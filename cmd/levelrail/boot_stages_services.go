@@ -216,6 +216,7 @@ func (s *bootState) wireRouter() {
 	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	startCanaryReconciler(ctx, logger, db, apiRouter)
+	startStackDrift(ctx, logger, db, apiRouter)
 	apiRouter.StartSplitTesting(ctx)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)

@@ -139,6 +139,7 @@ type stackResource struct {
 	LatestRevision  int                   `json:"latest_revision"`
 	LatestStatus    string                `json:"latest_status,omitempty"`
 	Lock            *stackLockResource    `json:"lock,omitempty"`
+	Drift           stackDriftResource    `json:"drift"`
 	Resources       []stackLedgerResource `json:"resources,omitempty"`
 }
 
@@ -392,6 +393,7 @@ func (rt *Router) stackResource(ctx context.Context, ss StackStore, s store.Stac
 	if l, ok, err := ss.GetStackLock(ctx, s.ID); err == nil && ok && !l.Expired(time.Now()) {
 		out.Lock = &stackLockResource{Holder: l.Holder, Revision: l.Revision, ExpiresAt: fmtStackTime(l.ExpiresAt)}
 	}
+	out.Drift = stackDriftOf(ctx, ss, s.ID)
 	if withLedger {
 		if entries, err := ss.ListStackLedger(ctx, s.ID); err == nil {
 			for _, e := range entries {
