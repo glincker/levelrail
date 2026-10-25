@@ -79,6 +79,7 @@ export const NAMESPACES = [
   'costs',
   'resources',
   'deployTimeline',
+  'deployEvents',
   'images',
   'buildCenter',
   'functions',

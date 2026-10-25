@@ -1899,6 +1899,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/retire | AbilityRead | handleAppImportRetire |
 | POST | /api/v1/migration/apps/sessions/{id}/retire | AbilityWriteSensitive | handleAppImportRetire |
 | POST | /api/v1/migration/exit-report | AbilityWriteSensitive | handleCoolifyExitReport |
+| GET | /api/v1/deployments/{id}/timeline | AbilityRead | handleGetDeployTimeline |
+| GET | /api/v1/deployments/{id}/timeline/stream | AbilityRead | handleDeployTimelineStream |
+| GET | /api/v1/deployments/{id}/timeline/compare | AbilityRead | handleCompareDeployTimelines |
 
 ## See also
 

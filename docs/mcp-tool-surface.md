@@ -14,14 +14,14 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | --- | ---: | ---: |
 | account | 5 | 351 |
 | alerts | 10 | 1130 |
-| apps | 16 | 1947 |
-| audit | 2 | 320 |
+| apps | 16 | 1901 |
+| audit | 2 | 256 |
 | backups | 14 | 1134 |
 | builds | 5 | 477 |
 | canary | 4 | 504 |
 | dashboards | 2 | 133 |
 | databases | 11 | 790 |
-| deploys | 22 | 2961 |
+| deploys | 23 | 2972 |
 | diagnostics | 5 | 496 |
 | domains | 12 | 955 |
 | environments | 3 | 417 |
@@ -39,7 +39,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | metrics | 10 | 876 |
 | migrate | 7 | 468 |
 | models | 16 | 2013 |
-| nodes | 7 | 566 |
+| nodes | 7 | 595 |
 | notifications | 3 | 225 |
 | orgs | 2 | 106 |
 | pipelines | 3 | 401 |
@@ -55,13 +55,13 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **247** | **24694** |
+| **total** | **248** | **24624** |
 
 ## Default session (progressive disclosure)
 
 `levelrail-mcp` lists only a small core plus `list_toolsets`, `enable_toolset` and `disable_toolset`. Enabling a toolset adds its tools for the rest of the session and sends `tools/list_changed`; the table above is what each toolset costs. `--all` (or `APP_MCP_ALL=1`), `--toolsets` and `--tool-profile` keep the static listing for clients without `list_changed` support. The mode and the token's abilities bound every call either way.
 
-21 tools, 2268 estimated tokens (ratchet 3150, ceiling per toolset 4000).
+21 tools, 2222 estimated tokens (ratchet 3150, ceiling per toolset 4000).
 
 - `cancel_deploy`
 - `deploy_app`
@@ -89,7 +89,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 
 Select with `--tool-profile agent-core` or `APP_MCP_TOOL_PROFILE=agent-core`. It is an allowlist independent of the read-only, standard and full modes; the API token's abilities still apply.
 
-15 tools, 1868 estimated tokens (cap 4000).
+15 tools, 1822 estimated tokens (cap 4000).
 
 - `cancel_deploy`
 - `deploy_app`

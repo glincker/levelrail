@@ -32,7 +32,7 @@ type listAppsInput struct {
 	Limit       int    `json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
 	Offset      int    `json:"offset,omitempty"`
 	Environment string `json:"environment,omitempty" jsonschema:"only apps in this environment"`
-	Fields      string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
+	Fields      string `json:"fields,omitempty" jsonschema:"keys to keep per item"`
 }
 
 type listAppsOutput struct {
@@ -297,7 +297,7 @@ type listDeployAttemptsInput struct {
 	Status string `json:"status,omitempty" jsonschema:"attempt status, e.g. succeeded or failed"`
 	Query  string `json:"query,omitempty" jsonschema:"free text match"`
 	Limit  int    `json:"limit,omitempty"`
-	Fields string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
+	Fields string `json:"fields,omitempty" jsonschema:"keys to keep per item"`
 }
 
 type appNameInput struct {
