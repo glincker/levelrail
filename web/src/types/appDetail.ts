@@ -137,6 +137,8 @@ export interface AppDetail {
   node_id?: string
   node_name?: string
   node_is_local?: boolean
+  // Response-only: true while the hosting node is offline.
+  node_offline?: boolean
   // auto_placed carries `omitempty` on the Go side and is response-only,
   // set only by POST /api/v1/apps: true when the create request omitted
   // node_id and simple spread scheduling picked a non-local node for it.

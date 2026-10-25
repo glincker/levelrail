@@ -45,7 +45,7 @@
     "superseded": "Superseded",
     "queued": "Queued",
     "canceled": "Canceled",
-    "pending": "Waiting for node"
+    "pending": "Queued until node returns"
   },
   "deployDetails": {
     "title": "{{status}} deploy",

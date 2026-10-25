@@ -192,7 +192,7 @@
       "superseded": "Superseded",
       "queued": "Queued",
       "canceled": "Canceled",
-      "pending": "Waiting for node"
+      "pending": "Queued until node returns"
     }
   },
   "quickStart": {
@@ -211,6 +211,10 @@
     }
   },
   "strip": {
+    "nodeOffline_one": "Node {{names}} is offline",
+    "nodeOffline_other": "{{count}} nodes offline: {{names}}",
+    "nodeOfflineSince": "since",
+    "nodeOfflineView": "View node",
     "ok_one": "All {{count}} app healthy",
     "ok_other": "All {{count}} apps healthy",
     "issues_one": "{{count}} thing needs attention",
