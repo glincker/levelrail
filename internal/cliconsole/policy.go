@@ -18,7 +18,7 @@ var deniedCommands = []string{
 	"apps exec",
 	"env pull", "env push",
 	"logs fetch",
-	"backups download", "app-volume-backups download",
+	"backups download", "app-volume-backups download", "assets upload",
 	"control-plane-backups download", "control-plane-backups keys", "control-plane-backups escrow",
 	"secrets generate-master-key", "secrets rotate-master-key",
 }
