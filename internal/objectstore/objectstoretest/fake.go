@@ -24,6 +24,12 @@ type Server struct {
 	FailPuts bool
 	// RejectAuth makes every request return 403 InvalidAccessKeyId.
 	RejectAuth bool
+	// DenyCORSWrite makes PutBucketCors return 403 AccessDenied.
+	DenyCORSWrite bool
+	// PublicRead lets unsigned GET and HEAD requests on objects succeed; otherwise they get 403.
+	PublicRead bool
+
+	cors []byte
 }
 
 type stored struct {
@@ -78,7 +84,24 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if _, ok := r.URL.Query()["cors"]; ok && key == "" {
+		s.handleCORS(w, r)
+		return
+	}
+	if key != "" && (r.Method == http.MethodGet || r.Method == http.MethodHead) && anonymous(r) && !s.PublicRead {
+		s3Error(w, http.StatusForbidden, "AccessDenied")
+		return
+	}
 	switch {
+	case r.Method == http.MethodHead:
+		o, ok := s.objects[key]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(o.data)))
+		w.Header().Set("ETag", `"fake"`)
+		w.WriteHeader(http.StatusOK)
 	case r.Method == http.MethodPut:
 		if s.FailPuts {
 			s3Error(w, http.StatusInternalServerError, "InternalError")
@@ -149,4 +172,29 @@ func s3Error(w http.ResponseWriter, status int, code string) {
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><Error><Code>` + code + `</Code><Message>` + code + `</Message></Error>`))
+}
+
+func anonymous(r *http.Request) bool {
+	return r.Header.Get("Authorization") == "" && r.URL.Query().Get("X-Amz-Signature") == ""
+}
+
+func (s *Server) handleCORS(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		if s.DenyCORSWrite {
+			s3Error(w, http.StatusForbidden, "AccessDenied")
+			return
+		}
+		s.cors, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	case http.MethodGet:
+		if s.cors == nil {
+			s3Error(w, http.StatusNotFound, "NoSuchCORSConfiguration")
+			return
+		}
+		w.Header().Set("Content-Type", "application/xml")
+		_, _ = w.Write(s.cors)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
 }
