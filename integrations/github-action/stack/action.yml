@@ -34,7 +34,7 @@ inputs:
     required: false
     default: ''
   secrets:
-    description: 'Newline separated NAME=ENVVAR pairs. Each ENVVAR must be set in the env of this step; values are masked and never printed.'
+    description: 'Newline separated NAME=ENVVAR pairs. Pass the same list to plan and apply: secret names are part of the plan hash. Each ENVVAR must be set in the env of this step; values are masked and never printed.'
     required: false
     default: ''
   expected-plan-hash:
@@ -65,8 +65,11 @@ outputs:
     description: 'Revision number written by the apply (apply mode)'
     value: ${{ steps.apply.outputs.revision }}
   status:
-    description: 'Revision status such as "applied", "partial" or "failed" (apply mode)'
+    description: 'Revision status such as "applied", "pending_approval", "partial" or "failed" (apply mode)'
     value: ${{ steps.apply.outputs.status }}
+  expires_at:
+    description: 'When a pending_approval revision expires (apply mode, empty otherwise)'
+    value: ${{ steps.apply.outputs.expires_at }}
 
 runs:
   using: composite
@@ -107,6 +110,19 @@ runs:
         while IFS= read -r line; do
           [ -n "$line" ] && args+=(--var "$line")
         done <<< "$LR_VARS"
+        # Secret names are part of the plan hash, so plan takes the same --secret flags as apply.
+        while IFS= read -r line; do
+          [ -n "$line" ] || continue
+          envname="${line#*=}"
+          if [ "$envname" = "$line" ] || [ -z "${!envname:-}" ]; then
+            echo "::error::secrets entry must be NAME=ENVVAR with ENVVAR set in the step env"
+            exit 1
+          fi
+          while IFS= read -r secret_line; do
+            [ -z "$secret_line" ] || echo "::add-mask::$secret_line"
+          done <<< "${!envname}"
+          args+=(--secret "$line")
+        done <<< "$LR_SECRETS"
         out="${RUNNER_TEMP:-/tmp}/lr-stack-plan.json"
         levelrail-cli "${args[@]}" > "$out"
         rc=$?
@@ -213,13 +229,27 @@ runs:
         rc=$?
         revision=$(jq -r '.revision.number // ""' "$out" 2>/dev/null || true)
         status=$(jq -r '.revision.status // ""' "$out" 2>/dev/null || true)
+        expires_at=$(jq -r '.expires_at // ""' "$out" 2>/dev/null || true)
+        # Apply exit 2 means the revision waits for a root approver, not that it failed.
+        if [ "$rc" -eq 2 ]; then
+          status=pending_approval
+        fi
         echo "revision=$revision" >> "$GITHUB_OUTPUT"
         echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "expires_at=$expires_at" >> "$GITHUB_OUTPUT"
         {
           echo "### Levelrail stack apply: \`${LR_STACK}\`"
           echo
           echo "Revision ${revision:-none}, status ${status:-unknown}"
+          if [ "$rc" -eq 2 ]; then
+            echo
+            echo "Awaiting approval until ${expires_at:-unknown}. Run the approve job with revision ${revision:-none}, or re-run apply after the approval expires."
+          fi
         } >> "$GITHUB_STEP_SUMMARY"
+        if [ "$rc" -eq 2 ]; then
+          echo "::notice::stack apply revision ${revision:-none} awaits approval until ${expires_at:-unknown}"
+          exit 0
+        fi
         if [ "$rc" -ne 0 ]; then
           echo "::error::stack apply failed (exit code $rc, revision status ${status:-unknown})"
           exit 1
