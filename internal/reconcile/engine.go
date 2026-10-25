@@ -223,10 +223,21 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 		return
 	}
 	n += len(dynamic)
+	// Per-app controllers run in a bounded pool so one app stuck in a long
+	// readiness wait cannot delay every other app's containers.
+	sem := make(chan struct{}, ParallelismFromEnv(os.Getenv))
+	var wg sync.WaitGroup
 	for _, c := range dynamic {
 		live[c.Name()] = struct{}{}
-		e.reconcileOne(ctx, c)
+		sem <- struct{}{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+			e.reconcileOne(ctx, c)
+		}()
 	}
+	wg.Wait()
 	e.persisted.forget(live)
 }
 

@@ -198,8 +198,30 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 
+	if rollbackTo != "" {
+		rt.recordOperatorRollback(r.Context(), name)
+	}
 	res := toAppResource(updated)
 	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
+}
+
+// recordOperatorRollback marks the newest attempt as an operator's choice so
+// the timeline shows it and a later crash of the superseded release cannot
+// override it.
+func (rt *Router) recordOperatorRollback(ctx context.Context, name string) {
+	if rt.deployGate == nil {
+		return
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, name)
+	if err != nil || len(attempts) == 0 {
+		return
+	}
+	if err := rt.deployGate.RecordGateEvent(ctx, store.DeployGateEvent{
+		DeployAttemptID: attempts[0].ID, ServiceName: name, Phase: deploysafety.PhaseRollback, Status: deploysafety.StatusInfo,
+		Reason: deploysafety.ReasonOperatorRollback, Message: "operator rollback accepted, automatic rollback will not override it", At: time.Now(),
+	}); err != nil {
+		rt.logger.Warn("api: record operator rollback failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
 }
 
 // executeConfirmedDeploy runs the actual desired-state change a deploy
