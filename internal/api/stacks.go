@@ -1010,8 +1010,9 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	caller := rt.stackCaller(r)
-	if mode == iac.StackDestroy && (caller.isCI || !rt.callerIsAdmin(r)) {
-		writeError(w, http.StatusForbidden, "destroy needs an administrator session or token and is never allowed from CI")
+	// Forget releases the whole ledger for adoption, so it is gated like destroy.
+	if caller.isCI || !rt.callerIsAdmin(r) {
+		writeError(w, http.StatusForbidden, "deleting a stack needs an administrator session or token and is never allowed from CI")
 		return
 	}
 	s, ok := rt.loadStack(w, r, ss)
