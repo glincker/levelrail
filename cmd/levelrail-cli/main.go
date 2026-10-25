@@ -186,6 +186,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "stack":
+		return runStack(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compliance":
 		return runCompliance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "otel":
@@ -413,6 +415,7 @@ Usage:
   %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
   %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
   %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
+  %[1]s stack list|show|create|plan|apply|history|show-revision|diff|rollback|pin|unpin|unlock|delete|settings <name> [flags]   stacks: named, versioned sets of resources with revisions and rollback
   %[1]s export destinations list|create|test|status|enable|disable|delete, export audit   send logs, audit events and metrics to your own tools
   %[1]s otel destinations list|add|test|remove                 OTLP/HTTP metric and log export to your own collector
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
