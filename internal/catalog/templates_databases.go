@@ -93,7 +93,7 @@ var databasesTemplates = []Template{
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:6333/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:6333/readyz || curl -fsS -o /dev/null http://127.0.0.1:6333/readyz || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

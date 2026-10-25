@@ -456,7 +456,7 @@ var devtoolsBatchTemplates = []Template{
 		Compose: `services:
   elasticsearch:
     image: elasticsearch:9.1.2
-    ports: ["9200:9200"]
+    ports: ["9200"]
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"

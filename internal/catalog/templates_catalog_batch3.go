@@ -204,7 +204,7 @@ var catalogBatch3Templates = []Template{
     image: registry.supertokens.io/supertokens/supertokens-postgresql:latest
     ports: ["3567:3567"]
     environment:
-      API_KEYS: ""
+      API_KEYS: $SERVICE_HEX_32_APIKEYS
       POSTGRESQL_CONNECTION_URI: postgresql://supertokens:$SERVICE_PASSWORD_POSTGRESQL@postgres:5432/supertokens
     depends_on: [postgres]
     healthcheck:

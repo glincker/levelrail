@@ -21,7 +21,7 @@ var catalogBatch5Templates = []Template{
 		Compose: `services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.19.22
-    ports: ["9200:9200"]
+    ports: ["9200"]
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"

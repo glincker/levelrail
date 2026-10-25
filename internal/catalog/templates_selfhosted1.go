@@ -34,7 +34,7 @@ var selfhosted1Templates = []Template{
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.152.0
     command: ["-storageDataPath=/storage", "-retentionPeriod=12"]
-    ports: ["8428:8428"]
+    ports: ["8428"]
     volumes:
       - victoriametrics_data:/storage
     healthcheck:

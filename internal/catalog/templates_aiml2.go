@@ -11,7 +11,7 @@ var aiml2Templates = []Template{
 		Compose: `services:
   chroma:
     image: ghcr.io/chroma-core/chroma:1.0.0
-    ports: ["8000:8000"]
+    ports: ["8000"]
     environment:
       IS_PERSISTENT: "TRUE"
       PERSIST_DIRECTORY: /data
@@ -37,7 +37,7 @@ var aiml2Templates = []Template{
   milvus:
     image: milvusdb/milvus:v3.0.2
     command: ["milvus", "run", "standalone"]
-    ports: ["19530:19530", "9091:9091"]
+    ports: ["19530", "9091"]
     environment:
       ETCD_USE_EMBED: "true"
       ETCD_DATA_DIR: /var/lib/milvus/etcd
