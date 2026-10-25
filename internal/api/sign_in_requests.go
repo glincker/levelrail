@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -74,6 +75,43 @@ func (rt *Router) signInOwner(w http.ResponseWriter, r *http.Request, approve bo
 		return "", signInActor{}, false
 	}
 	return rec.OwnerUserID, signInActor{kind: "token", id: rec.ID, name: rec.Name}, true
+}
+
+// signInDecider is signInOwner for approving or denying a waiting browser. It
+// also lets an unscoped, non-agent root token decide its own owner's
+// approvals (the CLI path on a fresh install), never reveal codes. rootOnly
+// marks that case so the password shortcut stays off it.
+func (rt *Router) signInDecider(w http.ResponseWriter, r *http.Request) (string, signInActor, bool, bool) {
+	if _, hasSession := rt.currentSessionUserID(r); !hasSession {
+		if _, pinned := rt.currentPinnedSession(r); !pinned {
+			if rec, ok := r.Context().Value(tokenIdentityKey{}).(*store.APIToken); ok && !hasSignInApprove(rec.Abilities) &&
+				slices.Contains(rec.Abilities, AbilityRoot) && rec.OwnerUserID != "" && rec.AgentName == "" {
+				if !rt.tokenIsUnscoped(r.Context(), rec.ID) {
+					writeError(w, http.StatusForbidden, msgNeedsSignInApprove)
+					return "", signInActor{}, false, false
+				}
+				return rec.OwnerUserID, signInActor{kind: "token", id: rec.ID, name: rec.Name}, true, true
+			}
+		}
+	}
+	owner, actor, ok := rt.signInOwner(w, r, true)
+	return owner, actor, false, ok
+}
+
+// tokenIsUnscoped is true only when no team, project or stack limit applies;
+// a failed lookup counts as scoped.
+func (rt *Router) tokenIsUnscoped(ctx context.Context, tokenID string) bool {
+	if db := rt.teamDB(); db != nil {
+		if s, err := db.GetAPITokenScope(ctx, tokenID); err != nil || s != nil {
+			return false
+		}
+	}
+	if ss := rt.tokenStackScopes(); ss != nil {
+		if s, err := ss.GetAPITokenStackScope(ctx, tokenID); err != nil || s != nil {
+			return false
+		}
+	}
+	return true
 }
 
 // handleListSignInRequests handles GET /api/v1/auth/sign-in-requests: the

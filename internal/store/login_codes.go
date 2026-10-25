@@ -34,6 +34,7 @@ const (
 	AuditActionNewDeviceDeny     = AuditActionFamilyNewDevice + ".denied"
 	AuditActionNewDeviceExpire   = AuditActionFamilyNewDevice + ".expired"
 	AuditActionNewDeviceReplace  = AuditActionFamilyNewDevice + ".superseded"
+	AuditActionFirstLoginTrust   = AuditActionFamilyNewDevice + ".first_login_trusted"
 	AuditActionTrustedDeviceDrop = AuditActionFamilyNewDevice + ".trust_revoked"
 	AuditActionApproverRevoke    = AuditActionFamilyNewDevice + ".approver_tokens_revoked"
 )

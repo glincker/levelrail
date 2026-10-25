@@ -86,6 +86,11 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 		return nil, nil
 	}
 	ctx := r.Context()
+	if rt.firstLoginTrusted(ctx, user, token, method) {
+		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionFirstLoginTrust, approvalAuditPrefix+"first_login#"+clientKindFromUserAgent(r.UserAgent()), http.StatusOK)
+		rt.trustDevice(w, r, user.ID)
+		return nil, nil
+	}
 	sessions := rt.approvalSessionEngine()
 	others, err := sessions.OtherSessionCount(ctx, user.ID, token, rt.codeLogin.approverFreshness)
 	if err != nil {
@@ -100,6 +105,9 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 	if err := sessions.RevokeChecked(ctx, token); err != nil {
 		return nil, fmt.Errorf("revoke unapproved session: %w", err)
 	}
+	if a, ok := rt.pendingApprovalForBrowser(r, user.ID); ok {
+		return &approvalHold{approval: a}, nil
+	}
 	if ok, retry := rt.codeLogin.approvals.allow(user.ID); !ok {
 		return &approvalHold{limited: true, retry: retry}, nil
 	}
@@ -108,6 +116,56 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 		return nil, err
 	}
 	return &approvalHold{approval: a}, nil
+}
+
+// pendingApprovalForBrowser finds the still-open approval this browser (or
+// CLI, by its binding cookie) already holds for userID, so a retried sign-in
+// keeps one request and one number instead of stacking new ones.
+func (rt *Router) pendingApprovalForBrowser(r *http.Request, userID string) (store.LoginApproval, bool) {
+	h, ok := cookieHash(r, approvalCookie)
+	if !ok {
+		return store.LoginApproval{}, false
+	}
+	a, err := rt.loginCodes.GetLoginApprovalByBrowser(r.Context(), h)
+	if err != nil || a.UserID != userID || a.Status != store.LoginApprovalPending || !time.Now().Before(a.ExpiresAt) {
+		return store.LoginApproval{}, false
+	}
+	return a, true
+}
+
+// firstLoginTrusted is the bounded trust on first use for a fresh install: the
+// setup admin's first password sign-in skips approval only inside the window
+// after creation, with no trusted browser yet and no session beyond the one
+// setup opened. Any doubt falls back to the normal approval flow.
+func (rt *Router) firstLoginTrusted(ctx context.Context, user store.User, token, method string) bool {
+	window := rt.codeLogin.firstLoginWindow
+	if window <= 0 || method != signInMethodPassword || !user.IsFirstUser || user.CreatedAt.IsZero() {
+		return false
+	}
+	now := time.Now()
+	if age := now.Sub(user.CreatedAt); age < 0 || age > window {
+		return false
+	}
+	devices, err := rt.loginCodes.ListTrustedDevices(ctx, user.ID, now)
+	if err != nil || len(devices) > 0 {
+		return false
+	}
+	views, err := rt.libSessions.ListUserSessions(ctx, user.ID, token)
+	if err != nil {
+		return false
+	}
+	setupOnly := user.CreatedAt.Add(rt.codeLogin.firstLoginSetupGrace)
+	others := 0
+	for _, v := range views {
+		if v.Current {
+			continue
+		}
+		others++
+		if others > 1 || v.CreatedAt.After(setupOnly) {
+			return false
+		}
+	}
+	return true
 }
 
 // pauseForDeviceApproval is holdForApproval for the JSON sign-in routes.
@@ -243,7 +301,7 @@ func (rt *Router) handleDenyLoginApproval(w http.ResponseWriter, r *http.Request
 }
 
 func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, approve bool) {
-	owner, actor, ok := rt.signInOwner(w, r, true)
+	owner, actor, rootOnly, ok := rt.signInDecider(w, r)
 	if !ok {
 		return
 	}
@@ -269,6 +327,9 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 			return
 		}
 		switch {
+		case byPassword && rootOnly:
+			writeError(w, http.StatusForbidden, "a root token can approve only with the number shown in the waiting browser")
+			return
 		case byPassword:
 			if !isLoopbackSignIn(a.RequesterIP) {
 				writeError(w, http.StatusForbidden, "approving with a password is only allowed for sign-ins from this computer: type the number shown on the waiting device")

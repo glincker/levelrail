@@ -480,7 +480,7 @@ A zero or negative value falls back to its default instead of switching the prot
 
 </Accordion>
 
-**The `signin:approve` ability.** A code is worth a session, so showing one, and deciding a new-browser approval, needs either a signed-in session of that account or a token that holds `signin:approve`. That ability is never implied: `root`, `write:sensitive` and every device login (`levelrail-cli auth login --device`) leave it out, so a leaked CLI token cannot turn itself into a dashboard session. Users and roles can never hold it.
+**The `signin:approve` ability.** A code is worth a session, so showing one needs either a signed-in session of that account or a token that holds `signin:approve`. That ability is never implied: `root`, `write:sensitive` and every device login (`levelrail-cli auth login --device`) leave it out, so a leaked CLI token cannot turn itself into a dashboard session. Users and roles can never hold it. The one exception is deciding a waiting new-browser sign-in, which an unscoped `root` token of the same user may also do (see below).
 
 Mint such a token only from a signed-in session: **Settings > API tokens > Create token > Approve my sign-ins**, or:
 
@@ -496,7 +496,9 @@ Such a token must expire within `APP_SIGNIN_APPROVE_TOKEN_MAX_DAYS` (default 30)
 
 When a password sign-in is correct but comes from a browser without a trusted-device cookie, and the account already has a live session somewhere else, the sign-in pauses. The new browser shows a waiting screen; every other session of that account sees a banner and an attention item with the requester's IP address, browser and time, and can **Approve** or **Deny**.
 
-A token owned by the user that holds `signin:approve` can decide too: `levelrail-cli auth code` lists the request, then `levelrail-cli auth approve <id> --match <number>` or `auth deny <id>` decides it.
+A token owned by the user that holds `signin:approve` can decide too: `levelrail-cli auth code` lists the request, then `levelrail-cli auth approve <id> --match <number>` or `auth deny <id>` decides it. So can an unscoped `root` token of that same user, which is what `setup admin` followed by `login --device` leaves you with on a headless install. A root token can only approve with the number the waiting browser shows (never the password shortcut), can never reveal a code, and is refused when it is an agent token, scoped to a team, project or stack, or owned by another account. A second sign-in attempt from the same waiting browser returns the request that is already open instead of creating another.
+
+**First sign-in on a fresh install.** The setup admin's first password sign-in does not wait for approval when all of these hold: the account is the first user, it was created within `APP_FIRST_LOGIN_TRUST_WINDOW` (a Go duration, default `30m`, `0` turns this off), no browser is trusted yet, and the only other live session is the one opened by `setup admin` (created within `APP_FIRST_LOGIN_SETUP_SESSION_GRACE` of the account, default `2m`). That browser becomes trusted and the sign-in is audited as `new_device.first_login_trusted`. It never applies to later users, to passkey or single sign-on sign-ins, or once a trusted browser or any other session exists.
 
 **Number matching.** The waiting browser shows a two digit number. Approving means typing that number (in the dashboard, or `--match NN` in the CLI); a wrong number denies the sign-in, so approving a prompt you did not expect does not let anyone in. The number never appears in a list, the attention feed or the CLI output, only in the waiting browser.
 
@@ -534,7 +536,7 @@ Break-glass: if you are stuck waiting for an approval no one can give, sign in w
 
 <Accordion title="Sign-in audit event names">
 
-Every step writes one audit row with a stable action, never the code: `login_code.requested`, `login_code.delivered` (email at send time, dashboard or CLI at each reveal), `login_code.redeemed`, `login_code.failed`, `login_code.locked`, `login_code.expired`, `new_device.requested`, `new_device.approved`, `new_device.denied`, `new_device.expired`, `new_device.superseded`, `new_device.trust_revoked` and `new_device.approver_tokens_revoked`.
+Every step writes one audit row with a stable action, never the code: `login_code.requested`, `login_code.delivered` (email at send time, dashboard or CLI at each reveal), `login_code.redeemed`, `login_code.failed`, `login_code.locked`, `login_code.expired`, `new_device.requested`, `new_device.approved`, `new_device.denied`, `new_device.expired`, `new_device.superseded`, `new_device.first_login_trusted`, `new_device.trust_revoked` and `new_device.approver_tokens_revoked`.
 
 The security center adds its own `security.*` events, listed in [Security center](/security-center#audit-events). Requests from someone who is not signed in are recorded with the actor `Sign-in` and the target user id when the account exists.
 
@@ -646,8 +648,8 @@ Recording is best-effort and runs after the real request completes. A failed aud
 | `POST` | `/api/v1/auth/login-approval/poll` | public (browser cookie required) |
 | `GET` | `/api/v1/auth/sign-in-requests` | session, or token with `write:sensitive` |
 | `POST` | `/api/v1/auth/sign-in-requests/codes/{id}/reveal` | session, or token with `signin:approve` |
-| `POST` | `/api/v1/auth/login-approvals/{id}/approve` | session, or token with `signin:approve` |
-| `POST` | `/api/v1/auth/login-approvals/{id}/deny` | session, or token with `signin:approve` |
+| `POST` | `/api/v1/auth/login-approvals/{id}/approve` | session, or token with `signin:approve`, or unscoped root token of the same user |
+| `POST` | `/api/v1/auth/login-approvals/{id}/deny` | session, or token with `signin:approve`, or unscoped root token of the same user |
 | `GET` | `/api/v1/auth/trusted-devices` | session, or token with `write:sensitive` |
 | `DELETE` | `/api/v1/auth/trusted-devices/{id}` | session, or token with `write:sensitive` |
 | `GET` | `/api/v1/settings/auth/code-login` | `read` |
