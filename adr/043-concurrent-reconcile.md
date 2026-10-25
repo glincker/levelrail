@@ -76,9 +76,44 @@ breaker and is retried on the next pass. The limit only applies with more than
 one worker, so the default path is unchanged.
 
 Readiness waits still block the worker for their own duration. Moving them off
-the worker (return `RequeueAfter` instead of waiting) is a later slice; with N
-workers, N apps stuck at once can still delay the rest, which is why the
-recommended value is 4 or more.
+the worker (return `RequeueAfter` instead of waiting) is a later slice, designed
+below; with N workers, N apps stuck at once can still delay the rest, which is
+why the recommended value is 4 or more.
+
+### Readiness as a requeue (designed, not yet built)
+
+The wait in the app controller is not a plain sleep: while it runs, a pinned
+port deploy holds the previous release stopped, the controller revives the last
+ready release if it dies, re-reads desired state to abort a superseded deploy,
+and the pre-deploy hook and stability gate run around it. A requeue version
+must keep every one of those, so it lands as its own change with this shape:
+
+- After starting a candidate, a run probes once. Not ready and inside the
+  budget: it returns `RequeueAfter` set to the probe interval with a
+  `ReadinessPending` condition and no error, so the breaker does not count it.
+- The budget deadline is derived from observed state (the candidate's
+  `StartedAt` plus the effective ready timeout), not from memory, so a control
+  plane restart mid-wait resumes the same wait instead of starting over.
+- The previous release held stopped for a pinned port is found again from the
+  service's own containers on each run, for the same reason. A timeout, crash
+  or superseded desired state takes the existing abort paths unchanged.
+- The pre-deploy hook runs only for a container this run created, and the
+  stability gate runs once readiness passes, so neither repeats on a requeue.
+  Rolling deploys keep one pending replica at a time.
+- A readiness requeue uses a fixed delay with no streak doubling, and with the
+  pool it re-adds only its own key after the delay instead of nudging a full
+  pass. The key stays serialized by the queue, so there is still one run in
+  flight per app.
+- It is enabled only with more than one worker at first, so the default of 1
+  keeps the blocking wait byte for byte.
+
+The engine side is already covered: a never-ready controller that requeues
+instead of blocking leaves 20 healthy apps converging at 1, 2 and 4 workers,
+never runs twice at once and does not hot-loop (`starvation_test.go`). With the
+wait still blocking, the app controller test runs one never-ready app and 20
+healthy apps through the real engine and asserts every healthy app, including
+ones created mid-wait, converges within the bound at 2 and 4 workers; at 1
+worker the same test reproduces the stall.
 
 ### Deleted apps
 
