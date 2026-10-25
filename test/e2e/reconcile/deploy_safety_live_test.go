@@ -141,6 +141,122 @@ func TestDeploySafety_Live_ZeroFailedRequests(t *testing.T) {
 	t.Logf("requests %d, ok by version %v, app 5xx %d, failed %d", load.total.Load(), ok, appErrors, len(failures))
 }
 
+// TestDeploySafety_Live_RestartAndOperatorRollback keeps a client on the
+// ingress through a deploy, a restart and an explicit rollback, and checks
+// the rollback takes traffic promptly and older releases do not linger.
+func TestDeploySafety_Live_RestartAndOperatorRollback(t *testing.T) {
+	if testing.Short() {
+		t.Skip("live Docker test")
+	}
+	testenv.RequireFullLive(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	s := startSafetyStack(ctx, t)
+	svcFor := func(version string) store.DesiredService {
+		return store.DesiredService{
+			Name: safetyService, Port: 8080, Domains: []string{safetyDomain},
+			Command: []string{"node", "-e", safetyAppScript},
+			Env:     map[string]string{"VERSION": version, "MODE": "ok"},
+			Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{
+				Path: "/healthz", Interval: 300 * time.Millisecond, Timeout: time.Second,
+			}},
+		}
+	}
+	ship := func(version string) {
+		t.Helper()
+		trigger := deploy.ImageTrigger{Store: s.db, Nudger: s.engine, Source: store.DeployAttemptSourceImage}
+		if _, err := trigger.Deploy(ctx, svcFor(version), safetyRepo+":"+version); err != nil {
+			t.Fatalf("deploy %s: %v", version, err)
+		}
+	}
+
+	ship("v1")
+	client := ingressClient(s.addr)
+	url := "https://" + safetyDomain + "/"
+	waitFor(t, 90*time.Second, "v1 to serve through the ingress", func() bool {
+		body, status, err := doGet(client, url)
+		return err == nil && status == 200 && body == "ok-v1"
+	})
+	load := newLoadResult()
+	loadCtx, stopLoad := context.WithCancel(ctx)
+	wg := hammer(loadCtx, client, url, 4, load)
+	defer func() { stopLoad(); wg.Wait() }()
+
+	ship("v2")
+	waitFor(t, 90*time.Second, "v2 to take traffic", func() bool { return load.lastVersion() == "v2" })
+	waitFor(t, 30*time.Second, "the v2 drain to finish", func() bool { return s.hasPhase(ctx, "v2", deploysafety.PhaseDrain) })
+	s.assertNoFailures(t, load)
+
+	t.Run("restart", func(t *testing.T) {
+		if err := s.db.RestartService(ctx, safetyService); err != nil {
+			t.Fatalf("RestartService() error = %v", err)
+		}
+		s.engine.Nudge()
+		svc, err := s.db.GetDesiredService(ctx, safetyService)
+		if err != nil {
+			t.Fatal(err)
+		}
+		target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
+		waitFor(t, 90*time.Second, "the restarted container to run", func() bool {
+			st, err := s.rt.InspectByName(ctx, target)
+			return err == nil && st != nil && st.Running
+		})
+		time.Sleep(5 * time.Second)
+		s.assertNoFailures(t, load)
+	})
+
+	t.Run("operator rollback", func(t *testing.T) {
+		v1 := s.attempt(ctx, t, "v1")
+		pins, err := s.db.ListRollbackPins(ctx, safetyService)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var pin *store.RollbackPin
+		for i := range pins {
+			if pins[i].DeployAttemptID == v1.ID {
+				pin = &pins[i]
+			}
+		}
+		current, err := s.db.GetDesiredService(ctx, safetyService)
+		if err != nil {
+			t.Fatal(err)
+		}
+		restored, ref, _ := deploy.RollbackDesired(*current, v1, pin)
+		trigger := deploy.ImageTrigger{Store: s.db, Nudger: s.engine, Source: store.DeployAttemptSourceImage, Reason: "RollbackTo: " + v1.ID}
+		asked := time.Now()
+		if _, err := trigger.Deploy(ctx, restored, ref); err != nil {
+			t.Fatalf("rollback deploy: %v", err)
+		}
+		waitFor(t, 60*time.Second, "the rollback to take traffic", func() bool { return load.lastVersion() == "v1" })
+		t.Logf("rollback took traffic %s after it was asked", time.Since(asked).Round(100*time.Millisecond))
+		time.Sleep(5 * time.Second)
+		s.assertNoFailures(t, load)
+
+		// The drain and the watch window bound how long the newer release stays.
+		limit := safetyConfig().DrainTimeout + safetyConfig().WatchWindow + 30*time.Second
+		waitFor(t, limit, "older releases to be retired", func() bool {
+			all, err := s.rt.ListByPrefix(ctx, safetyService+"-")
+			if err != nil {
+				return false
+			}
+			running := 0
+			for _, cs := range all {
+				if cs.Running && application.OwnsContainer(safetyService, cs.Name) {
+					running++
+				}
+			}
+			return running <= 2
+		})
+		s.assertNoFailures(t, load)
+	})
+
+	stopLoad()
+	wg.Wait()
+	ok, appErrors, failures := load.snapshot()
+	t.Logf("requests %d, ok by version %v, app 5xx %d, failed %d", load.total.Load(), ok, appErrors, len(failures))
+}
+
 func safetyConfig() deploysafety.Effective {
 	return deploysafety.Effective{
 		SuccessThreshold: 3, StableWindow: 3 * time.Second, DrainTimeout: 3 * time.Second,
