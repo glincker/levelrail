@@ -211,6 +211,14 @@ func (f *fakeGitHubAppClient) CreateCommitStatus(_ context.Context, _, _, owner,
 	return f.statusErr
 }
 
+func (f *fakeGitHubAppClient) GetPullRequest(context.Context, string, string, string, string, int) (githubapp.PullRequest, error) {
+	return githubapp.PullRequest{}, errors.New("fakeGitHubAppClient: GetPullRequest not stubbed")
+}
+
+func (f *fakeGitHubAppClient) GetCollaboratorPermission(context.Context, string, string, string, string, string) (string, error) {
+	return "", errors.New("fakeGitHubAppClient: GetCollaboratorPermission not stubbed")
+}
+
 func TestHandleGetGitHubAppStatus_NotConnected(t *testing.T) {
 	assertProviderStatusNotConnected(t, "/api/v1/github-app")
 }

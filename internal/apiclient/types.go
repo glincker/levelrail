@@ -1855,6 +1855,10 @@ type GitSourceResource struct {
 	// via SetPreviewPostPRComments (preview-settings, same route as
 	// PreviewEnabled).
 	PostPRComments bool `json:"post_pr_comments"`
+	// PRCommentCommands and PRCommentCommandsForks mirror the store fields,
+	// set via SetPRCommentCommands.
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
 	// fields of the same names, set via SetGitDeploySettings.
 	DeployPaths       []string `json:"deploy_paths"`
@@ -2886,14 +2890,20 @@ type PreviewEphemeralDatabaseResource struct {
 type SetPreviewSettingsRequest struct {
 	Enabled        *bool `json:"enabled,omitempty"`
 	PostPRComments *bool `json:"post_pr_comments,omitempty"`
+	// PRCommentCommands and PRCommentCommandsForks gate /levelrail pull
+	// request comment commands.
+	PRCommentCommands      *bool `json:"pr_comment_commands,omitempty"`
+	PRCommentCommandsForks *bool `json:"pr_comment_commands_forks,omitempty"`
 }
 
 // PreviewSettingsResource mirrors internal/api's previewSettingsResource:
 // the resulting state of both preview-settings toggles after a
 // SetPreviewSettingsRequest is applied.
 type PreviewSettingsResource struct {
-	Enabled        bool `json:"enabled"`
-	PostPRComments bool `json:"post_pr_comments"`
+	Enabled                bool `json:"enabled"`
+	PostPRComments         bool `json:"post_pr_comments"`
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 }
 
 // SweepPreviewEnvironmentsResult mirrors internal/api's

@@ -32,6 +32,7 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   git_push: 'git push',
   poll: 'poll',
   upload: 'cli upload',
+  pr_comment: 'pr comment',
 }
 
 function attemptTitle(a: DeployAttempt): string {

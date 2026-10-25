@@ -193,6 +193,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithCapacityForecastLookback(capacityForecastLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
+		api.WithPRCommentCommands(prCommentCommandConfig(logger)),
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithStaticOrphanGrace(staticOrphanGrace(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
