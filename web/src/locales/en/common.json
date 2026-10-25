@@ -1,4 +1,8 @@
 {
+  "nodeSelect": {
+    "auto": "Automatic (least loaded)",
+    "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there."
+  },
   "draft": {
     "message": "You have an unsaved draft from {{time}}.",
     "continue": "Continue where you left off",
@@ -99,6 +103,7 @@
     "title": "Apps",
     "tableLabel": "Apps",
     "colName": "Name",
+    "colNode": "Node",
     "colTraffic": "Traffic 1h",
     "colP95": "p95",
     "colErrors": "Errors",

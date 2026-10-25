@@ -42,6 +42,7 @@ import {
 } from '../lib/createResourcePlacement'
 import { CreateFormShell } from './CreateFormShell'
 import {
+  AUTO_NODE_VALUE,
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
   NodeSelectField,
@@ -147,7 +148,7 @@ const BASE_VALUES: CreateAppFormInput = {
   name: '',
   image: '',
   port: '',
-  node: LOCAL_NODE_VALUE,
+  node: AUTO_NODE_VALUE,
   project: NO_PROJECT_VALUE,
   strategy: STRATEGY_DEFAULT_VALUE,
   replicas: '',
@@ -213,6 +214,8 @@ export function CreateAppFields({
   // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
   // fresh open already gets a fresh useState(false) here.
   const [showAdvanced, setShowAdvanced] = useState(false)
+  // With several nodes the choice matters, so it is not hidden.
+  const multiNode = nodes.length > 1
   const form = useAppForm<CreateAppFormInput, CreateAppFormOutput>(
     createAppSchema,
     { defaultValues: initialValues() },
@@ -278,7 +281,7 @@ export function CreateAppFields({
         // advanced and submitting "Local node" (the field's own default)
         // still counts as an explicit choice here, sent as '', so it's
         // never silently overridden by that auto-placement.
-        node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
+        node_id: resolveSubmittedNodeId(showAdvanced || multiNode, nodeId),
       },
       {
         onSuccess: buildCreateResourceSuccessHandler({
@@ -407,6 +410,23 @@ export function CreateAppFields({
         ) : null}
       </div>
 
+      {multiNode ? (
+        <Controller
+          control={control}
+          name="node"
+          render={({ field }) => (
+            <NodeSelectField
+              idPrefix="app"
+              nodes={nodes}
+              withAuto
+              value={field.value ?? AUTO_NODE_VALUE}
+              onValueChange={field.onChange}
+              error={[formState.errors.node]}
+            />
+          )}
+        />
+      ) : null}
+
       {nodes.length > 0 || projects.length > 0 ? (
         <button
           type="button"
@@ -473,19 +493,21 @@ export function CreateAppFields({
             </Field>
           </div>
 
-          <Controller
-            control={control}
-            name="node"
-            render={({ field }) => (
-              <NodeSelectField
-                idPrefix="app"
-                nodes={nodes}
-                value={field.value ?? LOCAL_NODE_VALUE}
-                onValueChange={field.onChange}
-                error={[formState.errors.node]}
-              />
-            )}
-          />
+          {multiNode ? null : (
+            <Controller
+              control={control}
+              name="node"
+              render={({ field }) => (
+                <NodeSelectField
+                  idPrefix="app"
+                  nodes={nodes}
+                  value={field.value ?? LOCAL_NODE_VALUE}
+                  onValueChange={field.onChange}
+                  error={[formState.errors.node]}
+                />
+              )}
+            />
+          )}
 
           <Controller
             control={control}

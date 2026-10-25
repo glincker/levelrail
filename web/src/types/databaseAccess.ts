@@ -143,6 +143,8 @@ export interface DatabaseNetwork {
   database: string
   running: boolean
   internal: { host: string; address?: string; port: number }
+  // Where apps on other nodes reach a remote database; absent otherwise.
+  mesh?: { host: string; port: number }
   networks: {
     name: string
     address?: string

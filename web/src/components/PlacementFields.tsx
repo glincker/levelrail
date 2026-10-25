@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { NodeResource } from '../types/nodeDetail'
 import type { ProjectResource } from '../types/projectDetail'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
@@ -15,6 +16,10 @@ import {
 // separate "local" entry the API returns.
 export const LOCAL_NODE_VALUE = ''
 
+// Sentinel for "let the control plane pick the node" (simple spread
+// scheduling): the create request then omits node_id entirely.
+export const AUTO_NODE_VALUE = '__auto__'
+
 // Sentinel for "no project", the same reasoning LOCAL_NODE_VALUE
 // documents just above; base-ui's Select can't use "" as a real item
 // value.
@@ -26,6 +31,8 @@ interface NodeSelectFieldProps {
   value: string
   onValueChange: (value: string) => void
   error?: Array<{ message?: string } | undefined>
+  /** Offers "Automatic" as the first choice (multi-node installs). */
+  withAuto?: boolean
 }
 
 // Shared by CreateAppFields.tsx and CreateDatabaseFields.tsx: both offer
@@ -36,14 +43,18 @@ export function NodeSelectField({
   value,
   onValueChange,
   error,
+  withAuto = false,
 }: NodeSelectFieldProps) {
+  const { t } = useTranslation('common')
   if (nodes.length === 0) return null
   const id = `${idPrefix}-node`
+  const shown =
+    !withAuto && value === AUTO_NODE_VALUE ? LOCAL_NODE_VALUE : value
   return (
     <Field>
       <FieldLabel htmlFor={id}>Node</FieldLabel>
       <Select
-        value={value ?? LOCAL_NODE_VALUE}
+        value={shown ?? LOCAL_NODE_VALUE}
         onValueChange={(v) => {
           onValueChange(v ?? LOCAL_NODE_VALUE)
         }}
@@ -52,6 +63,11 @@ export function NodeSelectField({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          {withAuto ? (
+            <SelectItem value={AUTO_NODE_VALUE}>
+              {t('nodeSelect.auto')}
+            </SelectItem>
+          ) : null}
           <SelectItem value={LOCAL_NODE_VALUE}>
             This control plane (local)
           </SelectItem>
@@ -63,8 +79,9 @@ export function NodeSelectField({
         </SelectContent>
       </Select>
       <FieldHint>
-        Which server this runs on. Leave it on local unless you&rsquo;ve added
-        another server to manage.
+        {withAuto
+          ? t('nodeSelect.autoHint')
+          : 'Which server this runs on. Leave it on local unless you\u2019ve added another server to manage.'}
       </FieldHint>
       <FieldError errors={error} />
     </Field>

@@ -564,6 +564,8 @@
     "backToList": "Back to databases"
   },
   "connection": {
+    "forApps": "For apps (over the mesh)",
+    "forAppsHint": "Apps on other nodes get this name and port. The tabs below show the address on the database's own node.",
     "title": "Connection details",
     "description": "How apps and tools reach this database.",
     "engine": "Engine",

@@ -33,6 +33,17 @@ export function ConnectionCard({ database }: { database: DatabaseResource }) {
         revealPlaceholder: reveal,
       })
     : null
+  const meshUri = network.data?.mesh
+    ? buildSnippets({
+        engine,
+        host: network.data.mesh.host,
+        port: network.data.mesh.port,
+        user: defaultConnectUser(engine),
+        database: engine === 'postgres' ? 'postgres' : '',
+        tls,
+        revealPlaceholder: reveal,
+      }).uri
+    : ''
   const tabs = TABS.filter((id) => (snippets ? snippets[id] !== '' : true))
 
   return (
@@ -87,24 +98,35 @@ export function ConnectionCard({ database }: { database: DatabaseResource }) {
             </Button>
           </div>
         ) : (
-          <Tabs defaultValue="uri">
-            <TabsList className="max-w-full">
+          <>
+            {meshUri ? (
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{t('connection.forApps')}</p>
+                <CopyField value={meshUri} label={t('connection.forApps')} />
+                <p className="text-xs text-muted-foreground">
+                  {t('connection.forAppsHint')}
+                </p>
+              </div>
+            ) : null}
+            <Tabs defaultValue="uri">
+              <TabsList className="max-w-full">
+                {tabs.map((id) => (
+                  <TabsTrigger key={id} value={id}>
+                    {t(`connection.tab.${id}`, { engine })}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
               {tabs.map((id) => (
-                <TabsTrigger key={id} value={id}>
-                  {t(`connection.tab.${id}`, { engine })}
-                </TabsTrigger>
+                <TabsContent key={id} value={id} className="pt-2">
+                  <CopyField
+                    value={snippets[id]}
+                    label={t(`connection.tab.${id}`, { engine })}
+                    multiline={id === 'node' || id === 'python' || id === 'go'}
+                  />
+                </TabsContent>
               ))}
-            </TabsList>
-            {tabs.map((id) => (
-              <TabsContent key={id} value={id} className="pt-2">
-                <CopyField
-                  value={snippets[id]}
-                  label={t(`connection.tab.${id}`, { engine })}
-                  multiline={id === 'node' || id === 'python' || id === 'go'}
-                />
-              </TabsContent>
-            ))}
-          </Tabs>
+            </Tabs>
+          </>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <p className="min-w-0 text-sm text-muted-foreground">

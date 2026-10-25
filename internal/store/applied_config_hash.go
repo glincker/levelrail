@@ -19,6 +19,9 @@ const (
 	AppliedFieldLabels     = "labels"
 	AppliedFieldHostPort   = "host_port"
 	AppliedFieldBindAddr   = "bind_address"
+	// AppliedFieldDatabaseEnv hashes the database links: they resolve to env
+	// at container create, so a new link is pending until a restart.
+	AppliedFieldDatabaseEnv = "database_env"
 	// AppliedFieldSecretKeys lists, comma-joined, which env keys were
 	// secret-backed; informational, never diffed as a setting.
 	AppliedFieldSecretKeys = "secret_keys"
@@ -49,12 +52,13 @@ func AppEnvHashes(serviceName string, literal, secretValues map[string]string) m
 // creation. Resources and health are applied live, so they are not here.
 func AppliedFields(svc DesiredService) map[string]string {
 	return map[string]string{
-		AppliedFieldPort:       strconv.Itoa(svc.Port),
-		AppliedFieldCommand:    shortJSONHash(svc.Command),
-		AppliedFieldEntrypoint: shortJSONHash(svc.Entrypoint),
-		AppliedFieldLabels:     shortJSONHash(sortedLabels(svc.Labels)),
-		AppliedFieldHostPort:   hostPortField(svc.HostPort),
-		AppliedFieldBindAddr:   svc.BindAddress,
+		AppliedFieldPort:        strconv.Itoa(svc.Port),
+		AppliedFieldCommand:     shortJSONHash(svc.Command),
+		AppliedFieldEntrypoint:  shortJSONHash(svc.Entrypoint),
+		AppliedFieldLabels:      shortJSONHash(sortedLabels(svc.Labels)),
+		AppliedFieldHostPort:    hostPortField(svc.HostPort),
+		AppliedFieldBindAddr:    svc.BindAddress,
+		AppliedFieldDatabaseEnv: shortJSONHash(svc.DatabaseEnv),
 	}
 }
 

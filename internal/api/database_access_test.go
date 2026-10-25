@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/nodemove"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -365,5 +366,37 @@ func TestDatabaseNetwork_ReachabilityVerdictPrivate(t *testing.T) {
 	}
 	if !strings.Contains(n.Verdict.Text, "1 app") {
 		t.Errorf("verdict text = %q", n.Verdict.Text)
+	}
+}
+
+func TestDatabaseNetwork_RemoteDatabaseReportsMeshAddressForApps(t *testing.T) {
+	db := openTestDB(t)
+	fake := &scriptedRuntime{fakeExecAppRuntime: &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}}
+	rt := NewRouter(discardLogger(), testBrand(), db,
+		WithExecRuntime(func(string) (docker.Runtime, error) { return fake, nil }),
+		WithDatabaseAccess(db, dbaccess.DefaultTTLLimits()),
+		WithMultiNode(db, nodemove.Config{VerifyTimeout: time.Minute, MaxAttempts: 3, Interval: time.Second}, 21000, 21999),
+	)
+	rt.SetMeshZone("levelrail")
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "m1-db", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpdateDatabaseNode(context.Background(), "m1-db", "node-b"); err != nil {
+		t.Fatal(err)
+	}
+	cookie := loginTestSession(t, rt, db)
+	rec := viewerDo(t, rt, cookie, http.MethodGet, "/api/v1/databases/m1-db/network", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var n struct {
+		Mesh *struct {
+			Host string `json:"host"`
+			Port int    `json:"port"`
+		} `json:"mesh"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &n)
+	if n.Mesh == nil || n.Mesh.Host != "m1-db.levelrail" || n.Mesh.Port < 21000 || n.Mesh.Port > 21999 {
+		t.Fatalf("mesh address = %s", rec.Body.String())
 	}
 }
