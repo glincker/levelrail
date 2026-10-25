@@ -680,7 +680,6 @@ jobs:
     timeout-minutes: 30
     env:
       WEB: ${{ needs.changes.outputs.web }}
-      VITEST: ${{ needs.changes.outputs.vitest }}
       BASE: ${{ needs.changes.outputs.base }}
       # Only this job's build needs a manifest, for the mermaid-chunk
       # exemption in scripts/check-bundle-size.js; release.yml's build
@@ -756,13 +755,6 @@ jobs:
             echo "no changed web/*.ts(x) files"
           fi
 
-      # Tests whose module graph reaches a changed file. Config, lockfile
-      # and setup changes force the full run above instead.
-      - name: vitest (related to changed files)
-        if: env.WEB == 'full' && env.VITEST == 'changed'
-        working-directory: web
-        run: npm exec --no -- vitest run --changed "$BASE" --passWithNoTests
-
       - name: vitest (help pages)
         if: env.WEB == 'docs'
         working-directory: web
@@ -781,14 +773,17 @@ jobs:
           path: web/node_modules/.tmp
           key: ${{ steps.tsbuild.outputs.cache-primary-key }}
 
-  # The full vitest suite, sharded: vitest runs files serially (see
-  # web/vitest.config.ts), so one job is the whole suite's wall time.
+  # The vitest suite, sharded: vitest runs files serially (see
+  # web/vitest.config.ts), so one job is the whole suite's wall time. A change
+  # set runs only the tests whose module graph reaches a changed file (config,
+  # lockfile and setup changes force the full run), split the same way.
   web-test:
     name: Web tests (${{ matrix.shard }}/4)
     needs: changes
     if: >-
       ${{ !cancelled() && needs.changes.result == 'success'
-      && needs.changes.outputs.web == 'full' && needs.changes.outputs.vitest == 'full' }}
+      && needs.changes.outputs.web == 'full'
+      && (needs.changes.outputs.vitest == 'full' || needs.changes.outputs.vitest == 'changed') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 15
     strategy:
@@ -798,6 +793,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # --changed needs the base commit in history.
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -812,7 +810,15 @@ jobs:
 
       - name: vitest (shard)
         working-directory: web
-        run: npm exec --no -- vitest run --shard=${{ matrix.shard }}/4
+        env:
+          VITEST: ${{ needs.changes.outputs.vitest }}
+          BASE: ${{ needs.changes.outputs.base }}
+        run: |
+          if [ "$VITEST" = changed ]; then
+            npm exec --no -- vitest run --changed "$BASE" --shard=${{ matrix.shard }}/4 --passWithNoTests
+          else
+            npm exec --no -- vitest run --shard=${{ matrix.shard }}/4
+          fi
 
   # Runs install.sh end to end (install, re-run, upgrade, uninstall) in
   # systemd containers against a binary built from this commit.
