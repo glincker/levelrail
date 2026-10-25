@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
 func anyList(in []string) []any {
@@ -78,6 +80,11 @@ func (p *planner) planApp(r *Resource) {
 	for _, k := range []string{"project", "environment"} {
 		if _, want := f[k]; !want {
 			delete(liveMap, k)
+		}
+	}
+	if want, _ := f["image"].(string); want != "" {
+		if have, _ := liveMap["image"].(string); sameDeclaredImage(want, have) {
+			liveMap["image"] = want
 		}
 	}
 	managed := p.st.managed[r.Name]
@@ -154,4 +161,24 @@ func (p *planner) pruneLB(app string) {
 	p.add(r, ActionDelete, nil, nil, func(ctx context.Context, x *executor) error {
 		return x.d.Do(ctx, "DELETE", "/api/v1/apps/"+esc(app)+"/loadbalancer", nil, nil)
 	}).Reason = "app is managed by source " + p.opts.Source + " and the load balancer is absent from the files"
+}
+
+// sameDeclaredImage reports whether the live image is the declared one. The
+// runtime pins a fresh app to repo:tag@digest, so a digest on the live side
+// only counts when the declaration pins one too.
+func sameDeclaredImage(declared, live string) bool {
+	if !strings.Contains(declared, "@") {
+		live, _, _ = strings.Cut(live, "@")
+	}
+	return docker.SameImageRef(withDefaultTag(declared), withDefaultTag(live))
+}
+
+func withDefaultTag(ref string) string {
+	if strings.Contains(ref, "@") {
+		return ref
+	}
+	if i := strings.LastIndex(ref, "/"); !strings.Contains(ref[i+1:], ":") {
+		return ref + ":latest"
+	}
+	return ref
 }

@@ -32,6 +32,7 @@ type fakeCP struct {
 	channels  []map[string]any
 	deny      func(method, path string) bool
 	lbOff     bool
+	pinDigest bool
 	writes    []string
 	routes    []fakeRoute
 }
@@ -176,6 +177,10 @@ func (f *fakeCP) appRoutes() {
 			return nil, &StatusError{Status: http.StatusConflict, Message: "exists"}
 		}
 		b["env_dirty"] = false
+		if img, _ := b["image"].(string); f.pinDigest && img != "" {
+			// The runtime reports a freshly created app as tag@digest.
+			b["image"] = img + "@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+		}
 		f.apps[name] = b
 		f.secrets[name] = map[string]bool{}
 		for _, s := range stringList(b["secret_env"]) {

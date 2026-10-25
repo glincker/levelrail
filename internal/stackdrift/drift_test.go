@@ -22,6 +22,7 @@ type fakeStore struct {
 	revs     map[string][]store.StackRevisionRecord
 	owners   map[string]string
 	panicOn  string
+	ledger   []store.StackLedgerEntry
 	recorded map[string]store.StackDrift
 }
 
@@ -54,7 +55,7 @@ func (f *fakeStore) GetStackRevision(_ context.Context, id string, n int) (store
 	return store.StackRevisionRecord{}, store.ErrStackRevisionNotFound
 }
 func (f *fakeStore) ListStackLedger(context.Context, string) ([]store.StackLedgerEntry, error) {
-	return nil, nil
+	return f.ledger, nil
 }
 func (f *fakeStore) GetStackResourceOwner(_ context.Context, _, key string) (store.StackLedgerEntry, bool, error) {
 	id, ok := f.owners[key]
@@ -71,6 +72,7 @@ type fakeLive struct {
 	project bool
 	env     map[string]string
 	failAll bool
+	app     map[string]any
 }
 
 func (l *fakeLive) Do(_ context.Context, method, path string, _, out any) error {
@@ -90,8 +92,19 @@ func (l *fakeLive) Do(_ context.Context, method, path string, _, out any) error 
 		}
 	case "/api/v1/tags", "/api/v1/databases":
 		v = []any{}
+	case "/api/v1/projects/p1/environments":
+		v = []any{}
 	case "/api/v1/projects/p1/env":
 		v = l.env
+	case "/api/v1/apps/web":
+		if l.app == nil {
+			return &iac.StatusError{Status: 404, Message: "not found"}
+		}
+		v = l.app
+	case "/api/v1/apps/web/secrets":
+		v = []any{}
+	case "/api/v1/apps/web/loadbalancer":
+		return &iac.StatusError{Status: 404, Message: "the load-balancer feature is off by default; turn it on"}
 	default:
 		return &iac.StatusError{Status: 404, Message: "not found"}
 	}
@@ -239,5 +252,18 @@ func TestSummarize_CapsItems(t *testing.T) {
 	}
 	if got := Summarize(p, 2); len(got) != 2 {
 		t.Fatalf("len = %d", len(got))
+	}
+}
+
+func TestCheckAll_DigestPinnedLiveImageIsNotDrift(t *testing.T) {
+	doc := "version: 1\nkind: App\nmetadata: {name: web}\nspec:\n  project: shop\n  service:\n    build: {type: image, image: \"nginx:1.26-alpine\"}\n    port: 80\n"
+	fs := newStore("web")
+	raw, _ := json.Marshal([]renderedFile{{Name: "stack.yaml", Content: doc}})
+	fs.revs["id-web"][1].RenderedDocs = raw
+	fs.ledger = []store.StackLedgerEntry{{StackID: "id-web", Kind: "App", Key: "App/web", LiveID: "web", SinceRevision: 1}}
+	app := map[string]any{"name": "web", "image": "nginx:1.26-alpine@sha256:abc", "port": 80, "replicas": 1, "strategy": "blue-green", "bind_address": "private", "project_id": "p1", "tags": []string{"managed-by:web"}}
+	checker(t, fs, &fakeLive{t: t, project: true, app: app}).CheckAll(t.Context())
+	if d := fs.recorded["id-web"]; d.Status != store.StackDriftNone {
+		t.Fatalf("drift = %+v", d)
 	}
 }

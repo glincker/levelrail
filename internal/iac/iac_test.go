@@ -990,3 +990,47 @@ func TestPlanWorksWhenLoadBalancerFeatureIsOff(t *testing.T) {
 		t.Fatalf("second apply = %+v", o)
 	}
 }
+
+func TestDigestPinnedLiveImageMatchesDeclaredTag(t *testing.T) {
+	f := newFake()
+	f.pinDigest = true
+	opts := Options{Source: "git", Secrets: map[string]string{"API_KEY": "k1", "web/DB_PASSWORD": "p1"}}
+	if out := applyAll(t, f, fixture, opts); !out.OK() {
+		t.Fatalf("apply = %+v", out)
+	}
+	for _, c := range planFor(t, f, fixture, Options{Source: "git"}).Changes {
+		if c.Action != ActionNoop {
+			t.Errorf("spurious change after apply: %s %s %+v", c.Action, c.Key(), c.Fields)
+		}
+	}
+	changed := strings.Replace(fixture, "ghcr.io/acme/web:1.2.3", "ghcr.io/acme/web:1.2.4", 1)
+	updates := 0
+	for _, c := range planFor(t, f, changed, Options{Source: "git"}).Changes {
+		if c.Action == ActionUpdate {
+			updates++
+		}
+	}
+	if updates != 1 {
+		t.Fatalf("a new tag must still plan an update, got %d", updates)
+	}
+}
+
+func TestSameDeclaredImage(t *testing.T) {
+	cases := []struct {
+		declared, live string
+		want           bool
+	}{
+		{"nginx:1.26", "nginx:1.26@sha256:aa", true},
+		{"docker.io/library/nginx:1.26", "nginx:1.26@sha256:aa", true},
+		{"nginx:1.26", "nginx:1.27@sha256:aa", false},
+		{"nginx:1.26", "other/nginx:1.26@sha256:aa", false},
+		{"nginx:1.26@sha256:aa", "nginx:1.26@sha256:bb", false},
+		{"nginx:1.26@sha256:aa", "nginx:1.26@sha256:aa", true},
+		{"nginx", "nginx:latest@sha256:aa", true},
+	}
+	for _, tc := range cases {
+		if got := sameDeclaredImage(tc.declared, tc.live); got != tc.want {
+			t.Errorf("sameDeclaredImage(%q, %q) = %v, want %v", tc.declared, tc.live, got, tc.want)
+		}
+	}
+}
