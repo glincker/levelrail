@@ -74,6 +74,8 @@ levelrail-cli stack unpin shop-prod
 
 A stack owns the resources it created, and the resources it adopted. Prune deletes only owned resources that the files no longer declare. A resource that exists outside every stack makes the apply fail unless the apply sets `adopt`.
 
+Prune is never turned on by a pull request. A `spec.prune` field in the `Stack` document or a `--prune` flag only asks for it. The apply is refused unless an administrator set `allow_prune` on the stack, so editing the files in git cannot widen what an apply deletes.
+
 Databases and projects are never pruned, because they hold data or other stacks' members.
 
 Prune is also guarded against mass deletes. An apply that would delete more than `APP_STACK_PRUNE_MAX_COUNT` resources (default 10), or more than `APP_STACK_PRUNE_MAX_PERCENT` percent of the stack's resources (default 50), is refused. Review the plan, then send `allow_mass_prune` with the apply request to go ahead.

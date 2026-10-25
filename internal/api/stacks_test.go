@@ -470,3 +470,21 @@ func TestStackDriftedApplyIsNotNoop(t *testing.T) {
 		t.Fatalf("drifted apply must repair: %+v", out)
 	}
 }
+
+func TestStackPruneRequestCannotOverrideAllowPrune(t *testing.T) {
+	rt, db, cookie := stackFixture(t)
+	two := stackTestDocs("ghcr.io/acme/web:1.0.0") + "---\nversion: 1\nkind: App\nmetadata: {name: extra}\nspec:\n  project: shop\n  service:\n    build: {type: image, image: \"ghcr.io/acme/extra:1\"}\n    port: 3001\n"
+	if code, out := stackApply(t, rt, cookie, two, nil); code != http.StatusOK {
+		t.Fatalf("seed apply = %d %+v", code, out)
+	}
+	code, _ := stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), map[string]any{"prune": true})
+	if code != http.StatusUnprocessableEntity {
+		t.Fatalf("prune request with allow_prune off = %d, want 422", code)
+	}
+	if _, err := db.GetDesiredService(t.Context(), "extra"); err != nil {
+		t.Fatalf("app was pruned without allow_prune: %v", err)
+	}
+	if n := stackRevisionCount(t, rt, cookie); n != 1 {
+		t.Fatalf("refused prune left %d revisions, want 1", n)
+	}
+}
