@@ -20,7 +20,7 @@ Stacks are off by default. Set `APP_EXPERIMENTAL=iac` on the control plane, and 
 A stack has a name, the project it belongs to, and a few settings that a root token changes with `levelrail-cli stack settings`:
 
 - **Prune**: whether the stack may delete resources it owns. Off unless you turn it on with `--allow-prune`.
-- **Drift policy**: `warn` (default) or `lock`. See [Drift](#drift).
+- **Drift policy**: `warn` (default) or `lock`, set with `levelrail-cli stack settings NAME --drift lock`. See [Drift](#drift).
 - **Require approval**: holds applies until another administrator approves them. See [Approvals](#approvals).
 - **Pin**: when set, applies are refused except a rollback to the pinned revision. See [Pin](#pin).
 
@@ -68,13 +68,15 @@ levelrail-cli stack pin shop-prod 12
 levelrail-cli stack unpin shop-prod
 ```
 
-`plan`, `show` and `diff` change nothing. `apply` writes a new revision. `plan --exit-code` exits 2 when changes are pending. Run `levelrail-cli stack --help` for the full list, including `show-revision`, `reject`, `unlock` and `delete`.
+`plan`, `show` and `diff` change nothing. `apply` writes a new revision when it changes something. `plan --exit-code` exits 2 when changes are pending. Run `levelrail-cli stack --help` for the full list, including `show-revision`, `reject`, `unlock` and `delete`.
 
 ## Ownership and prune
 
 A stack owns the resources it created, and the resources it adopted. Prune deletes only owned resources that the files no longer declare. A resource that exists outside every stack makes the apply fail unless the apply sets `adopt`.
 
 Prune is never turned on by a pull request. A `spec.prune` field in the `Stack` document or a `--prune` flag only asks for it. The apply is refused unless an administrator set `allow_prune` on the stack, so editing the files in git cannot widen what an apply deletes.
+
+Domains listed inline on an `App` are part of that app, not separate owned resources. The stack does not record them in its ownership list, so two stacks are kept apart for them only by the rule that a host can belong to one app at a time. Declare a `Domain` document when you want a host to be owned, planned and pruned on its own.
 
 Databases and projects are never pruned, because they hold data or other stacks' members.
 
