@@ -109,6 +109,9 @@ func (c *Client) SolveRemote(ctx context.Context, req RemoteRequest, out io.Writ
 	if progress == nil {
 		progress = func(ProgressEvent) {}
 	}
+	if err := c.checkEngine(ctx); err != nil {
+		return nil, err
+	}
 	if err := checkDiskSpace(req.ContextDir); err != nil {
 		return nil, err
 	}

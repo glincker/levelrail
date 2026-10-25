@@ -6,6 +6,7 @@ import {
   ArrowUpIcon,
   CaretDownIcon,
   CheckCircleIcon,
+  HardDrivesIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { SkeletonLine, type Tone } from '@/components/kit'
@@ -16,6 +17,8 @@ import { causeCount } from '../../lib/dashboardHome'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { updatesQueryOptions } from '../../queries/updates'
 import { unsnoozeNow } from '../shell/snoozeStore'
+import { useNodeListOptional } from '../../queries/nodes'
+import { RelativeTime } from '../kit/RelativeTime'
 import { useDashboardAttention } from './useDashboardAttention'
 import { NoticeRows } from './DashboardBanners'
 import { useDashboardNotices } from '../../hooks/useDashboardNotices'
@@ -47,6 +50,37 @@ function UpdateChip() {
   )
 }
 
+/** Names offline nodes with how long they have been down and links to the first one. */
+function OfflineNodes({
+  nodes,
+}: {
+  nodes: Array<{ id: string; name: string; since?: string }>
+}) {
+  const { t } = useTranslation('dashboard')
+  const first = nodes[0]
+  if (!first) return null
+  const names = nodes.map((n) => n.name).join(', ')
+  const since = nodes.find((n) => n.since)?.since
+  return (
+    <Link
+      to="/nodes/$id"
+      params={{ id: first.id }}
+      className={cn(
+        'flex flex-wrap items-center gap-x-1.5 text-sm font-medium hover:underline',
+        TONE.danger.text,
+      )}
+    >
+      <HardDrivesIcon weight="fill" aria-hidden="true" className="size-5" />
+      {t('strip.nodeOffline', { count: nodes.length, names })}
+      {since ? (
+        <span className="font-normal">
+          {t('strip.nodeOfflineSince')} <RelativeTime at={since} live />
+        </span>
+      ) : null}
+    </Link>
+  )
+}
+
 /** StatusStrip is the one place the dashboard states fleet health and platform notices, collapsed to a single line. */
 export function StatusStrip({
   apps,
@@ -58,11 +92,23 @@ export function StatusStrip({
   const { t } = useTranslation('dashboard')
   const { level, count, visible, snoozed, isLoading } = useDashboardAttention()
   const notices = useDashboardNotices()
+  const nodeList = useNodeListOptional()
+  const offlineNodes = (nodeList.data ?? [])
+    .filter((n) => n.status === 'offline')
+    .map((n) => ({
+      id: n.id,
+      name: n.name,
+      since: n.offline_since ?? n.last_seen_at,
+    }))
+  const nodesDown = offlineNodes.length > 0
   const [open, setOpen] = useState(false)
-  const worst: Tone = notices.some((n) => n.tone === 'danger')
+  const worst: Tone = nodesDown
     ? 'danger'
-    : LEVEL_TONE[level]
-  const tone = level === 'ok' && notices.length > 0 ? 'warning' : worst
+    : notices.some((n) => n.tone === 'danger')
+      ? 'danger'
+      : LEVEL_TONE[level]
+  const tone =
+    !nodesDown && level === 'ok' && notices.length > 0 ? 'warning' : worst
   const causes = causeCount(visible)
   const Icon = tone === 'success' ? CheckCircleIcon : WarningCircleIcon
   const label =
@@ -83,7 +129,9 @@ export function StatusStrip({
         role="status"
         className="flex flex-wrap items-center gap-x-3 gap-y-2"
       >
-        {isLoading ? (
+        {nodesDown ? (
+          <OfflineNodes nodes={offlineNodes} />
+        ) : isLoading ? (
           <SkeletonLine width={220} className="h-5" />
         ) : (
           <span

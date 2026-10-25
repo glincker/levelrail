@@ -277,6 +277,21 @@ type ContainerSpec struct {
 	RestartPolicy string
 	// User runs the container process as this uid[:gid]. Empty keeps the image's user.
 	User string
+	// UsernsMode is the engine's user namespace mode, such as "auto" or
+	// "keep-id" (Podman). Empty keeps the engine default.
+	UsernsMode string
+	// SecurityOpt lists extra --security-opt entries. Added after the
+	// hardening defaults, never replacing them.
+	SecurityOpt []string
+	// Devices are "host[:container[:perms]]" passthrough entries, for
+	// example /dev/fuse.
+	Devices []string
+}
+
+// NeedsSecurityCapability reports whether the spec sets a field an agent that
+// predates it would silently drop, weakening the container profile.
+func (s ContainerSpec) NeedsSecurityCapability() bool {
+	return s.UsernsMode != "" || len(s.SecurityOpt) > 0 || len(s.Devices) > 0 || s.User != "" || len(s.BindMounts) > 0
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

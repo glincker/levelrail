@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/configtranslate"
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
 const (
@@ -47,6 +48,11 @@ func runImportConfig(prog string, args []string, stdout, stderr io.Writer, looku
 	fset.BoolVar(&jsonOut, "json", false, "print the result as JSON to stdout and nothing else")
 	fset.StringVar(&outputFlag, "output", "", "output format: json or table")
 	fset.StringVar(&query, "query", "", "project the JSON result with a dotted path")
+	var em importEmitFlags
+	var services, dbVersion string
+	bindImportEmitFlags(fset, &em, false)
+	fset.StringVar(&services, "service", "", "with --emit stack: only these services, comma separated (like apps create --service)")
+	fset.StringVar(&dbVersion, "db-version", "", "with --emit stack: engine versions for the proposed databases, e.g. postgres=16,redis=7.4")
 	jsonOut, of, exitCode, ok := parseSessionFlags(fset, reorderArgsFlagsFirst(fset, args), &jsonOut, &outputFlag, &query, prog, stderr)
 	if !ok {
 		return exitCode
@@ -69,6 +75,10 @@ func runImportConfig(prog string, args []string, stdout, stderr io.Writer, looku
 	res := configtranslate.Translate(files, opts...)
 	if len(res.Detected) == 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("no Procfile, app.json or vercel.json found in %s", dir))
+	}
+	if em.active() {
+		em.out = out
+		return runImportConfigEmit(prog, dir, res, em, services, dbVersion, jsonOut, stdout, stderr)
 	}
 	yamlBytes, err := res.Fragment.YAML()
 	if err != nil {
@@ -107,6 +117,33 @@ func runImportConfig(prog string, args []string, stdout, stderr io.Writer, looku
 		return exitValidation
 	}
 	return exitOK
+}
+
+// runImportConfigEmit writes the proposal as stack documents instead of one app.yaml.
+func runImportConfigEmit(prog, dir string, res configtranslate.Result, em importEmitFlags, services, dbVersion string, jsonOut bool, stdout, stderr io.Writer) int {
+	opts, err := em.options(stackNameFromDir(dir))
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	dbv, err := platformimport.ParseDBVersions(dbVersion)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--db-version: %v", err))
+	}
+	eo := configtranslate.EmitOptions{DBVersions: dbv}
+	for _, s := range strings.Split(services, ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			eo.Services = append(eo.Services, s)
+		}
+	}
+	in, err := res.EmitInput(eo)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%v", err))
+	}
+	files, err := platformimport.EmitStack(in, opts)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%v", err))
+	}
+	return finishEmit(prog, opts, em.out, files, em.force, jsonOut, stdout, stderr)
 }
 
 func printNextSteps(w io.Writer, steps []string) {
@@ -207,6 +244,7 @@ func readConfigFiles(dir string) (map[string][]byte, error) {
 func importConfigUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s import config [dir] [--out FILE] [--strict] [--json]
+  %[1]s import config [dir] --emit stack --out DIR [--stack NAME] [--image-repo REPO] [--service S] [--db-version postgres=16]
 
 Reads Procfile, app.json and vercel.json from dir (default: the current
 directory) and prints a proposed app.yaml. Findings (what has no equivalent,
@@ -217,6 +255,12 @@ Flags:
   --out FILE   write the proposed app.yaml to FILE instead of stdout
   --strict     exit 2 when any finding is a blocker (default: exit 0)
   --json       print {detected, spec, findings} as JSON to stdout and nothing else
+  --emit stack write a Stack, Project, Database, App and Domain documents plus SECRETS.md
+               (secret names only) and MIGRATION.md into the --out directory, for review in a pull request
+  --service S  with --emit: only these services, comma separated (as apps create --service)
+  --image-repo REPO  with --emit: registry path, apps are named REPO/SERVICE:latest (apply runs images only)
+  --db-version E=V   with --emit: version per database engine (the config files name none)
+  --stack, --project, --environment, --force   with --emit: names, and overwrite existing files
   --output, --query   as for every command
 
 Environment:

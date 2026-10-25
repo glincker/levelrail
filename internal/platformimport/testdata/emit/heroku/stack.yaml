@@ -1,0 +1,7 @@
+version: 1
+kind: Stack
+metadata:
+  name: heroku-import
+spec:
+  project: heroku-import
+  environment: production

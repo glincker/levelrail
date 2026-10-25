@@ -1,0 +1,12 @@
+version: 1
+kind: App
+metadata:
+  name: web
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/web:latest
+    port: 80

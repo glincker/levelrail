@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -36,6 +37,13 @@ func IsDenied(err error) bool {
 func IsNotFound(err error) bool {
 	var se *StatusError
 	return errors.As(err, &se) && se.Status == http.StatusNotFound
+}
+
+// IsFeatureOff reports whether err is the 404 a gated endpoint answers while
+// its beta feature is disabled.
+func IsFeatureOff(err error) bool {
+	var se *StatusError
+	return errors.As(err, &se) && se.Status == http.StatusNotFound && strings.Contains(se.Message, "feature is off by default")
 }
 
 func esc(s string) string { return url.PathEscape(s) }
@@ -88,6 +96,12 @@ type wireApp struct {
 	BindMounts    []map[string]any          `json:"bind_mounts,omitempty"`
 	Egress        map[string]any            `json:"egress,omitempty"`
 	EnvDirty      bool                      `json:"env_dirty"`
+	DatabaseEnv   map[string]wireDBRef      `json:"database_env,omitempty"`
+}
+
+type wireDBRef struct {
+	Database string `json:"database"`
+	Field    string `json:"field"`
 }
 
 type wireSecretKey struct {

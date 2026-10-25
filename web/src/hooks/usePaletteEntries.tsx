@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -8,10 +9,13 @@ import {
   StackIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { toast } from '@/components/ui/toast'
-import { fuzzyFilter } from '@/lib/fuzzy'
+import { rankItems, relatedFor } from '@/lib/paletteSearch'
+import { STARTER_KEYS } from '@/lib/paletteSearchIndex'
 import { groupHits } from '@/lib/paletteGroups'
 import { KIND_VALUES, scopeKeyCompletions, type Chip } from '@/lib/paletteQuery'
 import { isFeatureVisible } from '../lib/experimental'
+import { appListQueryOptions } from '../queries/apps'
+import { useTemplatePaletteItems } from '../components/palette/useTemplatePaletteItems'
 import {
   useDeleteSavedSearch,
   useSavedSearches,
@@ -65,6 +69,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
   const experimental = useExperimentalFeatures()
   const { restartApp } = usePaletteAppActions()
   const saved = useSavedSearches()
+  const queryClient = useQueryClient()
   const deleteSavedSearch = useDeleteSavedSearch().mutate
 
   const searching = ps.serverQuery !== ''
@@ -74,6 +79,12 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     [searching, ps.search.isError, ps.search.data],
   )
   const savedRows = saved.data
+  const related = React.useMemo(() => relatedFor(ps.text), [ps.text])
+  const templateItems = useTemplatePaletteItems(
+    ps.text,
+    ps.text.trim() !== '' && ps.chips.length === 0,
+    related.templates,
+  )
 
   const looseNavigate = React.useCallback(
     (opts: { to: string; search?: Record<string, string> }) =>
@@ -158,17 +169,37 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
               : { to: '/apps/$name', params: { name: sp.app ?? '' } },
           ),
       }))
-      const quick = DEFAULT_QUICK_ACTION_KEYS.flatMap((k) => {
+      // Cache-only read: opening the palette must not fire a list request.
+      const cachedApps = queryClient.getQueryData(
+        appListQueryOptions().queryKey,
+      )
+      const starter =
+        cachedApps === undefined
+          ? undefined
+          : cachedApps.length === 0
+            ? STARTER_KEYS.noApps
+            : STARTER_KEYS.hasApps
+      const quick = (starter ?? DEFAULT_QUICK_ACTION_KEYS).flatMap((k) => {
         const item = byKey.get(k)
-        return item
-          ? [
-              {
-                ...item,
-                key: `suggested-quick-${item.key}`,
-                group: 'Suggested',
-              },
-            ]
-          : []
+        if (!item) return []
+        const why = starter
+          ? t(`preview.starter.${k}` as 'preview.starter.nav-backups', {
+              defaultValue: '',
+            }) || undefined
+          : undefined
+        return [
+          {
+            ...item,
+            key: `suggested-quick-${item.key}`,
+            group: 'Suggested',
+            subtitle: why ?? item.subtitle,
+            preview: {
+              kind: 'page' as const,
+              ...item.preview,
+              description: why ?? item.preview?.description,
+            },
+          },
+        ]
       })
       push('Suggested', groupLabel('Suggested'), [...suggested, ...quick])
       push(
@@ -224,19 +255,28 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
       return out
     }
 
+    const byKey = new Map(baseItems.map((i) => [i.key, i]))
+    const relatedItems: PaletteItem[] =
+      ps.chips.length > 0
+        ? []
+        : related.keys.flatMap((k) => {
+            const item = byKey.get(k)
+            return item
+              ? [{ ...item, key: `related-${item.key}`, group: 'Suggested' }]
+              : []
+          })
+    const relatedKeys = new Set(related.keys)
+    push('related', groupLabel('Suggested'), relatedItems)
+
     // Client-only matches: the built-in fallback when search fails, and a
     // supplement to server hits otherwise. Chips mean a scoped search, so
     // static entries would only add noise.
     const clientItems = (hideSettings: boolean): PaletteItem[] => {
       if (ps.chips.length > 0 || q === '') return []
       const counts = new Map<string, number>()
-      return fuzzyFilter(
-        baseItems,
-        q,
-        (i) => i.label,
-        (i) => i.keywords,
-      ).filter((i) => {
+      return rankItems(baseItems, q, (i) => i.keywords).filter((i) => {
         if (!STATIC_SEARCH_GROUPS.has(i.group)) return false
+        if (relatedKeys.has(i.key)) return false
         if (hideSettings && i.group === 'Settings') return false
         const n = (counts.get(i.group) ?? 0) + 1
         counts.set(i.group, n)
@@ -246,6 +286,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
 
     if (failed) {
       pushStatic(clientItems(false))
+      push('Templates', groupLabel('Templates'), templateItems)
       return out
     }
 
@@ -283,8 +324,21 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
       )
     }
     pushStatic(clientItems(hits.some((h) => h.kind === 'setting')))
+    const serverTemplates = new Set(
+      hits
+        .filter((h) => h.kind === 'template')
+        .map((h) => h.title.toLowerCase()),
+    )
+    push(
+      'Templates',
+      groupLabel('Templates'),
+      templateItems.filter((i) => !serverTemplates.has(i.label.toLowerCase())),
+    )
     return out
   }, [
+    queryClient,
+    related,
+    templateItems,
     t,
     ps,
     searching,

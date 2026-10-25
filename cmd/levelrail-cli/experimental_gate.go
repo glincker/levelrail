@@ -17,6 +17,7 @@ var experimentalCommands = map[string]experimental.Feature{
 	"apply":             experimental.IaC,
 	"diff":              experimental.IaC,
 	"export":            experimental.IaC,
+	"stack":             experimental.IaC,
 	"cloudflare-tunnel": experimental.CloudflareTunnel,
 	"roles":             experimental.AccessRoles,
 	"environments":      experimental.GlobalEnvironments,

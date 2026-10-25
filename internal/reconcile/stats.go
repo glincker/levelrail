@@ -19,6 +19,7 @@ type Stats struct {
 	SlowestName    string        `json:"slowest_controller"`
 	SlowestElapsed time.Duration `json:"slowest_ns"`
 	Pending        bool          `json:"pending"`
+	Queue          *QueueStats   `json:"queue,omitempty"`
 }
 
 type passStats struct {
@@ -58,6 +59,12 @@ func (e *Engine) Stats() Stats {
 	if ns := e.stats.lastEnd.Load(); ns > 0 {
 		s.LastPassAt = time.Unix(0, ns).UTC()
 	}
+	e.qmu.Lock()
+	if e.queue != nil {
+		qs := e.queue.stats(time.Now())
+		s.Queue = &qs
+	}
+	e.qmu.Unlock()
 	e.mu.RLock()
 	win := append([]time.Duration(nil), e.ring...)
 	s.SlowestName, s.SlowestElapsed = e.slowestName, e.slowest

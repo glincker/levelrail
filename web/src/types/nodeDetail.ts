@@ -29,6 +29,8 @@ export interface NodeResource {
   cert_fingerprint?: string
   joined_at?: string
   last_seen_at?: string
+  // Set while status is offline: when the node was last seen healthy.
+  offline_since?: string
   // Schedulable is cordon's real backing state (see the NodeStatus
   // comment above): false means the node refuses new placements but
   // keeps running whatever's already on it. Toggled by

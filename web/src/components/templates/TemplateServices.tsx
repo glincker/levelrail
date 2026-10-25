@@ -1,8 +1,21 @@
 import { useTranslation } from 'react-i18next'
+import {
+  HardDrivesIcon,
+  KeyIcon,
+  PlugsConnectedIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
+import { envKind, imagePin } from '../../lib/templateTrust'
+import type { EnvKind } from '../../lib/templateTrust'
 import type { ComposePreviewService } from '../../types/compose'
 
-/** What gets deployed: each compose service with its image, port and role. */
+const ENV_STYLE: Record<EnvKind, string> = {
+  required: 'border-primary/50 text-foreground',
+  generated: 'border-border bg-muted/40 text-muted-foreground',
+  optional: 'border-dashed border-border text-muted-foreground',
+}
+
+/** Pre-deploy preview: each compose service with image, ports, volumes and env names (never values). */
 export function TemplateServices({
   services,
 }: {
@@ -13,11 +26,11 @@ export function TemplateServices({
   return (
     <section aria-labelledby="template-deployed" className="space-y-3">
       <div>
-        <h2 id="template-deployed" className="text-base font-medium">
-          {t('detail.deployed.title')}
+        <h2 id="template-deployed" className="text-base font-semibold">
+          {t('install.title')}
         </h2>
         <p className="text-sm text-muted-foreground">
-          {t('detail.deployed.description')}
+          {t('install.description', { count: services.length })}
         </p>
       </div>
       <ul className="space-y-2">
@@ -26,6 +39,8 @@ export function TemplateServices({
             ...(s.depends_on ?? []),
             ...(s.depends_on_healthy ?? []),
           ]
+          const volumes = [...(s.volumes ?? []), ...(s.bind_mounts ?? [])]
+          const env = s.env ?? []
           return (
             <li
               key={s.key}
@@ -42,7 +57,13 @@ export function TemplateServices({
                 </Badge>
                 {s.port ? (
                   <Badge variant="outline">
+                    <PlugsConnectedIcon className="size-3" aria-hidden="true" />
                     {t('detail.deployed.port', { port: s.port })}
+                  </Badge>
+                ) : null}
+                {s.image ? (
+                  <Badge variant="outline">
+                    {t(`install.pin.${imagePin(s.image)}`)}
                   </Badge>
                 ) : null}
               </div>
@@ -50,6 +71,41 @@ export function TemplateServices({
                 <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
                   {s.image}
                 </p>
+              ) : null}
+              {volumes.length > 0 ? (
+                <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <HardDrivesIcon
+                    className="mt-0.5 size-3.5 shrink-0"
+                    aria-label={t('install.volumes')}
+                  />
+                  <span className="min-w-0 font-mono break-all">
+                    {volumes.join(', ')}
+                  </span>
+                </p>
+              ) : null}
+              {env.length > 0 ? (
+                <ul
+                  className="mt-2 flex flex-wrap gap-1.5"
+                  aria-label={t('install.env')}
+                >
+                  {env.map((e) => {
+                    const kind = envKind(e)
+                    return (
+                      <li
+                        key={e.key}
+                        className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs ${ENV_STYLE[kind]}`}
+                      >
+                        {e.secret || kind !== 'optional' ? (
+                          <KeyIcon className="size-3" aria-hidden="true" />
+                        ) : null}
+                        <span className="font-mono">{e.key}</span>
+                        <span className="text-muted-foreground">
+                          {t(`install.envKind.${kind}`)}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
               ) : null}
               {deps.length > 0 ? (
                 <p className="mt-1 text-xs text-muted-foreground">

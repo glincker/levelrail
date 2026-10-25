@@ -8,6 +8,7 @@ import {
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { StuckPanel } from '../../components/StuckPanel'
+import { ManagedByStackBanner } from '../../components/stacks/ManagedByStackNotice'
 import { DatabaseActionBar } from '../../components/databases/DatabaseActionBar'
 import { DatabasePaletteActions } from '../../components/databases/DatabasePaletteActions'
 import {
@@ -65,6 +66,7 @@ function DatabaseDetailLayout() {
       {database.external ? null : (
         <DatabasePaletteActions database={database} action={action} />
       )}
+      <ManagedByStackBanner stack={database.managed_by_stack} />
       {database.external ? null : (
         <StuckPanel kind="database" name={database.name} />
       )}

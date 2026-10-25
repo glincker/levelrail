@@ -65,7 +65,7 @@ export const DEPLOY_ATTEMPT_STATUS_LABEL: Record<DeployAttemptStatus, string> =
     superseded: 'Superseded',
     queued: 'Queued',
     canceled: 'Canceled',
-    pending: 'Waiting for node',
+    pending: 'Queued until node returns',
   }
 
 export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
@@ -83,5 +83,6 @@ export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
     upload: 'Uploaded',
     restart: 'Restart',
     start: 'Start',
+    stop: 'Stop',
     pr_comment: 'Pull request comment',
   }

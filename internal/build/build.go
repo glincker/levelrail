@@ -96,6 +96,9 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 	if progress == nil {
 		progress = func(ProgressEvent) {}
 	}
+	if err := c.checkEngine(ctx); err != nil {
+		return nil, err
+	}
 	if err := checkDiskSpace(req.ContextDir, c.cache.Dir); err != nil {
 		return nil, err
 	}

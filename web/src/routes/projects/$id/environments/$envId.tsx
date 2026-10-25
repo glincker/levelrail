@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { ManagedByStackBanner } from '../../../../components/stacks/ManagedByStackNotice'
 
 // Environment detail route: the one place an operator can see every app
 // tagged with a specific staging/production-style label, plus jump to a
@@ -148,6 +149,7 @@ function EnvironmentDetailPage() {
         </div>
       }
     >
+      <ManagedByStackBanner stack={environment.managed_by_stack} />
       <EnvironmentEnvEditor environmentId={envId} />
       <SharedEnvSecretsCard scope="environment" id={envId} />
 

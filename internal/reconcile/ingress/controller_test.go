@@ -53,6 +53,8 @@ type fakeStore struct {
 	statusPage         store.StatusPageSettings
 	statusPageErr      error
 	attempts           map[string][]store.DeployAttempt
+	// readyAt stamps a service's Ready condition, zero when unset.
+	readyAt map[string]time.Time
 }
 
 func (f *fakeStore) ListDeployAttempts(_ context.Context, name string) ([]store.DeployAttempt, error) {
@@ -70,7 +72,8 @@ func (f *fakeStore) GetConditionsForControllers(_ context.Context, names []strin
 		if f.notReadyServices[strings.TrimPrefix(name, "application/")] {
 			continue
 		}
-		out[name] = []reconcile.Condition{{Type: "Ready", Status: reconcile.ConditionTrue}}
+		at := f.readyAt[strings.TrimPrefix(name, "application/")]
+		out[name] = []reconcile.Condition{{Type: "Ready", Status: reconcile.ConditionTrue, LastTransitionTime: at}}
 	}
 	return out, nil
 }

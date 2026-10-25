@@ -145,7 +145,7 @@ func (rt *Router) handleListStorageBuckets(w http.ResponseWriter, r *http.Reques
 	}
 	out := make([]storageBucketResource, 0, len(buckets))
 	for _, b := range buckets {
-		if app != "" && !bucketBoundTo(apps[b.ID], app) {
+		if b.Purpose == store.StorageBucketPurposeAssets || (app != "" && !bucketBoundTo(apps[b.ID], app)) {
 			continue
 		}
 		out = append(out, bucketResource(b, apps[b.ID]))
@@ -265,7 +265,7 @@ func (rt *Router) loadBucket(w http.ResponseWriter, r *http.Request) (*StorageDe
 		return nil, store.StorageBucket{}, false
 	}
 	b, err := d.Buckets.GetStorageBucket(r.Context(), r.PathValue("id"))
-	if errors.Is(err, store.ErrStorageBucketNotFound) {
+	if errors.Is(err, store.ErrStorageBucketNotFound) || (err == nil && b.Purpose == store.StorageBucketPurposeAssets) {
 		writeError(w, http.StatusNotFound, "bucket not found")
 		return nil, store.StorageBucket{}, false
 	}
@@ -777,7 +777,7 @@ func (rt *Router) handlePublicBucketObject(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	b, err := d.Buckets.GetStorageBucket(r.Context(), r.PathValue("id"))
-	if err != nil || !b.Public {
+	if err != nil || !b.Public || b.Purpose == store.StorageBucketPurposeAssets {
 		writeError(w, http.StatusNotFound, "object not found")
 		return
 	}

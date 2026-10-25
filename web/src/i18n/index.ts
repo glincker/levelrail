@@ -24,6 +24,7 @@ export const NAMESPACES = [
   'logBudgets',
   'alertSetup',
   'environments',
+  'stacks',
   'migration',
   'migrate',
   'domains',
@@ -117,6 +118,7 @@ export const NAMESPACES = [
   'palette',
   'splitTesting',
   'scheduledDeploy',
+  'assets',
 ] as const
 
 // New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.

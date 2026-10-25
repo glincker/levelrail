@@ -280,6 +280,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	// with an open connection stops looking healthy. Buffered and
 	// non-blocking: recvLoop must never block delivering the signal.
 	heartbeats := make(chan struct{}, 1)
+	caps := &capSet{}
 	m := newMuxWithHandlers(stream, muxHandlers{
 		gpu: s.onGPUReport(nodeID),
 		hostReport: func(r *agentpb.HostReport) {
@@ -299,6 +300,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 			}
 		},
 		hello: func(info *agentpb.AgentInfo) {
+			caps.store(info.GetCapabilities())
 			go s.recordAgentInfo(context.Background(), nodeID, info)
 		},
 		renewal: func(r *agentpb.RenewalReport) {
@@ -306,7 +308,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		},
 	})
 	live := s.trackSession(nodeID, m)
-	s.registry.Register(nodeID, newGRPCTransport(m))
+	s.registry.Register(nodeID, newGRPCTransportWithCaps(m, caps))
 	s.observeSession(ctx, nodeID)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 

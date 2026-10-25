@@ -5,6 +5,8 @@
 
 export interface EnvironmentResource {
   id: string
+  // Name of the stack managing this environment, absent when none.
+  managed_by_stack?: string
   project_id: string
   name: string
   // protected requires confirm: true on a deploy, rollback, or

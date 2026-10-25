@@ -200,7 +200,8 @@ func TestDoctorCheckMeshHubEndpoint(t *testing.T) {
 		{"mesh off", false, "127.0.0.1", true, doctorStatusOK, false},
 		{"loopback, no nodes", true, "127.0.0.1", false, doctorStatusOK, false},
 		{"loopback with nodes fails", true, "127.0.0.1", true, doctorStatusFail, true},
-		{"real host reminds about udp", true, "cp.example.com", true, doctorStatusOK, true},
+		{"hostname warns, WireGuard needs an IP", true, "cp.example.com", true, doctorStatusWarn, true},
+		{"public ip reminds about udp", true, "203.0.113.7", true, doctorStatusOK, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

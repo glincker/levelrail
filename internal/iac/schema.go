@@ -29,6 +29,23 @@ var secretRefEnv = map[string]any{
 	"properties":           map[string]any{"secretRef": map[string]any{"type": "string", "minLength": 1}},
 }
 
+// fromRefEnv is { from: { database, field } }: the value is resolved by the
+// control plane at container create and never appears in a document.
+var fromRefEnv = map[string]any{
+	"type":                 "object",
+	"required":             []any{"from"},
+	"additionalProperties": false,
+	"properties": map[string]any{"from": map[string]any{
+		"type":                 "object",
+		"required":             []any{"database"},
+		"additionalProperties": false,
+		"properties": map[string]any{
+			"database": map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+			"field":    map[string]any{"enum": []any{"url", "host", "port", "username", "password", "database"}},
+		},
+	}},
+}
+
 var (
 	mergedOnce sync.Once
 	mergedJSON []byte
@@ -41,7 +58,7 @@ var (
 
 // SchemaJSON returns the published JSON Schema: the resource envelope schema
 // with the app.yaml schema definitions merged in unchanged, except that an
-// env value may also be a { secretRef } object.
+// env value may also be a { secretRef } or a { from: { database, field } } object.
 func SchemaJSON() ([]byte, error) {
 	mergedOnce.Do(func() { mergedJSON, mergedErr = buildSchema() })
 	return bytes.Clone(mergedJSON), mergedErr
@@ -69,7 +86,7 @@ func buildSchema() ([]byte, error) {
 	}
 	env, _ := defs["envValue"].(map[string]any)
 	oneOf, _ := env["oneOf"].([]any)
-	env["oneOf"] = append(oneOf, secretRefEnv)
+	env["oneOf"] = append(oneOf, secretRefEnv, fromRefEnv)
 	out, err := json.MarshalIndent(own, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("iac: encode merged schema: %w", err)

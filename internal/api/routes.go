@@ -16,6 +16,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)
+	rt.registerAssetRoutes(mux)
 	rt.registerBackupCoverageRoutes(mux)
 	rt.registerPipelineRoutes(mux)
 	rt.registerSearchRoutes(mux)
@@ -34,6 +35,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDeployGateRoutes(mux)
 	rt.registerImageRoutes(mux)
 	rt.registerIaCRoutes(mux)
+	rt.registerStackRoutes(mux)
 	rt.registerDockerGuardRoutes(mux)
 	rt.registerCleanupRoutes(mux)
 	rt.registerRuntimeSettingsRoutes(mux)
@@ -78,7 +80,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMobileRoutes(mux)
 	rt.registerAccountSelfRoutes(mux)
 
-	var h http.Handler = mux
+	h := rt.stackLockMiddleware(mux)
 	h = rt.bodyLimitMiddleware(h)
 	h = rt.streamDrainMiddleware(h)
 	h = rt.accountEventMiddleware(h)

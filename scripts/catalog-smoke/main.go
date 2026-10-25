@@ -184,7 +184,7 @@ func render(tpl catalog.Template) (string, string) {
 // noInContainerProbe lists images with no shell, curl or wget. The platform probes
 // them over HTTP from outside, which docker compose cannot, so the harness only
 // checks that they stay running.
-var noInContainerProbe = map[string]bool{"portainer": true, "keycloak": true, "typesense": true}
+var noInContainerProbe = map[string]bool{"portainer": true, "keycloak": true, "typesense": true, "shiori": true, "vikunja": true, "loki": true}
 
 // dropHostPorts removes services.*.ports so a smoke run never collides with local ports.
 func dropHostPorts(body string, dropHealth bool) (string, error) {
@@ -203,7 +203,9 @@ func dropHostPorts(body string, dropHealth bool) (string, error) {
 				continue
 			}
 			delete(svc, "ports")
-			if dropHealth {
+			escapeContainerVars(svc)
+			// Only HTTP probes are dropped: a database healthcheck still gates depends_on.
+			if hc, ok := svc["healthcheck"].(map[string]any); ok && dropHealth && strings.Contains(fmt.Sprint(hc["test"]), "http") {
 				delete(svc, "healthcheck")
 			}
 			vols, _ := svc["volumes"].([]any)
@@ -224,6 +226,44 @@ func dropHostPorts(body string, dropHealth bool) (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+// escapeContainerVars rewrites $KEY to $$KEY in command, entrypoint and healthcheck
+// for keys the service declares in environment. The platform leaves those to the
+// container shell, but docker compose would expand them from the host (blank).
+func escapeContainerVars(svc map[string]any) {
+	env, _ := svc["environment"].(map[string]any)
+	if len(env) == 0 {
+		return
+	}
+	names := make([]string, 0, len(env))
+	for k := range env {
+		names = append(names, regexp.QuoteMeta(k))
+	}
+	re := regexp.MustCompile(`(^|[^$])\$(\{(?:` + strings.Join(names, "|") + `)\}|(?:` + strings.Join(names, "|") + `)\b)`)
+	esc := func(s string) string { return re.ReplaceAllString(s, "${1}$$$$${2}") }
+	var walk func(v any) any
+	walk = func(v any) any {
+		switch t := v.(type) {
+		case string:
+			return esc(t)
+		case []any:
+			for i := range t {
+				t[i] = walk(t[i])
+			}
+		}
+		return v
+	}
+	for _, k := range []string{"command", "entrypoint"} {
+		if v, ok := svc[k]; ok {
+			svc[k] = walk(v)
+		}
+	}
+	if hc, ok := svc["healthcheck"].(map[string]any); ok {
+		if v, ok := hc["test"]; ok {
+			hc["test"] = walk(v)
+		}
+	}
 }
 
 // namedVolume returns the volume name when v mounts a named volume, since
@@ -278,7 +318,7 @@ func report(args []string) error {
 		}
 	}
 	var b strings.Builder
-	b.WriteString("---\ntitle: \"Template status\"\ndescription: Measured pass rate of the one-click template catalog from the local smoke run\n---\n\n")
+	b.WriteString("---\ntitle: \"Template status\"\ndescription: Measured pass rate of the one-click template catalog from the local smoke run\n\"og:url\": \"https://docs.levelrail.com/templates-status\"\n---\n\n")
 	b.WriteString("Measured by the catalog smoke script (scripts/catalog-smoke.sh): each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.\n\n")
 	rate := 0.0
 	if len(rows) > 0 {

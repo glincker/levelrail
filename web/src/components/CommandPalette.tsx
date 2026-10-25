@@ -20,11 +20,16 @@ import { loadRecentSearches, pushRecentSearch } from '@/lib/paletteSearches'
 import { usePaletteBaseItems } from '../hooks/usePaletteBaseItems'
 import { usePaletteEntries } from '../hooks/usePaletteEntries'
 import { usePaletteSearch } from '../hooks/usePaletteSearch'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { recordSearchUse } from '../queries/search'
 import type { PaletteItem } from './commandPaletteData'
 import { ChipBar, PaletteFooter } from './commandPaletteEntries'
 import { PaletteList } from './paletteList'
+import { PalettePreview, PREVIEW_ID } from './palette/PalettePreview'
 import { SaveSearchButton, SaveSearchForm } from './paletteSaveSearch'
+
+// Below this width the preview pane drops out and the list is the only column.
+const PREVIEW_QUERY = '(min-width: 768px)'
 
 // Command palette: Cmd+K (Mac) / Ctrl+K (elsewhere) opens it from anywhere
 // in the app shell. `open` can also be driven externally (__root.tsx's
@@ -56,6 +61,7 @@ export function CommandPalette({
   const [pending, setPending] = React.useState<PaletteItem | null>(null)
   const [saving, setSaving] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const wide = useMediaQuery(PREVIEW_QUERY)
   const { t } = useTranslation('palette')
   const ps = usePaletteSearch(open)
   const baseItems = usePaletteBaseItems(onShowShortcuts)
@@ -144,6 +150,9 @@ export function CommandPalette({
           setRecentSearches(pushRecentSearch(ps.serverQuery))
         }
       } else {
+        if (ps.text.trim().length >= 2) {
+          setRecentSearches(pushRecentSearch(ps.text))
+        }
         const originalKey = item.key.replace(/^recent-/, '')
         if (isRecentEligible(originalKey)) {
           setRecentKeys(pushRecentKey(originalKey))
@@ -152,7 +161,7 @@ export function CommandPalette({
       item.run()
       if (!item.keepOpen) close()
     },
-    [close, ps.serverQuery],
+    [close, ps.serverQuery, ps.text],
   )
 
   const layered =
@@ -200,6 +209,7 @@ export function CommandPalette({
 
   const optionId = (item: PaletteItem) => `command-palette-option-${item.key}`
   const activeItem = results[activeIndex]
+  const showPreview = wide && results.length > 0 && !loading
 
   return (
     <DialogPrimitive.Root
@@ -217,7 +227,7 @@ export function CommandPalette({
         <DialogOverlay />
         <DialogPrimitive.Popup
           data-slot="command-palette"
-          className="glinui-glass-surface fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-0 overflow-hidden text-sm text-popover-foreground duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+          className="glinui-glass-surface fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-0 overflow-hidden text-sm text-popover-foreground duration-100 outline-none md:max-w-3xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
           <DialogTitle className="sr-only">{t('title')}</DialogTitle>
           <div className="flex flex-wrap items-center gap-2 border-b border-border px-3">
@@ -233,6 +243,7 @@ export function CommandPalette({
               aria-activedescendant={
                 activeItem ? optionId(activeItem) : undefined
               }
+              aria-describedby={showPreview ? PREVIEW_ID : undefined}
               value={ps.text}
               onChange={(e) => {
                 ps.setInput(e.target.value)
@@ -295,34 +306,48 @@ export function CommandPalette({
               </Button>
             </div>
           ) : null}
-          {results.length === 0 && !loading ? (
-            <div
-              id="command-palette-listbox"
-              role="listbox"
-              aria-label={t('resultsLabel')}
-              className="p-2"
-            >
-              <p className="px-2.5 py-4 text-center text-sm text-muted-foreground">
-                {t('empty')} {searching && !failed ? t('emptyBroaden') : ''}
-              </p>
-              {lastChip ? (
-                <div className="flex justify-center pb-2">
-                  <Button size="xs" variant="outline" onClick={ps.popChip}>
-                    {t('emptyRemoveFilter', { chip: chipLabel(lastChip) })}
-                  </Button>
+          <div className="flex min-h-0">
+            <div className="min-w-0 flex-1">
+              {results.length === 0 && !loading ? (
+                <div
+                  id="command-palette-listbox"
+                  role="listbox"
+                  aria-label={t('resultsLabel')}
+                  className="p-2"
+                >
+                  <p className="px-2.5 py-4 text-center text-sm text-muted-foreground">
+                    {t('empty')} {searching && !failed ? t('emptyBroaden') : ''}
+                  </p>
+                  {lastChip ? (
+                    <div className="flex justify-center pb-2">
+                      <Button size="xs" variant="outline" onClick={ps.popChip}>
+                        {t('emptyRemoveFilter', { chip: chipLabel(lastChip) })}
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
+              ) : (
+                <PaletteList
+                  entries={entries}
+                  label={t('resultsLabel')}
+                  activeIndex={activeIndex}
+                  query={ps.text}
+                  optionId={optionId}
+                  onSelect={select}
+                />
+              )}
             </div>
-          ) : (
-            <PaletteList
-              entries={entries}
-              label={t('resultsLabel')}
-              activeIndex={activeIndex}
-              query={ps.text}
-              optionId={optionId}
-              onSelect={select}
-            />
-          )}
+            {showPreview ? (
+              <PalettePreview
+                item={activeItem}
+                onRun={(item) => select(item)}
+                onSecondary={(item) => {
+                  item.secondary?.()
+                  close()
+                }}
+              />
+            ) : null}
+          </div>
           {saving ? (
             <SaveSearchForm
               query={ps.serverQuery}

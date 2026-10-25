@@ -1,0 +1,11 @@
+{"source": "shop-prod", "prune": true, "ledger": {"stack": "shop-prod", "owned": [
+  {"stack_id": "shop-prod", "kind": "Project", "key": "Project/shop", "live_id": "shop"},
+  {"stack_id": "shop-prod", "kind": "Environment", "key": "Environment/shop/staging", "live_id": "staging"},
+  {"stack_id": "shop-prod", "kind": "Tag", "key": "Tag/frontend", "live_id": "frontend"},
+  {"stack_id": "shop-prod", "kind": "Database", "key": "Database/main-db", "live_id": "main-db"},
+  {"stack_id": "shop-prod", "kind": "App", "key": "App/web", "live_id": "web"},
+  {"stack_id": "shop-prod", "kind": "Domain", "key": "Domain/www.example.com", "live_id": "web"},
+  {"stack_id": "shop-prod", "kind": "Pipeline", "key": "Pipeline/web/ci", "live_id": "ci"},
+  {"stack_id": "shop-prod", "kind": "AlertRule", "key": "AlertRule/web/high-cpu", "live_id": "high-cpu"},
+  {"stack_id": "shop-prod", "kind": "App", "key": "App/gone", "live_id": "gone"}
+], "allowMassPrune": true, "maxPercent": 50, "maxCount": 10}}

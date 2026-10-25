@@ -22,6 +22,8 @@ export type DatabaseEngine = 'postgres' | 'redis' | 'mysql'
 
 export interface DatabaseResource {
   name: string
+  // Name of the stack managing this database, absent when none.
+  managed_by_stack?: string
   engine: string
   version: string
   node_id?: string

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { DomainManagedByStackBanner } from '../../components/stacks/ManagedByStackNotice'
 import { StuckPanel } from '../../components/StuckPanel'
 import { DomainPolicyPage } from '../../components/domain/DomainPolicyPage'
 import { validateDomainSearch } from '../../components/domain/domainSearch'
@@ -22,6 +23,7 @@ function DomainRoute() {
   const navigate = Route.useNavigate()
   return (
     <div className="space-y-4">
+      <DomainManagedByStackBanner domain={domain} />
       {app ? <StuckPanel kind="domain" name={domain} appName={app} /> : null}
       <DomainPolicyPage
         app={app}

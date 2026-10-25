@@ -142,6 +142,12 @@ export interface CPHealth {
     slowest_controller: string
     lag_seconds: number
     pending: boolean
+    queue?: {
+      workers: number
+      queue_depth: number
+      in_flight: number
+      oldest_wait_seconds: number
+    }
     guard: CPHealthGuard
   }
   streams: { active: number; cap: number }

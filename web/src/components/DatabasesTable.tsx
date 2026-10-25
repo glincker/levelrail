@@ -12,6 +12,7 @@ import type { DatabaseListEntry } from '../types/databaseDetail'
 import { StatusLabel } from './AppRow'
 import { BrandTile } from './BrandLogoBadge'
 import { PlacementLabel } from './PlacementLabel'
+import { ManagedByStackTag } from './stacks/ManagedByStackNotice'
 
 const MIB = 1024 * 1024
 const GIB = 1024 * MIB
@@ -66,6 +67,7 @@ export function DatabasesTable({
                   {t('external.badge')}
                 </Badge>
               ) : null}
+              <ManagedByStackTag stack={db.managed_by_stack} />
             </span>
           </span>
         ),

@@ -178,7 +178,7 @@ var productivityBatchTemplates = []Template{
     volumes:
       - triliumnext_data:/home/node/trilium-data
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:8080/api/health-check || exit 1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:8080/api/health-check',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5

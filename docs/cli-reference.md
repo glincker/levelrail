@@ -753,7 +753,7 @@ levelrail-cli auth 2fa recovery-codes --code CODE [flags]
 - `login` authenticates and persists a new API token; with `--profile NAME` it saves under a named profile instead of overwriting `default`.
 - `login --device --json` prints one JSON line first (`verification_url`, `user_code`, `expires_in`, `expires_at`) so an agent can relay it, then the token resource once approved. See [Attention center](/attention-center).
 - `session-link` mints a short lived (about 2 minutes), single use login link that signs in as whoever minted it, meant for browser automation. It needs a token with the root ability.
-- `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those (`approve` needs `--match` with the two digit number the waiting browser shows, typed in; a wrong number denies it, and the number is never printed by `code`), and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user. Listing and `devices` accept `write:sensitive`; showing a code and `approve` or `deny` need `signin:approve`, which no device login, root or `write:sensitive` token carries. Mint one from a signed-in session with `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30` (it must expire within 30 days by default, cannot be an agent token, and is revoked when you change or reset your password or sign out your other sessions), or use the dashboard. `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](/identity-and-access#sign-in-with-a-code).
+- `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those (`approve` needs `--match` with the two digit number the waiting browser shows, typed in; a wrong number denies it, and the number is never printed by `code`), and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user. Listing and `devices` accept `write:sensitive`; showing a code needs `signin:approve`, which no device login, root or `write:sensitive` token carries; `approve` and `deny` need `signin:approve` or an unscoped root token of your own user (a root token must type the number, not the password). Mint one from a signed-in session with `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30` (it must expire within 30 days by default, cannot be an agent token, and is revoked when you change or reset your password or sign out your other sessions), or use the dashboard. `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](/identity-and-access#sign-in-with-a-code).
 - `activity` shows your own account activity feed (needs a token that belongs to you with `read:sensitive`); `preferences` reads or changes your timezone, language, theme, landing page and Gravatar choice; `export` requests the data bundle, waits and saves the zip (mode 0600); `unlink` removes a linked sign-in provider and refuses to remove your last way in; `delete-account` permanently deletes your account after the typed email and your password. See [Your account](/account).
 - Every `2fa` subcommand needs a live session: `--username` and `--password` (prompted if omitted), never the CLI's saved bearer token. `setup` starts enrollment and returns a secret and provisioning URI; `enable` confirms it and returns recovery codes once; `recovery-codes` regenerates them and invalidates the old set.
 
@@ -1101,6 +1101,23 @@ levelrail-cli storage test <id>
 levelrail-cli storage delete <id>
 ```
 S3 compatible storage destinations. `providers` lists the presets (`aws`, `r2`, `b2`, `minio`, `wasabi`, `custom`). `add` also takes `--account-id` (r2), `--region` (aws, b2, wasabi), `--endpoint` (minio, custom), `--virtual-hosted` and `--skip-verify`. `test` writes, reads back and deletes a probe object.
+
+## Assets
+
+```
+levelrail-cli assets buckets list [--project P]
+levelrail-cli assets buckets create <name> --target ID [--prefix P] [--public --confirm-name NAME] [--serving direct|cdn] [--public-base-url URL] [--cdn-base-url URL]
+levelrail-cli assets buckets show <bucket>
+levelrail-cli assets buckets set <bucket> [--public --confirm-name NAME | --private] [--serving direct|cdn] [--referrer-allow H,H] [--quota-bytes N]
+levelrail-cli assets buckets probe <bucket> [--origin URL] [--fix-cors]
+levelrail-cli assets buckets delete <bucket> [--yes]
+levelrail-cli assets usage <bucket> [--egress-gb N]
+levelrail-cli assets ls <bucket> [--prefix P] [--cursor C] [--limit N]
+levelrail-cli assets upload <bucket> <file> [--key K] [--content-type T]
+levelrail-cli assets url <bucket> <key> [--expires D]
+levelrail-cli assets rm <bucket> <key>
+```
+Files served from an S3 compatible storage destination. A `<bucket>` is the bucket name or its id. Buckets start private and Direct; making one public needs the bucket name typed back (`--confirm-name`, or an interactive prompt), never assumed. `upload` sends small files through the control plane and large ones straight to the provider with a presigned URL (the cutoff comes from `LEVELRAIL_ASSETS_DIRECT_MAX_BYTES`, and a 413 also switches routes), then prints the origin and CDN URLs. `buckets probe` checks access, browser upload CORS and public exposure; `--fix-cors` applies the CORS rule. `usage` prices the stored size with list prices and labels the result as an estimate with the price table date. `buckets delete` removes only the connection; objects stay at the provider. All commands take `--json` and `--output`.
 
 ## Data export
 
@@ -1780,6 +1797,15 @@ levelrail-cli migrate caprover --url URL --token TOKEN [flags]
 
 One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
 
+## Stack templates {#stack-templates}
+
+```
+levelrail-cli stack templates [--json]
+levelrail-cli stack init <template> [--dir DIR] [--set key=value]... [--force] [--json]
+```
+
+`stack templates` lists the bundled starter stacks: `web-app-postgres`, `worker-queue`, `static-site-cdn`, `agent-app` and `preview-env`. `stack init` copies one into `DIR` (default `./<name>`) and fills in the variables `name`, `domain` and `image`. It refuses a non-empty directory unless `--force` is set, and writes secret names only (`SECRETS.md`), never values. Both run offline. See [Stacks and GitOps](/stacks#start-from-a-template).
+
 ## Import
 
 ```
@@ -1787,9 +1813,11 @@ levelrail-cli import <repo-url|image> [--deploy] [--name NAME] [--ref REF] [--po
 levelrail-cli import <repo-url> --analyze|--apply [--base-directory DIR] [--dockerfile PATH] [--build-type TYPE] [--no-database] [flags]
 levelrail-cli import -f compose.yaml|Dockerfile [flags]
 levelrail-cli import --docker-run "docker run -p 80:80 nginx:1" [flags]
-levelrail-cli import platform coolify|dokploy|caprover --url URL [flags]
+levelrail-cli import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]
+levelrail-cli import platform heroku|vercel|render|coolify|dokploy|caprover --emit stack --out DIR [--stack NAME] [--image-repo REPO] [--db-version postgres=16]
 levelrail-cli import cutover plan|run|status|rollback|confirm-dns --session ID --app NAME [flags]
 levelrail-cli import config [dir] [--out FILE] [--strict] [--json]
+levelrail-cli import config [dir] --emit stack --out DIR [--stack NAME] [--image-repo REPO] [--service S] [--db-version postgres=16]
 levelrail-cli import takeover plan|run|status|rollback [flags]
 ```
 
@@ -1801,7 +1829,9 @@ levelrail-cli import takeover plan|run|status|rollback [flags]
 
 `import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](/migrating-from-coolify-dokploy-and-caprover#guided-cutover-of-one-staged-app).
 
-`import config` reads `Procfile`, `app.json` and `vercel.json` from a directory (default: the current one) and prints a proposed `app.yaml`. Findings go to stderr, blockers first, each with a fix. It is offline and read-only, needs no token and creates nothing. `--out FILE` writes the spec to a file, `--json` prints `{detected, spec, findings, nextSteps}`; the human output ends with NEXT STEPS, the exact `apps create --file ... --service ... --secret KEY=VALUE` and `databases create` commands. A Heroku plus Vercel directory merges into one service and keeps the Vercel cron jobs, with a warn finding. `apps create --file` refuses a spec with `databases:` or `from:` env references instead of dropping them, and `--strict` exits 2 when any finding is a blocker (otherwise it exits 0). `LEVELRAIL_IMPORT_WEB_PORT` (default 8080) and `LEVELRAIL_IMPORT_NODE_PORT` (default 3000) set the proposed ports.
+`import config` reads `Procfile`, `app.json` and `vercel.json` from a directory (default: the current one) and prints a proposed `app.yaml`. Findings go to stderr, blockers first, each with a fix. It is offline and read-only, needs no token and creates nothing. `--out FILE` writes the spec to a file, `--json` prints `{detected, spec, findings, nextSteps}`; the human output ends with NEXT STEPS, the exact `apps create --file ... --service ... --secret KEY=VALUE` and `databases create` commands. A Heroku plus Vercel directory keeps both services when their names clash: the Heroku one keeps the name and the Vercel one gets a `-vercel` suffix (then `-vercel-2` and so on) with its own cron jobs, plus a warn finding. `apps create --file` refuses a spec with `databases:` or `from:` env references instead of dropping them, and `--strict` exits 2 when any finding is a blocker (otherwise it exits 0). `LEVELRAIL_IMPORT_WEB_PORT` (default 8080) and `LEVELRAIL_IMPORT_NODE_PORT` (default 3000) set the proposed ports.
+
+`--emit stack` on `import config` and `import platform` writes reviewable documents instead of applying: a `Stack`, a `Project` (and with `--environment` an `Environment`), `Database`, `App` and `Domain` documents, a `SECRETS.md` checklist of secret names (never values) and a `MIGRATION.md` of what the documents cannot carry. `--out DIR` is required and an existing file is only overwritten with `--force`. The output is sorted, so the same source gives the same bytes, and it loads with `stack plan`. `--stack` names the stack (default `PLATFORM-import`, or the directory name for `import config`), `--project` defaults to the stack name. Apply runs prebuilt images only, so an app with no image takes `--image-repo REGISTRY/NAMESPACE` and is named `REGISTRY/NAMESPACE/APP:latest`; without it the emit fails and says so. `import config` also takes `--service S` (comma separated, as `apps create --service`) and `--db-version postgres=16,redis=7.4`, because the config files name no database version; `import platform` reads the source directly and needs no control plane, and takes the same `--db-version`. Database connection variables and `from:` references are written as secret names in `SECRETS.md` until the schema can reference a database. See [Stacks and GitOps](/stacks#migrate-into-a-stack).
 
 `import takeover` moves this server's ports 80 and 443 from the old platform's proxy to the built-in ingress. `plan` and `run --dry-run` print the preflight and steps and change nothing, `run --confirm takeover` does it and waits through the restart, `status` shows the latest run and `rollback` restores the previous addresses and starts the old proxy again. Other flags: `--accept-unmanaged`, `--run ID`, `--reason TEXT`, `--no-wait`, `--wait DURATION`, `--json`. Root only. See [Migrate on the same server](/migrate-same-server).
 

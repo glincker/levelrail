@@ -280,6 +280,8 @@ const (
 	// DeployAttemptSourceStart marks starting a stopped app: it gives a
 	// waiter an attempt that turns healthy only once the new container serves.
 	DeployAttemptSourceStart = "start"
+	// DeployAttemptSourceStop marks a stop queued while the app's node was offline.
+	DeployAttemptSourceStop = "stop"
 	// DeployAttemptSourceClone marks the first deploy of an app created
 	// by cloning a whole environment (internal/api/environment_clone.go's
 	// handleCloneEnvironment): a fresh app, same shape as the plain

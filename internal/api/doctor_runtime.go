@@ -55,7 +55,7 @@ func (rt *Router) doctorCheckContainerRuntime(ctx context.Context) doctorCheckRe
 	res.Status = doctorStatusWarn
 	res.DocsPath = containerRuntimeDocsPath
 	if info.Kind == docker.RuntimeKindPodman || info.Kind == docker.RuntimeKindUnknown {
-		res.Message += "; image and compose deploys are expected to work, source builds (Dockerfile, Railpack) need BuildKit inside dockerd and are not verified here"
+		res.Message += "; image and compose deploys are expected to work, source builds (Dockerfile, Railpack) are not supported on " + info.Kind.Label() + " yet (Podman source builds are planned via a managed buildkitd); not verified here"
 	}
 	res.Message += "; if this is the wrong engine, set APP_CONTAINER_RUNTIME_SOCKET to its socket (for Podman, enable podman.socket first). See the container runtimes guide"
 	return res

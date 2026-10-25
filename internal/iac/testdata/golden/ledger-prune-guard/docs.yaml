@@ -1,0 +1,7 @@
+version: 1
+kind: App
+metadata: {name: a1}
+spec:
+  service:
+    build: {type: image, image: "ghcr.io/acme/a1:1"}
+    port: 80

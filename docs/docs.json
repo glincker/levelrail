@@ -386,6 +386,7 @@
               "ai-models",
               "load-balancing",
               "platform-as-code",
+              "stacks",
               "resource-advisor",
               "feature-flags",
               "log-archive",

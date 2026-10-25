@@ -92,6 +92,8 @@ type AppPlan struct {
 	BuildMethod string            `json:"build_method,omitempty"`
 	BuildPath   string            `json:"build_path,omitempty"`
 	Crons       []CronPlan        `json:"crons,omitempty"`
+	// UnreadSecrets names secret variables the source would not reveal.
+	UnreadSecrets []string `json:"-"`
 }
 
 // CronPlan is a scheduled command that becomes a scheduled job on the new app.
@@ -347,6 +349,7 @@ func splitEnv(plan *AppPlan, env []Env, attention func(string, string)) {
 	}
 	if len(empty) > 0 {
 		sort.Strings(empty)
+		plan.UnreadSecrets = empty
 		attention("secret variables with no readable value were skipped: "+strings.Join(empty, ", "), "set them with the secrets command")
 	}
 	if len(plan.Env) == 0 {

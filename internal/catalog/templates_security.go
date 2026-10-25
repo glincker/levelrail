@@ -139,7 +139,7 @@ var securityTemplates = []Template{
     volumes:
       - privatebin_data:/srv/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/ || wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -1,0 +1,25 @@
+version: 1
+kind: App
+metadata:
+  name: web
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/web:latest
+    port: 3000
+    resources:
+      memory: 1024Mi
+    jobs:
+      - name: api-cron-daily
+        schedule: 0 5 * * *
+        command: [curl, -fsS, 'http://127.0.0.1:3000/api/cron/daily']
+        mode: exec
+        timezone: UTC
+      - name: api-cron-daily-2
+        schedule: 0 6 * * *
+        command: [curl, -fsS, 'http://127.0.0.1:3000/api/cron/daily?full=1']
+        mode: exec
+        timezone: UTC

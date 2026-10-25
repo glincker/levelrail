@@ -71,7 +71,9 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 	var out []*Resource
 	for _, d := range docs {
 		sink := &issueSink{d: d}
-		if r := buildOne(d, opts, sink); r != nil && len(sink.issues) == 0 {
+		r := buildOne(d, opts, sink)
+		checkPlaceholders(r, sink)
+		if r != nil && len(sink.issues) == 0 {
 			out = append(out, r)
 		}
 		issues = append(issues, sink.issues...)
@@ -81,6 +83,57 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 		return nil, sortIssues(issues)
 	}
 	return out, nil
+}
+
+// checkPlaceholders rejects a ${{ ... }} left in a rendered field, so a typo or
+// an unsupported spot never reaches a live app as a literal string.
+func checkPlaceholders(r *Resource, s *issueSink) {
+	if r == nil || r.Kind == KindPipeline {
+		return
+	}
+	keys := make([]string, 0, len(r.Fields))
+	for k := range r.Fields {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if m := findPlaceholder(r.Fields[k]); m != "" {
+			s.at("spec", "field %q still holds the unresolved placeholder %q; ${{ env.NAME }} is replaced from a var flag and ${{ secrets.NAME }} only works as a whole env var value", k, m)
+		}
+	}
+}
+
+var anyPlaceRe = regexp.MustCompile(`\$\{\{.*?\}\}`)
+
+func findPlaceholder(v any) string {
+	switch t := v.(type) {
+	case string:
+		return anyPlaceRe.FindString(t)
+	case map[string]any:
+		keys := make([]string, 0, len(t))
+		for k := range t {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			if m := findPlaceholder(t[k]); m != "" {
+				return m
+			}
+		}
+	case map[string]string:
+		for _, e := range t {
+			if m := anyPlaceRe.FindString(e); m != "" {
+				return m
+			}
+		}
+	case []any:
+		for _, e := range t {
+			if m := findPlaceholder(e); m != "" {
+				return m
+			}
+		}
+	}
+	return ""
 }
 
 func sortIssues(in []Issue) []Issue {
@@ -304,7 +357,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	decodeSpec(d, &sp, s)
 	svcNode := mapValue(d.SpecNode, "service")
-	env, secrets := appEnv(svcNode, s, opts)
+	env, secrets, conns := appEnv(svcNode, s, opts)
 
 	trimmed := *svcNode
 	trimmed.Content = nil
@@ -313,6 +366,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 			trimmed.Content = append(trimmed.Content, svcNode.Content[i], svcNode.Content[i+1])
 		}
 	}
+	substituteImage(&trimmed, s, opts)
 	var svc spec.Service
 	if err := trimmed.Decode(&svc); err != nil {
 		s.at("spec.service", "%v", err)
@@ -330,7 +384,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	f := appFields{Image: svc.Build.Image, Port: svc.Port, HostPort: svc.HostPort, BindAddress: svc.EffectiveBindAddress(),
 		Replicas: svc.EffectiveReplicas(), Strategy: svc.EffectiveStrategy(), Domains: sortedUnique(svc.Domains), Env: nonEmptyMap(env),
 		SecretEnv: sortedUnique(secrets), Labels: nonEmptyMap(svc.Labels), Command: svc.Command, Project: sp.Project, Environment: sp.Environment,
-		Tags: sortedUnique(sp.Tags)}
+		Tags: sortedUnique(sp.Tags), Connections: nonEmptyMap(conns)}
 	if opts.Source != "" {
 		f.Tags = sortedUnique(append(f.Tags, tagManagedPre+opts.Source))
 	}
@@ -345,7 +399,31 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	if f.Environment != "" && f.Project == "" {
 		s.at("spec.environment", "an environment needs a project")
 	}
+	f.Jobs = jobsFromSpec(svc.Jobs, s)
+	for _, v := range svc.Volumes {
+		if v.Name != "" {
+			if f.Volumes == nil {
+				f.Volumes = map[string]string{}
+			}
+			f.Volumes[v.Name] = v.Path
+		}
+	}
 	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: toMap(f), SecretRefs: f.SecretEnv}
+}
+
+// substituteImage resolves ${{ env.NAME }} in build.image like env values.
+func substituteImage(svc *yaml.Node, s *issueSink, opts Options) {
+	img := mapValue(mapValue(svc, "build"), "image")
+	if img == nil || img.Kind != yaml.ScalarNode {
+		return
+	}
+	val, missing := substituteVars(img.Value, opts.Vars)
+	for _, m := range missing {
+		s.at("spec.service.build.image", "variable %s is not provided (pass it with a var flag)", m)
+	}
+	if len(missing) == 0 {
+		img.Value = val
+	}
 }
 
 func checkSupportedService(svc *spec.Service, s *issueSink) {
@@ -353,14 +431,13 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	if svc.Build.Type != spec.BuildImage {
 		s.at(p+"build.type", "apply manages apps that run a prebuilt image; use build.type image (git builds are configured with a git source)")
 	}
-	if len(svc.Volumes) > 0 {
-		s.at(p+"volumes", "volumes are not supported by apply yet")
+	for i, v := range svc.Volumes {
+		if v.Name == "" {
+			s.at(fmt.Sprintf("%svolumes[%d]", p, i), "apply supports named volumes only; host paths are never declared in the files")
+		}
 	}
 	if svc.Egress != nil {
 		s.at(p+"egress", "egress policies are not supported by apply yet")
-	}
-	if len(svc.Jobs) > 0 {
-		s.at(p+"jobs", "scheduled jobs are not supported by apply yet; declare them in app.yaml or the app's Jobs tab")
 	}
 	if svc.LoadBalancer != nil {
 		s.at(p+"loadbalancer", "declare a LoadBalancer document instead")
@@ -373,12 +450,13 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	}
 }
 
-func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string) {
+func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string) {
 	envNode := mapValue(svcNode, "env")
 	if envNode == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	literal := map[string]string{}
+	conns := map[string]string{}
 	var secrets []string
 	for i := 0; i+1 < len(envNode.Content); i += 2 {
 		k, vn := envNode.Content[i].Value, envNode.Content[i+1]
@@ -397,10 +475,16 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 				literal[k] = v
 			}
 		case yaml.MappingNode:
+			if from := mapValue(vn, "from"); from != nil {
+				if ref, ok := parseFromRef(from, path+".from", s); ok {
+					conns[k] = ref
+				}
+				continue
+			}
 			secrets = mappingEnv(k, vn, path, secrets, s)
 		}
 	}
-	return literal, secrets
+	return literal, secrets, conns
 }
 
 func mappingEnv(k string, vn *yaml.Node, path string, secrets []string, s *issueSink) []string {
@@ -410,8 +494,8 @@ func mappingEnv(k string, vn *yaml.Node, path string, secrets []string, s *issue
 	if n := mapValue(vn, "secret"); n != nil && n.Value == "true" {
 		return append(secrets, k)
 	}
-	if mapValue(vn, "from") != nil || mapValue(vn, "vault") != nil {
-		s.at(path, "from and vault references are not supported by apply yet")
+	if mapValue(vn, "vault") != nil {
+		s.at(path, "vault references are not supported by apply yet")
 	}
 	return secrets
 }

@@ -246,7 +246,7 @@ This sign-in comes from a new device, so it needs your approval.
      in the browser where you are signed in to the dashboard.
   2. Type this number when asked: 42
 
-Or run "levelrail-cli auth approve la_Kx3pQ --match 42" with a token that holds signin:approve.
+Or run "levelrail-cli auth approve la_Kx3pQ --match 42" with a token that holds signin:approve, or with your root device login.
 Faster: open the dashboard, copy the command from the "Connect your CLI" card and run it (levelrail-cli login --api-url <url> --code XXXX-XXXX).
 Waiting up to 3m0s. Press Ctrl+C to cancel.
 ```

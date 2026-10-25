@@ -182,6 +182,9 @@ func runItem(ctx context.Context, x *executor, it *item, stopped bool) ItemResul
 	case stopped:
 		res.Status = StatusSkipped
 		res.Error = "not attempted after an earlier failure"
+	case ctx.Err() != nil:
+		res.Status = StatusSkipped
+		res.Error = "not attempted: " + context.Cause(ctx).Error()
 	case it.exec == nil:
 		res.Status = StatusNoop
 	default:

@@ -101,6 +101,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Pipelines](https://docs.levelrail.com/pipelines): define CI/CD pipelines as YAML with triggers, jobs, matrix builds, and approvals.
 - [Pipelines: OIDC federation](https://docs.levelrail.com/pipelines-oidc): mint short-lived OIDC tokens for pipeline jobs instead of long-lived cloud credentials.
 - [Platform as code](https://docs.levelrail.com/platform-as-code): describe projects, environments, apps, domains, and databases as YAML and apply the plan.
+- [Stacks and GitOps](https://docs.levelrail.com/stacks): experimental; keep a stack of apps, databases and domains in git, review plans in pull requests, apply on merge, and roll back to numbered revisions.
 - [Git integrations](https://docs.levelrail.com/git-integrations): GitHub/GitLab/Bitbucket/Gitea app installs, webhook deploys, and preview environments.
 - [Feature flags](https://docs.levelrail.com/feature-flags): toggle app behavior at runtime without a redeploy.
 - [Host firewall](https://docs.levelrail.com/host-firewall): manage allow and deny rules for the control plane host's ufw, with a lockout guard.

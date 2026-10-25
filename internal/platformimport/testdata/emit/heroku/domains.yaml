@@ -1,0 +1,6 @@
+version: 1
+kind: Domain
+metadata:
+  name: shop.example.com
+spec:
+  app: shop

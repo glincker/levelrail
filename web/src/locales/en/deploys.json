@@ -83,6 +83,7 @@
       "upload": "a directory uploaded from the CLI",
       "restart": "a restart",
       "start": "starting a stopped app",
+      "stop": "stopping the app",
       "pr_comment": "a pull request comment"
     }
   },
@@ -158,6 +159,14 @@
       "errorTitle": "Canary action failed"
     }
   },
+  "pendingChanges": {
+    "title": "Changes waiting for a restart",
+    "detail": "{{count}} not applied yet",
+    "restart": "Restart to apply",
+    "redeploy": "Redeploy to apply",
+    "applying": "Applying",
+    "failed": "Could not apply changes"
+  },
   "envCompare": {
     "title": "Compare env with another app",
     "pick": "Compare against",
@@ -166,7 +175,15 @@
     "differs": "Differs:",
     "secret": "(secret)",
     "secretOneSide": "(secret on one side only)",
-    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only."
+    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only.",
+    "tableLabel": "Environment differences",
+    "colKey": "Key",
+    "colStatus": "Status",
+    "added": "Only here",
+    "removed": "Only there",
+    "changed": "Changed",
+    "missing": "not set",
+    "secretMasked": "Secret value, hidden"
   },
   "appSleep": {
     "title": "Sleep when idle",

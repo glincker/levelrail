@@ -95,6 +95,7 @@ func TestCheck(t *testing.T) {
 		{"apps exec web -- sh", "", true},
 		{"apps exec web id", "apps exec", true},
 		{"backups download db", "backups download", true},
+		{"assets upload ./logo.png", "assets upload", true},
 		{"secrets generate-master-key", "secrets generate-master-key", true},
 		{"control-plane-backups keys generate", "control-plane-backups keys generate", true},
 		{"apps --team ops exec web id", "", true},

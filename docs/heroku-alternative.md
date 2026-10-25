@@ -66,6 +66,10 @@ To move the Postgres data itself, create a managed database and run `levelrail-c
 
 The two helpers above are previews you review, not a one-click migration. Add-ons and anything the findings flag as a blocker still need manual work. See [Migrate to Levelrail](/migrate-to-levelrail).
 
+### Emit it as a stack and review it in a pull request
+
+Instead of creating apps straight away, `levelrail-cli import platform heroku --emit stack --out DIR` reads your Heroku apps and add-ons (read only) and writes a Stack with App, Database and Domain documents, a `SECRETS.md` listing config var names (never values) and a `MIGRATION.md` of what has to be done by hand. Commit the directory, read the plan with `levelrail-cli stack plan`, and apply it when the pull request merges. See [Stacks and GitOps](/stacks#migrate-into-a-stack).
+
 ## Frequently asked questions
 
 <AccordionGroup>

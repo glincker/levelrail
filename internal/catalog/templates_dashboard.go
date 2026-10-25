@@ -59,6 +59,12 @@ var dashboardTemplates = []Template{
   glance:
     image: glanceapp/glance:v0.8.6
     ports: ["8080:8080"]
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        [ -f /app/config/glance.yml ] || printf 'pages:\n  - name: Home\n    columns:\n      - size: full\n        widgets:\n          - type: calendar\n' > /app/config/glance.yml
+        exec /app/glance --config /app/config/glance.yml
     volumes:
       - glance_config:/app/config
     healthcheck:

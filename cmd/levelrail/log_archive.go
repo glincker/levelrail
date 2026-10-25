@@ -27,7 +27,7 @@ func setupLogArchive(ctx context.Context, logger *slog.Logger, db *store.DB, tel
 	router.SetStorage(api.StorageDeps{
 		Options: db, Policy: db, Archive: db, Clients: resolver, Archiver: archiver, ArchiveRoot: opts.Prefix,
 		BuildCache: buildCache, BuildCacheSettings: db,
-		Buckets: db, BucketSweeper: sweeper,
+		Buckets: db, BucketSweeper: sweeper, AssetBuckets: db,
 	})
 	go archiver.Run(ctx)
 	go sweeper.Run(ctx)

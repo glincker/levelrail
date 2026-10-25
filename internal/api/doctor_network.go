@@ -370,6 +370,14 @@ func (rt *Router) doctorCheckMeshHubEndpoint(ctx context.Context) doctorCheckRes
 		}
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "single-node mesh; set APP_AGENT_ADVERTISE_HOST before enrolling a remote node"}
 	}
+	if net.ParseIP(host) == nil {
+		return doctorCheckResource{
+			Code: code, Name: name, Status: doctorStatusWarn,
+			Message:  fmt.Sprintf("mesh is enabled but APP_AGENT_ADVERTISE_HOST is the hostname %q; WireGuard endpoints must be IP addresses, so agents cannot set the endpoint and never handshake", host),
+			Fix:      "Set APP_AGENT_ADVERTISE_HOST to this server's public IP address and restart the control plane.",
+			DocsPath: docsPath,
+		}
+	}
 	return doctorCheckResource{
 		Code: code, Name: name, Status: doctorStatusOK,
 		Message:  fmt.Sprintf("agents will dial %s on UDP %d; this cannot be probed from the host itself", host, meshnet.DefaultListenPort),

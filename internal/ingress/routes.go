@@ -787,7 +787,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		case opts.ACMEEnabled:
 			cfg.Apps.TLS = acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
 			cfg.Apps.PKI = newInternalPKIApp()
-			cfg.Apps.Events = newACMEEventsApp()
+			cfg.Apps.ACMEEvents = &ACMEEventsApp{}
 			cfg.Logging = newACMELogTap()
 		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)

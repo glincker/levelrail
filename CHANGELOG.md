@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased (v0.8.6)
+
+
+### Features
+
+* stacks: `stack templates` and `stack init <template>` copy one of five starter bundles (web app with Postgres, worker with Redis, static site, scheduled agent app, per-PR preview) into a directory with name, domain and image filled in, and refuse a non-empty directory without `--force`
+* headless first run: the setup admin's first password sign-in skips new-device approval within `APP_FIRST_LOGIN_TRUST_WINDOW` (default 30m) when no other session or trusted browser exists, an unscoped root token can approve or deny a waiting browser from the CLI during that window only (no trusted browser is granted), the trust is one-shot, bound to the setup device and spent atomically, an unparsable window value now turns it off, and a retried sign-in from the same browser returns its open approval instead of a new one
+* headless first run: the setup admin's first password sign-in skips new-device approval within `APP_FIRST_LOGIN_TRUST_WINDOW` (default 30m) when no other session or trusted browser exists, an unscoped root token can approve or deny a waiting browser from the CLI, and a retried sign-in from the same browser returns its open approval instead of a new one
+* stacks (experimental, behind `APP_EXPERIMENTAL=iac`): a stack keeps apps, databases, domains and other platform documents in git and applies them as numbered revisions, with `plan`, `apply`, `history`, `diff`, `rollback` (applied forward as a new revision), `pin`, `unpin`, `unlock` and `delete --mode forget|destroy`
+* stacks own the resources they create or adopt through a ledger across kinds; prune removes only owned resources, databases and projects are never pruned, and a mass-prune guard (`APP_STACK_PRUNE_MAX_COUNT`, `APP_STACK_PRUNE_MAX_PERCENT`) refuses large deletes unless the request sets `allow_mass_prune`
+* stack approvals: `require_approval` holds an apply as a `pending_approval` revision (202) until another root administrator approves or rejects it; approvals expire after `APP_STACK_APPROVAL_TTL` (default 24h) and take secrets again at approval time
+* stack drift checker: reads each stack's latest revision against live state every `APP_STACK_DRIFT_INTERVAL` (default 15m, `0` disables) and raises attention items; it never applies changes, and the `warn` and `lock` policies only record drift for now
+* stack-scoped API tokens with `stack` and `stack_verbs` (`plan` or `apply`), limited to that stack's endpoints and, during an apply, to its ledger and project
+* GitHub Action for stacks in `integrations/github-action/stack`: plan comments on pull requests, apply on merge, and exit code 2 for an apply that awaits approval
+* stack App documents reference a database with `{ from: { database, field } }` (resolved by the control plane at container start, so plans and revisions hold only the reference) and declare `service.jobs`; `import --emit stack` now writes both instead of `SECRETS.md` placeholders and migration notes
+
 ## [0.8.4](https://github.com/glincker/levelrail/compare/v0.8.3...v0.8.4) (2026-10-24)
 
 

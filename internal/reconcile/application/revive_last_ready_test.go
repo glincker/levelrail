@@ -167,13 +167,14 @@ func waitUntil(d time.Duration, cond func() bool) bool {
 // A dead serving release comes back before the failing desired release's
 // readiness wait ends, not after it.
 func TestReviveLastReady_DoesNotWaitForFailingReadiness(t *testing.T) {
+	// The budget only needs to outlast the revive; the pass then ends at it.
 	for _, tc := range []struct {
 		name       string
 		oldRunning bool
 	}{{"dead before the pass", false}, {"killed during the wait", true}} {
 		t.Run(tc.name, func(t *testing.T) {
 			rt, st, _, oldName := reviveFixture(t, tc.oldRunning)
-			c := New("web", st, rt, WithReadyBudget(3*time.Second), WithReviveWatch(50*time.Millisecond),
+			c := New("web", st, rt, WithReadyBudget(1*time.Second), WithReviveWatch(50*time.Millisecond),
 				WithRestartBackoff(NewRestartBackoff(time.Hour, time.Hour, time.Hour)))
 			done := make(chan struct{})
 			go func() { defer close(done); _, _ = c.Reconcile(context.Background()) }()

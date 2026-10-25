@@ -23,6 +23,7 @@ const EXPECTED_GLOBAL = [
   '/projects',
   '/databases',
   '/backups',
+  '/assets',
   '/nodes',
   '/resource-advisor',
   '/usage',

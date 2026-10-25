@@ -1,0 +1,18 @@
+version: 1
+kind: App
+metadata:
+  name: {{name}}
+spec:
+  project: {{name}}
+  service:
+    build:
+      type: image
+      image: {{image}}
+    port: 3000
+    replicas: 1
+    health:
+      readiness: {path: /healthz}
+    env:
+      NODE_ENV: production
+      DATABASE_URL: {from: {database: main, field: url}}
+      SESSION_SECRET: {secretRef: SESSION_SECRET}

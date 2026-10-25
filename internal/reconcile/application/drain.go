@@ -16,11 +16,12 @@ import (
 type DrainTracker struct {
 	mu      sync.Mutex
 	cutover map[string]time.Time
+	serving map[string]string
 }
 
 // NewDrainTracker builds an empty tracker.
 func NewDrainTracker() *DrainTracker {
-	return &DrainTracker{cutover: make(map[string]time.Time)}
+	return &DrainTracker{cutover: make(map[string]time.Time), serving: make(map[string]string)}
 }
 
 // WithDrainTracker measures the drain window from the real cutover time.
@@ -35,6 +36,19 @@ func (t *DrainTracker) mark(service string, at time.Time) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.cutover[service] = at
+}
+
+// moved records release as service's serving release and reports whether it
+// replaced a different one, which is a cutover even when nothing was created.
+func (t *DrainTracker) moved(service, release string) bool {
+	if t == nil {
+		return false
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	prev := t.serving[service]
+	t.serving[service] = release
+	return prev != "" && prev != release
 }
 
 func (t *DrainTracker) at(service string) time.Time {
@@ -76,6 +90,11 @@ func (c *Controller) draining(cfg deploysafety.Effective, justDeployed bool, now
 func (c *Controller) retireStale(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) error {
 	cfg := c.safetyFor(ctx, desired)
 	now := time.Now()
+	// A rollback onto a held release that is still running creates nothing,
+	// but the release it replaces still owes its in-flight requests a drain.
+	if len(targets) > 0 && c.drain.moved(c.serviceName, releaseOf(targets[0])) {
+		justDeployed = true
+	}
 	if justDeployed {
 		c.drain.mark(c.serviceName, now)
 	}

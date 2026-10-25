@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Checkbox } from '@/components/ui/checkbox'
 import { StatusDot } from '../AppRow'
 import { AppRowActions } from '../AppRowActions'
+import { ManagedByStackTag } from '../stacks/ManagedByStackNotice'
 import type { AppListEntry } from '../../types/appDetail'
 import { AppLogo, AppMetaChips } from './AppMetaChips'
 import {
@@ -39,6 +40,7 @@ export function AppCard({
             </Link>
           </span>
           <AppMetaChips app={app} />
+          <ManagedByStackTag stack={app.managed_by_stack} />
         </div>
         <span className="relative z-10 flex items-center gap-1">
           <Checkbox

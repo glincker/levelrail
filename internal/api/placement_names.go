@@ -14,14 +14,17 @@ type placementResolver struct {
 	localNodeID string
 	hostname    string
 	names       map[string]string
+	offline     map[string]bool
 }
 
 func newPlacementResolver(nodes []store.Node, localNodeID, hostname string) placementResolver {
 	names := make(map[string]string, len(nodes))
+	offline := make(map[string]bool, len(nodes))
 	for _, n := range nodes {
 		names[n.ID] = n.Name
+		offline[n.ID] = n.Status == store.NodeStatusOffline
 	}
-	return placementResolver{localNodeID: localNodeID, hostname: hostname, names: names}
+	return placementResolver{localNodeID: localNodeID, hostname: hostname, names: names, offline: offline}
 }
 
 // resolve returns the node name and whether the placement is this server.
@@ -50,6 +53,7 @@ func (rt *Router) placementResolver(ctx context.Context) placementResolver {
 
 func (p placementResolver) stampApp(res *appResource) {
 	res.NodeName, res.NodeIsLocal = p.resolve(res.NodeID)
+	res.NodeOffline = p.offline[res.NodeID]
 }
 
 func (p placementResolver) stampDatabase(res *databaseResource) {
