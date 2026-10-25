@@ -24,6 +24,8 @@ type environmentResource struct {
 	Kind      string `json:"kind"`
 	Scope     string `json:"scope"`
 	SortOrder int    `json:"sort_order"`
+	// ManagedByStack names the stack owning this environment, omitted when none.
+	ManagedByStack string `json:"managed_by_stack,omitempty"`
 }
 
 func toEnvironmentResource(e store.Environment) environmentResource {
@@ -45,7 +47,8 @@ type updateEnvironmentRequest struct {
 // handleListEnvironments handles GET /api/v1/projects/{id}/environments.
 func (rt *Router) handleListEnvironments(w http.ResponseWriter, r *http.Request) {
 	projectID := r.PathValue("id")
-	if _, err := rt.projects.GetProject(r.Context(), projectID); errors.Is(err, store.ErrProjectNotFound) {
+	project, perr := rt.projects.GetProject(r.Context(), projectID)
+	if errors.Is(perr, store.ErrProjectNotFound) {
 		writeError(w, http.StatusNotFound, "project not found")
 		return
 	}
@@ -54,9 +57,14 @@ func (rt *Router) handleListEnvironments(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: list environments failed", err, slog.String("project_id", projectID))
 		return
 	}
+	owners := rt.loadStackOwners(r.Context())
 	out := make([]environmentResource, 0, len(envs))
 	for _, e := range envs {
-		out = append(out, toEnvironmentResource(e))
+		res := toEnvironmentResource(e)
+		if perr == nil {
+			res.ManagedByStack = owners.of("Environment", "Environment/"+project.Name+"/"+e.Name)
+		}
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }

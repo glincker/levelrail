@@ -23,10 +23,12 @@ func databaseControllerName(dbName string) string {
 
 // databaseResource NodeID is response-only on update; placement changes go through PUT .../node.
 type databaseResource struct {
-	Name    string `json:"name"`
-	Engine  string `json:"engine"`
-	Version string `json:"version"`
-	NodeID  string `json:"node_id,omitempty"`
+	// ManagedByStack is response-only: the owning stack, omitted when none.
+	ManagedByStack string `json:"managed_by_stack,omitempty"`
+	Name           string `json:"name"`
+	Engine         string `json:"engine"`
+	Version        string `json:"version"`
+	NodeID         string `json:"node_id,omitempty"`
 	// NodeName and NodeIsLocal are response-only display fields, see
 	// appResource.
 	NodeName    string `json:"node_name,omitempty"`
@@ -219,9 +221,11 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 
 	placement := rt.placementResolver(r.Context())
 	pending := rt.pendingDatabases(r.Context())
+	owners := rt.loadStackOwners(r.Context())
 	out := make([]databaseListResource, 0, len(dbs))
 	for _, d := range dbs {
 		res := toDatabaseResource(d)
+		res.ManagedByStack = owners.of("Database", "Database/"+d.Name)
 		placement.stampDatabase(&res)
 		res.TLSEnabled = tlsStatuses[d.Name]
 		if pending[d.Name] {
@@ -368,7 +372,9 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toDatabaseResourceWithStatus(r.Context(), *d))
+	res := rt.toDatabaseResourceWithStatus(r.Context(), *d)
+	res.ManagedByStack = rt.loadStackOwners(r.Context()).of("Database", "Database/"+d.Name)
+	writeJSON(w, http.StatusOK, res)
 }
 
 // The data volume is kept on delete, so a mistaken delete never destroys data.

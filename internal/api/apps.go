@@ -744,6 +744,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 	notes := rt.templateNotesFor(r.Context(), *svc)
 	writeJSON(w, http.StatusOK, appWithRequests{
 		appResource:              resource,
+		ManagedByStack:           rt.loadStackOwners(r.Context()).of("App", "App/"+name),
 		PendingImage:             pendingImage,
 		Requests:                 rt.requestSummaryFor(r, name),
 		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
@@ -772,7 +773,8 @@ func (rt *Router) previousReleaseHeldUntil(ctx context.Context, name string) *ti
 // ingress request summary (rate, error rate, p95), omitted without telemetry.
 type appWithRequests struct {
 	appResource
-	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
+	ManagedByStack string                    `json:"managed_by_stack,omitempty"`
+	Requests       *telemetry.RequestSummary `json:"requests,omitempty"`
 	// PendingImage is the desired image while a rollout to it is in progress
 	// or failed, with Image then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`
