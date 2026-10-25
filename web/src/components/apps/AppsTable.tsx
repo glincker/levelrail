@@ -11,6 +11,7 @@ import type { AppListEntry } from '../../types/appDetail'
 import { PlacementLabel } from '../PlacementLabel'
 import { AppRowActions } from '../AppRowActions'
 import { StatusLabel } from '../AppRow'
+import { ManagedByStackTag } from '../stacks/ManagedByStackNotice'
 import { AppLogo, AppMetaChips } from './AppMetaChips'
 import {
   ErrorCell,
@@ -66,6 +67,7 @@ export function AppsTable({
             <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <StatusLabel status={app.status} />
               <AppMetaChips app={app} />
+              <ManagedByStackTag stack={app.managed_by_stack} />
             </span>
           </span>
         ),
