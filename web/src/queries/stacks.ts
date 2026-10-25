@@ -10,12 +10,16 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type {
   Stack,
+  StackApproveInput,
+  StackApproveResult,
   StackDeleteMode,
   StackDeleteResult,
   StackDiff,
   StackDiffAgainst,
   StackHistory,
   StackList,
+  StackRejectInput,
+  StackRejectResult,
   StackRevisionDetail,
   StackRollbackResult,
   StackSettingsInput,
@@ -186,6 +190,36 @@ export function useUpdateStackSettings(name: string) {
   return useMutation({
     mutationFn: (input: StackSettingsInput) =>
       request<Stack>(base(name), json('PATCH', input), 'save stack settings'),
+    onSuccess: invalidate,
+  })
+}
+
+// Secrets go only in the request body; they are never cached or kept in state here.
+export function useApproveStack(name: string) {
+  const invalidate = useInvalidateStacks()
+  return useMutation({
+    mutationFn: ({ revision, secrets, expectedPlanHash }: StackApproveInput) =>
+      request<StackApproveResult>(
+        `${base(name)}/revisions/${String(revision)}/approve`,
+        json('POST', {
+          ...(secrets && Object.keys(secrets).length > 0 ? { secrets } : {}),
+          ...(expectedPlanHash ? { expected_plan_hash: expectedPlanHash } : {}),
+        }),
+        'approve',
+      ),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRejectStack(name: string) {
+  const invalidate = useInvalidateStacks()
+  return useMutation({
+    mutationFn: ({ revision, reason }: StackRejectInput) =>
+      request<StackRejectResult>(
+        `${base(name)}/revisions/${String(revision)}/reject`,
+        json('POST', reason ? { reason } : {}),
+        'reject',
+      ),
     onSuccess: invalidate,
   })
 }

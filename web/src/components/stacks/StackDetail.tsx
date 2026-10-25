@@ -11,6 +11,7 @@ import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { SkeletonLine } from '@/components/kit'
+import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { formatAbsolute } from '../../lib/dateFormat'
 import {
   stackHistoryQueryOptions,
@@ -18,11 +19,13 @@ import {
   usePinStack,
   useUnlockStack,
 } from '../../queries/stacks'
-import type { StackDiffAgainst } from '../../types/stacks'
+import type { StackDiffAgainst, StackRevisionSummary } from '../../types/stacks'
+import { ApproveDialog, RejectDialog } from './ApprovalDialogs'
 import { RevisionHistory } from './RevisionHistory'
 import { RevisionView } from './RevisionView'
 import { DeleteStackDialog, RollbackDialog } from './StackDialogs'
 import { RevisionStatusBadge, StackFlags } from './StackIndicators'
+import { DriftSummary } from './StackDrift'
 import { StackSettingsCard } from './StackSettingsCard'
 
 export interface StackSelection {
@@ -50,6 +53,9 @@ export function StackDetail({
   const pin = usePinStack(name)
   const unlock = useUnlockStack(name)
   const [rollbackRev, setRollbackRev] = useState<number | null>(null)
+  const currentUser = useAuthUsername()
+  const [approving, setApproving] = useState<StackRevisionSummary | null>(null)
+  const [rejecting, setRejecting] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   const stack = stackQuery.data
@@ -166,12 +172,15 @@ export function StackDetail({
           title={t('detail.pinnedBanner', { revision: stack.pinned_revision })}
         />
       ) : null}
+      <DriftSummary drift={stack.drift} />
       <h3 className="text-sm font-semibold">{t('history.title')}</h3>
       {revisions.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('history.empty')}</p>
       ) : (
         <RevisionHistory
           stack={stack}
+          isRoot={isRoot}
+          currentUser={currentUser}
           revisions={revisions}
           selected={selection.rev}
           onView={(n) => {
@@ -182,6 +191,8 @@ export function StackDetail({
           }}
           onRollback={setRollbackRev}
           onPin={setPin}
+          onApprove={setApproving}
+          onReject={setRejecting}
         />
       )}
       {selection.rev !== undefined ? (
@@ -203,6 +214,20 @@ export function StackDetail({
         />
       ) : null}
       <StackSettingsCard stack={stack} isRoot={isRoot} />
+      <ApproveDialog
+        name={name}
+        revision={approving}
+        onClose={() => {
+          setApproving(null)
+        }}
+      />
+      <RejectDialog
+        name={name}
+        revision={rejecting}
+        onClose={() => {
+          setRejecting(null)
+        }}
+      />
       <RollbackDialog
         name={name}
         revision={rollbackRev}

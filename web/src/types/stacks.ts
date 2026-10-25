@@ -25,6 +25,25 @@ export interface StackResource {
   since_revision: number
 }
 
+export type StackDriftStatus = 'none' | 'drifted'
+export type StackDriftAction = 'changed' | 'missing' | 'owner_changed'
+
+// Field paths only; the server never sends drifted values.
+export interface StackDriftItem {
+  kind: string
+  name: string
+  scope?: string
+  action: StackDriftAction
+  fields?: string[]
+}
+
+export interface StackDrift {
+  status: StackDriftStatus
+  checked_at?: string
+  revision?: number
+  summary: StackDriftItem[]
+}
+
 export interface Stack {
   name: string
   project_id: string
@@ -34,6 +53,7 @@ export interface Stack {
   drift_policy: StackDriftPolicy
   pinned_revision?: number
   require_approval: boolean
+  drift?: StackDrift
   created_at: string
   created_by: string
   latest_revision: number
@@ -60,6 +80,8 @@ export interface StackRevisionSummary {
   ci_run_url?: string
   created_at: string
   finished_at?: string
+  // Not sent today; when present it wins over the client-side estimate.
+  expires_at?: string
 }
 
 export interface StackHistory {
@@ -131,4 +153,27 @@ export interface StackRollbackResult {
   result?: StackResultBody
   replayed?: boolean
   warnings?: string[]
+  // 202: the stack requires approval and nothing was applied yet.
+  pending_approval?: boolean
+  expires_at?: string
+  plan?: StackPlanBody
+}
+
+export interface StackApproveInput {
+  revision: number
+  secrets?: Record<string, string>
+  expectedPlanHash?: string
+}
+
+export type StackApproveResult = StackRollbackResult
+
+export interface StackRejectInput {
+  revision: number
+  reason?: string
+}
+
+export interface StackRejectResult {
+  stack: string
+  revision: StackRevisionSummary
+  reason?: string
 }

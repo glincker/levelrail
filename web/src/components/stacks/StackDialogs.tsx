@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
+import { formatAbsolute } from '../../lib/dateFormat'
 import { useDeleteStack, useRollbackStack } from '../../queries/stacks'
 import type { StackDeleteMode } from '../../types/stacks'
 
@@ -19,6 +20,19 @@ export function RollbackDialog({
     setError(null)
     rollback.mutate(revision, {
       onSuccess: (res) => {
+        if (res.pending_approval) {
+          toast.add({
+            title: t('rollback.pendingApproval', {
+              number: res.revision.number,
+            }),
+            description: res.expires_at
+              ? t('approval.expires', { when: formatAbsolute(res.expires_at) })
+              : undefined,
+            type: 'info',
+          })
+          onClose()
+          return
+        }
         toast.add({
           title: t('rollback.done', { number: revision }),
           description: t('rollback.doneStatus', {

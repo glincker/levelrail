@@ -14,9 +14,16 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/badge'
+import { formatAbsolute } from '../../lib/dateFormat'
 import { StatusBadge } from '@/components/ui/status-badge'
 import type { Tone } from '@/components/kit'
-import type { Stack, StackRevisionStatus } from '../../types/stacks'
+import type {
+  Stack,
+  StackRevisionStatus,
+  StackRevisionSummary,
+} from '../../types/stacks'
+import { approvalExpiry } from './approval'
+import { DriftBadge } from './StackDrift'
 
 const STATUS_VIEW: Record<StackRevisionStatus, { tone: Tone; icon: Icon }> = {
   pending_approval: { tone: 'warning', icon: HourglassIcon },
@@ -44,6 +51,25 @@ export function RevisionStatusBadge({
   )
 }
 
+// Status badge plus, for a revision waiting on a person, when the request lapses.
+export function RevisionStatus({
+  revision,
+}: Readonly<{ revision: StackRevisionSummary }>) {
+  const { t } = useTranslation('stacks')
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      <RevisionStatusBadge status={revision.status} />
+      {revision.status === 'pending_approval' ? (
+        <span className="text-xs text-muted-foreground">
+          {t('approval.expires', {
+            when: formatAbsolute(approvalExpiry(revision)),
+          })}
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
 // Lock, pin, drift policy and approval at a glance; each is a small badge.
 export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
   const { t } = useTranslation('stacks')
@@ -67,6 +93,7 @@ export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
           {t('flags.pinned', { revision: stack.pinned_revision })}
         </Badge>
       ) : null}
+      <DriftBadge drift={stack.drift} />
       {stack.drift_policy === 'lock' ? (
         <Badge variant="outline">
           <WarningIcon aria-hidden="true" />

@@ -7,7 +7,7 @@ import { SkeletonLine } from '@/components/kit'
 import { stackRevisionQueryOptions } from '../../queries/stacks'
 import type { IacSummary } from '../../queries/iac'
 import type { StackDiffAgainst } from '../../types/stacks'
-import { RevisionStatusBadge } from './StackIndicators'
+import { RevisionStatus } from './StackIndicators'
 import { ChangeList, StackDiffView } from './StackDiffView'
 
 function SummaryLine({ summary }: Readonly<{ summary: IacSummary }>) {
@@ -49,7 +49,7 @@ export function RevisionView({
         <h3 className="text-sm font-semibold">
           {t('revision.title', { number: revision })}
         </h3>
-        {data ? <RevisionStatusBadge status={data.status} /> : null}
+        {data ? <RevisionStatus revision={data} /> : null}
         <Button
           type="button"
           variant="ghost"

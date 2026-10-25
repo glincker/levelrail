@@ -2,10 +2,12 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowCounterClockwiseIcon,
+  CheckIcon,
   EyeIcon,
   GitDiffIcon,
   PushPinIcon,
   PushPinSlashIcon,
+  XIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   ResponsiveTable,
@@ -15,26 +17,35 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RelativeTime } from '@/components/kit'
 import type { Stack, StackRevisionSummary } from '../../types/stacks'
-import { RevisionStatusBadge } from './StackIndicators'
+import { canApprove } from './approval'
+import { RevisionStatus } from './StackIndicators'
 
 export interface RevisionHistoryProps {
   stack: Stack
+  isRoot: boolean
+  currentUser: string | null
   revisions: readonly StackRevisionSummary[]
   selected?: number
   onView: (n: number) => void
   onDiff: (n: number) => void
   onRollback: (n: number) => void
   onPin: (n: number | null) => void
+  onApprove: (rev: StackRevisionSummary) => void
+  onReject: (n: number) => void
 }
 
 export function RevisionHistory({
   stack,
+  isRoot,
+  currentUser,
   revisions,
   selected,
   onView,
   onDiff,
   onRollback,
   onPin,
+  onApprove,
+  onReject,
 }: Readonly<RevisionHistoryProps>) {
   const { t } = useTranslation('stacks')
   const columns = useMemo<ResponsiveColumn<StackRevisionSummary>[]>(
@@ -62,7 +73,7 @@ export function RevisionHistory({
       {
         id: 'status',
         header: t('history.columns.status'),
-        cell: (r) => <RevisionStatusBadge status={r.status} />,
+        cell: (r) => <RevisionStatus revision={r} />,
       },
       {
         id: 'actor',
@@ -103,6 +114,32 @@ export function RevisionHistory({
         const pinned = stack.pinned_revision === r.number
         return (
           <span className="flex items-center gap-0.5">
+            {canApprove(r, isRoot, currentUser) ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t('actions.approveRev', { number: r.number })}
+                onClick={() => {
+                  onApprove(r)
+                }}
+              >
+                <CheckIcon aria-hidden="true" />
+              </Button>
+            ) : null}
+            {isRoot && r.status === 'pending_approval' ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t('actions.rejectRev', { number: r.number })}
+                onClick={() => {
+                  onReject(r.number)
+                }}
+              >
+                <XIcon aria-hidden="true" />
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="ghost"

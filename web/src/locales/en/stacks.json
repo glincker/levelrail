@@ -15,7 +15,7 @@
     "created": "Created"
   },
   "status": {
-    "pending_approval": "Pending approval",
+    "pending_approval": "Awaiting approval",
     "applying": "Applying",
     "applied": "Applied",
     "partial": "Partial",
@@ -58,7 +58,9 @@
     "pinned": "Pinned to revision {{revision}}",
     "unpinned": "Stack unpinned",
     "unlocked": "Stack unlocked",
-    "failed": "Action failed"
+    "failed": "Action failed",
+    "approveRev": "Approve revision {{number}}",
+    "rejectRev": "Reject revision {{number}}"
   },
   "history": {
     "title": "Revisions",
@@ -115,7 +117,8 @@
     "pending": "Rolling back",
     "done": "Rolled back to revision {{number}}",
     "doneStatus": "New revision {{number}} finished as {{status}}",
-    "failed": "Roll back failed"
+    "failed": "Roll back failed",
+    "pendingApproval": "Revision {{number}} is awaiting approval. Nothing was rolled back yet."
   },
   "delete": {
     "title": "Delete stack {{name}}?",
@@ -146,5 +149,39 @@
   "badge": {
     "managedBy": "Managed by stack {{name}}",
     "short": "Stack {{name}}"
+  },
+  "drift": {
+    "badge": "Drifted ({{count}})",
+    "title": "Drift: {{count}} resources differ from the stack",
+    "revision": "vs r{{number}}",
+    "checkedAt": "Checked {{when}}",
+    "noValues": "Only field paths are shown. Values are never stored.",
+    "action": {
+      "changed": "Changed",
+      "missing": "Missing",
+      "owner_changed": "Owner changed"
+    }
+  },
+  "approval": {
+    "expires": "Expires {{when}}",
+    "approveTitle": "Approve revision {{number}}?",
+    "approveDescription": "This applies the stored plan to {{name}}. Another admin requested it.",
+    "secretsNote": "Secrets are never stored. Supply any the manifest needs now; they are sent once and not kept.",
+    "secretName": "Secret name",
+    "secretValue": "Secret value",
+    "addSecret": "Add secret",
+    "removeSecret": "Remove secret",
+    "approve": "Approve",
+    "approving": "Approving",
+    "approved": "Revision {{number}} approved",
+    "approvedStatus": "Finished as {{status}}",
+    "stale": "The plan changed since it was reviewed. Request approval again.",
+    "expired": "This approval request expired. Request approval again.",
+    "rejectTitle": "Reject revision {{number}}?",
+    "rejectDescription": "Nothing is applied to {{name}} and the request is closed.",
+    "reason": "Reason (optional)",
+    "reject": "Reject",
+    "rejecting": "Rejecting",
+    "rejected": "Revision {{number}} rejected"
   }
 }
