@@ -3,9 +3,12 @@ package application
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -116,5 +119,136 @@ func TestReviveLastReady_RunningUnreadyDesiredDoesNotVeto(t *testing.T) {
 	c.reviveLastReady(context.Background(), []string{newName}, desired)
 	if !rt.containers[oldName].Running {
 		t.Error("last ready release was not revived while the failing desired release runs")
+	}
+}
+
+func reviveFixture(t *testing.T, oldRunning bool) (*fakeRuntime, *historyStore, *store.DesiredService, string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+	desired := &store.DesiredService{Name: "web", Image: "app:v3", Port: 80, Health: &store.ServiceHealth{
+		Readiness: &store.ServiceProbe{Path: "/", Interval: 20 * time.Millisecond, Timeout: 100 * time.Millisecond},
+	}}
+	oldSvc := store.DesiredService{Name: "web", Image: "app:v2", Port: 80}
+	oldName := ContainerName("web", NameImage(oldSvc), "")
+	rt := newFakeRuntime(serverPort(t, srv))
+	rt.seed(oldName, oldRunning)
+	rt.containers[oldName].Image = "app:v2"
+	st := &historyStore{
+		fakeStore: fakeStore{svc: desired},
+		attempts: []store.DeployAttempt{
+			{ID: "d3", Image: "app:v3", Status: store.DeployAttemptStatusFailed},
+			{ID: "d2", Image: "app:v2", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	return rt, st, desired, oldName
+}
+
+func running(rt *fakeRuntime, name string) bool {
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	cs := rt.containers[name]
+	return cs != nil && cs.Running
+}
+
+func waitUntil(d time.Duration, cond func() bool) bool {
+	end := time.Now().Add(d)
+	for time.Now().Before(end) {
+		if cond() {
+			return true
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	return cond()
+}
+
+// A dead serving release comes back before the failing desired release's
+// readiness wait ends, not after it.
+func TestReviveLastReady_DoesNotWaitForFailingReadiness(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		oldRunning bool
+	}{{"dead before the pass", false}, {"killed during the wait", true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, st, _, oldName := reviveFixture(t, tc.oldRunning)
+			c := New("web", st, rt, WithReadyBudget(3*time.Second), WithReviveWatch(50*time.Millisecond),
+				WithRestartBackoff(NewRestartBackoff(time.Hour, time.Hour, time.Hour)))
+			done := make(chan struct{})
+			go func() { defer close(done); _, _ = c.Reconcile(context.Background()) }()
+			if tc.oldRunning {
+				time.Sleep(200 * time.Millisecond)
+				rt.mu.Lock()
+				rt.containers[oldName].Running = false
+				rt.mu.Unlock()
+			}
+			started := time.Now()
+			if !waitUntil(time.Second, func() bool { return running(rt, oldName) }) {
+				t.Fatal("last ready release was not revived while the desired release waited for readiness")
+			}
+			select {
+			case <-done:
+				t.Fatalf("pass ended before the check, revive took %s", time.Since(started))
+			default:
+			}
+			<-done
+		})
+	}
+}
+
+// With a pinned host port, a container mid-create on the port blocks the revive.
+func TestReviveLastReady_PinnedPortHeldByCandidate(t *testing.T) {
+	rt, st, desired, oldName := reviveFixture(t, false)
+	hp := 8080
+	desired.HostPort = &hp
+	candidate := ContainerName("web", NameImage(*desired), "")
+	rt.seed(candidate, true)
+	rt.containers[candidate].Image = "app:v3"
+	rt.containers[candidate].Ports = []docker.PortBinding{{ContainerPort: 80, HostPort: hp}}
+	c := New("web", st, rt, WithRestartBackoff(NewRestartBackoff(time.Hour, time.Hour, time.Hour)))
+	c.reviveLastReady(context.Background(), []string{candidate}, desired)
+	if running(rt, oldName) {
+		t.Error("revive started a release onto a host port another container is creating on")
+	}
+}
+
+// A healthy redeploy keeps the old release running for the hold, never
+// restarts anything meanwhile, and removes it (no exited leftover) afterwards.
+func TestReconcile_RedeployHoldsPreviousThenRemoves(t *testing.T) {
+	rt := newDigestRuntime(map[string]string{})
+	oldName := ContainerName("web", "img:v1", "")
+	rt.seedRunning(oldName, "", time.Now().Add(-time.Hour))
+	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80}
+	st := &historyStore{
+		fakeStore: fakeStore{svc: desired},
+		attempts: []store.DeployAttempt{
+			{ID: "d2", Image: "img:v2", Status: store.DeployAttemptStatusSucceeded},
+			{ID: "d1", Image: "img:v1", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	c := New("web", st, rt, WithPreviousReleaseHold(3*time.Minute), WithDrainTracker(NewDrainTracker()),
+		WithRestartBackoff(NewRestartBackoff(time.Hour, time.Hour, time.Hour)))
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if !running(rt.fakeRuntime, oldName) {
+			t.Fatalf("pass %d: previous release stopped inside the hold", i)
+		}
+	}
+	if rt.startCalls != 1 {
+		t.Errorf("start calls = %d, want only the new release's own start", rt.startCalls)
+	}
+	rt.mu.Lock()
+	for _, cs := range rt.containers {
+		cs.Created = cs.Created.Add(-time.Hour)
+	}
+	rt.mu.Unlock()
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rt.count() != 1 {
+		t.Fatalf("containers after the hold = %v, want only the new release", rt.names())
 	}
 }

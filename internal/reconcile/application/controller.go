@@ -274,6 +274,7 @@ type Controller struct {
 	unconfirmedMu       sync.Mutex
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
+	reviveWatch         time.Duration                   // see WithReviveWatch
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
 	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
@@ -641,6 +642,9 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	}
 
 	c.servingImageID = ""
+	// Revive before the desired release's readiness wait: a dead serving
+	// release must not stay down for the whole wait of a failing deploy.
+	c.reviveIfDead(ctx, targets, desired, true)
 	var result reconcile.Result
 	switch strategy {
 	case strategyBlueGreen:
@@ -2166,23 +2170,37 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	// fakes don't, and gracefully just don't get the fast-fail below).
 	inspector, ok := c.runtime.(docker.ExitStateInspector)
 	if !ok {
-		if err := <-readyErr; err != nil {
-			return fmt.Errorf("readiness probe: %w", err)
-		}
-		return nil
+		return c.awaitReady(ctx, desired, state.Name, readyErr, nil)
 	}
 
 	crashErr := make(chan error, 1)
 	go watchForCrash(probeCtx, inspector, state.Name, cfg.Interval, crashErr)
 
-	select {
-	case err := <-readyErr:
-		if err != nil {
-			return fmt.Errorf("readiness probe: %w", err)
+	return c.awaitReady(ctx, desired, state.Name, readyErr, crashErr)
+}
+
+// awaitReady waits for the readiness or crash verdict. On an unpinned port it
+// also revives the last ready release if it dies meanwhile, so the wait of a
+// failing deploy does not extend an outage. crashErr may be nil.
+func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredService, candidate string, readyErr, crashErr <-chan error) error {
+	var tick <-chan time.Time
+	if desired.HostPort == nil {
+		t := time.NewTicker(c.effectiveReviveWatch())
+		defer t.Stop()
+		tick = t.C
+	}
+	for {
+		select {
+		case err := <-readyErr:
+			if err != nil {
+				return fmt.Errorf("readiness probe: %w", err)
+			}
+			return nil
+		case err := <-crashErr:
+			return err
+		case <-tick:
+			c.reviveIfDead(ctx, []string{candidate}, desired, false)
 		}
-		return nil
-	case err := <-crashErr:
-		return err
 	}
 }
 
