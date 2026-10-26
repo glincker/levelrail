@@ -57,8 +57,12 @@ type Client struct {
 	// pool, when set, makes EnsureNetwork assign explicit subnets.
 	pool  *NetworkPool
 	alloc poolAllocator
-	stop  chan struct{}
-	close sync.Once
+	// identMu guards the cached engine-identity probe isPodman fills in.
+	identMu     sync.Mutex
+	identKnown  bool
+	identPodman bool
+	stop        chan struct{}
+	close       sync.Once
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -92,7 +96,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	runtime := DetectRuntimeSocket(os.LookupEnv)
 	hardening, herr := HardeningFromEnv(runtime)
 	logHardeningEnv(herr)
-	c := &Client{hardening: hardening, runtime: runtime, pool: poolFromEnv(os.LookupEnv)}
+	c := &Client{hardening: hardening, runtime: runtime, pool: poolFromEnv(os.LookupEnv, runtime.Kind)}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -674,6 +678,15 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 	if spec.NetworkMode != "" {
 		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
 	}
+	if spec.UsernsMode != "" {
+		hostConfig.UsernsMode = container.UsernsMode(spec.UsernsMode)
+	}
+	if len(spec.SecurityOpt) > 0 {
+		hostConfig.SecurityOpt = append(hostConfig.SecurityOpt, spec.SecurityOpt...)
+	}
+	for _, d := range spec.Devices {
+		hostConfig.Devices = append(hostConfig.Devices, toDeviceMapping(d))
+	}
 	if spec.RestartPolicy != "" {
 		hostConfig.RestartPolicy = container.RestartPolicy{Name: container.RestartPolicyMode(spec.RestartPolicy)}
 	}
@@ -682,6 +695,19 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 		hostConfig.Tmpfs = map[string]string{"/tmp": hardenedTmpfsOpts}
 	}
 	return hostConfig
+}
+
+// toDeviceMapping parses "host[:container[:perms]]"; perms default to rwm.
+func toDeviceMapping(d string) container.DeviceMapping {
+	parts := strings.SplitN(d, ":", 3)
+	m := container.DeviceMapping{PathOnHost: parts[0], PathInContainer: parts[0], CgroupPermissions: "rwm"}
+	if len(parts) > 1 && parts[1] != "" {
+		m.PathInContainer = parts[1]
+	}
+	if len(parts) > 2 && parts[2] != "" {
+		m.CgroupPermissions = parts[2]
+	}
+	return m
 }
 
 func toDeviceRequest(g GPURequest) container.DeviceRequest {
@@ -852,6 +878,9 @@ func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) err
 
 // Remove implements Runtime.
 func (c *Client) Remove(ctx context.Context, id string, force bool) error {
+	if force && c.isPodman(ctx) {
+		return c.removePodman(ctx, id)
+	}
 	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
 		if strings.Contains(err.Error(), "already in progress") && c.waitContainerGone(ctx, id) {
 			return nil

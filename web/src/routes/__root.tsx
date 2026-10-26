@@ -13,7 +13,6 @@ import { demoQueryOptions } from '../queries/demo'
 import { DemoChrome } from '../components/demo/DemoChrome'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
-import { CommandPalette } from '../components/CommandPalette'
 import { StageOverlay } from '../components/StageOverlay'
 import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
@@ -33,6 +32,12 @@ import { DomainMaintenanceBanner } from '../components/maintenance/DomainMainten
 import { Toaster } from '../components/ui/toast'
 
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
+// Palette code is deferred until first use to keep it out of the first-load budget.
+const CommandPalette = React.lazy(() =>
+  import('../components/CommandPalette').then((m) => ({
+    default: m.CommandPalette,
+  })),
+)
 
 // Router context carries the QueryClient so every route loader can call
 // queryClient.ensureQueryData / ensureInfiniteQueryData without importing
@@ -118,6 +123,23 @@ function RootLayout() {
 function AppShell() {
   const username = useAuthUsername()
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)
+  const [paletteMounted, setPaletteMounted] = React.useState(false)
+  const openPalette = React.useCallback(() => {
+    setPaletteMounted(true)
+    setCommandPaletteOpen(true)
+  }, [])
+  // Before the palette chunk mounts, this catches the first Ctrl/Cmd+K; the palette owns the toggle after.
+  React.useEffect(() => {
+    if (paletteMounted) return
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        openPalette()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [paletteMounted, openPalette])
   const [stageOverlayOpen, setStageOverlayOpen] = React.useState(false)
   const openStageOverlay = React.useCallback(
     () => setStageOverlayOpen(true),
@@ -134,18 +156,22 @@ function AppShell() {
       <PreferencesApplier />
       <SkipLink />
       <AppSidebar />
-      <CommandPalette
-        open={commandPaletteOpen}
-        onOpenChange={setCommandPaletteOpen}
-        onShowShortcuts={openStageOverlay}
-      />
+      {paletteMounted && (
+        <React.Suspense fallback={null}>
+          <CommandPalette
+            open={commandPaletteOpen}
+            onOpenChange={setCommandPaletteOpen}
+            onShowShortcuts={openStageOverlay}
+          />
+        </React.Suspense>
+      )}
       <StageOverlay
         open={stageOverlayOpen}
         onOpenChange={setStageOverlayOpen}
       />
       <SidebarInset>
         <DemoChrome />
-        <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
+        <AppHeader onSearch={openPalette} />
         <ShellBanner />
         <RestartBanner />
         <LocalModeBanner />

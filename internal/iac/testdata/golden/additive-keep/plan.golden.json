@@ -1,0 +1,47 @@
+{
+  "changes": [
+    {
+      "kind": "Project",
+      "name": "shop",
+      "action": "noop",
+      "kept": [
+        {
+          "path": "env.LEGACY_FLAG",
+          "op": "keep",
+          "old": "(hidden)"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "Tag",
+      "name": "frontend",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 8
+    },
+    {
+      "kind": "App",
+      "name": "web",
+      "action": "noop",
+      "kept": [
+        {
+          "path": "domains[old.example.com]",
+          "op": "keep",
+          "old": "old.example.com"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 12
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 0,
+    "delete": 0,
+    "noop": 3,
+    "error": 0
+  },
+  "hash": "44cecc452b8c635c"
+}

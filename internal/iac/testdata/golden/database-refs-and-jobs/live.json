@@ -1,0 +1,16 @@
+{
+  "dbs": {"cache": {"name": "cache", "engine": "redis", "version": "7.4"}},
+  "apps": {
+    "web": {"name": "web", "image": "ghcr.io/acme/web:1.2.3", "port": 3000, "bind_address": "private", "replicas": 1, "strategy": "blue-green",
+      "env": {"LOG_LEVEL": "info", "DATABASE_URL": "postgres://u:hunter2@old-host:5432/app"},
+      "health": {"readiness": {"path": "/healthz"}},
+      "database_env": {"CACHE_HOST": {"database": "cache", "field": "host"}}}
+  },
+  "jobs": {
+    "web": {
+      "cleanup": {"id": "j1", "name": "cleanup", "mode": "fresh", "command": ["node", "scripts/cleanup.js"], "schedule": "0 * * * *", "timezone": "UTC", "enabled": true, "concurrency_policy": "forbid", "catch_up": "skip", "source": "api"},
+      "from-spec": {"id": "j2", "name": "from-spec", "mode": "fresh", "command": ["node", "other.js"], "schedule": "0 2 * * *", "timezone": "UTC", "enabled": true, "concurrency_policy": "forbid", "catch_up": "skip", "source": "spec"},
+      "manual": {"id": "j3", "name": "manual", "mode": "exec", "command": ["sh", "-c", "PGPASSWORD=s3cretpass1234 psql -c vacuum"], "schedule": "0 4 * * *", "timezone": "UTC", "enabled": true, "concurrency_policy": "allow", "catch_up": "skip", "source": "api"}
+    }
+  }
+}

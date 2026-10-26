@@ -13,6 +13,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Levelrail documentation](/index): Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
 - [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
 - [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+- [Container runtimes](/container-runtimes): Which container runtimes Levelrail supports on a Linux server, how install.sh picks one, and the manual steps for Podman.
+- [Install on a cloud VM](/install-on-cloud): Copy-paste user data and startup scripts that install the Levelrail control plane on a fresh AWS, Google Cloud, Azure, DigitalOcean or Hetzner VM, with the firewall ports to open.
 - [Run it on your laptop](/local-development): Start a private Levelrail instance on macOS or Linux with one command, deploy apps to name.localhost addresses, and reset it whenever you like.
 - [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 - [One command quickstart](/quickstart-one-command): Deploy a project with `levelrail-cli up`, which infers the name, port and build, then keep every advanced flag when you need it.
@@ -88,6 +90,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploy failures](/deploy-failures): The structured failure object every failed or blocked deploy carries, and what each failure code means.
 - [Deploying through git host outages](/git-host-outages): What still deploys when GitHub, GitLab or your own git server is down, how the source cache works, and how to deploy from it.
 - [Deploy trace](/deploy-trace): The step-by-step pipeline every deploy records, with or without a build, and how to read it in the dashboard, the CLI and the log stream.
+- [Deploy event timeline](/deploy-event-timeline): One screen per deploy that tells the whole story in order: trigger, build, push, hooks, readiness, cutover, post-deploy watch, rollback, and traffic before and after cutover, live while it runs and replayable after.
 - [Build performance](/build-performance): Cap build time and parallel builds, and read the per-app build duration trend and cache hit rate.
 - [build-center](/build-center)
 - [Scheduled deploys](/scheduled-deploys): Redeploy the latest commit on a branch on a recurring cron schedule, or schedule a one-shot image or git ref deploy, with freeze-window and restart-safe catch-up semantics.
@@ -122,15 +125,17 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [Domains and ingress](/domains-and-ingress): Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 - [Standalone domains](/standalone-domains): Proxy a domain to a port on this server, a network address, an external URL, another app's port or a container, with no app needed, and find the DNS target.
-- [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
+- [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
 - [Diagnose a domain](/domain-diagnosis): Find out why a domain is not working, see the exact DNS record to create, and fix it from the dashboard, the CLI or the API.
 - [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects and raw ports, from the UI, CLI or API.
+- [Ingress abuse defense](/abuse-defense): Per-app rate limit by client address, address and User-Agent deny lists, and a log only mode with a replay of recent traffic before you enforce, from the dashboard, CLI or API.
 - [CDN and caching](/cdn-and-caching): The response cache in the ingress: what it stores and what it never does, cache rules, purge by URL, prefix, tag or all, hit rate and bandwidth saved, and how to put a third party CDN in front.
 - [Forms](/forms): Collect submissions from the HTML forms on a static site with a public endpoint, a spam trap, per-address rate limits, an inbox with CSV export and notifications through your existing alert channels.
 - [Firewall](/firewall): Filter web requests at the embedded ingress: ordered rules, IP lists, automatic bans, a browser challenge, bot and AI crawler handling, attack mode, and a live view of what was blocked.
 - [Verifying real ACME issuance against a live domain](/acme-verification-runbook): Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA: what to check, common failures, a recorded run.
 - [Multi-node: adding and managing nodes](/multi-node): Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
 - [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
+- [Add a node anywhere](/add-node-anywhere): One guided flow to add an EC2 instance, a Google Cloud VM, a VPS or a home server as a node, with provider, region and zone auto-detect, live progress, preflight checks with fixes and failure-domain aware placement.
 - [Resource-aware placement](/resource-aware-placement): How new apps and databases are placed on nodes with room for them, how to read the "why here" explanation, and how to set the overcommit policy.
 - [Autoscaling](/autoscaling): Scale an app's replicas up and down on CPU, memory or request load, between a minimum and a maximum you set, with cooldowns that stop it from flapping and a recorded reason for every decision.
 - [Node provisioning](/node-provisioning): Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each needs, status polling, cost and known gaps.
@@ -159,6 +164,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Log pipelines](/log-pipelines): Apply transformations to every log line before storage, export or live tail. Redact secrets, drop noise, parse structured fields.
 - [Log volume budgets](/log-budgets): Cap how much log data one app can store, see which apps are noisiest, and forecast when a budget will be reached.
 - [Data export](/data-export): Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
+- [Traffic export](/traffic-export): Stream one record per finished edge request to PostHog, an OpenTelemetry collector or your own webhook, without visitor identity by default and without ever slowing a request.
 - [Audit event schema](/audit-event-schema): The fields of an exported audit event and how Splunk, syslog and OpenTelemetry sinks map them.
 - [Control plane backup and restore](/control-plane-backup): Back up and restore the control plane's database with automatic snapshots and offline restore.
 - [Archives](/archives): Move cold audit events, deploy attempts and pipeline runs into compressed bundles instead of deleting them.
@@ -215,10 +221,11 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Cost explorer and budgets](/cost-explorer): Explore cost over time by app, project, tag, node or kind, see a month end forecast with a range, spot the biggest increases, and set named budgets that alert at thresholds and can pause or throttle apps.
 - [Spend caps](/spend-caps): Set a monthly egress and cost limit per app, get alerts at 50, 80 and 100 percent, and choose whether the app is throttled or paused when the limit is reached.
 - [Integrations](/integrations): Attach curated third-party tools (PostHog, Sentry, Datadog, and more) to an app, injecting their env vars automatically at deploy time.
-- [Cloud integrations](/cloud-integrations): What works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
+- [Cloud integrations](/cloud-integrations): What works today with AWS, Google Cloud, Azure, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
 - [Rolling back the control plane](/rollback): How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server.
 - [Resilience: what survives a control plane crash](/resilience): What survives when the control plane process crashes, what does not, and why, measured with a real SIGKILL against a real control plane, not assumed.
 - [Resilience, in short](/resilience-summary): A short answer to what survives a control plane crash, with a link to the full measured page.
+- [Chaos test coverage](/chaos-coverage): Which failure scenarios have a test, what each test asserts, and whether it runs under -short with a fake Docker client or live against a real daemon.
 - [Observability: metrics, logs, and alerts](/observability): Node-local metrics, logs, and alerts with federated queries, no central ingestion.
 - [Traffic observability: rate, errors and duration](/traffic-observability): Per app and per replica request rate, error rate and p50/p95/p99 latency measured at the ingress, with slow request samples and SLO error-budget burn.
 - [Public status page](/status-page): An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
@@ -236,13 +243,16 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Service template catalog](/templates-and-registry): Deploy ready-made services from the built-in template catalog, save your own apps as templates, and see how templates, Compose and static sites relate.
 - [Private registries](/private-registries): Connect container registries with vendor presets and give builds private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems packages through secret mounts.
 - [Template catalog](/template-catalog): Every service in Levelrail's one-click template catalog, grouped by category, generated straight from the Go source
+- [Deploy to Levelrail button](/deploy-button): Add a Deploy to Levelrail button to your project's README so readers can launch it on their own server, with every URL parameter, limits and copy-paste snippets
 - [Template status](/templates-status): Measured pass rate of the one-click template catalog from the local smoke run
 - [Starter kit templates](/templates): Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends.
 
 ### Migrate
 
 - [Migrate to Levelrail](/migrate-to-levelrail): Move from Coolify, Dokploy, CapRover, Dokku or a compose file with the old server kept running, an honest downtime table and a rollback path.
+- [Migration wizard](/migration-wizard): Move apps, databases and volumes off Coolify, Dokploy, CapRover or an old server in one guided, resumable job, with live progress, DNS checks and a safe-to-delete gate.
 - [Migrate from Coolify](/migrate-from-coolify): Move Coolify apps, databases, env vars and domains to Levelrail with a read-only plan, staged copies and a reversible cutover. Coolify keeps serving.
+- [Coolify exit gap report](/coolify-exit-gap-report): What the Coolify importer carries over, what it reports for you to finish, and what it cannot see yet, audited against what a real Coolify instance holds.
 - [Migrate from Dokploy](/migrate-from-dokploy): Import Dokploy applications, databases, env vars and domains into Levelrail with a read-only dry run, then copy data and switch DNS while Dokploy keeps serving.
 - [Migrate from CapRover](/migrate-from-caprover): Import CapRover apps, env vars, domains and volumes into Levelrail with a read-only dry run. CapRover builds locally, so images need a repo or registry.
 - [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by importing the env dump or a docker inspect snapshot. Live Dokku over SSH is not supported, so some steps are manual.
@@ -265,10 +275,12 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [AI models](/ai-models): Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes, or small GGUF models on CPU with hard limits, as a first-class resource with an OpenAI-compatible endpoint protected by an API key.
 - [Load balancing across replicas](/load-balancing): Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status and config export.
 - [Platform as code](/platform-as-code): Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
+- [Stacks and GitOps](/stacks): Keep apps, databases and domains in git as a stack, review each change as a plan in the pull request, apply on merge, and roll back to any earlier revision.
 - [Resource advisor (beta)](/resource-advisor): The beta resource advisor suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes database settings from local telemetry.
 - [Feature flags](/feature-flags): Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 - [Log archive](/log-archive): Ship container logs to storage as compressed NDJSON on a schedule.
 - [Automatic cleanup](/janitor): Reclaim disk on the control plane node on a schedule, with preview and quarantine before anything is deleted.
+- [Cleanup center](/cleanup-center): Keep control plane data bounded with per-data-type retention, a scheduled cleanup with preview mode, floors for security data, and an exportable run history.
 - [Unified search](/search): One search over apps, databases, nodes, domains, templates, settings and actions, filtered by what you are allowed to see.
 
 ## Reference
@@ -337,6 +349,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Performance](/performance): Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.
 - [Performance budget](/performance-budget): The rules every new control plane feature follows so idle cost stays flat as features grow.
 - [Load and failover benchmarks](/benchmarks): How to measure throughput, latency, ingress overhead and failover behavior under load, and which numbers are still unmeasured.
+- [Benchmark runbook](/benchmark-runbook): Steps to measure load and failover on a labelled Linux server with a separate load generator, and how to publish the result.
 - [Control plane health](/control-plane-health): What the control plane measures about itself, which limits it enforces, and the fixes it can apply.
 - [Changelog](/changelog): Every Levelrail release with highlights, fixes and upgrade notes.
 - [Upgrade history](/upgrade-history): Every version the control plane has run, recorded at boot, and how upgrades are acknowledged.

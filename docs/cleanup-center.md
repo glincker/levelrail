@@ -28,7 +28,16 @@ Docker objects (stopped containers, images, build cache, orphaned volumes, old d
 | `messaging.event_webhook_deliveries` | Finished outbound event webhook deliveries | `retention.event_webhook_days` | 30 days | `APP_EVENT_WEBHOOK_RETENTION` | none |
 | `observability.alert_history` | Alert history | `retention.alert_history_days` | 30 days | `APP_ALERT_HISTORY_RETENTION` | none |
 | `auth.api_tokens` | Revoked and expired API tokens | `retention.revoked_token_days`, `retention.expired_token_days` | 90 days each | `APP_RETENTION_REVOKED_TOKEN_DAYS`, `APP_RETENTION_EXPIRED_TOKEN_DAYS` | none |
+| `auth.expired_credentials` | Expired sessions, device login codes and magic links, counted from their expiry | `retention.auth_expired_days` | 30 days | `APP_RETENTION_AUTH_EXPIRED_DAYS` | none |
+| `data.ai_history` | AI assistant chats idle past the window (with their messages) and AI usage metering | `retention.ai_history_days` | 90 days | `APP_RETENTION_AI_HISTORY_DAYS` | none |
+| `data.restore_history` | Finished restores, point-in-time restores and backup drills | `retention.restore_history_days` | 90 days | `APP_RETENTION_RESTORE_HISTORY_DAYS` | none |
+| `deploys.probe_attempts` | Per-attempt readiness probe detail | `retention.probe_attempt_days` | 90 days | `APP_RETENTION_PROBE_ATTEMPT_DAYS` | none |
+| `deploys.app_history` | App lifecycle events, scheduled deploy history, last canary outcomes | `retention.app_history_days` | 90 days | `APP_RETENTION_APP_HISTORY_DAYS` | none |
+| `observability.usage_cost` | Daily cost showback snapshots | `retention.usage_cost_days` | 90 days | `APP_RETENTION_USAGE_COST_DAYS` | none |
+| `observability.status_incidents` | Resolved incidents and completed maintenance | `retention.status_incident_days` | 365 days | `APP_RETENTION_STATUS_INCIDENT_DAYS` | none |
 | `docker.containers`, `docker.images`, `docker.build_cache`, `docker.volumes`, `deploys.attempts` | Janitor stages, read only | the janitor policy | see [automatic cleanup](/janitor) | none | none |
+
+The seven rows from `auth.expired_credentials` down are `new` targets: they start in `preview`, so nothing is deleted until an administrator switches the target to `on`. They only remove finished or expired data: running restores and drills, live sessions, open or scheduled status incidents and chats with recent messages are always kept. Upgrade history is append-only by design and has no target, and finished pipeline runs are already pruned by the pipeline engine (newest 100 per pipeline, `APP_PIPELINE_KEEP_RUNS`).
 
 The janitor stages only report. Their usage comes from the last recorded janitor pass, their mode follows the janitor policy (off, preview while it is in dry run, on), and the page links to Settings, Cleanup, Disk for changes.
 
@@ -39,7 +48,7 @@ Each older environment variable is now the env override of the same runtime sett
 - Day counts (`APP_EMAIL_LOG_RETENTION_DAYS` and similar) accept any whole number of days, not only the presets. `0` keeps the data forever, except for the two audit variables, where `0` is ignored and the default applies (it always meant that for audit).
 - `APP_EVENT_WEBHOOK_RETENTION` and `APP_ALERT_HISTORY_RETENTION` stay Go durations (`720h`) and also accept `30d`. They are converted to whole days, rounded up, so a window never shrinks (`36h` becomes 2 days).
 - Other settings: `APP_CLEANUP_INTERVAL`, `APP_CLEANUP_ENABLED`.
-- Limits, read from the environment only: `APP_CLEANUP_MAX_ROWS` (rows per run, default 100000), `APP_CLEANUP_SLICE` (time span of one delete, default 24h), `APP_CLEANUP_STAGGER` (default 5s), `APP_CLEANUP_STARTUP_DELAY` (default 5m), `APP_CLEANUP_HISTORY_DAYS` (default 365), `APP_CLEANUP_USAGE_TTL` (default 30s), `APP_CLEANUP_EXPORT_MAX` (CSV rows, default 10000), `APP_TOKEN_CLEANUP_BATCH` (token delete batch).
+- Limits, read from the environment only: `APP_CLEANUP_MAX_ROWS` (rows per run, default 100000), `APP_CLEANUP_SLICE` (time span of one delete, default 24h), `APP_CLEANUP_STAGGER` (default 5s), `APP_CLEANUP_STARTUP_DELAY` (default 5m), `APP_CLEANUP_HISTORY_DAYS` (default 365), `APP_CLEANUP_USAGE_TTL` (default 30s), `APP_CLEANUP_EXPORT_MAX` (CSV rows, default 10000), `APP_TOKEN_CLEANUP_BATCH` (token delete batch), `APP_CLEANUP_DELETE_BATCH` (rows per statement for the history targets, default 1000).
 
 ## Floors and weakening
 
@@ -81,4 +90,4 @@ A target that cannot use a cutoff (it deletes by count or by status) implements 
 
 ## Not covered yet
 
-Registry blob garbage collection, remote node stores, log size caps and scheduled VACUUM are not part of the cleanup center. Targets for data that had no sweeper before (expired sessions, device codes, AI usage, restore history and similar) are added on top of this registry later and start in preview mode.
+Registry blob garbage collection, remote node stores, log size caps and scheduled VACUUM are not part of the cleanup center. Security audit tables, the auth library audit events and upgrade history are not covered: their floors and append-only rules stay as they are.

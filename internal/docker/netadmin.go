@@ -80,8 +80,15 @@ func WithNetworkPool(p NetworkPool) ClientOption {
 	return func(c *Client) { c.pool = &p }
 }
 
-func poolFromEnv(lookup func(string) (string, bool)) *NetworkPool {
+func poolFromEnv(lookup func(string) (string, bool), kind RuntimeKind) *NetworkPool {
 	v, _ := lookup(EnvNetworkPool)
+	if strings.TrimSpace(v) == "" && kind == RuntimeKindPodman {
+		// Netavark hands out 10.89.x, 10.90.x and so on, so the shared default overlaps it.
+		v, _ = lookup(EnvNetworkPoolPodman)
+		if strings.TrimSpace(v) == "" {
+			v = DefaultPodmanNetworkPool
+		}
+	}
 	p, ok, err := ParseNetworkPool(v)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v; using the Docker daemon's default pools\n", err)

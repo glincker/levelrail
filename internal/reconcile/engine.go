@@ -90,6 +90,12 @@ type Engine struct {
 	persisted  persistLedger
 	fullResync time.Duration
 	now        func() time.Time
+
+	workers    int
+	keyTimeout time.Duration
+	keyed      func(name string) bool
+	qmu        sync.Mutex
+	queue      *keyQueue
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -121,6 +127,66 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 		guard:       NewGuard(GuardConfigFromEnv(os.Getenv)),
 		fullResync:  FullResyncFromEnv(os.Getenv),
 		now:         time.Now,
+		workers:     WorkersFromEnv(os.Getenv),
+		keyTimeout:  KeyTimeoutFromEnv(os.Getenv),
+	}
+}
+
+// SetKeyed marks which dynamic controllers may run on the keyed worker pool
+// when more than one worker is configured. Call it before Run.
+func (e *Engine) SetKeyed(keyed func(name string) bool) { e.keyed = keyed }
+
+// SetWorkers overrides EnvWorkers and EnvKeyTimeout. Call it before Run.
+func (e *Engine) SetWorkers(n int, keyTimeout time.Duration) {
+	e.workers = max(1, min(n, maxWorkers))
+	if keyTimeout > 0 {
+		e.keyTimeout = keyTimeout
+	}
+}
+
+func (e *Engine) concurrent(name string) bool {
+	return e.workers > 1 && e.keyed != nil && e.keyed(name)
+}
+
+// keyQueueFor starts the pool on first use; its context keeps ctx's values but
+// not its cancellation, so a pass ending never cuts another app's reconcile.
+func (e *Engine) keyQueueFor(ctx context.Context) *keyQueue {
+	e.qmu.Lock()
+	defer e.qmu.Unlock()
+	if e.queue == nil {
+		e.queue = newKeyQueue(ctx, e.workers, e.keyTimeout, e.reconcileKeyed)
+	}
+	return e.queue
+}
+
+func (e *Engine) reconcileKeyed(ctx context.Context, c Controller) {
+	result := e.runOne(ctx, c, true)
+	if ctx.Err() == context.DeadlineExceeded {
+		e.logger.Warn("reconcile cut at the per-app time limit", slog.String("controller", c.Name()), slog.Duration("limit", e.keyTimeout))
+	}
+	if result.KeyOnly && result.RequeueAfter > 0 {
+		time.AfterFunc(result.RequeueAfter, func() { e.requeueKey(c) })
+	}
+}
+
+// requeueKey re-adds c alone; a stopped pool or a deleted app drops it.
+func (e *Engine) requeueKey(c Controller) {
+	e.qmu.Lock()
+	q := e.queue
+	e.qmu.Unlock()
+	if q != nil {
+		q.requeue(c, e.now())
+	}
+}
+
+// stopQueue drains the pool for at most drain and waits for its workers.
+func (e *Engine) stopQueue(drain time.Duration) {
+	e.qmu.Lock()
+	q := e.queue
+	e.queue = nil
+	e.qmu.Unlock()
+	if q != nil {
+		q.close(drain)
 	}
 }
 
@@ -232,7 +298,17 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 	n += len(dynamic)
 	for _, c := range dynamic {
 		live[c.Name()] = struct{}{}
+		if e.concurrent(c.Name()) {
+			e.keyQueueFor(ctx).add(c, e.now())
+			continue
+		}
 		e.reconcileOne(ctx, c)
+	}
+	e.qmu.Lock()
+	q := e.queue
+	e.qmu.Unlock()
+	if q != nil {
+		q.retain(live)
 	}
 	e.persisted.forget(live)
 }
@@ -251,8 +327,13 @@ func (e *Engine) safeReconcile(ctx context.Context, c Controller) (result Result
 }
 
 func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
+	e.runOne(ctx, c, false)
+}
+
+// runOne reconciles c once; keyed says a KeyOnly requeue is the caller's to schedule.
+func (e *Engine) runOne(ctx context.Context, c Controller, keyed bool) Result {
 	if !e.guard.Before(c.Name()) {
-		return
+		return Result{}
 	}
 	start := time.Now()
 	result, panicked, err := e.safeReconcile(ctx, c)
@@ -264,7 +345,11 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 	e.lastResult[c.Name()] = result
 	e.lastErr[c.Name()] = err
 	e.mu.Unlock()
-	e.scheduleRequeue(c.Name(), result.RequeueAfter)
+	if keyed && result.KeyOnly {
+		e.scheduleRequeue(c.Name(), 0)
+	} else {
+		e.scheduleRequeue(c.Name(), result.RequeueAfter)
+	}
 
 	// Persisting status is best-effort and secondary to the reconcile
 	// itself: a database hiccup must never stop the controller from
@@ -304,13 +389,14 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 
 	if err != nil {
 		e.logger.Error("reconcile failed", append(attrs, slog.String("error", err.Error()))...)
-		return
+		return result
 	}
 	if changed {
 		e.logger.Info("reconciled", attrs...)
-		return
+		return result
 	}
 	e.logger.Debug("reconciled", attrs...)
+	return result
 }
 
 // LastResult returns the most recent Result and error for a controller by
@@ -374,6 +460,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 		select {
 		case <-ctx.Done():
 			e.logger.Info("reconcile engine stopping", slog.String("reason", ctx.Err().Error()))
+			e.stopQueue(e.drainTimeout)
 			return ctx.Err()
 
 		case <-ticker.C:

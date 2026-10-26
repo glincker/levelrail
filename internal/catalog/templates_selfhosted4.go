@@ -105,14 +105,14 @@ var selfhosted4Templates = []Template{
       KOPIA_PASSWORD: $SERVICE_PASSWORD_REPO
       KOPIA_SERVER_USERNAME: admin
       KOPIA_SERVER_PASSWORD: $SERVICE_PASSWORD_ADMIN
-    command: ["/bin/sh", "-c", "kopia repository connect filesystem --path=/app/repository || kopia repository create filesystem --path=/app/repository; exec kopia server start --insecure --tls-generate-cert --address=0.0.0.0:51515 --server-username=$KOPIA_SERVER_USERNAME --server-password=$KOPIA_SERVER_PASSWORD"]
+    entrypoint: ["/bin/sh", "-c", "kopia repository connect filesystem --path=/app/repository || kopia repository create filesystem --path=/app/repository; exec kopia server start --insecure --tls-generate-cert --address=0.0.0.0:51515 --server-username=admin --server-password=$KOPIA_SERVER_PASSWORD"]
     volumes:
       - kopia_repository:/app/repository
       - kopia_config:/app/config
       - kopia_cache:/app/cache
       - kopia_logs:/app/logs
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsSk -o /dev/null https://127.0.0.1:51515/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsSk -u admin:$KOPIA_SERVER_PASSWORD -o /dev/null https://127.0.0.1:51515/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -150,14 +150,14 @@ var selfhosted4Templates = []Template{
 		Category:               "Infrastructure",
 		DocumentationURL:       "https://snipe-it.readme.io/docs/docker",
 		RecommendedMemoryBytes: 536870912, // 512Mi
-		// APP_KEY needs the "base64:" prefix Laravel expects; the
-		// magic-var token only fills in the random portion after it.
+		// A raw 32 char APP_KEY is a valid AES-256 key; base64: plus a
+		// 32 char token would decode to only 24 bytes.
 		Compose: `services:
   snipeit:
     image: snipe/snipe-it:v7.1.16
     ports: ["8080:80"]
     environment:
-      APP_KEY: base64:$SERVICE_BASE64_32_APPKEY
+      APP_KEY: $SERVICE_PASSWORD_32_APPKEY
       APP_URL: http://localhost:8080
       MYSQL_DATABASE: snipeit
       MYSQL_USER: snipeit
@@ -198,7 +198,7 @@ var selfhosted4Templates = []Template{
       PUID: "1000"
       PGID: "1000"
       TZ: UTC
-      APP_KEY: base64:$SERVICE_BASE64_32_APPKEY
+      APP_KEY: $SERVICE_PASSWORD_32_APPKEY
       DB_CONNECTION: sqlite
       SPEEDTEST_SCHEDULE: "0 * * * *"
     volumes:

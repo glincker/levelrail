@@ -16,11 +16,40 @@ import (
 
 // GRPCTransport is the control-plane side of a reverse-dialed agent connection, built on the agent's session mux.
 type GRPCTransport struct {
-	mux *mux
+	mux  *mux
+	caps *capSet
+}
+
+// capSet holds what an agent advertised in its hello. It is shared with the
+// mux hello handler, which runs before the transport is registered.
+type capSet struct {
+	mu  sync.RWMutex
+	set map[string]bool
+}
+
+func (c *capSet) store(caps []string) {
+	m := make(map[string]bool, len(caps))
+	for _, name := range caps {
+		m[name] = true
+	}
+	c.mu.Lock()
+	c.set = m
+	c.mu.Unlock()
+}
+
+// has fails closed: before the hello arrives nothing is advertised.
+func (c *capSet) has(name string) bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.set[name]
 }
 
 func newGRPCTransport(m *mux) *GRPCTransport {
-	return &GRPCTransport{mux: m}
+	return newGRPCTransportWithCaps(m, &capSet{})
+}
+
+func newGRPCTransportWithCaps(m *mux, caps *capSet) *GRPCTransport {
+	return &GRPCTransport{mux: m, caps: caps}
 }
 
 var (
@@ -63,6 +92,9 @@ func (t *GRPCTransport) InspectExitState(ctx context.Context, name string) (*doc
 
 // Create implements Transport (docker.Runtime).
 func (t *GRPCTransport) Create(ctx context.Context, spec docker.ContainerSpec) (string, error) {
+	if spec.NeedsSecurityCapability() && !t.caps.has(CapContainerSpecSecurity) {
+		return "", ErrAgentLacksCapability
+	}
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_Create{Create: &agentpb.CreateRequest{Spec: containerSpecToPB(spec)}},
 	})

@@ -1,0 +1,1 @@
+{"source": "shop-prod", "prune": true, "ledger": {"stack": "shop-prod", "owned": [{"stack_id": "shop-prod", "kind": "App", "key": "App/a1", "live_id": "a1"}, {"stack_id": "shop-prod", "kind": "App", "key": "App/a2", "live_id": "a2"}, {"stack_id": "shop-prod", "kind": "App", "key": "App/a3", "live_id": "a3"}], "maxPercent": 50, "maxCount": 10}}

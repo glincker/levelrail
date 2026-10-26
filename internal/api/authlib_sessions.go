@@ -225,6 +225,12 @@ func (rt *Router) libRegister(w http.ResponseWriter, r *http.Request, req regist
 	if err := removeSetupToken(rt.dataDir); err != nil {
 		rt.logger.Warn("api: register: remove setup token failed", slog.String("error", err.Error()))
 	}
+	// Best effort: without it the first login simply falls back to normal approval.
+	if sid, ok := rt.libSessions.SessionIDFor(ctx, token); ok {
+		if err := rt.auth.SetUserSetupSession(ctx, user.ID, sid, clientIP(r)); err != nil {
+			rt.logger.Warn("api: register: record setup session failed", slog.String("error", err.Error()))
+		}
+	}
 	rt.finishLibSession(w, r, user, token)
 	writeJSON(w, http.StatusCreated, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }

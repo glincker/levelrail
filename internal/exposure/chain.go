@@ -10,7 +10,11 @@ type Chain struct {
 	// Readable is false when the chain could not be read; Reason says why.
 	Readable bool
 	Reason   string
-	Rules    []ChainRule
+	// NoChain is true when the firewall backend answers but has no
+	// DOCKER-USER chain (nftables engines such as Podman with netavark).
+	// That is permanent, not a transient read failure.
+	NoChain bool
+	Rules   []ChainRule
 }
 
 // ChainRule is one parsed DOCKER-USER rule. Anything the parser does not

@@ -1,0 +1,14 @@
+version: 1
+kind: App
+metadata:
+  name: {{name}}
+spec:
+  project: {{name}}
+  service:
+    build:
+      type: image
+      image: {{image}}
+    port: 80
+    replicas: 1
+    health:
+      readiness: {path: /}

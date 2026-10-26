@@ -330,6 +330,10 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				if rt.aiControlRejectsPinned(w, r, pinned.userID, required) {
 					return
 				}
+				var stackOK bool
+				if r, stackOK = rt.gateStackToken(w, r, pinned.userID); !stackOK {
+					return
+				}
 				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
 				if err != nil {
 					rt.internalError(w, "api: pinned session ability decision failed", err)
@@ -433,6 +437,10 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		}
 		r = rt.noteAITurnRequest(r, rec, required)
 		if rt.aiControlRejects(w, r, rec, required) {
+			return
+		}
+		var stackOK bool
+		if r, stackOK = rt.gateStackToken(w, r, rec.ID); !stackOK {
 			return
 		}
 		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)

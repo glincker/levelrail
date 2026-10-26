@@ -165,6 +165,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	placement := rt.placementResolver(r.Context())
+	owners := rt.loadStackOwners(r.Context())
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
@@ -179,6 +180,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 			appResource:     resource,
 			Status:          summarizeAppConditions(conditions),
 			EnvironmentName: envNames[s.EnvironmentID],
+			ManagedByStack:  owners.of("App", "App/"+s.Name),
 		}
 		if sl, ok := sleepRows[s.Name]; ok {
 			item.Sleep = &sl

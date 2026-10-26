@@ -208,7 +208,7 @@ var media1Templates = []Template{
       - navidrome_data:/data
       - navidrome_music:/music
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:4533/ping"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:4533/ping || wget -q -O /dev/null http://127.0.0.1:4533/ping || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

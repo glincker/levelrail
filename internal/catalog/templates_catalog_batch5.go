@@ -11,7 +11,7 @@ var catalogBatch5Templates = []Template{
 	{
 		ID:                     "elasticsearch",
 		Name:                   "Elasticsearch",
-		Slogan:                 "A distributed, RESTful search and analytics engine for full-text search and log analytics.",
+		Slogan:                 "A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.",
 		Category:               "Infrastructure",
 		DocumentationURL:       "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html",
 		RecommendedMemoryBytes: 1073741824, // 1Gi
@@ -21,7 +21,7 @@ var catalogBatch5Templates = []Template{
 		Compose: `services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.19.22
-    ports: ["9200:9200"]
+    ports: ["9200"]
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"

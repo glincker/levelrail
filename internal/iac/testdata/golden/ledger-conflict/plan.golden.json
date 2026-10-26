@@ -1,0 +1,92 @@
+{
+  "source": "shop-prod",
+  "changes": [
+    {
+      "kind": "Project",
+      "name": "shop",
+      "action": "noop",
+      "warnings": [
+        "the stack's own project; this apply claims it for stack shop-prod"
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "Tag",
+      "name": "frontend",
+      "action": "error",
+      "reason": "ledger conflict: Tag/frontend already exists and no stack owns it; pass adopt to bring it into stack shop-prod",
+      "file": "docs.yaml",
+      "line": 5
+    },
+    {
+      "kind": "App",
+      "name": "api",
+      "action": "create",
+      "fields": [
+        {
+          "path": "bindAddress",
+          "op": "add",
+          "new": "private"
+        },
+        {
+          "path": "image",
+          "op": "add",
+          "new": "ghcr.io/acme/api:1.0.0"
+        },
+        {
+          "path": "port",
+          "op": "add",
+          "new": "8080"
+        },
+        {
+          "path": "project",
+          "op": "add",
+          "new": "shop"
+        },
+        {
+          "path": "replicas",
+          "op": "add",
+          "new": "1"
+        },
+        {
+          "path": "strategy",
+          "op": "add",
+          "new": "blue-green"
+        },
+        {
+          "path": "tags[managed-by:shop-prod]",
+          "op": "add",
+          "new": "managed-by:shop-prod"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 33
+    },
+    {
+      "kind": "App",
+      "name": "web",
+      "action": "error",
+      "reason": "ledger conflict: App/web is owned by stack shop-staging; change it there or release it first",
+      "file": "docs.yaml",
+      "line": 9
+    },
+    {
+      "kind": "Pipeline",
+      "name": "ci",
+      "scope": "web",
+      "action": "error",
+      "reason": "ledger conflict: app web is owned by stack shop-staging; a Pipeline on it belongs in that stack",
+      "file": "docs.yaml",
+      "line": 20
+    }
+  ],
+  "summary": {
+    "create": 1,
+    "update": 0,
+    "delete": 0,
+    "noop": 1,
+    "error": 3
+  },
+  "hash": "a868b220c49c59ce"
+}

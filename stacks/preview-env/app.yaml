@@ -1,0 +1,17 @@
+version: 1
+kind: App
+metadata:
+  name: {{name}}
+spec:
+  project: {{name}}
+  service:
+    build:
+      type: image
+      image: {{image}}
+    port: 3000
+    replicas: 1
+    health:
+      readiness: {path: /healthz}
+    env:
+      APP_ENV: preview
+      DATABASE_URL: {from: {database: main, field: url}}

@@ -37,6 +37,24 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
   </Card>
 </CardGroup>
 
+## The order of a cutover
+
+Deploys, restarts and rollbacks follow the same order, and every step waits for the one before it:
+
+1. The new release starts and passes its readiness probe (and the stable window, when one is set).
+2. The route moves to it. Until then the release that was serving keeps every request.
+3. The previous release keeps answering in-flight requests for the drain timeout (`APP_DEPLOY_DRAIN_TIMEOUT`), then stays held for a rollback (`APP_DEPLOY_PREVIOUS_RELEASE_HOLD`) and is stopped after that.
+
+Two orders lose requests, and the ingress tests check both stay out of the cutover path: stopping the serving release before the route has moved, and moving the route to a release that is running but not listening yet. In both cases the ingress retries the dial for `APP_INGRESS_RETRY_WINDOW`, so a client with a shorter timeout sees a failed request.
+
+A rollback to a release that is still held reuses it only when its container is the same one that served before. A rollback that has to start a fresh container goes through the full readiness gate, so traffic stays on the current release until the restored one is ready. That takes the readiness time plus the stable window.
+
+Rollbacks follow the same three steps:
+
+- A held container that was stopped and is started again for the rollback counts as a new process. It passes readiness before it takes traffic, even though the container itself is older than the rollback.
+- When the restored release gets a new container (for example a rollback by digest), a held container that runs the same image serves while the new one warms up.
+- When the rollback lands on a held release that is still running, the release it replaces keeps answering in-flight requests for the drain timeout, as after a deploy.
+
 ## Frequently asked questions
 
 <AccordionGroup>

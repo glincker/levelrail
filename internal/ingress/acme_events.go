@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/caddyserver/caddy/v2"
+	"github.com/caddyserver/caddy/v2/modules/caddyevents"
 )
 
 func init() {
-	caddy.RegisterModule(acmeEventsModule{})
+	caddy.RegisterModule(ACMEEventsApp{})
 }
 
 // ACMEFailure is the last failed certificate attempt for one hostname.
@@ -71,32 +72,45 @@ func (a *ACMEFailures) ClearAll() {
 	clear(a.last)
 }
 
-// EventsApp is Caddy's "events" app, used only to observe certificate events.
-type EventsApp struct {
-	Subscriptions []EventSubscription `json:"subscriptions"`
-}
+// ACMEEventsApp subscribes the failure tracker to certificate events at
+// provision time. Caddy starts apps in random order and the stock events app
+// subscribes inside Start, racing the TLS app's async issuance jobs that read
+// its subscriber map.
+type ACMEEventsApp struct{}
 
-// EventSubscription binds handlers to named events.
-type EventSubscription struct {
-	Events   []string `json:"events"`
-	Handlers []any    `json:"handlers"`
-}
-
-func newACMEEventsApp() *EventsApp {
-	return &EventsApp{Subscriptions: []EventSubscription{{
-		Events:   []string{"cert_failed", "cert_obtained"},
-		Handlers: []any{map[string]string{"handler": "acme_tracker"}},
-	}}}
-}
-
-type acmeEventsModule struct{}
-
-func (acmeEventsModule) CaddyModule() caddy.ModuleInfo {
+// CaddyModule returns the Caddy module information.
+func (ACMEEventsApp) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		ID:  "events.handlers.acme_tracker",
-		New: func() caddy.Module { return new(acmeEventsModule) },
+		ID:  "acme_events",
+		New: func() caddy.Module { return new(ACMEEventsApp) },
 	}
 }
+
+// Provision binds the tracker before any app starts.
+func (ACMEEventsApp) Provision(ctx caddy.Context) error {
+	app, err := ctx.App("events")
+	if err != nil {
+		return fmt.Errorf("ingress: acme events: load events app: %w", err)
+	}
+	events, ok := app.(*caddyevents.App)
+	if !ok {
+		return fmt.Errorf("ingress: acme events: events app is %T", app)
+	}
+	for _, name := range []string{"cert_failed", "cert_obtained"} {
+		if err := events.On(name, acmeEventsModule{}); err != nil {
+			return fmt.Errorf("ingress: acme events: subscribe %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
+// Start implements caddy.App; there is nothing to run.
+func (ACMEEventsApp) Start() error { return nil }
+
+// Stop implements caddy.App.
+func (ACMEEventsApp) Stop() error { return nil }
+
+type acmeEventsModule struct{}
 
 // Handle records certmagic cert_failed events and clears them on cert_obtained.
 func (acmeEventsModule) Handle(_ context.Context, ev caddy.Event) error {

@@ -82,8 +82,9 @@ func printAuthCode(w io.Writer, prog string, out authCodeOutput) {
 func signInApproveHelp(prog string) string {
 	return fmt.Sprintf(`Revealing a code or approving a browser needs a token that belongs to your
 user and holds signin:approve. No device login token, root token or
-write:sensitive token carries it. Mint one while signed in with your
-password, or use the dashboard instead:
+write:sensitive token carries it. Approving or denying a waiting browser
+also accepts your own unscoped root token (type the number it shows).
+Mint an approver while signed in with your password, or use the dashboard:
   %s tokens create --name approver --abilities signin:approve --expires-in-days 30
 `, prog)
 }

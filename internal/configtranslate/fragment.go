@@ -3,7 +3,6 @@ package configtranslate
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -123,8 +122,9 @@ func (e Env) node() (*yaml.Node, error) {
 	return &n, nil
 }
 
-// merge adds other into f, keeping f's entry on a name clash.
-func (f *Fragment) merge(other Fragment, o options) []Finding {
+// merge adds other into f. A service name clash keeps both: the incoming
+// service gets a deterministic "-vercel" suffix so its cron jobs stay with it.
+func (f *Fragment) merge(other Fragment) []Finding {
 	var fs []Finding
 	if f.Services == nil && len(other.Services) > 0 {
 		f.Services = map[string]Service{}
@@ -133,22 +133,18 @@ func (f *Fragment) merge(other Fragment, o options) []Finding {
 		f.Databases = map[string]Database{}
 	}
 	for _, k := range sortedKeys(other.Services) {
-		if kept, dup := f.Services[k]; dup {
-			moved, lost := mergeClash(&kept, other.Services[k], o.nodePort)
-			f.Services[k] = kept
-			msg := "both Heroku and Vercel config define this service, the Heroku service is kept"
-			if len(moved) > 0 {
-				msg += " and the Vercel cron jobs (" + strings.Join(moved, ", ") + ") are attached to it"
-			}
-			if len(lost) > 0 {
-				msg += "; not carried over from Vercel: " + strings.Join(lost, ", ")
+		name := k
+		if _, dup := f.Services[k]; dup {
+			name = uniqueServiceName(f.Services, other.Services, k+"-vercel")
+			msg := fmt.Sprintf("both Heroku and Vercel config define this service, both are kept: the Heroku one as %q and the Vercel one as %q", k, name)
+			if n := len(other.Services[k].Jobs); n > 0 {
+				msg += fmt.Sprintf("; its %d cron job(s) stay on %q", n, name)
 			}
 			fs = append(fs, Finding{Code: "merge.service-clash", Severity: SeverityWarn, Source: "vercel.json", Subject: k,
 				Message: msg,
-				Fix:     "Check the merged service, the Vercel cron commands assume the Heroku service image has curl and listens on the same port."})
-			continue
+				Fix:     "Decide which service you still need. Both are emitted so nothing is silently dropped."})
 		}
-		f.Services[k] = other.Services[k]
+		f.Services[name] = other.Services[k]
 	}
 	for _, k := range sortedKeys(other.Databases) {
 		if _, dup := f.Databases[k]; !dup {
@@ -158,6 +154,23 @@ func (f *Fragment) merge(other Fragment, o options) []Finding {
 	return fs
 }
 
+// uniqueServiceName appends -2, -3 and so on until the name is free in both sets.
+func uniqueServiceName(have, incoming map[string]Service, base string) string {
+	taken := func(n string) bool {
+		_, a := have[n]
+		_, b := incoming[n]
+		return a || b
+	}
+	if !taken(base) {
+		return base
+	}
+	for i := 2; ; i++ {
+		if n := fmt.Sprintf("%s-%d", base, i); !taken(n) {
+			return n
+		}
+	}
+}
+
 func sortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
@@ -165,39 +178,4 @@ func sortedKeys[V any](m map[string]V) []string {
 	}
 	sort.Strings(keys)
 	return keys
-}
-
-// mergeClash attaches the other service's jobs to kept (by name, kept wins)
-// and reports the job names moved and the settings that could not be merged.
-func mergeClash(kept *Service, other Service, fromPort int) (moved, lost []string) {
-	have := map[string]bool{}
-	for _, j := range kept.Jobs {
-		have[j.Name] = true
-	}
-	for _, j := range other.Jobs {
-		if have[j.Name] {
-			continue
-		}
-		// The cron curl targets the Vercel port, point it at the kept service's port.
-		if kept.Port > 0 {
-			from, to := fmt.Sprintf("127.0.0.1:%d/", fromPort), fmt.Sprintf("127.0.0.1:%d/", kept.Port)
-			cmd := make([]string, len(j.Command))
-			for i, a := range j.Command {
-				cmd[i] = strings.Replace(a, from, to, 1)
-			}
-			j.Command = cmd
-		}
-		kept.Jobs = append(kept.Jobs, j)
-		moved = append(moved, j.Name)
-	}
-	if len(other.Routes) > 0 {
-		lost = append(lost, "routes")
-	}
-	if len(other.Headers) > 0 {
-		lost = append(lost, "headers")
-	}
-	if other.Static != nil {
-		lost = append(lost, "static options")
-	}
-	return moved, lost
 }

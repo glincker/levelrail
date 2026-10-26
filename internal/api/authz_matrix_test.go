@@ -81,6 +81,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/webhooks/functions/{name}":         "authenticated by the HMAC of timestamp and body with the function's own webhook secret, inside a replay window, rate limited per IP and function",
 	"POST /api/v1/hooks/pipeline/{id}/{token}":       "authenticated by the per-pipeline secret URL token (sha256 compared in constant time, uniform 404 on any mismatch), optionally plus a body HMAC, rate limited",
 	"POST /api/v1/ci/oidc-exchange":                  "authenticated by a CI provider OIDC identity token (signature, issuer, audience and expiry verified) that must match a per-app trust, rate limited",
+	"POST /api/v1/ci/stack-oidc-exchange":            "authenticated by a CI provider OIDC identity token (signature, issuer, audience and expiry verified) that must match a per-stack trust, rate limited, mints a token confined to that stack",
 	"POST /api/v1/hooks/deploy/{id}/{token}":         "authenticated by the per-hook secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
@@ -117,6 +118,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/models/preflight":                              "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
 	"POST /api/v1/models/fit":                                    "estimates VRAM fit from submitted specs and node facts, persists nothing",
 	"POST /api/v1/apply/plan":                                    "computes a plan from live reads, persists nothing",
+	"POST /api/v1/stacks/{name}/plan":                            "computes a stack plan from live reads, persists nothing",
 	"POST /api/v1/prometheus/read":                               "Prometheus remote read is a POST but only queries, gated by AbilityRead",
 	"POST /api/v1/iam/resources/match":                           "counts what resource patterns select, persists nothing",
 	"POST /api/v1/iam/policies/validate":                         "validates a submitted policy document, persists nothing",
@@ -170,10 +172,13 @@ func loadMatrixRoutes(t *testing.T) []matrixRoute {
 // concretePath fills a route pattern's path parameters. The resource
 // name segment for /apps, /databases and /models becomes name so a
 // resource-scoped Deny can target it.
-func concretePath(pattern, name string) string {
+func concretePath(pattern, name string) string { return concretePathFor(pattern, "{name}", name) }
+
+// concretePathFor is concretePath for a resource addressed by a different first path parameter, such as {id}.
+func concretePathFor(pattern, param, name string) string {
 	first := true
 	return matrixParamRe.ReplaceAllStringFunc(pattern, func(p string) string {
-		if p == "{name}" && first {
+		if p == param && first {
 			first = false
 			return name
 		}
@@ -281,10 +286,12 @@ var resourceKinds = []struct {
 	pathPrefix string
 	iamPrefix  string
 	label      string
+	param      string
 }{
-	{"/api/v1/apps/{name}", "app:", "app"},
-	{"/api/v1/databases/{name}", "database:", "database"},
-	{"/api/v1/models/{name}", "model:", "model"},
+	{"/api/v1/apps/{name}", "app:", "app", "{name}"},
+	{"/api/v1/databases/{name}", "database:", "database", "{name}"},
+	{"/api/v1/models/{name}", "model:", "model", "{name}"},
+	{"/api/v1/assets/buckets/{id}", "asset_bucket:", "asset_bucket", "{id}"},
 }
 
 func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
@@ -312,7 +319,7 @@ func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
 					continue
 				}
 				checked++
-				victim := concretePath(r.pattern, "victim")
+				victim := concretePathFor(r.pattern, k.param, "victim")
 				for name, mutate := range map[string]func(*http.Request){
 					"session": func(req *http.Request) { req.AddCookie(cookie) },
 					"token":   bearer(tokPlain),

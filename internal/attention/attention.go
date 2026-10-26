@@ -101,6 +101,7 @@ const (
 	KindGitHostUnreachable      = "git_host_unreachable"
 	KindFirewallAttackSuggested = "firewall_attack_suggested"
 	KindNodeCapacity            = "node_capacity"
+	KindStackDrift              = "stack_drift"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

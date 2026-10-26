@@ -92,5 +92,24 @@
   "count": "{{deploys}} deploys across {{apps}} apps",
   "banner": {
     "description": "A timeline of every deploy per app, with failures and rollbacks marked. Deploy an app and its lane appears here."
+  },
+  "appHistory": {
+    "title": "History",
+    "managedBy": "Managed by stack {{stack}}",
+    "kind": {
+      "deploy": "Deploy",
+      "rollback": "Rollback",
+      "restart": "Restart"
+    },
+    "status": {
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "held": "Held",
+      "superseded": "Superseded",
+      "queued": "Queued",
+      "canceled": "Canceled",
+      "pending": "Pending"
+    }
   }
 }

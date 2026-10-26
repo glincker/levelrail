@@ -38,6 +38,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"myCredentialsResponse.Tokens":                      "token metadata list (tokenResource carries no secret)",
 	"suggestionsResponse.Tokens":                        "token ids, names and ability lists only, no token value or hash",
 	"userResource.MustChangePassword":                   "bool flag",
+	"stackExchangeResponse.Token":                       "the minted stack credential, returned once to the authenticated OIDC exchanger",
 	"ciExchangeResponse.Token":                          "the minted credential, returned to its requester by design",
 	"cliPairResponse.Token":                             "minted credential returned once to the CLI that redeemed a single-use pairing code",
 	"createNodeJoinTokenResponse.Token":                 "show-once join token at creation",

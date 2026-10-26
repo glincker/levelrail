@@ -8,6 +8,7 @@ import {
   BugIcon,
   ClockCountdownIcon,
   CloudArrowUpIcon,
+  ImagesSquareIcon,
   CloudIcon,
   CpuIcon,
   DatabaseIcon,
@@ -72,6 +73,7 @@ export type GlobalTo =
   | '/projects'
   | '/databases'
   | '/backups'
+  | '/assets'
   | '/nodes'
   | '/resource-advisor'
   | '/usage'
@@ -216,6 +218,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Backups',
         to: '/backups',
         icon: <CloudArrowUpIcon />,
+      },
+      {
+        id: 'assets',
+        label: 'Assets',
+        to: '/assets',
+        icon: <ImagesSquareIcon />,
       },
       {
         id: 'network-shares',

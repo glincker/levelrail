@@ -27,7 +27,15 @@ type StorageBucket struct {
 	LifecycleDays int
 	LastSweptAt   string
 	CreatedAt     string
+	// Purpose is StorageBucketPurposeApp or StorageBucketPurposeAssets.
+	Purpose string
 }
+
+// Storage bucket purposes: app buckets bind to apps, asset buckets serve files (ADR 044).
+const (
+	StorageBucketPurposeApp    = "app"
+	StorageBucketPurposeAssets = "assets"
+)
 
 // StorageBucketBinding links a bucket to an app and names the env var prefix it is injected under.
 type StorageBucketBinding struct {
@@ -36,7 +44,7 @@ type StorageBucketBinding struct {
 	EnvPrefix string
 }
 
-const storageBucketCols = `id, name, target_id, prefix, public, quota_bytes, lifecycle_days, last_swept_at, created_at`
+const storageBucketCols = `id, name, target_id, prefix, public, quota_bytes, lifecycle_days, last_swept_at, created_at, purpose`
 
 func isStorageBucketConflict(err error) bool {
 	return strings.Contains(err.Error(), "UNIQUE constraint failed")
@@ -45,7 +53,7 @@ func isStorageBucketConflict(err error) bool {
 func scanStorageBucket(sc rowScanner) (StorageBucket, error) {
 	var b StorageBucket
 	var public int
-	err := sc.Scan(&b.ID, &b.Name, &b.TargetID, &b.Prefix, &public, &b.QuotaBytes, &b.LifecycleDays, &b.LastSweptAt, &b.CreatedAt)
+	err := sc.Scan(&b.ID, &b.Name, &b.TargetID, &b.Prefix, &public, &b.QuotaBytes, &b.LifecycleDays, &b.LastSweptAt, &b.CreatedAt, &b.Purpose)
 	b.Public = public != 0
 	return b, err
 }
@@ -53,9 +61,12 @@ func scanStorageBucket(sc rowScanner) (StorageBucket, error) {
 // CreateStorageBucket inserts b, stamping CreatedAt.
 func (db *DB) CreateStorageBucket(ctx context.Context, b StorageBucket) (StorageBucket, error) {
 	b.CreatedAt = time.Now().UTC().Format(time.RFC3339)
+	if b.Purpose == "" {
+		b.Purpose = StorageBucketPurposeApp
+	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO storage_buckets (`+storageBucketCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, b.ID, b.Name, b.TargetID, b.Prefix, boolInt(b.Public), b.QuotaBytes, b.LifecycleDays, b.LastSweptAt, b.CreatedAt)
+		INSERT INTO storage_buckets (`+storageBucketCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, b.ID, b.Name, b.TargetID, b.Prefix, boolInt(b.Public), b.QuotaBytes, b.LifecycleDays, b.LastSweptAt, b.CreatedAt, b.Purpose)
 	if err != nil {
 		if isStorageBucketConflict(err) {
 			return StorageBucket{}, ErrStorageBucketExists
@@ -79,7 +90,22 @@ func (db *DB) GetStorageBucket(ctx context.Context, id string) (StorageBucket, e
 
 // ListStorageBuckets returns every bucket by name.
 func (db *DB) ListStorageBuckets(ctx context.Context) ([]StorageBucket, error) {
-	rows, err := db.QueryContext(ctx, `SELECT `+storageBucketCols+` FROM storage_buckets ORDER BY name`)
+	return db.listStorageBuckets(ctx, "")
+}
+
+// ListStorageBucketsByPurpose returns the buckets with one purpose by name.
+func (db *DB) ListStorageBucketsByPurpose(ctx context.Context, purpose string) ([]StorageBucket, error) {
+	return db.listStorageBuckets(ctx, purpose)
+}
+
+func (db *DB) listStorageBuckets(ctx context.Context, purpose string) ([]StorageBucket, error) {
+	q := `SELECT ` + storageBucketCols + ` FROM storage_buckets`
+	var args []any
+	if purpose != "" {
+		q += ` WHERE purpose = ?`
+		args = append(args, purpose)
+	}
+	rows, err := db.QueryContext(ctx, q+` ORDER BY name`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list storage buckets: %w", err)
 	}
@@ -156,7 +182,7 @@ func (db *DB) UnbindStorageBucket(ctx context.Context, bucketID, appName string)
 
 // ListStorageBucketBindings returns bindings for one app, or for every app when appName is empty.
 func (db *DB) ListStorageBucketBindings(ctx context.Context, appName string) ([]StorageBucketBinding, error) {
-	q := `SELECT b.id, b.name, b.target_id, b.prefix, b.public, b.quota_bytes, b.lifecycle_days, b.last_swept_at, b.created_at, l.app_name, l.env_prefix
+	q := `SELECT b.id, b.name, b.target_id, b.prefix, b.public, b.quota_bytes, b.lifecycle_days, b.last_swept_at, b.created_at, b.purpose, l.app_name, l.env_prefix
 		FROM storage_bucket_bindings l JOIN storage_buckets b ON b.id = l.bucket_id`
 	var args []any
 	if appName != "" {
@@ -173,7 +199,7 @@ func (db *DB) ListStorageBucketBindings(ctx context.Context, appName string) ([]
 		var l StorageBucketBinding
 		var public int
 		b := &l.Bucket
-		if err := rows.Scan(&b.ID, &b.Name, &b.TargetID, &b.Prefix, &public, &b.QuotaBytes, &b.LifecycleDays, &b.LastSweptAt, &b.CreatedAt, &l.AppName, &l.EnvPrefix); err != nil {
+		if err := rows.Scan(&b.ID, &b.Name, &b.TargetID, &b.Prefix, &public, &b.QuotaBytes, &b.LifecycleDays, &b.LastSweptAt, &b.CreatedAt, &b.Purpose, &l.AppName, &l.EnvPrefix); err != nil {
 			return nil, fmt.Errorf("store: scan storage bucket binding: %w", err)
 		}
 		b.Public = public != 0

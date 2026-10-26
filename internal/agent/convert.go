@@ -120,7 +120,34 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		NetworkName:  networkName(s.Network),
 		NetworkAlias: networkAlias(s.Network),
 		Entrypoint:   s.Entrypoint,
+		UsernsMode:   s.UsernsMode,
+		SecurityOpt:  s.SecurityOpt,
+		Devices:      s.Devices,
+		User:         s.User,
+		BindMounts:   bindMountsToPB(s.BindMounts),
 	}
+}
+
+func bindMountsToPB(bs []docker.BindMount) []*agentpb.BindMount {
+	if len(bs) == 0 {
+		return nil
+	}
+	out := make([]*agentpb.BindMount, len(bs))
+	for i, b := range bs {
+		out[i] = &agentpb.BindMount{HostPath: b.HostPath, ContainerPath: b.ContainerPath, ReadOnly: b.ReadOnly}
+	}
+	return out
+}
+
+func bindMountsFromPB(bs []*agentpb.BindMount) []docker.BindMount {
+	if len(bs) == 0 {
+		return nil
+	}
+	out := make([]docker.BindMount, len(bs))
+	for i, b := range bs {
+		out[i] = docker.BindMount{HostPath: b.GetHostPath(), ContainerPath: b.GetContainerPath(), ReadOnly: b.GetReadOnly()}
+	}
+	return out
 }
 
 func networkName(n *docker.NetworkAttachment) string {
@@ -179,6 +206,11 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		Labels:       s.Labels,
 		Network:      networkFromPB(s.NetworkName, s.NetworkAlias),
 		Entrypoint:   s.Entrypoint,
+		UsernsMode:   s.UsernsMode,
+		SecurityOpt:  s.SecurityOpt,
+		Devices:      s.Devices,
+		User:         s.User,
+		BindMounts:   bindMountsFromPB(s.BindMounts),
 	}
 }
 

@@ -15,17 +15,39 @@ type tokenScopeRequest struct {
 	TeamID    string `json:"team_id,omitempty"`
 	ProjectID string `json:"project_id,omitempty"`
 	TeamRole  string `json:"team_role,omitempty"`
+	// Stack binds the token to one stack by name; StackVerbs are plan and/or
+	// apply and default to plan.
+	Stack      string   `json:"stack,omitempty"`
+	StackVerbs []string `json:"stack_verbs,omitempty"`
 }
 
 type tokenScopeResource struct {
-	TeamID    string `json:"team_id"`
-	ProjectID string `json:"project_id,omitempty"`
-	TeamRole  string `json:"team_role"`
+	TeamID     string   `json:"team_id"`
+	ProjectID  string   `json:"project_id,omitempty"`
+	TeamRole   string   `json:"team_role"`
+	StackID    string   `json:"stack_id,omitempty"`
+	StackVerbs []string `json:"stack_verbs,omitempty"`
 }
 
 // resolveTokenScope validates a requested token scope for the minting user.
 // It returns nil for an unscoped token, and false after writing an error.
 func (rt *Router) resolveTokenScope(w http.ResponseWriter, r *http.Request, req createTokenRequest) (*store.APITokenScope, bool) {
+	stack, ok := rt.resolveTokenStackScope(w, r, req)
+	if !ok {
+		return nil, false
+	}
+	scope, ok := rt.resolveTokenTeamScope(w, r, req)
+	if !ok || stack == nil {
+		return scope, ok
+	}
+	if scope == nil {
+		scope = &store.APITokenScope{}
+	}
+	scope.Stack = stack
+	return scope, true
+}
+
+func (rt *Router) resolveTokenTeamScope(w http.ResponseWriter, r *http.Request, req createTokenRequest) (*store.APITokenScope, bool) {
 	if req.TeamID == "" {
 		if req.ProjectID != "" || req.TeamRole != "" {
 			writeError(w, http.StatusBadRequest, "team_id is required with project_id or team_role")
@@ -83,13 +105,7 @@ func (rt *Router) saveTokenScope(w http.ResponseWriter, r *http.Request, tokenID
 		return true
 	}
 	scope.TokenID = tokenID
-	db := rt.teamAdmin()
-	var err error
-	if db == nil {
-		err = errors.New("store lacks token scopes")
-	} else {
-		err = db.SetAPITokenScope(r.Context(), *scope)
-	}
+	err := rt.storeTokenScope(r.Context(), scope)
 	if err == nil {
 		return true
 	}
@@ -103,16 +119,45 @@ func (rt *Router) saveTokenScope(w http.ResponseWriter, r *http.Request, tokenID
 	return false
 }
 
+// storeTokenScope writes the stack scope first, so a failure there leaves
+// no half-scoped token behind once the caller revokes it.
+func (rt *Router) storeTokenScope(ctx context.Context, scope *store.APITokenScope) error {
+	if scope.Stack != nil {
+		ss := rt.tokenStackScopes()
+		if ss == nil {
+			return errors.New("store lacks token stack scopes")
+		}
+		scope.Stack.TokenID = scope.TokenID
+		if err := ss.SetAPITokenStackScope(ctx, *scope.Stack); err != nil {
+			return err
+		}
+	}
+	if scope.TeamID == "" {
+		return nil
+	}
+	db := rt.teamAdmin()
+	if db == nil {
+		return errors.New("store lacks token scopes")
+	}
+	return db.SetAPITokenScope(ctx, *scope)
+}
+
 // tokenScopeOf loads a token's scope for listing; failures read as unscoped
 // only for display, never for authorization.
 func (rt *Router) tokenScopeOf(ctx context.Context, tokenID string) *tokenScopeResource {
-	db := rt.teamDB()
-	if db == nil {
-		return nil
+	var out *tokenScopeResource
+	if db := rt.teamDB(); db != nil {
+		if s, err := db.GetAPITokenScope(ctx, tokenID); err == nil && s != nil {
+			out = &tokenScopeResource{TeamID: s.TeamID, ProjectID: s.ProjectID, TeamRole: s.Role}
+		}
 	}
-	s, err := db.GetAPITokenScope(ctx, tokenID)
-	if err != nil || s == nil {
-		return nil
+	if ss := rt.tokenStackScopes(); ss != nil {
+		if s, err := ss.GetAPITokenStackScope(ctx, tokenID); err == nil && s != nil {
+			if out == nil {
+				out = &tokenScopeResource{}
+			}
+			out.StackID, out.StackVerbs = s.StackID, s.Verbs
+		}
 	}
-	return &tokenScopeResource{TeamID: s.TeamID, ProjectID: s.ProjectID, TeamRole: s.Role}
+	return out
 }

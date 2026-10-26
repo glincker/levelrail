@@ -1,0 +1,49 @@
+{
+  "changes": [
+    {
+      "kind": "Project",
+      "name": "shop",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "App",
+      "name": "web",
+      "action": "update",
+      "fields": [
+        {
+          "path": "env.LOG_LEVEL",
+          "op": "change",
+          "old": "(hidden)",
+          "new": "(hidden)"
+        },
+        {
+          "path": "secretEnv[DB_PASSWORD]",
+          "op": "add",
+          "new": "DB_PASSWORD"
+        },
+        {
+          "path": "secrets.API_KEY",
+          "op": "change",
+          "new": "(hidden)"
+        },
+        {
+          "path": "secrets.DB_PASSWORD",
+          "op": "change",
+          "new": "(hidden)"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 5
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 1,
+    "delete": 0,
+    "noop": 1,
+    "error": 0
+  },
+  "hash": "967d3fbfc93a5414"
+}

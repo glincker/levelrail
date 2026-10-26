@@ -1957,6 +1957,42 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
 | POST | /api/v1/imports/platform/databases/{name}/hosted/preflight | AbilityWriteSensitive | handleHostedPreflight |
 | POST | /api/v1/imports/platform/databases/{name}/hosted/run | AbilityWriteSensitive | handleHostedRun |
+| GET | /api/v1/stacks | AbilityRead | handleListStacks |
+| POST | /api/v1/stacks | AbilityWrite | handleCreateStack |
+| GET | /api/v1/stacks/{name} | AbilityRead | handleGetStack |
+| PATCH | /api/v1/stacks/{name} | AbilityRoot | handleUpdateStackSettings |
+| DELETE | /api/v1/stacks/{name} | AbilityWrite | handleDeleteStack |
+| POST | /api/v1/stacks/{name}/plan | AbilityRead | handleStackPlan |
+| POST | /api/v1/stacks/{name}/apply | AbilityWrite | handleStackApply |
+| GET | /api/v1/stacks/{name}/revisions | AbilityRead | handleStackRevisions |
+| GET | /api/v1/stacks/{name}/revisions/{n} | AbilityRead | handleStackRevision |
+| GET | /api/v1/stacks/{name}/revisions/{n}/diff | AbilityRead | handleStackDiff |
+| POST | /api/v1/stacks/{name}/revisions/{n}/rollback | AbilityWrite | handleStackRollback |
+| PUT | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackPin |
+| DELETE | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackUnpin |
+| POST | /api/v1/stacks/{name}/unlock | AbilityRoot | handleStackUnlock |
+| POST | /api/v1/stacks/{name}/revisions/{n}/approve | AbilityRoot | handleStackApprove |
+| POST | /api/v1/stacks/{name}/revisions/{n}/reject | AbilityRoot | handleStackReject |
+| POST | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleCreateStackTrust |
+| GET | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleListStackTrusts |
+| DELETE | /api/v1/stacks/{name}/oidc-trusts/{id} | AbilityRoot | handleDeleteStackTrust |
+| POST | /api/v1/ci/stack-oidc-exchange | Public | handleStackOIDCExchange |
+| GET | /api/v1/assets/buckets | AbilityRead | handleListAssetBuckets |
+| POST | /api/v1/assets/buckets | AbilityWriteSensitive | handleCreateAssetBucket |
+| GET | /api/v1/assets/buckets/{id} | AbilityRead | handleGetAssetBucket |
+| PATCH | /api/v1/assets/buckets/{id} | AbilityWriteSensitive | handleUpdateAssetBucket |
+| DELETE | /api/v1/assets/buckets/{id} | AbilityWriteSensitive | handleDeleteAssetBucket |
+| POST | /api/v1/assets/buckets/{id}/probe | AbilityWriteSensitive | handleProbeAssetBucket |
+| GET | /api/v1/assets/buckets/{id}/usage | AbilityRead | handleAssetUsage |
+| GET | /api/v1/assets/buckets/{id}/assets | AbilityReadSensitive | handleListAssets |
+| GET | /api/v1/assets/buckets/{id}/urls | AbilityReadSensitive | handleAssetURLs |
+| POST | /api/v1/assets/buckets/{id}/uploads | AbilityWrite | handleRequestAssetUpload |
+| POST | /api/v1/assets/buckets/{id}/uploads/confirm | AbilityWrite | handleConfirmAssetUpload |
+| PUT | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleUploadAsset |
+| DELETE | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleDeleteAsset |
+| GET | /api/v1/stack-templates | AbilityRead | handleListStackTemplates |
+| GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
+| POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
 
 ## See also
 

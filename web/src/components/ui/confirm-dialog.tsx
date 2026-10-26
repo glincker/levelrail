@@ -27,6 +27,8 @@ export interface ConfirmDialogProps {
   /** The user must type this exact value before the confirm button enables. */
   requireTyped?: string
   pending?: boolean
+  /** Blocks confirm for a reason the caller already explains in the body. */
+  confirmDisabled?: boolean
   error?: string | null
   onConfirm: () => void
   /** Extra controls rendered under the consequences, above the typed field. */
@@ -45,6 +47,7 @@ export function ConfirmDialog({
   tone = 'default',
   requireTyped,
   pending = false,
+  confirmDisabled = false,
   error,
   onConfirm,
   children,
@@ -117,7 +120,7 @@ export function ConfirmDialog({
             type="button"
             variant={tone === 'destructive' ? 'destructive' : 'default'}
             writeAction
-            disabled={pending || !matches}
+            disabled={pending || !matches || confirmDisabled}
             onClick={onConfirm}
           >
             {pending && pendingLabel ? pendingLabel : confirmLabel}

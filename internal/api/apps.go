@@ -142,6 +142,9 @@ type appResource struct {
 	// when NodeID points at a node that no longer exists.
 	NodeName    string `json:"node_name,omitempty"`
 	NodeIsLocal bool   `json:"node_is_local,omitempty"`
+	// NodeOffline is response-only: true while the hosting node is offline, so
+	// clients need not join against the nodes list.
+	NodeOffline bool `json:"node_offline,omitempty"`
 	// AutoPlaced is response-only, set only by handleCreateApp: true when
 	// node_id was omitted from the create request and simple spread
 	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
@@ -744,6 +747,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 	notes := rt.templateNotesFor(r.Context(), *svc)
 	writeJSON(w, http.StatusOK, appWithRequests{
 		appResource:              resource,
+		ManagedByStack:           rt.loadStackOwners(r.Context()).of("App", "App/"+name),
 		PendingImage:             pendingImage,
 		Requests:                 rt.requestSummaryFor(r, name),
 		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
@@ -772,7 +776,8 @@ func (rt *Router) previousReleaseHeldUntil(ctx context.Context, name string) *ti
 // ingress request summary (rate, error rate, p95), omitted without telemetry.
 type appWithRequests struct {
 	appResource
-	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
+	ManagedByStack string                    `json:"managed_by_stack,omitempty"`
+	Requests       *telemetry.RequestSummary `json:"requests,omitempty"`
 	// PendingImage is the desired image while a rollout to it is in progress
 	// or failed, with Image then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`
@@ -1160,6 +1165,10 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		rt.internalError(w, "api: stop app failed", err, slog.String("name", name))
 		return
+	}
+	// A stop on a reachable node needs no row; a queued one does, so history matches intent.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil && rt.offlineNodeFor(r.Context(), *svc) != nil {
+		rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStop)
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSuspend, Title: "Stopped"})

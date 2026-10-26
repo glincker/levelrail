@@ -1,0 +1,8 @@
+{
+  "tags": {"t1": {"id": "t1", "name": "managed-by:shop-prod"}},
+  "apps": {
+    "a1": {"name": "a1", "image": "ghcr.io/acme/a1:1", "port": 80, "bind_address": "private", "strategy": "blue-green", "replicas": 1, "tags": ["managed-by:shop-prod"], "env_dirty": false},
+    "a2": {"name": "a2", "image": "ghcr.io/acme/x:1", "port": 80, "bind_address": "private", "strategy": "blue-green", "replicas": 1, "tags": ["managed-by:shop-prod"], "env_dirty": false},
+    "a3": {"name": "a3", "image": "ghcr.io/acme/x:1", "port": 80, "bind_address": "private", "strategy": "blue-green", "replicas": 1, "tags": ["managed-by:shop-prod"], "env_dirty": false}
+  }
+}

@@ -155,6 +155,7 @@ type Router struct {
 	databases              DatabaseStore
 	auth                   AuthStore
 	tokens                 TokenStore
+	stackDrift             stackDriftToken
 	nodes                  NodeStore
 	doctorLookupHost       func(ctx context.Context, host string) ([]string, error) // nil uses the system resolver
 	agentCAFingerprint     string                                                   // empty: join tokens are returned without a CA pin

@@ -38,11 +38,15 @@ func TestSignInApprove_TokenCannotEscalateToSession(t *testing.T) {
 		name      string
 		abilities []string
 		want      bool
+		// wantApprove differs from want only for root, which may decide a
+		// waiting browser for the setup admin inside the first-login window
+		// (see TestRootTokenDecidesOwnApprovals) but never reveal a code.
+		wantApprove bool
 	}{
-		{"write:sensitive token", []string{AbilityWriteSensitive}, false},
-		{"root token", []string{AbilityRoot}, false},
-		{"device login token", authengine.EngineAbilities(), false},
-		{"signin:approve token", []string{AbilitySignInApprove}, true},
+		{"write:sensitive token", []string{AbilityWriteSensitive}, false, false},
+		{"root token, not the setup admin", []string{AbilityRoot}, false, false},
+		{"device login token", authengine.EngineAbilities(), false, false},
+		{"signin:approve token", []string{AbilitySignInApprove}, true, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,8 +72,8 @@ func TestSignInApprove_TokenCannotEscalateToSession(t *testing.T) {
 			req.SetPathValue("id", id)
 			rec = newRecorder()
 			h.rt.handleApproveLoginApproval(rec, req)
-			if got := rec.Code == http.StatusNoContent; got != tt.want {
-				t.Fatalf("approve status = %d (%s), want allowed=%v", rec.Code, rec.Body.String(), tt.want)
+			if got := rec.Code == http.StatusNoContent; got != tt.wantApprove {
+				t.Fatalf("approve status = %d (%s), want allowed=%v", rec.Code, rec.Body.String(), tt.wantApprove)
 			}
 		})
 	}

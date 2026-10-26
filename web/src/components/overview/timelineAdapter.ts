@@ -30,6 +30,7 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   auto_rollback: 'auto rollback',
   restart: 'restart',
   start: 'start',
+  stop: 'stop',
   git_push: 'git push',
   poll: 'poll',
   upload: 'cli upload',

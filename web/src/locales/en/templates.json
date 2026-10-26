@@ -226,5 +226,39 @@
     "searchPlaceholder": "Search templates...",
     "searchLabel": "Search templates",
     "noMatch": "No templates match “{{search}}”."
+  },
+  "install": {
+    "title": "What this installs",
+    "description_one": "One service will be created.",
+    "description_other": "{{count}} services will be created.",
+    "volumes": "Volumes",
+    "env": "Environment variables",
+    "pin": {
+      "digest": "Pinned by digest",
+      "tag": "Version tag",
+      "floating": "Floating tag"
+    },
+    "envKind": {
+      "generated": "generated",
+      "required": "you provide",
+      "optional": "optional"
+    }
+  },
+  "trust": {
+    "digest_one": "{{count}} image pinned by digest",
+    "digest_other": "{{count}} images pinned by digest",
+    "digestHint": "The exact image content is fixed",
+    "tag_one": "{{count}} image on a version tag",
+    "tag_other": "{{count}} images on a version tag",
+    "tagHint": "A version tag can still be re-pushed upstream",
+    "floating_one": "{{count}} image on a floating tag",
+    "floating_other": "{{count}} images on a floating tag",
+    "floatingHint": "The latest tag or no tag: the image can change between deploys"
+  },
+  "stackFile": {
+    "title": "View as stack file",
+    "preview": "Preview of the compose file this template deploys",
+    "download": "Download",
+    "label": "Template compose file"
   }
 }

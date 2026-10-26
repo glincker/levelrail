@@ -37,7 +37,10 @@ fi
 fail=0
 coverage_out="$(mktemp -t levelrail-coverage.XXXXXX)"
 push_log="$(mktemp -t levelrail-push-log.XXXXXX)"
-trap 'rm -f "$coverage_out" "$push_log"' EXIT
+build_log=""
+build_pid=""
+pkg_pid=""
+trap 'rm -f "$coverage_out" "$push_log" "$build_log"' EXIT
 # Captured for reuse as the PR-comment body below.
 exec > >(tee -a "$push_log") 2>&1
 
@@ -87,10 +90,12 @@ push_scope="${LEVELRAIL_PUSH_SCOPE:-fast}"
 # A push with no Go-affecting change (web, docs) cannot break the Go build,
 # and go build ./... costs ~18s on a warm cache.
 if [ "$fail" -eq 0 ] && [ "$scope" != "NONE" ]; then
-	echo "pre-push: go build"
-	if ! go build ./... 2>&1; then
-		fail=1
-	fi
+	# Runs beside the tests (their compiles share the build cache) and is
+	# collected before the verdict, so it no longer adds its own serial 18s.
+	echo "pre-push: go build (running alongside the tests)"
+	build_log="$(mktemp -t levelrail-push-build.XXXXXX)"
+	go build ./... >"$build_log" 2>&1 &
+	build_pid=$!
 fi
 
 # internal/api shard count for the fast and affected lanes: min(4, cores) unless
@@ -127,10 +132,11 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	done
 	if [ -n "$fast_pkgs" ]; then
 		echo "pre-push: go test -short (fast lane):$fast_pkgs"
+		# Background so the internal/api shards below overlap with it.
+		pkg_log="$(mktemp -t levelrail-push-pkgs.XXXXXX)"
 		# shellcheck disable=SC2086
-		if ! go test $fast_pkgs -short -timeout "$go_test_timeout" 2>&1; then
-			fail=1
-		fi
+		go test $fast_pkgs -short -timeout "$go_test_timeout" >"$pkg_log" 2>&1 &
+		pkg_pid=$!
 	fi
 	api_tests="$(printf '%s\n' "$changed_files" | grep '^internal/api/.*_test\.go$' | while read -r f; do grep -ho '^func Test[A-Za-z0-9_]*' "$f" 2>/dev/null | sed 's/^func //'; done | sort -u | paste -sd'|' -)"
 	# internal/api wasn't itself touched, but it's in the affected set
@@ -158,6 +164,11 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 		if ! TEST_FAST_TIMEOUT="$go_test_timeout" scripts/test-fast.sh -n "$api_shards" -r "^($api_tests)\$" 2>&1; then
 			fail=1
 		fi
+	fi
+	if [ -n "$pkg_pid" ]; then
+		wait "$pkg_pid" || fail=1
+		cat "$pkg_log"
+		rm -f "$pkg_log"
 	fi
 	echo "pre-push: fast lane skips dependents, test/e2e and the coverage gate (CI runs them)"
 elif [ "$fail" -eq 0 ]; then
@@ -195,6 +206,13 @@ elif [ "$fail" -eq 0 ]; then
 		if ! TEST_FAST_TIMEOUT="$go_test_timeout" scripts/test-fast.sh -n "$api_shards" 2>&1; then
 			fail=1
 		fi
+	fi
+fi
+
+if [ -n "$build_pid" ]; then
+	if ! wait "$build_pid"; then
+		cat "$build_log"
+		fail=1
 	fi
 fi
 

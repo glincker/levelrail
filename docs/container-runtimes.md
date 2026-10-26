@@ -63,9 +63,10 @@ Linger keeps the user's services running after logout. Point `APP_CONTAINER_RUNT
 
 - Source builds (Dockerfile and Railpack) need BuildKit, which Podman does not have. A source deploy on Podman fails with the class `build_engine_unsupported`. Deploy a prebuilt image, or run Docker on the build node.
 - Podman answers 404 for the engine's registry digest lookup. Levelrail treats that as "unknown", not "missing", and lets the node pull the image itself, so short names such as `nginx:1.27-alpine` work.
-- App networks are carved from `APP_NETWORK_POOL` (default `10.88.0.0/14`). The block `10.88.0.0/16` is skipped because Podman's default network uses it.
+- App networks are carved from `APP_NETWORK_POOL`. On Docker the default is `10.88.0.0/14`. When Podman is detected the default is `10.200.0.0/14` instead, because netavark hands out `10.88.0.0/16`, `10.89.0.0/24` and onward and would overlap. Set `APP_NETWORK_POOL_PODMAN` to change the Podman default, or `APP_NETWORK_POOL` to override both. Detection uses the socket path, so a Podman engine behind a `docker.sock` path needs `APP_NETWORK_POOL_PODMAN` or `APP_NETWORK_POOL` set by hand.
+- On restart and redeploy the old container is stopped first and then removed through the compat API, so it no longer stays running and published next to the new one. The graceful stop wait is `APP_PODMAN_STOP_TIMEOUT` (default `10s`).
 - Compose `ports` are not published on the host as written. A service port is published on a random loopback port for ingress, so do not rely on the host port you wrote in the compose file. See [Compose apps](/compose-apps).
-- The exposure controller needs the iptables DOCKER-USER chain. On Podman with netavark and nftables that chain is absent, so the controller reports it once and exposure rules are not applied.
+- The exposure controller needs the iptables DOCKER-USER chain. On Podman with netavark and nftables that chain is absent. The check recognises that case (it is not treated as a read failure), stays quiet when no port restrictions are set, and reports once when one is, because the allow-list cannot be applied there. Use firewalld or an nftables rule on the host instead.
 
 ## Verify
 

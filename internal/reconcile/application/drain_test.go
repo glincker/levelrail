@@ -59,3 +59,44 @@ func TestDrain_RollingKeepsOldReplicasUntilCutover(t *testing.T) {
 		}
 	}
 }
+
+// R1-1: a rollback onto the held release that is still running creates no
+// container, but the newer release it replaces must still drain.
+func TestDrain_RollbackOntoRunningReleaseDrainsNewer(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	for _, tt := range []struct {
+		name        string
+		wasServing  bool
+		wantRunning bool
+	}{
+		{"rollback after v2 served", true, true},
+		{"first pass after a restart keeps the hold rule", false, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime(serverPort(t, srv))
+			v1, v2 := ContainerName("web", "img:v1", ""), ContainerName("web", "img:v2", "")
+			rt.seed(v1, true)
+			rt.seed(v2, true)
+			desired := gateDesired()
+			desired.Image = "img:v1"
+			tracker := NewDrainTracker()
+			if tt.wasServing {
+				tracker.moved("web", v2)
+			}
+			rec := &fakeGateRecorder{}
+			opts := append(gateOptions(rec, 1, 0, time.Hour), WithDrainTracker(tracker))
+			c := New("web", &fakeStore{svc: desired}, rt, opts...)
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			cs, _ := rt.InspectByName(context.Background(), v2)
+			if got := cs != nil && cs.Running; got != tt.wantRunning {
+				t.Errorf("v2 running = %v, want %v", got, tt.wantRunning)
+			}
+			if tt.wantRunning && !rec.has(deploysafety.PhaseDrain, deploysafety.StatusStarted) {
+				t.Error("want a drain started gate event for the replaced release")
+			}
+		})
+	}
+}

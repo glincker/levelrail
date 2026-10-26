@@ -104,6 +104,10 @@ message AgentInfo {
   string commit = 2;
   string os = 3;
   string arch = 4;
+  // capabilities lists optional wire features this agent honors, such as
+  // "container_spec_security". An agent that predates a field sends none,
+  // and the control plane refuses specs that need the feature.
+  repeated string capabilities = 5;
 }
 
 message RenewRequest {
@@ -426,6 +430,21 @@ message ContainerSpec {
   string network_name = 15;
   string network_alias = 16;
   repeated string entrypoint = 17;
+  // The fields below are security-relevant: an agent that ignores them would
+  // run the container with a weaker profile, so the control plane sends them
+  // only to agents advertising "container_spec_security".
+  string userns_mode = 18;
+  repeated string security_opt = 19;
+  // devices are "host[:container[:perms]]" device passthrough entries.
+  repeated string devices = 20;
+  string user = 21;
+  repeated BindMount bind_mounts = 22;
+}
+
+message BindMount {
+  string host_path = 1;
+  string container_path = 2;
+  bool read_only = 3;
 }
 
 message GPURequest {

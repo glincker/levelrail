@@ -11,9 +11,10 @@ import {
   useServiceTemplate,
 } from '../../queries/serviceTemplates'
 import { useComposePreview } from '../../queries/composeStack'
-import { TemplateEnvNames } from '../../components/templates/TemplateEnvNames'
 import { TemplateFacts } from '../../components/templates/TemplateFacts'
 import { TemplateRequirementsCard } from '../../components/templates/TemplateRequirementsCard'
+import { TemplateStackFile } from '../../components/templates/TemplateStackFile'
+import { TemplateTrustBadges } from '../../components/templates/TemplateTrustBadges'
 import { TemplateServices } from '../../components/templates/TemplateServices'
 import { TemplateWhatYouGet } from '../../components/templates/TemplateWhatYouGet'
 import { TemplateDeployForm } from '../../components/templates/TemplateDeployForm'
@@ -68,6 +69,7 @@ function TemplateDetailRoute() {
 
   const deploying = deployTemplateNow.pendingId === template.id
   const version = primaryVersion(services)
+  const images = services.flatMap((s) => (s.image ? [s.image] : []))
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -107,6 +109,7 @@ function TemplateDetailRoute() {
                 />
               </>
             ) : null}
+            <TemplateTrustBadges images={images} />
             {template.requires_gpu ? (
               <Badge variant="muted">{t('detail.needsGpu')}</Badge>
             ) : null}
@@ -140,6 +143,13 @@ function TemplateDetailRoute() {
             slug={appSlug(template.id, template.name)}
           />
           <TemplateRequirementsCard requirements={template.requirements} />
+          {preview.isPending ? (
+            <div role="status" aria-label={t('detail.deployed.loading')}>
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : services.length > 0 ? (
+            <TemplateServices services={services} />
+          ) : null}
           {template.manifest ? (
             <TemplateDeployForm manifest={template.manifest} />
           ) : (
@@ -147,13 +157,6 @@ function TemplateDetailRoute() {
               <h2 className="text-base font-semibold">
                 {t('detail.deploy.title')}
               </h2>
-              {preview.isPending ? (
-                <div role="status" aria-label={t('detail.deployed.loading')}>
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : (
-                <TemplateEnvNames services={services} />
-              )}
               <p className="text-sm text-muted-foreground">
                 {template.requires_configuration
                   ? t('detail.deploy.configureHint')
@@ -186,9 +189,10 @@ function TemplateDetailRoute() {
               )}
             </section>
           )}
-          {services.length > 0 ? (
-            <TemplateServices services={services} />
-          ) : null}
+          <TemplateStackFile
+            compose={template.compose}
+            slug={appSlug(template.id, template.name)}
+          />
           <RelatedTemplates id={template.id} category={template.category} />
         </div>
 

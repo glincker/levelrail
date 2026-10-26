@@ -6,58 +6,108 @@ description: Measured pass rate of the one-click template catalog from the local
 
 Measured by the catalog smoke script (scripts/catalog-smoke.sh): each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.
 
-Last run: 2026-10-19. **48 of 50 passed (96%).** Templates that need operator configuration are skipped and listed in the run output, not counted.
+Last run: 2026-10-25. **93 of 100 passed (93%).** Templates that need operator configuration are skipped and listed in the run output, not counted.
 
 | Template | Result | Seconds | Note |
 | --- | --- | --- | --- |
+| `2fauth` | pass | 7 |  |
 | `actual-budget` | pass | 11 |  |
 | `adminer` | pass | 33 |  |
+| `alertmanager` | pass | 11 |  |
+| `apprise-api` | pass | 10 |  |
 | `appsmith` | pass | 65 |  |
 | `authentik` | pass | 63 |  |
+| `bentopdf` | pass | 6 |  |
 | `bookstack` | pass | 23 |  |
+| `bytestash` | pass | 10 |  |
 | `changedetection` | pass | 17 |  |
+| `consul` | pass | 7 |  |
+| `couchdb` | pass | 7 |  |
+| `cyberchef` | fail | 4 | image is amd64 only (exec format error), host limit on arm64 |
+| `dashy` | pass | 11 |  |
 | `directus` | pass | 44 |  |
+| `docker-registry` | pass | 12 |  |
+| `etcd` | pass | 8 |  |
+| `excalidraw` | pass | 33 |  |
 | `filebrowser` | pass | 8 |  |
 | `firefly-iii` | pass | 28 |  |
+| `flame` | fail | 5 | image is amd64 only (exec format error), host limit on arm64 |
+| `flatnotes` | pass | 9 |  |
 | `forgejo` | pass | 11 |  |
 | `ghost` | pass | 20 |  |
 | `gitea` | pass | 35 |  |
+| `glance` | pass | 31 |  |
+| `goatcounter` | pass | 13 |  |
+| `gotenberg` | pass | 46 |  |
 | `gotify` | pass | 6 |  |
 | `grafana` | pass | 35 |  |
+| `heimdall` | pass | 10 |  |
 | `homepage` | pass | 10 |  |
+| `homer` | pass | 7 |  |
 | `immich` | pass | 47 |  |
+| `influxdb` | pass | 34 |  |
 | `it-tools` | pass | 33 |  |
 | `jellyfin` | pass | 46 |  |
+| `kavita` | pass | 17 |  |
 | `keycloak` | pass | 35 |  |
+| `kopia` | pass | 7 |  |
+| `librespeed` | pass | 13 |  |
 | `linkding` | pass | 16 |  |
 | `listmonk` | pass | 39 |  |
+| `lldap` | pass | 8 |  |
+| `loki` | pass | 1 |  |
+| `mailhog` | fail | 5 | image is amd64 only (exec format error), host limit on arm64 |
+| `mailpit` | pass | 12 |  |
 | `mattermost` | pull_failed | 0 | no linux/arm64 image for the pinned tag (host limit) |
 | `mealie` | pass | 16 |  |
 | `meilisearch` | pass | 33 |  |
+| `memcached` | pass | 12 |  |
 | `memos` | pass | 11 |  |
 | `metabase` | pass | 37 |  |
+| `metube` | pass | 13 |  |
 | `minio` | pass | 37 |  |
+| `mosquitto` | pass | 7 |  |
 | `n8n` | pass | 41 |  |
+| `nats` | pass | 8 |  |
+| `navidrome` | pass | 12 |  |
 | `nextcloud` | pass | 40 |  |
 | `nocodb` | pass | 14 |  |
 | `ntfy` | pass | 32 |  |
 | `open-webui` | pass | 82 |  |
 | `outline` | pass | 47 |  |
+| `pairdrop` | pass | 14 |  |
 | `paperless-ngx` | pass | 19 |  |
 | `penpot` | pass | 52 |  |
 | `pgadmin` | pass | 16 |  |
+| `phpmyadmin` | pass | 18 |  |
 | `plausible` | pass | 41 |  |
+| `pocket-id` | pass | 8 |  |
 | `pocketbase` | pass | 13 |  |
 | `portainer` | pass | 4 |  |
+| `privatebin` | pass | 12 |  |
 | `prometheus` | pass | 34 |  |
+| `rabbitmq` | pass | 12 |  |
+| `readeck` | pass | 17 |  |
+| `redlib` | fail | 33 | upstream OAuth to Reddit returns 401 so the server never listens |
 | `rocketchat` | pass | 43 |  |
 | `searxng` | pass | 34 |  |
+| `shiori` | pass | 1 |  |
+| `silverbullet` | pass | 14 |  |
+| `snapdrop` | pull_failed | 1 | no linux/arm64 image (host limit) |
 | `sonarqube` | pass | 25 |  |
 | `strapi` | pass | 81 |  |
+| `syncthing` | pass | 34 |  |
+| `tautulli` | pass | 10 |  |
+| `triliumnext` | pass | 7 |  |
 | `typesense` | pass | 36 |  |
 | `umami` | pass | 43 |  |
 | `uptime-kuma` | pass | 16 |  |
+| `valkey` | pass | 7 |  |
 | `vaultwarden` | pass | 31 |  |
+| `verdaccio` | pass | 10 |  |
+| `vikunja` | pass | 8 |  |
+| `wakapi` | pass | 17 |  |
+| `wallos` | pass | 9 |  |
 | `woodpecker` | fail | 32 | agent needs a Docker socket backend, left for owner decision |
 | `wordpress` | pass | 13 |  |
 
@@ -67,8 +117,12 @@ Last run: 2026-10-19. **48 of 50 passed (96%).** Templates that need operator co
 | --- | --- | --- |
 | `woodpecker` | The agent needs a container backend, which means mounting the Docker socket into the agent. The template does not mount it, so the agent exits with "can't detect an available backend engine". The server starts and passes its own check. | Left as is: a CI runner with socket access is host-level exec, so adding it needs an explicit owner decision. |
 | `mattermost` | The pinned image publishes no linux/arm64 manifest, so the pull fails on Apple silicon and arm64 VPS nodes. It passes on amd64 hosts. | Harness limit on this arm64 host, not a template bug. |
+| `cyberchef`, `flame`, `mailhog`, `snapdrop` | The pinned images publish only linux/amd64 (`exec format error` on arm64). | Harness limit on this arm64 host, not a template bug. Run the smoke on an amd64 host to confirm. |
+| `redlib` | The server never listens: its startup OAuth handshake with Reddit returns 401 from this network. | Upstream or network block, not a template bug. |
 
 Fixed in the last pass (template, not harness): `gotify`, `vaultwarden`, `pgadmin`, `jellyfin`, `nextcloud`, `open-webui`, `immich` and `penpot` probed with a binary their image does not ship, so each healthcheck now tries `curl` and falls back to `wget` (the platform still turns it into an HTTP probe); `actual-budget` and `authentik` use the image's own health tool; `changedetection` probes with Python; `memos` tries `wget` first; `umami`, `directus` and `outline` start their database first (healthcheck plus `depends_on`); `directus` gained the missing `DB_PORT`; `outline` sets `PGSSLMODE=disable` for its bundled Postgres; `penpot` frontend points at the real `backend` and `exporter` service names. The harness now resolves `SERVICE_FQDN_*` to a full URL like the platform does (it broke `ghost`).
+
+Fixed in the wave N pass: `valkey` interpolated its password from the host shell (blank), so the command and healthcheck now use the generated token directly; `2fauth` had an `APP_KEY` of the wrong length (500 on every request); `wakapi` lacked `WAKAPI_DB_PORT` and waited on a database that was not ready; `kopia` set a `command` that the image entrypoint swallowed, so it now overrides `entrypoint`, and its healthcheck authenticates; `glance` exited without a config file, so it writes a minimal one on first start; `privatebin`, `rabbitmq` and `navidrome` probed with `curl`, which the image lacks, so they fall back to `wget`; `triliumnext` probes with Node. `shiori`, `vikunja` and `loki` ship no shell, so like `portainer` the harness only checks that they stay running.
 
 `portainer` (distroless, no shell), `keycloak` and `typesense` (no curl or wget) cannot run an in-container check under plain `docker compose`. The platform probes them over HTTP from outside, so their templates keep the HTTP healthcheck, and the harness only verifies that they stay running.
 

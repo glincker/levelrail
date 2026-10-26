@@ -167,6 +167,7 @@ var devtools2Templates = []Template{
     environment:
       WAKAPI_DB_TYPE: postgres
       WAKAPI_DB_HOST: db
+      WAKAPI_DB_PORT: 5432
       WAKAPI_DB_NAME: wakapi
       WAKAPI_DB_USER: $SERVICE_USER_DB
       WAKAPI_DB_PASSWORD: $SERVICE_PASSWORD_DB
@@ -174,10 +175,13 @@ var devtools2Templates = []Template{
     volumes:
       - wakapi_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/health"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/health || wget -q -O /dev/null http://127.0.0.1:3000/api/health"]
       interval: 10s
       timeout: 5s
       retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
   db:
     image: postgres:16-alpine
     environment:
@@ -186,6 +190,11 @@ var devtools2Templates = []Template{
       POSTGRES_DB: wakapi
     volumes:
       - wakapi_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d wakapi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 `,
 	},
 	{

@@ -1,0 +1,19 @@
+# An app plus Postgres; the app gets its URL through a database reference.
+# stack-run.sh creates project qa-@SUFFIX@ first (see hello-web.yaml).
+version: 1
+kind: Database
+metadata: { name: qa-db-@SUFFIX@ }
+spec: { engine: postgres, version: "16", project: qa-@SUFFIX@ }
+---
+version: 1
+kind: App
+metadata: { name: qa-appdb-@SUFFIX@ }
+spec:
+  project: qa-@SUFFIX@
+  service:
+    build: { type: image, image: "@IMAGE@" }
+    port: 80
+    health:
+      readiness: { path: /, interval: 2s, timeout: 2s }
+    env:
+      DATABASE_URL: { from: { database: qa-db-@SUFFIX@, field: url } }

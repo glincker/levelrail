@@ -77,6 +77,15 @@ export function hitToItem(hit: SearchHit, ctx: HitItemContext): PaletteItem {
     subtitle: isAction ? hit.app_name : hit.subtitle,
     highlightSpans: hit.title_spans ?? [],
     searchRef: hit.ref,
+    preview: {
+      kind:
+        hit.kind === 'app' || hit.kind === 'template' || hit.kind === 'action'
+          ? hit.kind
+          : 'page',
+      description: hit.subtitle,
+      path: hit.href?.split('?')[0],
+      primaryLabel: hit.kind === 'template' ? t('preview.deploy') : undefined,
+    },
     run: () => {
       if (hit.href) navigateHref(navigate, hit.href)
     },

@@ -1,0 +1,13 @@
+version: 1
+kind: Domain
+metadata:
+  name: web.example.com
+spec:
+  app: web
+---
+version: 1
+kind: Domain
+metadata:
+  name: www.example.com
+spec:
+  app: web

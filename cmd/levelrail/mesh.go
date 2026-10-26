@@ -274,6 +274,10 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
+	if host := advertiseHostFromStore(ctx, db); meshHubHostNeedsIP(host) {
+		logger.Warn("APP_AGENT_ADVERTISE_HOST is a hostname, but WireGuard needs an IP address: agents will fail to set the mesh endpoint and never handshake. Set it to this server's public IP",
+			slog.String("host", host))
+	}
 	if hub := meshHubEndpoint(advertiseHostFromStore(ctx, db), network.DefaultListenPort); hub != "" {
 		if err := coordinator.SetObservedEndpoint(localNodeID, hub); err != nil {
 			logger.Warn("mesh hub endpoint not recorded", slog.String("endpoint", hub), slog.String("error", err.Error()))
@@ -347,6 +351,16 @@ func containerDNSAddr(ctx context.Context, client *docker.Client, meshCfg *meshS
 	}
 
 	return gateway
+}
+
+// meshHubHostNeedsIP is true for a non-empty advertise host that is not an IP
+// literal; WireGuard endpoints are not resolved, so a name breaks the mesh.
+func meshHubHostNeedsIP(host string) bool {
+	if host == "" || host == "localhost" {
+		return false
+	}
+	_, err := netip.ParseAddr(host)
+	return err != nil
 }
 
 // meshHubEndpoint is the control plane's own WireGuard endpoint as agents

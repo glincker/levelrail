@@ -16,6 +16,7 @@ import {
   KeyIcon,
   PlugsConnectedIcon,
   CloudArrowUpIcon,
+  ImagesSquareIcon,
   WebhooksLogoIcon,
   GithubLogoIcon,
   UsersIcon,
@@ -80,6 +81,18 @@ export interface PaletteItem {
   removeLabel?: string
   /** Search hit ref, recorded as usage on select. */
   searchRef?: string
+  /** Preview pane content: what this entry is and where it leads. */
+  preview?: PalettePreviewData
+}
+
+export interface PalettePreviewData {
+  kind: 'page' | 'app' | 'template' | 'action'
+  description?: string
+  path?: string
+  /** Label of the primary (Enter) button. */
+  primaryLabel?: string
+  /** Small facts shown as chips: category, status, requirements. */
+  facts?: string[]
 }
 
 export interface RouteEntry {
@@ -95,9 +108,8 @@ export interface RouteEntry {
 export const GROUP_ORDER = [
   'Suggested',
   'Recent',
-  'Domain actions',
-  'Actions',
   'App actions',
+  'Domain actions',
   'Navigate',
   'Settings',
   'Apps',
@@ -111,6 +123,7 @@ export const GROUP_ORDER = [
   'Domains',
   'DNS zones',
   'DNS records',
+  'Actions',
 ] as const
 
 const nav = (
@@ -155,6 +168,13 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     search: { status: 'failing' },
   },
   nav('nav-dashboard', 'Dashboard', <GaugeIcon />, '/'),
+  nav(
+    'action-create-database',
+    'Create database',
+    <PlusIcon />,
+    '/databases',
+    'Actions',
+  ),
   nav('nav-databases', 'Databases', <DatabaseIcon />, '/databases'),
   nav('nav-projects', 'Projects', <FolderIcon />, '/projects'),
   nav('nav-pipelines', 'Pipelines', <TreeStructureIcon />, '/pipelines'),
@@ -183,6 +203,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'load-balancer',
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
+  nav('nav-assets', 'Assets', <ImagesSquareIcon />, '/assets'),
   nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
   nav(
     'nav-deploy-timeline',
@@ -374,7 +395,13 @@ export function routeEntryItem(
   ) => () => void,
   lockedSubtitle: string,
 ): PaletteItem {
-  const base = { key: e.key, label: e.label, group: e.group, icon: e.icon }
+  const base = {
+    key: e.key,
+    label: e.label,
+    group: e.group,
+    icon: e.icon,
+    preview: { kind: 'page' as const, path: e.to },
+  }
   if (isFeatureLocked(e.feature, enabled)) {
     return {
       ...base,

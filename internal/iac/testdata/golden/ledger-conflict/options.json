@@ -1,0 +1,1 @@
+{"source": "shop-prod", "secrets": {"API_KEY": "sk-golden-never-shown"}, "ledger": {"stack": "shop-prod", "scopeProject": "shop", "foreign": {"App/web": "shop-staging"}, "maxPercent": 50, "maxCount": 10}}

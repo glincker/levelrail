@@ -109,17 +109,13 @@ func (c *Client) ListNamedVolumes(ctx context.Context) ([]NamedVolume, error) {
 	return out, nil
 }
 
-// RemoveVolume deletes a single named Docker volume by name. Unlike
-// PruneAnonymousVolumes, this takes an exact, caller-supplied name
-// rather than discovering candidates itself: the caller
-// (internal/api's handleCleanupOrphanedVolumes) has already done its own
-// desired-state cross-reference and is asking for one specific,
-// operator-confirmed volume, not "whatever currently looks unused."
 // VolumeRemover is the optional capability to delete a named volume.
 type VolumeRemover interface {
 	RemoveVolume(ctx context.Context, name string) error
 }
 
+// RemoveVolume deletes one operator-confirmed volume by exact name, never a
+// discovered candidate; the caller already cross-referenced desired state.
 func (c *Client) RemoveVolume(ctx context.Context, name string) error {
 	if err := c.cli.VolumeRemove(ctx, name, false); err != nil {
 		return fmt.Errorf("docker: remove volume %q: %w", name, err)

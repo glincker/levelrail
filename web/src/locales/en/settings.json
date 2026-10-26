@@ -502,6 +502,14 @@
         "title": "Environments",
         "description": "Dev, test, UAT and production environments, and which are protected."
       },
+      "stacks": {
+        "title": "Stacks",
+        "description": "Resource sets with revision history, rollback and pinning."
+      },
+      "stack-templates": {
+        "title": "Stack templates",
+        "description": "Starter stack bundles to render, preview and copy out."
+      },
       "github-app": {
         "title": "GitHub App",
         "description": "Private-repository access for git-based deploys."
@@ -1018,6 +1026,9 @@
       "walHint": "Database file {{size}} MiB",
       "reconcile": "Last reconcile pass",
       "reconcileHint": "{{n}} controllers, p95 {{p95}} ms",
+      "reconcileQueue": "Reconcile queue",
+      "reconcileQueueValue": "{{inFlight}} of {{workers}} workers busy",
+      "reconcileQueueHint": "{{depth}} waiting, oldest {{wait}} s",
       "eventLag": "Since last reconcile pass",
       "streams": "Live streams",
       "rss": "Memory in use (RSS)",

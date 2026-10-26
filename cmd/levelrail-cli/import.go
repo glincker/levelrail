@@ -375,6 +375,7 @@ func importUsage(prog string) string {
   %[1]s import -f compose.yaml|Dockerfile [flags]
   %[1]s import --docker-run "docker run -p 80:80 nginx:1" [flags]
   %[1]s import config [dir] [--out FILE] [--strict]            offline preview of Procfile, app.json and vercel.json as an app spec
+  %[1]s import config|platform ... --emit stack --out DIR   write Stack, App, Database and Domain documents plus a secrets checklist for review
   %[1]s import repo plan <repo-url> [--branch B] [--dir D]   proposed app per monorepo package, nothing created
   %[1]s import repo apply <repo-url> [flags]                 create one app per monorepo package
 

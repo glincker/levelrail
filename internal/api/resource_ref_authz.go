@@ -20,6 +20,7 @@ const (
 	refKindNode        refKind = "node"
 	refKindProject     refKind = "project"
 	refKindModel       refKind = "model"
+	refKindAssetBucket refKind = "asset_bucket"
 )
 
 // resourceRef is a resource a request names in its body or query rather
@@ -35,6 +36,7 @@ func environmentRef(id string) resourceRef      { return resourceRef{refKindEnvi
 func nodeRef(id string) resourceRef             { return resourceRef{refKindNode, id} }
 func modelRef(name string) resourceRef          { return resourceRef{refKindModel, name} }
 func projectRef(id string) resourceRef          { return resourceRef{refKindProject, id} }
+func assetBucketRef(id string) resourceRef      { return resourceRef{refKindAssetBucket, id} }
 func appRefs(names []string) []resourceRef      { return mapRefs(names, appRef) }
 func databaseRefs(names []string) []resourceRef { return mapRefs(names, databaseRef) }
 
@@ -157,6 +159,8 @@ func (rt *Router) refAllowed(ctx context.Context, c *refCaller, ability string, 
 		return rt.environmentRefAllowed(ctx, c, ability, ref.id)
 	case refKindProject:
 		return rt.projectRefAllowed(ctx, c, ability, ref.id)
+	case refKindAssetBucket:
+		return rt.assetBucketAllowed(ctx, c.abilities, c.policies, ability, ref.id), nil
 	}
 	return false, fmt.Errorf("unknown resource kind %q", ref.kind)
 }

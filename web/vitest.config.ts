@@ -31,7 +31,10 @@ export default defineConfig({
     // this the actual default for every invocation (CI's plain
     // `npm test`, not just a --no-file-parallelism flag someone has to
     // remember to pass).
-    fileParallelism: false,
+    // CI keeps this off (constrained shared runners are what flaked). Local
+    // runs use a capped worker pool: full suite 750s serial, about 210s.
+    fileParallelism: !process.env.CI,
+    maxWorkers: Number(process.env.VITEST_MAX_WORKERS ?? 6),
     // CI only, so local runs still fail loudly. Vitest's github-actions
     // reporter (on by default in Actions) lists retried tests under
     // "Flaky Tests" in the job summary, so a retry is visible, not hidden.

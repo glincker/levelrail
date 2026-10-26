@@ -914,8 +914,8 @@ func TestBuildRoutesConfig_HTTPRedirectAndACMEEvents(t *testing.T) {
 			if disabled != tc.wantDisabled {
 				t.Errorf("redirects disabled = %v, want %v", disabled, tc.wantDisabled)
 			}
-			if (cfg.Apps.Events != nil) != tc.wantEventsApp {
-				t.Errorf("events app present = %v, want %v", cfg.Apps.Events != nil, tc.wantEventsApp)
+			if (cfg.Apps.ACMEEvents != nil) != tc.wantEventsApp {
+				t.Errorf("events app present = %v, want %v", cfg.Apps.ACMEEvents != nil, tc.wantEventsApp)
 			}
 		})
 	}

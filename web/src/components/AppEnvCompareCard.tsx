@@ -4,11 +4,39 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { diffAppEnv } from '../lib/appEnvDiff'
+import { toRows, type EnvRowStatus } from '../lib/appEnvRows'
 import { appDetailQueryOptions, useAppListOptional } from '../queries/apps'
 import type { AppDetail } from '../types/appDetail'
 import { useSecretKeys } from '../queries/secrets'
 
-/** AppEnvCompareCard diffs this app's env against another app's, comparing secrets by key only. */
+const STATUS_CLASS: Record<EnvRowStatus, string> = {
+  added: 'text-emerald-600 dark:text-emerald-400',
+  removed: 'text-red-600 dark:text-red-400',
+  changed: 'text-amber-600 dark:text-amber-400',
+}
+
+function EnvCell({
+  value,
+  secret,
+}: Readonly<{ value: string | undefined; secret: boolean }>) {
+  const { t } = useTranslation('deploys')
+  if (secret) {
+    return (
+      <span className="text-muted-foreground">
+        <span aria-hidden="true">••••••</span>
+        <span className="sr-only">{t('envCompare.secretMasked')}</span>
+      </span>
+    )
+  }
+  if (value === undefined) {
+    return (
+      <span className="text-muted-foreground">{t('envCompare.missing')}</span>
+    )
+  }
+  return <>{value}</>
+}
+
+/** AppEnvCompareCard diffs this app's env against another app's side by side, comparing secrets by key only. */
 export function AppEnvCompareCard({ app }: { app: AppDetail }) {
   const { t } = useTranslation('deploys')
   const [other, setOther] = useState('')
@@ -43,6 +71,7 @@ export function AppEnvCompareCard({ app }: { app: AppDetail }) {
         },
       )
     : null
+  const rows = diff ? toRows(diff) : []
 
   return (
     <Card>
@@ -53,10 +82,10 @@ export function AppEnvCompareCard({ app }: { app: AppDetail }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <label className="block space-y-1 text-xs text-muted-foreground">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
           {t('envCompare.pick')}
           <select
-            className="block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+            className="rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
             value={other}
             onChange={(e) => setOther(e.target.value)}
           >
@@ -71,28 +100,45 @@ export function AppEnvCompareCard({ app }: { app: AppDetail }) {
           </select>
         </label>
         {diff ? (
-          <div className="space-y-2 break-all font-mono text-xs" role="status">
-            {diff.onlyA.map((e) => (
-              <p key={`a-${e.key}`}>
-                {t('envCompare.onlyIn', { app: app.name })} {e.key}
-                {e.secret ? ` ${t('envCompare.secret')}` : `=${e.a ?? ''}`}
-              </p>
-            ))}
-            {diff.onlyB.map((e) => (
-              <p key={`b-${e.key}`}>
-                {t('envCompare.onlyIn', { app: other })} {e.key}
-                {e.secret ? ` ${t('envCompare.secret')}` : `=${e.b ?? ''}`}
-              </p>
-            ))}
-            {diff.differ.map((e) => (
-              <p key={`d-${e.key}`}>
-                {t('envCompare.differs')} {e.key}
-                {e.secret
-                  ? ` ${t('envCompare.secretOneSide')}`
-                  : `: ${e.a ?? ''} -> ${e.b ?? ''}`}
-              </p>
-            ))}
-            <p className="text-muted-foreground">
+          <div role="status">
+            <table
+              className="w-full table-fixed border-collapse text-left font-mono text-xs"
+              aria-label={t('envCompare.tableLabel')}
+            >
+              <thead className="text-muted-foreground">
+                <tr>
+                  <th className="w-1/4 py-1 pr-2 font-medium">
+                    {t('envCompare.colKey')}
+                  </th>
+                  <th className="w-1/4 py-1 pr-2 font-medium">{app.name}</th>
+                  <th className="w-1/4 py-1 pr-2 font-medium">{other}</th>
+                  <th className="w-1/4 py-1 font-medium">
+                    {t('envCompare.colStatus')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.key} className="border-t border-border align-top">
+                    <th scope="row" className="break-all py-1 pr-2 font-normal">
+                      {r.key}
+                    </th>
+                    <td className="break-all py-1 pr-2">
+                      <EnvCell value={r.a} secret={r.secret} />
+                    </td>
+                    <td className="break-all py-1 pr-2">
+                      <EnvCell value={r.b} secret={r.secret} />
+                    </td>
+                    <td className="py-1">
+                      <span className={STATUS_CLASS[r.status]}>
+                        {t(`envCompare.${r.status}`)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="pt-2 text-xs text-muted-foreground">
               {t('envCompare.summary', { count: diff.same })}
             </p>
           </div>

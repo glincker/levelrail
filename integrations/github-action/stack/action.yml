@@ -1,0 +1,313 @@
+name: 'Levelrail Stack Plan and Apply'
+description: 'Plan a Levelrail stack on pull requests (with a sticky comment) and apply it on merge, wrapping levelrail-cli stack'
+branding:
+  icon: 'layers'
+  color: 'blue'
+
+inputs:
+  stack:
+    description: 'Stack name'
+    required: true
+  path:
+    description: 'Resource file or directory holding the stack manifests'
+    required: true
+  mode:
+    description: '"plan" prints what an apply would change, "apply" writes the next revision'
+    required: false
+    default: 'plan'
+  api-url:
+    description: 'Levelrail control plane base URL'
+    required: true
+  token:
+    description: 'Levelrail API token with write access. Store it as a repository or environment secret. Not needed with oidc: "true".'
+    required: false
+    default: ''
+  oidc:
+    description: 'Set to "true" to swap the GitHub OIDC identity of this job for a short-lived token bound to this stack, instead of a stored token. Needs permissions id-token: write and a stack trust that matches this repository, ref and environment.'
+    required: false
+    default: 'false'
+  oidc-audience:
+    description: 'Audience of the GitHub identity token. Must equal the dashboard URL set in Levelrail Settings. Defaults to api-url.'
+    required: false
+    default: ''
+  project:
+    description: 'Project of the stack. Needed when the stack does not exist yet.'
+    required: false
+    default: ''
+  prune:
+    description: 'Set to "true" to delete resources the files no longer declare'
+    required: false
+    default: 'false'
+  vars:
+    description: 'Newline separated NAME=VALUE pairs for placeholders in the manifests'
+    required: false
+    default: ''
+  secrets:
+    description: 'Newline separated NAME=ENVVAR pairs. Pass the same list to plan and apply: secret names are part of the plan hash. Each ENVVAR must be set in the env of this step; values are masked and never printed.'
+    required: false
+    default: ''
+  expected-plan-hash:
+    description: 'Apply mode only. Refuse to apply when the plan no longer has this hash, usually the plan-hash output of an earlier plan step.'
+    required: false
+    default: ''
+  version:
+    description: 'levelrail-cli release tag to install. Pin it to the version your server runs.'
+    required: false
+    default: 'latest'
+  comment:
+    description: 'Set to "true" to post or update one sticky pull request comment with the plan (plan mode only, needs pull-requests: write)'
+    required: false
+    default: 'false'
+  github-token:
+    description: 'Token used to post the comment'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  has-changes:
+    description: '"true" when the plan holds changes (plan mode)'
+    value: ${{ steps.plan.outputs.has-changes }}
+  plan-hash:
+    description: 'Hash of the plan, pass it to the apply step as expected-plan-hash (plan mode)'
+    value: ${{ steps.plan.outputs.plan-hash }}
+  revision:
+    description: 'Revision number written by the apply (apply mode)'
+    value: ${{ steps.apply.outputs.revision }}
+  status:
+    description: 'Revision status such as "applied", "pending_approval", "partial" or "failed" (apply mode)'
+    value: ${{ steps.apply.outputs.status }}
+  expires_at:
+    description: 'When a pending_approval revision expires (apply mode, empty otherwise)'
+    value: ${{ steps.apply.outputs.expires_at }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install levelrail-cli
+      shell: bash
+      env:
+        REQUESTED_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        install_dir="${RUNNER_TEMP:-/tmp}/levelrail-cli-bin"
+        if [ "$REQUESTED_VERSION" != "latest" ]; then
+          export LEVELRAIL_VERSION="$REQUESTED_VERSION"
+        else
+          echo "::warning::version is latest, pin it to the release your server runs"
+        fi
+        LEVELRAIL_CLI_INSTALL_DIR="$install_dir" sh "${GITHUB_ACTION_PATH}/../../../install-cli.sh"
+        echo "$install_dir" >> "$GITHUB_PATH"
+
+    - name: Exchange OIDC identity
+      id: oidc
+      if: ${{ inputs.oidc == 'true' }}
+      shell: bash
+      env:
+        LR_API_URL: ${{ inputs.api-url }}
+        LR_AUDIENCE: ${{ inputs.oidc-audience }}
+        LR_STACK: ${{ inputs.stack }}
+      run: |
+        set -euo pipefail
+        if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+          echo "::error::oidc needs the job permission id-token: write"
+          exit 1
+        fi
+        api="${LR_API_URL%/}"
+        audience="${LR_AUDIENCE:-$api}"
+        # The request token only lets this job ask GitHub for its own identity.
+        [ -z "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ] || echo "::add-mask::$ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+        enc=$(jq -rn --arg a "$audience" '$a | @uri')
+        jwt=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${enc}" | jq -r '.value // ""')
+        if [ -z "$jwt" ]; then
+          echo "::error::GitHub did not return an identity token"
+          exit 1
+        fi
+        echo "::add-mask::$jwt"
+        body=$(jq -n --arg stack "$LR_STACK" --arg id_token "$jwt" '{stack: $stack, id_token: $id_token}')
+        resp="${RUNNER_TEMP:-/tmp}/lr-stack-oidc.json"
+        code=$(curl -sS -o "$resp" -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "$body" "$api/api/v1/ci/stack-oidc-exchange")
+        if [ "$code" != "200" ]; then
+          echo "::error::OIDC exchange refused with HTTP $code: $(jq -r '.error // "no detail"' "$resp" 2>/dev/null || echo "no detail")"
+          rm -f "$resp"
+          exit 1
+        fi
+        token=$(jq -r '.token // ""' "$resp")
+        rm -f "$resp"
+        [ -n "$token" ] || { echo "::error::exchange returned no token"; exit 1; }
+        echo "::add-mask::$token"
+        echo "token=$token" >> "$GITHUB_OUTPUT"
+
+    - name: Plan
+      id: plan
+      if: ${{ inputs.mode == 'plan' }}
+      shell: bash
+      env:
+        APP_EXPERIMENTAL: iac
+        LEVELRAIL_API_URL: ${{ inputs.api-url }}
+        LEVELRAIL_TOKEN: ${{ steps.oidc.outputs.token || inputs.token }}
+        LR_STACK: ${{ inputs.stack }}
+        LR_PATH: ${{ inputs.path }}
+        LR_PROJECT: ${{ inputs.project }}
+        LR_PRUNE: ${{ inputs.prune }}
+        LR_VARS: ${{ inputs.vars }}
+        LR_SECRETS: ${{ inputs.secrets }}
+      run: |
+        set -uo pipefail
+        [ -z "$LEVELRAIL_TOKEN" ] || echo "::add-mask::$LEVELRAIL_TOKEN"
+        args=(stack plan "$LR_STACK" -f "$LR_PATH" --json --exit-code)
+        [ -z "$LR_PROJECT" ] || args+=(--project "$LR_PROJECT")
+        [ "$LR_PRUNE" != "true" ] || args+=(--prune)
+        while IFS= read -r line; do
+          [ -n "$line" ] && args+=(--var "$line")
+        done <<< "$LR_VARS"
+        # Secret names are part of the plan hash, so plan takes the same --secret flags as apply.
+        while IFS= read -r line; do
+          [ -n "$line" ] || continue
+          envname="${line#*=}"
+          if [ "$envname" = "$line" ] || [ -z "${!envname:-}" ]; then
+            echo "::error::secrets entry must be NAME=ENVVAR with ENVVAR set in the step env"
+            exit 1
+          fi
+          while IFS= read -r secret_line; do
+            [ -z "$secret_line" ] || echo "::add-mask::$secret_line"
+          done <<< "${!envname}"
+          args+=(--secret "$line")
+        done <<< "$LR_SECRETS"
+        out="${RUNNER_TEMP:-/tmp}/lr-stack-plan.json"
+        levelrail-cli "${args[@]}" > "$out"
+        rc=$?
+        if [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ]; then
+          echo "::error::stack plan failed with exit code $rc"
+          cat "$out" 2>/dev/null || true
+          exit 1
+        fi
+        has_changes=false
+        [ "$rc" -ne 2 ] || has_changes=true
+        hash=$(jq -r '.plan.hash // ""' "$out")
+        echo "has-changes=$has_changes" >> "$GITHUB_OUTPUT"
+        echo "plan-hash=$hash" >> "$GITHUB_OUTPUT"
+
+        md="${RUNNER_TEMP:-/tmp}/lr-stack-comment.md"
+        {
+          echo "<!-- levelrail-stack:${LR_STACK} -->"
+          echo "### Levelrail stack plan: \`${LR_STACK}\`"
+          echo
+          jq -r '
+            (.plan.summary // {}) as $s
+            | "**\($s.create // 0)** to add, **\($s.update // 0)** to change, **\($s.delete // 0)** to remove, \($s.noop // 0) unchanged"
+              + (if ($s.error // 0) > 0 then ", **\($s.error)** with errors" else "" end),
+              "",
+              (if (.pinned_revision // 0) > 0 then "Pinned to revision \(.pinned_revision): applies are refused until the pin is removed.\n" else "" end),
+              ([.plan.changes[]? | select(.action != "noop")] as $c
+                | if ($c | length) == 0 then "No changes."
+                  else "| Action | Resource | Fields |\n| --- | --- | --- |\n"
+                    + ($c | map("| \(.action) | `\(.kind)/\(.name)` | \((.fields // []) | length) |") | join("\n"))
+                  end),
+              "",
+              (if ((.issues // []) | length) > 0 then "Issues:\n" + ((.issues // []) | map("- \(.message // tostring)") | join("\n")) + "\n" else "" end),
+              (if ((.warnings // []) | length) > 0 then "Warnings:\n" + ((.warnings // []) | map("- \(.)") | join("\n")) + "\n" else "" end)
+          ' "$out"
+          echo "Plan hash: \`${hash}\`"
+        } > "$md"
+        cat "$md" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Sticky plan comment
+      if: ${{ inputs.mode == 'plan' && inputs.comment == 'true' && github.event.pull_request.number }}
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      env:
+        LR_STACK: ${{ inputs.stack }}
+        LR_COMMENT_FILE: ${{ runner.temp }}/lr-stack-comment.md
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const body = fs.readFileSync(process.env.LR_COMMENT_FILE, 'utf8');
+          const marker = `<!-- levelrail-stack:${process.env.LR_STACK} -->`;
+          const { owner, repo } = context.repo;
+          const issue_number = context.payload.pull_request.number;
+          try {
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            // Only the Actions bot's own comments count, so a planted marker is never edited.
+            const existing = comments.find((c) => c.body && c.body.includes(marker) && c.user && c.user.type === 'Bot' && c.user.login === 'github-actions[bot]');
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+          } catch (err) {
+            core.warning(`Could not post the plan comment: ${err.message}`);
+          }
+
+    - name: Apply
+      id: apply
+      if: ${{ inputs.mode == 'apply' }}
+      shell: bash
+      env:
+        APP_EXPERIMENTAL: iac
+        LEVELRAIL_API_URL: ${{ inputs.api-url }}
+        LEVELRAIL_TOKEN: ${{ steps.oidc.outputs.token || inputs.token }}
+        LR_STACK: ${{ inputs.stack }}
+        LR_PATH: ${{ inputs.path }}
+        LR_PROJECT: ${{ inputs.project }}
+        LR_PRUNE: ${{ inputs.prune }}
+        LR_VARS: ${{ inputs.vars }}
+        LR_SECRETS: ${{ inputs.secrets }}
+        LR_EXPECTED_HASH: ${{ inputs.expected-plan-hash }}
+      run: |
+        set -uo pipefail
+        [ -z "$LEVELRAIL_TOKEN" ] || echo "::add-mask::$LEVELRAIL_TOKEN"
+        args=(stack apply "$LR_STACK" -f "$LR_PATH" --yes --json)
+        [ -z "$LR_PROJECT" ] || args+=(--project "$LR_PROJECT")
+        [ "$LR_PRUNE" != "true" ] || args+=(--prune)
+        [ -z "$LR_EXPECTED_HASH" ] || args+=(--expected-plan-hash "$LR_EXPECTED_HASH")
+        while IFS= read -r line; do
+          [ -n "$line" ] && args+=(--var "$line")
+        done <<< "$LR_VARS"
+        while IFS= read -r line; do
+          [ -n "$line" ] || continue
+          envname="${line#*=}"
+          if [ "$envname" = "$line" ] || [ -z "${!envname:-}" ]; then
+            echo "::error::secrets entry must be NAME=ENVVAR with ENVVAR set in the step env"
+            exit 1
+          fi
+          while IFS= read -r secret_line; do
+            [ -z "$secret_line" ] || echo "::add-mask::$secret_line"
+          done <<< "${!envname}"
+          args+=(--secret "$line")
+        done <<< "$LR_SECRETS"
+        out="${RUNNER_TEMP:-/tmp}/lr-stack-apply.json"
+        levelrail-cli "${args[@]}" > "$out"
+        rc=$?
+        revision=$(jq -r '.revision.number // ""' "$out" 2>/dev/null || true)
+        status=$(jq -r '.revision.status // ""' "$out" 2>/dev/null || true)
+        expires_at=$(jq -r '.expires_at // ""' "$out" 2>/dev/null || true)
+        # Apply exit 2 means the revision waits for a root approver, not that it failed.
+        if [ "$rc" -eq 2 ]; then
+          status=pending_approval
+        fi
+        echo "revision=$revision" >> "$GITHUB_OUTPUT"
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "expires_at=$expires_at" >> "$GITHUB_OUTPUT"
+        {
+          echo "### Levelrail stack apply: \`${LR_STACK}\`"
+          echo
+          echo "Revision ${revision:-none}, status ${status:-unknown}"
+          if [ "$rc" -eq 2 ]; then
+            echo
+            echo "Awaiting approval until ${expires_at:-unknown}. Run the approve job with revision ${revision:-none}, or re-run apply after the approval expires."
+          fi
+        } >> "$GITHUB_STEP_SUMMARY"
+        if [ "$rc" -eq 2 ]; then
+          echo "::notice::stack apply revision ${revision:-none} awaits approval until ${expires_at:-unknown}"
+          exit 0
+        fi
+        if [ "$rc" -ne 0 ]; then
+          echo "::error::stack apply failed (exit code $rc, revision status ${status:-unknown})"
+          exit 1
+        fi
+        case "$status" in
+          partial|failed)
+            echo "::error::revision $revision ended $status"
+            exit 1
+            ;;
+        esac

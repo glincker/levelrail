@@ -81,6 +81,8 @@ export interface LogDrain {
 // never-empty/zero value), so both are required here too, not optional.
 export interface AppDetail {
   name: string
+  // Name of the stack managing this app, absent when none or iac is off.
+  managed_by_stack?: string
   image: string
   /** The content image is pinned to; absent for a legacy unpinned tag. */
   image_digest?: string
@@ -135,6 +137,8 @@ export interface AppDetail {
   node_id?: string
   node_name?: string
   node_is_local?: boolean
+  // Response-only: true while the hosting node is offline.
+  node_offline?: boolean
   // auto_placed carries `omitempty` on the Go side and is response-only,
   // set only by POST /api/v1/apps: true when the create request omitted
   // node_id and simple spread scheduling picked a non-local node for it.
