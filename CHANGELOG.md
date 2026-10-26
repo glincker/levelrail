@@ -16,6 +16,21 @@
 * GitHub Action for stacks in `integrations/github-action/stack`: plan comments on pull requests, apply on merge, and exit code 2 for an apply that awaits approval
 * stack App documents reference a database with `{ from: { database, field } }` (resolved by the control plane at container start, so plans and revisions hold only the reference) and declare `service.jobs`; `import --emit stack` now writes both instead of `SECRETS.md` placeholders and migration notes
 
+## [0.8.5](https://github.com/glincker/levelrail/compare/v0.8.4...v0.8.5) (2026-10-26)
+
+
+### Features
+
+* safer rollbacks, hosted imports, Podman and multi-node fixes ([#1387](https://github.com/glincker/levelrail/issues/1387)) ([9c7a032](https://github.com/glincker/levelrail/commit/9c7a0323ba0e8850f97ace35b4d3da93f858791b))
+* stacks and GitOps, test speed, multi-node fixes (v0.8.6, in progress) ([b966071](https://github.com/glincker/levelrail/commit/b96607141b217db2e237616012f0cb65baf9dcef))
+* v0.8.6 stacks and GitOps, assets, concurrent reconcile, catalog hardening ([20bd36a](https://github.com/glincker/levelrail/commit/20bd36ad2dd141f7d29dca9ee7734b7c5431478c))
+
+
+### Bug Fixes
+
+* CI fan-in, keyed timeout test and first-load bundle ([6b902db](https://github.com/glincker/levelrail/commit/6b902dbb0718dd2961bf5c1fc7f2e8dd3b2e1231))
+* keep the ui-kit chunk inside its bundle budget ([78e4dde](https://github.com/glincker/levelrail/commit/78e4ddea1651a7065a1efd75779ea124de064bc0))
+
 ## [0.8.4](https://github.com/glincker/levelrail/compare/v0.8.3...v0.8.4) (2026-10-24)
 
 
