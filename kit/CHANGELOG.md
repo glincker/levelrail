@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/glincker/levelrail/compare/kit/v0.8.0...kit/v0.8.1) (2026-10-26)
+
+
+### Performance
+
+* skip weekend ([#1390](https://github.com/glincker/levelrail/issues/1390)) ([b9a361e](https://github.com/glincker/levelrail/commit/b9a361ee53746945b68447ee3dc8c4b5da5252f2))
+
 ## [0.8.0](https://github.com/glincker/levelrail/compare/kit/v0.4.0...kit/v0.8.0) (2026-10-21)
 
 
