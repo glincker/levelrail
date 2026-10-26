@@ -87,21 +87,15 @@ func TestHandleDeployServiceTemplateNow_RepeatDeploysGetDistinctNames(t *testing
 }
 
 // TestHandleDeployServiceTemplateNow_RequiresConfiguration_Conflict uses
-// "copyparty": a real catalog entry whose command: array embeds
-// $SERVICE_PASSWORD_ADMIN. compose.ResolveMagicVars' own doc comment
-// explains why that's unresolved even though PASSWORD is a generatable
-// kind: Command has no secret-storage indirection to land a generated
-// value in, so a generatable token found there is always reported as
-// unresolved instead of generated, so it's true in
-// Router.templateRequiresConfig for it: the one-click path must refuse
-// rather than deploy with that admin password left as a literal,
-// unset placeholder.
+// "plunk": its compose has a SERVICE_PROMPT_* installer prompt, which
+// has no generator, so it is always unresolved and the one-click path
+// must refuse (409) instead of deploying with an unset placeholder.
 func TestHandleDeployServiceTemplateNow_RequiresConfiguration_Conflict(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/service-templates/copyparty/deploy", ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/service-templates/plunk/deploy", ""))
 	if rec.Code != http.StatusConflict {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
 	}
@@ -122,7 +116,7 @@ func TestComputeTemplateRequiresConfig(t *testing.T) {
 		want bool
 	}{
 		{"redis-cache-starter", false}, // no SERVICE_ var at all
-		{"copyparty", true},            // $SERVICE_PASSWORD_ADMIN inside command:, unresolved
+		{"plunk", true},                // SERVICE_PROMPT_* installer prompt, always unresolved
 	}
 	for _, tt := range tests {
 		if _, ok := catalog.TemplateByID(tt.id); !ok {
