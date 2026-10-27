@@ -18,6 +18,7 @@ A command is a comment line that starts with the command at the first column, ou
 | `/levelrail rollback` | Rolls back to the newest earlier successful deploy of a different image. |
 | `/levelrail status` | Replies with the running image, the latest deploy and any freeze. Changes nothing. |
 | `/levelrail preview redeploy` | Rebuilds this pull request's preview environment. Needs previews on. |
+| `/levelrail help` | Replies with the supported commands. Only users with write access get the reply. |
 
 Send one command per comment. A comment with two commands runs neither. There is no way to name an app in the comment: the app is the one whose webhook received the event.
 
@@ -86,7 +87,7 @@ The webhook on the repository must also deliver the **Issue comments** event. Ad
 | A drive-by commenter deploys | Write or admin permission is confirmed with GitHub for every command, cached for a short time, and fails closed on any API error. |
 | A pull request from a fork runs code paths with the base repo's trust | Refused unless the owner turned on fork commands for that app. The head repository comes from the GitHub API. A deleted fork counts as a fork. |
 | A bot loop, or Levelrail answering itself | Bot accounts, GitHub App comments and comments with Levelrail's reply marker are ignored. |
-| Free text picks the target | The comment cannot name an app. Only the four fixed commands parse, and quoted text, indented text and code blocks never match. |
+| Free text picks the target | The comment cannot name an app. Only the five fixed commands parse, and quoted text, indented text and code blocks never match. |
 | A flood of comments | Per-user and per-pull-request limits held in bounded memory, and a bounded table of handled comment ids. |
 | Replay of the same delivery | Comment ids are recorded once per app. |
 | Bypassing a freeze, an approval or a policy | Freezes, running-deploy guards, protected environments and deploy policy are checked first. A frozen app, or one that needs approval, gets a reply saying why and nothing runs. There is no override from a comment. |

@@ -172,3 +172,43 @@ func TestPRComment_BodyCap(t *testing.T) {
 		}
 	})
 }
+
+func TestPRComment_Help(t *testing.T) {
+	t.Run("authorized commenter gets the command list", func(t *testing.T) {
+		f := newPRCmdFixture(t, testPRCommentConfig(), true)
+		f.send(commentOpts{body: "/levelrail help"})
+		reply := f.gh.lastReply()
+		for _, want := range []string{prCommentMarker, "/levelrail status", "/levelrail redeploy", "/levelrail rollback", "/levelrail preview redeploy", "/levelrail help"} {
+			if !strings.Contains(reply, want) {
+				t.Errorf("reply = %q, want it to list %q", reply, want)
+			}
+		}
+		if len(f.builder.calls) != 0 || f.gh.prCalls.Load() != 0 {
+			t.Error("help had side effects")
+		}
+	})
+	t.Run("unauthorized commenter gets nothing", func(t *testing.T) {
+		for _, setup := range []func(*fakeGitHub){
+			func(g *fakeGitHub) { g.perms["octo"] = "read" },
+			func(g *fakeGitHub) { g.permStatus = http.StatusInternalServerError },
+		} {
+			f := newPRCmdFixture(t, testPRCommentConfig(), true)
+			setup(f.gh)
+			f.send(commentOpts{body: "/levelrail help"})
+			if f.gh.replyCount() != 0 {
+				t.Fatalf("unauthorized help got a reply: %q", f.gh.lastReply())
+			}
+			if d := f.refusals(); len(d) != 1 || d[0].Command != "help" {
+				t.Errorf("refusals = %+v, want one refused help", d)
+			}
+		}
+	})
+	t.Run("bot gets nothing", func(t *testing.T) {
+		f := newPRCmdFixture(t, testPRCommentConfig(), true)
+		f.gh.perms["helper[bot]"] = "admin"
+		f.send(commentOpts{body: "/levelrail help", login: "helper[bot]"})
+		if f.gh.replyCount() != 0 || f.gh.apiCalls() != 0 {
+			t.Fatal("a bot's help comment reached GitHub")
+		}
+	})
+}

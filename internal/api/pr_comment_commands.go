@@ -215,6 +215,12 @@ func (rt *Router) runPRCommentCommand(ctx context.Context, name string, gs store
 		reply("Send one `/levelrail` command per comment. Nothing was run.")
 		return
 	}
+	// Help is answered only here, after the write check, so outsiders learn nothing.
+	if cmd == prcommand.Help {
+		rt.recordPRCommandEvent(ctx, name, ev, cmd)
+		reply(prCommandHelpText())
+		return
+	}
 	pr, err := rt.githubAppClient.GetPullRequest(ctx, inst, token, owner, repo, ev.Number)
 	if err != nil {
 		log.Warn("api: pr comment command: load pull request failed", slog.String("error", err.Error()))
@@ -443,6 +449,14 @@ func (rt *Router) prCommandPreviewRedeploy(ctx context.Context, name string, gs 
 		return "Preview redeploy done, preview is " + codeSpan(string(p.Status)) + "."
 	}
 	return "Preview redeploy done."
+}
+
+func prCommandHelpText() string {
+	parts := make([]string, 0, len(prcommand.Supported()))
+	for _, c := range prcommand.Supported() {
+		parts = append(parts, codeSpan(prcommand.Prefix+" "+string(c)))
+	}
+	return "Supported commands, one per comment: " + strings.Join(parts, ", ") + "."
 }
 
 func (rt *Router) prCommandStatus(ctx context.Context, name string, prNumber int) string {
