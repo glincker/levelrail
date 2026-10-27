@@ -37,11 +37,17 @@ function PathCard({
 }) {
   return (
     <Card>
-      <CardContent className="flex h-full flex-col gap-2">
-        <span aria-hidden="true">{icon}</span>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="flex-1 text-xs text-muted-foreground">{description}</p>
-        <div>{action}</div>
+      <CardContent className="flex h-full items-center gap-3 sm:flex-col sm:items-stretch sm:gap-2">
+        <span aria-hidden="true" className="shrink-0">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="text-sm font-medium text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+        <div className="shrink-0 sm:shrink [&_button]:min-h-11 sm:[&_button]:min-h-0">
+          {action}
+        </div>
       </CardContent>
     </Card>
   )
@@ -120,7 +126,7 @@ export function FirstDeploy({
         <FirstAppStatus app={app} phase={phase} onDone={onDone} />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
             <PathCard
               icon={<RocketLaunchIcon className="size-5 text-primary" />}
               title={t('first.sample.title')}

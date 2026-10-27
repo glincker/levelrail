@@ -125,4 +125,18 @@ describe('FirstDeploy', () => {
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
   })
+
+  it('keeps all three paths reachable in a compact row with 44px touch targets', () => {
+    stubFetch(200)
+    renderIt()
+    for (const name of [
+      'Deploy sample app',
+      'Browse templates',
+      'Deploy a repo',
+    ]) {
+      const button = screen.getByRole('button', { name })
+      expect(button.parentElement?.className).toContain('[&_button]:min-h-11')
+      expect(button.closest('[class*="items-center"]')).not.toBeNull()
+    }
+  })
 })
