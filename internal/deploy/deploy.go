@@ -218,6 +218,7 @@ type Pipeline struct {
 	inspector    docker.ImageInspector // nil skips recording a build's local image ID
 	registryAuth RegistryAuthSource    // nil resolves private images without credentials
 	ordered      OrderedStore          // nil disables the stale-deploy guard
+	ports        PortAdmitter          // nil skips host port admission (tests, demo)
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
 
 	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy

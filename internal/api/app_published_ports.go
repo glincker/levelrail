@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -97,16 +99,65 @@ func udpHostConflict(previous, next []store.DesiredService) (store.PublishedPort
 // The returned release must run after the caller saves, so a concurrent
 // deploy cannot pass the same check before this one's ports are stored.
 func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, appName string, previous, next []store.DesiredService) (func(), bool) {
-	// Only a deploy that claims a host port can race another one for it.
-	if !claimsHostPort(next) {
-		return func() {}, rt.checkPublishedPorts(w, r, appName, previous, next)
+	release, err := rt.admitHostPorts(r.Context(), appName, previous, next)
+	if err == nil {
+		return release, true
 	}
-	rt.publishedPortsMu.Lock()
-	if !rt.checkPublishedPorts(w, r, appName, previous, next) {
-		rt.publishedPortsMu.Unlock()
+	var refusal *portRefusal
+	if errors.As(err, &refusal) {
+		writeCodedError(w, refusal.status, refusal.code, refusal.msg)
 		return nil, false
 	}
-	return rt.publishedPortsMu.Unlock, true
+	rt.internalError(w, "api: published ports: admission check failed", err, slog.String("app", appName))
+	return nil, false
+}
+
+// AdmitPublishedPorts runs the API's host port admission for one service a
+// spec file deploy (app.yaml via webhook, git push or build) is about to save.
+func (rt *Router) AdmitPublishedPorts(ctx context.Context, desired store.DesiredService) (func(), error) {
+	appName := desired.AppID
+	var previous []store.DesiredService
+	prev, err := rt.apps.GetDesiredService(ctx, desired.Name)
+	switch {
+	case err == nil:
+		previous = []store.DesiredService{*prev}
+		if appName == "" {
+			appName = prev.AppID
+		}
+	case !errors.Is(err, store.ErrServiceNotFound):
+		return nil, fmt.Errorf("load service %q for port check: %w", desired.Name, err)
+	}
+	if appName == "" {
+		appName = desired.Name
+	}
+	return rt.admitHostPorts(ctx, appName, previous, []store.DesiredService{desired})
+}
+
+// portRefusal is an admission refusal with the status and code the API
+// answers with; spec deploys show its message as the deploy failure.
+type portRefusal struct {
+	status int
+	code   string
+	msg    string
+}
+
+func (e *portRefusal) Error() string { return e.msg }
+
+func refusePort(status int, code, msg string) error {
+	return &portRefusal{status: status, code: code, msg: msg}
+}
+
+func (rt *Router) admitHostPorts(ctx context.Context, appName string, previous, next []store.DesiredService) (func(), error) {
+	// Only a deploy that claims a host port can race another one for it.
+	if !claimsHostPort(next) {
+		return func() {}, rt.checkPublishedPorts(ctx, appName, previous, next)
+	}
+	rt.publishedPortsMu.Lock()
+	if err := rt.checkPublishedPorts(ctx, appName, previous, next); err != nil {
+		rt.publishedPortsMu.Unlock()
+		return nil, err
+	}
+	return rt.publishedPortsMu.Unlock, nil
 }
 
 func claimsHostPort(services []store.DesiredService) bool {
@@ -143,7 +194,7 @@ func (rt *Router) reservedPublishedPorts() map[int]string {
 	return out
 }
 
-func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, appName string, previous, next []store.DesiredService) bool {
+func (rt *Router) checkPublishedPorts(ctx context.Context, appName string, previous, next []store.DesiredService) error {
 	nodeOf := make(map[string]string, len(previous))
 	for _, p := range previous {
 		nodeOf[p.Name] = p.NodeID
@@ -153,8 +204,7 @@ func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 	for _, svc := range next {
 		self[svc.Name] = true
 		if err := spec.ValidatePublishedPorts(svc.PublishedPorts); err != nil {
-			writeCodedError(w, http.StatusBadRequest, codePublishedPortInvalid, err.Error())
-			return false
+			return refusePort(http.StatusBadRequest, codePublishedPortInvalid, err.Error())
 		}
 		node, known := nodeOf[svc.Name]
 		if !known {
@@ -162,9 +212,8 @@ func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 		}
 		for _, p := range svc.PublishedPorts {
 			if node != "" && node != rt.localNodeID {
-				writeCodedError(w, http.StatusBadRequest, codePublishedPortRemoteNode,
+				return refusePort(http.StatusBadRequest, codePublishedPortRemoteNode,
 					fmt.Sprintf("host port %s can only be published on the control plane's own node, service %q is placed on node %q", p, svc.Name, node))
-				return false
 			}
 			want[portKey(p)] = svc.Name
 		}
@@ -176,26 +225,23 @@ func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 		}
 		pinned[*svc.HostPort] = svc.Name
 		if mine, taken := want[store.PublishedPort{HostPort: *svc.HostPort, Protocol: spec.PortProtocolTCP}]; taken {
-			writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+			return refusePort(http.StatusConflict, codePublishedPortConflict,
 				fmt.Sprintf("host port %d/tcp for service %q is already the host port of %q", *svc.HostPort, mine, svc.Name))
-			return false
 		}
 	}
 	if len(want) == 0 && len(pinned) == 0 {
-		return true
+		return nil
 	}
 	reserved := rt.reservedPublishedPorts()
 	for p, svc := range want {
 		if label, ok := reserved[p.HostPort]; ok {
-			writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+			return refusePort(http.StatusConflict, codePublishedPortConflict,
 				fmt.Sprintf("host port %s for service %q is reserved by the control plane (%s)", p, svc, label))
-			return false
 		}
 	}
-	all, err := rt.apps.ListDesiredServices(r.Context())
+	all, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
-		rt.internalError(w, "api: deploy compose: list services for port check failed", err, slog.String("app", appName))
-		return false
+		return fmt.Errorf("list services for port check: %w", err)
 	}
 	for _, other := range all {
 		if other.AppID == appName || self[other.Name] {
@@ -203,41 +249,37 @@ func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 		}
 		if other.HostPort != nil {
 			if mine, taken := want[store.PublishedPort{HostPort: *other.HostPort, Protocol: spec.PortProtocolTCP}]; taken {
-				writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+				return refusePort(http.StatusConflict, codePublishedPortConflict,
 					fmt.Sprintf("host port %d/tcp for service %q is already the host port of %q", *other.HostPort, mine, other.Name))
-				return false
 			}
 		}
 		for _, p := range other.PublishedPorts {
 			if mine, taken := pinned[p.HostPort]; taken && p.EffectiveProtocol() == spec.PortProtocolTCP {
-				writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+				return refusePort(http.StatusConflict, codePublishedPortConflict,
 					fmt.Sprintf("host port %d/tcp for service %q is already published by %q", p.HostPort, mine, other.Name))
-				return false
 			}
 			if mine, taken := want[portKey(p)]; taken {
-				writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+				return refusePort(http.StatusConflict, codePublishedPortConflict,
 					fmt.Sprintf("host port %s for service %q is already published by %q", p, mine, other.Name))
-				return false
 			}
 		}
 	}
-	if !rt.publishedPortsFreeOnHost(w, r, appName, self, previous, want) {
-		return false
+	if err := rt.publishedPortsFreeOnHost(ctx, self, previous, want); err != nil {
+		return err
 	}
 	// After the app check, so a port another app holds names that app.
 	if p, svc, sock, busy := udpHostConflict(previous, next); busy {
-		writeCodedError(w, http.StatusConflict, codePublishedPortInUse,
+		return refusePort(http.StatusConflict, codePublishedPortInUse,
 			fmt.Sprintf("host port %s for service %q is already bound by another process on this server (%s), stop it or pick another host port", p, svc, sock))
-		return false
 	}
-	return true
+	return nil
 }
 
 // publishedPortsFreeOnHost refuses a port an app stream holds, and a new tcp
 // port a host process already listens on (this app's own ports are skipped).
-func (rt *Router) publishedPortsFreeOnHost(w http.ResponseWriter, r *http.Request, appName string, self map[string]bool, previous []store.DesiredService, want map[store.PublishedPort]string) bool {
+func (rt *Router) publishedPortsFreeOnHost(ctx context.Context, self map[string]bool, previous []store.DesiredService, want map[store.PublishedPort]string) error {
 	if len(want) == 0 {
-		return true
+		return nil
 	}
 	held := map[int]bool{}
 	for _, svc := range previous {
@@ -247,30 +289,27 @@ func (rt *Router) publishedPortsFreeOnHost(w http.ResponseWriter, r *http.Reques
 	}
 	for _, port := range hostListeningPorts() {
 		if mine, taken := want[store.PublishedPort{HostPort: port, Protocol: spec.PortProtocolTCP}]; taken && !held[port] {
-			writeCodedError(w, http.StatusConflict, codePublishedPortInUse,
+			return refusePort(http.StatusConflict, codePublishedPortInUse,
 				fmt.Sprintf("host port %d/tcp for service %q is already listened on by another process on this server, stop it or pick another host port", port, mine))
-			return false
 		}
 	}
 	if rt.appStreams == nil {
-		return true
+		return nil
 	}
-	streams, err := rt.appStreams.ListAllAppStreams(r.Context())
+	streams, err := rt.appStreams.ListAllAppStreams(ctx)
 	if err != nil {
-		rt.internalError(w, "api: published ports: list streams failed", err, slog.String("app", appName))
-		return false
+		return fmt.Errorf("list streams for port check: %w", err)
 	}
 	for _, st := range streams {
 		if self[st.ServiceName] {
 			continue
 		}
 		if mine, taken := want[store.PublishedPort{HostPort: st.HostPort, Protocol: st.Protocol}]; taken {
-			writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+			return refusePort(http.StatusConflict, codePublishedPortConflict,
 				fmt.Sprintf("host port %d/%s for service %q is already used by a stream on %q", st.HostPort, st.Protocol, mine, st.ServiceName))
-			return false
 		}
 	}
-	return true
+	return nil
 }
 
 func portKey(p store.PublishedPort) store.PublishedPort {

@@ -417,6 +417,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		}))
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
+	if builder != nil {
+		// Spec file deploys (webhook, git push, builds) admit host ports like POST /apps.
+		builder.SetPortAdmitter(rt)
+	}
 	wireBindMountSettings(rt)
 	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler(b))))), rt
 }
