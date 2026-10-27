@@ -93,6 +93,8 @@ The webhook on the repository must also deliver the **Issue comments** event. Ad
 | A stolen permission after a role change | Permission answers are cached for `APP_PR_COMMENT_PERMISSION_CACHE` only. Refusals are never cached. |
 | An abused installation | `APP_PR_COMMENT_COMMANDS_DISABLED` turns the feature off for the whole control plane without a deploy. |
 
+Every refused command writes an audit log entry with the action `pr_comment_command.refused`, the GitHub login as `github:<login>`, the repository, the pull request number, the parsed command and a reason such as `commands_off`, `no_write_access`, `permission_lookup_failed`, `rate_limited_user`, `rate_limited_pull_request`, `bot`, `fork_commands_off` or `blocked` (a freeze, an approval requirement or a policy). The comment body is never stored, and every recorded value is reduced to plain characters. Comments that hold no command are not audited.
+
 Secrets are never logged or echoed. Logs carry the app name, pull request number and GitHub login.
 
 ## What it does not do
