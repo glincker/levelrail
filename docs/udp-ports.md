@@ -4,7 +4,7 @@ description: Publish a UDP port from a compose service directly on the host, wit
 "og:url": "https://docs.levelrail.com/udp-ports"
 ---
 
-A compose service can publish a UDP port on the host with `HOST:CONTAINER/udp`. This covers services such as a DNS server or a STUN endpoint. It is the first slice of [ADR 049](https://github.com/glincker/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md): UDP publishing only.
+A compose service can publish a UDP port on the host with `HOST:CONTAINER/udp`. This covers services such as a DNS server or a STUN endpoint. It is the first slice of [ADR 049](https://github.com/glincker/levelrail/blob/release/v0.8.9/adr/049-udp-ports-capabilities-sysctls.md): UDP publishing only.
 
 ## What it does
 
@@ -51,8 +51,17 @@ A running deploy that hits the remote node case reports the reconcile reason `Pu
 ```yaml
 services:
   echo:
-    image: alpine:3.20
-    command: ["sh", "-c", "nc -u -l -p 9000 -e /bin/cat"]
+    image: python:3.12-alpine3.20
+    command:
+      - python3
+      - -c
+      - |
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.bind(("0.0.0.0", 9000))
+        while True:
+            d, a = s.recvfrom(65535)
+            s.sendto(d, a)
     ports:
       - "9000:9000/udp"
 ```
@@ -62,7 +71,7 @@ levelrail-cli compose deploy echo -f compose.yaml
 echo hello | nc -u -w1 <server-ip> 9000
 ```
 
-The port is private by default, so run the test from the server itself or set a public bind address and open UDP 9000 in the firewall. Some `nc` builds in minimal images lack `-e`. If yours does, use an image whose `nc` supports it.
+The port is private by default, so run the test from the server itself or set a public bind address and open UDP 9000 in the firewall. The echo server is a short Python loop because busybox `nc -e` serves only one client per container start, so a second test would hang.
 
 ## Example: DNS-style service
 
@@ -73,15 +82,15 @@ services:
     command:
       - sh
       - -c
-      - apk add --no-cache dnsmasq && exec dnsmasq -k --no-resolv --port=53 --address=/app.test/10.0.0.5
+      - apk add --no-cache dnsmasq && exec dnsmasq -k --no-resolv --port=53 --interface=eth0 --address=/app.test/10.0.0.5
     ports:
       - target: 53
-        published: 5353
+        published: 5354
         protocol: udp
-      - "5353:53/tcp"
+      - "5354:53/tcp"
 ```
 
-This publishes container port 53 on host port 5353 for UDP (long form) and for TCP (short form, declared as the same number to show they are separate). Test it with `dig @<server-ip> -p 5353 app.test`, which answers `10.0.0.5`. Host port 5353 avoids a clash with a resolver already on port 53. The container installs dnsmasq at start, so it needs outbound network access.
+This publishes container port 53 on host port 5354 for UDP (long form) and for TCP (short form, declared as the same number to show they are separate). Test it with `dig @<server-ip> -p 5354 app.test`, which answers `10.0.0.5`. Host port 5354 avoids a clash with a resolver already on port 53 and with mDNS on 5353. `--interface=eth0` makes dnsmasq answer queries that arrive through the port forward; without it dnsmasq drops them as non-local. The container installs dnsmasq at start, so it needs outbound network access.
 
 ## Not yet
 
@@ -91,4 +100,4 @@ These are not built, so compose files that use them are still rejected:
 - `sysctls`
 - `network_mode: host`
 
-That means a WireGuard server cannot run as an app yet. See [ADR 049](https://github.com/glincker/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md) for the plan.
+That means a WireGuard server cannot run as an app yet. See [ADR 049](https://github.com/glincker/levelrail/blob/release/v0.8.9/adr/049-udp-ports-capabilities-sysctls.md) for the plan.
