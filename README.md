@@ -52,12 +52,12 @@ The last lines of output include the dashboard address and a one-time setup link
 Levelrail vX.Y.Z installed and running.
 
 Open the dashboard:
-  http://203.0.113.10:8080/login?setup=<token>
+  http://203.0.113.10:8080/login#setup=<token>
 ```
 
 ### 2. Create the admin account
 
-Open the setup link and choose a password. The first sign-in opens one screen that turns on a free certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
+Open the setup link and choose a password. The token sits in the `#` fragment, so it never reaches the server or its logs; lost it? `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` prints it again. The first sign-in opens one screen that turns on a free certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
 
 ### 3. Deploy an app
 
