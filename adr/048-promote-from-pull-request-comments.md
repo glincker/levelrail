@@ -22,7 +22,15 @@ it never promotes directly: it calls `requestDeployApproval`
 `deploy_approvals` row. A different privileged user then decides it.
 `loadDecidableApprovalAs` refuses a decider who resolves to the same human
 as the requester: a token counts as its owning user, and only an ownerless
-(system or CI) token is compared by its own `(type, id)` pair.
+(system or CI) token is compared by its own `(type, id)` pair. The
+requester's human is stored with the row at request time.
+
+Chat approvals (Slack and Discord buttons, `decideChatApproval` in
+`internal/api/chat_interactions.go`) decide as the channel, not a person, so
+a requester can approve their own request through a shared channel. This is
+channel-level trust by design today. Approvals that need true separation of
+duties should use dashboard or CLI approval only, with the per-channel
+**Interactive approval buttons** toggle left off; there is no global switch.
 
 Two facts shape this decision:
 
@@ -48,7 +56,7 @@ Options:
   mapping), matched on the numeric GitHub id from the signed payload. The
   approval row records that user as the requester. The self-approval check
   does not work unchanged: at decide time it must resolve the decider to a
-  human (a token's owning user, as `approvalPrincipal` already does for
+  human (a token's owning user, as `approvalHuman` already does for
   dashboard approvals) and refuse when that human is the requesting user,
   or when the decider's own linked GitHub numeric id equals the id that
   made the comment. Both comparisons are needed, because a link can be
