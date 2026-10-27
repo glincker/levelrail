@@ -25,8 +25,8 @@ var memoryUnits = map[string]int64{
 
 // Env caps on compose limits; unset leaves only the int64 headroom guard.
 const (
-	envMaxMemoryBytes = "LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES"
-	envMaxCPUs        = "LEVELRAIL_COMPOSE_MAX_CPUS"
+	envMaxMemoryBytes = "APP_COMPOSE_MAX_MEMORY_BYTES"
+	envMaxCPUs        = "APP_COMPOSE_MAX_CPUS"
 	// Headroom so quota SUMs over many services cannot overflow int64.
 	sumHeadroomShift = 16
 )

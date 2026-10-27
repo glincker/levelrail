@@ -49,8 +49,8 @@ func TestToDesiredServices_RejectsBadMemoryLimit(t *testing.T) {
 }
 
 func TestLimitsForService_ValidAndInvalid(t *testing.T) {
-	t.Setenv("LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES", "")
-	t.Setenv("LEVELRAIL_COMPOSE_MAX_CPUS", "")
+	t.Setenv("APP_COMPOSE_MAX_MEMORY_BYTES", "")
+	t.Setenv("APP_COMPOSE_MAX_CPUS", "")
 	ok := []struct {
 		mem, cpu string
 		wantMem  int64
@@ -86,8 +86,8 @@ func TestLimitsForService_ValidAndInvalid(t *testing.T) {
 }
 
 func TestLimitsForService_EnvCap(t *testing.T) {
-	t.Setenv("LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES", "1073741824")
-	t.Setenv("LEVELRAIL_COMPOSE_MAX_CPUS", "4")
+	t.Setenv("APP_COMPOSE_MAX_MEMORY_BYTES", "1073741824")
+	t.Setenv("APP_COMPOSE_MAX_CPUS", "4")
 	if _, _, err := limitsForService(Service{MemLimit: "2g"}); err == nil {
 		t.Error("mem above env cap must be rejected")
 	}
@@ -100,8 +100,8 @@ func TestLimitsForService_EnvCap(t *testing.T) {
 }
 
 func TestLimitsForService_ShorthandWinsOverDeploy(t *testing.T) {
-	t.Setenv("LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES", "")
-	t.Setenv("LEVELRAIL_COMPOSE_MAX_CPUS", "")
+	t.Setenv("APP_COMPOSE_MAX_MEMORY_BYTES", "")
+	t.Setenv("APP_COMPOSE_MAX_CPUS", "")
 	svc := Service{MemLimit: "256m", CPUs: "1", Deploy: &Deploy{}}
 	svc.Deploy.Resources.Limits = deployLimits{Memory: "1g", CPUs: "2"}
 	mem, nano, err := limitsForService(svc)
