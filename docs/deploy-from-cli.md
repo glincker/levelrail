@@ -47,6 +47,8 @@ deploy dep_1: healthy
 https://demo-app.203-0-113-10.sslip.io
 ```
 
+On the first deploy of a new domain the certificate is requested only when the app goes live, so the URL can refuse connections for up to a minute. When the certificate is not issued yet, the summary adds `live on <url> (certificate is being issued, usually under a minute)` on stderr, and `--json` carries `"certificate": "pending"`. Pass `--wait-url` to block until it is issued (limit `APP_DEPLOY_URL_WAIT`, default 2m).
+
 The exit code is 0 for a healthy deploy, 7 when the deploy failed or rolled back and a timeout code when `--timeout` (default 15 minutes) ends before the deploy finishes. The deploy itself keeps running after a timeout.
 
 ## What is uploaded

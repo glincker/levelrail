@@ -36,6 +36,8 @@ type deployUploadResult struct {
 	DeployID string `json:"deploy_id,omitempty"`
 	Status   string `json:"status,omitempty"`
 	URL      string `json:"url,omitempty"`
+	// Certificate is issued, pending or failed for the primary domain; empty for a fallback URL or when unknown.
+	Certificate string `json:"certificate,omitempty"`
 	// Failure is the server's classified reason when the build or rollout failed.
 	Failure  *apiclient.DeployFailure `json:"failure,omitempty"`
 	Error    string                   `json:"error,omitempty"`
@@ -80,7 +82,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "deploy", "print the result as JSON to stdout and nothing else", stderr)
 	var appName, name, fromHash, timeoutStr string
 	var port int
-	var dryRun, yes, static bool
+	var dryRun, yes, static, waitURL bool
 	env, buildEnv := stringMapFlag{}, stringMapFlag{}
 	var include []string
 	fs.StringVar(&appName, "app", "", "app to deploy to (default: the directory name, created on the first deploy)")
@@ -95,6 +97,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.StringVar(&fromHash, "upload-hash", "", "rebuild an earlier upload that is still stored, without sending the directory again")
 	fs.StringVar(&timeoutStr, "timeout", defaultDeployUploadWait, "stop following the deploy after this long (the deploy itself keeps running)")
 	fs.BoolVar(&static, "static", false, "publish a folder or .zip as a static site: no build, no source control (implied by a .zip argument)")
+	fs.BoolVar(&waitURL, "wait-url", false, "after a healthy deploy, wait for the domain certificate to be issued (limit: "+envDeployURLWait+")")
 	fs.BoolVar(&dryRun, "dry-run", false, "list the files that would be uploaded and change nothing")
 	fs.BoolVar(&yes, "yes", false, "do not ask for confirmation on a terminal")
 	fs.BoolVar(&yes, "y", false, "shorthand for --yes")
@@ -128,6 +131,12 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	maxBytes, err := uploadMaxBytes(lookupEnv)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
+	}
+	var urlWait time.Duration
+	if waitURL {
+		if urlWait, err = deployURLWait(lookupEnv); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
 	}
 
 	if staticDrop {
@@ -188,7 +197,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 			return reportError(stdout, stderr, jsonOut, err)
 		}
 		fromHash = hash
-		return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, &res, stdout, stderr, of, jsonOut)
+		return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
 	}
 
 	if !validUploadHash(fromHash) {
@@ -203,7 +212,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	res.Hash = fromHash
-	return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, &res, stdout, stderr, of, jsonOut)
+	return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
 }
 
 // dirAppName turns the directory's own name into a valid app name, or "" to fall back to detection.
@@ -339,7 +348,7 @@ func packAndUpload(ctx context.Context, client *Client, app string, plan sourceu
 // logDrainGrace lets the last log lines print after the verdict before the follow is cut.
 const logDrainGrace = 2 * time.Second
 
-func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf upInference, hash string, buildEnv map[string]string, timeout time.Duration, res *deployUploadResult, stdout, stderr io.Writer, of outputFlags, jsonOut bool) int {
+func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf upInference, hash string, buildEnv map[string]string, timeout, urlWait time.Duration, res *deployUploadResult, stdout, stderr io.Writer, of outputFlags, jsonOut bool) int {
 	name := inf.Flags.name
 	req := buildTriggerRequest{
 		UploadHash: hash,
@@ -398,10 +407,24 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 	res.Failure, res.Error = wait.Deploy.Failure, wait.Deploy.Error
 	if final, err := client.GetApp(ctx, name); err == nil {
 		res.URL = appPrimaryURL(final)
+		if domain := primaryDomain(final); domain != "" && res.Status == apiclient.DeployOutcomeHealthy {
+			res.Certificate = domainCertState(ctx, client, domain)
+			if res.Certificate == certPending && urlWait > 0 {
+				if !jsonOut {
+					_, _ = fmt.Fprintln(stderr, "waiting for the certificate on "+res.URL)
+				}
+				res.Certificate = waitForDomainCert(ctx, client, domain, urlWait)
+			}
+		}
 	}
 	code := writeScheduledTaskResult(stdout, stderr, of, res, func() {
 		if res.Status == apiclient.DeployOutcomeHealthy && res.URL != "" {
 			_, _ = fmt.Fprintln(stdout, res.URL)
+			if res.Certificate == certIssued && urlWait > 0 {
+				_, _ = fmt.Fprintln(stderr, "certificate issued, "+res.URL+" is ready")
+			} else if note := certNote(res.URL, res.Certificate); note != "" {
+				_, _ = fmt.Fprintln(stderr, note)
+			}
 		}
 		_, _ = fmt.Fprintf(stderr, "deploy %s: %s\n", res.DeployID, res.Status)
 		printUploadFailure(stderr, res)
@@ -448,6 +471,7 @@ Flags:
   --upload-hash HASH    rebuild an earlier upload that is still stored (default retention 7 days)
   --timeout duration    stop following the deploy after this long (default %[2]s)
   --static              publish as a static site, no build (implied for a .zip)
+  --wait-url            after a healthy deploy, wait for the domain certificate (limit %[4]s, default %[5]s)
   --dry-run             list the files that would be uploaded, send nothing
   --yes, -y             do not ask for confirmation on a terminal
   --token, --api-url, --profile, --json, --output, --query as for every command
@@ -456,7 +480,7 @@ Size limit: %[3]s (default 512 MiB, compressed), also enforced by the server.
 
 Example:
   %[1]s deploy ./my-app --env LOG_LEVEL=info
-`, prog, defaultDeployUploadWait, envUploadMaxBytes)
+`, prog, defaultDeployUploadWait, envUploadMaxBytes, envDeployURLWait, defaultDeployURLWait)
 }
 
 // printUploadFailure shows why a deploy did not succeed; the server already
