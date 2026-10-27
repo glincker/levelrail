@@ -413,9 +413,10 @@ var validKnownStrategies = map[string]bool{
 }
 
 // validateAppPort allows no port for a service that only publishes host
-// ports (a DNS or VPN style UDP server); a routed domain still needs one.
-func validateAppPort(a appResource) error {
-	if a.Port == 0 && len(a.PublishedPorts) > 0 {
+// ports (a DNS or VPN style UDP server), or one stored without a port (a
+// compose worker); a routed domain still needs one.
+func validateAppPort(a appResource, storedPortless bool) error {
+	if a.Port == 0 && (len(a.PublishedPorts) > 0 || storedPortless) {
 		if len(a.Domains) > 0 {
 			return errors.New("port is required when domains are set, the proxy routes HTTP to it")
 		}
@@ -428,6 +429,10 @@ func validateAppPort(a appResource) error {
 }
 
 func validateAppResource(a appResource) error {
+	return validateAppResourceWith(a, false)
+}
+
+func validateAppResourceWith(a appResource, storedPortless bool) error {
 	if a.Name == "" {
 		return errors.New("name is required")
 	}
@@ -437,7 +442,7 @@ func validateAppResource(a appResource) error {
 	if a.Image == "" {
 		return errors.New("image is required")
 	}
-	if err := validateAppPort(a); err != nil {
+	if err := validateAppPort(a, storedPortless); err != nil {
 		return err
 	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
@@ -881,16 +886,19 @@ func httpsURL(host string, port int) string {
 	return "https://" + host + ":" + strconv.Itoa(port)
 }
 
-// withStoredPublishedPorts fills omitted published_ports from the stored app
-// for validation, since omitted means "keep" on update.
-func (rt *Router) withStoredPublishedPorts(ctx context.Context, req appResource) appResource {
-	if req.PublishedPorts != nil || req.Port != 0 {
-		return req
+// validateAppUpdate reads omitted published_ports as the stored list, and
+// lets a service deployed without a port (compose worker, UDP-only) stay so.
+func (rt *Router) validateAppUpdate(ctx context.Context, req appResource) error {
+	storedPortless := false
+	if req.Port == 0 {
+		if existing, err := rt.apps.GetDesiredService(ctx, req.Name); err == nil {
+			storedPortless = existing.Port == 0
+			if req.PublishedPorts == nil {
+				req.PublishedPorts = existing.PublishedPorts
+			}
+		}
 	}
-	if existing, err := rt.apps.GetDesiredService(ctx, req.Name); err == nil {
-		req.PublishedPorts = existing.PublishedPorts
-	}
-	return req
+	return validateAppResourceWith(req, storedPortless)
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
@@ -905,7 +913,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Name = name // the path is authoritative, not whatever the body claims
 
-	if err := validateAppResource(rt.withStoredPublishedPorts(r.Context(), req)); err != nil {
+	if err := rt.validateAppUpdate(r.Context(), req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

@@ -66,7 +66,16 @@ func TestPublishedPorts_UDPOnlyApp(t *testing.T) {
 			t.Errorf("%s: status = %d, body = %s, want 400", name, rec.Code, rec.Body.String())
 		}
 	}
-	if rec := do(http.MethodPut, "/api/v1/apps/dns-dns", `{"image":"alpine:3.20","published_ports":[]}`); rec.Code != http.StatusBadRequest {
-		t.Errorf("clearing the only port of a portless app: status = %d, body = %s, want 400", rec.Code, rec.Body.String())
+	if rec := do(http.MethodPut, "/api/v1/apps/dns-dns", `{"image":"alpine:3.20","published_ports":[]}`); rec.Code != http.StatusOK {
+		t.Fatalf("clearing the ports of a portless app: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if got := stored("dns-dns"); len(got.PublishedPorts) != 0 {
+		t.Fatalf("after clear: published_ports = %+v, want none", got.PublishedPorts)
+	}
+	if rec := do(http.MethodPost, "/api/v1/apps", `{"name":"web","image":"alpine:3.20","port":80}`); rec.Code >= 300 {
+		t.Fatalf("create web: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if rec := do(http.MethodPut, "/api/v1/apps/web", `{"image":"alpine:3.20"}`); rec.Code != http.StatusBadRequest {
+		t.Errorf("dropping the port of a web app: status = %d, body = %s, want 400", rec.Code, rec.Body.String())
 	}
 }
