@@ -1649,6 +1649,7 @@ type ServiceTemplateListItem struct {
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
+	Verified               bool   `json:"verified"`
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:

@@ -38,6 +38,8 @@ type serviceTemplateListItem struct {
 	// NeedsDatabase and HasVolume are card hints read from the Compose body.
 	NeedsDatabase bool `json:"needs_database,omitempty"`
 	HasVolume     bool `json:"has_volume,omitempty"`
+	// Verified marks a template that passed the last committed live smoke run.
+	Verified bool `json:"verified"`
 }
 
 var templateDatabaseImage = regexp.MustCompile(`(?m)^\s*image:\s*["']?(?:[\w.\-]+/)*(postgres|postgis|mysql|mariadb|mongo|redis|valkey|clickhouse|timescaledb)\b`)
@@ -85,6 +87,7 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			Installable:            tpl.Manifest != nil,
 			NeedsDatabase:          needsDB,
 			HasVolume:              hasVol,
+			Verified:               catalog.IsVerified(tpl.ID),
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
