@@ -63,9 +63,10 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | `profiles` | A service with `profiles:` only deploys when one of its profiles is enabled with `--profile-name` (or `?profiles=` on the API). |
 | `deploy.replicas`, `deploy.resources.reservations.devices` | Replica count and GPU reservations. Other Swarm keys are rejected. |
 | `mem_limit`, `cpus`, `deploy.resources.limits.memory`, `deploy.resources.limits.cpus` | Hard memory and CPU caps for the service (`512m`, `1g`, `0.5`). The shorthand wins when both are set. |
+| `shm_size` | Size of `/dev/shm` (`1gb`, `256m`), for Chromium based apps that crash with Docker's 64 MB default. Changing it recreates the container. |
 | `restart`, `networks` | Parsed and reported as notices. The reconciler restarts containers, and every service shares one app network. |
 
-Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `APP_COMPOSE_MAX_MEMORY_BYTES` and `APP_COMPOSE_MAX_CPUS` on the control plane to lower the cap; unset keeps only the built-in overflow guard.
+Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `APP_COMPOSE_MAX_MEMORY_BYTES`, `APP_COMPOSE_MAX_CPUS` and `APP_COMPOSE_MAX_SHM_BYTES` on the control plane to lower the cap; unset keeps only the built-in overflow guard.
 
 ### Keys that are ignored
 
@@ -79,9 +80,10 @@ Common ones and their alternatives:
 | `env_file` | Move the values into `environment:` or the app's env vars. |
 | `container_name`, `hostname`, `links` | Not needed: containers are named `<app>-<service>` and services reach each other by name. |
 | `user`, `working_dir` | Set `USER` or `WORKDIR` in the image. |
+| `cap_drop`, `pids_limit` | Not needed: every container already drops all capabilities except a minimal set and gets a process limit (`APP_CONTAINER_PIDS_LIMIT`, default 4096). |
 | `expose` | Add `ports:` for the port ingress should route to. |
 | `deploy.resources.reservations` CPU and memory | Only limits are applied. |
-| `tty`, `stdin_open`, `logging`, `ulimits`, `shm_size`, `stop_grace_period` | Remove them, they have no effect. |
+| `tty`, `stdin_open`, `logging`, `ulimits`, `stop_grace_period` | Remove them, they have no effect. |
 | Top-level `volumes:` options, `name:` | Named volumes are always created for the app. |
 | `healthcheck.disable`, `healthcheck.start_interval`, `depends_on.restart`, `depends_on.required`, long-form `ports` `host_ip`, long-form `volumes` `bind` or `tmpfs` | Remove them. |
 

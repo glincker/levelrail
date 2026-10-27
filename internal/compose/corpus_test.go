@@ -18,7 +18,7 @@ var wantUnsupported = map[string][]string{
 	"wordpress_mysql.yaml":      {"db:env_file", "wordpress:links"},
 	"profiles_extends.yaml":     {"debug:extends", "debug:stdin_open", "debug:tty", "migrate:depends_on.restart"},
 	"secrets_configs.yaml":      {},
-	"deploy_resources.yaml":     {"gpu:shm_size", "gpu:ulimits", "worker:deploy.resources.reservations.cpus", "worker:deploy.resources.reservations.memory"},
+	"deploy_resources.yaml":     {"gpu:ulimits", "worker:deploy.resources.reservations.cpus", "worker:deploy.resources.reservations.memory"},
 	"healthcheck_variants.yaml": {"http:healthcheck.start_interval", "off:healthcheck.disable"},
 	"anchors_extensions.yaml":   {":volumes.data", "a:logging", "b:hostname", "b:logging", "b:ports.host_ip", "b:volumes.volume"},
 	"env_file_stack.yaml":       {":name", ":volumes.redis", "api:container_name", "api:env_file", "api:stop_grace_period", "api:user", "redis:container_name"},
