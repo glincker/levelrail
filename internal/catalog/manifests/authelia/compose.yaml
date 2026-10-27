@@ -33,8 +33,13 @@ services:
           filesystem:
             filename: /data/notification.txt
         CFG
-        # users.yml is rebuilt unless it holds a sha512-crypt hash, so an empty password never ships
-        if ! grep -Eq 'password: "[[:punct:]]6[[:punct:]][^"]{60,}"' /data/users.yml 2>/dev/null; then
+        # Rebuilt only when no user has a password; hashes of any algorithm are kept, an empty one refuses to start
+        if sed "s/[\"']//g" /data/users.yml 2>/dev/null | grep -Eq '^[[:space:]]*password:[[:space:]]*[^[:space:]~]'; then
+          if sed "s/[\"']//g" /data/users.yml | grep -Eqx '[[:space:]]*password:[[:space:]]*(~|null)?[[:space:]]*'; then
+            echo "users.yml has a user with an empty password: set a hash or remove that user" >&2
+            exit 1
+          fi
+        else
           rm -f /data/users.yml /data/admin.digest
           [ -n "$ADMIN_PASSWORD" ] || exit 1
           # mkpasswd reads the password from stdin so it never appears in argv
