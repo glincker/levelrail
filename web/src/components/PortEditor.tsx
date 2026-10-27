@@ -144,7 +144,7 @@ export function PortEditor({ app }: { app: AppDetail }) {
         port: values.port,
         host_port: values.hostPort === '' ? null : Number(values.hostPort),
         bind_address: bindAddress,
-        published_ports: parsed.ports.length > 0 ? parsed.ports : undefined,
+        published_ports: parsed.ports,
       },
       {
         onSuccess: () => {

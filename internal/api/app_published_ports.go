@@ -90,18 +90,28 @@ func udpHostConflict(previous, next []store.DesiredService) (store.PublishedPort
 	return store.PublishedPort{}, "", netip.AddrPort{}, false
 }
 
-// admitPublishedPorts refuses a deploy whose direct host ports another app
-// already holds, keyed by (host port, protocol), or whose service sits on
-// a remote node, where node firewall and exposure rules are not managed.
+// admitPublishedPorts refuses invalid direct host ports, ones another app
+// already holds, keyed by (host port, protocol), or ones on a service placed
+// on a remote node, where node firewall and exposure rules are not managed.
 func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, appName string, previous, next []store.DesiredService) bool {
 	nodeOf := make(map[string]string, len(previous))
 	for _, p := range previous {
 		nodeOf[p.Name] = p.NodeID
 	}
 	want := map[store.PublishedPort]string{}
+	self := make(map[string]bool, len(next))
 	for _, svc := range next {
+		self[svc.Name] = true
+		if err := spec.ValidatePublishedPorts(svc.PublishedPorts); err != nil {
+			writeCodedError(w, http.StatusBadRequest, codePublishedPortInvalid, err.Error())
+			return false
+		}
+		node, known := nodeOf[svc.Name]
+		if !known {
+			node = svc.NodeID
+		}
 		for _, p := range svc.PublishedPorts {
-			if node := nodeOf[svc.Name]; node != "" && node != rt.localNodeID {
+			if node != "" && node != rt.localNodeID {
 				writeCodedError(w, http.StatusBadRequest, codePublishedPortRemoteNode,
 					fmt.Sprintf("host port %s can only be published on the control plane's own node, service %q is placed on node %q", p, svc.Name, node))
 				return false
@@ -118,7 +128,7 @@ func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 		return false
 	}
 	for _, other := range all {
-		if other.AppID == appName {
+		if other.AppID == appName || self[other.Name] {
 			continue
 		}
 		for _, p := range other.PublishedPorts {

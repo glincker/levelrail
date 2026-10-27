@@ -51,8 +51,8 @@ type appResource struct {
 	// time. Settable on create and update, like Port itself, not
 	// response-only.
 	HostPort *int `json:"host_port,omitempty"`
-	// PublishedPorts are ports bound straight on the host beside Port
-	// (UDP today), response only; set them through a compose file.
+	// PublishedPorts are ports bound straight on the host beside Port (UDP
+	// today). On update, omitted keeps the stored list and [] clears it.
 	PublishedPorts []store.PublishedPort `json:"published_ports,omitempty"`
 	// BindAddress picks which network interface Port (and HostPort, if
 	// pinned) binds to on the host (store.DesiredService.BindAddress,
@@ -358,20 +358,21 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 
 func (a appResource) toDesiredService() store.DesiredService {
 	return store.DesiredService{
-		Name:        a.Name,
-		Image:       a.Image,
-		Port:        a.Port,
-		HostPort:    a.HostPort,
-		BindAddress: a.BindAddress,
-		Domains:     a.Domains,
-		Env:         a.Env,
-		Resources:   a.Resources,
-		Health:      a.Health,
-		Hooks:       a.Hooks,
-		Strategy:    a.Strategy,
-		Replicas:    a.Replicas,
-		Labels:      a.Labels,
-		Command:     a.Command,
+		Name:           a.Name,
+		Image:          a.Image,
+		Port:           a.Port,
+		HostPort:       a.HostPort,
+		BindAddress:    a.BindAddress,
+		Domains:        a.Domains,
+		Env:            a.Env,
+		Resources:      a.Resources,
+		Health:         a.Health,
+		Hooks:          a.Hooks,
+		Strategy:       a.Strategy,
+		Replicas:       a.Replicas,
+		Labels:         a.Labels,
+		Command:        a.Command,
+		PublishedPorts: a.PublishedPorts,
 	}
 }
 
@@ -585,6 +586,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if !errors.Is(err, store.ErrServiceNotFound) {
 		rt.internalError(w, "api: create app: check existing failed", err, slog.String("name", req.Name))
+		return
+	}
+
+	admitted := req.toDesiredService()
+	admitted.NodeID = req.NodeID
+	if !rt.admitPublishedPorts(w, r, req.Name, nil, []store.DesiredService{admitted}) {
 		return
 	}
 
@@ -910,6 +917,16 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	imageChanged := req.Image != existing.Image
 	desired := req.toDesiredService()
+	if req.PublishedPorts == nil {
+		desired.PublishedPorts = existing.PublishedPorts
+	}
+	appID := existing.AppID
+	if appID == "" {
+		appID = name
+	}
+	if !rt.admitPublishedPorts(w, r, appID, []store.DesiredService{*existing}, []store.DesiredService{desired}) {
+		return
+	}
 	quotaRelease, quotaOK := rt.admitAppResizeQuota(w, r, *existing, desired)
 	if !quotaOK {
 		return
