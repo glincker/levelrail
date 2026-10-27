@@ -53,15 +53,19 @@ export function FirstAppStatus({
     failed,
   )
 
+  // The live address pill already opens the app, so the extra Open button only shows without one.
+  const showOpenApp = phase !== 'live' || !url
   const appLinks = (
     <div className="flex flex-wrap gap-2">
-      <Button
-        size="sm"
-        variant="outline"
-        render={<Link to="/apps/$name" params={{ name: app.name }} />}
-      >
-        {t('first.status.openApp')}
-      </Button>
+      {showOpenApp ? (
+        <Button
+          size="sm"
+          variant="outline"
+          render={<Link to="/apps/$name" params={{ name: app.name }} />}
+        >
+          {t('first.status.openApp')}
+        </Button>
+      ) : null}
       <Button
         size="sm"
         variant="outline"

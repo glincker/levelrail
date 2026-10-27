@@ -110,3 +110,25 @@ describe('FirstAppStatus address with HTTPS off', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+describe('FirstAppStatus live actions', () => {
+  it('shows the address pill without a second Open app button', () => {
+    httpsState.data = { state: 'off' }
+    urlsState.data = {
+      addresses: [
+        {
+          kind: 'public',
+          url: 'http://203.0.113.5:8080',
+          reachable_hint: 'reachable',
+        },
+      ],
+    }
+    renderPhase('live')
+    expect(
+      screen.queryByRole('link', { name: getStartedEn.first.status.openApp }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: getStartedEn.first.status.viewLogs }),
+    ).toBeInTheDocument()
+  })
+})
