@@ -21,6 +21,7 @@ type DrainTracker struct {
 	serving  map[string]string
 	replaced map[string]string
 	retired  map[string]map[string]time.Time
+	shrink   map[string]bool
 }
 
 // NewDrainTracker builds an empty tracker.
@@ -28,7 +29,21 @@ func NewDrainTracker() *DrainTracker {
 	return &DrainTracker{
 		cutover: make(map[string]time.Time), serving: make(map[string]string),
 		replaced: make(map[string]string), retired: make(map[string]map[string]time.Time),
+		shrink: make(map[string]bool),
 	}
+}
+
+// shrinking records whether service has surplus replicas of its serving
+// release and reports when they first appear, which opens a drain window.
+func (t *DrainTracker) shrinking(service string, surplus bool) bool {
+	if t == nil {
+		return false
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	opened := surplus && !t.shrink[service]
+	t.shrink[service] = surplus
+	return opened
 }
 
 // retire records when traffic left release; a release serving again is
@@ -169,6 +184,17 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 		justDeployed = true
 		c.drain.retire(c.serviceName, c.drain.previous(c.serviceName), releaseOf(targets[0]), now)
 	}
+	if !justDeployed && cfg.DrainTimeout > 0 && len(targets) > 0 {
+		all, err := c.listPrefix(ctx, c.serviceName+"-")
+		if err != nil {
+			return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
+		}
+		// A scale-down changes no release, but the surplus replicas still
+		// serve in-flight requests until a drain window passes.
+		if c.drain.shrinking(c.serviceName, c.hasSurplusReplicas(all, targets)) {
+			c.drain.mark(c.serviceName, now)
+		}
+	}
 	if justDeployed {
 		c.drain.mark(c.serviceName, now)
 	}
@@ -220,6 +246,18 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 			fmt.Sprintf("stopped %d container(s) of the previous release after draining", running))
 	}
 	return err
+}
+
+// hasSurplusReplicas reports whether a stale replica of the current release
+// is still running, as after a scale-down.
+func (c *Controller) hasSurplusReplicas(all []docker.ContainerState, targets []string) bool {
+	current := releaseOf(targets[0])
+	for _, cs := range c.filterStale(all, targets) {
+		if cs.Running && releaseOf(cs.Name) == current {
+			return true
+		}
+	}
+	return false
 }
 
 // drainFilter returns the stale containers due at now. Each release drains

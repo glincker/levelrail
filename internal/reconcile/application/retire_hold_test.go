@@ -147,3 +147,37 @@ func TestRetire_OverlappingCutoversDrainFromTrafficMove(t *testing.T) {
 		t.Fatal("v2 removed inside its own drain")
 	}
 }
+
+// R2: a plain scale-down creates nothing and moves no traffic between
+// releases, yet the removed replica still drains before it is stopped.
+func TestRetire_ScaleDownDrainsSurplusReplica(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	drain := time.Minute
+	p := clockedPass{t: t, rt: rt, tracker: NewDrainTracker(), cfg: deploysafety.Effective{SuccessThreshold: 1, DrainTimeout: drain}, hold: 3 * time.Minute}
+	desired := *gateDesired()
+	base, extra := ReplicaContainerName("web", desired.Image, "", 0), ReplicaContainerName("web", desired.Image, "", 1)
+	t0 := time.Now().Truncate(time.Second)
+	for _, name := range []string{base, extra} {
+		rt.seed(name, true)
+		rt.setExitState(name, &docker.ExitState{Running: true})
+		rt.containers[name].Created = t0.Add(-time.Hour)
+	}
+
+	desired.Replicas = 2
+	p.run(t0, desired)
+	desired.Replicas = 1
+	p.run(t0.Add(time.Second), desired)
+	p.run(t0.Add(drain-time.Second), desired)
+	if !p.running(extra) {
+		t.Fatal("surplus replica stopped before its drain")
+	}
+	p.run(t0.Add(time.Second+drain+time.Second), desired)
+	if cs, _ := rt.InspectByName(context.Background(), extra); cs != nil {
+		t.Fatalf("surplus replica = %+v after its drain, want it removed", cs)
+	}
+	if !p.running(base) {
+		t.Fatal("serving replica removed")
+	}
+}
