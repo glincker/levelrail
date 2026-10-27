@@ -17,6 +17,7 @@ import { useAppNetwork } from '../queries/appNetwork'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { DomainAuthGateControl } from './DomainAuthGateControl'
+import { PublishedPortsField } from './PublishedPortsField'
 import { FallbackBetaNote } from './FallbackBetaNote'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -98,6 +99,11 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
               </span>
             )}
           </FlowField>
+          {app.published_ports?.length ? (
+            <FlowField label={t('network.publishedPorts')}>
+              <PublishedPortsField ports={app.published_ports} />
+            </FlowField>
+          ) : null}
           <FlowField label="Status">
             <Badge variant={running ? 'success' : 'muted'}>
               {running ? 'Running' : 'Not running'}
