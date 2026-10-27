@@ -79,7 +79,12 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		out := deployAppOutput{DeployTriggerResult: result}
 		if in.Wait && result.PendingApproval == nil {
-			w, err := waitDeploy(ctx, client, in.Name, "latest", in.MaxWaitSeconds)
+			target := result.DeployID
+			if target == "" {
+				target = "latest"
+				out.WaitNote = "server returned no deploy_id; waited on the newest deploy, which may be another one"
+			}
+			w, err := waitDeploy(ctx, client, in.Name, target, in.MaxWaitSeconds)
 			if err != nil {
 				return nil, out, fmt.Errorf("deploy app %q started, wait failed: %w", in.Name, err)
 			}
@@ -339,7 +344,8 @@ type deployAppWaitInput struct {
 
 type deployAppOutput struct {
 	apiclient.DeployTriggerResult
-	Wait *waitForDeployOutput `json:"wait,omitempty" jsonschema:"set when wait=true"`
+	Wait     *waitForDeployOutput `json:"wait,omitempty" jsonschema:"set when wait=true"`
+	WaitNote string               `json:"wait_note,omitempty"`
 }
 
 type rollbackToDeployInput struct {

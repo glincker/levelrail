@@ -140,3 +140,52 @@ func TestDeployAppWithoutWaitDoesNotPoll(t *testing.T) {
 		t.Error("deploy_app polled without wait")
 	}
 }
+
+// A second deploy lands between trigger and first poll: the wait must
+// follow the attempt this call created, not whatever is newest.
+func TestDeployAppWaitFollowsItsOwnAttempt(t *testing.T) {
+	t.Setenv(EnvWaitInterval, "1")
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/apps/web/deploys":
+			_, _ = w.Write([]byte(`{"name":"web","deploy_id":"dep_mine"}`))
+		case "/api/v1/apps/web/deploys/dep_mine":
+			_ = json.NewEncoder(w).Encode(apiclient.DeployAttemptResource{ID: "dep_mine", ServiceName: "web", Status: "succeeded", Outcome: "healthy"})
+		default:
+			_ = json.NewEncoder(w).Encode(apiclient.DeployAttemptResource{ID: "dep_other", ServiceName: "web", Status: "failed", Outcome: "failed"})
+		}
+	})
+	args := map[string]any{"name": "web", "image": "nginx:1", "wait": true}
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "deploy_app", Arguments: args})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got deployAppOutput
+	decodeStructured(t, result, &got)
+	if got.Wait == nil || got.Wait.DeployID != "dep_mine" || got.Wait.Status != "healthy" || got.WaitNote != "" {
+		t.Fatalf("wait = %+v note %q, want dep_mine healthy", got.Wait, got.WaitNote)
+	}
+}
+
+func TestDeployAppWaitWithoutIDFallsBackAndSaysSo(t *testing.T) {
+	t.Setenv(EnvWaitInterval, "1")
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/v1/apps/web/deploys" {
+			_, _ = w.Write([]byte(`{"name":"web"}`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(apiclient.DeployAttemptResource{ID: "dep_1", ServiceName: "web", Status: "succeeded", Outcome: "healthy"})
+	})
+	args := map[string]any{"name": "web", "image": "nginx:1", "wait": true}
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "deploy_app", Arguments: args})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got deployAppOutput
+	decodeStructured(t, result, &got)
+	if got.Wait == nil || got.Wait.DeployID != "dep_1" || got.WaitNote == "" {
+		t.Fatalf("wait = %+v note %q, want latest fallback with a note", got.Wait, got.WaitNote)
+	}
+}
