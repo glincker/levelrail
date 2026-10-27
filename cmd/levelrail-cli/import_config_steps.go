@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/configtranslate"
@@ -40,7 +41,11 @@ func refDatabase(ref string) string {
 func importConfigSteps(f configtranslate.Fragment, prog, specFile string) []string {
 	var out []string
 	for _, k := range sortedFragmentKeys(f.Databases) {
-		out = append(out, fmt.Sprintf("%s databases create --name %s --engine %s --version VERSION", prog, k, f.Databases[k].Engine))
+		if !configtranslate.ValidDatabaseName(k) {
+			out = append(out, configtranslate.SkippedStep("database", k))
+			continue
+		}
+		out = append(out, fmt.Sprintf("%s databases create --name %s --engine %s --version VERSION", prog, k, configtranslate.ShellQuote(f.Databases[k].Engine)))
 	}
 	out = append(out, configtranslate.NextSteps(configtranslate.Fragment{Version: f.Version, Services: f.Services}, prog, specFile)...)
 	for _, k := range sortedFragmentKeys(f.Services) {
@@ -54,7 +59,11 @@ func importConfigSteps(f configtranslate.Fragment, prog, specFile string) []stri
 		}
 		sort.Strings(dbs)
 		for _, db := range dbs {
-			out = append(out, fmt.Sprintf("%s databases link %s APP   # APP is the --name given to the %s service", prog, db, k))
+			if !configtranslate.ValidDatabaseName(db) {
+				out = append(out, configtranslate.SkippedStep("database", db))
+				continue
+			}
+			out = append(out, fmt.Sprintf("%s databases link %s APP   # APP is the --name given to the %s service", prog, db, strconv.Quote(k)))
 		}
 	}
 	return out

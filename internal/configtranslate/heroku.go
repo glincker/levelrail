@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -304,6 +305,13 @@ func attachDatabase(frag *Fragment, r addonRule, plan, as string) []Finding {
 	if frag.Databases == nil {
 		frag.Databases = map[string]Database{}
 	}
+	var fs []Finding
+	if as != "" && (!ValidDatabaseName(strings.ToLower(as)) || strings.Contains(as, "-")) {
+		fs = append(fs, Finding{Code: "heroku.addon.name.invalid", Severity: SeverityWarn, Source: fileAppJSON, Subject: plan,
+			Message: "add-on alias " + strconv.Quote(as) + " is not a valid name, the default name is used instead",
+			Fix:     "Use only letters and digits, starting with a letter, in the add-on as field."})
+		as = ""
+	}
 	name := strings.ToLower(as)
 	env := r.env
 	if as != "" {
@@ -331,9 +339,9 @@ func attachDatabase(frag *Fragment, r addonRule, plan, as string) []Finding {
 		svc.Env[env] = Env{From: r.engine + "." + name + ".url"}
 		frag.Services[k] = svc
 	}
-	return []Finding{{Code: "heroku.addon.database", Severity: SeverityInfo, Source: fileAppJSON, Subject: plan,
+	return append(fs, Finding{Code: "heroku.addon.database", Severity: SeverityInfo, Source: fileAppJSON, Subject: plan,
 		Message: "add-on maps to a managed " + r.engine + " database named " + name + ", exposed as " + env,
-		Fix:     "Dump the data from Heroku and restore it into the new database before cutover."}}
+		Fix:     "Dump the data from Heroku and restore it into the new database before cutover."})
 }
 
 func herokuEnv(frag *Fragment, app appJSON) []Finding {
