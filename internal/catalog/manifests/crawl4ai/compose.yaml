@@ -5,8 +5,6 @@ services:
     environment:
       CRAWL4AI_API_TOKEN: ${API_TOKEN}
     shm_size: 1gb
-    cap_drop:
-      - ALL
     security_opt:
       - no-new-privileges:true
     healthcheck:

@@ -1,13 +1,13 @@
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2.6.5
-    user: root
-    command: start --log info rocksdb:/mydata/database.db
+    # The image runs as uid 65532; mounting at its own home keeps the volume writable without root.
+    command: start --log info rocksdb:/home/nonroot/database.db
     environment:
       SURREAL_USER: root
       SURREAL_PASS: ${DB_PASSWORD}
     volumes:
-      - surreal_data:/mydata
+      - surreal_data:/home/nonroot
     healthcheck:
       test: ["CMD", "/surreal", "isready", "--endpoint", "http://127.0.0.1:8000"]
       interval: 10s
