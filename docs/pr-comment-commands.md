@@ -63,12 +63,13 @@ The webhook on the repository must also deliver the **Issue comments** event. Ad
 | `APP_PR_COMMENT_PERMISSION_CACHE` | 1m | How long a positive permission answer is reused. |
 | `APP_PR_COMMENT_LOG_RETENTION` | 720h | How long handled comment ids are remembered. |
 | `APP_PR_COMMENT_RUN_TIMEOUT` | 30m | Upper bound for one command's deploy work. |
+| `APP_PR_COMMENT_MAX_BODY_BYTES` | 4096 | Longest comment body that is scanned for a command. A longer comment is ignored, and audited as `body_too_large` when it mentions a command. |
 
 ## What happens on a comment
 
 1. The webhook signature is verified with the same per-app secret as push deploys. An unsigned or wrongly signed delivery is rejected with 401.
 2. The kill switch and the app setting are checked. Off means the event is ignored.
-3. Only a newly created comment on a pull request counts. Edits, deletes and plain issues are ignored.
+3. Only a newly created comment on a pull request counts. Edits, deletes and plain issues are ignored, and so is a comment longer than `APP_PR_COMMENT_MAX_BODY_BYTES`.
 4. Comments from bots, from GitHub Apps, and comments carrying Levelrail's own reply marker are ignored.
 5. The comment id is recorded. A redelivered webhook, or an operator replay, finds it already handled and does nothing.
 6. The per-user and per-pull-request limits are applied before any call to GitHub.

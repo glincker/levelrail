@@ -140,3 +140,35 @@ func TestPRCommentAudit_AcceptedAndNonCommandsNotRefused(t *testing.T) {
 		t.Fatalf("refusal rows = %+v, want none", got)
 	}
 }
+
+func TestPRComment_BodyCap(t *testing.T) {
+	t.Run("default cap", func(t *testing.T) {
+		f := newPRCmdFixture(t, testPRCommentConfig(), true)
+		f.send(commentOpts{body: "/levelrail redeploy\n" + strings.Repeat("a", defaultPRCommentMaxBodyBytes)})
+		if len(f.builder.calls) != 0 || f.gh.apiCalls() != 0 {
+			t.Fatal("an oversized comment was acted on")
+		}
+		f.wantOneRefusal(prRefusedBodyTooLarge)
+	})
+	t.Run("cap from env", func(t *testing.T) {
+		t.Setenv(envPRCommentMaxBodyBytes, "32")
+		f := newPRCmdFixture(t, testPRCommentConfig(), true)
+		f.send(commentOpts{body: "/levelrail status\nplease check this one"})
+		if f.gh.replyCount() != 0 {
+			t.Fatal("a comment over the env cap got a reply")
+		}
+		f.wantOneRefusal(prRefusedBodyTooLarge)
+		f.send(commentOpts{body: "/levelrail status"})
+		if f.gh.replyCount() != 1 {
+			t.Errorf("replies = %d, want a short command to still run", f.gh.replyCount())
+		}
+	})
+	t.Run("long prose without a command is not audited", func(t *testing.T) {
+		t.Setenv(envPRCommentMaxBodyBytes, "32")
+		f := newPRCmdFixture(t, testPRCommentConfig(), true)
+		f.send(commentOpts{body: strings.Repeat("looks good ", 10)})
+		if got := f.refusals(); len(got) != 0 {
+			t.Fatalf("refusal rows = %+v, want none", got)
+		}
+	})
+}

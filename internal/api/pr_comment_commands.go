@@ -130,6 +130,12 @@ func (rt *Router) handleIssueCommentWebhook(ctx context.Context, name string, gs
 	if ev.Action != "created" || !ev.IsPullRequest {
 		return ignore("ignored: not a new pull request comment\n")
 	}
+	if len(ev.Body) > envIntDefault(envPRCommentMaxBodyBytes, defaultPRCommentMaxBodyBytes) {
+		if strings.Contains(strings.ToLower(ev.Body), prcommand.Prefix) {
+			rt.auditPRCommandRefused(ctx, name, ev, "", prRefusedBodyTooLarge, "")
+		}
+		return ignore("ignored: comment is too long\n")
+	}
 	cmd, parseErr := prcommand.Parse(ev.Body)
 	if cmd == "" && parseErr == nil {
 		return ignore("ignored: no command\n")
@@ -471,12 +477,19 @@ func (rt *Router) recordPRCommandEvent(ctx context.Context, name string, ev webh
 	}
 }
 
+// A command is one short line, so a long body is never worth scanning.
+const (
+	envPRCommentMaxBodyBytes     = "APP_PR_COMMENT_MAX_BODY_BYTES"
+	defaultPRCommentMaxBodyBytes = 4096
+)
+
 // Refusal reasons are stable values that audit filters and runbooks rely on.
 const (
 	auditActionPRCommandRefused = "pr_comment_command.refused"
 	prNotRun                    = "Not run: "
 
 	prRefusedCommandsOff      = "commands_off"
+	prRefusedBodyTooLarge     = "body_too_large"
 	prRefusedBot              = "bot"
 	prRefusedInvalidLogin     = "invalid_login"
 	prRefusedRepoMismatch     = "repository_mismatch"
