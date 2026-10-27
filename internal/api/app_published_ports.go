@@ -157,7 +157,42 @@ func (rt *Router) admitHostPorts(ctx context.Context, appName string, previous, 
 		rt.publishedPortsMu.Unlock()
 		return nil, err
 	}
+	if err := rt.pinnedHostPortsFree(ctx, previous, next); err != nil {
+		rt.publishedPortsMu.Unlock()
+		return nil, err
+	}
 	return rt.publishedPortsMu.Unlock, nil
+}
+
+// pinnedHostPortsFree runs the API's pinned host_port checks (control plane
+// ports, another app's pin, a host listener) on every deploy path.
+func (rt *Router) pinnedHostPortsFree(ctx context.Context, previous, next []store.DesiredService) error {
+	prev := make(map[string]*store.DesiredService, len(previous))
+	for i := range previous {
+		prev[previous[i].Name] = &previous[i]
+	}
+	reserved := rt.reservedPublishedPorts()
+	for _, svc := range next {
+		if svc.HostPort == nil {
+			continue
+		}
+		existing, node := prev[svc.Name], svc.NodeID
+		if existing != nil {
+			node = existing.NodeID
+		}
+		if node == rt.localNodeID {
+			node = ""
+		}
+		unchanged := existing != nil && existing.HostPort != nil && *existing.HostPort == *svc.HostPort
+		if label, ok := reserved[*svc.HostPort]; ok && !unchanged && node == "" {
+			return refusePort(http.StatusConflict, codePublishedPortConflict,
+				fmt.Sprintf("host port %d/tcp for service %q is reserved by the control plane (%s)", *svc.HostPort, svc.Name, label))
+		}
+		if eerr := rt.hostPortConflict(ctx, svc.Name, node, svc.HostPort, existing); eerr != nil {
+			return refusePort(eerr.status, codePublishedPortConflict, eerr.msg)
+		}
+	}
+	return nil
 }
 
 func claimsHostPort(services []store.DesiredService) bool {
