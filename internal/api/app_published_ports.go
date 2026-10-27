@@ -171,7 +171,7 @@ func (rt *Router) pinnedHostPortsFree(ctx context.Context, previous, next []stor
 	for i := range previous {
 		prev[previous[i].Name] = &previous[i]
 	}
-	reserved := rt.reservedPublishedPorts()
+	reserved := rt.reservedPublishedPorts(ctx)
 	for _, svc := range next {
 		if svc.HostPort == nil {
 			continue
@@ -206,7 +206,7 @@ func claimsHostPort(services []store.DesiredService) bool {
 
 // reservedPublishedPorts are host ports the control plane listens on, kept
 // off both protocols (443/udp carries HTTP/3); the mesh adds its UDP port.
-func (rt *Router) reservedPublishedPorts() map[int]string {
+func (rt *Router) reservedPublishedPorts(ctx context.Context) map[int]string {
 	out := map[int]string{}
 	for p := range reservedControlPlanePorts {
 		out[p] = "ingress or dashboard"
@@ -218,7 +218,11 @@ func (rt *Router) reservedPublishedPorts() map[int]string {
 		out[p] = "ingress"
 	}
 	if rt.mesh != nil {
-		out[network.DefaultListenPort] = "mesh WireGuard"
+		port := network.DefaultListenPort
+		if st, err := rt.mesh.Status(ctx); err == nil && st.ListenPort > 0 {
+			port = st.ListenPort
+		}
+		out[port] = "mesh WireGuard"
 	}
 	for _, p := range rt.firewallRequiredPorts {
 		out[p] = "required by the firewall guard"
@@ -267,7 +271,7 @@ func (rt *Router) checkPublishedPorts(ctx context.Context, appName string, previ
 	if len(want) == 0 && len(pinned) == 0 {
 		return nil
 	}
-	reserved := rt.reservedPublishedPorts()
+	reserved := rt.reservedPublishedPorts(ctx)
 	for p, svc := range want {
 		if label, ok := reserved[p.HostPort]; ok {
 			return refusePort(http.StatusConflict, codePublishedPortConflict,
