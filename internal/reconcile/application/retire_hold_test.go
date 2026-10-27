@@ -103,3 +103,47 @@ func TestRetire_SupersededReleaseRemovedAfterHold(t *testing.T) {
 		})
 	}
 }
+
+// R1: with three overlapping deploys, v1 drains from when v2 took traffic
+// (T+90s), not from v2's creation (T), so v3's cutover at T+100s keeps it.
+func TestRetire_OverlappingCutoversDrainFromTrafficMove(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	drain := time.Minute
+	p := clockedPass{t: t, rt: rt, tracker: NewDrainTracker(), cfg: deploysafety.Effective{SuccessThreshold: 1, DrainTimeout: drain}}
+	desired := *gateDesired()
+	v1, v2, v3 := ContainerName("web", "img:v1", ""), ContainerName("web", "img:v2", ""), ContainerName("web", "img:v3", "")
+	for _, name := range []string{v1, v2, v3} {
+		rt.setExitState(name, &docker.ExitState{Running: true})
+	}
+	t0 := time.Now().Truncate(time.Second)
+	seedAt := func(name string, at time.Time) {
+		rt.seed(name, true)
+		rt.containers[name].Created = at
+	}
+
+	desired.Image = "img:v1"
+	p.run(t0.Add(-time.Hour), desired)
+	seedAt(v2, t0)
+	desired.Image = "img:v2"
+	p.run(t0.Add(90*time.Second), desired)
+	seedAt(v3, t0.Add(95*time.Second))
+	desired.Image = "img:v3"
+	cut := t0.Add(100 * time.Second)
+	p.run(cut, desired)
+	if !p.running(v1) {
+		t.Fatal("v1 cut at the v3 cutover, inside its own drain from the v2 cutover")
+	}
+	p.run(t0.Add(90*time.Second+drain-5*time.Second), desired)
+	if !p.running(v1) || !p.running(v2) {
+		t.Fatalf("v1 running = %v, v2 running = %v, want both still draining", p.running(v1), p.running(v2))
+	}
+	p.run(t0.Add(90*time.Second+drain+time.Second), desired)
+	if cs, _ := rt.InspectByName(context.Background(), v1); cs != nil {
+		t.Fatalf("v1 = %+v after its drain, want it removed", cs)
+	}
+	if !p.running(v2) {
+		t.Fatal("v2 removed inside its own drain")
+	}
+}

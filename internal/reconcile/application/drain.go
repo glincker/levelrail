@@ -12,18 +12,67 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// DrainTracker remembers each service's last cutover across passes, so the
-// drain is measured from cutover. In memory: a restart falls back to the hold.
+// DrainTracker remembers each service's cutovers across passes, so each
+// release drains from when traffic left it. In memory: after a restart a
+// release's retirement falls back to its successor's creation, then the hold.
 type DrainTracker struct {
 	mu       sync.Mutex
 	cutover  map[string]time.Time
 	serving  map[string]string
 	replaced map[string]string
+	retired  map[string]map[string]time.Time
 }
 
 // NewDrainTracker builds an empty tracker.
 func NewDrainTracker() *DrainTracker {
-	return &DrainTracker{cutover: make(map[string]time.Time), serving: make(map[string]string), replaced: make(map[string]string)}
+	return &DrainTracker{
+		cutover: make(map[string]time.Time), serving: make(map[string]string),
+		replaced: make(map[string]string), retired: make(map[string]map[string]time.Time),
+	}
+}
+
+// retire records when traffic left release; a release serving again is
+// no longer retired.
+func (t *DrainTracker) retire(service, release, serving string, at time.Time) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	m := t.retired[service]
+	if m == nil {
+		m = make(map[string]time.Time)
+		t.retired[service] = m
+	}
+	delete(m, serving)
+	if release != "" {
+		m[release] = at
+	}
+}
+
+// retiredAt is when traffic left release, if observed since start.
+func (t *DrainTracker) retiredAt(service, release string) (time.Time, bool) {
+	if t == nil {
+		return time.Time{}, false
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	at, ok := t.retired[service][release]
+	return at, ok
+}
+
+// forgetRetired drops retirements of releases no longer observed.
+func (t *DrainTracker) forgetRetired(service string, present map[string]bool) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for rel := range t.retired[service] {
+		if !present[rel] {
+			delete(t.retired[service], rel)
+		}
+	}
 }
 
 // WithDrainTracker measures the drain window from the real cutover time.
@@ -118,6 +167,7 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 	// but the release it replaces still owes its in-flight requests a drain.
 	if len(targets) > 0 && c.drain.moved(c.serviceName, releaseOf(targets[0])) {
 		justDeployed = true
+		c.drain.retire(c.serviceName, c.drain.previous(c.serviceName), releaseOf(targets[0]), now)
 	}
 	if justDeployed {
 		c.drain.mark(c.serviceName, now)
@@ -200,17 +250,23 @@ func (c *Controller) drainFilter(all []docker.ContainerState, targets []string, 
 		}
 	}
 	retired := map[string]time.Time{}
+	present := map[string]bool{currentBase: true}
 	for i, rel := range order {
+		present[rel] = true
 		if rel == currentBase {
 			continue
 		}
 		at := cutover
-		// An unknown successor creation time keeps the release: the hold pass cleans it up.
-		if rel != serving && rel != newestStale && i+1 < len(order) && !first[order[i+1]].IsZero() {
+		// Without an observed cutover, date it from the successor's creation;
+		// an unknown creation keeps the release for the hold pass.
+		if t, ok := c.drain.retiredAt(c.serviceName, rel); ok {
+			at = t
+		} else if rel != serving && rel != newestStale && i+1 < len(order) && !first[order[i+1]].IsZero() {
 			at = first[order[i+1]]
 		}
 		retired[rel] = at
 	}
+	c.drain.forgetRetired(c.serviceName, present)
 	for _, cs := range stale {
 		rel := releaseOf(cs.Name)
 		if cs.Running && (rel == currentBase || now.Before(retired[rel].Add(timeout))) {
