@@ -53,6 +53,9 @@ var errDomainNotSet = errors.New("domain is not set")
 // handleEditAppDomains handles PATCH /api/v1/apps/{name}/domains: changes only
 // the domain list, atomically, so it never overwrites a concurrent edit to
 // the app's other settings.
+// domainNeedsHTTPPortCode refuses a domain on an app that only publishes host ports.
+const domainNeedsHTTPPortCode = "domain_needs_http_port"
+
 func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 	editor, ok := rt.apps.(serviceDomainsEditor)
 	if !ok {
@@ -104,6 +107,14 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 	if env := strings.TrimSpace(req.Environment); env != "" {
 		rt.editAppEnvironmentDomains(w, r, name, env, req.Set, add, remove)
 		return
+	}
+
+	if adding := len(set)+len(add) > 0; adding {
+		if svc, gerr := rt.apps.GetDesiredService(r.Context(), name); gerr == nil && svc.Port == 0 {
+			writeCodedError(w, http.StatusBadRequest, domainNeedsHTTPPortCode,
+				"this app has no HTTP port, set a port before adding a domain: the proxy routes HTTP to it")
+			return
+		}
 	}
 
 	var before []string
