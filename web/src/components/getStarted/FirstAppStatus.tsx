@@ -139,6 +139,11 @@ export function FirstAppStatus({
       <p className="text-sm text-muted-foreground">
         {t('first.status.deployingDetail', { status: app.status.label })}
       </p>
+      {phase === 'deploying' ? (
+        <p className="text-xs text-muted-foreground">
+          {t('first.status.expectedWait')}
+        </p>
+      ) : null}
       {phase === 'slow' ? (
         <p className="text-xs text-muted-foreground">
           {t('first.status.slow')}

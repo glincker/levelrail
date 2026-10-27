@@ -197,6 +197,7 @@
       "diagnosing": "Diagnosing...",
       "deploying": "Deploying {{name}}",
       "deployingDetail": "{{status}}. Pulling the image, starting the container, and waiting for the health check to pass.",
+      "expectedWait": "The first start can take up to two minutes. A new domain's DNS record and certificate can add up to another minute.",
       "slow": "This is taking longer than usual. Large images take a while on a slow connection; the logs show what is happening.",
       "openApp": "Open app",
       "viewLogs": "View logs",
