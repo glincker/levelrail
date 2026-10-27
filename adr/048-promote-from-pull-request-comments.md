@@ -20,8 +20,9 @@ Users ask for `/levelrail promote <env>`. Promotion today is
 it never promotes directly: it calls `requestDeployApproval`
 (`internal/api/deploy_approvals.go`), which saves a pending
 `deploy_approvals` row. A different privileged user then decides it.
-`loadDecidableApprovalAs` refuses a decider whose `(type, id)` equals the
-requester's.
+`loadDecidableApprovalAs` refuses a decider who resolves to the same human
+as the requester: a token counts as its owning user, and only an ownerless
+(system or CI) token is compared by its own `(type, id)` pair.
 
 Two facts shape this decision:
 
@@ -29,10 +30,12 @@ Two facts shape this decision:
    `*http.Request`. It reads the requester from the session or token
    (`currentActor`) and writes its own error responses. A webhook has no
    such actor.
-2. The self-approval check compares requester and decider by `(type, id)`.
-   If a GitHub login were recorded under a type of its own, the same person
-   could request from a comment and approve from the dashboard, and the
-   check would not notice.
+2. Comparing raw `(type, id)` pairs is not enough. Until recently the check
+   did only that, and the same user could request from a dashboard session
+   and approve with their own API token (or the reverse), because a session
+   records `user/<id>` and a token records `token/<id>`. That gap is now
+   closed for dashboard approvals by resolving a token to its owner. A
+   GitHub login recorded under a type of its own would reopen the same gap.
 
 ## Questions and answers
 
@@ -42,9 +45,15 @@ Options:
 
 - **A. Linked identity only.** Promote is accepted only when the GitHub
   login is linked to a Levelrail user (an OAuth link or an admin-set
-  mapping). The approval row records that user as the requester, so the
-  existing self-approval check works unchanged. An unlinked login is
-  refused with reason `unlinked_github_login`.
+  mapping), matched on the numeric GitHub id from the signed payload. The
+  approval row records that user as the requester. The self-approval check
+  does not work unchanged: at decide time it must resolve the decider to a
+  human (a token's owning user, as `approvalPrincipal` already does for
+  dashboard approvals) and refuse when that human is the requesting user,
+  or when the decider's own linked GitHub numeric id equals the id that
+  made the comment. Both comparisons are needed, because a link can be
+  changed between request and decision. An unlinked login is refused with
+  reason `unlinked_github_login`.
 - **B. A dedicated `github` requester type.** The row records
   `RequestedByType: "github"`, `RequestedBy: <numeric GitHub user id>`,
   `RequestedByName: github:<login>`. It needs its own limits and its own
@@ -75,9 +84,10 @@ cannot be changed into something else after a reviewer has read it.
   comment-triggered promote never takes the direct path. This keeps a
   single rule: comments request, people decide.
 - A protected environment's existing approver rules apply unchanged. The
-  decider must not be the requester. Under option A that is the existing
-  check. Under option B the check must also refuse a decider whose linked
-  GitHub id equals the requester's id.
+  decider must not be the requester. Under option A that is the resolved
+  human check above plus the linked GitHub id comparison. Under option B the
+  check must also refuse a decider whose linked GitHub id equals the
+  requester's id.
 - Freeze, policy and image signature checks run when the request is made
   and again when it is decided, as for a dashboard promote. A comment can
   never set `force`, `confirm` or a freeze override.
@@ -107,7 +117,8 @@ cannot be changed into something else after a reviewer has read it.
 ## Decision (recommended)
 
 Option A, linked identity only, for the first version. It reuses the
-existing requester model and self-approval check with no new trust type,
+existing requester model with no new trust type, extends the self-approval
+check with the linked GitHub id comparison,
 and an unlinked login gets an audited refusal and no reply. Option B stays
 open as a later extension if unlinked contributors need it.
 
@@ -120,6 +131,10 @@ An `approve` verb, for the reasons above.
 
 ## Code touch points
 
+- `internal/api/deploy_approvals.go`: `loadDecidableApprovalAs` and
+  `approvalPrincipal` already compare resolved humans (a token's owning
+  user). Extend them to refuse a decider whose linked GitHub numeric id
+  equals the requesting comment's id, and store that id on the row.
 - `internal/api/deploy_approvals.go`: split `requestDeployApproval` into an
   HTTP wrapper and a core `createDeployApproval(ctx, requester, ...)
   (store.DeployApproval, error)` that takes the requester as a value.
@@ -133,8 +148,13 @@ An `approve` verb, for the reasons above.
   `createDeployApproval`. The reply links to the approval in the dashboard.
 - `internal/prcommand`: a `promote <env>` form with an environment name
   validated against a strict charset and length.
-- `internal/store`: comment id and pull request number on the approval row
-  (a migration), and the GitHub link lookup for option A.
+- `internal/store`: comment id, pull request number and requesting GitHub
+  numeric id on the approval row (a migration), and the GitHub link lookup
+  for option A.
+- `internal/api/chat_interactions.go`: a chat decision is recorded as the
+  `channel` type, not a person, so the resolved human check cannot apply.
+  Comment-sourced approvals must either refuse chat decisions or resolve
+  the chat user to a Levelrail user first.
 - Audit: accepted requests as `pr_comment_command.promote_requested`,
   refusals under the existing `pr_comment_command.refused` action.
 
