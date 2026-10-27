@@ -26,12 +26,24 @@ type hostFirewallPort struct {
 	Protocol string `json:"protocol"`
 }
 
+// hostFirewallPublishedPort is one host port an app binds directly, tcp or
+// udp, with whether the host firewall lets it in right now.
+type hostFirewallPublishedPort struct {
+	Port        int    `json:"port"`
+	Protocol    string `json:"protocol"`
+	App         string `json:"app"`
+	Service     string `json:"service"`
+	BindAddress string `json:"bind_address"`
+	Allowed     bool   `json:"allowed"`
+}
+
 type hostFirewallResource struct {
-	Installed       bool               `json:"installed"`
-	Active          bool               `json:"active"`
-	DefaultIncoming string             `json:"default_incoming,omitempty"`
-	Required        []hostFirewallPort `json:"required"`
-	Commands        []string           `json:"commands"`
+	Installed       bool                        `json:"installed"`
+	Active          bool                        `json:"active"`
+	DefaultIncoming string                      `json:"default_incoming,omitempty"`
+	Required        []hostFirewallPort          `json:"required"`
+	Commands        []string                    `json:"commands"`
+	PublishedPorts  []hostFirewallPublishedPort `json:"published_ports"`
 }
 
 type hostFirewallActionRequest struct {
@@ -66,6 +78,10 @@ func hostFirewallSSHPorts() []int {
 // hostFirewallRequired lists SSH first, then the ports the control plane itself
 // needs, then 443/udp for HTTP/3.
 func (rt *Router) hostFirewallRequired(ctx context.Context) []hostFirewallPort {
+	return rt.hostFirewallRequiredFor(ctx, rt.publishedHostPortRows(ctx))
+}
+
+func (rt *Router) hostFirewallRequiredFor(ctx context.Context, rows []hostFirewallPublishedPort) []hostFirewallPort {
 	var out []hostFirewallPort
 	seen := map[hostFirewallPort]bool{}
 	add := func(p hostFirewallPort) {
@@ -86,25 +102,67 @@ func (rt *Router) hostFirewallRequired(ctx context.Context) []hostFirewallPort {
 		add(hostFirewallPort{Port: p, Protocol: "tcp"})
 	}
 	add(hostFirewallPort{Port: httpsUDPPort, Protocol: "udp"})
-	for _, p := range rt.publishedFirewallPorts(ctx) {
-		add(hostFirewallPort{Port: p, Protocol: "tcp"})
+	var published []hostFirewallPort
+	for _, row := range rows {
+		if row.BindAddress != bindaddr.Private {
+			published = append(published, hostFirewallPort{Port: row.Port, Protocol: row.Protocol})
+		}
+	}
+	for _, p := range rt.streamFirewallPorts(ctx) {
+		published = append(published, hostFirewallPort{Port: p, Protocol: "tcp"})
+	}
+	slices.SortFunc(published, func(a, b hostFirewallPort) int {
+		if a.Port != b.Port {
+			return a.Port - b.Port
+		}
+		return strings.Compare(a.Protocol, b.Protocol)
+	})
+	for _, p := range published {
+		if p.Port >= 1 && p.Port <= 65535 {
+			add(p)
+		}
 	}
 	return out
 }
 
-// publishedFirewallPorts lists pinned host ports of apps bound beyond loopback,
-// plus raw TCP stream ports, so enabling ufw never cuts off a running app.
-func (rt *Router) publishedFirewallPorts(ctx context.Context) []int {
+// publishedHostPortRows lists every host port an app binds directly: the
+// pinned routed port (tcp) and each published port with its own protocol.
+func (rt *Router) publishedHostPortRows(ctx context.Context) []hostFirewallPublishedPort {
 	services, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
 		rt.logger.Warn("api: firewall: list services for published ports failed", slog.String("error", err.Error()))
+		return []hostFirewallPublishedPort{}
+	}
+	out := []hostFirewallPublishedPort{}
+	for _, svc := range services {
+		row := hostFirewallPublishedPort{App: svc.AppID, Service: svc.Name, BindAddress: svc.BindAddress}
+		if row.App == "" {
+			row.App = svc.Name
+		}
+		if row.BindAddress == "" {
+			row.BindAddress = bindaddr.Default
+		}
+		if svc.HostPort != nil {
+			row.Port, row.Protocol = *svc.HostPort, "tcp"
+			out = append(out, row)
+		}
+		for _, p := range svc.PublishedPorts {
+			row.Port, row.Protocol = p.HostPort, p.EffectiveProtocol()
+			out = append(out, row)
+		}
+	}
+	return slices.DeleteFunc(out, func(r hostFirewallPublishedPort) bool { return r.Port < 1 || r.Port > 65535 })
+}
+
+// streamFirewallPorts lists raw TCP stream ports, so enabling ufw never cuts
+// off a running app.
+func (rt *Router) streamFirewallPorts(ctx context.Context) []int {
+	services, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
 		return nil
 	}
 	var ports []int
 	for _, svc := range services {
-		if svc.HostPort != nil && svc.BindAddress != bindaddr.Private && svc.BindAddress != "" {
-			ports = append(ports, *svc.HostPort)
-		}
 		streams, err := rt.apps.ListAppStreamsForService(ctx, svc.Name)
 		if err != nil {
 			continue
@@ -113,35 +171,69 @@ func (rt *Router) publishedFirewallPorts(ctx context.Context) []int {
 			ports = append(ports, st.HostPort)
 		}
 	}
-	slices.Sort(ports)
-	return slices.DeleteFunc(slices.Compact(ports), func(p int) bool { return p < 1 || p > 65535 })
+	return ports
 }
 
+// ufwAllowed reads the ALLOW rules of `ufw status verbose`. A bare port
+// rule ("53 ALLOW IN") covers both protocols; ranges use "lo:hi".
+func ufwAllowed(text string, port int, proto string) bool {
+	for _, line := range strings.Split(text, "\n") {
+		f := strings.Fields(line)
+		if len(f) < 2 || f[1] != "ALLOW" {
+			continue
+		}
+		ports, rp, hasProto := strings.Cut(f[0], "/")
+		if hasProto && rp != proto {
+			continue
+		}
+		for _, part := range strings.Split(ports, ",") {
+			lo, hi, isRange := strings.Cut(part, ":")
+			l, err := strconv.Atoi(lo)
+			if err != nil {
+				continue
+			}
+			h := l
+			if isRange {
+				if h, err = strconv.Atoi(hi); err != nil {
+					continue
+				}
+			}
+			if port >= l && port <= h {
+				return true
+			}
+		}
+	}
+	return false
+}
 func allowArgs(p hostFirewallPort) []string {
 	return []string{"allow", fmt.Sprintf("%d/%s", p.Port, p.Protocol)}
 }
 
 func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
-	res := hostFirewallResource{Required: rt.hostFirewallRequired(ctx), Commands: []string{}}
+	rows := rt.publishedHostPortRows(ctx)
+	res := hostFirewallResource{Required: rt.hostFirewallRequiredFor(ctx, rows), Commands: []string{}, PublishedPorts: rows}
 	for _, p := range res.Required {
 		res.Commands = append(res.Commands, "ufw "+strings.Join(allowArgs(p), " "))
 	}
 	res.Commands = append(res.Commands, "ufw --force enable")
-	if _, err := rt.hostFirewallLookPath("ufw"); err != nil {
-		return res
+	text := ""
+	if _, err := rt.hostFirewallLookPath("ufw"); err == nil {
+		res.Installed = true
+		if out, err := rt.hostFirewallRun(ctx, "ufw", "status", "verbose"); err == nil {
+			text = string(out)
+		}
 	}
-	res.Installed = true
-	out, err := rt.hostFirewallRun(ctx, "ufw", "status", "verbose")
-	if err != nil {
-		return res
-	}
-	text := string(out)
 	res.Active = strings.Contains(text, "Status: active")
 	for _, line := range strings.Split(text, "\n") {
 		fields := strings.Fields(strings.TrimSpace(line))
 		if len(fields) > 1 && fields[0] == "Default:" {
 			res.DefaultIncoming = fields[1]
 		}
+	}
+	// Nothing filters while ufw is absent, inactive or defaulting to allow.
+	open := !res.Active || res.DefaultIncoming == "allow"
+	for i, row := range res.PublishedPorts {
+		res.PublishedPorts[i].Allowed = open || ufwAllowed(text, row.Port, row.Protocol)
 	}
 	return res
 }

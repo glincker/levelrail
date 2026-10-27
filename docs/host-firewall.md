@@ -41,6 +41,10 @@ levelrail-cli firewall disable
 
 The API is `GET /api/v1/firewall/host`, `POST /api/v1/firewall/host/enable` and `POST /api/v1/firewall/host/disable`, where both POSTs accept `{"dry_run": true}`.
 
+### Ports apps publish directly
+
+`GET /api/v1/firewall/host` also returns `published_ports`: one row per host port an app binds directly, TCP or UDP, with `port`, `protocol`, `app`, `service`, `bind_address` and `allowed`. `allowed` is true when the host firewall lets that port and protocol in today (ufw absent, inactive, defaulting to allow, or with a matching allow rule). A cloud security group is not visible here, so check it separately for UDP ports such as 53 or 51820. Ports bound beyond loopback are added to the turn-on commands with their own protocol, so enabling the firewall never cuts off a running UDP service.
+
 ## Add and remove rules
 
 <Tabs>
