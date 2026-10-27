@@ -134,6 +134,11 @@ func TestDeployUpload_FullFlow(t *testing.T) {
 		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1/logs"):
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = w.Write([]byte("data: {\"line\":\"step 1/2 FROM nginx\",\"stream\":\"stdout\"}\n\n"))
+			// Held open like the real server, so the CLI must stop following on its own.
+			w.(http.Flusher).Flush()
+			mu.Unlock()
+			<-r.Context().Done()
+			mu.Lock()
 		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1"):
 			_, _ = w.Write([]byte(`{"id":"dep_1","outcome":"healthy"}`))
 		default:

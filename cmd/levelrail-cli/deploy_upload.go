@@ -332,6 +332,9 @@ func packAndUpload(ctx context.Context, client *Client, app string, plan sourceu
 	return up.Hash, nil
 }
 
+// logDrainGrace lets the last log lines print after the verdict before the follow is cut.
+const logDrainGrace = 2 * time.Second
+
 func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf upInference, hash string, buildEnv map[string]string, timeout time.Duration, res *deployUploadResult, stdout, stderr io.Writer, of outputFlags, jsonOut bool) int {
 	name := inf.Flags.name
 	req := buildTriggerRequest{
@@ -352,6 +355,8 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("app %q is ready but the build did not start, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err))
 	}
 	res.DeployID = trig.ID
+	var logDone chan struct{}
+	stopLog := func() {}
 	if !jsonOut {
 		if trig.Status == "queued" {
 			_, _ = fmt.Fprintf(stderr, "queued behind another deploy (%s)\n", trig.WaitReason)
@@ -359,12 +364,26 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		_, _ = fmt.Fprintf(stderr, "building %q (deploy %s)\n", name, trig.ID)
 		followCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		_ = client.StreamDeployLog(followCtx, name, trig.ID, func(e apiclient.LogStreamEntry) error {
-			_, _ = fmt.Fprintln(stderr, e.Line)
-			return nil
-		})
+		logDone = make(chan struct{})
+		stopLog = cancel
+		go func() {
+			defer close(logDone)
+			_ = client.StreamDeployLog(followCtx, name, trig.ID, func(e apiclient.LogStreamEntry) error {
+				_, _ = fmt.Fprintln(stderr, e.Line)
+				return nil
+			})
+		}()
 	}
 	wait, werr := client.WaitForDeploy(ctx, name, trig.ID, apiclient.WaitOptions{Interval: 2 * time.Second, Window: timeout})
+	// The log stream stays open after the deploy ends, so stop following once the verdict is in.
+	if logDone != nil {
+		select {
+		case <-logDone:
+		case <-time.After(logDrainGrace):
+		}
+		stopLog()
+		<-logDone
+	}
 	if werr != nil && !errors.Is(werr, context.Canceled) {
 		return reportError(stdout, stderr, jsonOut, werr)
 	}
