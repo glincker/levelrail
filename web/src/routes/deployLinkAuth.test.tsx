@@ -68,6 +68,52 @@ describe('deploy link through the sign-in redirect', () => {
     expect(router.state.location.hash).toContain('setup=tok123')
   })
 
+  it('(e) an email-change style hash survives sign-in', async () => {
+    const router = makeRouter('/settings/security#token=abc123')
+    await router.load()
+    expect(router.state.location.pathname).toBe('/login')
+    expect(router.state.location.hash).toBe('token=abc123')
+    window.history.replaceState(null, '', router.state.location.href)
+    setStoredUsername('admin')
+    goAfterLogin(router.navigate, router)
+    await vi.waitFor(() =>
+      expect(router.state.location.pathname).toBe('/settings/security'),
+    )
+    expect(router.state.location.hash).toBe('token=abc123')
+  })
+
+  it('(f) the first-run setup token is not carried past sign-in', async () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/login?redirect=%2Ftemplates#setup=t',
+    )
+    setStoredUsername('admin')
+    const router = makeRouter('/login')
+    await router.load()
+    goAfterLogin(router.navigate, router)
+    await vi.waitFor(() =>
+      expect(router.state.location.pathname).toBe('/templates'),
+    )
+    expect(router.state.location.hash).toBe('')
+  })
+
+  it('(g) an unsafe return path with a hash is still rejected', async () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/login?redirect=%2F%2Fevil.example#token=x',
+    )
+    setStoredUsername('admin')
+    const router = makeRouter('/login')
+    await router.load()
+    goAfterLogin(router.navigate, router)
+    await vi.waitFor(() =>
+      expect(router.state.location.pathname).not.toBe('/login'),
+    )
+    expect(router.state.location.href).not.toContain('evil.example')
+  })
+
   it('(c) logged in stays on the deploy link', async () => {
     setStoredUsername('admin')
     const router = makeRouter(DEPLOY_PATH)
