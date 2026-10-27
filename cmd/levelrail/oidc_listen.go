@@ -53,6 +53,10 @@ func listenWhenAssigned(ctx context.Context, addr string, retry time.Duration, l
 	if err != nil {
 		return nil, err
 	}
+	// APP_OIDC_TOKEN_REQUEST_RETRY=0s would poll the interfaces in a busy loop.
+	if retry <= 0 {
+		retry = defaultOIDCListenRetry
+	}
 	warned := false
 	for !hostAddrAssigned(host, local()) {
 		if !warned {
