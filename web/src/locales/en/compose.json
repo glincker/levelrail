@@ -92,5 +92,10 @@
     "working": "Installing...",
     "success": "Installed {{app}}",
     "requiredMissing": "{{field}} is required"
+  },
+  "publishedPortError": {
+    "published_port_invalid": "Use HOST:CONTAINER with an optional /udp, for example 51820:51820/udp. Each host port and protocol can appear once.",
+    "published_port_conflict": "Another service already publishes that host port and protocol. Pick a free host port, or stop the other service.",
+    "published_port_remote_node": "Host ports can only be published on the control plane's own node. Move the service to this node or drop the host port."
   }
 }

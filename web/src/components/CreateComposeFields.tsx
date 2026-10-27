@@ -22,6 +22,7 @@ import { useDeployCompose } from '../queries/compose'
 import { useFormDraft } from '../hooks/useFormDraft'
 import { useIsRoot } from '../hooks/useIsRoot'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
+import { PublishedPortError } from './PublishedPortError'
 import { ComposePreviewPanel } from './ComposePreviewPanel'
 import { useTranslation } from 'react-i18next'
 
@@ -438,10 +439,7 @@ export function CreateComposeFields({
       <PullPolicyHelper onInsert={handleInsertLine} />
 
       {deployCompose.isError ? (
-        <Alert variant="destructive">
-          <WarningIcon />
-          <AlertDescription>{deployCompose.error.message}</AlertDescription>
-        </Alert>
+        <PublishedPortError error={deployCompose.error} />
       ) : null}
 
       <DialogFooter>

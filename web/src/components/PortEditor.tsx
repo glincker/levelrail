@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { PlugsIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { PublishedPortError } from './PublishedPortError'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -245,9 +245,7 @@ export function PortEditor({ app }: { app: AppDetail }) {
             </Button>
           </div>
           {updateApp.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{updateApp.error.message}</AlertDescription>
-            </Alert>
+            <PublishedPortError error={updateApp.error} />
           ) : null}
         </form>
       </CardContent>
