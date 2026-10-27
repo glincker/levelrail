@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type rawFile struct {
@@ -193,7 +195,15 @@ func (p *Port) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (p *Port) parsePortShortForm(raw string) error {
-	parts := strings.Split(raw, ":")
+	body, proto, hasProto := strings.Cut(raw, "/")
+	if hasProto {
+		normalized, err := portProtocol(proto)
+		if err != nil {
+			return fmt.Errorf("ports: %q: %w", raw, err)
+		}
+		p.Protocol = normalized
+	}
+	parts := strings.Split(body, ":")
 	switch len(parts) {
 	case 1:
 		port, err := parsePort(parts[0])
@@ -241,11 +251,11 @@ func (p *Port) parsePortLongForm(node *yaml.Node) error {
 	if err != nil {
 		return fmt.Errorf("ports: target: %w", err)
 	}
-	switch raw.Protocol {
-	case "", "tcp":
-	default:
-		return fmt.Errorf("ports: target %d: protocol %q is not supported, only tcp is", target, raw.Protocol)
+	proto, err := portProtocol(raw.Protocol)
+	if err != nil {
+		return fmt.Errorf("ports: target %d: %w", target, err)
 	}
+	p.Protocol = proto
 	p.ContainerPort = target
 	if raw.Published == "" {
 		return nil
@@ -272,6 +282,19 @@ func (s *yamlScalarString) UnmarshalYAML(node *yaml.Node) error {
 	}
 	*s = yamlScalarString(node.Value)
 	return nil
+}
+
+// portProtocol maps a compose protocol to the Port.Protocol spelling: tcp
+// stays empty so existing ports compare and serialize exactly as before.
+func portProtocol(raw string) (string, error) {
+	switch strings.ToLower(raw) {
+	case "", store.PortProtocolTCP:
+		return "", nil
+	case store.PortProtocolUDP:
+		return store.PortProtocolUDP, nil
+	default:
+		return "", fmt.Errorf("protocol %q is not supported, use tcp or udp", raw)
+	}
 }
 
 func parsePort(s string) (int, error) {

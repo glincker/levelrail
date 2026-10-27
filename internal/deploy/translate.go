@@ -59,6 +59,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.HostPort = &hostPort
 	}
 	d.BindAddress = svc.EffectiveBindAddress()
+	d.PublishedPorts = svc.PublishedPorts
 
 	if svc.Resources != nil {
 		resources, err := toServiceResources(*svc.Resources)

@@ -8,7 +8,8 @@
 // has a real checkout. Both paths share the same narrow scope
 // otherwise: environment/ports/volumes accept both Compose's short and
 // long forms (see yaml.go), but only the fields Levelrail's own model
-// has room for: no port ranges, no UDP, no tmpfs/npipe mounts.
+// has room for: no port ranges, no tmpfs/npipe mounts. A UDP port is
+// published straight on the host, never through the HTTP proxy.
 // restart: and networks: both parse and are surfaced as non-blocking
 // Notices instead of being silently dropped or translated: see Notices
 // for why neither has a real translation onto how Levelrail runs a
@@ -163,6 +164,8 @@ type Volume struct {
 type Port struct {
 	HostPort      int
 	ContainerPort int
+	// Protocol is empty for tcp (the default) or "udp".
+	Protocol string
 }
 
 // rawBuild exists so Parse can detect and reject build:; never

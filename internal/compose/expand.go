@@ -97,10 +97,12 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 	if domain != "" {
 		s.Domains = []string{domain}
 	}
-	for _, p := range csvc.Ports {
-		s.Port = p.ContainerPort
-		break
+	main, published, err := splitPorts(csvc.Ports)
+	if err != nil {
+		return spec.Service{}, "", fmt.Errorf("compose: service %q: %w", key, err)
 	}
+	s.Port = main
+	s.PublishedPorts = published
 	if len(csvc.Environment) > 0 {
 		s.Env = make(map[string]spec.EnvVar, len(csvc.Environment))
 		for k, v := range csvc.Environment {

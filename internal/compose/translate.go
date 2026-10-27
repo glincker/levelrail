@@ -67,10 +67,12 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
 		d.Replicas = replicas
-		for _, p := range svc.Ports {
-			d.Port = p.ContainerPort
-			break
+		main, published, err := splitPorts(svc.Ports)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		d.Port = main
+		d.PublishedPorts = published
 		if domain := f.Domains[key]; domain != "" {
 			d.Domains = []string{domain}
 		}
@@ -101,6 +103,27 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		out = append(out, d)
 	}
 	return out, warnings, nil
+}
+
+// splitPorts keeps the first tcp port as the routed one (as before UDP
+// existed) and returns every udp port as a direct host publish, which
+// needs an explicit host port: a random one is unusable for UDP clients.
+func splitPorts(ports []Port) (int, []spec.PublishedPort, error) {
+	main := 0
+	var published []spec.PublishedPort
+	for _, p := range ports {
+		if p.Protocol != spec.PortProtocolUDP {
+			if main == 0 {
+				main = p.ContainerPort
+			}
+			continue
+		}
+		published = append(published, spec.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: spec.PortProtocolUDP})
+	}
+	if err := spec.ValidatePublishedPorts(published); err != nil {
+		return 0, nil, err
+	}
+	return main, published, nil
 }
 
 // volumeName gives a compose service's own logical volume name a

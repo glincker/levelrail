@@ -243,6 +243,14 @@ func (svc *Service) validatePorts(name string) error {
 	if svc.Build.Type == BuildCompose && svc.Port != 0 {
 		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, each of the compose file's own services has its own port instead", name, BuildCompose)
 	}
+	if len(svc.PublishedPorts) > 0 {
+		if svc.Build.Type == BuildStatic {
+			return fmt.Errorf("spec: service %q: published_ports must not be set when build.type is %q, static sites have no running container to publish a port for", name, BuildStatic)
+		}
+		if err := ValidatePublishedPorts(svc.PublishedPorts); err != nil {
+			return fmt.Errorf("spec: service %q: %w", name, err)
+		}
+	}
 	if svc.HostPort == 0 {
 		return nil
 	}
