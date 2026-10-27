@@ -240,7 +240,7 @@ Without those env vars and with no user yet, the control plane generates a one-t
 
 - `GET /api/v1/auth/setup-status` (public) returns `{"needs_setup": true}` until the first admin exists, and the login page switches to its setup form on its own.
 - `POST /api/v1/auth/register` requires the token in `setup_token` (constant-time compare) and deletes the file on success, so whoever reaches the dashboard first can't claim the instance without shell access to the server.
-- `install.sh` prints the token and a `http://<ip>:8080/login#setup=<token>` link; `sudo levelrail setup-token` prints it again.
+- `install.sh` prints the token and a `http://<ip>:8080/login#setup=<token>` link; `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` prints it again (`docker compose exec levelrail levelrail setup-token` for a compose install).
 
 `POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check), so concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
 

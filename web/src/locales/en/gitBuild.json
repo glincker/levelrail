@@ -111,6 +111,11 @@
     "started": "Deploy from the source cache started",
     "failed": "Could not deploy from cache"
   },
+  "failureDetails": {
+    "classLabel": "Failure class",
+    "failedAt": "Failed at {{step}}",
+    "excerpt": "Error excerpt"
+  },
   "failureAlsoMatched": "Also matched: {{codes}}",
   "workspace": {
     "title": "Workspace packages",

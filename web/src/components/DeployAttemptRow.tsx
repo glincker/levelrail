@@ -30,6 +30,7 @@ import {
 } from '../lib/deployAttemptPresentation'
 import { CancelDeployDialog } from './CancelDeployDialog'
 import { DeployFailureActions } from './DeployFailureActions'
+import { DeployFailureDetails } from './DeployFailureDetails'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
 import { InfoTip, ActionMenu, RelativeTime } from './kit'
 import { RolloutChip } from './DeployDigestChips'
@@ -402,6 +403,7 @@ export function DeployAttemptRow({
                   {attempt.failure.suggested_fix}
                 </p>
               ) : null}
+              <DeployFailureDetails failure={attempt.failure} />
               {attempt.failure ? (
                 <DeployFailureActions
                   failure={attempt.failure}

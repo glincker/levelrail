@@ -274,6 +274,7 @@ type Controller struct {
 	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
 	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
+	now                 func() time.Time // nil uses time.Now; tests step a fake clock
 	unconfirmedMu       sync.Mutex
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry

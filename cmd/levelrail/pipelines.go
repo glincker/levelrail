@@ -394,13 +394,21 @@ func serveOIDCTokenRequests(ctx context.Context, addr string, engine *pipeline.E
 	mux := http.NewServeMux()
 	mux.Handle("/oidc/token", engine.OIDCTokenRequestHandler())
 	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	ln, err := listenWhenAssigned(ctx, addr, envDurationOrDefault(logger, envOIDCListenRetry, defaultOIDCListenRetry), localInterfacePrefixes, logger)
+	if err != nil {
+		logger.Error("pipeline: oidc token request server stopped", slog.String("error", err.Error()))
+		return
+	}
+	if ln == nil {
+		return
+	}
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)
 	}()
-	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Error("pipeline: oidc token request server stopped", slog.String("error", err.Error()))
 	}
 }

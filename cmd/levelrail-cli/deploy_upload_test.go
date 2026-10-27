@@ -134,6 +134,11 @@ func TestDeployUpload_FullFlow(t *testing.T) {
 		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1/logs"):
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = w.Write([]byte("data: {\"line\":\"step 1/2 FROM nginx\",\"stream\":\"stdout\"}\n\n"))
+			// Held open like the real server, so the CLI must stop following on its own.
+			w.(http.Flusher).Flush()
+			mu.Unlock()
+			<-r.Context().Done()
+			mu.Lock()
 		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1"):
 			_, _ = w.Write([]byte(`{"id":"dep_1","outcome":"healthy"}`))
 		default:
@@ -162,5 +167,58 @@ func TestDeployUpload_FullFlow(t *testing.T) {
 	}
 	if len(uploaded) == 0 || bytes.Contains(uploaded, []byte("SECRET")) {
 		t.Error("archive empty or contains the ignored .env content")
+	}
+}
+
+func TestDeployUpload_FailurePrintsReason(t *testing.T) {
+	dir := writeDeployDir(t, appDirFiles)
+	var created map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/"+filepath.Base(dir):
+			if created == nil {
+				http.Error(w, `{"error":"app not found"}`, http.StatusNotFound)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"name": created["name"]})
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps":
+			_ = json.NewDecoder(r.Body).Decode(&created)
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(created)
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/uploads"):
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]any{"hash": strings.Repeat("ab", 32), "size": 1, "file_count": 3})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/builds"):
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = w.Write([]byte(`{"id":"dep_1"}`))
+		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1/logs"):
+			w.Header().Set("Content-Type", "text/event-stream")
+		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1"):
+			_, _ = w.Write([]byte(`{"id":"dep_1","outcome":"failed","error":"source builds are not supported on Podman"}`))
+		default:
+			http.Error(w, `{"error":"unexpected"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	code, _, errOut := runDeployCLI([]string{"deploy", dir, "--yes", "--api-url", srv.URL, "--token", "tok"}, nil)
+	if code != exitDeployNotHealthy {
+		t.Fatalf("exit = %d, want %d", code, exitDeployNotHealthy)
+	}
+	if !strings.Contains(errOut, "not supported on Podman") {
+		t.Errorf("stderr lacks the failure reason:\n%s", errOut)
+	}
+}
+
+// Build output is repo-author controlled; its escape codes must not reach the terminal.
+func TestPrintUploadFailure_StripsControlCodes(t *testing.T) {
+	var buf bytes.Buffer
+	printUploadFailure(&buf, &deployUploadResult{Error: "build failed\x1b[2J\x1b]0;pwned\x07\rstep 3\x07"})
+	got := buf.String()
+	if strings.ContainsAny(got, "\x1b\x07\r") {
+		t.Fatalf("printUploadFailure() = %q, want no control codes", got)
+	}
+	if !strings.Contains(got, "build failed") || !strings.Contains(got, "step 3") {
+		t.Errorf("printUploadFailure() = %q, want the readable text kept", got)
 	}
 }

@@ -187,3 +187,28 @@ func TestVeryLongLogStillClassifies(t *testing.T) {
 		t.Errorf("classification took %s", d)
 	}
 }
+
+func TestBuildStepVersusDependencyInstall(t *testing.T) {
+	at := time.Date(2026, 9, 26, 10, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name string
+		logs []string
+		want string
+	}{
+		{"plain RUN exit code", []string{`process "/bin/sh -c echo x && exit 7" did not complete successfully: exit code: 7`}, CodeBuildStepFailed},
+		{"npm error", []string{`npm ERR! code E404`, `process "/bin/sh -c npm install" did not complete successfully: exit code: 1`}, CodeDependencyInstall},
+		{"pip error", []string{`ERROR: No matching distribution found for nope`, `process "/bin/sh -c pip install nope" did not complete successfully: exit code: 1`}, CodeDependencyInstall},
+		{"apk error", []string{`ERROR: unable to select packages:`, `process "/bin/sh -c apk add nope" did not complete successfully: exit code: 1`}, CodeDependencyInstall},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := Classify(Input{Status: "failed", FailingStep: "building", Error: "build: build: exit 1", LogLines: tc.logs, At: at}, Options{DocsBase: "https://docs.example.test"})
+			if !ok || got.Code != tc.want {
+				t.Fatalf("code = %q, want %q", got.Code, tc.want)
+			}
+			if strings.Contains(got.LogExcerpt, "build: build:") || !strings.HasPrefix(got.DocsURL, "https://docs.example.test/") {
+				t.Errorf("excerpt or docs url not polished: %q %q", got.LogExcerpt, got.DocsURL)
+			}
+		})
+	}
+}

@@ -96,7 +96,7 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 
 <Steps>
 <Step title="Open the setup link">
-Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The public address is printed first, then private addresses. Container bridge addresses are hidden.
+Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The summary prints the token and these links only in an interactive terminal; in cloud-init or CI it points to `setup-token` instead. The public address is printed first, then private addresses. Container bridge addresses are hidden.
 
 **8080 is only the default.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
 </Step>

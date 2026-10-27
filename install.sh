@@ -1499,11 +1499,33 @@ secret is encrypted with it, and it cannot be recovered if lost.
 EOF
 }
 
+# interactive_output is true only for a human terminal; cloud-init and CI
+# capture stdout into logs that must never hold the setup token.
+interactive_output() {
+	[ -t 1 ] && [ "${CI:-}" != "true" ] && [ -z "${CLOUD_INIT_SESSION:-}" ]
+}
+
+print_token_hidden() {
+	cat <<EOF
+The one-time setup token is not printed here because this output is not an
+interactive terminal (it may end up in cloud-init or CI logs). On the server run:
+  sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} setup-token
+The token file is ${DATA_DIR}/setup-token. Enter the token on the sign-in page.
+
+EOF
+}
+
 print_summary() {
 	token=""
+	token_hidden=0
 	[ ! -r "$DATA_DIR/setup-token" ] || token="$(tr -d '[:space:]' <"$DATA_DIR/setup-token")"
+	if [ -n "$token" ] && ! interactive_output; then
+		token=""
+		token_hidden=1
+	fi
 	if [ "$COEXIST_ACTIVE" -eq 1 ]; then
 		print_coexist_summary
+		[ "$token_hidden" -ne 1 ] || print_token_hidden
 		return 0
 	fi
 
@@ -1528,6 +1550,7 @@ print_summary() {
 		[ "$found" -eq 1 ] || log "  ${DASHBOARD_SCHEME}://<server-ip>:${DASHBOARD_PORT}"
 	fi
 	log ""
+	[ "$token_hidden" -ne 1 ] || print_token_hidden
 	if [ -n "$token" ]; then
 		cat <<EOF
 Create the first admin account with this one-time setup token:
@@ -1550,10 +1573,15 @@ EOF
 	sslip_hint
 	cat <<EOF
 
-Manage it from your own machine with the CLI (no root needed there):
-  curl -fsSL https://levelrail.com/install-cli.sh | sh
-  export APP_API_URL=${DASHBOARD_SCHEME}://${PUBLIC_IP:-<server-ip>}:${DASHBOARD_PORT}
-  levelrail-cli auth login --device
+Connect the CLI after you create the admin account. In the dashboard open
+"Connect your CLI" and copy the pairing code, then run:
+EOF
+	if [ "$CLI_PRESENT" -ne 1 ]; then
+		log "  curl -fsSL https://levelrail.com/install-cli.sh | sudo sh"
+	fi
+	cat <<EOF
+  levelrail-cli login --api-url ${DASHBOARD_SCHEME}://${PUBLIC_IP:-<server-ip>}:${DASHBOARD_PORT} --code <XXXX-XXXX>
+The same login works from your own machine after installing the CLI there.
 
   Service status: systemctl status ${SERVICE_NAME}
   Logs:           journalctl -u ${SERVICE_NAME} -f
@@ -1639,6 +1667,7 @@ installed_version() {
 	"$BIN_PATH" version 2>/dev/null | awk '{ print $1; exit }'
 }
 
+CLI_PRESENT=0
 CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-https://levelrail.com/install-cli.sh}"
 
 # install_cli reuses install-cli.sh so the CLI gets the same checksum and
@@ -1647,13 +1676,20 @@ install_cli() {
 	cli_hint="curl -fsSL ${CLI_INSTALLER_URL} | sudo sh"
 	[ "${LEVELRAIL_INSTALL_CLI:-1}" != "0" ] || return 0
 	if [ -n "${LEVELRAIL_BINARY_FILE:-}${LEVELRAIL_BINARY_URL:-}" ]; then
-		log "levelrail-cli not installed: run ${cli_hint}"
+		# A local-binary install skips the CLI download; say so only when none is present.
+		if command -v levelrail-cli >/dev/null 2>&1; then
+			CLI_PRESENT=1
+			log "levelrail-cli already present at $(command -v levelrail-cli), left unchanged."
+		else
+			log "Local-binary install: levelrail-cli not installed. To add it: ${cli_hint}"
+		fi
 		return 0
 	fi
 	cli_script="$(mktemp)"
 	if curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$cli_script" "$CLI_INSTALLER_URL" 2>/dev/null &&
 		LEVELRAIL_VERSION="$VERSION" LEVELRAIL_CLI_INSTALL_DIR="${LEVELRAIL_CLI_INSTALL_DIR:-/usr/local/bin}" sh "$cli_script"; then
 		rm -f "$cli_script"
+		CLI_PRESENT=1
 		return 0
 	fi
 	rm -f "$cli_script"

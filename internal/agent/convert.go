@@ -225,7 +225,16 @@ func containerStateToPB(s *docker.ContainerState) *agentpb.ContainerState {
 		Running: s.Running,
 		Ports:   portBindingsToPB(s.Ports),
 		Labels:  s.Labels,
+		Created: createdToPB(s.Created),
 	}
+}
+
+// createdToPB leaves the field unset for an unknown time, matching what an older agent sends.
+func createdToPB(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t)
 }
 
 func containerStateFromPB(s *agentpb.ContainerState) *docker.ContainerState {
@@ -236,6 +245,7 @@ func containerStateFromPB(s *agentpb.ContainerState) *docker.ContainerState {
 		ID:            s.Id,
 		Name:          s.Name,
 		Image:         s.Image,
+		Created:       timestampFromPB(s.Created),
 		Running:       s.Running,
 		Ports:         portBindingsFromPB(s.Ports),
 		Labels:        s.Labels,

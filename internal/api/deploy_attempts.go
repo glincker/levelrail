@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // This file is the real deploy-attempt history and log surface: a
@@ -128,7 +129,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		errMsg := ""
 		if deployErr != nil {
 			status = store.DeployAttemptStatusFailed
-			errMsg = deployErr.Error()
+			errMsg = deployErrorMessage(deployErr)
 		}
 		if err := rt.deployAttempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
 			rt.logger.Error("api: trigger build: finish deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
@@ -571,4 +572,10 @@ func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
 		return
 	}
 	_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
+}
+
+// deployErrorMessage is stored and served on the deploy record and the error
+// carries repo-author build output, so strip control codes, redact and bound it.
+func deployErrorMessage(err error) string {
+	return untrusted.Sanitize(err.Error(), failureOptions().MaxBytes)
 }

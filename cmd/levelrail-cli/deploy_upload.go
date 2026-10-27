@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 const (
@@ -25,18 +26,21 @@ const (
 
 // deployUploadResult is the --json shape and the data behind the final summary.
 type deployUploadResult struct {
-	App      string   `json:"app"`
-	Created  bool     `json:"created"`
-	Hash     string   `json:"hash,omitempty"`
-	Files    int      `json:"files"`
-	Bytes    int64    `json:"bytes"`
-	Archive  int64    `json:"archive_bytes,omitempty"`
-	Deduped  bool     `json:"deduped,omitempty"`
-	DeployID string   `json:"deploy_id,omitempty"`
-	Status   string   `json:"status,omitempty"`
-	URL      string   `json:"url,omitempty"`
-	DryRun   bool     `json:"dry_run,omitempty"`
-	FileList []string `json:"file_list,omitempty"`
+	App      string `json:"app"`
+	Created  bool   `json:"created"`
+	Hash     string `json:"hash,omitempty"`
+	Files    int    `json:"files"`
+	Bytes    int64  `json:"bytes"`
+	Archive  int64  `json:"archive_bytes,omitempty"`
+	Deduped  bool   `json:"deduped,omitempty"`
+	DeployID string `json:"deploy_id,omitempty"`
+	Status   string `json:"status,omitempty"`
+	URL      string `json:"url,omitempty"`
+	// Failure is the server's classified reason when the build or rollout failed.
+	Failure  *apiclient.DeployFailure `json:"failure,omitempty"`
+	Error    string                   `json:"error,omitempty"`
+	DryRun   bool                     `json:"dry_run,omitempty"`
+	FileList []string                 `json:"file_list,omitempty"`
 }
 
 // wantsUploadDeploy reports whether "deploy" args mean a local directory rather than a git or image deploy.
@@ -332,6 +336,9 @@ func packAndUpload(ctx context.Context, client *Client, app string, plan sourceu
 	return up.Hash, nil
 }
 
+// logDrainGrace lets the last log lines print after the verdict before the follow is cut.
+const logDrainGrace = 2 * time.Second
+
 func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf upInference, hash string, buildEnv map[string]string, timeout time.Duration, res *deployUploadResult, stdout, stderr io.Writer, of outputFlags, jsonOut bool) int {
 	name := inf.Flags.name
 	req := buildTriggerRequest{
@@ -352,6 +359,8 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("app %q is ready but the build did not start, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err))
 	}
 	res.DeployID = trig.ID
+	var logDone chan struct{}
+	stopLog := func() {}
 	if !jsonOut {
 		if trig.Status == "queued" {
 			_, _ = fmt.Fprintf(stderr, "queued behind another deploy (%s)\n", trig.WaitReason)
@@ -359,12 +368,26 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		_, _ = fmt.Fprintf(stderr, "building %q (deploy %s)\n", name, trig.ID)
 		followCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		_ = client.StreamDeployLog(followCtx, name, trig.ID, func(e apiclient.LogStreamEntry) error {
-			_, _ = fmt.Fprintln(stderr, e.Line)
-			return nil
-		})
+		logDone = make(chan struct{})
+		stopLog = cancel
+		go func() {
+			defer close(logDone)
+			_ = client.StreamDeployLog(followCtx, name, trig.ID, func(e apiclient.LogStreamEntry) error {
+				_, _ = fmt.Fprintln(stderr, e.Line)
+				return nil
+			})
+		}()
 	}
 	wait, werr := client.WaitForDeploy(ctx, name, trig.ID, apiclient.WaitOptions{Interval: 2 * time.Second, Window: timeout})
+	// The log stream stays open after the deploy ends, so stop following once the verdict is in.
+	if logDone != nil {
+		select {
+		case <-logDone:
+		case <-time.After(logDrainGrace):
+		}
+		stopLog()
+		<-logDone
+	}
 	if werr != nil && !errors.Is(werr, context.Canceled) {
 		return reportError(stdout, stderr, jsonOut, werr)
 	}
@@ -372,6 +395,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 	if !wait.Done {
 		res.Status = "timeout"
 	}
+	res.Failure, res.Error = wait.Deploy.Failure, wait.Deploy.Error
 	if final, err := client.GetApp(ctx, name); err == nil {
 		res.URL = appPrimaryURL(final)
 	}
@@ -380,6 +404,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 			_, _ = fmt.Fprintln(stdout, res.URL)
 		}
 		_, _ = fmt.Fprintf(stderr, "deploy %s: %s\n", res.DeployID, res.Status)
+		printUploadFailure(stderr, res)
 	})
 	if code != exitOK {
 		return code
@@ -432,4 +457,16 @@ Size limit: %[3]s (default 512 MiB, compressed), also enforced by the server.
 Example:
   %[1]s deploy ./my-app --env LOG_LEVEL=info
 `, prog, defaultDeployUploadWait, envUploadMaxBytes)
+}
+
+// printUploadFailure shows why a deploy did not succeed; the server already
+// redacts and caps both the failure excerpt and the error text.
+func printUploadFailure(w io.Writer, res *deployUploadResult) {
+	switch {
+	case res.Failure != nil:
+		printDeployFailure(w, res.Failure)
+	case res.Error != "":
+		// The server strips control codes too; an older one may not.
+		_, _ = fmt.Fprintf(w, "reason: %s\n", untrusted.Clean(res.Error))
+	}
 }

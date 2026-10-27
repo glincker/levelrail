@@ -183,7 +183,7 @@ func TestInferUpNeedsRemote(t *testing.T) {
 	initRepo(t, root, "")
 	writeTree(t, root, map[string]string{"go.mod": "module x\n"})
 	_, err := inferUp(root, upFlags{}, detectGitAt(root))
-	if err == nil || !strings.Contains(err.Error(), "git remote") {
+	if err == nil || !strings.Contains(err.Error(), "git remote") || !strings.Contains(err.Error(), "levelrail-cli deploy") {
 		t.Fatalf("err = %v, want a git remote hint", err)
 	}
 	inf, err := inferUp(root, upFlags{repo: "https://example.com/x.git"}, detectGitAt(root))

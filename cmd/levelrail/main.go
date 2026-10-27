@@ -196,7 +196,7 @@ func main() {
 		return
 	}
 	if len(os.Args) > 1 && os.Args[1] == "setup-token" {
-		if err := runSetupToken(context.Background(), os.Stdout, openStore); err != nil {
+		if err := runSetupToken(context.Background(), os.Stdout, len(os.Args) > 2 && os.Args[2] == "--plain", openStore); err != nil {
 			logger.Error("setup-token failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
