@@ -412,6 +412,21 @@ var validKnownStrategies = map[string]bool{
 	spec.StrategyBlueGreen: true,
 }
 
+// validateAppPort allows no port for a service that only publishes host
+// ports (a DNS or VPN style UDP server); a routed domain still needs one.
+func validateAppPort(a appResource) error {
+	if a.Port == 0 && len(a.PublishedPorts) > 0 {
+		if len(a.Domains) > 0 {
+			return errors.New("port is required when domains are set, the proxy routes HTTP to it")
+		}
+		return nil
+	}
+	if a.Port <= 0 || a.Port > 65535 {
+		return errors.New("port must be between 1 and 65535, or set published_ports for a service with no HTTP port")
+	}
+	return nil
+}
+
 func validateAppResource(a appResource) error {
 	if a.Name == "" {
 		return errors.New("name is required")
@@ -422,8 +437,8 @@ func validateAppResource(a appResource) error {
 	if a.Image == "" {
 		return errors.New("image is required")
 	}
-	if a.Port <= 0 || a.Port > 65535 {
-		return errors.New("port must be between 1 and 65535")
+	if err := validateAppPort(a); err != nil {
+		return err
 	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
 		return errors.New("host_port must be between 1 and 65535")
@@ -866,6 +881,18 @@ func httpsURL(host string, port int) string {
 	return "https://" + host + ":" + strconv.Itoa(port)
 }
 
+// withStoredPublishedPorts fills omitted published_ports from the stored app
+// for validation, since omitted means "keep" on update.
+func (rt *Router) withStoredPublishedPorts(ctx context.Context, req appResource) appResource {
+	if req.PublishedPorts != nil || req.Port != 0 {
+		return req
+	}
+	if existing, err := rt.apps.GetDesiredService(ctx, req.Name); err == nil {
+		req.PublishedPorts = existing.PublishedPorts
+	}
+	return req
+}
+
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
 // SaveDesiredService itself: there is no partial-update semantics here,
 // matching how store.DesiredService is already documented to work.
@@ -878,7 +905,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Name = name // the path is authoritative, not whatever the body claims
 
-	if err := validateAppResource(req); err != nil {
+	if err := validateAppResource(rt.withStoredPublishedPorts(r.Context(), req)); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
