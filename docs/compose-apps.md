@@ -65,6 +65,8 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | `mem_limit`, `cpus`, `deploy.resources.limits.memory`, `deploy.resources.limits.cpus` | Hard memory and CPU caps for the service (`512m`, `1g`, `0.5`). The shorthand wins when both are set. |
 | `restart`, `networks` | Parsed and reported as notices. The reconciler restarts containers, and every service shares one app network. |
 
+Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES` and `LEVELRAIL_COMPOSE_MAX_CPUS` on the control plane to lower the cap; unset keeps only the built-in overflow guard.
+
 ### Keys that are ignored
 
 A key outside the table above does not stop the deploy, but it is never dropped silently. Every ignored key is reported as a warning that names the service, the key and what to do instead. `levelrail-cli apps deploy-compose` prints each one with the file path, `compose preview` and `apps validate` list them, and the deploy API returns them in `notices` (level `warning`).

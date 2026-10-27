@@ -2,6 +2,8 @@ package compose
 
 import (
 	"fmt"
+	"math"
+	"os"
 	"strconv"
 	"strings"
 
@@ -21,6 +23,29 @@ var memoryUnits = map[string]int64{
 	"g": 1 << 30, "gb": 1 << 30,
 }
 
+// Env caps on compose limits; unset leaves only the int64 headroom guard.
+const (
+	envMaxMemoryBytes = "LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES"
+	envMaxCPUs        = "LEVELRAIL_COMPOSE_MAX_CPUS"
+	// Headroom so quota SUMs over many services cannot overflow int64.
+	sumHeadroomShift = 16
+)
+
+func envCap(name string, fallback float64) float64 {
+	if v, err := strconv.ParseFloat(strings.TrimSpace(os.Getenv(name)), 64); err == nil && v > 0 && !math.IsInf(v, 0) {
+		return math.Min(v, fallback)
+	}
+	return fallback
+}
+
+// toInt64 converts a scaled float, refusing NaN, Inf, overflow and values that round to zero.
+func toInt64(v, ceiling float64) (int64, bool) {
+	if math.IsNaN(v) || math.IsInf(v, 0) || v < 1 || v > ceiling {
+		return 0, false
+	}
+	return int64(v), true
+}
+
 // parseMemoryBytes reads Compose's byte-value form ("512m", "1.5g", "1048576").
 func parseMemoryBytes(raw string) (int64, error) {
 	s := strings.ToLower(strings.TrimSpace(raw))
@@ -30,18 +55,28 @@ func parseMemoryBytes(raw string) (int64, error) {
 	}
 	mult, ok := memoryUnits[s[i:]]
 	n, err := strconv.ParseFloat(s[:i], 64)
-	if !ok || err != nil || n <= 0 {
+	if !ok || err != nil || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 {
 		return 0, fmt.Errorf("%q is not a memory size such as 512m or 1g", raw)
 	}
-	return int64(n * float64(mult)), nil
+	memCap := envCap(envMaxMemoryBytes, float64(math.MaxInt64>>sumHeadroomShift))
+	b, ok := toInt64(n*float64(mult), memCap)
+	if !ok {
+		return 0, fmt.Errorf("%q is out of range: it must be at least 1 byte and at most %d bytes (%s)", raw, int64(memCap), envMaxMemoryBytes)
+	}
+	return b, nil
 }
 
 func parseNanoCPUs(raw string) (int64, error) {
 	n, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
-	if err != nil || n <= 0 {
+	if err != nil || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 {
 		return 0, fmt.Errorf("%q is not a positive CPU count such as 0.5 or 2", raw)
 	}
-	return int64(n * 1e9), nil
+	maxCPUs := envCap(envMaxCPUs, float64(math.MaxInt64>>sumHeadroomShift)/1e9)
+	nano, ok := toInt64(n*1e9, maxCPUs*1e9)
+	if !ok {
+		return 0, fmt.Errorf("%q is out of range: it must be at least 0.000000001 and at most %g CPUs (%s)", raw, maxCPUs, envMaxCPUs)
+	}
+	return nano, nil
 }
 
 // limitsForService merges deploy.resources.limits with the service-level
@@ -59,12 +94,12 @@ func limitsForService(svc Service) (mem, nano int64, err error) {
 	}
 	if memRaw != "" {
 		if mem, err = parseMemoryBytes(memRaw); err != nil {
-			return 0, 0, fmt.Errorf("memory limit: %w", err)
+			return 0, 0, fmt.Errorf("mem_limit: %w", err)
 		}
 	}
 	if cpuRaw != "" {
 		if nano, err = parseNanoCPUs(cpuRaw); err != nil {
-			return 0, 0, fmt.Errorf("cpus limit: %w", err)
+			return 0, 0, fmt.Errorf("cpus: %w", err)
 		}
 	}
 	return mem, nano, nil

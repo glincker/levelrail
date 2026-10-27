@@ -1,6 +1,9 @@
 package compose
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestToDesiredServices_AppliesResourceLimits(t *testing.T) {
 	f, err := Parse([]byte(`services:
@@ -42,5 +45,67 @@ func TestToDesiredServices_RejectsBadMemoryLimit(t *testing.T) {
 	}
 	if _, _, err := ToDesiredServices("app", f); err == nil {
 		t.Fatal("want an error for an unparseable memory limit")
+	}
+}
+
+func TestLimitsForService_ValidAndInvalid(t *testing.T) {
+	t.Setenv("LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES", "")
+	t.Setenv("LEVELRAIL_COMPOSE_MAX_CPUS", "")
+	ok := []struct {
+		mem, cpu string
+		wantMem  int64
+		wantNano int64
+	}{
+		{"512m", "", 512 << 20, 0},
+		{"1g", "", 1 << 30, 0},
+		{"1.5g", "", 3 << 29, 0},
+		{"100m", "", 100 << 20, 0},
+		{"", "0.5", 0, 500_000_000},
+		{"", "2", 0, 2_000_000_000},
+	}
+	for _, c := range ok {
+		mem, nano, err := limitsForService(Service{MemLimit: yamlScalarString(c.mem), CPUs: yamlScalarString(c.cpu)})
+		if err != nil || mem != c.wantMem || nano != c.wantNano {
+			t.Errorf("%q/%q = %d,%d,%v want %d,%d", c.mem, c.cpu, mem, nano, err, c.wantMem, c.wantNano)
+		}
+	}
+	for _, mem := range []string{"nan", "inf", "-inf", "1e30", "9999999999g", "0.0000001m", "0", "-5m", "0.4b"} {
+		if _, _, err := limitsForService(Service{MemLimit: yamlScalarString(mem)}); err == nil {
+			t.Errorf("mem_limit %q must be rejected", mem)
+		} else if !strings.Contains(err.Error(), "mem_limit") {
+			t.Errorf("error for %q must name the key: %v", mem, err)
+		}
+	}
+	for _, cpu := range []string{"nan", "NaN", "inf", "+Inf", "1e12", "1e-10", "0", "-1", "1e30"} {
+		if _, _, err := limitsForService(Service{CPUs: yamlScalarString(cpu)}); err == nil {
+			t.Errorf("cpus %q must be rejected", cpu)
+		} else if !strings.Contains(err.Error(), "cpus") {
+			t.Errorf("error for %q must name the key: %v", cpu, err)
+		}
+	}
+}
+
+func TestLimitsForService_EnvCap(t *testing.T) {
+	t.Setenv("LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES", "1073741824")
+	t.Setenv("LEVELRAIL_COMPOSE_MAX_CPUS", "4")
+	if _, _, err := limitsForService(Service{MemLimit: "2g"}); err == nil {
+		t.Error("mem above env cap must be rejected")
+	}
+	if _, _, err := limitsForService(Service{CPUs: "8"}); err == nil {
+		t.Error("cpus above env cap must be rejected")
+	}
+	if _, _, err := limitsForService(Service{MemLimit: "1g", CPUs: "4"}); err != nil {
+		t.Errorf("values at the cap are valid: %v", err)
+	}
+}
+
+func TestLimitsForService_ShorthandWinsOverDeploy(t *testing.T) {
+	t.Setenv("LEVELRAIL_COMPOSE_MAX_MEMORY_BYTES", "")
+	t.Setenv("LEVELRAIL_COMPOSE_MAX_CPUS", "")
+	svc := Service{MemLimit: "256m", CPUs: "1", Deploy: &Deploy{}}
+	svc.Deploy.Resources.Limits = deployLimits{Memory: "1g", CPUs: "2"}
+	mem, nano, err := limitsForService(svc)
+	if err != nil || mem != 256<<20 || nano != 1_000_000_000 {
+		t.Errorf("got %d,%d,%v", mem, nano, err)
 	}
 }
