@@ -50,7 +50,7 @@ func pinnedPortUnbound(state *docker.ContainerState, desired *store.DesiredServi
 		return false
 	}
 	for _, p := range state.Ports {
-		if p.HostPort == *desired.HostPort {
+		if p.HostPort == *desired.HostPort && bindingProtocol(p) == store.PortProtocolTCP {
 			return false
 		}
 	}
@@ -62,28 +62,57 @@ func pinnedPortUnbound(state *docker.ContainerState, desired *store.DesiredServi
 // so blue-green overlap is impossible: the old release is stopped (not
 // removed) so a failed deploy can restore it.
 func (c *Controller) releasePinnedPort(ctx context.Context, target string, desired *store.DesiredService) ([]docker.ContainerState, error) {
-	if desired.HostPort == nil || desired.Port == 0 {
+	pinned := pinnedHostPorts(desired)
+	if len(pinned) == 0 {
 		return nil, nil
 	}
 	if until, ok := c.handoffFailed[target]; ok && time.Now().Before(until) {
-		return nil, &pinnedPortBackoffError{port: *desired.HostPort, until: until}
+		return nil, &pinnedPortBackoffError{port: pinned[0].HostPort, until: until}
 	}
 	all, err := c.listPrefix(ctx, c.serviceName+"-")
 	if err != nil {
-		return nil, fmt.Errorf("list containers holding pinned host port %d: %w", *desired.HostPort, err)
+		return nil, fmt.Errorf("list containers holding pinned host port %s: %w", pinned[0], err)
 	}
 	var released []docker.ContainerState
 	for _, cs := range all {
-		if cs.Name == target || !cs.Running || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) || !holdsHostPort(cs, *desired.HostPort) {
+		if cs.Name == target || !cs.Running || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) || !holdsAnyHostPort(cs, pinned) {
 			continue
 		}
 		if err := c.stopContainer(ctx, cs.ID); err != nil {
 			_ = c.restoreReleased(ctx, released)
-			return nil, fmt.Errorf("stop %q to free pinned host port %d: %w", cs.Name, *desired.HostPort, err)
+			return nil, fmt.Errorf("stop %q to free its pinned host ports: %w", cs.Name, err)
 		}
 		released = append(released, cs)
 	}
 	return released, nil
+}
+
+// pinnedHostPorts lists every fixed host port desired binds: the pinned
+// main tcp port plus each published port. None can be bound twice.
+func pinnedHostPorts(desired *store.DesiredService) []store.PublishedPort {
+	var out []store.PublishedPort
+	if desired.HostPort != nil && desired.Port != 0 {
+		out = append(out, store.PublishedPort{ContainerPort: desired.Port, HostPort: *desired.HostPort, Protocol: store.PortProtocolTCP})
+	}
+	return append(out, desired.PublishedPorts...)
+}
+
+func holdsAnyHostPort(cs docker.ContainerState, pinned []store.PublishedPort) bool {
+	for _, p := range cs.Ports {
+		for _, want := range pinned {
+			if p.HostPort == want.HostPort && bindingProtocol(p) == want.EffectiveProtocol() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func bindingProtocol(p docker.PortBinding) string {
+	if p.Protocol == "" {
+		return store.PortProtocolTCP
+	}
+	return p.Protocol
 }
 
 func holdsHostPort(cs docker.ContainerState, port int) bool {
@@ -144,6 +173,10 @@ func (e *requiredSecretError) Error() string {
 const reasonRequiredSecretMissing = "RequiredSecretMissing"
 
 func createFailureReason(err error) string {
+	var remote *publishedPortsRemoteError
+	if errors.As(err, &remote) {
+		return ReasonPublishedPortsRemoteNode
+	}
 	var missing *requiredSecretError
 	if errors.As(err, &missing) {
 		return reasonRequiredSecretMissing

@@ -1003,7 +1003,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	meshIP, _ := c.meshBindIP(ctx, desired)
-	if publishedPortDrifted(state, desired, meshIP) {
+	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, desired) {
 		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
 		}
@@ -1354,6 +1354,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		}
 	}
 
+	if err := c.refuseRemotePublishedPorts(desired); err != nil {
+		return err
+	}
 	spec, err := toContainerSpec(name, desired)
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
@@ -2733,6 +2736,16 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			binding.HostPort = *desired.HostPort
 		}
 		spec.Ports = []docker.PortBinding{binding}
+	}
+	if len(desired.PublishedPorts) > 0 {
+		// Same bind address rule as the routed port, so a UDP port is private unless the service is public.
+		hostIP, err := bindaddr.Resolve(desired.BindAddress)
+		if err != nil {
+			return docker.ContainerSpec{}, fmt.Errorf("bind address: %w", err)
+		}
+		for _, p := range desired.PublishedPorts {
+			spec.Ports = append(spec.Ports, docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: hostIP, Protocol: p.EffectiveProtocol()})
+		}
 	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{

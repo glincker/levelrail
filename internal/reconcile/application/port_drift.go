@@ -36,7 +36,7 @@ func publishedPortDrifted(state *docker.ContainerState, desired *store.DesiredSe
 		want = ip
 	}
 	for _, p := range ports {
-		if p.ContainerPort != desired.Port {
+		if p.ContainerPort != desired.Port || bindingProtocol(p) != store.PortProtocolTCP {
 			continue
 		}
 		if meshFlapBind(p.HostIP, want) || p.HostIP == "" || p.HostIP == want || (want == "0.0.0.0" && p.HostIP == "::") {
@@ -51,4 +51,39 @@ func publishedPortDrifted(state *docker.ContainerState, desired *store.DesiredSe
 func meshFlapBind(have, want string) bool {
 	ip := net.ParseIP(have)
 	return isLoopbackIP(want) && ip != nil && !ip.IsLoopback() && !ip.IsUnspecified()
+}
+
+// publishedPortsDrifted reports a container whose direct host ports differ
+// from desired by (container port, host port, protocol), in either
+// direction. No reported bindings at all is unknown, not drifted.
+func publishedPortsDrifted(state *docker.ContainerState, desired *store.DesiredService) bool {
+	if state == nil {
+		return false
+	}
+	ports := state.Ports
+	if !state.Running {
+		ports = state.ConfiguredPorts
+	}
+	if len(ports) == 0 {
+		return false
+	}
+	have := map[store.PublishedPort]bool{}
+	for _, p := range ports {
+		have[store.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: bindingProtocol(p)}] = true
+	}
+	want := map[store.PublishedPort]bool{}
+	for _, p := range desired.PublishedPorts {
+		key := store.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: p.EffectiveProtocol()}
+		want[key] = true
+		if !have[key] {
+			return true
+		}
+	}
+	// Only non-tcp leftovers count: tcp bindings also come from the main port and app streams.
+	for k := range have {
+		if k.Protocol != store.PortProtocolTCP && !want[k] {
+			return true
+		}
+	}
+	return false
 }
