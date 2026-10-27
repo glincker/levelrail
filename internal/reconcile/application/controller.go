@@ -2258,7 +2258,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 		return c.watchStartup(ctx, state.Name, desired)
 	}
 
-	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
 		// No published port here almost always means the container
 		// already died (Docker clears bindings once it stops).
@@ -2367,7 +2367,7 @@ func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.Conta
 		return nil
 	}
 
-	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
 		// Not evaluated, not failed: an unreachable node must never flip a
 		// serving app unhealthy.
@@ -2567,8 +2567,8 @@ func (c *Controller) removeContainers(ctx context.Context, cs []docker.Container
 // port binding a service with exactly one declared port produces.
 // Exported so internal/api's health-discovery endpoint (apps_health_discover.go)
 // can resolve the same address without reimplementing this lookup.
-func PrimaryAddr(state *docker.ContainerState) (string, error) {
-	p, ok := docker.PrimaryPort(state.Ports)
+func PrimaryAddr(state *docker.ContainerState, port int) (string, error) {
+	p, ok := docker.PrimaryPort(state.Ports, port)
 	if !ok {
 		return "", fmt.Errorf("container %s has no published tcp port to probe", state.Name)
 	}

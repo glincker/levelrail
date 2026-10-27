@@ -270,7 +270,7 @@ func TestReviveLastReady_PublishedUDPPortHeldByCandidate(t *testing.T) {
 
 func TestPrimaryAddrSkipsUDPBinding(t *testing.T) {
 	state := &docker.ContainerState{Name: "web", Ports: []docker.PortBinding{{ContainerPort: 53, HostPort: 53, Protocol: "udp"}, {ContainerPort: 80, HostPort: 32768, Protocol: "tcp"}}}
-	if got, err := PrimaryAddr(state); err != nil || got != "127.0.0.1:32768" {
+	if got, err := PrimaryAddr(state, 80); err != nil || got != "127.0.0.1:32768" {
 		t.Fatalf("PrimaryAddr = %q %v, want the tcp binding", got, err)
 	}
 }

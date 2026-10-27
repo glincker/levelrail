@@ -1374,12 +1374,12 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 		if dial, ok := c.lastDial.Load(svc.Name); ok {
 			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
 		}
-	} else if dial, ok := dialAddr(state); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
+	} else if dial, ok := dialAddr(state, svc.Port); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
 
-	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target, warmingImageID(svc, state)); ok {
+	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, svc.Port, target, warmingImageID(svc, state)); ok {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
@@ -1495,11 +1495,11 @@ func streamDial(state *docker.ContainerState, containerPort int) (string, bool) 
 	return "", false
 }
 
-func dialAddr(state *docker.ContainerState) (string, bool) {
+func dialAddr(state *docker.ContainerState, port int) (string, bool) {
 	if state == nil || !state.Running {
 		return "", false
 	}
-	p, ok := docker.PrimaryPort(state.Ports)
+	p, ok := docker.PrimaryPort(state.Ports, port)
 	if !ok {
 		return "", false
 	}
@@ -1508,7 +1508,7 @@ func dialAddr(state *docker.ContainerState) (string, bool) {
 
 // dialPreviousRelease finds another running, ported container for
 // serviceName besides exclude, to keep serving while exclude isn't ready.
-func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude, preferImageID string) (string, bool) {
+func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName string, port int, exclude, preferImageID string) (string, bool) {
 	prev, err := c.previousReleasesPreferring(ctx, serviceName, exclude, preferImageID)
 	if err != nil {
 		if dial, ok := c.lastDial.Load(serviceName); ok {
@@ -1519,7 +1519,7 @@ func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclu
 	if len(prev) == 0 {
 		return "", false
 	}
-	return dialAddr(&prev[0])
+	return dialAddr(&prev[0], port)
 }
 
 // previousReleases returns serviceName's running, ported containers other

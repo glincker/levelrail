@@ -65,11 +65,11 @@ func runnableProbe(p *store.ServiceProbe, port int) *store.ServiceProbe {
 
 // probeTarget resolves what a probe dials. A port probe on a remote node
 // dials its mesh address: the control plane's loopback is the wrong host.
-func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerState, p store.ServiceProbe, nodeID string) (probe.Target, error) {
+func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerState, p store.ServiceProbe, port int, nodeID string) (probe.Target, error) {
 	if !p.NeedsPort() {
 		return probe.Target{ContainerID: state.ID}, nil
 	}
-	addr, err := PrimaryAddr(state)
+	addr, err := PrimaryAddr(state, port)
 	if err != nil {
 		return probe.Target{}, err
 	}
@@ -87,7 +87,7 @@ func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerSta
 	if !path.Usable {
 		return probe.Target{}, fmt.Errorf("node %s is not reachable over the mesh: %s", nodeID, path.Reason)
 	}
-	primary, _ := docker.PrimaryPort(state.Ports)
+	primary, _ := docker.PrimaryPort(state.Ports, port)
 	bound := primary.HostIP
 	if ip := net.ParseIP(bound); ip != nil && ip.IsLoopback() {
 		return probe.Target{}, fmt.Errorf("port is published on loopback of node %s, waiting for the mesh bind", nodeID)

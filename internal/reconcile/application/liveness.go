@@ -179,7 +179,7 @@ func (c *Controller) checkLiveness(ctx context.Context, targets []string, desire
 	now := time.Now()
 	worst := livenessOutcome{}
 	for _, target := range targets {
-		out := c.checkReplicaLiveness(ctx, target, desired.NodeID, *cfg, interval, threshold, now)
+		out := c.checkReplicaLiveness(ctx, target, desired.NodeID, desired.Port, *cfg, interval, threshold, now)
 		if out.severity > worst.severity {
 			worst = out
 		}
@@ -187,7 +187,7 @@ func (c *Controller) checkLiveness(ctx context.Context, targets []string, desire
 	return worst
 }
 
-func (c *Controller) checkReplicaLiveness(ctx context.Context, target, nodeID string, cfg store.ServiceProbe, interval time.Duration, threshold int, now time.Time) livenessOutcome {
+func (c *Controller) checkReplicaLiveness(ctx context.Context, target, nodeID string, port int, cfg store.ServiceProbe, interval time.Duration, threshold int, now time.Time) livenessOutcome {
 	if !c.liveness.due(target, now, interval) {
 		return livenessOutcome{}
 	}
@@ -204,7 +204,7 @@ func (c *Controller) checkReplicaLiveness(ctx context.Context, target, nodeID st
 		return livenessOutcome{}
 	}
 
-	at, err := c.probeTarget(ctx, state, cfg, nodeID)
+	at, err := c.probeTarget(ctx, state, cfg, port, nodeID)
 	if err != nil {
 		return livenessOutcome{severity: livenessProbeUnavailable, err: fmt.Errorf("liveness probe: %w", err)}
 	}

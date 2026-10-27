@@ -131,7 +131,7 @@ func (c *Controller) startedAt(ctx context.Context, state *docker.ContainerState
 // pending true means not ready yet and still inside the budget.
 func (c *Controller) probeCandidate(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, started time.Time) (pending bool, err error) {
 	readiness := c.deployReadinessProbeFor(desired)
-	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
 		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
 			return false, crash

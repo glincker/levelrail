@@ -303,6 +303,9 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 		}
 		f.specPorts[id] = spec.Ports
 	}
+	if len(spec.Ports) > 0 {
+		f.containers[spec.Name].ConfiguredPorts = spec.Ports
+	}
 	return id, nil
 }
 
@@ -344,11 +347,19 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 				continue
 			}
 			if f.hostPort != 0 {
-				cs.Ports = []docker.PortBinding{{ContainerPort: 80, HostPort: f.hostPort}}
+				cs.Ports = []docker.PortBinding{{ContainerPort: fakeRoutedPort(cs), HostPort: f.hostPort}}
 			}
 		}
 	}
 	return nil
+}
+
+// fakeRoutedPort is the container port the created spec routes, 80 by default.
+func fakeRoutedPort(cs *docker.ContainerState) int {
+	if len(cs.ConfiguredPorts) > 0 && cs.ConfiguredPorts[0].ContainerPort != 0 {
+		return cs.ConfiguredPorts[0].ContainerPort
+	}
+	return 80
 }
 
 func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {

@@ -14,7 +14,7 @@ import (
 func TestProbeTarget_RemoteNodeDialsMeshAddress(t *testing.T) {
 	tcp := store.ServiceProbe{TCP: true}
 	state := func(hostIP string) *docker.ContainerState {
-		return &docker.ContainerState{ID: "c1", Name: "web", Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 18102, HostIP: hostIP}}}
+		return &docker.ContainerState{ID: "c1", Name: "web", Ports: []docker.PortBinding{{ContainerPort: 22, HostPort: 2222, HostIP: hostIP}, {ContainerPort: 80, HostPort: 18102, HostIP: hostIP}}}
 	}
 	tests := []struct {
 		name     string
@@ -37,7 +37,7 @@ func TestProbeTarget_RemoteNodeDialsMeshAddress(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := New("web", &fakeStore{}, newFakeRuntime(0), WithMeshPaths(tt.paths))
-			got, err := c.probeTarget(context.Background(), state(tt.hostIP), tcp, tt.node)
+			got, err := c.probeTarget(context.Background(), state(tt.hostIP), tcp, 80, tt.node)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
 			}

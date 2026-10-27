@@ -281,7 +281,7 @@ func TestComposeTemplates_Live(t *testing.T) {
 			s := deployLiveStack(t, rt, "lrtpl-"+m.ID, body)
 			s.converge(t, 6*time.Minute)
 			hc := s.container(t, m.Healthcheck.Service)
-			addr, err := PrimaryAddr(hc)
+			addr, err := PrimaryAddr(hc, 0)
 			if err != nil {
 				t.Fatalf("PrimaryAddr() error = %v", err)
 			}
