@@ -111,8 +111,8 @@ func TestDrain_RollbackStopsOlderHeldRelease(t *testing.T) {
 	rt.seed(oldest, true)
 	rt.seed(serving, true)
 	now := time.Now()
-	rt.containers[oldest].Created = now.Add(-2 * time.Minute)
-	rt.containers[serving].Created = now.Add(-time.Minute)
+	rt.containers[oldest].Created = now.Add(-3 * time.Hour)
+	rt.containers[serving].Created = now.Add(-2 * time.Hour)
 	desired := gateDesired()
 	desired.Image = "rollback/web:dep_1"
 	rt.setExitState(ContainerName("web", desired.Image, ""), &docker.ExitState{Running: true})
@@ -128,5 +128,86 @@ func TestDrain_RollbackStopsOlderHeldRelease(t *testing.T) {
 	}
 	if cs, _ := rt.InspectByName(context.Background(), oldest); cs != nil {
 		t.Errorf("older release %s = %+v, want it removed", oldest, cs)
+	}
+}
+
+// v3 cuts over while v1 still drains from the v2 cutover: v1 keeps its own
+// window instead of being cut mid-request.
+func TestDrain_OverlappingCutoverKeepsEarlierDrain(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	v1, v2 := ContainerName("web", "img:v1", ""), ContainerName("web", "img:v2", "")
+	rt.seed(v1, true)
+	rt.seed(v2, true)
+	now := time.Now()
+	rt.containers[v1].Created = now.Add(-time.Hour)
+	rt.containers[v2].Created = now.Add(-10 * time.Second)
+	desired := gateDesired()
+	desired.Image = "img:v3"
+	rt.setExitState(ContainerName("web", desired.Image, ""), &docker.ExitState{Running: true})
+	tracker := NewDrainTracker()
+	tracker.moved("web", v2)
+	rec := &fakeGateRecorder{}
+	opts := append(gateOptions(rec, 1, 0, time.Hour), WithDrainTracker(tracker))
+
+	c := New("web", &fakeStore{svc: desired}, rt, opts...)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	for _, name := range []string{v1, v2} {
+		if cs, _ := rt.InspectByName(context.Background(), name); cs == nil || !cs.Running {
+			t.Errorf("release %s = %+v, want it still draining", name, cs)
+		}
+	}
+}
+
+// Replicas of the current release removed by a scale-down during an open
+// drain window still owe their in-flight requests a drain.
+func TestDrain_KeepsCurrentScaleDownReplicas(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := gateDesired()
+	base, extra := ReplicaContainerName("web", desired.Image, "", 0), ReplicaContainerName("web", desired.Image, "", 1)
+	for _, name := range []string{base, extra} {
+		rt.seed(name, true)
+		rt.setExitState(name, &docker.ExitState{Running: true})
+	}
+	tracker := NewDrainTracker()
+	tracker.moved("web", releaseOf(base))
+	tracker.mark("web", time.Now())
+	rec := &fakeGateRecorder{}
+	opts := append(gateOptions(rec, 1, 0, time.Hour), WithDrainTracker(tracker))
+
+	c := New("web", &fakeStore{svc: desired}, rt, opts...)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cs, _ := rt.InspectByName(context.Background(), extra); cs == nil || !cs.Running {
+		t.Errorf("scale-down replica %s = %+v, want it still draining", extra, cs)
+	}
+}
+
+// Two previous releases created in the same second: the hold keeps the one
+// that was serving, not whichever name sorts last.
+func TestHeldFilter_TieKeepsServingRelease(t *testing.T) {
+	a, b := ContainerName("web", "img:v1", ""), ContainerName("web", "img:v2", "")
+	serving, other := min(a, b), max(a, b)
+	target := ContainerName("web", "img:v3", "")
+	now := time.Now().Truncate(time.Second)
+	all := []docker.ContainerState{
+		{Name: serving, Running: true, Created: now.Add(-time.Second)},
+		{Name: other, Running: true, Created: now.Add(-time.Second)},
+		{Name: target, Running: true, Created: now},
+	}
+	tracker := NewDrainTracker()
+	tracker.moved("web", serving)
+	tracker.moved("web", target)
+	c := New("web", &fakeStore{}, newFakeRuntime(0), WithDrainTracker(tracker))
+
+	due, _ := c.heldFilterFor(all, []string{target}, now, time.Hour)
+	if len(due) != 1 || due[0].Name != other {
+		t.Errorf("due = %+v, want only %s", due, other)
 	}
 }

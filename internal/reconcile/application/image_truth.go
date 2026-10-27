@@ -159,24 +159,7 @@ func (c *Controller) heldFilter(all []docker.ContainerState, targets []string, n
 
 // heldFilterFor is heldFilter with an explicit hold duration.
 func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string, now time.Time, hold time.Duration) (due []docker.ContainerState, heldUntil time.Time) {
-	firstCreated := map[string]time.Time{}
-	lastCreated := map[string]time.Time{}
-	seenBase := map[string]bool{}
-	for _, cs := range all {
-		if !ownsContainer(c.serviceName, cs.Name) {
-			continue
-		}
-		rel := releaseOf(cs.Name)
-		if cs.Name == rel {
-			firstCreated[rel] = cs.Created
-			seenBase[rel] = true
-		} else if first, ok := firstCreated[rel]; !seenBase[rel] && (!ok || cs.Created.Before(first)) {
-			firstCreated[rel] = cs.Created
-		}
-		if cs.Created.After(lastCreated[rel]) {
-			lastCreated[rel] = cs.Created
-		}
-	}
+	firstCreated, lastCreated := releaseCreation(c.serviceName, all)
 	var cutover time.Time
 	for _, t := range firstCreated {
 		if t.After(cutover) {
@@ -192,7 +175,7 @@ func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string
 	stale := c.filterStale(all, targets)
 	newestPrevious := ""
 	if holding {
-		newestPrevious = newestRunningRelease(stale, lastCreated, currentBase)
+		newestPrevious = newestRunningRelease(stale, lastCreated, currentBase, c.drain.previous(c.serviceName))
 	}
 	for _, cs := range stale {
 		if newestPrevious != "" && cs.Running && releaseOf(cs.Name) == newestPrevious {
@@ -206,16 +189,52 @@ func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string
 	return due, heldUntil
 }
 
+// releaseCreation maps each of service's releases to its cutover (replica 0's
+// creation, else its earliest replica) and to its newest replica's creation.
+func releaseCreation(service string, all []docker.ContainerState) (first, last map[string]time.Time) {
+	first, last = map[string]time.Time{}, map[string]time.Time{}
+	seenBase := map[string]bool{}
+	for _, cs := range all {
+		if !ownsContainer(service, cs.Name) {
+			continue
+		}
+		rel := releaseOf(cs.Name)
+		if cs.Name == rel {
+			first[rel] = cs.Created
+			seenBase[rel] = true
+		} else if t, ok := first[rel]; !seenBase[rel] && (!ok || cs.Created.Before(t)) {
+			first[rel] = cs.Created
+		}
+		if cs.Created.After(last[rel]) {
+			last[rel] = cs.Created
+		}
+	}
+	return first, last
+}
+
+// releaseNewer reports whether release a was created after b. Docker
+// creation times have whole-second resolution, so a tie goes to serving
+// (the release that served until the last cutover) before name order.
+func releaseNewer(a, b string, created map[string]time.Time, serving string) bool {
+	if !created[a].Equal(created[b]) {
+		return created[a].After(created[b])
+	}
+	if a == serving || b == serving {
+		return a == serving && b != serving
+	}
+	return a > b
+}
+
 // newestRunningRelease is the most recently created running release among
 // stale other than currentBase, or "" when none runs.
-func newestRunningRelease(stale []docker.ContainerState, lastCreated map[string]time.Time, currentBase string) string {
+func newestRunningRelease(stale []docker.ContainerState, lastCreated map[string]time.Time, currentBase, serving string) string {
 	newest := ""
 	for _, cs := range stale {
 		rel := releaseOf(cs.Name)
 		if !cs.Running || rel == currentBase {
 			continue
 		}
-		if newest == "" || lastCreated[rel].After(lastCreated[newest]) || (lastCreated[rel].Equal(lastCreated[newest]) && rel > newest) {
+		if newest == "" || releaseNewer(rel, newest, lastCreated, serving) {
 			newest = rel
 		}
 	}
@@ -227,6 +246,7 @@ func newestRunningRelease(stale []docker.ContainerState, lastCreated map[string]
 // release keeps serving, and older ones can only leak.
 func (c *Controller) supersededPrevious(all []docker.ContainerState, targets []string) []docker.ContainerState {
 	stale := c.filterStale(all, targets)
+	serving := c.drain.previous(c.serviceName)
 	lastCreated := map[string]time.Time{}
 	newest := ""
 	for _, cs := range stale {
@@ -244,7 +264,7 @@ func (c *Controller) supersededPrevious(all []docker.ContainerState, targets []s
 			if runningOnly && !cs.Running {
 				continue
 			}
-			if best == "" || lastCreated[rel].After(lastCreated[best]) || (lastCreated[rel].Equal(lastCreated[best]) && rel > best) {
+			if best == "" || releaseNewer(rel, best, lastCreated, serving) {
 				best = rel
 			}
 		}
