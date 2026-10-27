@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func writeComposeFixture(t *testing.T) string {
@@ -173,5 +175,37 @@ func TestPrintComposeFileWarnings_NamesPathServiceAndKey(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("warning output %q missing %q", got, want)
 		}
+	}
+}
+
+func TestRun_AppsDeployCompose_APINoticesPrintedOnce(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(composeDeployResult{
+			AppID: "myapp",
+			Notices: []apiclient.ComposeNotice{
+				{Level: "warning", Message: "api says: key ignored"},
+				{Level: "note", Message: "api note only"},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	// A local file with an unsupported key must not add a second warning.
+	path := filepath.Join(t.TempDir(), "compose.yaml")
+	body := "services:\n  web:\n    image: nginx:latest\n    privileged: true\n"
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", path, "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d (stderr=%q)", got, stderr.String())
+	}
+	if c := strings.Count(stderr.String(), "warning:"); c != 1 {
+		t.Errorf("warning lines = %d, want 1: %q", c, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "api says: key ignored") || strings.Contains(stderr.String(), "api note only") {
+		t.Errorf("stderr = %q, want only the API warning", stderr.String())
 	}
 }

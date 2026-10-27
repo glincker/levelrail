@@ -38,13 +38,22 @@ func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read %s: %w", file, readErr))
 	}
 
-	printComposeFileWarnings(stderr, file, data)
-
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.DeployCompose(context.Background(), name, data)
 	if err != nil {
+		printComposeFileWarnings(stderr, file, data)
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy compose to app %q: %w", name, err))
+	}
+	// The API's notices win; the local parse only covers an older server.
+	if len(result.Notices) > 0 {
+		for _, n := range result.Notices {
+			if n.Level == "warning" {
+				_, _ = fmt.Fprintf(stderr, "warning: %s: %s\n", file, n.Message)
+			}
+		}
+	} else {
+		printComposeFileWarnings(stderr, file, data)
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, result, func() { printComposeDeployResultHuman(stdout, result) }); err != nil {

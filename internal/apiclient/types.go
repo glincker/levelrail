@@ -409,8 +409,16 @@ type DeployApprovalDecisionResult struct {
 // ComposeDeployResult mirrors internal/api's composeDeployResponse
 // (internal/api/apps_compose.go).
 type ComposeDeployResult struct {
-	AppID    string        `json:"app_id"`
-	Services []AppResource `json:"services"`
+	AppID    string          `json:"app_id"`
+	Services []AppResource   `json:"services"`
+	Notices  []ComposeNotice `json:"notices,omitempty"`
+}
+
+// ComposeNotice mirrors internal/api's composeNoticeResult: a compose key
+// that parsed but is not applied as Docker Compose would.
+type ComposeNotice struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
 }
 
 // ConditionResource mirrors internal/reconcile.Condition, the wire shape
