@@ -43,6 +43,8 @@ type rawService struct {
 	Secrets     []any             `yaml:"secrets"`
 	Configs     []any             `yaml:"configs"`
 	Profiles    []string          `yaml:"profiles"`
+	MemLimit    yamlScalarString  `yaml:"mem_limit"`
+	CPUs        yamlScalarString  `yaml:"cpus"`
 	HostAccess  HostAccess        `yaml:",inline"`
 	Strategy    string            `yaml:"x-levelrail-strategy"`
 	// StrategyReason is shown next to the strategy so an operator knows why a template pinned it.

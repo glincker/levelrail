@@ -110,7 +110,10 @@ type Service struct {
 	Secrets []any
 	Configs []any
 	// Profiles gates the service behind compose profiles (ApplyProfiles).
-	Profiles   []string
+	Profiles []string
+	// MemLimit and CPUs are the mem_limit: and cpus: shorthands for a hard cap.
+	MemLimit   yamlScalarString
+	CPUs       yamlScalarString
 	HostAccess HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
 	// such as recreate for an app that locks its state volume. Empty means default.

@@ -15,13 +15,13 @@ import (
 // wantUnsupported records, per fixture, the keys the parser must report.
 var wantUnsupported = map[string][]string{
 	"nginx_php.yaml":            {"php:expose", "php:user", "php:working_dir", "web:container_name"},
-	"wordpress_mysql.yaml":      {"db:env_file", "db:mem_limit", "wordpress:links"},
+	"wordpress_mysql.yaml":      {"db:env_file", "wordpress:links"},
 	"profiles_extends.yaml":     {"debug:extends", "debug:stdin_open", "debug:tty", "migrate:depends_on.restart"},
 	"secrets_configs.yaml":      {},
-	"deploy_resources.yaml":     {"gpu:shm_size", "gpu:ulimits", "worker:deploy.resources.limits.cpus", "worker:deploy.resources.limits.memory", "worker:deploy.resources.reservations.cpus", "worker:deploy.resources.reservations.memory"},
+	"deploy_resources.yaml":     {"gpu:shm_size", "gpu:ulimits", "worker:deploy.resources.reservations.cpus", "worker:deploy.resources.reservations.memory"},
 	"healthcheck_variants.yaml": {"http:healthcheck.start_interval", "off:healthcheck.disable"},
 	"anchors_extensions.yaml":   {":volumes.data", "a:logging", "b:hostname", "b:logging", "b:ports.host_ip", "b:volumes.volume"},
-	"env_file_stack.yaml":       {":name", ":volumes.redis", "api:container_name", "api:cpus", "api:env_file", "api:stop_grace_period", "api:user", "redis:container_name"},
+	"env_file_stack.yaml":       {":name", ":volumes.redis", "api:container_name", "api:env_file", "api:stop_grace_period", "api:user", "redis:container_name"},
 }
 
 func flatten(keys []compose.UnsupportedKey) []string {

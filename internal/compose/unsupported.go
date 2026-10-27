@@ -198,7 +198,9 @@ func deployUnsupported(v any) []string {
 	var out []string
 	if limits, ok := res["limits"].(map[string]any); ok {
 		for _, k := range sortedKeys(limits) {
-			out = append(out, "deploy.resources.limits."+k)
+			if k != "cpus" && k != "memory" {
+				out = append(out, "deploy.resources.limits."+k)
+			}
 		}
 	}
 	if rsv, ok := res["reservations"].(map[string]any); ok {

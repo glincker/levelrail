@@ -57,6 +57,11 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if gpu != nil {
 			d.Resources = &store.ServiceResources{GPU: gpu}
 		}
+		mem, nano, err := limitsForService(svc)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
+		applyLimits(&d, mem, nano)
 		replicas, err := replicasFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)

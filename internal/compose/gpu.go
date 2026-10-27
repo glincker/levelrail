@@ -22,6 +22,7 @@ type Deploy struct {
 		Reservations struct {
 			Devices []Device `yaml:"devices"`
 		} `yaml:"reservations"`
+		Limits deployLimits `yaml:"limits"`
 	} `yaml:"resources"`
 	// Replicas maps onto the same store.DesiredService.Replicas /
 	// spec.Service.Replicas field a service's own top-level replicas:
