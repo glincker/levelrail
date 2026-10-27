@@ -135,10 +135,11 @@ for f in "${CHANGED_FILES[@]}"; do
 	fi
 	# Outside any package (docs/, root files, proto/): Go files naming it in
 	# a string literal, e.g. a test that reads ../../docs/api-reference.md.
+	# The name must start at a path boundary so ci.md does not match use-any-ci.md.
 	name="$(basename "$f")"
 	[[ "$name" =~ $GENERIC_NAMES ]] && continue
 	if [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]; then
-		grep_args=(-E -e "[\"\`][^\"\`]*${name//./\\.}[\"\`]")
+		grep_args=(-E -e "[\"\`]([^\"\`]*/)?${name//./\\.}[\"\`]")
 	else
 		grep_args=(-F -e "$name")
 	fi
