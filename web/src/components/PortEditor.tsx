@@ -247,9 +247,11 @@ export function PortEditor({ app }: { app: AppDetail }) {
                 {...register('publishedPorts')}
                 aria-invalid={!!formState.errors.publishedPorts}
               />
-              <FieldDescription>
-                {t('portEditor.publishedPortsHint')}
-              </FieldDescription>
+              {formState.errors.publishedPorts ? null : (
+                <FieldDescription>
+                  {t('portEditor.publishedPortsHint')}
+                </FieldDescription>
+              )}
               <FieldError errors={[formState.errors.publishedPorts]} />
             </Field>
 
