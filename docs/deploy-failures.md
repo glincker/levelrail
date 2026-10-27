@@ -61,6 +61,9 @@ When a build fails because the Dockerfile path in the git source is wrong, the f
 ### dependency_install_failed
 A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the [build node](/build-node-routing).
 
+### build_step_failed
+A command in the build, such as a Dockerfile `RUN` line, exited with an error that is not a dependency install. Read the failing step in the excerpt and fix that command.
+
 ### compile_error
 The application code failed to compile (tsc, Next.js, go build, cargo, javac). The excerpt shows the compiler line with the file and position. Fix it, confirm it builds locally, then redeploy.
 
