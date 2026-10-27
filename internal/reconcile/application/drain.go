@@ -77,6 +77,13 @@ func (t *DrainTracker) at(service string) time.Time {
 	return t.cutover[service]
 }
 
+func (c *Controller) clock() time.Time {
+	if c.now != nil {
+		return c.now()
+	}
+	return time.Now()
+}
+
 // effectiveHold is how long the previous release outlives a cutover: at
 // least the drain timeout and, with auto-rollback, the watch window, so a
 // watch-triggered rollback lands on a release that is still running.
@@ -106,7 +113,7 @@ func (c *Controller) draining(cfg deploysafety.Effective, justDeployed bool, now
 // release for the hold after that.
 func (c *Controller) retireStale(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) error {
 	cfg := c.safetyFor(ctx, desired)
-	now := time.Now()
+	now := c.clock()
 	// A rollback onto a held release that is still running creates nothing,
 	// but the release it replaces still owes its in-flight requests a drain.
 	if len(targets) > 0 && c.drain.moved(c.serviceName, releaseOf(targets[0])) {
