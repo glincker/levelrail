@@ -183,5 +183,16 @@
       "renewalFailed": "Last renewal failed {{date}}",
       "retrying": "Retrying {{date}}"
     }
+  },
+  "portEditor": {
+    "publishedPorts": "Extra published ports",
+    "publishedPortsPlaceholder": "51820:51820/udp, 53/udp",
+    "publishedPortsHint": "HOST:CONTAINER/udp or /tcp, comma separated. Published on this server only.",
+    "errors": {
+      "syntax": "\"{{entry}}\" is not a port, use HOST:CONTAINER/udp",
+      "protocol": "\"{{entry}}\": protocol must be tcp or udp",
+      "range": "\"{{entry}}\": ports must be between 1 and 65535",
+      "duplicate": "\"{{entry}}\" is listed twice"
+    }
   }
 }
