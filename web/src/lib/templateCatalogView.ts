@@ -27,10 +27,12 @@ export function filterTemplates(
   templates: readonly ServiceTemplateListItem[],
   query: string,
   category: string,
+  verifiedOnly = false,
 ): ServiceTemplateListItem[] {
   const q = normalizeText(query)
   return templates.filter(
     (template) =>
+      (!verifiedOnly || template.verified === true) &&
       (category === ALL_CATEGORIES || template.category === category) &&
       (q === '' || relevance(template, q) >= 0),
   )

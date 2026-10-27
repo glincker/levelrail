@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ListBulletsIcon,
   MagnifyingGlassIcon,
+  SealCheckIcon,
   SquaresFourIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Input } from '@/components/ui/input'
@@ -56,6 +57,8 @@ export function TemplateToolbar({
   onSearch,
   sort,
   onSort,
+  verifiedOnly,
+  onVerifiedOnly,
   density,
   onDensity,
   categoryCounts,
@@ -68,6 +71,8 @@ export function TemplateToolbar({
   onSearch: (value: string) => void
   sort: TemplateSort
   onSort: (value: TemplateSort) => void
+  verifiedOnly: boolean
+  onVerifiedOnly: (value: boolean) => void
   density: TemplateDensity
   onDensity: (value: TemplateDensity) => void
   categoryCounts: [string, number][]
@@ -116,6 +121,23 @@ export function TemplateToolbar({
             ))}
           </SelectContent>
         </Select>
+        <button
+          type="button"
+          aria-pressed={verifiedOnly}
+          onClick={() => {
+            onVerifiedOnly(!verifiedOnly)
+          }}
+          title={t('verified.hint')}
+          className={cn(
+            'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+            verifiedOnly
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border text-foreground/70 hover:text-foreground',
+          )}
+        >
+          <SealCheckIcon className="size-4" aria-hidden="true" />
+          {t('verified.filter')}
+        </button>
         <div
           role="group"
           aria-label={t('marketplace.density.label')}

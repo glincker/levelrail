@@ -15,6 +15,7 @@ import { STARTER_STACKS } from '../../lib/templateStacks'
 import type { ServiceTemplateListItem } from '../../queries/serviceTemplates'
 import { DeleteCustomTemplateDialog } from '../DeleteCustomTemplateDialog'
 import { TemplateLogoTile } from '../TemplateLogoTile'
+import { TemplateVerifiedBadge } from './TemplateVerifiedBadge'
 
 export interface TemplateCardProps {
   template: ServiceTemplateListItem
@@ -89,6 +90,7 @@ function Chips({ template }: { template: ServiceTemplateListItem }) {
   const services = STARTER_STACKS[template.id]?.services ?? 0
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {template.verified && <TemplateVerifiedBadge className="text-xs" />}
       {services > 1 && (
         <Badge variant="outline" className="text-xs">
           {t('marketplace.card.services', { count: services })}

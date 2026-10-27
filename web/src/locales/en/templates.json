@@ -1,4 +1,9 @@
 {
+  "verified": {
+    "badge": "Verified",
+    "hint": "Passed the last live smoke test: it started and its health check passed.",
+    "filter": "Verified only"
+  },
   "detail": {
     "back": "Back to templates",
     "ramRecommended": "~{{size}} RAM recommended",
