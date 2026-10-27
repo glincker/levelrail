@@ -4,7 +4,7 @@ description: Publish a UDP port from a compose service directly on the host, wit
 "og:url": "https://docs.levelrail.com/udp-ports"
 ---
 
-A compose service can publish a UDP port on the host with `HOST:CONTAINER/udp`. This covers services such as a DNS server or a STUN endpoint. It is the first slice of [ADR 049](https://github.com/levelrail/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md): UDP publishing only.
+A compose service can publish a UDP port on the host with `HOST:CONTAINER/udp`. This covers services such as a DNS server or a STUN endpoint. It is the first slice of [ADR 049](https://github.com/glincker/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md): UDP publishing only.
 
 ## What it does
 
@@ -62,27 +62,26 @@ levelrail-cli compose deploy echo -f compose.yaml
 echo hello | nc -u -w1 <server-ip> 9000
 ```
 
-The service is private by default, so run the test from the server itself or set a public bind address and open UDP 9000 in the firewall. Some `nc` builds in minimal images lack `-e`. If yours does, use an image whose `nc` supports it.
+The port is private by default, so run the test from the server itself or set a public bind address and open UDP 9000 in the firewall. Some `nc` builds in minimal images lack `-e`. If yours does, use an image whose `nc` supports it.
 
 ## Example: DNS-style service
 
 ```yaml
 services:
   dns:
-    image: coredns/coredns:1.11.3
-    command: ["-conf", "/etc/coredns/Corefile"]
-    volumes:
-      - dns-config:/etc/coredns
+    image: alpine:3.20
+    command:
+      - sh
+      - -c
+      - apk add --no-cache dnsmasq && exec dnsmasq -k --no-resolv --port=53 --address=/app.test/10.0.0.5
     ports:
       - target: 53
         published: 5353
         protocol: udp
       - "5353:53/tcp"
-volumes:
-  dns-config: {}
 ```
 
-This declares the same container port twice, once for UDP (long form) and once for TCP. Test it with `dig @<server-ip> -p 5353 example.com`. Host port 5353 avoids clashing with a resolver already on port 53. Add a `Corefile` to the `dns-config` volume before use.
+This publishes container port 53 on host port 5353 for UDP (long form) and for TCP (short form, declared as the same number to show they are separate). Test it with `dig @<server-ip> -p 5353 app.test`, which answers `10.0.0.5`. Host port 5353 avoids a clash with a resolver already on port 53. The container installs dnsmasq at start, so it needs outbound network access.
 
 ## Not yet
 
@@ -92,4 +91,4 @@ These are not built, so compose files that use them are still rejected:
 - `sysctls`
 - `network_mode: host`
 
-That means a WireGuard server cannot run as an app yet. See [ADR 049](https://github.com/levelrail/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md) for the plan.
+That means a WireGuard server cannot run as an app yet. See [ADR 049](https://github.com/glincker/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md) for the plan.
