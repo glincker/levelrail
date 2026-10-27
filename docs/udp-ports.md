@@ -32,7 +32,8 @@ App spec files take the same `published_ports` shape.
 - A public UDP service is easy to abuse. An open DNS resolver can be used for amplification, so keep it private unless you mean to serve the internet.
 - Exposure findings already list UDP ports from Docker.
 - The interaction with the Docker `DOCKER-USER` firewall chain has not been tested on a real server yet. Do not rely on a `DOCKER-USER` rule to restrict a UDP port until it is.
-- Known gaps: the firewall edge view has no UDP rows yet, and a UDP port is not checked against processes already listening on the host.
+- The host firewall view (`GET /api/v1/firewall/host`, see [Host firewall](/host-firewall)) lists each published UDP port with its app, bind address and whether ufw allows it.
+- A deploy is refused when another process on the server already binds the UDP port on a clashing address. systemd-resolved on 127.0.0.53:53 does not clash with the private default (127.0.0.1), but it does clash with a public bind. If the socket table cannot be read (not Linux), the check is skipped and Docker reports the bind failure.
 
 ## Errors
 
@@ -41,6 +42,7 @@ App spec files take the same `published_ports` shape.
 | `published_port_invalid` (400) | `published port 51820/udp: a host port between 1 and 65535 is required, for example "51820:51820/udp"` | Give an explicit host port. A bare `51820/udp` has none. |
 | `published_port_invalid` (400) | `published port 53/udp is declared twice` | Remove the duplicate entry. |
 | `published_port_conflict` (409) | `host port 53/udp for service "<svc>" is already published by "<other>"` | Pick another host port, or stop the other service. |
+| `published_port_in_use` (409) | `host port 53/udp for service "<svc>" is already bound by another process on this server (0.0.0.0:53), stop it or pick another host port` | Stop the process (`ss -ulpn` shows it) or pick another host port. |
 | `published_port_remote_node` (400) | `host port 53/udp can only be published on the control plane's own node, service "<svc>" is placed on node "<id>"` | Place the service on the control plane node. |
 | none (400, parse) | `protocol "sctp" is not supported, use tcp or udp` | Use `tcp` or `udp`. |
 
