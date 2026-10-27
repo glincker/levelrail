@@ -1,7 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { CatchBoundary, Link, useRouterState } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
 import {
   Sidebar,
   SidebarContent,
@@ -14,13 +12,13 @@ import {
 } from '@/components/ui/sidebar'
 import { useBrand } from '../hooks/useBrand'
 import { AccountMenu } from './shell/AccountMenu'
-import { updatesQueryOptions } from '../queries/updates'
 import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
 import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
+import { SidebarVersionLink } from './shell/SidebarVersionLink'
 import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
@@ -71,8 +69,6 @@ function warmScopedSidebars() {
 // duplicated across a parent chooser and per-mode components.
 export function AppSidebar() {
   const brand = useBrand()
-  const { t } = useTranslation()
-  const version = useQuery(updatesQueryOptions()).data?.current_version
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = appScopeName(pathname)
   const scopedDatabaseName = databaseScopeName(pathname)
@@ -96,17 +92,11 @@ export function AppSidebar() {
                 <BrandMarkGlyph svgWrapperClassName="flex size-7 items-center justify-center [&_svg]:size-full" />
                 <SidebarStatusBadge />
               </span>
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate text-sm font-semibold">
-                  {brand.ShortName || brand.Name}
-                </span>
-                <span className="truncate text-[11px] text-sidebar-foreground/60">
-                  {version
-                    ? `${t('shell.account.controlPlane')} v${version.replace(/^v/, '').split(/[-+]/)[0]}`
-                    : t('shell.account.controlPlane')}
-                </span>
+              <span className="truncate text-sm font-semibold">
+                {brand.ShortName || brand.Name}
               </span>
             </SidebarMenuButton>
+            <SidebarVersionLink />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

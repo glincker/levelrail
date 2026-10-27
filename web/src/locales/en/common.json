@@ -308,6 +308,7 @@
     },
     "account": {
       "controlPlane": "Control plane",
+      "updateAvailable": "Update available: {{version}}",
       "signOut": "Sign out"
     },
     "breadcrumb": {
