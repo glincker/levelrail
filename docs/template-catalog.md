@@ -500,3 +500,11 @@ Every entry here passed the same structural checks the rest of the catalog gets 
 - [Template status](/templates-status) - measured pass rate from the local smoke run
 - [Deploying apps](/deploying-apps) - using templates from the dashboard or CLI
 - [ADR 015: Service template catalog reversal](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md) - why this catalog exists at all
+
+## Verified templates
+
+Templates that came up healthy in the last live smoke run (see [template status](/templates-status)) carry a Verified badge in the dashboard, a `verified` field in `GET /api/v1/service-templates`, and show up under `levelrail-cli templates list --verified`. The dashboard has a "Verified only" filter on the templates page.
+
+## Deploy link for your README
+
+Link to `https://YOUR-INSTANCE/templates?deploy=<template-id>` to land a visitor on that template's deploy page on their own instance. An unknown id shows a not-found page with a link back to the catalog.

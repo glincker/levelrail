@@ -1,4 +1,11 @@
 {
+  "prefill": {
+    "loading": "Opening {{slug}}",
+    "notFoundTitle": "Template not found",
+    "notFoundDescription": "This instance has no template named \"{{slug}}\". It may be spelled differently or not in this version's catalog.",
+    "errorTitle": "Could not open the template",
+    "browse": "Browse templates"
+  },
   "verified": {
     "badge": "Verified",
     "hint": "Passed the last live smoke test: it started and its health check passed.",
