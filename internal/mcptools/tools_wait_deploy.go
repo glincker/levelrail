@@ -18,6 +18,8 @@ const (
 
 	defaultWaitWindow   = 55 * time.Second
 	defaultWaitInterval = 2 * time.Second
+
+	deployOutcomeFailed = "failed"
 )
 
 func envSeconds(key string, def time.Duration) time.Duration {
@@ -39,6 +41,7 @@ type waitForDeployOutput struct {
 	DeployID  string                          `json:"deploy_id"`
 	App       string                          `json:"app"`
 	Failure   *apiclient.DeployFailure        `json:"failure,omitempty"`
+	Diagnosis *compactDiagnosis               `json:"diagnosis,omitempty" jsonschema:"on failed: class, cause, fix and redacted excerpt"`
 	Deploy    apiclient.DeployAttemptResource `json:"deploy"`
 }
 
@@ -62,9 +65,13 @@ func registerWaitDeployTool(server *mcp.Server, client *apiclient.Client) {
 		if !res.Done {
 			status = apiclient.DeployOutcomeInProgress
 		}
-		return nil, waitForDeployOutput{
+		out := waitForDeployOutput{
 			Status: status, PollAgain: !res.Done, DeployID: res.Deploy.ID, App: res.Deploy.ServiceName,
 			Failure: res.Deploy.Failure, Deploy: res.Deploy,
-		}, nil
+		}
+		if status == deployOutcomeFailed {
+			out.Diagnosis = buildDiagnosis(ctx, client, in.Name, res.Deploy.ID, res.Deploy.Failure)
+		}
+		return nil, out, nil
 	})
 }
