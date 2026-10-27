@@ -67,14 +67,22 @@ func parseByteSize(raw, capEnv string) (int64, error) {
 		return 0, fmt.Errorf("%q is not a memory size such as 512m or 1g", raw)
 	}
 	memCap := envCap(capEnv, float64(math.MaxInt64>>sumHeadroomShift))
-	if capEnv == envMaxShmBytes && strings.TrimSpace(os.Getenv(capEnv)) == "" {
-		memCap = defaultMaxShmBytes
+	if capEnv == envMaxShmBytes {
+		memCap = float64(MaxShmBytes())
 	}
 	b, ok := toInt64(n*float64(mult), memCap)
 	if !ok {
 		return 0, fmt.Errorf("%q is out of range: it must be at least 1 byte and at most %d bytes (%s)", raw, int64(memCap), capEnv)
 	}
 	return b, nil
+}
+
+// MaxShmBytes is the largest /dev/shm any app may request, compose or API.
+func MaxShmBytes() int64 {
+	if strings.TrimSpace(os.Getenv(envMaxShmBytes)) == "" {
+		return defaultMaxShmBytes
+	}
+	return int64(envCap(envMaxShmBytes, float64(math.MaxInt64>>sumHeadroomShift)))
 }
 
 func parseNanoCPUs(raw string) (int64, error) {

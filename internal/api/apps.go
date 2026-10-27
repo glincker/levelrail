@@ -445,6 +445,9 @@ func validateAppResourceWith(a appResource, storedPortless bool) error {
 	if err := validateAppPort(a, storedPortless); err != nil {
 		return err
 	}
+	if err := validateServiceResources(a.Resources); err != nil {
+		return err
+	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
 		return errors.New("host_port must be between 1 and 65535")
 	}
@@ -550,7 +553,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := validateAppResource(req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeAppInvalid(w, err)
 		return
 	}
 	// Create only: apps that predate this rule keep updating under their old names.
@@ -914,7 +917,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	req.Name = name // the path is authoritative, not whatever the body claims
 
 	if err := rt.validateAppUpdate(r.Context(), req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeAppInvalid(w, err)
 		return
 	}
 	if !rt.requireWildcardDNS01(w, r, req.Domains) {
