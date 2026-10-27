@@ -23,7 +23,7 @@ func TestRunSetupToken(t *testing.T) {
 		return store.Open(context.Background(), filepath.Join(dataDir, "levelrail.db"))
 	}
 
-	if err := runSetupToken(context.Background(), &bytes.Buffer{}, openFresh); err == nil {
+	if err := runSetupToken(context.Background(), &bytes.Buffer{}, false, openFresh); err == nil {
 		t.Fatal("runSetupToken() with no database = nil, want an error pointing at APP_DATA_DIR")
 	}
 	initDB, err := openFresh(context.Background())
@@ -33,7 +33,7 @@ func TestRunSetupToken(t *testing.T) {
 	_ = initDB.Close()
 
 	var first bytes.Buffer
-	if err := runSetupToken(context.Background(), &first, openFresh); err != nil {
+	if err := runSetupToken(context.Background(), &first, false, openFresh); err != nil {
 		t.Fatalf("runSetupToken() error = %v", err)
 	}
 	token, err := api.ReadSetupToken(dataDir)
@@ -46,7 +46,7 @@ func TestRunSetupToken(t *testing.T) {
 	}
 
 	var second bytes.Buffer
-	if err := runSetupToken(context.Background(), &second, openFresh); err != nil {
+	if err := runSetupToken(context.Background(), &second, false, openFresh); err != nil {
 		t.Fatal(err)
 	}
 	if second.String() != first.String() {
@@ -61,7 +61,7 @@ func TestRunSetupToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = adminDB.Close()
-	if err := runSetupToken(context.Background(), &bytes.Buffer{}, openFresh); !errors.Is(err, errAdminExists) {
+	if err := runSetupToken(context.Background(), &bytes.Buffer{}, false, openFresh); !errors.Is(err, errAdminExists) {
 		t.Errorf("runSetupToken() with an admin = %v, want errAdminExists", err)
 	}
 	if _, err := os.Stat(api.SetupTokenPath(dataDir)); !errors.Is(err, os.ErrNotExist) {
@@ -94,5 +94,26 @@ func TestEnsureSetupTokenNeverLogsToken(t *testing.T) {
 	}
 	if !strings.Contains(logs.String(), "setup-token") {
 		t.Fatalf("log output does not point at the setup-token subcommand: %s", logs.String())
+	}
+}
+
+func TestRunSetupTokenPlain(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APP_DATA_DIR", dataDir)
+	open := func(context.Context) (*store.DB, error) {
+		return store.Open(context.Background(), filepath.Join(dataDir, "levelrail.db"))
+	}
+	db, err := open(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	var out bytes.Buffer
+	if err := runSetupToken(context.Background(), &out, true, open); err != nil {
+		t.Fatal(err)
+	}
+	token, _ := api.ReadSetupToken(dataDir)
+	if out.String() != token+"\n" {
+		t.Errorf("plain output = %q, want only the token", out.String())
 	}
 }

@@ -58,7 +58,7 @@ func ensureSetupToken(ctx context.Context, logger *slog.Logger, db *store.DB) {
 
 // runSetupToken is the setup-token subcommand: it prints the current
 // first-admin setup token, creating one if the file is missing.
-func runSetupToken(ctx context.Context, stdout io.Writer, openStore func(context.Context) (*store.DB, error)) error {
+func runSetupToken(ctx context.Context, stdout io.Writer, plain bool, openStore func(context.Context) (*store.DB, error)) error {
 	dbPath := filepath.Join(dataDirFromEnv(), storeFilename)
 	if _, err := os.Stat(dbPath); err != nil {
 		return fmt.Errorf("no control plane database at %s; set APP_DATA_DIR to the control plane's data directory (tried %s; the installer uses %s): %w", dbPath, dataDirFromEnv(), installedDataDir, err)
@@ -77,6 +77,11 @@ func runSetupToken(ctx context.Context, stdout io.Writer, openStore func(context
 	}
 	if token == "" {
 		return errAdminExists
+	}
+	// Scripts capture stdout whole, so --plain prints the bare token only.
+	if plain {
+		_, _ = fmt.Fprintln(stdout, token)
+		return nil
 	}
 	host := publicHost()
 	if host == "" {
