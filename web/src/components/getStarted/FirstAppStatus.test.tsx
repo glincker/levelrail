@@ -16,6 +16,22 @@ vi.mock('../golive/GoLiveCta', () => ({ GoLiveCta: () => null }))
 vi.mock('../../queries/appNetwork', () => ({
   useAppNetwork: () => ({ data: undefined }),
 }))
+const urlsState = vi.hoisted(() => ({
+  data: undefined as { addresses: object[] } | undefined,
+}))
+const httpsState = vi.hoisted(() => ({
+  data: undefined as { state: string } | undefined,
+}))
+vi.mock('../../queries/appUrls', () => ({
+  useAppUrls: () => ({ data: urlsState.data }),
+}))
+vi.mock('../../hooks/useIsRoot', () => ({ useIsRoot: () => true }))
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: httpsState.data }),
+}))
+vi.mock('../../queries/httpsStatus', () => ({
+  httpsStatusQueryOptions: () => ({}),
+}))
 vi.mock('../../queries/diagnosis', () => ({
   useDiagnosis: () => ({ data: undefined, isLoading: false }),
 }))
@@ -54,6 +70,43 @@ describe('FirstAppStatus expected wait', () => {
     renderPhase('live')
     expect(
       screen.queryByText(getStartedEn.first.status.expectedWait),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FirstAppStatus address with HTTPS off', () => {
+  it('opens the direct address and explains it is not secure yet', () => {
+    httpsState.data = { state: 'off' }
+    urlsState.data = {
+      addresses: [
+        {
+          kind: 'public',
+          url: 'http://203.0.113.5:8080',
+          reachable_hint: 'reachable',
+        },
+      ],
+    }
+    renderPhase('live')
+    expect(
+      screen.getByText(/203\.0\.113\.5:8080/).closest('a'),
+    ).toHaveAttribute('href', 'http://203.0.113.5:8080')
+    expect(
+      screen.getByText(getStartedEn.first.status.notSecure, { exact: false }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: getStartedEn.first.status.enableHttps }),
+    ).toHaveAttribute('href', '#enable-https')
+  })
+
+  it('shows no address and no secure note when the API reports none', () => {
+    httpsState.data = { state: 'off' }
+    urlsState.data = { addresses: [] }
+    renderPhase('live')
+    expect(
+      screen.getByText(getStartedEn.first.status.noAddress),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(getStartedEn.first.status.notSecure, { exact: false }),
     ).not.toBeInTheDocument()
   })
 })

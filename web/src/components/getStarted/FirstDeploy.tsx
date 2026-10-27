@@ -204,7 +204,11 @@ export function FirstDeploy({
         </>
       )}
 
-      {isRoot ? <EnableHttpsCard /> : null}
+      {isRoot ? (
+        <div id="enable-https">
+          <EnableHttpsCard />
+        </div>
+      ) : null}
     </div>
   )
 }

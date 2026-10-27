@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { GoLiveCta } from '../golive/GoLiveCta'
 import { useTranslation } from 'react-i18next'
 import {
@@ -10,8 +11,11 @@ import {
 import { Button } from '@/components/ui/button'
 import type { AppListEntry } from '../../types/appDetail'
 import { useAppNetwork } from '../../queries/appNetwork'
+import { useAppUrls } from '../../queries/appUrls'
+import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
+import { useIsRoot } from '../../hooks/useIsRoot'
 import { useDiagnosis } from '../../queries/diagnosis'
-import { liveUrl } from '../../lib/firstApp'
+import { openableUrl } from '../../lib/firstApp'
 import type { AppPhase } from '../../lib/firstApp'
 
 /** FirstAppStatus renders the tracked app's deploy progress, its live URL, or its diagnosis. */
@@ -26,7 +30,22 @@ export function FirstAppStatus({
 }) {
   const { t } = useTranslation('getStarted')
   const { data: network } = useAppNetwork(app.name)
-  const url = liveUrl(app, network, window.location.hostname)
+  const { data: urls } = useAppUrls(app.name)
+  const isRoot = useIsRoot()
+  const { data: https } = useQuery({
+    ...httpsStatusQueryOptions(),
+    enabled: isRoot,
+    retry: false,
+  })
+  const url = openableUrl(
+    app,
+    network,
+    urls,
+    window.location.hostname,
+    https?.state === 'issued',
+  )
+  const insecure =
+    Boolean(https) && https?.state !== 'issued' && url?.startsWith('http:')
   const failed = phase === 'failed'
   const { data: diagnosis, isLoading: diagnosing } = useDiagnosis(
     app.name,
@@ -77,6 +96,17 @@ export function FirstAppStatus({
             {t('first.status.noAddress')}
           </p>
         )}
+        {insecure ? (
+          <p className="text-xs text-muted-foreground">
+            {t('first.status.notSecure')}{' '}
+            <a
+              href="#enable-https"
+              className="text-foreground underline underline-offset-2"
+            >
+              {t('first.status.enableHttps')}
+            </a>
+          </p>
+        ) : null}
         <GoLiveCta app={app.name} />
         <div className="flex flex-wrap gap-2">
           {appLinks}

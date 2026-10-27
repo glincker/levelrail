@@ -195,6 +195,8 @@
     },
     "status": {
       "live": "It is live",
+      "notSecure": "This address is plain http, so it is not secure until HTTPS is enabled.",
+      "enableHttps": "Enable HTTPS",
       "liveDetail": "{{name}} passed its health check and is serving traffic.",
       "noAddress": "It has no public address yet. Add a domain on the app's Domains tab to reach it from the internet.",
       "failed": "{{name}} is not healthy",
