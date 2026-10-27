@@ -6,6 +6,7 @@
 // backend contract, not a public SDK, and a remapping layer would just
 // be one more place for the two shapes to silently drift apart.
 
+import type { PublishedPort } from './publishedPort'
 import type { EnvVarMeta } from '../lib/envRows'
 
 export interface ServiceResources {
@@ -92,6 +93,8 @@ export interface AppDetail {
   // "let Docker assign one", the ordinary case. Settable on create and
   // update, like `port` itself, not response-only.
   host_port?: number | null
+  /** Extra host ports published beyond `port`, each tcp or udp. */
+  published_ports?: PublishedPort[]
   // bind_address picks which network interface `port` (and `host_port`,
   // if pinned) binds to on the host (internal/api/apps.go's
   // appResource.BindAddress): "private" (loopback only, the default),
