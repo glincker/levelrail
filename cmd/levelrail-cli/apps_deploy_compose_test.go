@@ -193,7 +193,7 @@ func TestRun_AppsDeployCompose_APINoticesPrintedOnce(t *testing.T) {
 
 	// A local file with an unsupported key must not add a second warning.
 	path := filepath.Join(t.TempDir(), "compose.yaml")
-	body := "services:\n  web:\n    image: nginx:latest\n    privileged: true\n"
+	body := "services:\n  web:\n    image: nginx:latest\n    sysctls:\n      net.core.somaxconn: 1024\n"
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
