@@ -28,6 +28,17 @@ function updateTone(behind: number | null, security: boolean): Tone {
     : 'neutral'
 }
 
+// Only https release links are trusted as an href; anything else falls back to the in-app page.
+function safeReleaseUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  try {
+    const u = new URL(raw)
+    return u.protocol === 'https:' ? u.href : null
+  } catch {
+    return null
+  }
+}
+
 export function UpdateStripView({
   info,
   canUpdate,
@@ -43,6 +54,7 @@ export function UpdateStripView({
   if (dismissed && !security) return null
   const behind = releasesBehind(info.current_version, latest)
   const tone = updateTone(behind, security)
+  const releaseHref = safeReleaseUrl(info.release_url)
   return (
     <section
       aria-label={t('updateStrip.label')}
@@ -78,9 +90,9 @@ export function UpdateStripView({
         </span>
       ) : null}
       <span className="ml-auto flex items-center gap-1.5">
-        {info.release_url ? (
+        {releaseHref ? (
           <a
-            href={info.release_url}
+            href={releaseHref}
             target="_blank"
             rel="noreferrer"
             className={buttonVariants({ size: 'sm', variant: 'ghost' })}

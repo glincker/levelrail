@@ -78,6 +78,18 @@ describe('UpdateStripView', () => {
     ).toBe('/settings/updates')
   })
 
+  it.each([
+    ['javascript:alert(1)'],
+    ['data:text/html,x'],
+    ['http://example.test/notes'],
+    ['/relative/path'],
+  ])('falls back to the updates page for %s', (url) => {
+    show({ ...base, release_url: url })
+    expect(
+      screen.getByRole('link', { name: "What's new" }).getAttribute('href'),
+    ).toBe('/settings/updates')
+  })
+
   it('hides the Update action for non-admins', () => {
     show(base, false)
     expect(screen.queryByRole('link', { name: 'Update' })).toBeNull()
