@@ -37,11 +37,11 @@ services:
     image: redis:7-alpine
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$REDIS_PASSWORD\""]
     volumes:
       - redis:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 5s
       timeout: 5s
       retries: 10

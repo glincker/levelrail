@@ -9,9 +9,16 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"strconv"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -108,19 +115,49 @@ func TestServiceTemplates_Live_Batch2Boots(t *testing.T) {
 				// One Reconcile is not enough on a cold runner: the image pull and
 				// first start can outlast a single pass. Retry until Ready or twice
 				// the ready budget has passed.
+				target := application.ContainerName(svc.Name, svc.Image, "")
 				if result, err := reconcileUntilReady(deployCtx, ctrl, 2*tt.readyBudget); err != nil {
-					t.Fatalf("service %q: %v (result = %+v)", svc.Name, err, result)
+					t.Fatalf("service %q: %v (result = %+v)\ncontainer logs:\n%s", svc.Name, err, result, bootFailureLogs(env.DockerCli, target))
 				}
 
-				target := application.ContainerName(svc.Name, svc.Image, "")
 				state, err := runtime.InspectByName(deployCtx, target)
 				if err != nil {
 					t.Fatalf("InspectByName(%q) error = %v", target, err)
 				}
 				if state == nil || !state.Running {
-					t.Fatalf("InspectByName(%q) = %+v, want a running container", target, state)
+					t.Fatalf("InspectByName(%q) = %+v, want a running container\ncontainer logs:\n%s", target, state, bootFailureLogs(env.DockerCli, target))
 				}
 			}
 		})
 	}
+}
+
+// bootFailureLogs returns the tail of a container's output so a CI boot
+// failure is diagnosable from the test log alone. Size caps come from env.
+func bootFailureLogs(cli *client.Client, name string) string {
+	tail := envInt("LEVELRAIL_E2E_BOOT_LOG_TAIL_LINES", 60)
+	maxBytes := envInt("LEVELRAIL_E2E_BOOT_LOG_MAX_BYTES", 8192)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	rc, err := cli.ContainerLogs(ctx, name, container.LogsOptions{ShowStdout: true, ShowStderr: true, Tail: strconv.Itoa(tail)})
+	if err != nil {
+		return "(logs unavailable: " + err.Error() + ")"
+	}
+	defer func() { _ = rc.Close() }()
+	var buf bytes.Buffer
+	if _, err := stdcopy.StdCopy(&buf, &buf, rc); err != nil && buf.Len() == 0 {
+		return "(logs unreadable: " + err.Error() + ")"
+	}
+	out := buf.Bytes()
+	if len(out) > maxBytes {
+		out = out[len(out)-maxBytes:]
+	}
+	return string(out)
+}
+
+func envInt(key string, fallback int) int {
+	if n, err := strconv.Atoi(os.Getenv(key)); err == nil && n > 0 {
+		return n
+	}
+	return fallback
 }

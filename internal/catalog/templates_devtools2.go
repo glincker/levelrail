@@ -191,7 +191,7 @@ var devtools2Templates = []Template{
     volumes:
       - wakapi_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d wakapi"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d wakapi"]
       interval: 5s
       timeout: 5s
       retries: 10

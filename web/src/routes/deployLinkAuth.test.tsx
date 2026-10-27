@@ -1,10 +1,29 @@
 import { QueryClient } from '@tanstack/react-query'
-import { createMemoryHistory, createRouter } from '@tanstack/react-router'
+import {
+  createMemoryHistory,
+  createRoute,
+  createRouter,
+} from '@tanstack/react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearStoredUsername, setStoredUsername } from '../lib/authStore'
 import { goAfterLogin } from '../queries/auth'
 import { Route as loginRoute } from './login'
-import { routeTree } from '../routeTree.gen'
+import { Route as rootRoute } from './__root'
+
+// routeTree.gen.ts is gitignored and CI never generates it, so build a small tree.
+const routeTree = rootRoute.addChildren([
+  loginRoute.update({
+    id: '/login',
+    path: '/login',
+    getParentRoute: () => rootRoute,
+  } as never),
+  createRoute({ getParentRoute: () => rootRoute, path: '/templates' }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/settings/security',
+  }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/' }),
+])
 
 const DEPLOY_PATH = '/templates?deploy=uptime-kuma'
 
