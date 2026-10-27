@@ -270,7 +270,8 @@
     "sshNote": "SSH is on a different port? Set APP_FIREWALL_SSH_PORTS on the control plane before turning this on.",
     "published": "Published ports",
     "allowed": "Allowed",
-    "notAllowed": "Not allowed"
+    "notAllowed": "Not allowed",
+    "localOnly": "Local only"
   },
   "setupNext": {
     "heading": "Next steps",

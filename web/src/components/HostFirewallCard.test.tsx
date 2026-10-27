@@ -80,6 +80,33 @@ describe('HostFirewallCard published ports', () => {
   })
 })
 
+describe('HostFirewallCard loopback binds', () => {
+  it('shows a neutral Local only label instead of Not allowed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          json({
+            ...off,
+            published_ports: [
+              {
+                port: 5353,
+                protocol: 'udp',
+                app: 'dns',
+                bind_address: '127.0.0.1',
+                allowed: false,
+              },
+            ],
+          }),
+        ),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText('Local only')).toBeInTheDocument()
+    expect(screen.queryByText('Not allowed')).toBeNull()
+  })
+})
+
 describe('HostFirewallCard', () => {
   it('previews the exact commands and only enables after confirming', async () => {
     const calls: string[] = []

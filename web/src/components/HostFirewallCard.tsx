@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { HostFirewallToggle } from './HostFirewallToggle'
 import { useHostFirewall } from '../queries/hostFirewall'
 
+const LOOPBACK_BINDS = new Set(['127.0.0.1', '::1', 'localhost'])
+
 export function HostFirewallCard() {
   const { t } = useTranslation('settings')
   const { data } = useHostFirewall()
@@ -63,16 +65,28 @@ export function HostFirewallCard() {
                     <span className="text-muted-foreground">
                       {p.service ? `${p.app} / ${p.service}` : p.app}
                     </span>
-                    <span className="font-mono text-muted-foreground">
-                      {p.bind_address}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="font-mono text-muted-foreground">
+                        {p.bind_address}
+                      </span>
+                      <Badge
+                        variant={
+                          p.allowed
+                            ? 'success'
+                            : LOOPBACK_BINDS.has(p.bind_address)
+                              ? 'muted'
+                              : 'warning'
+                        }
+                      >
+                        {t(
+                          p.allowed
+                            ? 'hostFirewall.allowed'
+                            : LOOPBACK_BINDS.has(p.bind_address)
+                              ? 'hostFirewall.localOnly'
+                              : 'hostFirewall.notAllowed',
+                        )}
+                      </Badge>
                     </span>
-                    <Badge variant={p.allowed ? 'success' : 'warning'}>
-                      {t(
-                        p.allowed
-                          ? 'hostFirewall.allowed'
-                          : 'hostFirewall.notAllowed',
-                      )}
-                    </Badge>
                   </li>
                 ))}
               </ul>
