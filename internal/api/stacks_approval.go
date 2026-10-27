@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -253,7 +254,16 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rev.RequesterUserID == "" && rev.TokenID != "" {
-		rev.RequesterUserID = rt.tokenOwnerOf(r.Context(), rev.TokenID)
+		owner, err := rt.tokenOwnerOf(r.Context(), rev.TokenID)
+		if errors.Is(err, errApprovalOwnerUnknown) {
+			writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
+			return
+		}
+		if err != nil {
+			rt.internalError(w, "api: stack approve: resolve requester failed", err)
+			return
+		}
+		rev.RequesterUserID = owner
 	}
 	if !distinctApprover(caller, rev) {
 		writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
@@ -297,17 +307,39 @@ func distinctApprover(caller stackCaller, rev store.StackRevisionRecord) bool {
 	return caller.tokenID() == "" || caller.tokenID() != rev.TokenID
 }
 
-// tokenOwnerOf returns the owner of a stored token id, or "" for an ownerless
-// or missing token.
-func (rt *Router) tokenOwnerOf(ctx context.Context, tokenID string) string {
-	if rt.tokens == nil {
-		return ""
+// tokenOwnerOf returns the owner of a stored token id, "" for an ownerless
+// one, errApprovalOwnerUnknown when neither token store has it, and any
+// store error as is, so approval checks fail closed.
+func (rt *Router) tokenOwnerOf(ctx context.Context, tokenID string) (string, error) {
+	found := false
+	if rt.tokens != nil {
+		rec, err := rt.tokens.GetAPITokenByID(ctx, tokenID)
+		switch {
+		case err == nil:
+			if rec.OwnerUserID != "" {
+				return rec.OwnerUserID, nil
+			}
+			found = true
+		case !errors.Is(err, store.ErrAPITokenNotFound):
+			return "", err
+		}
 	}
-	rec, err := rt.tokens.GetAPITokenByID(ctx, tokenID)
-	if err != nil {
-		return ""
+	if rt.authLib.tokens != nil {
+		rec, err := rt.authLib.tokens.GetToken(ctx, tokenID)
+		switch {
+		case err == nil:
+			if rec.OwnerLegacyID != "" {
+				return rec.OwnerLegacyID, nil
+			}
+			found = true
+		case !errors.Is(err, authengine.ErrTokenUnknown):
+			return "", err
+		}
 	}
-	return rec.OwnerUserID
+	if !found {
+		return "", errApprovalOwnerUnknown
+	}
+	return "", nil
 }
 
 func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {

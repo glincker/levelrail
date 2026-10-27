@@ -114,8 +114,14 @@ func (rt *Router) requestDeployApproval(w http.ResponseWriter, r *http.Request, 
 		rt.internalError(w, "api: request deploy approval: mint id failed", err)
 		return deployApprovalResource{}, false
 	}
+	human, err := rt.approvalHuman(r.Context(), actorType, actorID)
+	if err != nil {
+		rt.internalError(w, "api: request deploy approval: resolve requester failed", err)
+		return deployApprovalResource{}, false
+	}
 	now := time.Now().UTC()
 	a := store.DeployApproval{
+		RequesterUserID: human, RequesterRecorded: true,
 		ID: id, ServiceName: serviceName, SourceServiceName: sourceServiceName,
 		EnvironmentID: env.ID, Action: action, Image: image,
 		Status:          store.DeployApprovalStatusPending,
@@ -282,30 +288,47 @@ func (rt *Router) loadDecidableApprovalAs(ctx context.Context, id, deciderType, 
 	if a.Status != store.DeployApprovalStatusPending {
 		return store.DeployApproval{}, &deployApprovalDecisionError{http.StatusConflict, "deploy approval " + id + " is no longer pending (status: " + a.Status + ")"}
 	}
-	reqType, reqID := rt.approvalPrincipal(ctx, a.RequestedByType, a.RequestedBy)
-	decType, decID := rt.approvalPrincipal(ctx, deciderType, deciderID)
-	if (deciderType == a.RequestedByType && deciderID == a.RequestedBy) || (decType == reqType && decID == reqID) {
-		return store.DeployApproval{}, &deployApprovalDecisionError{http.StatusForbidden, "the same user or token that requested this deploy cannot approve or reject it; a different privileged user must decide"}
+	if deciderType == a.RequestedByType && deciderID == a.RequestedBy {
+		return store.DeployApproval{}, errSameApprover
+	}
+	reqHuman := a.RequesterUserID
+	if !a.RequesterRecorded {
+		reqHuman, err = rt.approvalHuman(ctx, a.RequestedByType, a.RequestedBy)
+	}
+	decHuman, decErr := rt.approvalHuman(ctx, deciderType, deciderID)
+	if err == nil {
+		err = decErr
+	}
+	if errors.Is(err, errApprovalOwnerUnknown) {
+		return store.DeployApproval{}, errSameApprover
+	}
+	if err != nil {
+		return store.DeployApproval{}, fmt.Errorf("api: resolve approval principal failed: %w", err)
+	}
+	if reqHuman != "" && reqHuman == decHuman {
+		return store.DeployApproval{}, errSameApprover
 	}
 	return a, nil
 }
 
-// approvalPrincipal maps a token to its owning user so one person cannot
-// request through a session and decide through their own token, or the
-// reverse. Ownerless (system, CI) tokens keep their own (type, id) pair.
-func (rt *Router) approvalPrincipal(ctx context.Context, actorType, actorID string) (string, string) {
-	if actorType != store.PrincipalTypeToken {
-		return actorType, actorID
+var errSameApprover = &deployApprovalDecisionError{http.StatusForbidden, "the same user or token that requested this deploy cannot approve or reject it; a different privileged user must decide"}
+
+// errApprovalOwnerUnknown means a token is gone, so whether a person stood
+// behind it cannot be told; callers refuse rather than guess.
+var errApprovalOwnerUnknown = errors.New("api: approval token owner unknown")
+
+// approvalHuman returns the user behind a principal: the session user, or a
+// token's owner. "" means no person (ownerless token, system or chat actor).
+// A lookup failure is an error, never a silent fallback to the token pair.
+func (rt *Router) approvalHuman(ctx context.Context, actorType, actorID string) (string, error) {
+	switch actorType {
+	case store.PrincipalTypeUser:
+		return actorID, nil
+	case store.PrincipalTypeToken:
+		return rt.tokenOwnerOf(ctx, actorID)
+	default:
+		return "", nil
 	}
-	if owner := rt.tokenOwnerOf(ctx, actorID); owner != "" {
-		return store.PrincipalTypeUser, owner
-	}
-	if rt.authLib.tokens != nil {
-		if rec, err := rt.authLib.tokens.GetToken(ctx, actorID); err == nil && rec.OwnerLegacyID != "" {
-			return store.PrincipalTypeUser, rec.OwnerLegacyID
-		}
-	}
-	return actorType, actorID
 }
 
 // loadDecidableApproval is loadDecidableApprovalAs for a session/token
