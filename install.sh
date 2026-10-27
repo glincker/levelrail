@@ -1499,11 +1499,33 @@ secret is encrypted with it, and it cannot be recovered if lost.
 EOF
 }
 
+# interactive_output is true only for a human terminal; cloud-init and CI
+# capture stdout into logs that must never hold the setup token.
+interactive_output() {
+	[ -t 1 ] && [ "${CI:-}" != "true" ] && [ -z "${CLOUD_INIT_SESSION:-}" ]
+}
+
+print_token_hidden() {
+	cat <<EOF
+The one-time setup token is not printed here because this output is not an
+interactive terminal (it may end up in cloud-init or CI logs). On the server run:
+  sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} setup-token
+The token file is ${DATA_DIR}/setup-token. Enter the token on the sign-in page.
+
+EOF
+}
+
 print_summary() {
 	token=""
+	token_hidden=0
 	[ ! -r "$DATA_DIR/setup-token" ] || token="$(tr -d '[:space:]' <"$DATA_DIR/setup-token")"
+	if [ -n "$token" ] && ! interactive_output; then
+		token=""
+		token_hidden=1
+	fi
 	if [ "$COEXIST_ACTIVE" -eq 1 ]; then
 		print_coexist_summary
+		[ "$token_hidden" -ne 1 ] || print_token_hidden
 		return 0
 	fi
 
@@ -1528,6 +1550,7 @@ print_summary() {
 		[ "$found" -eq 1 ] || log "  ${DASHBOARD_SCHEME}://<server-ip>:${DASHBOARD_PORT}"
 	fi
 	log ""
+	[ "$token_hidden" -ne 1 ] || print_token_hidden
 	if [ -n "$token" ]; then
 		cat <<EOF
 Create the first admin account with this one-time setup token:
