@@ -184,17 +184,17 @@ export function FirstDeploy({
               }
             />
           </div>
-          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <p className="flex flex-wrap items-center gap-x-4 text-xs text-muted-foreground sm:gap-y-1">
             <Link
               to="/settings/import-platform"
-              className="inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+              className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-2 sm:min-h-0 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             >
               {t('first.more.import')}
               <ArrowRightIcon aria-hidden="true" className="size-3" />
             </Link>
             <Link
               to="/settings/github-app"
-              className="inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+              className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-2 sm:min-h-0 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             >
               {t('first.more.git')}
               <ArrowRightIcon aria-hidden="true" className="size-3" />

@@ -98,6 +98,9 @@ describe('FirstDeploy', () => {
     expect(
       screen.getByRole('link', { name: /Connect GitHub/ }).getAttribute('href'),
     ).toBe('/settings/github-app')
+    expect(screen.getByRole('link', { name: /Import it/ })).toHaveClass(
+      'min-h-11',
+    )
   })
 
   it('tracks the app after the sample deploys', async () => {
