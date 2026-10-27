@@ -33,10 +33,12 @@ services:
             filename: /data/notification.txt
         CFG
         if [ ! -f /data/users.yml ]; then
-          authelia crypto hash generate argon2 --password "$ADMIN_PASSWORD" | sed -n 's/^Digest: //p' > /data/admin.digest
+          # mkpasswd reads the password from stdin so it never appears in argv
+          printf '%s' "$ADMIN_PASSWORD" | mkpasswd -P 0 -m sha512 > /data/admin.digest
           { printf 'users:\n  admin:\n    displayname: Admin\n    email: admin@localhost\n    groups:\n      - admins\n    password: "'; tr -d '\n' < /data/admin.digest; printf '"\n'; } > /data/users.yml
           rm -f /data/admin.digest
         fi
+        unset ADMIN_PASSWORD
         exec authelia --config /config/configuration.yml
     volumes:
       - data:/data

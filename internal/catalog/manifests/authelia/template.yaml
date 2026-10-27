@@ -1,6 +1,6 @@
 id: authelia
 name: Authelia
-description: "Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (shown in the service environment); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt."
+description: "Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt."
 icon: shield-check
 category: Security
 documentation_url: https://www.authelia.com/configuration/prologue/introduction/
