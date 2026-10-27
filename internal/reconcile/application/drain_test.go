@@ -211,3 +211,30 @@ func TestHeldFilter_TieKeepsServingRelease(t *testing.T) {
 		t.Errorf("due = %+v, want only %s", due, other)
 	}
 }
+
+// After a restart the tracker is empty: a failed newer release left stopped
+// must not date the retirement of the older release that is still serving.
+func TestDrain_StoppedFailedReleaseKeepsServingDrain(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	serving, failed := ContainerName("web", "img:v1", ""), ContainerName("web", "img:v2", "")
+	rt.seed(serving, true)
+	rt.seed(failed, false)
+	now := time.Now()
+	rt.containers[serving].Created = now.Add(-3 * time.Hour)
+	rt.containers[failed].Created = now.Add(-2 * time.Hour)
+	desired := gateDesired()
+	desired.Image = "img:v3"
+	rt.setExitState(ContainerName("web", desired.Image, ""), &docker.ExitState{Running: true})
+	rec := &fakeGateRecorder{}
+	opts := append(gateOptions(rec, 1, 0, time.Hour), WithDrainTracker(NewDrainTracker()))
+
+	c := New("web", &fakeStore{svc: desired}, rt, opts...)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cs, _ := rt.InspectByName(context.Background(), serving); cs == nil || !cs.Running {
+		t.Errorf("serving release %s = %+v, want it still draining", serving, cs)
+	}
+}

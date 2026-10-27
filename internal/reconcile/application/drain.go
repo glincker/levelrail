@@ -184,10 +184,23 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 		justDeployed = true
 		c.drain.retire(c.serviceName, c.drain.previous(c.serviceName), releaseOf(targets[0]), now)
 	}
-	if !justDeployed && cfg.DrainTimeout > 0 && len(targets) > 0 {
+	// The scale-down check and the drain branch share one listing per pass.
+	var listed []docker.ContainerState
+	list := func() ([]docker.ContainerState, error) {
+		if listed != nil {
+			return listed, nil
+		}
 		all, err := c.listPrefix(ctx, c.serviceName+"-")
 		if err != nil {
-			return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
+			return nil, fmt.Errorf("list containers for %s: %w", c.serviceName, err)
+		}
+		listed = all
+		return all, nil
+	}
+	if !justDeployed && cfg.DrainTimeout > 0 && len(targets) > 0 {
+		all, err := list()
+		if err != nil {
+			return err
 		}
 		// A scale-down changes no release, but the surplus replicas still
 		// serve in-flight requests until a drain window passes.
@@ -199,9 +212,9 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 		c.drain.mark(c.serviceName, now)
 	}
 	if c.draining(cfg, justDeployed, now) {
-		all, err := c.listPrefix(ctx, c.serviceName+"-")
+		all, err := list()
 		if err != nil {
-			return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
+			return err
 		}
 		cut := c.drain.at(c.serviceName)
 		if cut.IsZero() {
@@ -227,9 +240,9 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 		}
 		due = stale
 	} else {
-		all, err := c.listPrefix(ctx, c.serviceName+"-")
+		all, err := list()
 		if err != nil {
-			return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
+			return err
 		}
 		due, heldUntil = c.heldFilterFor(all, targets, now, hold)
 		c.recordHold(ctx, heldUntil)
@@ -281,12 +294,9 @@ func (c *Controller) drainFilter(all []docker.ContainerState, targets []string, 
 	}
 	order := append([]string{currentBase}, rels...)
 	sort.SliceStable(order, func(i, j int) bool { return releaseNewer(order[j], order[i], first, serving) })
-	newestStale := ""
-	for _, rel := range rels {
-		if newestStale == "" || releaseNewer(rel, newestStale, first, serving) {
-			newestStale = rel
-		}
-	}
+	// Only a running release can be the one serving; a newer stopped one
+	// (a failed deploy) must not date its retirement after a restart.
+	newestStale := newestRunningRelease(stale, first, currentBase, serving)
 	retired := map[string]time.Time{}
 	present := map[string]bool{currentBase: true}
 	for i, rel := range order {
