@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -342,6 +343,11 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 		var body loginApprovalDecision
 		err := decodeJSONBody(r, &body)
 		byPassword := err == nil && body.Match == 0 && body.StepUp != nil && body.StepUp.Password != ""
+		var typeErr *json.UnmarshalTypeError
+		if errors.As(err, &typeErr) {
+			writeError(w, http.StatusBadRequest, "match must be a number: type the two digit number shown in the waiting browser")
+			return
+		}
 		if err != nil || (!byPassword && (body.Match < 10 || body.Match > 99)) {
 			writeError(w, http.StatusBadRequest, "match is required: type the two digit number shown in the waiting browser")
 			return
