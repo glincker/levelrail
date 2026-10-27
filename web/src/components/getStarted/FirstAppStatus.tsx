@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { GoLiveCta } from '../golive/GoLiveCta'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowSquareOutIcon,
@@ -73,17 +72,26 @@ export function FirstAppStatus({
       >
         {t('first.status.viewLogs')}
       </Button>
+      {phase === 'live' ? (
+        <Button
+          size="sm"
+          variant="outline"
+          render={<Link to="/apps/$name/go-live" params={{ name: app.name }} />}
+        >
+          {t('first.status.goLive')}
+        </Button>
+      ) : null}
     </div>
   )
 
   if (phase === 'live') {
     return (
       <div className="space-y-3 rounded-lg border border-tone-success-border bg-tone-success-soft p-4">
-        <p className="flex items-center gap-2 text-base font-semibold text-foreground">
-          <CheckCircleIcon className="size-5 text-tone-success" />
-          {t('first.status.live')}
-        </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="flex items-center gap-2 text-sm text-foreground">
+          <CheckCircleIcon
+            aria-hidden="true"
+            className="size-5 shrink-0 text-tone-success"
+          />
           {t('first.status.liveDetail', { name: app.name })}
         </p>
         {url ? (
@@ -105,7 +113,6 @@ export function FirstAppStatus({
             {t('first.status.notSecure')}
           </p>
         ) : null}
-        <GoLiveCta app={app.name} />
         <div className="flex flex-wrap gap-2">
           {appLinks}
           {onDone ? (

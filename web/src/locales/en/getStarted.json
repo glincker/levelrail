@@ -196,7 +196,6 @@
       "preview": "With no domain set, an app gets an address like {{url}}."
     },
     "status": {
-      "live": "It is live",
       "notSecure": "This address is plain http, so it is not secure until HTTPS is enabled.",
       "liveDetail": "{{name}} passed its health check and is serving traffic.",
       "noAddress": "It has no public address yet. Add a domain on the app's Domains tab to reach it from the internet.",
@@ -208,6 +207,7 @@
       "slow": "This is taking longer than usual. Large images take a while on a slow connection; the logs show what is happening.",
       "openApp": "Open app",
       "viewLogs": "View logs",
+      "goLive": "Add a domain",
       "done": "Go to the dashboard"
     }
   },

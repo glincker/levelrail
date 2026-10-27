@@ -12,7 +12,6 @@ vi.mock('@tanstack/react-router', () => ({
     <a href={to}>{children}</a>
   ),
 }))
-vi.mock('../golive/GoLiveCta', () => ({ GoLiveCta: () => null }))
 vi.mock('../../queries/appNetwork', () => ({
   useAppNetwork: () => ({ data: undefined }),
 }))
@@ -130,5 +129,20 @@ describe('FirstAppStatus live actions', () => {
     expect(
       screen.getByRole('link', { name: getStartedEn.first.status.viewLogs }),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FirstAppStatus live state', () => {
+  it('shows one status line and keeps the go-live action reachable', () => {
+    renderPhase('live')
+    expect(screen.queryByText('It is live')).not.toBeInTheDocument()
+    expect(
+      screen.getByText(
+        getStartedEn.first.status.liveDetail.replace('{{name}}', app.name),
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: getStartedEn.first.status.goLive }),
+    ).toHaveAttribute('href', '/apps/$name/go-live')
   })
 })
