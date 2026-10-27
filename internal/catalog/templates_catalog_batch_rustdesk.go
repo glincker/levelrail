@@ -6,7 +6,7 @@ var catalogRustDeskTemplates = []Template{
 	{
 		ID:                     "rustdesk-server",
 		Name:                   "RustDesk Server",
-		Slogan:                 "Self-hosted ID and relay servers for RustDesk remote desktop clients (AGPL-3.0).",
+		Slogan:                 "Self-hosted RustDesk ID and relay servers (AGPL-3.0). Set RUSTDESK_RELAY to host:21117, set a public bind per port in Network settings, open TCP 21115-21117 and UDP 21116, read id_ed25519.pub in the data volume.",
 		Category:               "Infrastructure",
 		DocumentationURL:       "https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/",
 		RecommendedMemoryBytes: 134217728, // 128Mi
@@ -14,7 +14,7 @@ var catalogRustDeskTemplates = []Template{
 # The platform binds published ports privately by default: open the app's
 # Network settings and set the public bind for each published port, and allow
 # TCP 21115-21117 and UDP 21116 in the host or cloud firewall.
-# Set RUSTDESK_RELAY to your public host:21117 so clients can reach the relay.
+# RUSTDESK_RELAY (your public host:21117) is required: the container exits with a log line if it is empty.
 # After first start, read id_ed25519.pub in the data volume and give that key
 # to every client (ID/Relay server settings, Key field). AGPL-3.0.
 services:
@@ -26,8 +26,9 @@ services:
       - "21116:21116/udp"
       - "21117:21117"
     environment:
-      RELAY: ${RUSTDESK_RELAY:-relay.example.com:21117}
+      RELAY: ${RUSTDESK_RELAY:-}
       ENCRYPTED_ONLY: "1"
+    command: ["/command/with-contenv", "sh", "-c", "[ -n \"$RELAY\" ] || { echo 'RUSTDESK_RELAY is empty: set it to your public host:21117' >&2; exit 1; }; exec sleep infinity"]
     volumes:
       - rustdesk_data:/data
     healthcheck:
