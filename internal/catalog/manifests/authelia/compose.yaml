@@ -1,0 +1,49 @@
+services:
+  authelia:
+    image: authelia/authelia:4.39.28
+    ports: ["9091"]
+    environment:
+      X_AUTHELIA_CONFIG_FILTERS: template
+      PORTAL_URL: ${SERVICE_FQDN_AUTHELIA:-https://localhost}
+      ADMIN_PASSWORD: ${SERVICE_PASSWORD_ADMIN}
+      AUTHELIA_SESSION_SECRET: ${SERVICE_PASSWORD_SESSION}
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: ${SERVICE_PASSWORD_STORAGE}
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET: ${SERVICE_PASSWORD_JWT}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        mkdir -p /config /data
+        cat > /config/configuration.yml <<'CFG'
+        server:
+          address: tcp://0.0.0.0:9091
+        authentication_backend:
+          file:
+            path: /data/users.yml
+        access_control:
+          default_policy: one_factor
+        session:
+          cookies:
+            - domain: '{{ env "PORTAL_URL" | trimPrefix "https://" | trimPrefix "http://" }}'
+              authelia_url: 'https://{{ env "PORTAL_URL" | trimPrefix "https://" | trimPrefix "http://" }}'
+        storage:
+          local:
+            path: /data/db.sqlite3
+        notifier:
+          filesystem:
+            filename: /data/notification.txt
+        CFG
+        if [ ! -f /data/users.yml ]; then
+          authelia crypto hash generate argon2 --password "$ADMIN_PASSWORD" | sed -n 's/^Digest: //p' > /data/admin.digest
+          { printf 'users:\n  admin:\n    displayname: Admin\n    email: admin@localhost\n    groups:\n      - admins\n    password: "'; tr -d '\n' < /data/admin.digest; printf '"\n'; } > /data/users.yml
+          rm -f /data/admin.digest
+        fi
+        exec authelia --config /config/configuration.yml
+    volumes:
+      - data:/data
+      - config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:9091/api/health | grep -q OK"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
