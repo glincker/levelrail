@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,5 +66,33 @@ func TestRunSetupToken(t *testing.T) {
 	}
 	if _, err := os.Stat(api.SetupTokenPath(dataDir)); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("setup token file should be gone once an admin exists: %v", err)
+	}
+}
+
+func TestEnsureSetupTokenNeverLogsToken(t *testing.T) {
+	dataDir := t.TempDir()
+	t.Setenv("APP_DATA_DIR", dataDir)
+	ctx := context.Background()
+	db, err := store.Open(ctx, filepath.Join(dataDir, "levelrail.db"))
+	if err != nil {
+		t.Fatalf("store.Open() error = %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, nil))
+	// First call creates the token, second reuses it: neither may log it.
+	ensureSetupToken(ctx, logger, db)
+	ensureSetupToken(ctx, logger, db)
+
+	token, err := api.ReadSetupToken(dataDir)
+	if err != nil || token == "" {
+		t.Fatalf("ReadSetupToken() = %q, %v", token, err)
+	}
+	if strings.Contains(logs.String(), token) {
+		t.Fatalf("setup token leaked into log output: %s", logs.String())
+	}
+	if !strings.Contains(logs.String(), "setup-token") {
+		t.Fatalf("log output does not point at the setup-token subcommand: %s", logs.String())
 	}
 }
