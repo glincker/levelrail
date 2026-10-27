@@ -96,6 +96,9 @@ type AppResource struct {
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
 	// and update, like Resources/Health above.
 	Hooks *ServiceHooks `json:"hooks,omitempty"`
+	// PublishedPorts mirrors internal/api's appResource.PublishedPorts:
+	// ports bound straight on the host (UDP), settable on create.
+	PublishedPorts []PublishedPort `json:"published_ports,omitempty"`
 	// NodeID mirrors internal/api's appResource.NodeID: response-only on
 	// update, but settable at create time as an explicit placement
 	// override (omitted entirely lets the server auto-place via simple
@@ -406,6 +409,13 @@ type RejectDeployApprovalRequest struct {
 type DeployApprovalDecisionResult struct {
 	Approval DeployApprovalResource `json:"approval"`
 	App      AppResource            `json:"app"`
+}
+
+// PublishedPort is one host-published port, protocol tcp or udp.
+type PublishedPort struct {
+	ContainerPort int    `json:"container_port"`
+	HostPort      int    `json:"host_port"`
+	Protocol      string `json:"protocol,omitempty"`
 }
 
 // ComposeDeployResult mirrors internal/api's composeDeployResponse
