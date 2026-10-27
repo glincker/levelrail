@@ -288,6 +288,8 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			Command:     svc.Command,
 			Replicas:    svc.Replicas,
 			Strategy:    svc.Strategy,
+
+			PublishedPorts: toPublishedPorts(svc.PublishedPorts),
 		},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
@@ -353,6 +355,8 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			Command:     svc.Command,
 			Replicas:    svc.Replicas,
 			Strategy:    svc.Strategy,
+
+			PublishedPorts: toPublishedPorts(svc.PublishedPorts),
 		},
 		Volumes: svc.Volumes,
 	}, nil
@@ -1064,4 +1068,15 @@ func applyCreateHealth(f createFlags, body *appResource, static bool) error {
 	}
 	body.Health = &health
 	return nil
+}
+
+func toPublishedPorts(in []spec.PublishedPort) []publishedPort {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]publishedPort, len(in))
+	for i, p := range in {
+		out[i] = publishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: p.EffectiveProtocol()}
+	}
+	return out
 }
