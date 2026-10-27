@@ -1,0 +1,34 @@
+id: open-notebook
+name: Open Notebook
+description: An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
+icon: book
+category: AI
+documentation_url: https://github.com/lfnovo/open-notebook/blob/main/docs/1-INSTALLATION/docker-compose.md
+recommended_memory_bytes: 1610612736
+env:
+  - key: ENCRYPTION_KEY
+    label: Encryption key
+    description: Encrypts provider API keys stored in the database. Losing it makes stored keys unreadable.
+    generate: hex
+    length: 64
+    secret: true
+  - key: APP_PASSWORD
+    label: App password
+    description: Password for the web UI and REST API.
+    generate: password
+    length: 24
+    secret: true
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled SurrealDB.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: open_notebook
+    port: 8502
+    description: Public address of the Open Notebook UI.
+healthcheck:
+  service: open_notebook
+  port: 5055
+  path: /health
