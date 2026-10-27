@@ -10,22 +10,24 @@ export function PublishedPortsField({ ports }: { ports?: PublishedPort[] }) {
   return (
     <ul
       aria-label={t('network.publishedPorts')}
-      className="flex flex-wrap items-center gap-x-3 gap-y-1"
+      className="flex flex-wrap items-center gap-2"
     >
       {ports.map((p) => (
         <li
           key={`${p.host_port}/${p.protocol}`}
-          className="flex items-center gap-1.5"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5"
         >
-          <span className="font-mono">:{p.host_port}</span>
+          <span className="font-mono">
+            {p.container_port !== p.host_port
+              ? t('network.portMapping', {
+                  host: p.host_port,
+                  container: p.container_port,
+                })
+              : p.host_port}
+          </span>
           <Badge variant={p.protocol === 'udp' ? 'info' : 'muted'}>
             {p.protocol.toUpperCase()}
           </Badge>
-          {p.container_port !== p.host_port ? (
-            <span className="text-xs text-muted-foreground">
-              {t('network.toContainerPort', { port: p.container_port })}
-            </span>
-          ) : null}
         </li>
       ))}
     </ul>

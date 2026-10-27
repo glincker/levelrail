@@ -38,7 +38,7 @@ describe('PublishedPortsField', () => {
     ])
     expect(screen.getByText('UDP')).toBeInTheDocument()
     expect(screen.getByText('TCP')).toBeInTheDocument()
-    expect(screen.getByText('to :53')).toBeInTheDocument()
+    expect(screen.getByText('5353 \u2192 53')).toBeInTheDocument()
     expect(screen.getAllByRole('listitem')).toHaveLength(2)
   })
 })

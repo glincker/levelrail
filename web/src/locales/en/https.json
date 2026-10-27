@@ -90,7 +90,7 @@
     "offAction": "Turn them on",
     "noPublicHost": "No public IP is known for this server, so no automatic hostname can be built. Set APP_PUBLIC_HOST on the control plane.",
     "publishedPorts": "Published ports",
-    "toContainerPort": "to :{{port}}"
+    "portMapping": "{{host}} \u2192 {{container}}"
   },
   "wizard": {
     "ownDomainTitle": "Or use your own domain",
