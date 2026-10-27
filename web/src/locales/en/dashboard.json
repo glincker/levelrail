@@ -207,7 +207,6 @@
     "causes_one": "{{count}} issue from {{causes}} cause",
     "causes_other": "{{count}} issues from {{causes}} root causes",
     "details": "Details",
-    "update": "{{version}} available",
     "notices_one": "{{count}} notice",
     "notices_other": "{{count}} notices",
     "showSnoozed_one": "Show {{count}} snoozed",
@@ -323,5 +322,15 @@
     "deleteBody": "The board is removed for everyone who can see it. Exported JSON files are not affected.",
     "cancel": "Cancel",
     "save": "Save"
+  },
+  "updateStrip": {
+    "label": "Update available",
+    "to": "to",
+    "behind_one": "{{count}} release behind",
+    "behind_other": "{{count}} releases behind",
+    "security": "Includes a security fix",
+    "whatsNew": "What's new",
+    "update": "Update",
+    "dismiss": "Hide {{version}} until the next release"
   }
 }
