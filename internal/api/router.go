@@ -317,6 +317,7 @@ type Router struct {
 	publicHost              string
 	detectPublicIPs         func(context.Context) []string // nil uses ingress.DetectPublicIPs; tests stub it
 	standaloneSafety        StandaloneSafety               // see WithStandaloneSafety
+	publishedPortsMu        sync.Mutex                     // serializes published port admission through the save
 	standaloneResolver      standalone.Resolver            // nil uses net.DefaultResolver; tests stub it
 	interfaceAddrs          func() ([]net.Addr, error)     // nil uses net.InterfaceAddrs; tests stub it
 	dashboardListenAddr     string                         // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream

@@ -591,9 +591,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 
 	admitted := req.toDesiredService()
 	admitted.NodeID = req.NodeID
-	if !rt.admitPublishedPorts(w, r, req.Name, nil, []store.DesiredService{admitted}) {
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, req.Name, nil, []store.DesiredService{admitted})
+	if !portsOK {
 		return
 	}
+	defer portsRelease()
 
 	appReserve := serviceReservation(req.Resources, req.Replicas)
 	quotaRelease, quotaOK := rt.admitQuotaOrWrite(w, r, req.ProjectID, store.ResourceOwner{},
@@ -924,9 +926,11 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if appID == "" {
 		appID = name
 	}
-	if !rt.admitPublishedPorts(w, r, appID, []store.DesiredService{*existing}, []store.DesiredService{desired}) {
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, appID, []store.DesiredService{*existing}, []store.DesiredService{desired})
+	if !portsOK {
 		return
 	}
+	defer portsRelease()
 	quotaRelease, quotaOK := rt.admitAppResizeQuota(w, r, *existing, desired)
 	if !quotaOK {
 		return

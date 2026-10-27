@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -93,7 +94,37 @@ func udpHostConflict(previous, next []store.DesiredService) (store.PublishedPort
 // admitPublishedPorts refuses invalid direct host ports, ones another app
 // already holds, keyed by (host port, protocol), or ones on a service placed
 // on a remote node, where node firewall and exposure rules are not managed.
-func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, appName string, previous, next []store.DesiredService) bool {
+// The returned release must run after the caller saves, so a concurrent
+// deploy cannot pass the same check before this one's ports are stored.
+func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, appName string, previous, next []store.DesiredService) (func(), bool) {
+	rt.publishedPortsMu.Lock()
+	if !rt.checkPublishedPorts(w, r, appName, previous, next) {
+		rt.publishedPortsMu.Unlock()
+		return nil, false
+	}
+	return rt.publishedPortsMu.Unlock, true
+}
+
+// reservedPublishedPorts are host ports the control plane listens on, kept
+// off both protocols (443/udp carries HTTP/3); the mesh adds its UDP port.
+func (rt *Router) reservedPublishedPorts() map[int]string {
+	out := map[int]string{}
+	for p := range reservedControlPlanePorts {
+		out[p] = "ingress or dashboard"
+	}
+	for _, cp := range rt.standaloneSafety.ControlPorts {
+		out[cp.Port] = cp.Label
+	}
+	for _, p := range rt.standaloneSafety.IngressPorts {
+		out[p] = "ingress"
+	}
+	if rt.mesh != nil {
+		out[network.DefaultListenPort] = "mesh WireGuard"
+	}
+	return out
+}
+
+func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, appName string, previous, next []store.DesiredService) bool {
 	nodeOf := make(map[string]string, len(previous))
 	for _, p := range previous {
 		nodeOf[p.Name] = p.NodeID
@@ -122,6 +153,24 @@ func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 	if len(want) == 0 {
 		return true
 	}
+	for _, svc := range next {
+		if svc.HostPort == nil {
+			continue
+		}
+		if mine, taken := want[store.PublishedPort{HostPort: *svc.HostPort, Protocol: spec.PortProtocolTCP}]; taken {
+			writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+				fmt.Sprintf("host port %d/tcp for service %q is already the host port of %q", *svc.HostPort, mine, svc.Name))
+			return false
+		}
+	}
+	reserved := rt.reservedPublishedPorts()
+	for p, svc := range want {
+		if label, ok := reserved[p.HostPort]; ok {
+			writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+				fmt.Sprintf("host port %s for service %q is reserved by the control plane (%s)", p, svc, label))
+			return false
+		}
+	}
 	all, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: deploy compose: list services for port check failed", err, slog.String("app", appName))
@@ -130,6 +179,13 @@ func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 	for _, other := range all {
 		if other.AppID == appName || self[other.Name] {
 			continue
+		}
+		if other.HostPort != nil {
+			if mine, taken := want[store.PublishedPort{HostPort: *other.HostPort, Protocol: spec.PortProtocolTCP}]; taken {
+				writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+					fmt.Sprintf("host port %d/tcp for service %q is already the host port of %q", *other.HostPort, mine, other.Name))
+				return false
+			}
 		}
 		for _, p := range other.PublishedPorts {
 			if mine, taken := want[portKey(p)]; taken {

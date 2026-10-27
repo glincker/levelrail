@@ -161,9 +161,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
 		return composeDeployResponse{}, false
 	}
-	if !rt.admitPublishedPorts(w, r, name, previousServices, services) {
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, name, previousServices, services)
+	if !portsOK {
 		return composeDeployResponse{}, false
 	}
+	defer portsRelease()
 	serviceNames := make([]string, 0, len(services))
 	for _, svc := range services {
 		serviceNames = append(serviceNames, svc.Name)
