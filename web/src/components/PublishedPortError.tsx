@@ -7,6 +7,7 @@ const HINT_CODES = [
   'published_port_invalid',
   'published_port_conflict',
   'published_port_remote_node',
+  'published_port_in_use',
 ] as const
 
 // Server message first (it names the port and service), then a one-line fix hint

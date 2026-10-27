@@ -267,7 +267,10 @@
     "disabledToast": "Firewall is off",
     "failedToast": "Could not change the firewall",
     "missingHelp": "Install ufw on this server to manage its firewall from here, or use your cloud provider's firewall.",
-    "sshNote": "SSH is on a different port? Set APP_FIREWALL_SSH_PORTS on the control plane before turning this on."
+    "sshNote": "SSH is on a different port? Set APP_FIREWALL_SSH_PORTS on the control plane before turning this on.",
+    "published": "Published ports",
+    "allowed": "Allowed",
+    "notAllowed": "Not allowed"
   },
   "setupNext": {
     "heading": "Next steps",

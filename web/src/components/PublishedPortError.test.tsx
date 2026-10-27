@@ -32,6 +32,15 @@ describe('PublishedPortError', () => {
     expect(screen.getByText(/Pick a free host port/)).toBeInTheDocument()
   })
 
+  it('shows a hint for a host listener clash', () => {
+    renderError(
+      new ApiError(409, 'udp 53 is held by pid 9', {
+        code: 'published_port_in_use',
+      }),
+    )
+    expect(screen.getByText(/stop that process/)).toBeInTheDocument()
+  })
+
   it('shows only the message for other errors', () => {
     renderError(new ApiError(500, 'boom'))
     expect(screen.getByText('boom')).toBeInTheDocument()
