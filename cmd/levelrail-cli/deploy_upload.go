@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 const (
@@ -465,6 +466,7 @@ func printUploadFailure(w io.Writer, res *deployUploadResult) {
 	case res.Failure != nil:
 		printDeployFailure(w, res.Failure)
 	case res.Error != "":
-		_, _ = fmt.Fprintf(w, "reason: %s\n", res.Error)
+		// The server strips control codes too; an older one may not.
+		_, _ = fmt.Fprintf(w, "reason: %s\n", untrusted.Clean(res.Error))
 	}
 }

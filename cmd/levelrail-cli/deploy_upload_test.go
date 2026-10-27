@@ -209,3 +209,16 @@ func TestDeployUpload_FailurePrintsReason(t *testing.T) {
 		t.Errorf("stderr lacks the failure reason:\n%s", errOut)
 	}
 }
+
+// Build output is repo-author controlled; its escape codes must not reach the terminal.
+func TestPrintUploadFailure_StripsControlCodes(t *testing.T) {
+	var buf bytes.Buffer
+	printUploadFailure(&buf, &deployUploadResult{Error: "build failed\x1b[2J\x1b]0;pwned\x07\rstep 3\x07"})
+	got := buf.String()
+	if strings.ContainsAny(got, "\x1b\x07\r") {
+		t.Fatalf("printUploadFailure() = %q, want no control codes", got)
+	}
+	if !strings.Contains(got, "build failed") || !strings.Contains(got, "step 3") {
+		t.Errorf("printUploadFailure() = %q, want the readable text kept", got)
+	}
+}
