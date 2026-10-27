@@ -1496,10 +1496,14 @@ func streamDial(state *docker.ContainerState, containerPort int) (string, bool) 
 }
 
 func dialAddr(state *docker.ContainerState) (string, bool) {
-	if state == nil || !state.Running || len(state.Ports) == 0 {
+	if state == nil || !state.Running {
 		return "", false
 	}
-	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), true
+	p, ok := docker.PrimaryPort(state.Ports)
+	if !ok {
+		return "", false
+	}
+	return "127.0.0.1:" + strconv.Itoa(p.HostPort), true
 }
 
 // dialPreviousRelease finds another running, ported container for

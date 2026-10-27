@@ -134,6 +134,12 @@ func (rt *Router) reservedPublishedPorts() map[int]string {
 	if rt.mesh != nil {
 		out[network.DefaultListenPort] = "mesh WireGuard"
 	}
+	for _, p := range rt.firewallRequiredPorts {
+		out[p] = "required by the firewall guard"
+	}
+	for _, p := range rt.hostFirewallSSHPorts {
+		out[p] = "ssh"
+	}
 	return out
 }
 
@@ -163,18 +169,20 @@ func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 			want[portKey(p)] = svc.Name
 		}
 	}
-	if len(want) == 0 {
-		return true
-	}
+	pinned := map[int]string{}
 	for _, svc := range next {
 		if svc.HostPort == nil {
 			continue
 		}
+		pinned[*svc.HostPort] = svc.Name
 		if mine, taken := want[store.PublishedPort{HostPort: *svc.HostPort, Protocol: spec.PortProtocolTCP}]; taken {
 			writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
 				fmt.Sprintf("host port %d/tcp for service %q is already the host port of %q", *svc.HostPort, mine, svc.Name))
 			return false
 		}
+	}
+	if len(want) == 0 && len(pinned) == 0 {
+		return true
 	}
 	reserved := rt.reservedPublishedPorts()
 	for p, svc := range want {
@@ -201,6 +209,11 @@ func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 			}
 		}
 		for _, p := range other.PublishedPorts {
+			if mine, taken := pinned[p.HostPort]; taken && p.EffectiveProtocol() == spec.PortProtocolTCP {
+				writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+					fmt.Sprintf("host port %d/tcp for service %q is already published by %q", p.HostPort, mine, other.Name))
+				return false
+			}
 			if mine, taken := want[portKey(p)]; taken {
 				writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
 					fmt.Sprintf("host port %s for service %q is already published by %q", p, mine, other.Name))
@@ -208,11 +221,54 @@ func (rt *Router) checkPublishedPorts(w http.ResponseWriter, r *http.Request, ap
 			}
 		}
 	}
+	if !rt.publishedPortsFreeOnHost(w, r, appName, self, previous, want) {
+		return false
+	}
 	// After the app check, so a port another app holds names that app.
 	if p, svc, sock, busy := udpHostConflict(previous, next); busy {
 		writeCodedError(w, http.StatusConflict, codePublishedPortInUse,
 			fmt.Sprintf("host port %s for service %q is already bound by another process on this server (%s), stop it or pick another host port", p, svc, sock))
 		return false
+	}
+	return true
+}
+
+// publishedPortsFreeOnHost refuses a port an app stream holds, and a new tcp
+// port a host process already listens on (this app's own ports are skipped).
+func (rt *Router) publishedPortsFreeOnHost(w http.ResponseWriter, r *http.Request, appName string, self map[string]bool, previous []store.DesiredService, want map[store.PublishedPort]string) bool {
+	if len(want) == 0 {
+		return true
+	}
+	held := map[int]bool{}
+	for _, svc := range previous {
+		for _, p := range svc.PublishedPorts {
+			held[p.HostPort] = true
+		}
+	}
+	for _, port := range hostListeningPorts() {
+		if mine, taken := want[store.PublishedPort{HostPort: port, Protocol: spec.PortProtocolTCP}]; taken && !held[port] {
+			writeCodedError(w, http.StatusConflict, codePublishedPortInUse,
+				fmt.Sprintf("host port %d/tcp for service %q is already listened on by another process on this server, stop it or pick another host port", port, mine))
+			return false
+		}
+	}
+	if rt.appStreams == nil {
+		return true
+	}
+	streams, err := rt.appStreams.ListAllAppStreams(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: published ports: list streams failed", err, slog.String("app", appName))
+		return false
+	}
+	for _, st := range streams {
+		if self[st.ServiceName] {
+			continue
+		}
+		if mine, taken := want[store.PublishedPort{HostPort: st.HostPort, Protocol: st.Protocol}]; taken {
+			writeCodedError(w, http.StatusConflict, codePublishedPortConflict,
+				fmt.Sprintf("host port %d/%s for service %q is already used by a stream on %q", st.HostPort, st.Protocol, mine, st.ServiceName))
+			return false
+		}
 	}
 	return true
 }

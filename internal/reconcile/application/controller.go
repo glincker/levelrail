@@ -2568,10 +2568,11 @@ func (c *Controller) removeContainers(ctx context.Context, cs []docker.Container
 // Exported so internal/api's health-discovery endpoint (apps_health_discover.go)
 // can resolve the same address without reimplementing this lookup.
 func PrimaryAddr(state *docker.ContainerState) (string, error) {
-	if len(state.Ports) == 0 {
-		return "", fmt.Errorf("container %s has no published ports to probe", state.Name)
+	p, ok := docker.PrimaryPort(state.Ports)
+	if !ok {
+		return "", fmt.Errorf("container %s has no published tcp port to probe", state.Name)
 	}
-	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), nil
+	return "127.0.0.1:" + strconv.Itoa(p.HostPort), nil
 }
 
 // hashLen is the number of hex characters ContainerName keeps from the

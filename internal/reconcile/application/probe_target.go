@@ -87,14 +87,15 @@ func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerSta
 	if !path.Usable {
 		return probe.Target{}, fmt.Errorf("node %s is not reachable over the mesh: %s", nodeID, path.Reason)
 	}
-	bound := state.Ports[0].HostIP
+	primary, _ := docker.PrimaryPort(state.Ports)
+	bound := primary.HostIP
 	if ip := net.ParseIP(bound); ip != nil && ip.IsLoopback() {
 		return probe.Target{}, fmt.Errorf("port is published on loopback of node %s, waiting for the mesh bind", nodeID)
 	}
 	if bound != "" && bound != "0.0.0.0" && bound != path.Address {
-		return probe.Target{Addr: net.JoinHostPort(bound, strconv.Itoa(state.Ports[0].HostPort))}, nil
+		return probe.Target{Addr: net.JoinHostPort(bound, strconv.Itoa(primary.HostPort))}, nil
 	}
-	return probe.Target{Addr: net.JoinHostPort(path.Address, strconv.Itoa(state.Ports[0].HostPort))}, nil
+	return probe.Target{Addr: net.JoinHostPort(path.Address, strconv.Itoa(primary.HostPort))}, nil
 }
 
 // runtimeExecutor adapts docker.Runtime's streaming Exec to probe.Executor.

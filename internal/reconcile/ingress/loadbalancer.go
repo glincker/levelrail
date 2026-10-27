@@ -251,10 +251,10 @@ func upstreamDial(state *docker.ContainerState, host string, remote bool) (dial 
 	if !state.Running {
 		return "", false, "container not running"
 	}
-	if len(state.Ports) == 0 {
-		return "", false, "no published port"
+	p, ok := docker.PrimaryPort(state.Ports)
+	if !ok {
+		return "", false, "no published tcp port"
 	}
-	p := state.Ports[0]
 	if remote && isLoopback(p.HostIP) {
 		return "", false, "published on loopback, set bind_address to public to balance across nodes"
 	}
