@@ -16,6 +16,39 @@
 * GitHub Action for stacks in `integrations/github-action/stack`: plan comments on pull requests, apply on merge, and exit code 2 for an apply that awaits approval
 * stack App documents reference a database with `{ from: { database, field } }` (resolved by the control plane at container start, so plans and revisions hold only the reference) and declare `service.jobs`; `import --emit stack` now writes both instead of `SECRETS.md` placeholders and migration notes
 
+## [0.8.6](https://github.com/glincker/levelrail/compare/v0.8.5...v0.8.6) (2026-10-27)
+
+
+### Features
+
+* **web:** show failure class and copyable error excerpt on deploys ([4ceea67](https://github.com/glincker/levelrail/commit/4ceea6715d3ce7ac75d33005477e3540863316b2))
+
+
+### Bug Fixes
+
+* **agent:** keep container creation time from remote nodes ([c1cc5d1](https://github.com/glincker/levelrail/commit/c1cc5d17a7c408d98e5055558e1e9a10224a9ad6))
+* **cli:** clearer errors for up without git and a non-numeric match ([61fff3b](https://github.com/glincker/levelrail/commit/61fff3b3dc7cbe04f19410639c33ebd9a6ba3191))
+* **cli:** deploy exits right after the summary ([94f3bef](https://github.com/glincker/levelrail/commit/94f3befa69eec874f870bdc264718fe36d83a5c6))
+* **deploy:** a serving release keeps its drain after a restart ([834a465](https://github.com/glincker/levelrail/commit/834a465b9a5d7bb7eac8bd38d12f93114aa49eb3))
+* **deploy:** classify failed build steps correctly and link full docs URLs ([c6c8158](https://github.com/glincker/levelrail/commit/c6c8158d0ff691cd19a111a33d1ac4b87c94aae9))
+* **deploy:** overlapping deploys no longer cut a release mid-drain ([11213b4](https://github.com/glincker/levelrail/commit/11213b4dc7431229c85576636b9f3615d37ef240))
+* **deploy:** rollback no longer leaves older releases running ([846fee4](https://github.com/glincker/levelrail/commit/846fee47398ee010fc701878830452a1899035b1))
+* **deploy:** show why a build failed, stop claiming services run early ([cb58273](https://github.com/glincker/levelrail/commit/cb582736da6f4df1bca2519c5f7b6cbff383adf4))
+* **install:** keep the setup token out of cloud-init and CI logs ([9fef9a0](https://github.com/glincker/levelrail/commit/9fef9a0c4f12f0b6c193ddd6c16679806457fe5c))
+* **install:** one copy-pasteable CLI login sequence after install ([a27f396](https://github.com/glincker/levelrail/commit/a27f3962913ed0b548e1f7447597970aba32919b))
+* **podman:** a zero OIDC retry interval no longer spins ([f7b25a9](https://github.com/glincker/levelrail/commit/f7b25a9c1493dbefa7a622096c174961cfbd75cf))
+* **podman:** OIDC endpoint waits for the bridge instead of failing to bind ([a0c4425](https://github.com/glincker/levelrail/commit/a0c4425c9a6d8d2424784422d4c0803db71ff493))
+* **reconcile:** drain each release from when traffic left it ([c73a286](https://github.com/glincker/levelrail/commit/c73a286dbfa7742d0e8d9687c52ed86bc3891078))
+* **reconcile:** drain replicas removed by a scale-down ([4dab2bd](https://github.com/glincker/levelrail/commit/4dab2bd103dbf35167ec608ae758c0acee10eba8))
+* **security:** keep the first-run setup token out of the service log ([9fd4616](https://github.com/glincker/levelrail/commit/9fd4616c5aa9f99b554a1cf1f8455a4ac3d417ea))
+* **security:** strip terminal control codes from build errors ([4513331](https://github.com/glincker/levelrail/commit/4513331873035723f97bffafd84f606f61e85b74))
+* stability fixes from real-host QA on Docker and Podman ([40648b1](https://github.com/glincker/levelrail/commit/40648b17db278ccc771c1a5c86db3af35f490be9))
+
+
+### Documentation
+
+* **install:** setup-token command that works on the server ([fe0be5f](https://github.com/glincker/levelrail/commit/fe0be5f483e286ce92704f010e01634a07bc6292))
+
 ## [0.8.5](https://github.com/glincker/levelrail/compare/v0.8.4...v0.8.5) (2026-10-26)
 
 
