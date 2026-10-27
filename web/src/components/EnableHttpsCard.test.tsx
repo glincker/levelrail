@@ -62,6 +62,7 @@ describe('EnableHttpsCard', () => {
     renderCard(true)
     const setUp = await screen.findByRole('button', { name: 'Set up' })
     expect(screen.queryByText(/sslip\.io/)).not.toBeInTheDocument()
+    expect(screen.getByText(/not secure/i)).toBeInTheDocument()
     expect(screen.queryByLabelText(/email for certificate/i)).toBeNull()
     await user.click(setUp)
     expect(

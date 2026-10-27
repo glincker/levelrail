@@ -236,13 +236,10 @@ export function EnableHttpsCard({ compact = false }: { compact?: boolean }) {
   ) {
     return (
       <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-2">
-          <p className="flex min-w-0 items-center gap-2 text-sm">
+        <CardContent className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-0.5">
+          <p className="flex min-w-0 items-center gap-2 text-sm font-medium">
             <LockKeyIcon aria-hidden="true" className="size-4 shrink-0" />
-            <span className="font-medium">{t('card.title')}</span>
-            <span className="text-muted-foreground">
-              {t('card.compactHint')}
-            </span>
+            <span className="truncate">{t('card.title')}</span>
           </p>
           <Button
             type="button"
@@ -252,6 +249,9 @@ export function EnableHttpsCard({ compact = false }: { compact?: boolean }) {
           >
             {t('card.setUp')}
           </Button>
+          <p className="col-span-2 text-xs text-muted-foreground sm:col-span-1 sm:col-start-1">
+            {t('card.compactHint')}
+          </p>
         </CardContent>
       </Card>
     )

@@ -74,7 +74,7 @@ describe('FirstAppStatus expected wait', () => {
 })
 
 describe('FirstAppStatus address with HTTPS off', () => {
-  it('opens the direct address and explains it is not secure yet', () => {
+  it('opens the direct address and leaves the not-secure wording to the HTTPS card', () => {
     httpsState.data = { state: 'off' }
     urlsState.data = {
       addresses: [
@@ -89,24 +89,19 @@ describe('FirstAppStatus address with HTTPS off', () => {
     expect(
       screen.getByText(/203\.0\.113\.5:8080/).closest('a'),
     ).toHaveAttribute('href', 'http://203.0.113.5:8080')
-    expect(
-      screen.getByText(getStartedEn.first.status.notSecure, { exact: false }),
-    ).toBeInTheDocument()
+    expect(screen.queryByText(/not secure/i)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: 'Enable HTTPS' }),
     ).not.toBeInTheDocument()
   })
 
-  it('shows no address and no secure note when the API reports none', () => {
+  it('shows no address when the API reports none', () => {
     httpsState.data = { state: 'off' }
     urlsState.data = { addresses: [] }
     renderPhase('live')
     expect(
       screen.getByText(getStartedEn.first.status.noAddress),
     ).toBeInTheDocument()
-    expect(
-      screen.queryByText(getStartedEn.first.status.notSecure, { exact: false }),
-    ).not.toBeInTheDocument()
   })
 })
 

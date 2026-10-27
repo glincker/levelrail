@@ -43,8 +43,6 @@ export function FirstAppStatus({
     window.location.hostname,
     https?.state === 'issued',
   )
-  const insecure =
-    Boolean(https) && https?.state !== 'issued' && url?.startsWith('http:')
   const failed = phase === 'failed'
   const { data: diagnosis, isLoading: diagnosing } = useDiagnosis(
     app.name,
@@ -108,11 +106,6 @@ export function FirstAppStatus({
             {t('first.status.noAddress')}
           </p>
         )}
-        {insecure ? (
-          <p className="text-xs text-muted-foreground">
-            {t('first.status.notSecure')}
-          </p>
-        ) : null}
         <div className="flex flex-wrap gap-2">
           {appLinks}
           {onDone ? (
