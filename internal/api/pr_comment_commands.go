@@ -57,6 +57,7 @@ type prCommentState struct {
 	perUser *apiRateLimiter
 	permMu  sync.Mutex
 	perm    map[string]permEntry
+	refused *refusalAuditWindow
 	now     func() time.Time
 	// run starts a command's work. Production detaches it so GitHub's delivery
 	// timeout cannot cancel a deploy; tests run it inline.
@@ -73,6 +74,8 @@ func WithPRCommentCommands(cfg PRCommentCommandConfig) Option {
 		rt.prCommands = &prCommentState{
 			cfg: cfg, perPR: newAPIRateLimiter(cfg.PerPRPerMinute), perUser: newAPIRateLimiter(cfg.PerUserPerMinute),
 			perm: make(map[string]permEntry), now: time.Now, run: func(f func()) { go f() },
+			refused: newRefusalAuditWindow(envDurationOr(envPRCommentRefusalAuditWindow, defaultPRCommentRefusalAuditWindow),
+				envIntDefault(envPRCommentRefusalAuditMaxKeys, defaultPRCommentRefusalAuditMaxKeys)),
 		}
 	}
 }
@@ -130,9 +133,29 @@ func (rt *Router) handleIssueCommentWebhook(ctx context.Context, name string, gs
 	if ev.Action != "created" || !ev.IsPullRequest {
 		return ignore("ignored: not a new pull request comment\n")
 	}
+	var claimed, first bool
+	var claimErr error
+	claim := func(c prcommand.Command) (bool, error) {
+		if !claimed {
+			claimed = true
+			first, claimErr = rt.prCommentCommands.ClaimPRCommentCommand(ctx, name, ev.CommentID, ev.Commenter, string(c), ev.Number, pc.now(), pc.cfg.LogRetention)
+		}
+		return first, claimErr
+	}
+	// Refusals are audited only for a configured feature, once per comment id,
+	// and through a per-login window so a comment loop cannot flood the log.
+	refuse := func(c prcommand.Command, reason string) {
+		if pc == nil {
+			return
+		}
+		if ok, err := claim(c); err != nil || !ok {
+			return
+		}
+		rt.auditPRRefusalWindowed(ctx, pc, name, ev, c, reason)
+	}
 	if len(ev.Body) > envIntDefault(envPRCommentMaxBodyBytes, defaultPRCommentMaxBodyBytes) {
 		if strings.Contains(strings.ToLower(ev.Body), prcommand.Prefix) {
-			rt.auditPRCommandRefused(ctx, name, ev, "", prRefusedBodyTooLarge, "")
+			refuse("", prRefusedBodyTooLarge)
 		}
 		return ignore("ignored: comment is too long\n")
 	}
@@ -141,43 +164,42 @@ func (rt *Router) handleIssueCommentWebhook(ctx context.Context, name string, gs
 		return ignore("ignored: no command\n")
 	}
 	if off {
-		rt.auditPRCommandRefused(ctx, name, ev, cmd, prRefusedCommandsOff, "")
+		refuse(cmd, prRefusedCommandsOff)
 		return ignore("")
 	}
 	if strings.Contains(ev.Body, prCommentMarker) {
 		return http.StatusOK, "ignored: comment is from a bot\n"
 	}
 	if ev.CommenterType == "Bot" || ev.SenderType == "Bot" || ev.PerformedViaApp || strings.HasSuffix(ev.Commenter, "[bot]") {
-		rt.auditPRCommandRefused(ctx, name, ev, cmd, prRefusedBot, "")
+		refuse(cmd, prRefusedBot)
 		return http.StatusOK, "ignored: comment is from a bot\n"
 	}
 	if !githubLoginPattern.MatchString(ev.Commenter) {
-		rt.auditPRCommandRefused(ctx, name, ev, cmd, prRefusedInvalidLogin, "")
+		refuse(cmd, prRefusedInvalidLogin)
 		return http.StatusOK, "ignored: unusable commenter login\n"
 	}
 	inst, token, owner, repo, ok := rt.githubTargetFor(ctx, name, gs)
 	if !ok || !strings.EqualFold(ev.RepoFullName, owner+"/"+repo) {
 		rt.logger.Info("api: pr comment command ignored: repository does not match the connected one", slog.String("app_name", name))
-		rt.auditPRCommandRefused(ctx, name, ev, cmd, prRefusedRepoMismatch, "")
+		refuse(cmd, prRefusedRepoMismatch)
 		return http.StatusOK, "ignored: repository does not match\n"
 	}
-	now := pc.now()
-	first, err := rt.prCommentCommands.ClaimPRCommentCommand(ctx, name, ev.CommentID, ev.Commenter, string(cmd), ev.Number, now, pc.cfg.LogRetention)
+	isFirst, err := claim(cmd)
 	if err != nil {
 		rt.logger.Error("api: pr comment command claim failed", slog.String("error", err.Error()), slog.String("app_name", name))
 		return http.StatusInternalServerError, "internal error"
 	}
-	if !first {
+	if !isFirst {
 		return http.StatusOK, "ignored: comment already handled\n"
 	}
 	if ok, _ := pc.perUser.allow(strings.ToLower(ev.Commenter)); !ok {
 		rt.logger.Warn("api: pr comment command rate limited", slog.String("app_name", name), slog.String("actor", ev.Commenter), slog.String("scope", "user"))
-		rt.auditPRCommandRefused(ctx, name, ev, cmd, prRefusedRateLimitedUser, "")
+		rt.auditPRRefusalWindowed(ctx, pc, name, ev, cmd, prRefusedRateLimitedUser)
 		return http.StatusOK, "ignored: rate limited\n"
 	}
 	if ok, _ := pc.perPR.allow(fmt.Sprintf("%s|%d", name, ev.Number)); !ok {
 		rt.logger.Warn("api: pr comment command rate limited", slog.String("app_name", name), slog.Int("pr_number", ev.Number), slog.String("scope", "pr"))
-		rt.auditPRCommandRefused(ctx, name, ev, cmd, prRefusedRateLimitedPR, "")
+		rt.auditPRRefusalWindowed(ctx, pc, name, ev, cmd, prRefusedRateLimitedPR)
 		return http.StatusOK, "ignored: rate limited\n"
 	}
 
@@ -197,10 +219,10 @@ func (rt *Router) runPRCommentCommand(ctx context.Context, name string, gs store
 	log := rt.logger.With(slog.String("app_name", name), slog.Int("pr_number", ev.Number), slog.String("actor", ev.Commenter))
 	if ok, why := rt.commenterCanWrite(ctx, inst, token, owner, repo, ev.Commenter); !ok {
 		log.Info("api: pr comment command refused: commenter lacks write access or the check failed", slog.String("reason", why))
-		rt.auditPRCommandRefused(ctx, name, ev, cmd, why, "")
+		rt.auditPRRefusalWindowed(ctx, rt.prCommands, name, ev, cmd, why)
 		return
 	}
-	refuse := func(reason, note string) { rt.auditPRCommandRefused(ctx, name, ev, cmd, reason, note) }
+	refuse := func(reason, note string) { rt.auditPRCommandRefused(ctx, name, ev, cmd, reason, note, 0) }
 	reply := func(text string) {
 		body := prCommentMarker + "\n" + text
 		if len(body) > prCommentReplyMax+len(prCommentMarker) {
@@ -497,6 +519,14 @@ const (
 	defaultPRCommentMaxBodyBytes = 4096
 )
 
+// Refusal audits are windowed per app and login; the key cap bounds memory.
+const (
+	envPRCommentRefusalAuditWindow      = "APP_PR_COMMENT_REFUSAL_AUDIT_WINDOW"
+	defaultPRCommentRefusalAuditWindow  = 10 * time.Minute
+	envPRCommentRefusalAuditMaxKeys     = "APP_PR_COMMENT_REFUSAL_AUDIT_MAX_KEYS"
+	defaultPRCommentRefusalAuditMaxKeys = 10000
+)
+
 // Refusal reasons are stable values that audit filters and runbooks rely on.
 const (
 	auditActionPRCommandRefused = "pr_comment_command.refused"
@@ -527,11 +557,13 @@ type prCommandRefusalDetail struct {
 	Command string `json:"command,omitempty"`
 	Reason  string `json:"reason"`
 	Note    string `json:"note,omitempty"`
+	// Suppressed counts refusals for the same app and login dropped since the previous row.
+	Suppressed int `json:"suppressed,omitempty"`
 }
 
 // auditPRCommandRefused writes one audit row per refused command. The comment
 // body is never stored, and every echoed field is reduced to plain characters.
-func (rt *Router) auditPRCommandRefused(ctx context.Context, name string, ev webhook.IssueCommentEvent, cmd prcommand.Command, reason, note string) {
+func (rt *Router) auditPRCommandRefused(ctx context.Context, name string, ev webhook.IssueCommentEvent, cmd prcommand.Command, reason, note string, suppressed int) {
 	if rt.auditLog == nil {
 		return
 	}
@@ -543,7 +575,7 @@ func (rt *Router) auditPRCommandRefused(ctx context.Context, name string, ev web
 	raw, err := json.Marshal(prCommandRefusalDetail{
 		App: name, Login: login, Repo: sanitizeCommentText(ev.RepoFullName, prCommentFieldMax),
 		PR: ev.Number, Comment: ev.CommentID, Command: string(cmd), Reason: reason,
-		Note: sanitizeCommentText(note, prCommentFieldMax),
+		Note: sanitizeCommentText(note, prCommentFieldMax), Suppressed: suppressed,
 	})
 	if err != nil {
 		return

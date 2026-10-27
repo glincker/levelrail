@@ -65,6 +65,8 @@ The webhook on the repository must also deliver the **Issue comments** event. Ad
 | `APP_PR_COMMENT_LOG_RETENTION` | 720h | How long handled comment ids are remembered. |
 | `APP_PR_COMMENT_RUN_TIMEOUT` | 30m | Upper bound for one command's deploy work. |
 | `APP_PR_COMMENT_MAX_BODY_BYTES` | 4096 | Longest comment body that is scanned for a command. A longer comment is ignored, and audited as `body_too_large` when it mentions a command. |
+| `APP_PR_COMMENT_REFUSAL_AUDIT_WINDOW` | 10m | A refused comment writes at most one audit row per app and GitHub login in this window. The next row carries a `suppressed` count of the refusals dropped in between. Redelivered comments and apps where the feature was never configured write none. |
+| `APP_PR_COMMENT_REFUSAL_AUDIT_MAX_KEYS` | 10000 | Upper bound on app and login pairs tracked for that window. |
 
 ## What happens on a comment
 
