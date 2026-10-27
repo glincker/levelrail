@@ -97,12 +97,25 @@ func udpHostConflict(previous, next []store.DesiredService) (store.PublishedPort
 // The returned release must run after the caller saves, so a concurrent
 // deploy cannot pass the same check before this one's ports are stored.
 func (rt *Router) admitPublishedPorts(w http.ResponseWriter, r *http.Request, appName string, previous, next []store.DesiredService) (func(), bool) {
+	// Only a deploy that claims a host port can race another one for it.
+	if !claimsHostPort(next) {
+		return func() {}, rt.checkPublishedPorts(w, r, appName, previous, next)
+	}
 	rt.publishedPortsMu.Lock()
 	if !rt.checkPublishedPorts(w, r, appName, previous, next) {
 		rt.publishedPortsMu.Unlock()
 		return nil, false
 	}
 	return rt.publishedPortsMu.Unlock, true
+}
+
+func claimsHostPort(services []store.DesiredService) bool {
+	for _, svc := range services {
+		if len(svc.PublishedPorts) > 0 || svc.HostPort != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // reservedPublishedPorts are host ports the control plane listens on, kept

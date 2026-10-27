@@ -612,6 +612,22 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	desired := req.toDesiredService()
+	// Required: false for every entry here, since this endpoint has no
+	// { required: true } concept of its own to carry over (that only
+	// ever comes from app.yaml, via internal/deploy's translate.go); the
+	// same permissive default specServiceFromDesired's own doc comment
+	// already documents for a plain manual build.
+	desired.SecretEnv = store.SecretEnvRefsFromNames(unionSecretEnvNames(req.SecretEnv, req.Secrets))
+	if len(req.VaultEnv) > 0 {
+		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
+		for k, v := range req.VaultEnv {
+			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
+		}
+	}
+	// Before admission: a registry round trip must not hold the port lock.
+	resolution, createTrace := rt.resolveCreateImage(r.Context(), &desired)
+
 	admitted := req.toDesiredService()
 	admitted.NodeID = req.NodeID
 	portsRelease, portsOK := rt.admitPublishedPorts(w, r, req.Name, nil, []store.DesiredService{admitted})
@@ -646,20 +662,6 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	desired := req.toDesiredService()
-	// Required: false for every entry here, since this endpoint has no
-	// { required: true } concept of its own to carry over (that only
-	// ever comes from app.yaml, via internal/deploy's translate.go); the
-	// same permissive default specServiceFromDesired's own doc comment
-	// already documents for a plain manual build.
-	desired.SecretEnv = store.SecretEnvRefsFromNames(unionSecretEnvNames(req.SecretEnv, req.Secrets))
-	if len(req.VaultEnv) > 0 {
-		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
-		for k, v := range req.VaultEnv {
-			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
-		}
-	}
-	resolution, createTrace := rt.resolveCreateImage(r.Context(), &desired)
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
