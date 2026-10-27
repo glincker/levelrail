@@ -61,6 +61,9 @@ type File struct {
 	// values an operator would reasonably expect to reach a container.
 	HasSecrets bool
 	HasConfigs bool
+	// Unsupported lists keys that parsed but are not read, so Notices can
+	// report them instead of dropping them silently.
+	Unsupported []UnsupportedKey
 }
 
 // Service is one entry under services:.
@@ -174,11 +177,12 @@ func Parse(data []byte) (*File, error) {
 	}
 
 	f := &File{
-		Version:    raw.Version,
-		Services:   make(map[string]Service, len(raw.Services)),
-		Domains:    raw.Domains,
-		HasSecrets: len(raw.Secrets) > 0,
-		HasConfigs: len(raw.Configs) > 0,
+		Version:     raw.Version,
+		Services:    make(map[string]Service, len(raw.Services)),
+		Domains:     raw.Domains,
+		HasSecrets:  len(raw.Secrets) > 0,
+		HasConfigs:  len(raw.Configs) > 0,
+		Unsupported: findUnsupported(data),
 	}
 	healthy, err := parseDependsOnConditions(data)
 	if err != nil {

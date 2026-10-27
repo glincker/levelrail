@@ -18,6 +18,10 @@ const (
 type Notice struct {
 	Level   NoticeLevel
 	Message string
+	// Service, Key and Alternative are set for an ignored-key warning.
+	Service     string
+	Key         string
+	Alternative string
 }
 
 // Notices reports every non-blocking observation across f:
@@ -61,6 +65,9 @@ func (f *File) Notices() []Notice {
 			Level:   NoticeLevelNote,
 			Message: "depends_on: is enforced as start order (a dependency's container must be running before its dependent is created); add condition: service_healthy to also wait for the dependency's readiness check",
 		})
+	}
+	for _, u := range f.Unsupported {
+		notices = append(notices, Notice{Level: NoticeLevelWarning, Message: u.Message(), Service: u.Service, Key: u.Key, Alternative: u.Alternative})
 	}
 	return notices
 }
