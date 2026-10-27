@@ -45,6 +45,11 @@ type appAccessResource struct {
 	Node          string             `json:"node,omitempty"`
 	LocalNode     bool               `json:"local_node"`
 	Addresses     []appAccessAddress `json:"addresses"`
+	// HTTPFallbackURL is a plain-http address the ingress really routes for
+	// this app's automatic hostname. Set only when a TLS-terminating proxy
+	// fronts the ingress (it then serves routes on its http port); with the
+	// default redirect there is no plain-http route, so it is omitted.
+	HTTPFallbackURL string `json:"http_fallback_url,omitempty"`
 }
 
 // hostInterfaceAddrs lists this host's interface addresses by interface
@@ -187,12 +192,27 @@ func (rt *Router) handleGetAppURLs(w http.ResponseWriter, r *http.Request) {
 		if fb, ok := rt.autoHost(ctx, svc.Name); ok {
 			u := rt.ingressHTTPSURL(ing, fb)
 			res.Addresses = append(res.Addresses, appAccessAddress{Kind: accessKindDomain, Host: hostOfURL(u, fb), URL: u, ReachableHint: hintUnknown})
+			res.HTTPFallbackURL = rt.plainHTTPFallbackURL(ing, fb, u)
 		}
 	}
 	if dns := dnsNameFor(svc.Name, network.Zone(rt.brand.ShortName)); dns != "" {
 		res.Addresses = append(res.Addresses, appAccessAddress{Kind: accessKindInternal, Host: dns, Port: svc.Port, ReachableHint: hintUnknown})
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// plainHTTPFallbackURL is the http link for host, or "" when the ingress
+// serves no plain-http routes (only with TLSTerminatedUpstream, see
+// internal/ingress BuildRoutesConfig PlainHTTP) or the https link is already http.
+func (rt *Router) plainHTTPFallbackURL(s store.IngressSettings, host, httpsLink string) string {
+	if !s.TLSTerminatedUpstream || strings.HasPrefix(httpsLink, "http://") {
+		return ""
+	}
+	port := rt.doctorHTTPPort
+	if port == 0 || port == 80 {
+		return "http://" + host
+	}
+	return "http://" + net.JoinHostPort(host, strconv.Itoa(port))
 }
 
 func hostOfURL(raw, fallback string) string {
