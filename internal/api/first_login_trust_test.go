@@ -430,8 +430,8 @@ func TestConcurrentFirstLoginsTrustOnlyOne(t *testing.T) {
 			trusted++
 		}
 	}
-	if trusted != 1 {
-		t.Fatalf("first-login trust granted %d times, want exactly 1 (through=%d)", trusted, through)
+	if trusted != 1 || through != 1 {
+		t.Fatalf("first-login trust granted %d times and %d sign-ins went through, want exactly 1 each", trusted, through)
 	}
 }
 
