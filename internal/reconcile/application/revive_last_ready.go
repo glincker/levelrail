@@ -51,6 +51,9 @@ func (c *Controller) reviveIfDead(ctx context.Context, targets []string, desired
 		if desired.HostPort != nil && holdsHostPort(cs, *desired.HostPort) {
 			return
 		}
+		if holdsAnyHostPort(cs, desired.PublishedPorts) {
+			return
+		}
 	}
 	attempts, err := hist.ListDeployAttempts(ctx, c.serviceName)
 	if err != nil {

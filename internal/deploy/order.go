@@ -88,6 +88,10 @@ func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.D
 	if err := p.applyAutoscaleReplicas(ctx, req, &desired); err != nil {
 		return false, err
 	}
+	// A preview runs beside the main app, so it must not bind the same host ports.
+	if req.Preview {
+		desired.HostPort, desired.PublishedPorts = nil, nil
+	}
 	if err := commitPoint(req); err != nil {
 		return false, err
 	}

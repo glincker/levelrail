@@ -2312,7 +2312,7 @@ func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredServi
 			if c.desiredSuperseded(ctx, desired) {
 				return errSuperseded
 			}
-			if desired.HostPort == nil {
+			if desired.HostPort == nil && len(desired.PublishedPorts) == 0 {
 				c.reviveIfDead(ctx, []string{candidate}, desired, false)
 			}
 		}

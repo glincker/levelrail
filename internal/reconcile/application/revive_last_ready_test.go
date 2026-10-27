@@ -253,3 +253,17 @@ func TestReconcile_RedeployHoldsPreviousThenRemoves(t *testing.T) {
 		t.Fatalf("containers after the hold = %v, want only the new release", rt.names())
 	}
 }
+
+func TestReviveLastReady_PublishedUDPPortHeldByCandidate(t *testing.T) {
+	rt, st, desired, oldName := reviveFixture(t, false)
+	desired.PublishedPorts = []store.PublishedPort{{ContainerPort: 53, HostPort: 5353, Protocol: store.PortProtocolUDP}}
+	candidate := ContainerName("web", NameImage(*desired), "")
+	rt.seed(candidate, true)
+	rt.containers[candidate].Image = "app:v3"
+	rt.containers[candidate].Ports = []docker.PortBinding{{ContainerPort: 53, HostPort: 5353, Protocol: store.PortProtocolUDP}}
+	c := New("web", st, rt, WithRestartBackoff(NewRestartBackoff(time.Hour, time.Hour, time.Hour)))
+	c.reviveLastReady(context.Background(), []string{candidate}, desired)
+	if running(rt, oldName) {
+		t.Error("revive started a release onto a udp host port another container holds")
+	}
+}
