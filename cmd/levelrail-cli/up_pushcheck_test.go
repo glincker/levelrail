@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -129,5 +131,39 @@ func TestCheckPushedRejectsHostileOperands(t *testing.T) {
 func TestSafeTextStripsControls(t *testing.T) {
 	if got := safeText("a\x1b[31mb\nc"); strings.ContainsAny(got, "\x1b\n") {
 		t.Fatalf("safeText kept controls: %q", got)
+	}
+}
+
+func TestCheckPushedIgnoresHostileRepoConfig(t *testing.T) {
+	t.Setenv(envPushCheckTimeoutSec, "5")
+	dir, inf := pushCase(t, func(*testing.T, string, string) {})
+	marker := filepath.Join(t.TempDir(), "pwned")
+	script := filepath.Join(t.TempDir(), "hook.sh")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\ntouch "+marker+"\n"), 0o700); err != nil { //nolint:gosec // test hook must be executable
+		t.Fatal(err)
+	}
+	authSrv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("WWW-Authenticate", `Basic realm="x"`)
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	t.Cleanup(authSrv.Close)
+	gitT(t, dir, "config", "http.sslVerify", "false")
+	tests := []struct{ name, key, value, remote string }{
+		{"git proxy", "core.gitProxy", script, "git://127.0.0.1:1/shop.git"},
+		{"credential helper", "credential.helper", "!" + script, authSrv.URL + "/shop.git"},
+		{"askpass", "core.askPass", script, authSrv.URL + "/shop.git"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_ = os.Remove(marker)
+			gitT(t, dir, "config", tc.key, tc.value)
+			t.Cleanup(func() { gitT(t, dir, "config", "--unset-all", tc.key) })
+			in := inf
+			in.Flags.repo = tc.remote
+			got := checkPushed(context.Background(), dir, in, true)
+			if _, err := os.Stat(marker); err == nil {
+				t.Fatalf("%s in .git/config ran a command (check = %+v)", tc.key, got)
+			}
+		})
 	}
 }

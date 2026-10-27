@@ -101,10 +101,12 @@ func unpushedMessage(branch, head, why string) string {
 }
 
 func pushGit(ctx context.Context, dir string, args ...string) (string, error) {
-	// Config overrides neutralise hostile repo settings; the protocol allowlist blocks ext:: and similar helpers.
-	full := append([]string{"-C", dir, "-c", "core.fsmonitor=false", "-c", "core.sshCommand=ssh", "-c", "protocol.ext.allow=never"}, args...)
+	// Config overrides neutralise hostile repo settings that run commands. git:// is off the
+	// allowlist because the first core.gitProxy git reads (the repo's) wins over -c.
+	full := append([]string{"-C", dir, "-c", "core.fsmonitor=false", "-c", "core.sshCommand=ssh", "-c", "core.gitProxy=",
+		"-c", "credential.helper=", "-c", "core.askPass=", "-c", "protocol.ext.allow=never"}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed git subcommands, validated operands, no shell
-	cmd.Env = append(cmd.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_ALLOW_PROTOCOL=https:http:ssh:git:file")
+	cmd.Env = append(cmd.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_PROXY_COMMAND=", "GIT_ALLOW_PROTOCOL=https:ssh:file")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
