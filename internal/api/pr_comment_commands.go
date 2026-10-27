@@ -148,7 +148,12 @@ func (rt *Router) handleIssueCommentWebhook(ctx context.Context, name string, gs
 		if pc == nil {
 			return
 		}
-		if ok, err := claim(c); err != nil || !ok {
+		ok, err := claim(c)
+		if err != nil {
+			rt.logger.Warn("api: pr comment command refusal: claim failed", slog.String("error", err.Error()), slog.String("app_name", name), slog.Int64("comment_id", ev.CommentID))
+			return
+		}
+		if !ok {
 			return
 		}
 		rt.auditPRRefusalWindowed(ctx, pc, name, ev, c, reason)
