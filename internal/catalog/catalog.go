@@ -69,6 +69,7 @@ var Templates = concat(
 	catalogBatch4Templates,
 	catalogBatch5Templates,
 	catalogBatch6Templates,
+	catalogRustDeskTemplates,
 	catalogDevtoolsInfraTemplates,
 	contribTemplates,
 	manifestTemplates,
