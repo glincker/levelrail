@@ -27,6 +27,7 @@ var memoryUnits = map[string]int64{
 const (
 	envMaxMemoryBytes = "APP_COMPOSE_MAX_MEMORY_BYTES"
 	envMaxCPUs        = "APP_COMPOSE_MAX_CPUS"
+	envMaxShmBytes    = "APP_COMPOSE_MAX_SHM_BYTES"
 	// Headroom so quota SUMs over many services cannot overflow int64.
 	sumHeadroomShift = 16
 )
@@ -48,6 +49,10 @@ func toInt64(v, ceiling float64) (int64, bool) {
 
 // parseMemoryBytes reads Compose's byte-value form ("512m", "1.5g", "1048576").
 func parseMemoryBytes(raw string) (int64, error) {
+	return parseByteSize(raw, envMaxMemoryBytes)
+}
+
+func parseByteSize(raw, capEnv string) (int64, error) {
 	s := strings.ToLower(strings.TrimSpace(raw))
 	i := len(s)
 	for i > 0 && (s[i-1] < '0' || s[i-1] > '9') && s[i-1] != '.' {
@@ -58,10 +63,10 @@ func parseMemoryBytes(raw string) (int64, error) {
 	if !ok || err != nil || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 {
 		return 0, fmt.Errorf("%q is not a memory size such as 512m or 1g", raw)
 	}
-	memCap := envCap(envMaxMemoryBytes, float64(math.MaxInt64>>sumHeadroomShift))
+	memCap := envCap(capEnv, float64(math.MaxInt64>>sumHeadroomShift))
 	b, ok := toInt64(n*float64(mult), memCap)
 	if !ok {
-		return 0, fmt.Errorf("%q is out of range: it must be at least 1 byte and at most %d bytes (%s)", raw, int64(memCap), envMaxMemoryBytes)
+		return 0, fmt.Errorf("%q is out of range: it must be at least 1 byte and at most %d bytes (%s)", raw, int64(memCap), capEnv)
 	}
 	return b, nil
 }
@@ -113,4 +118,20 @@ func applyLimits(d *store.DesiredService, mem, nano int64) {
 		d.Resources = &store.ServiceResources{}
 	}
 	d.Resources.MemoryBytes, d.Resources.NanoCPUs = mem, nano
+}
+
+// applyShmSize sets /dev/shm from shm_size:, with mem_limit's unit and range rules.
+func applyShmSize(d *store.DesiredService, raw yamlScalarString) error {
+	if raw == "" {
+		return nil
+	}
+	b, err := parseByteSize(string(raw), envMaxShmBytes)
+	if err != nil {
+		return fmt.Errorf("shm_size: %w", err)
+	}
+	if d.Resources == nil {
+		d.Resources = &store.ServiceResources{}
+	}
+	d.Resources.ShmSizeBytes = b
+	return nil
 }

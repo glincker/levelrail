@@ -1002,6 +1002,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	if shmDrifted(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonShmDriftRecreate}, fmt.Errorf("remove %q to apply its changed shm_size: %w", target, err)
+		}
+		state = nil
+	}
+
 	meshIP, _ := c.meshBindIP(ctx, desired)
 	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, desired) {
 		if err := c.removeContainer(ctx, state.ID); err != nil {
@@ -2758,6 +2765,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			spec.GPU = &docker.GPURequest{Count: g.Count, DeviceIDs: g.DeviceIDs}
 		}
 	}
+	spec.ShmSizeBytes, spec.Labels = shmSpec(desired, spec.Labels)
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}

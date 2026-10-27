@@ -62,6 +62,9 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
 		applyLimits(&d, mem, nano)
+		if err := applyShmSize(&d, svc.ShmSize); err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
 		replicas, err := replicasFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)

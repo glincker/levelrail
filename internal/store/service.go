@@ -32,6 +32,8 @@ type ServiceResources struct {
 	CPUSetCPUs string `json:"cpuset_cpus,omitempty"`
 	// GPU requests NVIDIA GPUs. nil means none.
 	GPU *ServiceGPU `json:"gpu,omitempty"`
+	// ShmSizeBytes sizes /dev/shm; 0 keeps Docker's default (64 MB).
+	ShmSizeBytes int64 `json:"shm_size_bytes,omitempty"`
 }
 
 // ServiceGPU is a service's GPU request: Count -1 means every GPU,

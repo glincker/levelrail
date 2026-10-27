@@ -51,7 +51,6 @@ var alternatives = map[string]string{
 	"sysctls":                              "set sysctls on the host; per-container sysctls are not applied",
 	"read_only":                            "remove it; the root filesystem stays writable",
 	"tmpfs":                                "use a named volume at that path instead",
-	"shm_size":                             "remove it; Docker's default shared memory size applies",
 	"platform":                             "build or pull the image for the server's architecture",
 	"scale":                                "use deploy.replicas",
 	"cap_drop":                             "remove it; capabilities are not changed",

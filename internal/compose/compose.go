@@ -113,8 +113,10 @@ type Service struct {
 	// Profiles gates the service behind compose profiles (ApplyProfiles).
 	Profiles []string
 	// MemLimit and CPUs are the mem_limit: and cpus: shorthands for a hard cap.
-	MemLimit   yamlScalarString
-	CPUs       yamlScalarString
+	MemLimit yamlScalarString
+	CPUs     yamlScalarString
+	// ShmSize is shm_size:, the /dev/shm size Chromium based apps need.
+	ShmSize    yamlScalarString
 	HostAccess HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
 	// such as recreate for an app that locks its state volume. Empty means default.

@@ -660,8 +660,8 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 		limit := spec.PidsLimit
 		hostConfig.PidsLimit = &limit
 	}
-	if spec.ShmSizeBytes > 0 {
-		hostConfig.ShmSize = spec.ShmSizeBytes
+	if shm := effectiveShmSize(spec); shm > 0 {
+		hostConfig.ShmSize = shm
 	}
 	if spec.GPU != nil {
 		hostConfig.DeviceRequests = []container.DeviceRequest{toDeviceRequest(*spec.GPU)}
