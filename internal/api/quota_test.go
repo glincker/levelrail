@@ -231,3 +231,27 @@ func TestQuota_AttentionItemCrossesWarnThreshold(t *testing.T) {
 	}
 	t.Fatalf("no quota item at 80%% usage: %s", body)
 }
+
+func TestQuota_StandingShmOnlyAppsCountTowardMemory(t *testing.T) {
+	rt, db, cookie, proj := quotaFixture(t)
+	ctx := context.Background()
+	if err := db.SetQuota(ctx, quota.ScopeProject, proj, quota.Amounts{MemoryBytes: 2 << 30}); err != nil {
+		t.Fatal(err)
+	}
+	shm := `,"resources":{"shm_size_bytes":1073741824}`
+	for _, name := range []string{"s1", "s2"} {
+		if code, body := createQuotaApp(t, rt, cookie, name, proj, shm); code != http.StatusCreated {
+			t.Fatalf("create %s = %d %s, want 201", name, code, body)
+		}
+	}
+	used, err := db.QuotaUsage(ctx, quota.ScopeProject, proj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if used.MemoryBytes != 2<<30 {
+		t.Fatalf("standing memory = %d, want %d (shm counts when no memory limit is set)", used.MemoryBytes, int64(2<<30))
+	}
+	if code, body := createQuotaApp(t, rt, cookie, "s3", proj, shm); code != http.StatusConflict {
+		t.Fatalf("third shm-only create = %d %s, want 409", code, body)
+	}
+}
