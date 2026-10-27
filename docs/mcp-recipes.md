@@ -1,7 +1,7 @@
 ---
 title: "MCP recipes"
 tag: "Beta"
-description: Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
+description: Real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
 "og:url": "https://docs.levelrail.com/mcp-recipes"
 ---
 
@@ -51,6 +51,26 @@ Prompt `first_hour_setup`.
 Runs: `get_onboarding_status`, `get_system_doctor`, `get_attention`, `list_nodes`, `list_apps`, `backups_health`, `get_upgrade_readiness`.
 
 Comes back: "Docker and ingress are healthy, no apps yet, no backup target. Next three: deploy a first app (`levelrail-cli apps create`), add a domain, add a backup target." The assistant changes nothing.
+
+## Deploy and debug from your agent
+
+Both flows need `--allow-write` for the deploy. Waiting is bounded by `APP_MCP_WAIT_WINDOW_SECONDS` (default 55) and polled every `APP_MCP_WAIT_POLL_SECONDS`; if the deploy is still running the result says `poll_again` and you call `wait_for_deploy` with the returned `deploy_id`.
+
+### Deploy and confirm it is healthy
+
+Prompt: "Deploy nginx:1.27 to the app web and tell me when it is healthy."
+
+Runs: `deploy_app` with `name=web image=nginx:1.27 wait=true`.
+
+Comes back: the app plus a `wait` block with `status: healthy` and the deploy id. One call, no polling loop in the conversation.
+
+### Find out why a deploy failed
+
+Prompt: "Deploy nginx:bad to web. If it fails, tell me why and how to fix it."
+
+Runs: `deploy_app` with `wait=true`, or `wait_for_deploy` for a deploy already running.
+
+Comes back: `status: failed` and a short `diagnosis` with the failure `class`, `cause`, `fix`, `confidence` and a log `excerpt`. The excerpt has secrets masked and terminal control codes removed, so the assistant can quote it. For the full ranked causes call `diagnose_app_failure`.
 
 ## Attach a resource instead of calling a tool
 
