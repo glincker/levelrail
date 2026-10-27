@@ -94,8 +94,8 @@ describe('FirstAppStatus address with HTTPS off', () => {
       screen.getByText(getStartedEn.first.status.notSecure, { exact: false }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: getStartedEn.first.status.enableHttps }),
-    ).toHaveAttribute('href', '#enable-https')
+      screen.queryByRole('link', { name: 'Enable HTTPS' }),
+    ).not.toBeInTheDocument()
   })
 
   it('shows no address and no secure note when the API reports none', () => {

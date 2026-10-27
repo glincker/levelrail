@@ -102,13 +102,7 @@ export function FirstAppStatus({
         )}
         {insecure ? (
           <p className="text-xs text-muted-foreground">
-            {t('first.status.notSecure')}{' '}
-            <a
-              href="#enable-https"
-              className="text-foreground underline underline-offset-2"
-            >
-              {t('first.status.enableHttps')}
-            </a>
+            {t('first.status.notSecure')}
           </p>
         ) : null}
         <GoLiveCta app={app.name} />
