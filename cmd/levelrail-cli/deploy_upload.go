@@ -97,7 +97,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.StringVar(&fromHash, "upload-hash", "", "rebuild an earlier upload that is still stored, without sending the directory again")
 	fs.StringVar(&timeoutStr, "timeout", defaultDeployUploadWait, "stop following the deploy after this long (the deploy itself keeps running)")
 	fs.BoolVar(&static, "static", false, "publish a folder or .zip as a static site: no build, no source control (implied by a .zip argument)")
-	fs.BoolVar(&waitURL, "wait-url", false, "after a healthy deploy, wait for the domain certificate to be issued (limit: "+envDeployURLWait+")")
+	fs.BoolVar(&waitURL, "wait-url", false, "after a healthy deploy, wait for the domain certificate to be issued (limit: "+envDeployCertWait+")")
 	fs.BoolVar(&dryRun, "dry-run", false, "list the files that would be uploaded and change nothing")
 	fs.BoolVar(&yes, "yes", false, "do not ask for confirmation on a terminal")
 	fs.BoolVar(&yes, "y", false, "shorthand for --yes")
@@ -140,7 +140,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 
 	if staticDrop {
-		opts := staticOpts{appName: appName, fromHash: fromHash, include: include, timeout: timeout, maxBytes: maxBytes, dryRun: dryRun, yes: yes}
+		opts := staticOpts{appName: appName, fromHash: fromHash, include: include, timeout: timeout, maxBytes: maxBytes, dryRun: dryRun, yes: yes, urlWait: urlWait}
 		newClient := func() *Client { return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv) }
 		return runDeployStatic(prog, dir, opts, newClient, stdout, stderr, of, jsonOut, func() bool {
 			return !isTerminal(stdin) || confirmUp(stdin, stderr)
@@ -480,7 +480,7 @@ Size limit: %[3]s (default 512 MiB, compressed), also enforced by the server.
 
 Example:
   %[1]s deploy ./my-app --env LOG_LEVEL=info
-`, prog, defaultDeployUploadWait, envUploadMaxBytes, envDeployURLWait, defaultDeployURLWait)
+`, prog, defaultDeployUploadWait, envUploadMaxBytes, envDeployCertWait, defaultDeployCertWait)
 }
 
 // printUploadFailure shows why a deploy did not succeed; the server already

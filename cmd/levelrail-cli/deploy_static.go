@@ -23,6 +23,7 @@ type staticOpts struct {
 	timeout           time.Duration
 	maxBytes          int64
 	dryRun, yes       bool
+	urlWait           time.Duration
 }
 
 func isZipPath(p string) bool { return strings.EqualFold(filepath.Ext(p), ".zip") }
@@ -63,7 +64,7 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 		if err := ensureUploadApp(ctx, client, inf, nil, &res, say); err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
-		return finishUploadDeploy(ctx, client, prog, inf, o.fromHash, nil, o.timeout, 0, &res, stdout, stderr, of, jsonOut)
+		return finishUploadDeploy(ctx, client, prog, inf, o.fromHash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
 	}
 
 	st, err := os.Stat(src)
@@ -126,7 +127,7 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
-	return finishUploadDeploy(ctx, client, prog, inf, hash, nil, o.timeout, 0, &res, stdout, stderr, of, jsonOut)
+	return finishUploadDeploy(ctx, client, prog, inf, hash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
 }
 
 // listZip counts a zip's files and bytes so the plan can be shown before anything is sent.

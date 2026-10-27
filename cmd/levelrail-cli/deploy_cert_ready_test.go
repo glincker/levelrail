@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // certDeployServer serves a healthy upload deploy whose app has a domain; certs is called per /cert/status read.
@@ -106,5 +107,43 @@ func TestDeployUpload_WaitURLReportsReadyOnce(t *testing.T) {
 	}
 	if !strings.Contains(errOut, "certificate issued, https://app.1-2-3-4.sslip.io is ready") {
 		t.Errorf("stderr lacks the ready line:\n%s", errOut)
+	}
+}
+
+func TestDeployUpload_WaitURLEndsAtWindowWhenStatusHangs(t *testing.T) {
+	dir := writeDeployDir(t, appDirFiles)
+	var reads atomic.Int32
+	release := make(chan struct{})
+	srv := certDeployServer(t, dir, func() string {
+		if reads.Add(1) < 2 {
+			return `{"state":"pending"}`
+		}
+		<-release
+		return issuedCert
+	})
+	defer srv.Close()
+	defer close(release)
+
+	start := time.Now()
+	runDeployCLI([]string{"deploy", dir, "--yes", "--wait-url", "--api-url", srv.URL, "--token", "tok"}, map[string]string{"APP_DEPLOY_CERT_WAIT": "400ms"})
+	if d := time.Since(start); d > 5*time.Second {
+		t.Errorf("deploy took %s, want it to end near the 400ms wait window", d)
+	}
+}
+
+func TestDeployStatic_WaitURLIsHonored(t *testing.T) {
+	dir := writeDeployDir(t, appDirFiles)
+	var reads atomic.Int32
+	srv := certDeployServer(t, dir, func() string {
+		if reads.Add(1) < 2 {
+			return `{"state":"pending"}`
+		}
+		return issuedCert
+	})
+	defer srv.Close()
+
+	_, _, errOut := runDeployCLI([]string{"deploy", dir, "--static", "--yes", "--wait-url", "--api-url", srv.URL, "--token", "tok"}, nil)
+	if !strings.Contains(errOut, "certificate issued") {
+		t.Errorf("static deploy ignored --wait-url:\n%s", errOut)
 	}
 }

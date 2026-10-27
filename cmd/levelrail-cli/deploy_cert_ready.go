@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	envDeployURLWait     = "APP_DEPLOY_URL_WAIT"
-	defaultDeployURLWait = "2m"
-	urlWaitPollInterval  = 2 * time.Second
+	envDeployCertWait     = "APP_DEPLOY_CERT_WAIT"
+	defaultDeployCertWait = "2m"
+	urlWaitPollInterval   = 2 * time.Second
 )
 
 // primaryDomain returns the host of a URL built from the app's first domain, or "" for a fallback URL.
@@ -32,6 +32,8 @@ func domainCertState(ctx context.Context, c *Client, domain string) string {
 
 // waitForDomainCert polls until the certificate leaves pending or the window closes.
 func waitForDomainCert(ctx context.Context, c *Client, domain string, window time.Duration) string {
+	ctx, cancel := context.WithTimeout(ctx, window)
+	defer cancel()
 	deadline := time.Now().Add(window)
 	for {
 		state := domainCertState(ctx, c, domain)
@@ -58,13 +60,13 @@ func certNote(url, state string) string {
 }
 
 func deployURLWait(lookupEnv func(string) (string, bool)) (time.Duration, error) {
-	v, ok := lookupEnv(envDeployURLWait)
+	v, ok := lookupEnv(envDeployCertWait)
 	if !ok || strings.TrimSpace(v) == "" {
-		v = defaultDeployURLWait
+		v = defaultDeployCertWait
 	}
 	d, err := time.ParseDuration(strings.TrimSpace(v))
 	if err != nil || d <= 0 {
-		return 0, newValidationError("%s must be a positive duration, got %q", envDeployURLWait, v)
+		return 0, newValidationError("%s must be a positive duration, got %q", envDeployCertWait, v)
 	}
 	return d, nil
 }
