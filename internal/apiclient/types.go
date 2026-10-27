@@ -1665,6 +1665,7 @@ type ServiceTemplateListItem struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
 	Slogan                 string `json:"slogan"`
+	Description            string `json:"description,omitempty"`
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
@@ -1683,6 +1684,7 @@ type ServiceTemplateDetail struct {
 	ID                     string               `json:"id"`
 	Name                   string               `json:"name"`
 	Slogan                 string               `json:"slogan"`
+	Description            string               `json:"description,omitempty"`
 	Category               string               `json:"category"`
 	DocumentationURL       string               `json:"documentation_url"`
 	Compose                string               `json:"compose"`

@@ -12,9 +12,11 @@ package catalog
 // compose.yaml body, valid against internal/compose's supported
 // subset (see catalog_test.go, which parses and validates every one).
 type Template struct {
-	ID               string
-	Name             string
-	Slogan           string
+	ID     string
+	Name   string
+	Slogan string
+	// Description is optional operator setup notes (ports, firewall, required env, licence), plain text.
+	Description      string
 	Category         string
 	DocumentationURL string
 	Compose          string
