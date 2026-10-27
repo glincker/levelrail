@@ -105,7 +105,9 @@ describe('EnableHttpsCard', () => {
     expect(await screen.findByLabelText(/email for certificate/i)).toHaveValue(
       'admin@glincker.com',
     )
-    expect(screen.getByText(/plain HTTP stops working/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/sign in over the https address/i),
+    ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Enable HTTPS' }))
     await waitFor(() => {
       const post = fetchMock.mock.calls.find(
