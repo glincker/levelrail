@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 func runConfigCmd(t *testing.T, env map[string]string, args ...string) (int, string, string) {
@@ -94,5 +96,36 @@ func TestImportConfigPrintsNextSteps(t *testing.T) {
 		if !strings.Contains(errOut, want) {
 			t.Errorf("stderr missing %q:\n%s", want, errOut)
 		}
+	}
+}
+
+const roundTripApp = `{"addons":["heroku-postgresql:essential-0"],"env":{"STRIPE_KEY":{"required":true}}}`
+
+func TestImportConfigEmitsAppCreatableFile(t *testing.T) {
+	dir := writeConfigDir(t, map[string]string{"Procfile": "web: node server.js\n", "app.json": roundTripApp})
+	code, out, _ := runConfigCmd(t, nil, dir)
+	if code != exitOK {
+		t.Fatalf("code=%d", code)
+	}
+	parsed, err := spec.Parse([]byte(out))
+	if err != nil {
+		t.Fatalf("emitted file does not parse: %v\n%s", err, out)
+	}
+	if err := checkUnappliedSections(parsed, "web", "levelrail", "app.yaml"); err != nil {
+		t.Fatalf("emitted file has unapplied sections: %v\n%s", err, out)
+	}
+}
+
+func TestImportConfigStepOrder(t *testing.T) {
+	dir := writeConfigDir(t, map[string]string{"Procfile": "web: node server.js\n", "app.json": roundTripApp})
+	_, _, errOut := runConfigCmd(t, nil, dir)
+	order := []string{"databases create --name main", "apps create --file app.yaml", "databases link main APP"}
+	last := -1
+	for _, want := range order {
+		i := strings.Index(errOut, want)
+		if i < 0 || i < last {
+			t.Fatalf("step %q missing or out of order:\n%s", want, errOut)
+		}
+		last = i
 	}
 }

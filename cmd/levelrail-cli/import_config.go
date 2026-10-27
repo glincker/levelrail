@@ -80,7 +80,7 @@ func runImportConfig(prog string, args []string, stdout, stderr io.Writer, looku
 		em.out = out
 		return runImportConfigEmit(prog, dir, res, em, services, dbVersion, jsonOut, stdout, stderr)
 	}
-	yamlBytes, err := res.Fragment.YAML()
+	yamlBytes, err := appCreatableFragment(res.Fragment).YAML()
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -96,7 +96,7 @@ func runImportConfig(prog string, args []string, stdout, stderr io.Writer, looku
 	if out != "" {
 		specFile = out
 	}
-	steps := configtranslate.NextSteps(res.Fragment, prog, specFile)
+	steps := importConfigSteps(res.Fragment, prog, specFile)
 	if of.Format == outputJSON || of.Query != "" {
 		data := importConfigOutput{Detected: res.Detected, Spec: string(yamlBytes), Findings: res.Findings, NextSteps: steps}
 		if err := renderResult(stdout, of.Format, of.Query, data, func() {}); err != nil {
