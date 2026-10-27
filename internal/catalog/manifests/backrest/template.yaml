@@ -1,6 +1,6 @@
 id: backrest
 name: Backrest
-description: A web UI for restic backups with scheduled snapshots, retention policies and restore browsing. Create the admin user on first visit, before exposing the address publicly.
+description: A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly.
 icon: archive
 category: Backups
 documentation_url: https://garethgeorge.github.io/backrest/

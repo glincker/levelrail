@@ -1,6 +1,6 @@
 id: rsshub
 name: RSSHub
-description: Turns sites without a feed into RSS feeds, with thousands of ready-made routes. The instance is open to anyone who can reach it, so restrict access.
+description: Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access.
 icon: rss
 category: Productivity
 documentation_url: https://docs.rsshub.app/deploy/

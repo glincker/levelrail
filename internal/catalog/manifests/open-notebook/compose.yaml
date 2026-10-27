@@ -18,6 +18,7 @@ services:
     image: lfnovo/open_notebook:1.15.0
     ports: ["8502", "5055"]
     environment:
+      API_URL: ${SERVICE_FQDN_OPEN_NOTEBOOK:-http://localhost:8502}
       OPEN_NOTEBOOK_ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       OPEN_NOTEBOOK_PASSWORD: ${APP_PASSWORD}
       SURREAL_URL: ws://surrealdb:8000/rpc
