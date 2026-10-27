@@ -101,3 +101,33 @@ func TestUpRefusesUnpushedBranch(t *testing.T) {
 		t.Fatalf("--allow-unpushed code=%d stderr=%q", code, errOut)
 	}
 }
+
+func TestCheckPushedRejectsHostileOperands(t *testing.T) {
+	dir, inf := pushCase(t, func(*testing.T, string, string) {})
+	marker := filepath.Join(t.TempDir(), "pwned")
+	tests := []struct{ name, remote, branch string }{
+		{"upload-pack remote", "--upload-pack=touch " + marker, "feat"},
+		{"config remote", "-c core.sshCommand=touch " + marker, "feat"},
+		{"ext transport", "ext::sh -c touch% " + marker, "feat"},
+		{"option branch", inf.Flags.repo, "--upload-pack=touch " + marker},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			in := inf
+			in.Flags.repo, in.Flags.ref = tc.remote, tc.branch
+			got := checkPushed(context.Background(), dir, in, true)
+			if got.Problem == "" && got.Warning == "" {
+				t.Fatal("hostile operand passed silently")
+			}
+			if _, err := os.Stat(marker); err == nil {
+				t.Fatal("hostile operand executed a command")
+			}
+		})
+	}
+}
+
+func TestSafeTextStripsControls(t *testing.T) {
+	if got := safeText("a\x1b[31mb\nc"); strings.ContainsAny(got, "\x1b\n") {
+		t.Fatalf("safeText kept controls: %q", got)
+	}
+}

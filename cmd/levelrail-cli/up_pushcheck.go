@@ -5,9 +5,36 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"strconv"
 	"strings"
+	"time"
+	"unicode"
 )
+
+const (
+	envPushCheckTimeoutSec     = "LEVELRAIL_PUSH_CHECK_TIMEOUT_SEC"
+	defaultPushCheckTimeoutSec = 15
+)
+
+// pushCheckTimeout bounds every git call so a hung remote cannot stall up.
+func pushCheckTimeout() time.Duration {
+	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv(envPushCheckTimeoutSec))); err == nil && n > 0 {
+		return time.Duration(n) * time.Second
+	}
+	return defaultPushCheckTimeoutSec * time.Second
+}
+
+// safeText drops control characters so a hostile remote or branch cannot forge terminal output.
+func safeText(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, s)
+}
 
 // pushCheck is the verdict of comparing the local HEAD with the remote branch the server will build.
 type pushCheck struct {
@@ -29,6 +56,12 @@ func checkPushed(ctx context.Context, dir string, inf upInference, explicitRef b
 	if remote == "" {
 		return pushCheck{}
 	}
+	// A leading dash would be read by git as an option (--upload-pack=...).
+	if strings.HasPrefix(remote, "-") || strings.HasPrefix(branch, "-") {
+		return pushCheck{Warning: "the repository URL or branch starts with a dash, so up cannot check that the remote has your commit"}
+	}
+	ctx, cancel := context.WithTimeout(ctx, pushCheckTimeout())
+	defer cancel()
 	head, err := pushGit(ctx, dir, "rev-parse", "--verify", "HEAD")
 	if err != nil {
 		return pushCheck{Warning: "the repository has no commits yet, so up cannot check that the remote has your commit"}
@@ -36,9 +69,9 @@ func checkPushed(ctx context.Context, dir string, inf upInference, explicitRef b
 	// Only the directory's own branch on its own remote says anything about HEAD.
 	compareHead := branch == inf.Git.Ref && inf.Sources["repo"] == srcGit
 
-	out, err := pushGit(ctx, dir, "ls-remote", "--heads", remote, "refs/heads/"+branch)
+	out, err := pushGit(ctx, dir, "ls-remote", "--heads", "--", remote, "refs/heads/"+branch)
 	if err != nil {
-		return pushCheck{Warning: fmt.Sprintf("could not reach %s to check the branch (%v)", remote, err)}
+		return pushCheck{Warning: fmt.Sprintf("could not reach %s to check the branch (%v)", safeText(remote), err)}
 	}
 	fields := strings.Fields(out)
 	if len(fields) == 0 {
@@ -64,12 +97,14 @@ func unpushedMessage(branch, head, why string) string {
 	if len(short) > 7 {
 		short = short[:7]
 	}
-	return fmt.Sprintf("branch %q %s (local HEAD %s), so the server would build nothing or stale code.\nPush it first: git push -u origin %s\nOr build what the remote has anyway with --allow-unpushed", branch, why, short, branch)
+	return fmt.Sprintf("branch %q %s (local HEAD %s), so the server would build nothing or stale code.\nPush it first: git push -u origin %s\nOr build what the remote has anyway with --allow-unpushed", safeText(branch), why, short, safeText(branch))
 }
 
 func pushGit(ctx context.Context, dir string, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...) //nolint:gosec // fixed git subcommands, no shell
-	cmd.Env = append(cmd.Environ(), "GIT_TERMINAL_PROMPT=0")
+	// Config overrides neutralise hostile repo settings; the protocol allowlist blocks ext:: and similar helpers.
+	full := append([]string{"-C", dir, "-c", "core.fsmonitor=false", "-c", "core.sshCommand=ssh", "-c", "protocol.ext.allow=never"}, args...)
+	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed git subcommands, validated operands, no shell
+	cmd.Env = append(cmd.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_ALLOW_PROTOCOL=https:http:ssh:git:file")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
