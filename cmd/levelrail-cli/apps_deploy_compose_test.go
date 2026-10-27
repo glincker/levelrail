@@ -164,3 +164,14 @@ func TestRun_AppsDeployCompose_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr.String())
 	}
 }
+
+func TestPrintComposeFileWarnings_NamesPathServiceAndKey(t *testing.T) {
+	var buf bytes.Buffer
+	printComposeFileWarnings(&buf, "stack.yaml", []byte("services:\n  web:\n    image: nginx:1\n    container_name: w\n"))
+	got := buf.String()
+	for _, want := range []string{"stack.yaml", `service "web"`, "container_name", "containers are named"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("warning output %q missing %q", got, want)
+		}
+	}
+}

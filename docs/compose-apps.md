@@ -64,6 +64,26 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | `deploy.replicas`, `deploy.resources.reservations.devices` | Replica count and GPU reservations. Other Swarm keys are rejected. |
 | `restart`, `networks` | Parsed and reported as notices. The reconciler restarts containers, and every service shares one app network. |
 
+### Keys that are ignored
+
+A key outside the table above does not stop the deploy, but it is never dropped silently. Every ignored key is reported as a warning that names the service, the key and what to do instead. `levelrail-cli apps deploy-compose` prints each one with the file path, `compose preview` and `apps validate` list them, and the deploy API returns them in `notices` (level `warning`).
+
+Common ones and their alternatives:
+
+| Ignored key | Instead |
+| --- | --- |
+| `extends` | Inline the extended service's keys. |
+| `env_file` | Move the values into `environment:` or the app's env vars. |
+| `container_name`, `hostname`, `links` | Not needed: containers are named `<app>-<service>` and services reach each other by name. |
+| `user`, `working_dir` | Set `USER` or `WORKDIR` in the image. |
+| `expose` | Add `ports:` for the port ingress should route to. |
+| `deploy.resources.reservations` CPU and memory | Only limits are applied. |
+| `tty`, `stdin_open`, `logging`, `ulimits`, `shm_size`, `stop_grace_period` | Remove them, they have no effect. |
+| Top-level `volumes:` options, `name:` | Named volumes are always created for the app. |
+| `healthcheck.disable`, `healthcheck.start_interval`, `depends_on.restart`, `depends_on.required`, long-form `ports` `host_ip`, long-form `volumes` `bind` or `tmpfs` | Remove them. |
+
+`x-` extension fields are ignored by design, as the Compose spec allows. Anchors and merge keys (`<<: *common`) are resolved before keys are checked.
+
 ### What is rejected
 
 These keys widen a container's access to the host, so a compose file that sets any of them is rejected with a clear error. The rule name in brackets matches the Docker socket guard ([Docker access](/docker-access)):
