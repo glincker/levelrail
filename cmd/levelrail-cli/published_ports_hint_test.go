@@ -15,6 +15,7 @@ func TestPublishedPortErrorHints(t *testing.T) {
 		{"published_port_invalid", `published port 51820/udp: a host port between 1 and 65535 is required`, `"HOST:CONTAINER/udp"`},
 		{"published_port_conflict", `host port 53/udp for service "dns" is already published by "other"`, "choose another host port"},
 		{"published_port_remote_node", `host port 53/udp can only be published on the control plane's own node, service "dns" is placed on node "n2"`, "control plane node"},
+		{"published_port_in_use", `host port 53/udp is already in use on this server by "systemd-resolve" (pid 812)`, "another process on this server already uses that port"},
 		{"other_code", "boom", ""},
 	}
 	for _, tc := range tests {
