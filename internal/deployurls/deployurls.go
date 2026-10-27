@@ -143,7 +143,7 @@ func Clone(app store.DesiredService, w Wanted, host string) store.DesiredService
 	svc.Domains = []string{host}
 	svc.Replicas = 1
 	svc.Volumes, svc.BindMounts = nil, nil
-	svc.HostPort = nil
+	svc.HostPort, svc.PublishedPorts = nil, nil
 	svc.Hooks = nil
 	svc.Suspended = false
 	svc.AutoRollbackOnCrashloop, svc.AutoRollbackOnSLOBurn = false, ""
