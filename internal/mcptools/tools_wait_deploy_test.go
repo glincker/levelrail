@@ -93,3 +93,50 @@ func TestWaitForDeployFailureCarriesCleanDiagnosis(t *testing.T) {
 		t.Errorf("excerpt not clean: %q", ex)
 	}
 }
+
+func TestDeployAppWaitReturnsDiagnosisOnFailure(t *testing.T) {
+	t.Setenv(EnvWaitInterval, "1")
+	var posted bool
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps/web/deploys":
+			posted = true
+			_, _ = w.Write([]byte(`{"name":"web"}`))
+		case r.URL.Path == "/api/v1/apps/web/diagnose":
+			_, _ = w.Write([]byte(`{"confidence":"medium"}`))
+		default:
+			_ = json.NewEncoder(w).Encode(apiclient.DeployAttemptResource{
+				ID: "dep_1", ServiceName: "web", Status: "failed", Outcome: "failed",
+				Failure: &apiclient.DeployFailure{Code: "oom_killed", Cause: "out of memory", SuggestedFix: "raise memory"},
+			})
+		}
+	})
+	args := map[string]any{"name": "web", "image": "nginx:1", "wait": true}
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "deploy_app", Arguments: args})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got deployAppOutput
+	decodeStructured(t, result, &got)
+	if !posted || got.Wait == nil || got.Wait.Status != "failed" || got.Wait.Diagnosis == nil || got.Wait.Diagnosis.Class != "oom_killed" {
+		t.Fatalf("got %+v", got)
+	}
+}
+
+func TestDeployAppWithoutWaitDoesNotPoll(t *testing.T) {
+	var polled bool
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			polled = true
+		}
+		_, _ = w.Write([]byte(`{"name":"web"}`))
+	})
+	if _, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "deploy_app", Arguments: map[string]any{"name": "web", "image": "nginx:1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if polled {
+		t.Error("deploy_app polled without wait")
+	}
+}

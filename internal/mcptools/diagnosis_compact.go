@@ -11,11 +11,11 @@ import (
 // compactDiagnosis is the short why-it-failed answer attached to a failed
 // deploy result, so an agent does not need a second tool call.
 type compactDiagnosis struct {
-	Class      string `json:"class,omitempty" jsonschema:"failure class code"`
+	Class      string `json:"class,omitempty"`
 	Cause      string `json:"cause,omitempty"`
 	Fix        string `json:"fix,omitempty"`
 	Confidence string `json:"confidence,omitempty"`
-	Excerpt    string `json:"excerpt,omitempty" jsonschema:"redacted log lines around the failure"`
+	Excerpt    string `json:"excerpt,omitempty"`
 	Retryable  bool   `json:"retryable,omitempty"`
 }
 
