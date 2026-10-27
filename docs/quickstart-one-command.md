@@ -16,6 +16,10 @@ levelrail-cli open shop
 
 `up` reads the directory, works out how to build it, creates the app, creates and connects the database, builds from your git remote and prints the app's URL. Push your code to the remote first: the server builds from git, not from your working copy.
 
+Before it creates anything, `up` asks the remote whether your branch is there at your latest commit. If not, it stops, names the branch and prints the fix, `git push -u origin <branch>`. Pass `--allow-unpushed` to build what the remote has anyway. When the check cannot run (no git, a detached HEAD, an unreachable remote), `up` warns and continues.
+
+`up` then follows the first deploy and exits when the app is healthy: 0 healthy, 7 not healthy (the failure reason is printed), 6 still running when `--timeout` ran out (default 15m, the deploy keeps going). A new domain's certificate may still be pending; `up` says so. Pass `--no-wait` to return as soon as the build is started and follow it yourself with `levelrail-cli apps deploys wait`.
+
 ## What `up` infers
 
 Each value comes from the first of these that has one: a flag, your app spec (`app.yaml`), detection, a default. `up` prints every value with where it came from, so you know what to change.
