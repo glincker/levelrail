@@ -42,7 +42,7 @@ While you can still sign in, create a token in **Settings, CLI Access** named `b
 
 | Situation | Route |
 | --- | --- |
-| First run, no admin yet | `levelrail setup-token` prints the one-time setup token |
+| First run, no admin yet | `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` (or `docker compose exec levelrail levelrail setup-token`) prints the one-time setup token |
 | Bad upgrade | Restore the pre-migration snapshot with `levelrail restore-db` |
 | Session policy blocks your address | `levelrail access-policy-reset --yes` removes every session policy |
 | CLI already logged in | `levelrail-cli auth login --device`, approved from any signed-in session |
