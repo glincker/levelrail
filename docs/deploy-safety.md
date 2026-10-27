@@ -344,6 +344,12 @@ anything, since it stops the old release before starting the new one.
 `GET /api/v1/apps/{name}` reports `previous_release_held_until` (RFC3339)
 while a release is held, and `levelrail-cli apps status <name>` prints it.
 
+### How long it is held, and what you will see after a rollback
+
+The previous release is held for `max(APP_DEPLOY_PREVIOUS_RELEASE_HOLD, APP_DEPLOY_WATCH_WINDOW)` (plus the drain timeout floor). With defaults that is the 5 minute watch window, because the 3 minute hold is shorter. Setting the hold higher than the watch window extends it; setting it to `0` does not shorten it below the watch window while auto-rollback is on.
+
+A running previous release after a deploy, or a `levelrail-rollback/<service>:<attempt>` image tag in `docker images`, is expected. The tag is a local pin that keeps a rollback target's image from being pruned; it is a tag on an image, not a running container, and it is not a leak. Pins are retained on purpose so a rollback works without a pull.
+
 ## What visitors see during a deploy
 
 The ingress never serves a bare `502` or a TLS error for a domain that was recently routed. When a deploy leaves a domain without a ready container (a `recreate` deploy, a crash, a restart), the domain keeps its route and its certificate for `APP_INGRESS_HOLD_WINDOW` (default `10m`) and answers a styled `503` with `Retry-After` and a page that reloads itself. A request whose container refuses the connection is retried for `APP_INGRESS_RETRY_WINDOW` (default `2s`) first, and with two or more replicas it moves to another replica immediately. The windows that remain, with measured numbers, are listed in [resilience](/resilience#ingress-availability-windows-measured), and every knob is in [Edge limits, client IPs and failover](/domains-and-ingress#edge-limits-client-ips-and-failover).
