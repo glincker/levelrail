@@ -12,6 +12,7 @@ services:
     entrypoint: ["sh", "-c"]
     command:
       - |
+        set -e
         mkdir -p /config /data
         cat > /config/configuration.yml <<'CFG'
         server:
@@ -32,10 +33,17 @@ services:
           filesystem:
             filename: /data/notification.txt
         CFG
-        if [ ! -f /data/users.yml ]; then
+        # users.yml is rebuilt unless it holds a sha512-crypt hash, so an empty password never ships
+        if ! grep -Eq 'password: "[[:punct:]]6[[:punct:]][^"]{60,}"' /data/users.yml 2>/dev/null; then
+          rm -f /data/users.yml /data/admin.digest
+          [ -n "$ADMIN_PASSWORD" ] || exit 1
           # mkpasswd reads the password from stdin so it never appears in argv
-          printf '%s' "$ADMIN_PASSWORD" | mkpasswd -P 0 -m sha512 > /data/admin.digest
-          { printf 'users:\n  admin:\n    displayname: Admin\n    email: admin@localhost\n    groups:\n      - admins\n    password: "'; tr -d '\n' < /data/admin.digest; printf '"\n'; } > /data/users.yml
+          printf '%s' "$ADMIN_PASSWORD" | mkpasswd -P 0 -m sha512 > /data/admin.digest || { rm -f /data/admin.digest; exit 1; }
+          # octal 044 is the dollar sign: the digest must start with the sha512-crypt prefix
+          grep -Eq '^[[:punct:]]6[[:punct:]][./A-Za-z0-9]{1,16}[[:punct:]][./A-Za-z0-9]{86}' /data/admin.digest || { rm -f /data/admin.digest; exit 1; }
+          [ -z "`cut -c1,3 /data/admin.digest | tr -d '\044\n'`" ] || { rm -f /data/admin.digest; exit 1; }
+          { printf 'users:\n  admin:\n    displayname: Admin\n    email: admin@localhost\n    groups:\n      - admins\n    password: "'; tr -d '\n' < /data/admin.digest; printf '"\n'; } > /data/users.yml.tmp
+          mv /data/users.yml.tmp /data/users.yml
           rm -f /data/admin.digest
         fi
         unset ADMIN_PASSWORD
