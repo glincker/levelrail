@@ -1,6 +1,12 @@
 package spec
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// ErrInvalidPublishedPort marks every ValidatePublishedPorts failure.
+var ErrInvalidPublishedPort = errors.New("invalid published port")
 
 // Port protocols a PublishedPort may carry.
 const (
@@ -32,6 +38,13 @@ func (p PublishedPort) String() string {
 // ValidatePublishedPorts checks each entry's range and protocol, and that
 // no (host port, protocol) pair appears twice.
 func ValidatePublishedPorts(ports []PublishedPort) error {
+	if err := validatePublishedPorts(ports); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidPublishedPort, err)
+	}
+	return nil
+}
+
+func validatePublishedPorts(ports []PublishedPort) error {
 	seen := make(map[PublishedPort]bool, len(ports))
 	for _, p := range ports {
 		proto := p.EffectiveProtocol()

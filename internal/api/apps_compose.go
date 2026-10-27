@@ -18,6 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -127,6 +128,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	}
 
 	services, healthWarnings, err := compose.ToDesiredServices(name, file)
+	if errors.Is(err, spec.ErrInvalidPublishedPort) {
+		writeCodedError(w, http.StatusBadRequest, codePublishedPortInvalid, err.Error())
+		return composeDeployResponse{}, false
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
@@ -154,6 +159,9 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	previousServices, err := rt.appGroups.ListServicesByApp(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
+		return composeDeployResponse{}, false
+	}
+	if !rt.admitPublishedPorts(w, r, name, previousServices, services) {
 		return composeDeployResponse{}, false
 	}
 	serviceNames := make([]string, 0, len(services))
@@ -214,7 +222,8 @@ func composeConfigChanged(prev, next store.DesiredService) bool {
 		!slices.Equal(prev.Command, next.Command) ||
 		!slices.Equal(prev.Entrypoint, next.Entrypoint) ||
 		prev.Port != next.Port ||
-		!ptrIntEqual(prev.HostPort, next.HostPort)
+		!ptrIntEqual(prev.HostPort, next.HostPort) ||
+		!slices.Equal(prev.PublishedPorts, next.PublishedPorts)
 }
 
 func ptrIntEqual(a, b *int) bool {

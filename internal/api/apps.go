@@ -51,6 +51,9 @@ type appResource struct {
 	// time. Settable on create and update, like Port itself, not
 	// response-only.
 	HostPort *int `json:"host_port,omitempty"`
+	// PublishedPorts are ports bound straight on the host beside Port
+	// (UDP today), response only; set them through a compose file.
+	PublishedPorts []store.PublishedPort `json:"published_ports,omitempty"`
 	// BindAddress picks which network interface Port (and HostPort, if
 	// pinned) binds to on the host (store.DesiredService.BindAddress,
 	// migrations/0098): "private" (loopback only, the default), "public"
@@ -320,6 +323,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Image:               svc.Image,
 		Port:                svc.Port,
 		HostPort:            svc.HostPort,
+		PublishedPorts:      svc.PublishedPorts,
 		BindAddress:         svc.BindAddress,
 		Domains:             svc.Domains,
 		Env:                 svc.Env,
