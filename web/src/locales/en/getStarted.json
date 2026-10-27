@@ -186,6 +186,10 @@
       "description": "Build from a repository. The name comes from the repo and the build is detected.",
       "cta": "Deploy a repo"
     },
+    "more": {
+      "import": "Moving from another platform? Import it",
+      "git": "Connect GitHub to deploy on every push"
+    },
     "url": {
       "preview": "With no domain set, an app gets an address like {{url}}."
     },

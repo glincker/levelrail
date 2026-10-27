@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  ArrowRightIcon,
   GitBranchIcon,
   RocketLaunchIcon,
   SquaresFourIcon,
@@ -173,6 +175,22 @@ export function FirstDeploy({
               }
             />
           </div>
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <Link
+              to="/settings/import-platform"
+              className="inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {t('first.more.import')}
+              <ArrowRightIcon aria-hidden="true" className="size-3" />
+            </Link>
+            <Link
+              to="/settings/github-app"
+              className="inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {t('first.more.git')}
+              <ArrowRightIcon aria-hidden="true" className="size-3" />
+            </Link>
+          </p>
           {createError ? (
             <p role="alert" className="text-xs text-destructive">
               {createError}

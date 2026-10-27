@@ -89,6 +89,17 @@ describe('FirstDeploy', () => {
     expect(screen.getByText('https card')).toBeTruthy()
   })
 
+  it('keeps import and git reachable as secondary links', () => {
+    stubFetch(200)
+    renderIt()
+    expect(
+      screen.getByRole('link', { name: /Import it/ }).getAttribute('href'),
+    ).toBe('/settings/import-platform')
+    expect(
+      screen.getByRole('link', { name: /Connect GitHub/ }).getAttribute('href'),
+    ).toBe('/settings/github-app')
+  })
+
   it('tracks the app after the sample deploys', async () => {
     stubFetch(200)
     const onStarted = renderIt()
