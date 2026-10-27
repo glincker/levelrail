@@ -53,7 +53,7 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | Compose key | Behavior |
 | --- | --- |
 | `image` | Required. `build:` is rejected here; use a git deploy for that. |
-| `ports` | The first container port is the one ingress routes to. Host ports are never published. |
+| `ports` | The first container port is the one ingress routes to. A TCP host port is never published from compose. A UDP entry, `HOST:CONTAINER/udp` in short form or `protocol: udp` in long form, is published directly on the host (local node only), and TCP and UDP on the same number are separate ports. See [UDP published ports](/udp-ports). |
 | `x-levelrail-domains` | Maps a service to a domain. HTTPS is issued automatically once DNS points at the server. |
 | `volumes` | Named volumes become Docker volumes scoped to the app and service. An absolute host path is a bind mount and needs the `root` ability. |
 | `environment` | Literal values are stored as config. `${SERVICE_PASSWORD_X}` and the other generated kinds are created once, encrypted, and injected when the container is created. |
@@ -94,7 +94,7 @@ These keys widen a container's access to the host, so a compose file that sets a
 - `privileged: true` [privileged]
 - `network_mode: host` [network_host], and `network_mode: service:...` or `container:...`
 - `pid`, `ipc`, `uts`, `userns_mode` or `cgroup` set to `host`
-- `cap_add`, `devices`, `volumes_from`, and `security_opt` (except `no-new-privileges`)
+- `cap_add` (so no `NET_ADMIN` yet, see [UDP published ports](/udp-ports#not-yet)), `devices`, `volumes_from`, and `security_opt` (except `no-new-privileges`)
 - a bind mount of the Docker socket (`docker.sock`, `podman.sock` or `containerd.sock`) from any path, plus system paths such as `/`, `/etc` and `/var/lib/docker`
 - top-level and per-service `secrets:` and `configs:`
 
