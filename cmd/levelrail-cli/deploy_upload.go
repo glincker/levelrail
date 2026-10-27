@@ -25,18 +25,21 @@ const (
 
 // deployUploadResult is the --json shape and the data behind the final summary.
 type deployUploadResult struct {
-	App      string   `json:"app"`
-	Created  bool     `json:"created"`
-	Hash     string   `json:"hash,omitempty"`
-	Files    int      `json:"files"`
-	Bytes    int64    `json:"bytes"`
-	Archive  int64    `json:"archive_bytes,omitempty"`
-	Deduped  bool     `json:"deduped,omitempty"`
-	DeployID string   `json:"deploy_id,omitempty"`
-	Status   string   `json:"status,omitempty"`
-	URL      string   `json:"url,omitempty"`
-	DryRun   bool     `json:"dry_run,omitempty"`
-	FileList []string `json:"file_list,omitempty"`
+	App      string `json:"app"`
+	Created  bool   `json:"created"`
+	Hash     string `json:"hash,omitempty"`
+	Files    int    `json:"files"`
+	Bytes    int64  `json:"bytes"`
+	Archive  int64  `json:"archive_bytes,omitempty"`
+	Deduped  bool   `json:"deduped,omitempty"`
+	DeployID string `json:"deploy_id,omitempty"`
+	Status   string `json:"status,omitempty"`
+	URL      string `json:"url,omitempty"`
+	// Failure is the server's classified reason when the build or rollout failed.
+	Failure  *apiclient.DeployFailure `json:"failure,omitempty"`
+	Error    string                   `json:"error,omitempty"`
+	DryRun   bool                     `json:"dry_run,omitempty"`
+	FileList []string                 `json:"file_list,omitempty"`
 }
 
 // wantsUploadDeploy reports whether "deploy" args mean a local directory rather than a git or image deploy.
@@ -391,6 +394,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 	if !wait.Done {
 		res.Status = "timeout"
 	}
+	res.Failure, res.Error = wait.Deploy.Failure, wait.Deploy.Error
 	if final, err := client.GetApp(ctx, name); err == nil {
 		res.URL = appPrimaryURL(final)
 	}
@@ -399,6 +403,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 			_, _ = fmt.Fprintln(stdout, res.URL)
 		}
 		_, _ = fmt.Fprintf(stderr, "deploy %s: %s\n", res.DeployID, res.Status)
+		printUploadFailure(stderr, res)
 	})
 	if code != exitOK {
 		return code
@@ -451,4 +456,15 @@ Size limit: %[3]s (default 512 MiB, compressed), also enforced by the server.
 Example:
   %[1]s deploy ./my-app --env LOG_LEVEL=info
 `, prog, defaultDeployUploadWait, envUploadMaxBytes)
+}
+
+// printUploadFailure shows why a deploy did not succeed; the server already
+// redacts and caps both the failure excerpt and the error text.
+func printUploadFailure(w io.Writer, res *deployUploadResult) {
+	switch {
+	case res.Failure != nil:
+		printDeployFailure(w, res.Failure)
+	case res.Error != "":
+		_, _ = fmt.Fprintf(w, "reason: %s\n", res.Error)
+	}
 }

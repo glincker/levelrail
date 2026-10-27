@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // This file is the real deploy-attempt history and log surface: a
@@ -128,7 +129,8 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		errMsg := ""
 		if deployErr != nil {
 			status = store.DeployAttemptStatusFailed
-			errMsg = deployErr.Error()
+			// Stored and served on the deploy record, so keep it redacted and bounded.
+			errMsg = untrusted.Truncate(untrusted.Redact(deployErr.Error()), failureOptions().MaxBytes)
 		}
 		if err := rt.deployAttempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
 			rt.logger.Error("api: trigger build: finish deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))

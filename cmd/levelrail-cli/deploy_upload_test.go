@@ -169,3 +169,43 @@ func TestDeployUpload_FullFlow(t *testing.T) {
 		t.Error("archive empty or contains the ignored .env content")
 	}
 }
+
+func TestDeployUpload_FailurePrintsReason(t *testing.T) {
+	dir := writeDeployDir(t, appDirFiles)
+	var created map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/"+filepath.Base(dir):
+			if created == nil {
+				http.Error(w, `{"error":"app not found"}`, http.StatusNotFound)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"name": created["name"]})
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps":
+			_ = json.NewDecoder(r.Body).Decode(&created)
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(created)
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/uploads"):
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]any{"hash": strings.Repeat("ab", 32), "size": 1, "file_count": 3})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/builds"):
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = w.Write([]byte(`{"id":"dep_1"}`))
+		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1/logs"):
+			w.Header().Set("Content-Type", "text/event-stream")
+		case strings.HasSuffix(r.URL.Path, "/deploys/dep_1"):
+			_, _ = w.Write([]byte(`{"id":"dep_1","outcome":"failed","error":"source builds are not supported on Podman"}`))
+		default:
+			http.Error(w, `{"error":"unexpected"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	code, _, errOut := runDeployCLI([]string{"deploy", dir, "--yes", "--api-url", srv.URL, "--token", "tok"}, nil)
+	if code != exitDeployNotHealthy {
+		t.Fatalf("exit = %d, want %d", code, exitDeployNotHealthy)
+	}
+	if !strings.Contains(errOut, "not supported on Podman") {
+		t.Errorf("stderr lacks the failure reason:\n%s", errOut)
+	}
+}

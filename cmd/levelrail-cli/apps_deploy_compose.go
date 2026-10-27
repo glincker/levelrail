@@ -55,7 +55,8 @@ func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, 
 // shaped for exactly one app.
 func printComposeDeployResultHuman(out io.Writer, r composeDeployResult) {
 	_, _ = fmt.Fprintf(out, "app_id: %s\n", r.AppID)
-	_, _ = fmt.Fprintf(out, "deployed %d service(s):\n", len(r.Services))
+	// Services are recorded here; their containers start afterwards, so do not claim they run yet.
+	_, _ = fmt.Fprintf(out, "accepted %d service(s), containers are starting:\n", len(r.Services))
 	for _, svc := range r.Services {
 		_, _ = fmt.Fprintf(out, "  %s\t%s\n", svc.Name, svc.Image)
 	}
