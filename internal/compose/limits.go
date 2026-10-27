@@ -2,10 +2,12 @@ package compose
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -77,12 +79,25 @@ func parseByteSize(raw, capEnv string) (int64, error) {
 	return b, nil
 }
 
-// MaxShmBytes is the largest /dev/shm any app may request, compose or API.
+// badShmEnvWarned holds the last invalid APP_COMPOSE_MAX_SHM_BYTES logged, so it warns once.
+var badShmEnvWarned atomic.Value
+
+// MaxShmBytes is the largest /dev/shm any app may request, compose or API. An
+// invalid value keeps the default: tmpfs no mem_limit bounds must stay capped.
 func MaxShmBytes() int64 {
-	if strings.TrimSpace(os.Getenv(envMaxShmBytes)) == "" {
+	raw := strings.TrimSpace(os.Getenv(envMaxShmBytes))
+	if raw == "" {
 		return defaultMaxShmBytes
 	}
-	return int64(envCap(envMaxShmBytes, float64(math.MaxInt64>>sumHeadroomShift)))
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil || math.IsNaN(v) || math.IsInf(v, 0) || v < 1 {
+		if prev, _ := badShmEnvWarned.Load().(string); prev != raw {
+			badShmEnvWarned.Store(raw)
+			slog.Warn("compose: invalid shm cap, using the default", slog.String("env", envMaxShmBytes), slog.String("value", raw), slog.Int64("default_bytes", defaultMaxShmBytes))
+		}
+		return defaultMaxShmBytes
+	}
+	return int64(math.Min(v, float64(math.MaxInt64>>sumHeadroomShift)))
 }
 
 func parseNanoCPUs(raw string) (int64, error) {
