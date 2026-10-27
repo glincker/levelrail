@@ -3498,7 +3498,9 @@ type ContainerState struct {
 	// labels let reconcilers adopt a container by its labels after a reconnect.
 	Labels map[string]string `protobuf:"bytes,6,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// created is unset by agents older than v0.8.7; the control plane reads that as unknown.
-	Created       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created,proto3" json:"created,omitempty"`
+	Created *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created,proto3" json:"created,omitempty"`
+	// image_id is empty from agents older than v0.8.8; the control plane reads that as unknown.
+	ImageId       string `protobuf:"bytes,8,opt,name=image_id,json=imageId,proto3" json:"image_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3580,6 +3582,13 @@ func (x *ContainerState) GetCreated() *timestamppb.Timestamp {
 		return x.Created
 	}
 	return nil
+}
+
+func (x *ContainerState) GetImageId() string {
+	if x != nil {
+		return x.ImageId
+	}
+	return ""
 }
 
 type ImageInfo struct {
@@ -7512,7 +7521,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x10disk_inodes_free\x18\n" +
 	" \x01(\x04R\x0ediskInodesFree\x12(\n" +
 	"\x10swap_total_bytes\x18\v \x01(\x04R\x0eswapTotalBytes\x12&\n" +
-	"\x0fswap_free_bytes\x18\f \x01(\x04R\rswapFreeBytes\"\xd4\x02\n" +
+	"\x0fswap_free_bytes\x18\f \x01(\x04R\rswapFreeBytes\"\xef\x02\n" +
 	"\x0eContainerState\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -7520,7 +7529,8 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\arunning\x18\x04 \x01(\bR\arunning\x125\n" +
 	"\x05ports\x18\x05 \x03(\v2\x1f.levelrail.agent.v1.PortBindingR\x05ports\x12F\n" +
 	"\x06labels\x18\x06 \x03(\v2..levelrail.agent.v1.ContainerState.LabelsEntryR\x06labels\x124\n" +
-	"\acreated\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\acreated\x1a9\n" +
+	"\acreated\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\acreated\x12\x19\n" +
+	"\bimage_id\x18\b \x01(\tR\aimageId\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
