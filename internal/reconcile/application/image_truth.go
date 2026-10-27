@@ -192,15 +192,7 @@ func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string
 	stale := c.filterStale(all, targets)
 	newestPrevious := ""
 	if holding {
-		for _, cs := range stale {
-			rel := releaseOf(cs.Name)
-			if !cs.Running || rel == currentBase {
-				continue
-			}
-			if newestPrevious == "" || lastCreated[rel].After(lastCreated[newestPrevious]) || (lastCreated[rel].Equal(lastCreated[newestPrevious]) && rel > newestPrevious) {
-				newestPrevious = rel
-			}
-		}
+		newestPrevious = newestRunningRelease(stale, lastCreated, currentBase)
 	}
 	for _, cs := range stale {
 		if newestPrevious != "" && cs.Running && releaseOf(cs.Name) == newestPrevious {
@@ -212,6 +204,22 @@ func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string
 		heldUntil = cutover.Add(hold)
 	}
 	return due, heldUntil
+}
+
+// newestRunningRelease is the most recently created running release among
+// stale other than currentBase, or "" when none runs.
+func newestRunningRelease(stale []docker.ContainerState, lastCreated map[string]time.Time, currentBase string) string {
+	newest := ""
+	for _, cs := range stale {
+		rel := releaseOf(cs.Name)
+		if !cs.Running || rel == currentBase {
+			continue
+		}
+		if newest == "" || lastCreated[rel].After(lastCreated[newest]) || (lastCreated[rel].Equal(lastCreated[newest]) && rel > newest) {
+			newest = rel
+		}
+	}
+	return newest
 }
 
 // supersededPrevious returns stale containers that are not part of the newest

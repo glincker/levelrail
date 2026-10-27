@@ -100,3 +100,33 @@ func TestDrain_RollbackOntoRunningReleaseDrainsNewer(t *testing.T) {
 		})
 	}
 }
+
+// F9: a rollback drains only the release that was serving. An older held
+// release serves nothing, so it must not keep running beside the other two.
+func TestDrain_RollbackStopsOlderHeldRelease(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	oldest, serving := ContainerName("web", "img:v1", ""), ContainerName("web", "img:v1@sha256:abc", "")
+	rt.seed(oldest, true)
+	rt.seed(serving, true)
+	now := time.Now()
+	rt.containers[oldest].Created = now.Add(-2 * time.Minute)
+	rt.containers[serving].Created = now.Add(-time.Minute)
+	desired := gateDesired()
+	desired.Image = "rollback/web:dep_1"
+	rt.setExitState(ContainerName("web", desired.Image, ""), &docker.ExitState{Running: true})
+	rec := &fakeGateRecorder{}
+	opts := append(gateOptions(rec, 1, 0, time.Hour), WithDrainTracker(NewDrainTracker()))
+
+	c := New("web", &fakeStore{svc: desired}, rt, opts...)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cs, _ := rt.InspectByName(context.Background(), serving); cs == nil || !cs.Running {
+		t.Errorf("serving release %s = %+v, want it still draining", serving, cs)
+	}
+	if cs, _ := rt.InspectByName(context.Background(), oldest); cs != nil {
+		t.Errorf("older release %s = %+v, want it removed", oldest, cs)
+	}
+}

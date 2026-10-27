@@ -103,17 +103,12 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 		if err != nil {
 			return err
 		}
-		var stopped []docker.ContainerState
-		for _, cs := range stale {
-			if !cs.Running {
-				stopped = append(stopped, cs)
-			}
-		}
-		if justDeployed && len(stale) > len(stopped) {
+		due, draining := drainFilter(stale, targets)
+		if justDeployed && draining {
 			c.recordGate(ctx, desired, "", deploysafety.PhaseDrain, deploysafety.StatusStarted, "",
 				fmt.Sprintf("previous release keeps serving in-flight requests for %s", cfg.DrainTimeout))
 		}
-		return c.removeContainers(ctx, stopped)
+		return c.removeContainers(ctx, due)
 	}
 
 	hold := c.effectiveHold(cfg)
@@ -147,4 +142,28 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 			fmt.Sprintf("stopped %d container(s) of the previous release after draining", running))
 	}
 	return err
+}
+
+// drainFilter keeps only the release that served until the cutover running;
+// older releases serve no traffic, so a rollback must not leave them up.
+func drainFilter(stale []docker.ContainerState, targets []string) (due []docker.ContainerState, draining bool) {
+	lastCreated := map[string]time.Time{}
+	for _, cs := range stale {
+		if rel := releaseOf(cs.Name); cs.Created.After(lastCreated[rel]) {
+			lastCreated[rel] = cs.Created
+		}
+	}
+	currentBase := ""
+	if len(targets) > 0 {
+		currentBase = releaseOf(targets[0])
+	}
+	keep := newestRunningRelease(stale, lastCreated, currentBase)
+	for _, cs := range stale {
+		if keep != "" && cs.Running && releaseOf(cs.Name) == keep {
+			draining = true
+			continue
+		}
+		due = append(due, cs)
+	}
+	return due, draining
 }
