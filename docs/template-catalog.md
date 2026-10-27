@@ -505,6 +505,16 @@ Every entry here passed the same structural checks the rest of the catalog gets 
 
 Templates that came up healthy in the last live smoke run (see [template status](/templates-status)) carry a Verified badge in the dashboard, a `verified` field in `GET /api/v1/service-templates`, and show up under `levelrail-cli templates list --verified`. The dashboard has a "Verified only" filter on the templates page.
 
+## Added 2026-10-27
+
+New templates, each booted under the platform's hardening flags (cap-drop ALL, no-new-privileges, pids limit) with a working health or login check:
+
+- **AI**: `crawl4ai` (every API call except `/health` needs the generated token as a Bearer header), `open-notebook` (sets `API_URL` from the platform domain, so the UI works behind one public port).
+- **Backups**: `backrest` (GPL-3.0). It has no login until you create the admin user on first visit, so do that before exposing the address.
+- **Infrastructure**: `headscale` (no UDP, so clients relay over HTTPS).
+- **Productivity**: `rsshub` (AGPL-3.0) has no access key, so restrict who can reach it; `archivebox` (MIT) creates its admin account from the generated credentials on first start.
+- **Security**: `authelia`, with the admin password generated at first boot.
+
 ## Deploy link for your README
 
 Link to `https://YOUR-INSTANCE/templates?deploy=<template-id>` to land a visitor on that template's deploy page on their own instance. An unknown id shows a not-found page with a link back to the catalog.
