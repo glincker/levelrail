@@ -32,7 +32,7 @@ type upResult struct {
 func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "up", "print the result as JSON to stdout and nothing else", stderr)
 	var f upFlags
-	var dryRun, yes bool
+	var dryRun, yes, allowUnpushed bool
 	f.secrets = map[string]string{}
 	fs.StringVar(&f.name, "name", "", "app name (default: the directory name)")
 	fs.IntVar(&f.port, "port", 0, "container port (default: from the app spec, the Dockerfile or the detected framework)")
@@ -49,6 +49,7 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	fs.StringVar(&f.ref, "ref", "", "git branch to build (default: the current branch, then main)")
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var as KEY=VALUE, repeatable, for a required secret the app spec declares")
 	fs.BoolVar(&dryRun, "dry-run", false, "print the inferred settings and the exact commands, change nothing")
+	fs.BoolVar(&allowUnpushed, "allow-unpushed", false, "build even when the remote branch lacks your local commit")
 	fs.BoolVar(&yes, "yes", false, "do not ask for confirmation on a terminal")
 	fs.BoolVar(&yes, "y", false, "shorthand for --yes")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, upUsage(prog)) }
@@ -95,6 +96,14 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	if !jsonOut && !yes && isTerminal(stdin) && !confirmUp(stdin, stderr) {
 		_, _ = fmt.Fprintln(stderr, "cancelled, nothing changed")
 		return exitUsage
+	}
+
+	chk := checkPushed(ctx, dir, inf, f.ref != "")
+	if chk.Warning != "" && !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "warning: %s\n", chk.Warning)
+	}
+	if chk.Problem != "" && !allowUnpushed {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%s", chk.Problem))
 	}
 
 	if err := executeUp(ctx, client, prog, inf, existing, exists, &result, stderr, jsonOut); err != nil {
@@ -432,6 +441,7 @@ Flags:
   --repo string       git repository URL (default: the remote "origin")
   --ref string        git branch (default: the current branch, then main)
   --secret KEY=VALUE  secret env var, repeatable, for a required secret the spec declares
+  --allow-unpushed    build even when the remote branch lacks your local commit
   --dry-run           print the inferred settings and the exact commands, change nothing
   --yes, -y           do not ask for confirmation on a terminal
   --token string      API token (default: %[2]s env var, then the credentials file)
