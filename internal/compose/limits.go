@@ -23,13 +23,16 @@ var memoryUnits = map[string]int64{
 	"g": 1 << 30, "gb": 1 << 30,
 }
 
-// Env caps on compose limits; unset leaves only the int64 headroom guard.
+// Env caps on compose limits; unset leaves only the int64 headroom guard,
+// except shm, whose tmpfs is not bounded by mem_limit's absence.
 const (
 	envMaxMemoryBytes = "APP_COMPOSE_MAX_MEMORY_BYTES"
 	envMaxCPUs        = "APP_COMPOSE_MAX_CPUS"
 	envMaxShmBytes    = "APP_COMPOSE_MAX_SHM_BYTES"
 	// Headroom so quota SUMs over many services cannot overflow int64.
 	sumHeadroomShift = 16
+	// defaultMaxShmBytes applies when APP_COMPOSE_MAX_SHM_BYTES is unset.
+	defaultMaxShmBytes = 2 << 30
 )
 
 func envCap(name string, fallback float64) float64 {
@@ -64,6 +67,9 @@ func parseByteSize(raw, capEnv string) (int64, error) {
 		return 0, fmt.Errorf("%q is not a memory size such as 512m or 1g", raw)
 	}
 	memCap := envCap(capEnv, float64(math.MaxInt64>>sumHeadroomShift))
+	if capEnv == envMaxShmBytes && strings.TrimSpace(os.Getenv(capEnv)) == "" {
+		memCap = defaultMaxShmBytes
+	}
 	b, ok := toInt64(n*float64(mult), memCap)
 	if !ok {
 		return 0, fmt.Errorf("%q is out of range: it must be at least 1 byte and at most %d bytes (%s)", raw, int64(memCap), capEnv)

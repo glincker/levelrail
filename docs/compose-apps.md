@@ -66,7 +66,7 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | `shm_size` | Size of `/dev/shm` (`1gb`, `256m`), for Chromium based apps that crash with Docker's 64 MB default. Changing it recreates the container. |
 | `restart`, `networks` | Parsed and reported as notices. The reconciler restarts containers, and every service shares one app network. |
 
-Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `APP_COMPOSE_MAX_MEMORY_BYTES`, `APP_COMPOSE_MAX_CPUS` and `APP_COMPOSE_MAX_SHM_BYTES` on the control plane to lower the cap; unset keeps only the built-in overflow guard.
+Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `APP_COMPOSE_MAX_MEMORY_BYTES` and `APP_COMPOSE_MAX_CPUS` on the control plane to lower the cap; unset keeps only the built-in overflow guard. `shm_size` is capped at 2 GiB by default; set `APP_COMPOSE_MAX_SHM_BYTES` (bytes) to raise or lower it. A service with `shm_size` and no memory limit counts its `/dev/shm` size against the project memory quota, since that memory comes from the host.
 
 ### Keys that are ignored
 

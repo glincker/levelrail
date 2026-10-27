@@ -147,3 +147,22 @@ func TestToDesiredServices_ShmSize(t *testing.T) {
 		t.Errorf("512m at the cap: %+v %v", svc, err)
 	}
 }
+
+func TestShmSizeDefaultCap(t *testing.T) {
+	t.Setenv("APP_COMPOSE_MAX_SHM_BYTES", "")
+	parse := func(v string) error {
+		f, err := Parse([]byte("services:\n  a:\n    image: x:1\n    shm_size: " + v + "\n"))
+		if err != nil {
+			return err
+		}
+		_, _, err = ToDesiredServices("app", f)
+		return err
+	}
+	if err := parse("500g"); err == nil || !strings.Contains(err.Error(), "APP_COMPOSE_MAX_SHM_BYTES") {
+		t.Fatalf("500g with no override: err = %v, want the default cap named", err)
+	}
+	t.Setenv("APP_COMPOSE_MAX_SHM_BYTES", "8589934592")
+	if err := parse("8g"); err != nil {
+		t.Fatalf("8g under a raised cap: %v", err)
+	}
+}

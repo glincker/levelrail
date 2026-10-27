@@ -95,7 +95,12 @@ func serviceReservation(res *store.ServiceResources, replicas int) quota.Amounts
 		return quota.Amounts{}
 	}
 	n := int64(max(replicas, 1))
-	return quota.Amounts{MemoryBytes: res.MemoryBytes * n, NanoCPUs: res.NanoCPUs * n}
+	// /dev/shm is charged to the memory cgroup, so mem_limit bounds it when set.
+	mem := res.MemoryBytes
+	if mem == 0 {
+		mem = res.ShmSizeBytes
+	}
+	return quota.Amounts{MemoryBytes: mem * n, NanoCPUs: res.NanoCPUs * n}
 }
 
 // quotaDenial is a refused change, naming the scope, limit and usage.
