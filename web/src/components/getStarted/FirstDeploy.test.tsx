@@ -8,8 +8,18 @@ import getStartedEn from '../../locales/en/getStarted.json'
 import { FirstDeploy } from './FirstDeploy'
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: { children: ReactNode; to: string }) => (
-    <a href={to}>{children}</a>
+  Link: ({
+    children,
+    to,
+    className,
+  }: {
+    children: ReactNode
+    to: string
+    className?: string
+  }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
   ),
 }))
 vi.mock('../CreateResourceWizard', () => ({
