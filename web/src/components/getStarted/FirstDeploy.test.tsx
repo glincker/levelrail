@@ -84,7 +84,7 @@ describe('FirstDeploy', () => {
     stubFetch(200)
     renderIt()
     expect(
-      await screen.findByText(/https:\/\/sample-app\.1-2-3-4\.sslip\.io/),
+      await screen.findByText(/http:\/\/sample-app\.1-2-3-4\.sslip\.io/),
     ).toBeTruthy()
     expect(screen.getByText('https card')).toBeTruthy()
   })

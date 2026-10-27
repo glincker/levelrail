@@ -103,8 +103,9 @@ export function FirstDeploy({
     createApp.error.status === HTTP_CONFLICT
   const createError =
     createApp.error && !conflict ? createApp.error.message : ''
+  const live = Boolean(app) && phase === 'live'
   const preview = https?.suggested_domain
-    ? `https://${SAMPLE_APP.name}.${https.suggested_domain}`
+    ? `${https.state === 'issued' ? 'https' : 'http'}://${SAMPLE_APP.name}.${https.suggested_domain}`
     : ''
 
   return (
@@ -115,11 +116,13 @@ export function FirstDeploy({
             aria-hidden="true"
             className="size-6 text-primary"
           />
-          {t('first.title')}
+          {live ? t('first.titleLive') : t('first.title')}
         </h1>
-        <p className="max-w-prose text-sm text-muted-foreground">
-          {t('first.subtitle')}
-        </p>
+        {live ? null : (
+          <p className="max-w-prose text-sm text-muted-foreground">
+            {t('first.subtitle')}
+          </p>
+        )}
       </header>
 
       {app ? (
