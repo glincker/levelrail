@@ -282,10 +282,30 @@ func (rt *Router) loadDecidableApprovalAs(ctx context.Context, id, deciderType, 
 	if a.Status != store.DeployApprovalStatusPending {
 		return store.DeployApproval{}, &deployApprovalDecisionError{http.StatusConflict, "deploy approval " + id + " is no longer pending (status: " + a.Status + ")"}
 	}
-	if deciderType == a.RequestedByType && deciderID == a.RequestedBy {
+	reqType, reqID := rt.approvalPrincipal(ctx, a.RequestedByType, a.RequestedBy)
+	decType, decID := rt.approvalPrincipal(ctx, deciderType, deciderID)
+	if (deciderType == a.RequestedByType && deciderID == a.RequestedBy) || (decType == reqType && decID == reqID) {
 		return store.DeployApproval{}, &deployApprovalDecisionError{http.StatusForbidden, "the same user or token that requested this deploy cannot approve or reject it; a different privileged user must decide"}
 	}
 	return a, nil
+}
+
+// approvalPrincipal maps a token to its owning user so one person cannot
+// request through a session and decide through their own token, or the
+// reverse. Ownerless (system, CI) tokens keep their own (type, id) pair.
+func (rt *Router) approvalPrincipal(ctx context.Context, actorType, actorID string) (string, string) {
+	if actorType != store.PrincipalTypeToken {
+		return actorType, actorID
+	}
+	if owner := rt.tokenOwnerOf(ctx, actorID); owner != "" {
+		return store.PrincipalTypeUser, owner
+	}
+	if rt.authLib.tokens != nil {
+		if rec, err := rt.authLib.tokens.GetToken(ctx, actorID); err == nil && rec.OwnerLegacyID != "" {
+			return store.PrincipalTypeUser, rec.OwnerLegacyID
+		}
+	}
+	return actorType, actorID
 }
 
 // loadDecidableApproval is loadDecidableApprovalAs for a session/token
