@@ -40,6 +40,17 @@ func stackApprovalTTL() time.Duration {
 // stackApprovalStore is the extra store surface approvals need.
 type stackApprovalStore interface {
 	SetPendingStackRevisionMeta(ctx context.Context, stackID string, number int, meta []byte) error
+	FailPendingStackRevision(ctx context.Context, stackID string, number int, result []byte, now time.Time) (bool, error)
+}
+
+// failPending fails a revision only if it still awaits approval; ok=false
+// means an approve already moved it on and its apply owns the outcome.
+func failPending(ctx context.Context, ss StackStore, stackID string, number int, result []byte, now time.Time) (bool, error) {
+	aps, ok := ss.(stackApprovalStore)
+	if !ok {
+		return false, errors.New("api: stack store cannot decide approvals")
+	}
+	return aps.FailPendingStackRevision(ctx, stackID, number, result, now)
 }
 
 // stackPendingMeta holds the non-secret apply options kept with a pending revision.
@@ -89,7 +100,7 @@ func (rt *Router) expireStackApprovals(ctx context.Context, ss StackStore, s sto
 	now := time.Now()
 	for _, v := range revs {
 		if approvalExpired(v, now) {
-			_ = ss.SetStackRevisionStatus(context.WithoutCancel(ctx), s.ID, v.Number, store.StackRevFailed, expiredResult(), now)
+			_, _ = failPending(context.WithoutCancel(ctx), ss, s.ID, v.Number, expiredResult(), now)
 		}
 	}
 }
@@ -207,7 +218,7 @@ func (rt *Router) checkApprovable(ctx context.Context, w http.ResponseWriter, ss
 		return false
 	}
 	if approvalExpired(v, time.Now()) {
-		_ = ss.SetStackRevisionStatus(context.WithoutCancel(ctx), stack.ID, v.Number, store.StackRevFailed, expiredResult(), time.Now())
+		_, _ = failPending(context.WithoutCancel(ctx), ss, stack.ID, v.Number, expiredResult(), time.Now())
 		writeError(w, http.StatusGone, fmt.Sprintf("the approval for revision %d expired; request a new apply", v.Number))
 		return false
 	}
@@ -342,6 +353,10 @@ func (rt *Router) tokenOwnerOf(ctx context.Context, tokenID string) (string, err
 	return "", nil
 }
 
+// stackRejectAfterRead is a test seam between a reject's status read and its
+// write, where a concurrent approve can move the revision to applying.
+var stackRejectAfterRead func()
+
 func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 	ss, ok := rt.stackStoreOr501(w)
 	if !ok {
@@ -368,10 +383,18 @@ func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is %s, not awaiting approval", n, rev.Status))
 		return
 	}
+	if stackRejectAfterRead != nil {
+		stackRejectAfterRead()
+	}
 	caller := rt.stackCaller(r)
 	result, _ := json.Marshal(map[string]string{"error": "rejected", "rejected_by": caller.name, "reason": body.Reason})
-	if err := ss.SetStackRevisionStatus(r.Context(), s.ID, n, store.StackRevFailed, result, time.Now()); err != nil {
+	ok, err = failPending(r.Context(), ss, s.ID, n, result, time.Now())
+	if err != nil {
 		rt.writeStackError(w, "reject", err)
+		return
+	}
+	if !ok {
+		writeError(w, http.StatusConflict, fmt.Sprintf("revision %d is no longer awaiting approval", n))
 		return
 	}
 	rev.Status = store.StackRevFailed
