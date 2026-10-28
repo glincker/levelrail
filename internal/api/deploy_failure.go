@@ -67,6 +67,16 @@ func rolloutFailureCondition(a store.DeployAttempt, conds []reconcile.Condition)
 			return &failure.Condition{Reason: c.Reason, Message: c.Message}
 		}
 	}
+	// A serving attempt already rolled out; a later crash loop is steady state, not this deploy's result.
+	if a.RolloutState == store.RolloutStateServing {
+		return nil
+	}
+	limit := failure.RolloutCrashLoopRestarts(os.LookupEnv)
+	for _, c := range conds {
+		if failure.IsRolloutCrashLoop(c.Reason, c.Message, limit) && !c.LastTransitionTime.Before(*a.FinishedAt) {
+			return &failure.Condition{Reason: c.Reason, Message: c.Message}
+		}
+	}
 	return nil
 }
 

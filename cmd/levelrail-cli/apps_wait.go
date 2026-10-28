@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/failure"
 )
 
 const waitTimelineLimit = 20
@@ -132,6 +134,13 @@ func computeRolloutOutcome(attempt deployAttemptResource, conditions []condition
 	for i := range conditions {
 		c := &conditions[i]
 		if c.Reason == "CompletionTimeout" && !c.LastTransitionTime.Before(reference) && !completedSince(conditions, c.LastTransitionTime) {
+			return rolloutOutcome{state: "failed", condition: c}
+		}
+	}
+	limit := failure.RolloutCrashLoopRestarts(os.LookupEnv)
+	for i := range conditions {
+		c := &conditions[i]
+		if failure.IsRolloutCrashLoop(c.Reason, c.Message, limit) && !c.LastTransitionTime.Before(reference) {
 			return rolloutOutcome{state: "failed", condition: c}
 		}
 	}
