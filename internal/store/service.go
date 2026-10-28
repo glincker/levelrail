@@ -56,6 +56,28 @@ type ServiceProbe struct {
 	Interval        time.Duration `json:"interval,omitempty"`
 	Timeout         time.Duration `json:"timeout,omitempty"`
 	Failures        int           `json:"failures,omitempty"`
+	// Platform marks a probe declared to run from outside the container
+	// (compose x-levelrail-healthcheck), never as an in-container exec.
+	Platform bool `json:"platform,omitempty"`
+}
+
+// Probe kinds ServiceProbe.Kind reports.
+const (
+	ProbeKindHTTP = "http"
+	ProbeKindTCP  = "tcp"
+	ProbeKindExec = "exec"
+)
+
+// Kind reports whether p is an http, tcp or exec probe.
+func (p ServiceProbe) Kind() string {
+	switch {
+	case p.TCP:
+		return ProbeKindTCP
+	case len(p.Exec) > 0:
+		return ProbeKindExec
+	default:
+		return ProbeKindHTTP
+	}
 }
 
 // ProbeConfig converts p into the shape internal/probe runs.

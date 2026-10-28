@@ -94,7 +94,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			})
 		}
 
-		health, warning, err := resolveHealthcheck(key, svc.Healthcheck)
+		health, warning, err := resolveServiceHealth(key, svc.Healthcheck, svc.PlatformProbe, main)
 		if err != nil {
 			return nil, nil, err
 		}

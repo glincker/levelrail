@@ -114,7 +114,7 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 		s.Volumes = append(s.Volumes, spec.Volume{Name: v.Name, Path: v.ContainerPath})
 	}
 
-	health, warning, err := resolveHealthcheck(key, csvc.Healthcheck)
+	health, warning, err := resolveServiceHealth(key, csvc.Healthcheck, csvc.PlatformProbe, main)
 	if err != nil {
 		return spec.Service{}, "", err
 	}

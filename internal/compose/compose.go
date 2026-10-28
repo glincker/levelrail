@@ -122,6 +122,8 @@ type Service struct {
 	// such as recreate for an app that locks its state volume. Empty means default.
 	Strategy       string
 	StrategyReason string
+	// PlatformProbe is x-levelrail-healthcheck, see resolveServiceHealth.
+	PlatformProbe *spec.PlatformProbe
 	// DependsOnHealthy lists the DependsOn entries declared with
 	// condition: service_healthy, which wait for readiness, not just start.
 	DependsOnHealthy []string

@@ -10,3 +10,12 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    # Probed from outside: the admin port 14269 above is not published.
+    x-levelrail-healthcheck:
+      kind: http
+      path: /
+      port: 16686
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

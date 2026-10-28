@@ -192,7 +192,8 @@ func (h *composeHealth) toStoreHealth() *store.ServiceHealth {
 // toSpecHealth converts h into app.yaml's string-duration shape for
 // ExpandBuildService's git-sourced path.
 func (h *composeHealth) toSpecHealth() *spec.Health {
-	if h == nil {
+	// app.yaml has no tcp probe: the deploy gate's implicit port connect covers it.
+	if h == nil || h.TCP {
 		return nil
 	}
 	return &spec.Health{

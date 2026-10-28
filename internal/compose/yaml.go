@@ -7,6 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -52,6 +53,8 @@ type rawService struct {
 	Strategy    string            `yaml:"x-levelrail-strategy"`
 	// StrategyReason is shown next to the strategy so an operator knows why a template pinned it.
 	StrategyReason string `yaml:"x-levelrail-strategy-reason"`
+	// PlatformProbe replaces healthcheck: with a probe run from outside the container.
+	PlatformProbe *spec.PlatformProbe `yaml:"x-levelrail-healthcheck"`
 	// DependsOnHealthy is filled by Parse from depends_on's long form.
 	DependsOnHealthy []string `yaml:"-"`
 	// DependsOnCompleted is filled by Parse from depends_on's long form.

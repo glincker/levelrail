@@ -229,9 +229,13 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 }
 
 // noteImplicitReadiness puts a timeline note on a release that has no
-// explicit readiness probe, so the weaker check is visible, not silent.
+// explicit readiness probe, so the weaker check is visible, not silent. A
+// platform probe gets a note too: it is the check that replaced the image's own.
 func (c *Controller) noteImplicitReadiness(ctx context.Context, container string, desired *store.DesiredService, readiness *store.ServiceProbe) {
 	switch {
+	case readiness != nil && readiness.Platform:
+		c.recordGate(ctx, desired, container, deploysafety.PhaseReadiness, deploysafety.StatusInfo, "",
+			fmt.Sprintf("readiness is a %s probe on port %d run from outside the container", readiness.Kind(), desired.Port))
 	case readiness == nil:
 		c.recordGate(ctx, desired, container, deploysafety.PhaseReadiness, deploysafety.StatusInfo, "",
 			"no port or probe: readiness is only container running; add a port or a health check")
