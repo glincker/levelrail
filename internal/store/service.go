@@ -828,6 +828,9 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
 
+	if err := recordAppChange(ctx, tx, svc.Name); err != nil {
+		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: save desired service %q: commit: %w", svc.Name, err)
 	}
@@ -926,7 +929,7 @@ func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error 
 	if n == 0 {
 		return ErrServiceNotFound
 	}
-	return nil
+	return db.noteAppChange(ctx, name)
 }
 
 // UpdateServiceProject reassigns svc to project projectID ("" for "no
@@ -953,7 +956,7 @@ func (db *DB) UpdateServiceProject(ctx context.Context, name, projectID string) 
 	if n == 0 {
 		return ErrServiceNotFound
 	}
-	return nil
+	return db.noteAppChange(ctx, name)
 }
 
 // UpdateServiceStorageTarget reassigns svc's object-storage credential
@@ -1231,7 +1234,7 @@ func (db *DB) UpdateServiceSuspended(ctx context.Context, name string, suspended
 	if n == 0 {
 		return ErrServiceNotFound
 	}
-	return nil
+	return db.noteAppChange(ctx, name)
 }
 
 // SetServiceAutoRollbackOnCrashloop is the only way
@@ -1355,7 +1358,7 @@ func (db *DB) RestartService(ctx context.Context, name string) error {
 	if n == 0 {
 		return ErrServiceNotFound
 	}
-	return nil
+	return db.noteAppChange(ctx, name)
 }
 
 // ErrServiceNotFound is returned by GetDesiredService when no service
@@ -1594,7 +1597,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if err := db.DeleteAppForms(ctx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
-	return nil
+	return db.noteAppChange(ctx, name)
 }
 
 // LocalImageID is ImageID when it still belongs to the current Image.
