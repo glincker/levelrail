@@ -660,6 +660,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/files | AbilityRead | handleListAppFiles |
 | PUT | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleSetAppFile |
 | DELETE | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleDeleteAppFile |
+| GET | /api/v1/apps/{name}/template-upgrade | AbilityRead | handleGetTemplateUpgrade |
+| GET | /api/v1/apps/{name}/tunnel | AbilityRoot | handleAppTunnel |
 
 </Accordion>
 
@@ -1997,6 +1999,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/stack-templates | AbilityRead | handleListStackTemplates |
 | GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
 | POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
+| POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
 
 ## See also
 

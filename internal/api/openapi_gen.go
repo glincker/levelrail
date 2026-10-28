@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1772 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1775 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -395,6 +395,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/tags", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/tags", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAttachAppTag", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/tags/{id}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDetachAppTag", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/template-upgrade", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetTemplateUpgrade", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/terminal", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppTerminal", Description: "Interactive terminal (terminal.go): the same AbilityRoot tier as one-off exec above, since a shell can read the same secrets. A WebSocket rather than SSE, which that file's own doc comment argues for at length."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/timeline", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppTimeline", Description: "Timeline and pending changes (app_timeline.go, pending_changes.go)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/traces", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListTraces", Description: ""},
@@ -403,6 +404,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/tracing", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetTracing", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/tracing", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleEnableTracing", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/traffic", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppTraffic", Description: "Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/tunnel", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppTunnel", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/uploads", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListUploads", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/uploads", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUploadSource", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/urls", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppURLs", Description: "Exposure: port, direct host port and its tagged firewall rule. The write opens a host port, so it is AbilityWriteSensitive like firewall rules."},
@@ -1168,6 +1170,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/images/layers", Ability: "AbilityRead", Group: "Other", Handler: "handleImageLayerBreakdown", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/signature-policy/validate", Ability: "AbilityWrite", Group: "Other", Handler: "handleValidateImageSignaturePolicy", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/verify", Ability: "AbilityWrite", Group: "Other", Handler: "handleImageVerify", Description: ""},
+	{Method: "POST", Path: "/api/v1/import/k8s", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportK8s", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},

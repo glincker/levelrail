@@ -159,6 +159,16 @@
       "errorTitle": "Canary action failed"
     }
   },
+  "templateUpgrade": {
+    "badge": "Template update available",
+    "blocked": "needs manual steps",
+    "risk": {
+      "none": "No changes",
+      "low": "Low risk",
+      "medium": "Medium risk",
+      "high": "High risk"
+    }
+  },
   "pendingChanges": {
     "title": "Changes waiting for a restart",
     "detail": "{{count}} not applied yet",
