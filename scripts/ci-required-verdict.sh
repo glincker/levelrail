@@ -47,9 +47,9 @@ fi
 # purpose, so they are exempt. CI_ON_DRAFTS is already folded into `draft`.
 if [ "$(out changes draft)" != true ]; then
 	expect() {
-		if [ "$(res "$1")" = skipped ]; then
-			add_fail "$1 was skipped but the planner expects it to run"
-		fi
+		case "$(res "$1")" in
+		skipped | missing) add_fail "$1 was skipped but the planner expects it to run" ;;
+		esac
 	}
 	if [ "$(out changes go)" = true ] && [ "$(out plan has_tests)" = true ]; then expect test-go; fi
 	if [ "$(out changes kit)" = true ]; then expect kit; fi

@@ -205,6 +205,7 @@ jobs:
         run: |
           scripts/test-ci-go-plan.sh
           scripts/test-ci-changes.sh
+          scripts/test-ci-required-verdict.sh
 
       - name: go build
         if: needs.plan.outputs.scope != 'none'
