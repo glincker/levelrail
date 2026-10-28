@@ -110,6 +110,9 @@ func printDeploysWaitHuman(w io.Writer, r deploysWaitResult, timeout string) {
 		return
 	}
 	_, _ = fmt.Fprintf(w, "deploy %s of %q: %s\n", r.DeployID, r.App, r.Status)
+	if r.Deploy.OutcomeReason != "" && r.Status != apiclient.DeployOutcomeHealthy {
+		_, _ = fmt.Fprintf(w, "reason: %s\n", r.Deploy.OutcomeReason)
+	}
 	if r.Failure != nil {
 		printDeployFailure(w, r.Failure)
 	}

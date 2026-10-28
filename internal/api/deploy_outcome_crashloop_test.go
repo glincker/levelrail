@@ -49,3 +49,32 @@ func TestComputeDeployOutcome_CrashLoop(t *testing.T) {
 		t.Errorf("steady-state crash attached failure %+v to a serving attempt", got)
 	}
 }
+
+func TestApplyDeployOutcome_ReasonAndThreshold(t *testing.T) {
+	t.Setenv("APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS", "4")
+	finished := time.Date(2026, 1, 1, 0, 0, 5, 0, time.UTC)
+	after := finished.Add(time.Minute)
+	a := store.DeployAttempt{Status: store.DeployAttemptStatusSucceeded, FinishedAt: &finished}
+
+	res := toDeployAttemptResource(a)
+	applyDeployOutcome(&res, a, true, []reconcile.Condition{crashLoopCond(5, after)})
+	if res.Outcome != OutcomeFailed || res.OutcomeReason == "" {
+		t.Errorf("crash loop: outcome %q reason %q, want failed with a reason", res.Outcome, res.OutcomeReason)
+	}
+	if res.RolloutCrashLoopRestarts != 4 {
+		t.Errorf("threshold = %d, want 4 from env", res.RolloutCrashLoopRestarts)
+	}
+
+	old := toDeployAttemptResource(a)
+	applyDeployOutcome(&old, a, false, nil)
+	if old.Outcome != OutcomeSuperseded {
+		t.Errorf("older attempt outcome = %q, want superseded", old.Outcome)
+	}
+
+	failed := store.DeployAttempt{Status: store.DeployAttemptStatusFailed, Error: "build exited 1"}
+	fr := toDeployAttemptResource(failed)
+	applyDeployOutcome(&fr, failed, true, nil)
+	if fr.Outcome != OutcomeFailed || fr.OutcomeReason != "build exited 1" {
+		t.Errorf("failed: outcome %q reason %q", fr.Outcome, fr.OutcomeReason)
+	}
+}

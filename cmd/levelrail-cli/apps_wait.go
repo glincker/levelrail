@@ -299,6 +299,9 @@ func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			_, _ = fmt.Fprintf(stdout, "%q %s\n", name, rolloutResultLabel(outcome.result))
 		} else {
 			_, _ = fmt.Fprintf(stdout, "%q failed to converge (%s)\n", name, result.Reason)
+			if outcome.condition != nil && outcome.condition.Message != "" {
+				_, _ = fmt.Fprintf(stdout, "reason: %s\n", outcome.condition.Message)
+			}
 		}
 	})
 	if outcome.state == "succeeded" {

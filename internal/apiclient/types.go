@@ -3885,9 +3885,12 @@ type DeployAttemptResource struct {
 	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *DeployFailure `json:"failure,omitempty"`
-	// Outcome is set by GetDeploy only: in_progress, healthy, failed,
-	// canceled, superseded or blocked.
-	Outcome string `json:"outcome,omitempty"`
+	// Outcome is in_progress, healthy, failed, canceled, superseded or
+	// blocked; OutcomeReason is the one-line why.
+	Outcome       string `json:"outcome,omitempty"`
+	OutcomeReason string `json:"outcome_reason,omitempty"`
+	// RolloutCrashLoopRestarts is the server's crash-loop failure threshold.
+	RolloutCrashLoopRestarts int `json:"rollout_crash_loop_restarts,omitempty"`
 	// Phase is the stored attempt status when GetDeploy reports a derived
 	// Status (building, rolling_out, failed).
 	Phase string `json:"phase,omitempty"`

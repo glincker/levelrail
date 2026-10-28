@@ -177,7 +177,7 @@ func (rt *Router) handleGetDeploy(w http.ResponseWriter, r *http.Request) {
 	res := toDeployAttemptResource(a)
 	res.ChainPosition = rerunChainPositions(attempts)(a.ID)
 	rt.applyWait(ctx, &res, a, attempts)
-	res.Outcome = computeDeployOutcome(a, idx == 0, conds)
+	applyDeployOutcome(&res, a, idx == 0, conds)
 	res.Phase = res.Status
 	res.Status = presentedDeployStatus(a.Status, res.Outcome)
 	if f, ok := rt.classifyAttempt(ctx, a, conds, idx == 0); ok {
@@ -214,4 +214,17 @@ func (rt *Router) diagnoseFailure(attempt *store.DeployAttempt, conds []reconcil
 		return nil
 	}
 	return &f
+}
+
+// rolloutConditions loads the app's rollout conditions; a failed lookup only
+// loses the rollout half of an outcome, so it is logged and skipped.
+func (rt *Router) rolloutConditions(ctx context.Context, name string) []reconcile.Condition {
+	if rt.deploys == nil {
+		return nil
+	}
+	conds, err := rt.deploys.GetConditions(ctx, applicationControllerName(name))
+	if err != nil {
+		rt.logger.Warn("api: load rollout conditions failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+	return conds
 }

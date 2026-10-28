@@ -1,6 +1,10 @@
 package api
 
 import (
+	"os"
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -78,4 +82,48 @@ func computeDeployOutcome(a store.DeployAttempt, newest bool, conds []reconcile.
 		}
 	}
 	return OutcomeInProgress
+}
+
+// applyDeployOutcome sets the outcome, its short reason and the crash-loop
+// threshold on res, so every response that carries an attempt agrees.
+func applyDeployOutcome(res *deployAttemptResource, a store.DeployAttempt, newest bool, conds []reconcile.Condition) {
+	res.Outcome = computeDeployOutcome(a, newest, conds)
+	res.OutcomeReason = deployOutcomeReason(a, res.Outcome, conds)
+	res.RolloutCrashLoopRestarts = failure.RolloutCrashLoopRestarts(os.LookupEnv)
+}
+
+func deployOutcomeReason(a store.DeployAttempt, outcome string, conds []reconcile.Condition) string {
+	switch outcome {
+	case OutcomeFailed:
+		if c := rolloutFailureCondition(a, conds); c != nil {
+			return outcomeReasonLine(c.Message, c.Reason)
+		}
+		return outcomeReasonLine(a.Error, "")
+	case OutcomeHealthy:
+		return "serving"
+	case OutcomeInProgress:
+		if a.Status == store.DeployAttemptStatusSucceeded {
+			return "rolling out"
+		}
+		return "building"
+	case OutcomeSuperseded:
+		return "replaced by a newer deploy"
+	case OutcomeCanceled:
+		return "canceled"
+	}
+	return ""
+}
+
+func outcomeReasonLine(s, fallback string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = s[:i]
+	}
+	if s == "" {
+		return fallback
+	}
+	if len(s) > 200 {
+		s = s[:200]
+	}
+	return s
 }
