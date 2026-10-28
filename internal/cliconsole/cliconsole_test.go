@@ -321,7 +321,7 @@ func TestRunnerScrubsEnvAndCapsOutput(t *testing.T) {
 	bin := writeFakeCLI(t, `/usr/bin/env; pwd; echo "args:$*"; exit 3`)
 	r := &Runner{Binary: bin, APIURL: "http://127.0.0.1:1", Timeout: 5 * time.Second, MaxOutputBytes: 1 << 20}
 	var out strings.Builder
-	res, err := r.Run(context.Background(), []string{"apps", "list"}, "tok", func(_ string, d []byte) error {
+	res, err := r.Run(context.Background(), []string{"apps", "list"}, "lr_session_tok", func(_ string, d []byte) error {
 		out.Write(d)
 		return nil
 	})
@@ -329,7 +329,7 @@ func TestRunnerScrubsEnvAndCapsOutput(t *testing.T) {
 		t.Fatalf("Run = %+v, %v", res, err)
 	}
 	got := out.String()
-	if strings.Contains(got, "should-not-leak") || !strings.Contains(got, "APP_API_TOKEN=tok") || !strings.Contains(got, "args:apps list") {
+	if strings.Contains(got, "should-not-leak") || strings.Contains(got, "lr_session_tok") || !strings.Contains(got, "APP_API_TOKEN=[redacted]") || !strings.Contains(got, "args:apps list") {
 		t.Fatalf("child output = %q", got)
 	}
 
@@ -367,5 +367,48 @@ func TestVetBinary(t *testing.T) {
 	}
 	if _, err := vetBinary(filepath.Join(t.TempDir(), "missing")); err == nil {
 		t.Fatal("missing binary accepted")
+	}
+}
+
+func TestSanitizeLine(t *testing.T) {
+	tok := "lr_sessiontoken123"
+	tests := []struct{ in, want string }{
+		{"\x1b[31mred\x1b[0m done", "red done"},
+		{"\x1b]0;title\x07after", "after"},
+		{"\x1b]8;;http://evil\x1b\\link\x1b]8;;\x1b\\", "link"},
+		{"a\u009b2Jb", "ab"},
+		{"bell\x07 and \x08back", "bell and back"},
+		{"token is " + tok, "token is [redacted]"},
+		{"DB_PASSWORD=hunter2 other=ok", "DB_PASSWORD=[redacted] other=ok"},
+		{`{"api_key": "abc123", "name": "web"}`, `{"api_key": "[redacted]", "name": "web"}`},
+		{"postgres://app:s3cret@db:5432/x", "postgres://app:[redacted]@db:5432/x"},
+		{"Authorization: Bearer abc.def", "Authorization: Bearer [redacted]"},
+		{"-----BEGIN RSA PRIVATE KEY-----", "[redacted]"},
+		{"plain output", "plain output"},
+	}
+	for _, tc := range tests {
+		if got := SanitizeLine(tc.in, 0, tok); got != tc.want {
+			t.Errorf("SanitizeLine(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+	if got := SanitizeLine(strings.Repeat("x", 50), 10); got != strings.Repeat("x", 10)+"..." {
+		t.Errorf("line cap: got %q", got)
+	}
+}
+
+func TestLineFilterJoinsSplitReads(t *testing.T) {
+	f := &lineFilter{maxLine: 64, secrets: []string{"lr_tok"}}
+	var out []byte
+	for _, chunk := range []string{"ok \x1b[3", "1mred\x1b[0m lr_", "tok\nsecond", " line"} {
+		out = append(out, f.write([]byte(chunk))...)
+	}
+	out = append(out, f.flush()...)
+	if got, want := string(out), "ok red [redacted]\nsecond line"; got != want {
+		t.Fatalf("filtered = %q, want %q", got, want)
+	}
+	long := &lineFilter{maxLine: 8}
+	got := string(long.write([]byte(strings.Repeat("y", 20)))) + string(long.write([]byte("zz\nnext\n")))
+	if got != "yyyyyyyy...\nnext\n" {
+		t.Fatalf("long line = %q", got)
 	}
 }

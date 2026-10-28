@@ -16,6 +16,7 @@ const (
 	EnvIdleTimeout    = "APP_CLI_CONSOLE_IDLE_TIMEOUT"
 	EnvCommandTimeout = "APP_CLI_CONSOLE_COMMAND_TIMEOUT"
 	EnvMaxOutput      = "APP_CLI_CONSOLE_MAX_OUTPUT_BYTES"
+	EnvMaxLine        = "APP_CLI_CONSOLE_MAX_LINE_BYTES"
 	EnvMaxSession     = "APP_CLI_CONSOLE_MAX_SESSION"
 	EnvOpensPerMinute = "APP_CLI_CONSOLE_OPENS_PER_MINUTE"
 	EnvBinary         = "APP_CLI_BINARY"
@@ -28,6 +29,7 @@ type Config struct {
 	CommandTimeout time.Duration
 	MaxSession     time.Duration
 	MaxOutputBytes int64
+	MaxLineBytes   int
 	OpensPerMinute int
 	RunAsUser      string
 }
@@ -48,6 +50,7 @@ func LoadConfig() Config {
 		CommandTimeout: envDuration(EnvCommandTimeout, 2*time.Minute),
 		MaxSession:     envDuration(EnvMaxSession, time.Hour),
 		MaxOutputBytes: int64(envInt(EnvMaxOutput, 1<<20)),
+		MaxLineBytes:   envInt(EnvMaxLine, 4096),
 		OpensPerMinute: envInt(EnvOpensPerMinute, 6),
 		RunAsUser:      envString(EnvRunAsUser, "nobody"),
 	}
