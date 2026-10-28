@@ -1,8 +1,12 @@
 # .gitlab-ci.yml
-# Build, push and deploy by digest. GitLab ID tokens are not accepted by the
-# control plane yet, so this uses an API token stored as a masked, protected
-# CI/CD variable LEVELRAIL_TOKEN (create it with: levelrail-cli tokens create --name gitlab --preset deployer --expires-in-days 90).
-# LEVELRAIL_API_URL is a plain CI/CD variable.
+# Build, push and deploy by digest with no stored Levelrail token: the job's
+# GitLab ID token is swapped for a deploy token that expires after 15 minutes.
+# One-time setup on the control plane:
+#   levelrail-cli apps github-actions trust add my-app --provider gitlab \
+#     --repo example/my-app --ref refs/heads/main --protected-ref
+# On a self-managed GitLab add --issuer https://gitlab.example.com.
+# LEVELRAIL_API_URL is a plain CI/CD variable holding the dashboard URL set in
+# Settings; it is also the audience of the ID token.
 stages: [deploy]
 
 deploy:
@@ -12,6 +16,9 @@ deploy:
   resource_group: production
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  id_tokens:
+    LEVELRAIL_ID_TOKEN:
+      aud: $LEVELRAIL_API_URL
   variables:
     APP: my-app
     IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
@@ -23,5 +30,7 @@ deploy:
     - PINNED=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE")
     - apk add --no-cache curl
     - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - LEVELRAIL_TOKEN=$(levelrail-cli apps github-actions token "$APP" --id-token-env LEVELRAIL_ID_TOKEN)
+    - export LEVELRAIL_TOKEN
     - levelrail-cli apps deploy "$APP" --image "$PINNED"
     - levelrail-cli apps wait "$APP" --timeout 5m
