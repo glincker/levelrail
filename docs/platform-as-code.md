@@ -137,6 +137,25 @@ The value is never read by apply. Apply records the reference (the same connecti
 
 `service.volumes` lists named volumes (`name`, `path`). Apply matches them by name through `PUT /api/v1/apps/{name}/volumes`: a new name is attached, a changed path is updated, and the plan shows `volumes.data: /data`. Host-path bind mounts are rejected, so the files can never mount a host directory. Volumes that the files do not list are kept, and detached only by prune on an app the source manages. Detaching never deletes the Docker volume or its data; deleting data is a separate, explicit action. Mounts are fixed when the container is created, so a volume change restarts the app unless `--no-deploy` is set, and the app shows a pending config change until then. An app document without a `volumes` key never touches the app's volumes.
 
+#### Published ports and restart
+
+`service.published_ports` binds ports straight on the host beside the routed `port`, for UDP services such as DNS or WireGuard. Each entry is `container_port`, `host_port` and `protocol` (`tcp`, the default, or `udp`), the same shape as app.yaml and the API. A port out of range, a protocol other than tcp or udp, or the same host port and protocol twice is rejected before the plan. Apply runs the same host port admission as `POST /api/v1/apps`: a port another app already publishes, a reserved port, or a service placed on a remote node fails the apply with the API's own message, and nothing is saved for that app.
+
+`service.restart` takes `no`, `on-failure` or `on-failure:N` for a service that runs to completion (a migration or seed job), and `always` or `unless-stopped`. The plan shows changes as `publishedPorts` and `restart`, an out-of-band change to either is drift, and revisions and rollbacks keep both. An app document without `published_ports` or `restart` leaves the live values alone; `published_ports: []` clears the ports.
+
+```yaml
+version: 1
+kind: App
+metadata: {name: dns}
+spec:
+  service:
+    build: {type: image, image: "ghcr.io/acme/dns:1.0.0"}
+    port: 8080
+    published_ports:
+      - {container_port: 53, host_port: 53, protocol: udp}
+      - {container_port: 53, host_port: 53, protocol: tcp}
+```
+
 #### Scheduled jobs
 
 `service.jobs` is the app.yaml jobs list. Apply matches jobs by name: a new name is created, a changed one is updated in place (its run history is kept). Jobs created in the dashboard or CLI that the files do not list are kept, and removed only by prune on an app the source manages. A job that the app's own app.yaml declares is left alone with a warning, so each job has one owner. An app document without a `jobs` key never touches the app's jobs.

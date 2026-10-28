@@ -170,6 +170,8 @@ A pin freezes a stack. While it is set, an apply is refused unless it is a rollb
 
 Drift is a difference between live state and the files, usually from a hand edit in the dashboard or the CLI.
 
+That includes an app's published ports and restart policy when the files declare them.
+
 A drift checker plans each stack's latest applied revision against live state every `APP_STACK_DRIFT_INTERVAL` (default 15m). Set it to `0` to turn the checker off. It reads live state with a read-only system token that lives `APP_STACK_DRIFT_TOKEN_TTL` (default 2h) and is rotated in the last quarter of that time; stale ones left by an earlier process are revoked at startup. The checker only reads. It never applies a plan or changes a resource.
 
 - **warn** (default): a drifted stack is recorded and raises an attention item, shown only to people who can read that stack.
