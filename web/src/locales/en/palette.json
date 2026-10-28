@@ -138,6 +138,7 @@
       "settings-account": "Your profile and password.",
       "settings-security": "Sessions, two-factor sign-in and secrets policy.",
       "settings-tokens": "Create and revoke API tokens.",
+      "settings-stacks": "Stacks kept in git: revisions, drift, plans and rollback.",
       "settings-stack-templates": "Starter stack bundles: fill in a few variables, preview the files and copy the CLI commands.",
       "settings-registry-credentials": "Credentials for private container registries, used to pull images.",
       "settings-backup-targets": "Where backups are stored.",
