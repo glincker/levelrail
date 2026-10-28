@@ -50,8 +50,10 @@ type Service struct {
 	Health         *Health           `yaml:"health,omitempty"`
 	Resources      *Resources        `yaml:"resources,omitempty"`
 	Env            map[string]EnvVar `yaml:"env,omitempty"`
-	Replicas       int               `yaml:"replicas,omitempty"`
-	Strategy       string            `yaml:"strategy,omitempty"`
+	// Files are inline text files written into the container before it starts.
+	Files    []File `yaml:"files,omitempty"`
+	Replicas int    `yaml:"replicas,omitempty"`
+	Strategy string `yaml:"strategy,omitempty"`
 	// Labels are arbitrary operator-supplied Docker labels applied to the
 	// service's container at create time, an escape hatch for tooling
 	// this platform doesn't know about (a monitoring agent or log

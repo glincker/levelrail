@@ -104,6 +104,8 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.Egress = toServiceEgressPolicy(*svc.Egress)
 	}
 
+	d.Files = toServiceFiles(name, svc.Files)
+
 	return d, nil
 }
 

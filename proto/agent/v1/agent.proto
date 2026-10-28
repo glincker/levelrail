@@ -439,6 +439,15 @@ message ContainerSpec {
   repeated string devices = 20;
   string user = 21;
   repeated BindMount bind_mounts = 22;
+  // files are inline files written into the container before it starts. Sent
+  // only to agents advertising "container_spec_files".
+  repeated FileMount files = 23;
+}
+
+message FileMount {
+  string path = 1;
+  uint32 mode = 2;
+  bytes content = 3;
 }
 
 message BindMount {

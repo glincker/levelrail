@@ -78,6 +78,10 @@
           "items": { "$ref": "#/$defs/volume" }
         },
         "hooks": { "$ref": "#/$defs/hooks" },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/file" }
+        },
         "jobs": {
           "type": "array",
           "items": { "$ref": "#/$defs/job" }
@@ -310,6 +314,17 @@
         "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
         "warnAfter": { "type": "string", "minLength": 2 },
         "enabled": { "type": "boolean" }
+      }
+    },
+    "file": {
+      "type": "object",
+      "required": ["path", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "content": { "type": "string" },
+        "mode": { "type": "string", "pattern": "^0?[0-7]{3,4}$" },
+        "secret": { "type": "boolean" }
       }
     },
     "hooks": {

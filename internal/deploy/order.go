@@ -115,6 +115,9 @@ func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.D
 	if held, err := p.holdForLock(ctx, req, desired); held || err != nil {
 		return held, err
 	}
+	if err := p.persistFileSecrets(ctx, &desired); err != nil {
+		return false, err
+	}
 	if req.Order != nil && p.ordered != nil {
 		return false, p.ordered.SaveDesiredServiceOrdered(ctx, desired, *req.Order, CheckOrder)
 	}

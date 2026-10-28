@@ -1404,6 +1404,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	spec.Ports = append(spec.Ports, streamPorts...)
 	spec.Env = env
+	if spec.Files, err = c.resolveFiles(ctx, desired, env); err != nil {
+		return fmt.Errorf("resolve files: %w", err)
+	}
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}

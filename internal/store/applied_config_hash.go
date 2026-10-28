@@ -63,6 +63,7 @@ func AppliedFields(svc DesiredService) map[string]string {
 		AppliedFieldBindAddr:    svc.BindAddress,
 		AppliedFieldDatabaseEnv: shortJSONHash(svc.DatabaseEnv),
 		AppliedFieldVolumes:     shortJSONHash(svc.Volumes),
+		AppliedFieldFiles:       filesAppliedHash(svc.Files),
 	}
 }
 

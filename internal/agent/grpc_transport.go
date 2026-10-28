@@ -100,6 +100,9 @@ func (t *GRPCTransport) Create(ctx context.Context, spec docker.ContainerSpec) (
 	if spec.NeedsSecurityCapability() && !t.caps.has(CapContainerSpecSecurity) {
 		return "", ErrAgentLacksCapability
 	}
+	if spec.NeedsFilesCapability() && !t.caps.has(CapContainerSpecFiles) {
+		return "", ErrAgentLacksCapability
+	}
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_Create{Create: &agentpb.CreateRequest{Spec: containerSpecToPB(spec)}},
 	})
