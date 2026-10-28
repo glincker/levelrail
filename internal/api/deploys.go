@@ -590,18 +590,74 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conditions, err := rt.deploys.GetConditions(r.Context(), applicationControllerName(name))
+	conditions, err := rt.appStatusConditions(r.Context(), *svc)
 	if err != nil {
 		rt.internalError(w, "api: deploy history failed", err, slog.String("name", name))
 		return
 	}
+	writeJSON(w, http.StatusOK, conditions)
+}
+
+// appStatusConditions is the one place the app's status conditions are
+// assembled, shared by the deploys and status routes.
+func (rt *Router) appStatusConditions(ctx context.Context, svc store.DesiredService) ([]reconcile.Condition, error) {
+	conditions, err := rt.deploys.GetConditions(ctx, applicationControllerName(svc.Name))
+	if err != nil {
+		return nil, err
+	}
 	// This app's own controller never sees CrossNodeIngress, reported
 	// under the ingress controller's own singleton name: see
 	// crossNodeIngressAppCondition's doc comment.
-	if cond := rt.crossNodeIngressAppCondition(r.Context(), *svc); cond != nil {
+	if cond := rt.crossNodeIngressAppCondition(ctx, svc); cond != nil {
 		conditions = append(conditions, *cond)
 	}
-	writeJSON(w, http.StatusOK, rt.markRestartRollingOut(r.Context(), *svc, conditions))
+	return rt.markRestartRollingOut(ctx, svc, conditions), nil
+}
+
+// handleAppStatus handles GET /api/v1/apps/{name}/status: the same
+// conditions as the deploys route plus the newest deploy's outcome, computed
+// by applyDeployOutcome so clients never re-derive the crash-loop rule.
+func (rt *Router) handleAppStatus(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: app status: load app failed", err, slog.String("name", name))
+		return
+	}
+	conditions, err := rt.appStatusConditions(r.Context(), *svc)
+	if err != nil {
+		rt.internalError(w, "api: app status failed", err, slog.String("name", name))
+		return
+	}
+	out := appStatusResource{Conditions: conditions}
+	if rt.deployAttempts != nil {
+		attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), name)
+		if err != nil {
+			rt.logger.Warn("api: app status: list attempts failed", slog.String("error", err.Error()), slog.String("name", name))
+		} else if len(attempts) > 0 {
+			var res deployAttemptResource
+			applyDeployOutcome(&res, attempts[0], true, conditions)
+			out.DeployID = attempts[0].ID
+			out.Outcome = res.Outcome
+			out.OutcomeReason = res.OutcomeReason
+			out.RolloutCrashLoopRestarts = res.RolloutCrashLoopRestarts
+		}
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// appStatusResource is the GET /apps/{name}/status body; the outcome fields
+// match the deploy responses and are empty when the app has no deploys.
+type appStatusResource struct {
+	Conditions               []reconcile.Condition `json:"conditions"`
+	DeployID                 string                `json:"deploy_id,omitempty"`
+	Outcome                  string                `json:"outcome,omitempty"`
+	OutcomeReason            string                `json:"outcome_reason,omitempty"`
+	RolloutCrashLoopRestarts int                   `json:"rollout_crash_loop_restarts,omitempty"`
 }
 
 // markRestartRollingOut replaces a stored Ready=True while the newest attempt

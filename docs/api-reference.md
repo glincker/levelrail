@@ -656,6 +656,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/scheduled-deploys | AbilityRead | handleListScheduledDeploys |
 | GET | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityRead | handleGetScheduledDeploy |
 | DELETE | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityDeploy | handleCancelScheduledDeploy |
+| GET | /api/v1/apps/{name}/status | AbilityRead | handleAppStatus |
 
 </Accordion>
 
