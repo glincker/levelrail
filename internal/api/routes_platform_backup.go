@@ -193,4 +193,5 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// uses, since this is an ordinary declarative resource, not a secret
 	// or network-exfiltration surface like egress-policy/storage.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppVolumes))
+	rt.registerAppFilesRoutes(mux)
 }

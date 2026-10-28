@@ -657,6 +657,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityRead | handleGetScheduledDeploy |
 | DELETE | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityDeploy | handleCancelScheduledDeploy |
 | GET | /api/v1/apps/{name}/status | AbilityRead | handleAppStatus |
+| GET | /api/v1/apps/{name}/files | AbilityRead | handleListAppFiles |
+| PUT | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleSetAppFile |
+| DELETE | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleDeleteAppFile |
 
 </Accordion>
 

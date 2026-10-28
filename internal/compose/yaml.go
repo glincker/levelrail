@@ -24,8 +24,8 @@ type rawFile struct {
 	// just their keys (same reasoning as Networks): File.HasSecrets/
 	// HasConfigs only need to know either block was declared at all, not
 	// its shape.
-	Secrets map[string]struct{} `yaml:"secrets"`
-	Configs map[string]struct{} `yaml:"configs"`
+	Secrets map[string]struct{}  `yaml:"secrets"`
+	Configs map[string]rawConfig `yaml:"configs"`
 }
 
 type rawService struct {
@@ -45,6 +45,7 @@ type rawService struct {
 	Deploy      *Deploy           `yaml:"deploy"`
 	Secrets     []any             `yaml:"secrets"`
 	Configs     []any             `yaml:"configs"`
+	Files       []spec.File       `yaml:"-"`
 	Profiles    []string          `yaml:"profiles"`
 	MemLimit    yamlScalarString  `yaml:"mem_limit"`
 	CPUs        yamlScalarString  `yaml:"cpus"`

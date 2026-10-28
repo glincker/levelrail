@@ -110,6 +110,8 @@ type Service struct {
 	// rejection reasoning, see validateComposeServices.
 	Secrets []any
 	Configs []any
+	// Files are inline configs: content translated to container files.
+	Files []spec.File
 	// Profiles gates the service behind compose profiles (ApplyProfiles).
 	Profiles []string
 	// MemLimit and CPUs are the mem_limit: and cpus: shorthands for a hard cap.
@@ -205,6 +207,9 @@ func Parse(data []byte) (*File, error) {
 		svc.DependsOnHealthy = healthy[name]
 		svc.DependsOnCompleted = completed[name]
 		f.Services[name] = Service(svc)
+	}
+	if err := resolveConfigFiles(f, raw.Configs); err != nil {
+		return nil, err
 	}
 	if len(raw.Networks) > 0 {
 		f.Networks = make([]string, 0, len(raw.Networks))

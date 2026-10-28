@@ -79,6 +79,9 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if domain := f.Domains[key]; domain != "" {
 			d.Domains = []string{domain}
 		}
+		for _, cf := range svc.Files {
+			d.Files = append(d.Files, store.ServiceFile{Path: cf.Path, Mode: cf.Mode, Content: cf.Content, Hash: store.FileContentHash(d.Name, cf.Path, cf.Content)})
+		}
 		for _, v := range svc.Volumes {
 			if v.HostPath != "" {
 				d.BindMounts = append(d.BindMounts, store.ServiceBindMount{
