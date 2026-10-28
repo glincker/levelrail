@@ -86,6 +86,9 @@ type ServiceHealth struct {
 	// "use the default". See internal/spec.Health.ReadyTimeout, its
 	// app.yaml source.
 	ReadyTimeout time.Duration `json:"ready_timeout,omitempty"`
+	// Restart is a compose file's explicit restart: "no" or "on-failure[:N]",
+	// which makes the service run to completion. Empty keeps it running.
+	Restart string `json:"restart,omitempty"`
 }
 
 // ServiceHooks holds a service's pre/post-deploy hook commands
