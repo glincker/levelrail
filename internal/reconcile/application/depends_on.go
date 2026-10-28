@@ -32,6 +32,12 @@ func (c *Controller) dependencyBlock(ctx context.Context, desired *store.Desired
 	}
 	for _, dep := range desired.DependsOn {
 		depName := desired.AppID + "-" + dep
+		if slices.Contains(desired.DependsOnCompleted(), dep) {
+			if res := c.completionBlock(ctx, desired, dep, depName); res != nil {
+				return res
+			}
+			continue
+		}
 		started, err := c.dependencyStarted(ctx, depName)
 		if err != nil {
 			res := notReady("DependencyCheckFailed", fmt.Errorf("check dependency %q: %w", dep, err))
@@ -89,9 +95,53 @@ func (c *Controller) dependencyStarted(ctx context.Context, depName string) (boo
 		return false, fmt.Errorf("list containers for %s: %w", depName, err)
 	}
 	for _, s := range states {
-		if s.Running && ownsContainer(depName, s.Name) {
+		if !ownsContainer(depName, s.Name) {
+			continue
+		}
+		// A one-shot that already exited 0 did start; requiring Running would block forever.
+		if s.Running || c.completedExit(ctx, s.Name) != nil {
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+const (
+	reasonWaitingForCompletion = "WaitingForDependencyCompleted"
+	reasonDependencyFailed     = "DependencyFailed"
+)
+
+// completionBlock gates condition: service_completed_successfully: nil once a
+// container of depName exited 0, a failure result when it exited nonzero.
+func (c *Controller) completionBlock(ctx context.Context, desired *store.DesiredService, dep, depName string) *reconcile.Result {
+	states, err := c.listPrefix(ctx, depName+"-")
+	if err != nil {
+		res := notReady("DependencyCheckFailed", fmt.Errorf("check dependency %q: %w", dep, err))
+		return &res
+	}
+	var failed *readinessCrashError
+	for _, s := range states {
+		if !ownsContainer(depName, s.Name) {
+			continue
+		}
+		if c.completedExit(ctx, s.Name) != nil {
+			return nil
+		}
+		if crash := c.exitedCrash(ctx, s.Name); crash != nil && failed == nil {
+			failed = crash
+		}
+	}
+	if failed != nil {
+		msg := fmt.Sprintf("dependency %q (%s) did not complete successfully: exit code %d", dep, depName, failed.exit.ExitCode)
+		if failed.exit.OOMKilled {
+			msg += " (OOM killed)"
+		}
+		c.traceDependencyWait(ctx, desired, dep, reasonDependencyFailed, msg)
+		return &reconcile.Result{Conditions: []reconcile.Condition{{
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reasonDependencyFailed, Message: msg,
+		}}}
+	}
+	res := waitingFor(dep, depName, reasonWaitingForCompletion, "run to completion")
+	c.traceDependencyWait(ctx, desired, dep, reasonWaitingForCompletion, res.Conditions[0].Message)
+	return res
 }

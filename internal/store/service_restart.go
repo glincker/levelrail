@@ -18,3 +18,11 @@ func IsRunToCompletionRestart(policy string) bool {
 func (s DesiredService) RunsToCompletion() bool {
 	return s.Health != nil && IsRunToCompletionRestart(s.Health.Restart)
 }
+
+// DependsOnCompleted lists the dependencies that must exit 0 before this service starts.
+func (s DesiredService) DependsOnCompleted() []string {
+	if s.Health == nil {
+		return nil
+	}
+	return s.Health.DependsOnCompleted
+}

@@ -125,6 +125,9 @@ type Service struct {
 	// DependsOnHealthy lists the DependsOn entries declared with
 	// condition: service_healthy, which wait for readiness, not just start.
 	DependsOnHealthy []string
+	// DependsOnCompleted lists the DependsOn entries declared with
+	// condition: service_completed_successfully, which wait for exit 0.
+	DependsOnCompleted []string
 }
 
 // PullPolicyAlways is pull_policy: always, the only non-default value
@@ -192,12 +195,13 @@ func Parse(data []byte) (*File, error) {
 		HasConfigs:  len(raw.Configs) > 0,
 		Unsupported: findUnsupported(data),
 	}
-	healthy, err := parseDependsOnConditions(data)
+	healthy, completed, err := parseDependsOnConditions(data)
 	if err != nil {
 		return nil, err
 	}
 	for name, svc := range raw.Services {
 		svc.DependsOnHealthy = healthy[name]
+		svc.DependsOnCompleted = completed[name]
 		f.Services[name] = Service(svc)
 	}
 	if len(raw.Networks) > 0 {

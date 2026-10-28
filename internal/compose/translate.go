@@ -109,6 +109,12 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			}
 			d.Health.Restart = policy
 		}
+		if len(svc.DependsOnCompleted) > 0 {
+			if d.Health == nil {
+				d.Health = &store.ServiceHealth{}
+			}
+			d.Health.DependsOnCompleted = svc.DependsOnCompleted
+		}
 
 		out = append(out, d)
 	}

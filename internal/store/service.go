@@ -89,6 +89,9 @@ type ServiceHealth struct {
 	// Restart is a compose file's explicit restart: "no" or "on-failure[:N]",
 	// which makes the service run to completion. Empty keeps it running.
 	Restart string `json:"restart,omitempty"`
+	// DependsOnCompleted is the subset of DependsOn declared with compose
+	// condition: service_completed_successfully: the dependency must exit 0 first.
+	DependsOnCompleted []string `json:"depends_on_completed,omitempty"`
 }
 
 // ServiceHooks holds a service's pre/post-deploy hook commands

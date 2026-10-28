@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -112,5 +113,64 @@ func TestRunToCompletion_UnsetRestartStillRestartsExitZero(t *testing.T) {
 	_, _ = c.Reconcile(context.Background())
 	if rt.startCalls == 0 {
 		t.Fatal("Start not called, want an unset restart policy to keep restarting an exited container")
+	}
+}
+
+func completedDependent() *store.DesiredService {
+	return &store.DesiredService{
+		Name: "myapp-web", AppID: "myapp", Image: "img:v1", Replicas: 1,
+		DependsOn: []string{"migrate"},
+		Health:    &store.ServiceHealth{DependsOnCompleted: []string{"migrate"}},
+	}
+}
+
+func TestDependsOnCompleted_WaitsForExitZero(t *testing.T) {
+	rt := newFakeRuntime(0)
+	dep := replicaContainerName("myapp-migrate", "img:v1", "", 0)
+	rt.seed(dep, true)
+	rt.setExitState(dep, &docker.ExitState{Running: true, StartedAt: time.Now()})
+	c := New("myapp-web", &fakeStore{svc: completedDependent()}, rt, WithStartupWatch(0))
+
+	res, _ := c.Reconcile(context.Background())
+	if cond := conditionOf(t, res); cond.Reason != reasonWaitingForCompletion || rt.createCalls != 0 {
+		t.Fatalf("while the dependency runs: condition = %+v, creates = %d, want %s and no create", cond, rt.createCalls, reasonWaitingForCompletion)
+	}
+
+	rt.crashContainer(dep, false, 0)
+	res, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("after exit 0: error = %v", err)
+	}
+	if cond := conditionOf(t, res); cond.Status != reconcile.ConditionTrue || rt.createCalls == 0 {
+		t.Fatalf("after exit 0: condition = %+v, creates = %d, want the dependent started", cond, rt.createCalls)
+	}
+}
+
+func TestDependsOnCompleted_NonzeroExitBlocksWithReason(t *testing.T) {
+	rt := newFakeRuntime(0)
+	dep := replicaContainerName("myapp-migrate", "img:v1", "", 0)
+	rt.seed(dep, false)
+	rt.crashContainer(dep, false, 2)
+	c := New("myapp-web", &fakeStore{svc: completedDependent()}, rt, WithStartupWatch(0))
+
+	res, _ := c.Reconcile(context.Background())
+	cond := conditionOf(t, res)
+	if cond.Reason != reasonDependencyFailed || rt.createCalls != 0 || !strings.Contains(cond.Message, "exit code 2") {
+		t.Fatalf("condition = %+v, creates = %d, want %s naming exit code 2 and no create", cond, rt.createCalls, reasonDependencyFailed)
+	}
+}
+
+// A plain service_started dependency on a one-shot that already finished must not block forever.
+func TestDependsOnStarted_CompletedDependencyCounts(t *testing.T) {
+	rt := newFakeRuntime(0)
+	dep := replicaContainerName("myapp-migrate", "img:v1", "", 0)
+	rt.seed(dep, false)
+	rt.crashContainer(dep, false, 0)
+	svc := completedDependent()
+	svc.Health = nil
+	c := New("myapp-web", &fakeStore{svc: svc}, rt, WithStartupWatch(0))
+
+	if _, err := c.Reconcile(context.Background()); err != nil || rt.createCalls == 0 {
+		t.Fatalf("error = %v, creates = %d, want the dependent started", err, rt.createCalls)
 	}
 }

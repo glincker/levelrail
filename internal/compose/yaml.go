@@ -54,6 +54,8 @@ type rawService struct {
 	StrategyReason string `yaml:"x-levelrail-strategy-reason"`
 	// DependsOnHealthy is filled by Parse from depends_on's long form.
 	DependsOnHealthy []string `yaml:"-"`
+	// DependsOnCompleted is filled by Parse from depends_on's long form.
+	DependsOnCompleted []string `yaml:"-"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own
