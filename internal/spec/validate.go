@@ -238,7 +238,13 @@ func (svc *Service) validatePorts(name string) error {
 	// each with its own port from the compose file's own ports:, so the
 	// wrapper itself has no single container to route to either.
 	if svc.Build.Type != BuildStatic && svc.Build.Type != BuildCompose && svc.Port == 0 {
-		return fmt.Errorf("spec: service %q: port is required unless build.type is %q or %q", name, BuildStatic, BuildCompose)
+		// A service that only publishes host ports (UDP DNS or VPN style) has no HTTP port.
+		if len(svc.PublishedPorts) == 0 {
+			return fmt.Errorf("spec: service %q: port is required unless build.type is %q or %q, or published_ports is set for a service with no HTTP port", name, BuildStatic, BuildCompose)
+		}
+		if len(svc.Domains) > 0 {
+			return fmt.Errorf("spec: service %q: port is required when domains are set, the proxy routes HTTP to it", name)
+		}
 	}
 	if svc.Build.Type == BuildStatic && svc.Port != 0 {
 		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, static sites have no running container to route to", name, BuildStatic)

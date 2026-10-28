@@ -119,3 +119,47 @@ func TestExportKeepsPublishedPortsAndRestart(t *testing.T) {
 		t.Fatalf("export does not rebuild: %v\n%s", issues, out)
 	}
 }
+
+const udpOnlyApp = `version: 1
+kind: App
+metadata: {name: wg}
+spec:
+  service:
+    build: {type: image, image: "ghcr.io/acme/wg:1"}
+    published_ports:
+      - {container_port: 51820, host_port: 51820, protocol: udp}
+`
+
+func TestUDPOnlyAppValidatesAppliesExportsAndRoundTrips(t *testing.T) {
+	if issues := buildIssues(t, udpOnlyApp); len(issues) > 0 {
+		t.Fatalf("udp-only app refused: %v", issues)
+	}
+	f := newFake()
+	applyAll(t, f, udpOnlyApp, Options{})
+	if p := planFor(t, f, udpOnlyApp, Options{}); p.Summary.Create+p.Summary.Update != 0 {
+		t.Fatalf("replan not empty: %+v", p.Changes)
+	}
+	out := exportAll(t, f)
+	if strings.Contains(out, "port: 0") || !strings.Contains(out, "protocol: udp") {
+		t.Fatalf("export wrong:\n%s", out)
+	}
+	if issues := buildIssues(t, out); len(issues) > 0 {
+		t.Fatalf("export does not rebuild: %v\n%s", issues, out)
+	}
+}
+
+func TestAppPortRuleFailuresAreClear(t *testing.T) {
+	withDomain := strings.Replace(udpOnlyApp, "    published_ports:", "    domains: [wg.example.com]\n    published_ports:", 1)
+	noPorts := strings.Split(udpOnlyApp, "    published_ports:")[0]
+	for name, tc := range map[string]struct{ src, want string }{
+		"domain without port":  {withDomain, "port is required when domains are set"},
+		"no port no published": {noPorts, "port is required unless"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			issues := buildIssues(t, tc.src)
+			if len(issues) == 0 || !strings.Contains(issues[0].Message, tc.want) {
+				t.Fatalf("issues = %v, want %q", issues, tc.want)
+			}
+		})
+	}
+}
