@@ -50,6 +50,12 @@ levelrail-cli templates deploy node-postgres-starter --name my-app
 </Tab>
 </Tabs>
 
+## Access details
+
+An app deployed from a template records its template id and returns it as `template_id` on `GET /api/v1/apps/{name}`. Its app page then shows an **Access details** card on the overview, and the app header menu has **Open access details**, which opens the same content in a dialog. Apps without a recorded id show it too when they carry generated `SERVICE_PASSWORD_*`, `SERVICE_USER_*` or `SERVICE_FQDN_*` keys or are trials.
+
+The card shows the app address, the generated credentials, and the template's setup notes. Credential values stay masked until you press reveal. Reveal follows the app's environment policy: it is unavailable when reveal is disabled or secrets are write only, may ask for step-up confirmation, and a denied reveal shows an error. The same flow is the app's environment page, or `levelrail-cli apps env get <app> <KEY> --reveal` with the `secrets:reveal` ability. The browse templates dialog shows the same result after a deploy.
+
 ## Caveats
 
 Each template's Compose body is checked structurally in the test suite (parse, validation, expansion into services, dependency cycles, health check presence). Templates are reference wiring, not production-ready apps: the `web`, `api` and `worker` services run a minimal server built from their base image's own runtime (Node's `http` module, Python's `http.server`) so that nothing needs installing at start. Replace them with your own image.
