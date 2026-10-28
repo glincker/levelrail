@@ -143,4 +143,17 @@ describe('deriveHeroStatus', () => {
             ).toBe(true)
           }
   })
+
+  it('prefers the server failed outcome over a local Reconciling read', () => {
+    const conditions = [cond({ Status: 'Unknown', Reason: 'Pending' })]
+    const withServer = deriveHeroStatus({
+      ...base,
+      conditions,
+      serverOutcome: { outcome: 'failed', reason: 'web keeps exiting' },
+    })
+    expect(withServer.label).toBe('Needs attention')
+    expect(withServer.title).toBe('web keeps exiting')
+    // Older server: no outcome, the local rule still applies.
+    expect(deriveHeroStatus({ ...base, conditions }).label).toBe('Starting up')
+  })
 })

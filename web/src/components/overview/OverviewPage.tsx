@@ -5,6 +5,7 @@ import {
   CopyIcon,
   RocketLaunchIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useAppStatus } from '../../queries/appStatus'
 import { useGitSource } from '../../queries/gitSources'
 import { useIsStaticSite } from '../../queries/staticSites'
 import { DropDeployCard } from '../dropdeploy/DropDeployCard'
@@ -58,6 +59,7 @@ export function OverviewPage({
   const git = useGitSource(app.name)
   const isStatic = useIsStaticSite(app.name)
   const uploadAttempt = git.data ? undefined : latestUpload(attempts)
+  const appStatus = useAppStatus(app.name).data
   const suggestions = useOverviewSuggestions(app, reading, latest, conditions)
   const setup = useSetupDismissed(app.name)
   const { data: traffic } = useAppTraffic(app.name)
@@ -197,6 +199,11 @@ export function OverviewPage({
         attempts={attempts}
         url={openUrl}
         attentionCount={suggestions.attention.length}
+        serverOutcome={
+          appStatus?.outcome
+            ? { outcome: appStatus.outcome, reason: appStatus.outcome_reason }
+            : undefined
+        }
         onDeploy={setDeployTab}
       />
       {pairing ? (
