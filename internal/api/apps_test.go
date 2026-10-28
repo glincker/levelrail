@@ -966,10 +966,7 @@ func TestHandleGetApp_HostPortRoundTrip(t *testing.T) {
 }
 
 // TestHandleUpdateApp_HostPort proves an update through the general PUT
-// endpoint both sets and clears a pinned host_port, the same
-// full-record-replace semantics Port itself already has (HostPort is an
-// ordinary field, not excluded from SaveDesiredService the way
-// NodeID/ProjectID/LogDrain are).
+// endpoint sets a pinned host_port and clears it on an explicit null.
 func TestHandleUpdateApp_HostPort(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -995,7 +992,7 @@ func TestHandleUpdateApp_HostPort(t *testing.T) {
 
 	recClear := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(recClear, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
-		`{"name":"web","image":"levelrail/web:1","port":3000}`))
+		`{"name":"web","image":"levelrail/web:1","port":3000,"host_port":null}`))
 	if recClear.Code != http.StatusOK {
 		t.Fatalf("PUT status = %d, body = %s", recClear.Code, recClear.Body.String())
 	}
@@ -1033,9 +1030,8 @@ func TestHandleGetApp_BindAddressDefaultsToPrivate(t *testing.T) {
 }
 
 // TestHandleUpdateApp_BindAddress proves an update through the general
-// PUT endpoint sets an explicit bind_address, and that omitting it again
-// falls back to the default, the same full-record-replace semantics
-// TestHandleUpdateApp_HostPort already establishes for host_port.
+// PUT endpoint sets an explicit bind_address, and that sending it empty falls
+// back to the default while omitting it keeps the stored value.
 func TestHandleUpdateApp_BindAddress(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -1061,7 +1057,7 @@ func TestHandleUpdateApp_BindAddress(t *testing.T) {
 
 	recClear := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(recClear, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
-		`{"name":"web","image":"levelrail/web:1","port":3000}`))
+		`{"name":"web","image":"levelrail/web:1","port":3000,"bind_address":""}`))
 	if recClear.Code != http.StatusOK {
 		t.Fatalf("PUT status = %d, body = %s", recClear.Code, recClear.Body.String())
 	}

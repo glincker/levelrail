@@ -26,6 +26,7 @@ var resourceRefTags = map[string]bool{
 // need no per-reference check. Every entry carries its reason.
 var bodyRefAuthzAllowlist = map[string]string{ //nolint:gosec // reasons, not credentials
 	"handleUpdateApp":           "node_id, project_id, environment_id and database_env are response-only on update; existing values are kept",
+	"decodeAppUpdate":           "pure decoder; handleUpdateApp keeps stored placement and refs and takes no new reference from the body",
 	"handlePreflightApp":        "only required_env is read from the body; placement comes from the stored app",
 	"handleCreateToken":         "resolveTokenScope only narrows to a team and project the minting user already belongs to",
 	"handleIaCExport":           "runs through loopbackDoer, so every read re-enters the API with the caller's credentials",
