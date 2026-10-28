@@ -81,6 +81,9 @@ export interface DeployAttempt {
   /** Server classification, e.g. "rollback" for a redeploy of an earlier image. */
   trigger?: string
   rollout_state?: 'serving' | 'mismatch' | 'superseded'
+  /** Single-deploy endpoint only: the server's computed deploy outcome. */
+  outcome?:
+    'in_progress' | 'healthy' | 'failed' | 'canceled' | 'superseded' | 'blocked'
   running_image_id?: string
   sequence?: number
   /** Why the attempt was held, superseded, or allowed through a freeze. */

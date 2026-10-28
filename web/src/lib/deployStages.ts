@@ -57,6 +57,18 @@ const ROLLOUT_FAILURE_REASONS = [
 // Deployed. Treating only "Deployed" as done here left every such
 // redeploy (e.g. re-triggering the same image tag) stuck on "running"
 // forever, since that condition transition never occurs.
+// Mirrors the server default of APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS; used
+// only when the attempt carries no server outcome (older servers, list rows).
+const CRASHLOOP_RESTARTS = 2
+const CRASHLOOP_REASON = 'CrashLoopBackOff'
+const CRASHLOOP_MESSAGE_RE = /\((\d+) restarts\), next restart in (\S+)/
+
+function isRolloutCrashLoop(c: ReconcileCondition): boolean {
+  if (c.Reason !== CRASHLOOP_REASON) return false
+  const m = CRASHLOOP_MESSAGE_RE.exec(c.Message)
+  return m !== null && Number(m[1]) >= CRASHLOOP_RESTARTS
+}
+
 const ROLLOUT_DONE_REASONS = ['Deployed', 'AlreadyRunning']
 
 // Fixed-length tuple, not DeployStage[]: always exactly Build then Roll
@@ -136,6 +148,9 @@ function computeRolloutStage(
   // build finished, so a condition transition at or after finished_at
   // reflects the reconciler reacting to this exact attempt's desired
   // state, not one left over from an earlier deploy.
+  if (attempt.outcome === 'healthy') {
+    return { key, label, status: 'done', startedAt: attempt.finished_at }
+  }
   const referenceMs = attempt.finished_at
     ? new Date(attempt.finished_at).getTime()
     : null
@@ -153,6 +168,26 @@ function computeRolloutStage(
       detail: failedCondition.Message,
       startedAt: attempt.finished_at,
       finishedAt: failedCondition.LastTransitionTime,
+    }
+  }
+
+  // A serving attempt already rolled out; a later crash loop is steady state.
+  const crashLoop =
+    attempt.rollout_state === 'serving'
+      ? undefined
+      : conditions.find(
+          (c) =>
+            isRolloutCrashLoop(c) &&
+            isAtOrAfter(c.LastTransitionTime, referenceMs),
+        )
+  if (attempt.outcome === 'failed' || crashLoop) {
+    return {
+      key,
+      label,
+      status: 'failed',
+      detail: crashLoop?.Message,
+      startedAt: attempt.finished_at,
+      finishedAt: crashLoop?.LastTransitionTime,
     }
   }
 
