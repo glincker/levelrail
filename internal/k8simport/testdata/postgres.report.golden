@@ -1,0 +1,2 @@
+changes-behavior StatefulSet/postgres spec.template.spec.containers[postgres].volumeMounts[scratch]: emptyDir becomes a persistent named volume: data now survives restarts
+ignored-safe PersistentVolumeClaim/data spec.resources.requests.storage: named volumes have no size request, the host disk is used

@@ -1,0 +1,4 @@
+changes-behavior CronJob/nightly-report kind: the app also runs the command once when deployed, then the schedule runs it in fresh containers
+changes-behavior CronJob/nightly-report ports: no port declared and every app needs one: 8080 is a placeholder, nothing has to listen on it
+changes-behavior CronJob/nightly-report spec.template.spec.containers[report].command: command replaces the image CMD here, the image ENTRYPOINT still runs first
+changes-behavior Job/migrate ports: no port declared and every app needs one: 8080 is a placeholder, nothing has to listen on it

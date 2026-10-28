@@ -1,0 +1,34 @@
+version: 1
+kind: Project
+metadata:
+  name: kubernetes
+spec: {}
+---
+version: 1
+kind: Environment
+metadata:
+  name: default
+spec:
+  project: kubernetes
+---
+version: 1
+kind: App
+metadata:
+  name: postgres
+spec:
+  project: kubernetes
+  environment: default
+  service:
+    build:
+      type: image
+      image: postgres:16
+    port: 5432
+    replicas: 1
+    env:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: {secretRef: POSTGRES_PASSWORD}
+    volumes:
+      - name: data
+        path: /var/lib/postgresql/data
+      - name: scratch
+        path: /tmp
