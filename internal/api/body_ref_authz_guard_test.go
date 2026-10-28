@@ -31,6 +31,7 @@ var bodyRefAuthzAllowlist = map[string]string{ //nolint:gosec // reasons, not cr
 	"handleIaCExport":           "runs through loopbackDoer, so every read re-enters the API with the caller's credentials",
 	"handleStepUp":              "a step-up grant confers no access; the protected route still authorizes the app",
 	"handleStepUpPasskeyFinish": "a step-up grant confers no access; the protected route still authorizes the app",
+	"handleCIOIDCExchange":      "unauthenticated by design; the app name only selects trusts, and a token is minted only after the CI provider JWT verifies against a trust of that app",
 	"parseDeploymentQuery":      "pure parser; handleListDeployments intersects the filter with visibleAppNames",
 }
 
