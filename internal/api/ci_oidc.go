@@ -41,6 +41,11 @@ type CIClaims struct {
 	Ref         string
 	Environment string
 	Subject     string
+	// Provider is empty for GitHub; Issuer, RefProtected and ContextIDs are set only by the GitLab and CircleCI verifiers.
+	Provider     string
+	Issuer       string
+	RefProtected bool
+	ContextIDs   []string
 }
 
 // CIIDTokenVerifier checks a CI identity token's signature, issuer, audience and expiry.
