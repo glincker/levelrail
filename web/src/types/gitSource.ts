@@ -184,6 +184,8 @@ export interface GitSourceResource {
   deploy_paths: string[]
   deploy_paths_ignore: string[]
   report_status: boolean
+  wait_for_ci?: boolean
+  ci_required_checks?: string[]
   created_at: string
   updated_at: string
 }
@@ -199,6 +201,8 @@ export interface GitDeploySettings {
   deploy_paths: string[]
   deploy_paths_ignore: string[]
   report_status: boolean
+  wait_for_ci?: boolean
+  ci_required_checks?: string[]
 }
 
 export type SetGitDeploySettingsRequest = Partial<GitDeploySettings>
