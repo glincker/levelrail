@@ -12,16 +12,25 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface CITrust {
   id: string
+  provider: string
+  issuer?: string
   repository: string
   ref_pattern: string
   environment: string
+  protected_ref_only?: boolean
   created_at: string
+  // Set by the API on create when the trust is less strict than the default.
+  warning?: string
 }
 
 export interface CITrustInput {
+  provider: string
+  issuer?: string
+  org_id?: string
   repository: string
   ref_pattern: string
   environment: string
+  protected_ref_only?: boolean
 }
 
 export interface CIWorkflow {

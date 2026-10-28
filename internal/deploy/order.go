@@ -77,6 +77,16 @@ func WithOrderedStore(s OrderedStore) Option {
 	return func(p *Pipeline) { p.ordered = s }
 }
 
+// PortAdmitter checks a spec-built service's host ports against every other
+// claim on this server; release runs after the save, like the API's own check.
+type PortAdmitter interface {
+	AdmitPublishedPorts(ctx context.Context, desired store.DesiredService) (release func(), err error)
+}
+
+// SetPortAdmitter installs the admitter after construction, since the API
+// router that implements it is built after the pipeline.
+func (p *Pipeline) SetPortAdmitter(a PortAdmitter) { p.ports = a }
+
 // WithAttemptRecorder records resolved digests on the request's attempt.
 func WithAttemptRecorder(r AttemptRecorder) Option {
 	return func(p *Pipeline) { p.attempts = r }
@@ -87,6 +97,17 @@ func WithAttemptRecorder(r AttemptRecorder) Option {
 func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.DesiredService) (held bool, err error) {
 	if err := p.applyAutoscaleReplicas(ctx, req, &desired); err != nil {
 		return false, err
+	}
+	// A preview runs beside the main app, so it must not bind the same host ports.
+	if req.Preview {
+		desired.HostPort, desired.PublishedPorts = nil, nil
+	}
+	if p.ports != nil && (desired.HostPort != nil || len(desired.PublishedPorts) > 0) {
+		release, err := p.ports.AdmitPublishedPorts(ctx, desired)
+		if err != nil {
+			return false, fmt.Errorf("host ports: %w", err)
+		}
+		defer release()
 	}
 	if err := commitPoint(req); err != nil {
 		return false, err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 	"testing"
 
 	"google.golang.org/protobuf/proto"
@@ -59,7 +60,8 @@ func TestCreateRefusedForAgentWithoutCapability(t *testing.T) {
 
 func TestLocalAgentInfoAdvertisesSecurityCapability(t *testing.T) {
 	caps := LocalAgentInfo().GetCapabilities()
-	if len(caps) != 1 || caps[0] != CapContainerSpecSecurity {
-		t.Fatalf("caps %v", caps)
+	want := []string{CapContainerSpecSecurity, CapExitTimes}
+	if !slices.Equal(caps, want) {
+		t.Fatalf("caps %v, want exactly %v", caps, want)
 	}
 }

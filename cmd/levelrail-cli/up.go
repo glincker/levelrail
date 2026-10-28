@@ -26,13 +26,20 @@ type upResult struct {
 	URL       string   `json:"url,omitempty"`
 	Plan      []string `json:"plan,omitempty"`
 	DryRun    bool     `json:"dry_run,omitempty"`
+	DeployID  string   `json:"deploy_id,omitempty"`
+	Status    string   `json:"status,omitempty"`
+	// Certificate is issued, pending or failed for the primary domain; empty when unknown.
+	Certificate string                   `json:"certificate,omitempty"`
+	Failure     *apiclient.DeployFailure `json:"failure,omitempty"`
+	Error       string                   `json:"error,omitempty"`
 }
 
 // runUp implements "up [dir]": infer an app from the directory, then create or update it, connect databases, build and add the domain.
 func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "up", "print the result as JSON to stdout and nothing else", stderr)
 	var f upFlags
-	var dryRun, yes bool
+	var dryRun, yes, allowUnpushed, noWait bool
+	var timeoutStr string
 	f.secrets = map[string]string{}
 	fs.StringVar(&f.name, "name", "", "app name (default: the directory name)")
 	fs.IntVar(&f.port, "port", 0, "container port (default: from the app spec, the Dockerfile or the detected framework)")
@@ -49,6 +56,9 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	fs.StringVar(&f.ref, "ref", "", "git branch to build (default: the current branch, then main)")
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var as KEY=VALUE, repeatable, for a required secret the app spec declares")
 	fs.BoolVar(&dryRun, "dry-run", false, "print the inferred settings and the exact commands, change nothing")
+	fs.BoolVar(&allowUnpushed, "allow-unpushed", false, "build even when the remote branch lacks your local commit")
+	fs.BoolVar(&noWait, "no-wait", false, "return once the build is started instead of waiting for the deploy to become healthy")
+	fs.StringVar(&timeoutStr, "timeout", defaultDeployUploadWait, "stop waiting for the deploy after this long (the deploy itself keeps running)")
 	fs.BoolVar(&yes, "yes", false, "do not ask for confirmation on a terminal")
 	fs.BoolVar(&yes, "y", false, "shorthand for --yes")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, upUsage(prog)) }
@@ -74,6 +84,11 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 		return reportError(stdout, stderr, jsonOut, newValidationError("--strategy must be rolling, recreate or blue-green, got %q", f.strategy))
 	}
 
+	timeout, err := parseDurationOrZero(timeoutStr)
+	if err != nil || timeout <= 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--timeout must be a valid positive duration, got %q", timeoutStr))
+	}
+
 	inf, err := inferUp(dir, f, detectGitAt(dir))
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -97,15 +112,40 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 		return exitUsage
 	}
 
+	chk := checkPushed(ctx, dir, inf, f.ref != "")
+	if chk.Warning != "" && !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "warning: %s\n", chk.Warning)
+	}
+	if chk.Problem != "" && !allowUnpushed {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%s", chk.Problem))
+	}
+
 	if err := executeUp(ctx, client, prog, inf, existing, exists, &result, stderr, jsonOut); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+	waited := !noWait
+	if waited {
+		if err := waitUpDeploy(ctx, client, &result, timeout, stderr, jsonOut); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+	}
+	code := writeScheduledTaskResult(stdout, stderr, of, result, func() {
+		if waited {
+			if result.Status == apiclient.DeployOutcomeHealthy && result.URL != "" {
+				_, _ = fmt.Fprintf(stdout, "%s\n", result.URL)
+			}
+			printUpWaitVerdict(stderr, &result)
+			return
+		}
 		if result.URL != "" {
 			_, _ = fmt.Fprintf(stdout, "%s\n", result.URL)
 		}
 		_, _ = fmt.Fprintf(stderr, "follow it with \"%s apps deploys wait %s\", logs with \"%s apps logs %s\"\n", prog, result.App, prog, result.App)
 	})
+	if code != exitOK || !waited {
+		return code
+	}
+	return upWaitExit(result.Status)
 }
 
 func lookupApp(ctx context.Context, client *Client, name string) (appResource, bool, error) {
@@ -296,9 +336,11 @@ func executeUp(ctx context.Context, client *Client, prog string, inf upInference
 		}
 	case plan.Build != nil:
 		say("building %q from %s (ref %s)", name, plan.Build.RepoURL, plan.Build.Ref)
-		if _, err := client.TriggerBuild(ctx, name, *plan.Build); err != nil {
+		trig, err := client.TriggerBuild(ctx, name, *plan.Build)
+		if err != nil {
 			return fmt.Errorf("app %q is set up but the build did not start, re-run \"%s up\" to retry: %w", name, prog, err)
 		}
+		result.DeployID = trig.ID
 	}
 
 	if inf.Domain != "" && !hasDomain(existing.Domains, inf.Domain) {
@@ -416,6 +458,9 @@ command. It reads app.yaml when there is one, otherwise detects the stack
 (Dockerfile, Node, Go, Python, Java or a static site), infers the name,
 port and build, then creates or updates the app, connects any databases,
 builds from the directory's git remote "origin" and adds the domain.
+It then follows the first deploy until the app is healthy and exits like
+"deploy": 0 healthy, %[6]d not healthy, %[7]d timed out. --no-wait returns
+as soon as the build is started. The branch must be pushed first.
 Running it again updates the same app and rebuilds; nothing is duplicated.
 Every value is printed with where it came from. Precedence: flag, app
 spec, detection, default.
@@ -432,6 +477,9 @@ Flags:
   --repo string       git repository URL (default: the remote "origin")
   --ref string        git branch (default: the current branch, then main)
   --secret KEY=VALUE  secret env var, repeatable, for a required secret the spec declares
+  --allow-unpushed    build even when the remote branch lacks your local commit
+  --no-wait           return once the build is started instead of waiting for a healthy deploy
+  --timeout string    stop waiting after this long, the deploy keeps running (default %[5]s)
   --dry-run           print the inferred settings and the exact commands, change nothing
   --yes, -y           do not ask for confirmation on a terminal
   --token string      API token (default: %[2]s env var, then the credentials file)
@@ -444,5 +492,5 @@ Flags:
 
 Example:
   %[1]s up --with postgres --domain app.example.com
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, envAPIToken, envAPIURL, defaultAPIURL, defaultDeployUploadWait, exitDeployNotHealthy, exitDeployTimeout)
 }

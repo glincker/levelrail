@@ -233,3 +233,17 @@ func TestConfigFromEnv(t *testing.T) {
 		}
 	}
 }
+
+func TestCloneDropsHostBindings(t *testing.T) {
+	hp := 8080
+	app := store.DesiredService{Name: "vpn", Image: "vpn:ddddddd", HostPort: &hp,
+		PublishedPorts: []store.PublishedPort{{ContainerPort: 51820, HostPort: 51820, Protocol: "udp"}}}
+	w := Plan(app, []store.DeployAttempt{attempt(5, store.DeployAttemptStatusSucceeded, "ddddddd")}, nil, 3)
+	if len(w) != 1 {
+		t.Fatalf("plan = %+v, want one retained deploy", w)
+	}
+	svc := Clone(app, w[0], "d5.example.test")
+	if svc.HostPort != nil || len(svc.PublishedPorts) != 0 {
+		t.Fatalf("clone host_port = %v, published_ports = %+v, want neither", svc.HostPort, svc.PublishedPorts)
+	}
+}

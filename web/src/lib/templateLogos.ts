@@ -47,6 +47,8 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   weaviate: () => import('@thesvg/react/weaviate'),
   woodpecker: () => import('@thesvg/react/woodpecker'),
   'actual-budget': () => import('@thesvg/react/actual-budget'),
+  authelia: () => import('@thesvg/react/authelia'),
+  rsshub: () => import('@thesvg/react/rsshub'),
   'adguard-home': () => import('@thesvg/react/adguard'),
   adminer: () => import('@thesvg/react/adminer'),
   answer: () => import('@thesvg/react/answer'),
@@ -413,6 +415,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   zipline: () => import('@thesvg/react/zipline'),
   'obsidian-livesync': () => import('@thesvg/react/obsidian'),
   'cloudflare-ddns': () => import('@thesvg/react/cloudflare'),
+  'rustdesk-server': () => import('@thesvg/react/rustdesk'),
 }
 
 export type LogoSurface = 'light' | 'dark'
@@ -496,6 +499,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale'.split(
     ' ',
   )

@@ -21,6 +21,7 @@ type fakeUFW struct {
 	active    bool
 	failOn    string
 	installed bool
+	rules     string
 }
 
 func (f *fakeUFW) run(_ context.Context, name string, args ...string) ([]byte, error) {
@@ -29,7 +30,7 @@ func (f *fakeUFW) run(_ context.Context, name string, args ...string) ([]byte, e
 	call := name + " " + strings.Join(args, " ")
 	if len(args) > 0 && args[0] == "status" {
 		if f.active {
-			return []byte("Status: active\nDefault: deny (incoming), allow (outgoing), disabled (routed)\n"), nil
+			return []byte("Status: active\nDefault: deny (incoming), allow (outgoing), disabled (routed)\n" + f.rules), nil
 		}
 		return []byte("Status: inactive\n"), nil
 	}
@@ -168,5 +169,63 @@ func TestHostFirewallRequired_IncludesPublishedPorts(t *testing.T) {
 	}
 	if !slices.Contains(got, 25565) || slices.Contains(got, 9999) {
 		t.Errorf("required ports = %v, want 25565 (public) and not 9999 (loopback)", got)
+	}
+}
+
+func TestHostFirewallStatus_ListsUDPPublishedPorts(t *testing.T) {
+	f := &fakeUFW{installed: true, active: true, rules: "To Action From\n53/udp ALLOW IN Anywhere\n8080 ALLOW IN Anywhere\n"}
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithHostFirewallRunner(f.run, f.lookPath))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveApp(t.Context(), store.App{ID: "dns", Name: "dns", CreatedAt: "2026-01-01T00:00:00Z", UpdatedAt: "2026-01-01T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	pinned := 8080
+	for _, svc := range []store.DesiredService{
+		{Name: "dns-server", AppID: "dns", Image: "img", Port: 8080, HostPort: &pinned, BindAddress: bindaddr.Public, PublishedPorts: []store.PublishedPort{
+			{ContainerPort: 53, HostPort: 53, Protocol: "udp"}, {ContainerPort: 51820, HostPort: 51820, Protocol: "udp"},
+		}},
+		{Name: "local", Image: "img", Port: 80, PublishedPorts: []store.PublishedPort{{ContainerPort: 5353, HostPort: 5353, Protocol: "udp"}}},
+	} {
+		if err := db.SaveDesiredService(t.Context(), svc); err != nil {
+			t.Fatalf("save %s: %v", svc.Name, err)
+		}
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/firewall/host", ""))
+	var res hostFirewallResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	want := []hostFirewallPublishedPort{
+		{Port: 8080, Protocol: "tcp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true},
+		{Port: 53, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true},
+		{Port: 51820, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: false},
+		{Port: 5353, Protocol: "udp", App: "local", Service: "local", BindAddress: bindaddr.Private, Allowed: false},
+	}
+	for _, w := range want {
+		if !slices.Contains(res.PublishedPorts, w) {
+			t.Errorf("published_ports = %+v, missing %+v", res.PublishedPorts, w)
+		}
+	}
+	if !slices.Contains(res.Required, hostFirewallPort{Port: 51820, Protocol: "udp"}) || slices.Contains(res.Required, hostFirewallPort{Port: 5353, Protocol: "udp"}) {
+		t.Errorf("required = %+v, want 51820/udp (public) and not 5353/udp (loopback)", res.Required)
+	}
+}
+
+func TestUFWAllowed(t *testing.T) {
+	text := "22/tcp ALLOW IN Anywhere\n53 ALLOW IN Anywhere\n60000:61000/udp ALLOW IN Anywhere\n80,443/tcp ALLOW IN Anywhere\n9000/udp DENY IN Anywhere\n"
+	cases := []struct {
+		port  int
+		proto string
+		want  bool
+	}{
+		{22, "tcp", true}, {22, "udp", false}, {53, "udp", true}, {53, "tcp", true},
+		{60500, "udp", true}, {60500, "tcp", false}, {443, "tcp", true}, {9000, "udp", false},
+	}
+	for _, c := range cases {
+		if got := ufwAllowed(text, c.port, c.proto); got != c.want {
+			t.Errorf("ufwAllowed(%d/%s) = %v, want %v", c.port, c.proto, got, c.want)
+		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 type (
 	Client                           = apiclient.Client
 	appResource                      = apiclient.AppResource
+	publishedPort                    = apiclient.PublishedPort
 	deployTriggerResult              = apiclient.DeployTriggerResult
 	deployApprovalResource           = apiclient.DeployApprovalResource
 	deployApprovalDecisionResult     = apiclient.DeployApprovalDecisionResult

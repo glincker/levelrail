@@ -17,25 +17,25 @@ services:
 `,
 		},
 		{
-			name: "restart: no is the platform's own default: no note",
+			name: "restart: no notes the service runs to completion",
 			yaml: `
 services:
   web:
     image: nginx:latest
     restart: "no"
 `,
+			wants: []Notice{
+				{Level: NoticeLevelNote, Message: `service "web": restart: "no" runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff`},
+			},
 		},
 		{
-			name: "restart: always notes the reconciler owns lifecycle",
+			name: "restart: always matches the platform default: no note",
 			yaml: `
 services:
   web:
     image: nginx:latest
     restart: always
 `,
-			wants: []Notice{
-				{Level: NoticeLevelNote, Message: `service "web": restart: "always" is parsed but not applied; Levelrail's reconciler keeps containers running, not Docker's native restart policy`},
-			},
 		},
 		{
 			name: "top-level networks: warns even with no per-service assignment",
@@ -75,8 +75,7 @@ services:
     restart: unless-stopped
 `,
 			wants: []Notice{
-				{Level: NoticeLevelNote, Message: `service "web": restart: "on-failure:3" is parsed but not applied; Levelrail's reconciler keeps containers running, not Docker's native restart policy`},
-				{Level: NoticeLevelNote, Message: `service "worker": restart: "unless-stopped" is parsed but not applied; Levelrail's reconciler keeps containers running, not Docker's native restart policy`},
+				{Level: NoticeLevelNote, Message: `service "web": restart: "on-failure:3" runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff (N is accepted and ignored, there is no retry cap)`},
 				{Level: NoticeLevelWarning, Message: "networks: is declared but not enforced; every service in this app shares one network and can already reach every other service, regardless of any networks: assignment"},
 			},
 		},

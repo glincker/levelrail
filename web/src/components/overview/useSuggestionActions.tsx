@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowClockwiseIcon,
@@ -11,7 +12,7 @@ import {
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { toast } from '@/components/ui/toast'
-import { useRestartApp } from '../../queries/apps'
+import { useAppPower } from '../apps/useAppPower'
 import { useApplyPending } from '../../queries/appTimeline'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployAttempt } from '../../types/deployAttempt'
@@ -30,8 +31,9 @@ const ICONS: Record<SuggestionActionKind, React.ReactNode> = {
 }
 
 export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
-  const restart = useRestartApp()
+  const power = useAppPower(app)
   const applyPending = useApplyPending(app.name)
   const [fixOpen, setFixOpen] = useState(false)
   const name = app.name
@@ -40,16 +42,11 @@ export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {
 
   const run: Record<SuggestionActionKind, () => void> = {
     open_health: go('/apps/$name/health'),
-    restart: () =>
-      restart.mutate(name, {
-        onSuccess: () =>
-          toast.add({ title: `Restarting "${name}".`, type: 'success' }),
-        onError,
-      }),
+    restart: power.restart,
     apply_pending: () =>
       applyPending.mutate(undefined, {
         onSuccess: () =>
-          toast.add({ title: 'Applying changes.', type: 'success' }),
+          toast.add({ title: t('appPower.applying'), type: 'success' }),
         onError,
       }),
     open_logs: go('/apps/$name/logs'),
@@ -68,10 +65,16 @@ export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {
     connect_git: go('/apps/$name/source'),
   }
   const pending: Partial<Record<SuggestionActionKind, boolean>> = {
-    restart: restart.isPending,
+    restart: power.restarting,
     apply_pending: applyPending.isPending,
   }
-  return { run, pending, fixOpen, setFixOpen }
+  return {
+    run,
+    pending,
+    fixOpen,
+    setFixOpen,
+    confirmDialog: power.confirmDialog,
+  }
 }
 
 export function toSuggestionItems(

@@ -293,3 +293,23 @@ func TestApprovalRowWithoutRequesterIDUsesTokenOwner(t *testing.T) {
 		t.Fatalf("same owner approve = %d", code)
 	}
 }
+
+// A reject that read the revision as pending must not fail it once an
+// approve has moved it to applying: the apply is already running.
+func TestApprovalRejectLosesToInFlightApply(t *testing.T) {
+	rt, db, cookie, approver := approvalFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	id := mustStackID(t, db)
+	stackRejectAfterRead = func() {
+		if err := db.SetStackRevisionStatus(t.Context(), id, 1, store.StackRevApplying, nil, time.Now()); err != nil {
+			t.Errorf("move to applying: %v", err)
+		}
+	}
+	t.Cleanup(func() { stackRejectAfterRead = nil })
+	if code := tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/reject", `{"reason":"late"}`, nil); code != http.StatusConflict {
+		t.Fatalf("reject of an applying revision = %d, want 409", code)
+	}
+	if rev, _ := db.GetStackRevision(t.Context(), id, 1); rev.Status != store.StackRevApplying {
+		t.Fatalf("status = %q, want applying", rev.Status)
+	}
+}

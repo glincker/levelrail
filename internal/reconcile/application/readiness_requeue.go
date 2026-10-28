@@ -110,7 +110,7 @@ func WithReadinessRequeue(p *PendingReadiness, delay time.Duration) Option {
 // defersReadiness reports whether this run probes once instead of blocking.
 // A release with nothing to probe keeps its short startup watch.
 func (c *Controller) defersReadiness(desired *store.DesiredService) bool {
-	return c.deferReadiness && c.deployReadinessProbeFor(desired) != nil
+	return c.deferReadiness && !desired.RunsToCompletion() && c.deployReadinessProbeFor(desired) != nil
 }
 
 // startedAt is when name last started, from the runtime when it reports it.
@@ -131,7 +131,7 @@ func (c *Controller) startedAt(ctx context.Context, state *docker.ContainerState
 // pending true means not ready yet and still inside the budget.
 func (c *Controller) probeCandidate(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, started time.Time) (pending bool, err error) {
 	readiness := c.deployReadinessProbeFor(desired)
-	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
 		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
 			return false, crash

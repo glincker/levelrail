@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppDetail } from '../../types/appDetail'
@@ -6,6 +7,7 @@ import type { AppPaletteAction } from '../../lib/paletteAction'
 import { AppPaletteActions } from './AppPaletteActions'
 
 const clear = vi.fn()
+vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }))
 vi.mock('../../lib/paletteAction', async (orig) => ({
   ...(await orig<typeof import('../../lib/paletteAction')>()),
   useClearActionParam: () => clear,
@@ -15,6 +17,13 @@ const stopMutate = vi.fn()
 vi.mock('../../queries/apps', () => ({
   useRestartApp: () => ({ mutate: restartMutate, isPending: false }),
   useStopApp: () => ({ mutate: stopMutate, isPending: false }),
+  useStartApp: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+vi.mock('../../queries/deploys', () => ({
+  deployStatusQueryOptions: () => ({
+    queryKey: ['deploys'],
+    queryFn: () => [],
+  }),
 }))
 const rollbackMutate = vi.fn()
 vi.mock('../../queries/deployControl', () => ({
@@ -35,11 +44,13 @@ const app = { name: 'web', suspended: false } as AppDetail
 function setup(action: AppPaletteAction | undefined, suspended = false) {
   const onDeploy = vi.fn()
   render(
-    <AppPaletteActions
-      app={{ ...app, suspended }}
-      action={action}
-      onDeploy={onDeploy}
-    />,
+    <QueryClientProvider client={new QueryClient()}>
+      <AppPaletteActions
+        app={{ ...app, suspended }}
+        action={action}
+        onDeploy={onDeploy}
+      />
+    </QueryClientProvider>,
   )
   return onDeploy
 }

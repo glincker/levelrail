@@ -203,7 +203,7 @@ func (m Manifest) Template() (Template, error) {
 	}
 	mm := m
 	return Template{
-		ID: m.ID, Name: m.Name, Slogan: m.Description, Category: m.Category, DocumentationURL: m.DocumentationURL,
+		ID: m.ID, Name: m.Name, Slogan: m.Description, Description: m.Description, Category: m.Category, DocumentationURL: m.DocumentationURL,
 		Compose: body, RecommendedMemoryBytes: m.RecommendedMemoryBytes, Manifest: &mm,
 	}, nil
 }

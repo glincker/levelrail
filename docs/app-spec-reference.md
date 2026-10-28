@@ -103,6 +103,7 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |
 | `autoscale` | `Autoscale` | no | none | Scales replicas on CPU, memory or request load between a minimum and maximum. Cannot be combined with `replicas`. See [`Autoscale`](#autoscale). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
+| `restart` | string | no | none | `"no"` or `on-failure` (also `on-failure:N`, N a non-negative integer that is accepted and ignored) runs the service to completion, the same as a compose `restart:`: exit code 0 marks it `Completed` and it is not restarted; a nonzero exit is restarted with crash backoff. `always` and `unless-stopped` keep the default. Any other value fails validation. A redeploy from app.yaml replaces the stored value, so keep `restart` in the file. Not supported by `apply` yet. |
 
 ### `Build`
 

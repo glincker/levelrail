@@ -3,6 +3,8 @@ package compose
 import (
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestToDesiredServices_AppliesResourceLimits(t *testing.T) {
@@ -107,5 +109,60 @@ func TestLimitsForService_ShorthandWinsOverDeploy(t *testing.T) {
 	mem, nano, err := limitsForService(svc)
 	if err != nil || mem != 256<<20 || nano != 1_000_000_000 {
 		t.Errorf("got %d,%d,%v", mem, nano, err)
+	}
+}
+
+func TestToDesiredServices_ShmSize(t *testing.T) {
+	t.Setenv("APP_COMPOSE_MAX_SHM_BYTES", "")
+	parse := func(v string) (*store.DesiredService, error) {
+		f, err := Parse([]byte("services:\n  a:\n    image: x:1\n    shm_size: " + v + "\n"))
+		if err != nil {
+			return nil, err
+		}
+		if len(f.Unsupported) != 0 {
+			t.Errorf("shm_size must not be reported as ignored: %v", f.Unsupported)
+		}
+		out, _, err := ToDesiredServices("app", f)
+		if err != nil {
+			return nil, err
+		}
+		return &out[0], nil
+	}
+	for raw, want := range map[string]int64{"1gb": 1 << 30, "256m": 256 << 20, "\"2g\"": 2 << 30, "67108864": 64 << 20} {
+		svc, err := parse(raw)
+		if err != nil || svc.Resources == nil || svc.Resources.ShmSizeBytes != want {
+			t.Errorf("shm_size %s = %+v err %v, want %d", raw, svc, err, want)
+		}
+	}
+	for _, bad := range []string{"lots", "0", "-1g", "NaN", "Inf", "0.1b", "99999999999g"} {
+		if _, err := parse(bad); err == nil || !strings.Contains(err.Error(), "shm_size") {
+			t.Errorf("shm_size %s: err = %v, want a shm_size error", bad, err)
+		}
+	}
+	t.Setenv("APP_COMPOSE_MAX_SHM_BYTES", "536870912")
+	if _, err := parse("1g"); err == nil || !strings.Contains(err.Error(), "APP_COMPOSE_MAX_SHM_BYTES") {
+		t.Errorf("1g over a 512 MiB cap: err = %v, want the env cap named", err)
+	}
+	if svc, err := parse("512m"); err != nil || svc.Resources.ShmSizeBytes != 512<<20 {
+		t.Errorf("512m at the cap: %+v %v", svc, err)
+	}
+}
+
+func TestShmSizeDefaultCap(t *testing.T) {
+	t.Setenv("APP_COMPOSE_MAX_SHM_BYTES", "")
+	parse := func(v string) error {
+		f, err := Parse([]byte("services:\n  a:\n    image: x:1\n    shm_size: " + v + "\n"))
+		if err != nil {
+			return err
+		}
+		_, _, err = ToDesiredServices("app", f)
+		return err
+	}
+	if err := parse("500g"); err == nil || !strings.Contains(err.Error(), "APP_COMPOSE_MAX_SHM_BYTES") {
+		t.Fatalf("500g with no override: err = %v, want the default cap named", err)
+	}
+	t.Setenv("APP_COMPOSE_MAX_SHM_BYTES", "8589934592")
+	if err := parse("8g"); err != nil {
+		t.Fatalf("8g under a raised cap: %v", err)
 	}
 }

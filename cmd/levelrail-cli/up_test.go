@@ -237,7 +237,9 @@ type fakeUp struct {
 	conns       []string
 	calls       map[string]int
 	failConnect bool
-	domains     []string
+	// outcome is what GET .../deploys/{id} reports; empty means healthy.
+	outcome string
+	domains []string
 }
 
 func newFakeUp(t *testing.T) (*fakeUp, *httptest.Server) {
@@ -280,6 +282,12 @@ func (f *fakeUp) serve(w http.ResponseWriter, r *http.Request) {
 		reply(http.StatusOK, a)
 	case strings.HasSuffix(key, "/builds"):
 		reply(http.StatusAccepted, map[string]string{"id": "b1"})
+	case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/deploys/"):
+		d := map[string]any{"id": "b1", "outcome": orDefault(f.outcome, "healthy")}
+		if f.outcome == "failed" {
+			d["error"] = "build exploded"
+		}
+		reply(http.StatusOK, d)
 	case key == "GET /api/v1/databases":
 		out := []map[string]string{}
 		for n := range f.dbs {

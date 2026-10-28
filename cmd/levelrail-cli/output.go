@@ -281,6 +281,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.HostPort != nil {
 		_, _ = fmt.Fprintf(out, "host port: %d (pinned)\n", *a.HostPort)
 	}
+	if len(a.PublishedPorts) > 0 {
+		_, _ = fmt.Fprintf(out, "published: %s\n", formatPublishedPorts(a.PublishedPorts))
+	}
 	if len(a.Domains) > 0 {
 		_, _ = fmt.Fprintf(out, "domains:  %v\n", a.Domains)
 	}
@@ -338,6 +341,10 @@ func printAppsTable(out io.Writer, apps []appResource) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT\tNODE\tENV")
 	for _, a := range apps {
+		port := fmt.Sprintf("%d", a.Port)
+		if len(a.PublishedPorts) > 0 {
+			port += " +" + formatPublishedPorts(a.PublishedPorts)
+		}
 		node := a.NodeID
 		if node == "" {
 			node = "(local)"
@@ -346,7 +353,7 @@ func printAppsTable(out io.Writer, apps []appResource) {
 		if a.EnvDirty {
 			env = "pending restart"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\n", a.Name, a.Image, a.Port, node, env)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", a.Name, a.Image, port, node, env)
 	}
 	_ = tw.Flush()
 }
@@ -904,4 +911,18 @@ func nodeStatusHint(n nodeResource) string {
 		return "enrolled but its agent never connected (the join token is already used). Run `nodes delete " + n.ID + "`, then re-enrol with a new join token; check the agent logs on the host."
 	}
 	return ""
+}
+
+// formatPublishedPorts renders host ports the way operators write them,
+// "53/udp, 8080/tcp", an empty protocol reading as tcp.
+func formatPublishedPorts(ports []publishedPort) string {
+	parts := make([]string, 0, len(ports))
+	for _, p := range ports {
+		proto := p.Protocol
+		if proto == "" {
+			proto = "tcp"
+		}
+		parts = append(parts, fmt.Sprintf("%d/%s", p.HostPort, proto))
+	}
+	return strings.Join(parts, ", ")
 }

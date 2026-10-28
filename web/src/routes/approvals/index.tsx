@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/responsive-table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Badge } from '@/components/ui/badge'
+import { DeployApprovalStatusBadge } from '@/components/deploy/DeployApprovalStatusBadge'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -27,11 +27,9 @@ import {
   useDeployApprovals,
   useRejectDeployApproval,
 } from '../../queries/deployApprovals'
-import type {
-  DeployApprovalResource,
-  DeployApprovalStatus,
-} from '../../types/deployApproval'
+import type { DeployApprovalResource } from '../../types/deployApproval'
 import { ApiError } from '../../lib/apiError'
+import { canDecideApproval } from '../../lib/deployApprovalStatus'
 
 // Cross-app operational queue for the two-person approval gate on a
 // deploy/promote into a protected environment (internal/api/
@@ -49,28 +47,14 @@ export const Route = createFileRoute('/approvals/')({
   pendingComponent: DeployApprovalsPending,
 })
 
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'all', label: 'All' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'expired', label: 'Expired' },
-]
-
-function statusBadgeVariant(
-  status: DeployApprovalStatus,
-): 'warning' | 'success' | 'destructive' | 'muted' {
-  switch (status) {
-    case 'pending':
-      return 'warning'
-    case 'approved':
-      return 'success'
-    case 'rejected':
-      return 'destructive'
-    default:
-      return 'muted'
-  }
-}
+const STATUS_FILTER_VALUES = [
+  'pending',
+  'all',
+  'approving',
+  'approved',
+  'rejected',
+  'expired',
+] as const
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
@@ -113,9 +97,7 @@ const COLUMNS: ResponsiveColumn<DeployApprovalResource>[] = [
   {
     id: 'status',
     header: 'Status',
-    cell: (a) => (
-      <Badge variant={statusBadgeVariant(a.status)}>{a.status}</Badge>
-    ),
+    cell: (a) => <DeployApprovalStatusBadge status={a.status} />,
   },
   {
     id: 'requestedBy',
@@ -138,6 +120,10 @@ const COLUMNS: ResponsiveColumn<DeployApprovalResource>[] = [
 function DeployApprovalsPage() {
   const { t } = useTranslation('common')
   useEnvironmentScope()
+  const statusOptions = STATUS_FILTER_VALUES.map((value) => ({
+    value,
+    label: t(`deployApprovalStatus.${value}`),
+  }))
   const [status, setStatus] = useState('pending')
   const { data: approvals } = useDeployApprovals(status)
   const approve = useApproveDeployApproval()
@@ -201,7 +187,7 @@ function DeployApprovalsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
+            {statusOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>
@@ -240,7 +226,7 @@ function DeployApprovalsPage() {
           getRowId={(a) => a.id}
           ariaLabel={t('tableLabels.approvals')}
           renderActions={(a) =>
-            a.status === 'pending' ? (
+            canDecideApproval(a.status) ? (
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"

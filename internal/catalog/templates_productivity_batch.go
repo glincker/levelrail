@@ -230,6 +230,8 @@ var productivityBatchTemplates = []Template{
         condition: service_started
       teable-db:
         condition: service_healthy
+      teable-db-migrate:
+        condition: service_completed_successfully
     environment:
       PUBLIC_ORIGIN: ${SERVICE_FQDN_TEABLE:-http://localhost:3000}
       PRISMA_DATABASE_URL: postgresql://teable:$SERVICE_PASSWORD_DB@teable-db:5432/teable

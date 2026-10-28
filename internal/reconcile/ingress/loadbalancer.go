@@ -227,7 +227,7 @@ func (c *Controller) discoverUpstreams(ctx context.Context, svc store.DesiredSer
 		case state == nil:
 			u.Note = "not created yet"
 		default:
-			u.Dial, u.Running, u.Note = upstreamDial(state, host, host != localUpstreamHost)
+			u.Dial, u.Running, u.Note = upstreamDial(state, svc.Port, host, host != localUpstreamHost)
 		}
 		out = append(out, u)
 	}
@@ -247,14 +247,14 @@ func anyRunning(ups []loadbalancer.UpstreamObservation) bool {
 	return false
 }
 
-func upstreamDial(state *docker.ContainerState, host string, remote bool) (dial string, running bool, note string) {
+func upstreamDial(state *docker.ContainerState, port int, host string, remote bool) (dial string, running bool, note string) {
 	if !state.Running {
 		return "", false, "container not running"
 	}
-	if len(state.Ports) == 0 {
-		return "", false, "no published port"
+	p, ok := docker.PrimaryPort(state.Ports, port)
+	if !ok {
+		return "", false, "no published tcp port"
 	}
-	p := state.Ports[0]
 	if remote && isLoopback(p.HostIP) {
 		return "", false, "published on loopback, set bind_address to public to balance across nodes"
 	}
@@ -290,7 +290,7 @@ func (c *Controller) previousReleaseUpstreams(ctx context.Context, rt docker.Run
 		if application.ReleaseKey(svc.Name, st.Name) != held {
 			continue
 		}
-		dial, running, _ := upstreamDial(&st, host, host != localUpstreamHost)
+		dial, running, _ := upstreamDial(&st, svc.Port, host, host != localUpstreamHost)
 		if !running {
 			continue
 		}

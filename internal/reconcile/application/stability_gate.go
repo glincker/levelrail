@@ -130,7 +130,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 		passes   = cfg.SuccessThreshold
 	)
 	if readiness != nil {
-		t, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
+		t, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 		if err != nil {
 			return &gateError{reason: deploysafety.ReasonExitedDuringWindow, message: fmt.Sprintf("stability gate: %v", err)}
 		}
@@ -254,11 +254,37 @@ func gateFailureMessage(name, reason string, obs deploysafety.GateObservation, c
 	}
 }
 
-// stabilityGateForNew runs the stability gate only for a freshly created
-// container, never for a restart of an existing one.
+// stabilityGateForNew runs the stability gate for a freshly created
+// container, and for any restart of one with no readiness probe: being
+// running is its only readiness, so an instant exit would otherwise pass.
 func (c *Controller) stabilityGateForNew(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, created bool) error {
-	if !created {
+	// A one-shot is meant to exit inside the window; awaitCompletion already judged it.
+	if desired.RunsToCompletion() {
 		return nil
 	}
+	if !created && c.deployReadinessProbeFor(desired) != nil {
+		return nil
+	}
+	if !created {
+		return c.restartSettle(ctx, state.Name)
+	}
 	return c.stabilityGate(ctx, state, desired)
+}
+
+// restartSettle is a crash restart's whole gate: one live inspect after a
+// gate tick. A full stable window here would stall the reconcile loop.
+func (c *Controller) restartSettle(ctx context.Context, name string) error {
+	tick := c.gateTick
+	if tick <= 0 {
+		tick = defaultGateTick
+	}
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("restart settle for %s: %w", name, ctx.Err())
+	case <-time.After(tick):
+	}
+	if crash := c.exitedCrash(ctx, name); crash != nil {
+		return crash
+	}
+	return nil
 }

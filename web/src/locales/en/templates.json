@@ -6,6 +6,9 @@
     "errorTitle": "Could not open the template",
     "browse": "Browse templates"
   },
+  "description": {
+    "label": "Setup notes"
+  },
   "verified": {
     "badge": "Verified",
     "hint": "Passed the last live smoke test: it started and its health check passed.",
@@ -272,5 +275,52 @@
     "preview": "Preview of the compose file this template deploys",
     "download": "Download",
     "label": "Template compose file"
+  },
+  "result": {
+    "title": "{{name}} is deploying",
+    "deployFailed": "Deploy failed",
+    "address": "Address",
+    "addressPending": "The address appears once the app is running.",
+    "credentials": "Generated credentials",
+    "credentialsHint": "Created for this app. Shown only when you ask, then hidden again.",
+    "noCredentials": "This template generated no credentials.",
+    "reveal": "Reveal {{key}}",
+    "hide": "Hide {{key}}",
+    "copy": "Copy {{key}}",
+    "copied": "Copied",
+    "hidesIn": "Hides in {{seconds}}s",
+    "revealDenied": "Revealing values needs owner or admin access, or is turned off for this app.",
+    "openEnvironment": "Open Environment",
+    "nextSteps": "Next steps",
+    "openApp": "Open app",
+    "viewLogs": "View logs",
+    "close": "Close",
+    "accessDetails": "Access details",
+    "toastDeployed": "\"{{name}}\" deployed",
+    "toastRunning_one": "{{count}} service running now.",
+    "toastRunning_other": "{{count}} services running now.",
+    "services_one": "{{count}} service starting",
+    "services_other": "{{count}} services starting"
+  },
+  "access": {
+    "title": "Access details",
+    "description": "Address, generated logins and setup notes for this app.",
+    "open": "Open access details"
+  },
+  "wizard": {
+    "deployedUnder_one": "{{count}} service deployed under \"{{app}}\".",
+    "deployedUnder_other": "{{count}} services deployed under \"{{app}}\".",
+    "created": "Created",
+    "view": "View",
+    "done": "Done",
+    "back": "Back to templates",
+    "ramRecommended": "RAM recommended",
+    "documentation": "Documentation",
+    "name": "Name",
+    "namePlaceholder": "e.g. my-stack",
+    "nameHint": "Groups every service this template defines under one app name.",
+    "composeHint": "Pre-filled from the template. Edit it if you need to before deploying.",
+    "deploying": "Deploying...",
+    "deploy": "Deploy"
   }
 }

@@ -40,7 +40,8 @@ func RestoreSnapshot(current store.DesiredService, snap store.DeployAttemptSnaps
 	if snap.Port != 0 {
 		out.Port = snap.Port
 	}
-	out.Health = snap.Health
+	// Snapshots taken before run-to-completion was recorded lack Restart.
+	out.Health = store.KeepComposeHealth(snap.Health, current.Health)
 	if snap.Replicas > 0 {
 		out.Replicas = snap.Replicas
 	}

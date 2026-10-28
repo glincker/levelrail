@@ -59,6 +59,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.HostPort = &hostPort
 	}
 	d.BindAddress = svc.EffectiveBindAddress()
+	d.PublishedPorts = svc.PublishedPorts
 
 	if svc.Resources != nil {
 		resources, err := toServiceResources(*svc.Resources)
@@ -82,6 +83,17 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 			continue
 		}
 		d.Volumes = append(d.Volumes, store.ServiceVolume{Name: volumeName(name, v.Name), ContainerPath: v.Path})
+	}
+
+	policy, err := spec.ParseRestartPolicy(svc.Restart)
+	if err != nil {
+		return store.DesiredService{}, err
+	}
+	if store.IsRunToCompletionRestart(policy) {
+		if d.Health == nil {
+			d.Health = &store.ServiceHealth{}
+		}
+		d.Health.Restart = policy
 	}
 
 	if svc.Hooks != nil {

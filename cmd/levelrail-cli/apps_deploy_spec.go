@@ -98,6 +98,7 @@ func toDeploySpecService(svc spec.Service) deploySpecService {
 		Port:     svc.Port,
 		Replicas: svc.Replicas,
 		Strategy: svc.Strategy,
+		Restart:  svc.Restart,
 	}
 	if len(svc.Env) > 0 {
 		out.Env = make(map[string]deploySpecServiceEnv, len(svc.Env))

@@ -8,7 +8,8 @@
 // has a real checkout. Both paths share the same narrow scope
 // otherwise: environment/ports/volumes accept both Compose's short and
 // long forms (see yaml.go), but only the fields Levelrail's own model
-// has room for: no port ranges, no UDP, no tmpfs/npipe mounts.
+// has room for: no port ranges, no tmpfs/npipe mounts. A UDP port is
+// published straight on the host, never through the HTTP proxy.
 // restart: and networks: both parse and are surfaced as non-blocking
 // Notices instead of being silently dropped or translated: see Notices
 // for why neither has a real translation onto how Levelrail runs a
@@ -112,8 +113,10 @@ type Service struct {
 	// Profiles gates the service behind compose profiles (ApplyProfiles).
 	Profiles []string
 	// MemLimit and CPUs are the mem_limit: and cpus: shorthands for a hard cap.
-	MemLimit   yamlScalarString
-	CPUs       yamlScalarString
+	MemLimit yamlScalarString
+	CPUs     yamlScalarString
+	// ShmSize is shm_size:, the /dev/shm size Chromium based apps need.
+	ShmSize    yamlScalarString
 	HostAccess HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
 	// such as recreate for an app that locks its state volume. Empty means default.
@@ -122,6 +125,9 @@ type Service struct {
 	// DependsOnHealthy lists the DependsOn entries declared with
 	// condition: service_healthy, which wait for readiness, not just start.
 	DependsOnHealthy []string
+	// DependsOnCompleted lists the DependsOn entries declared with
+	// condition: service_completed_successfully, which wait for exit 0.
+	DependsOnCompleted []string
 }
 
 // PullPolicyAlways is pull_policy: always, the only non-default value
@@ -163,6 +169,8 @@ type Volume struct {
 type Port struct {
 	HostPort      int
 	ContainerPort int
+	// Protocol is empty for tcp (the default) or "udp".
+	Protocol string
 }
 
 // rawBuild exists so Parse can detect and reject build:; never
@@ -187,12 +195,13 @@ func Parse(data []byte) (*File, error) {
 		HasConfigs:  len(raw.Configs) > 0,
 		Unsupported: findUnsupported(data),
 	}
-	healthy, err := parseDependsOnConditions(data)
+	healthy, completed, err := parseDependsOnConditions(data)
 	if err != nil {
 		return nil, err
 	}
 	for name, svc := range raw.Services {
 		svc.DependsOnHealthy = healthy[name]
+		svc.DependsOnCompleted = completed[name]
 		f.Services[name] = Service(svc)
 	}
 	if len(raw.Networks) > 0 {

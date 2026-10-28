@@ -44,12 +44,14 @@ type Service struct {
 	// default when empty), "public" (every interface, an explicit opt-
 	// in), or a literal IP. See internal/bindaddr.Resolve for the exact
 	// rules; EffectiveBindAddress applies the default.
-	BindAddress string            `yaml:"bind_address,omitempty"`
-	Health      *Health           `yaml:"health,omitempty"`
-	Resources   *Resources        `yaml:"resources,omitempty"`
-	Env         map[string]EnvVar `yaml:"env,omitempty"`
-	Replicas    int               `yaml:"replicas,omitempty"`
-	Strategy    string            `yaml:"strategy,omitempty"`
+	BindAddress string `yaml:"bind_address,omitempty"`
+	// PublishedPorts bind straight on the host, bypassing the proxy (UDP).
+	PublishedPorts []PublishedPort   `yaml:"published_ports,omitempty"`
+	Health         *Health           `yaml:"health,omitempty"`
+	Resources      *Resources        `yaml:"resources,omitempty"`
+	Env            map[string]EnvVar `yaml:"env,omitempty"`
+	Replicas       int               `yaml:"replicas,omitempty"`
+	Strategy       string            `yaml:"strategy,omitempty"`
 	// Labels are arbitrary operator-supplied Docker labels applied to the
 	// service's container at create time, an escape hatch for tooling
 	// this platform doesn't know about (a monitoring agent or log
@@ -125,6 +127,9 @@ type Service struct {
 	// start-order guarantee, not a health-based wait. See Validate for
 	// the reference and cycle checks.
 	DependsOn []string `yaml:"dependsOn,omitempty"`
+
+	// Restart "no" or "on-failure[:N]" runs the service to completion, as in compose.
+	Restart string `yaml:"restart,omitempty"`
 
 	// Jobs are cron-scheduled commands run for this service, each in a
 	// fresh container of its image (or exec'd into the running one), kept

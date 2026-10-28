@@ -86,6 +86,9 @@ func printComposeDeployResultHuman(out io.Writer, r composeDeployResult) {
 	_, _ = fmt.Fprintf(out, "accepted %d service(s), containers are starting:\n", len(r.Services))
 	for _, svc := range r.Services {
 		_, _ = fmt.Fprintf(out, "  %s\t%s\n", svc.Name, svc.Image)
+		if len(svc.PublishedPorts) > 0 {
+			_, _ = fmt.Fprintf(out, "    published: %s\n", formatPublishedPorts(svc.PublishedPorts))
+		}
 	}
 	_, _ = fmt.Fprintln(out, "app_id is the group; pass a service name above to apps get, logs or deploys")
 }

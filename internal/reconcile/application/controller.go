@@ -233,6 +233,7 @@ type Controller struct {
 	probeUnreachableLogged atomic.Bool
 	probeLimits            probe.Limits
 	readyBudget            time.Duration
+	completionBudget       time.Duration  // 0 reads EnvOneShotTimeout, see effectiveCompletionBudget
 	secretResolver         SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder         DeployRecorder // nil is valid: deploy frequency just isn't recorded
 	meshDNSAddr            string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
@@ -804,13 +805,21 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 			break
 		}
 	}
+	completed := !allRunning && c.oneShotsDone(ctx, targets, desired)
 
 	stale, err := c.staleContainers(ctx, targets)
 	if err != nil {
 		return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
 	}
 
+	if completed && len(stale) == 0 {
+		return ready(ReasonCompleted), nil
+	}
 	if allRunning && len(stale) == 0 {
+		if desired.RunsToCompletion() {
+			reason, err := c.stillRunning(ctx, targets[0], desired)
+			return notReady(reason, err), nil
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
 
@@ -914,6 +923,9 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
 		c.recordAdoptedCutover(ctx, targets[0], desired)
+		if desired.RunsToCompletion() {
+			return ready(ReasonCompleted), nil
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
 
@@ -1002,12 +1014,25 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	if shmDrifted(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonShmDriftRecreate}, fmt.Errorf("remove %q to apply its changed shm_size: %w", target, err)
+		}
+		state = nil
+	}
+
 	meshIP, _ := c.meshBindIP(ctx, desired)
-	if publishedPortDrifted(state, desired, meshIP) {
+	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, desired) {
 		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
 		}
 		state = nil
+	}
+
+	if desired.RunsToCompletion() && state != nil {
+		if out, done, err := c.settleOneShot(ctx, target, state, desired); done {
+			return out, err
+		}
 	}
 
 	if c.defersReadiness(desired) && state != nil && !state.Running {
@@ -1164,7 +1189,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	var readyErr error
-	if c.defersReadiness(desired) {
+	if desired.RunsToCompletion() {
+		readyErr = c.awaitCompletion(ctx, state.Name, desired)
+		var still *completionPending
+		if errors.As(readyErr, &still) {
+			return replicaOutcome{reason: still.reason}, still
+		}
+	} else if c.defersReadiness(desired) {
 		c.noteImplicitReadiness(ctx, state.Name, desired, c.deployReadinessProbeFor(desired))
 		now := time.Now()
 		pending, err := c.probeCandidate(ctx, state, desired, c.startedAt(ctx, state, now))
@@ -1209,13 +1240,18 @@ func (c *Controller) readinessVerdict(ctx context.Context, target string, state 
 		c.retained.NoteReady(c.serviceName)
 	}
 	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
-	// A crash restart of the same container already proved itself once, so it
+	// A crash restart of a probed container already proved itself once, so it
 	// only needs readiness, not another stability window of downtime.
 	if err := c.stabilityGateForNew(ctx, state, desired, created); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
 		c.traceAbort(ctx, desired, target, reason, err)
-		c.recordRolloutFailure(ctx, desired, err)
-		c.markGateFailure(ctx, desired, reason)
+		// A steady-state crash is not a rollout: it must not fail an earlier, succeeded deploy.
+		if created {
+			c.recordRolloutFailure(ctx, desired, err)
+			c.markGateFailure(ctx, desired, reason)
+		} else if crash := (*readinessCrashError)(nil); errors.As(err, &crash) {
+			c.captureExit(ctx, desired, target, crash.exit, crash.verdict())
+		}
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 	}
 	delete(c.handoffFailed, target)
@@ -1354,6 +1390,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		}
 	}
 
+	if err := c.refuseRemotePublishedPorts(desired); err != nil {
+		return err
+	}
 	spec, err := toContainerSpec(name, desired)
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
@@ -2248,7 +2287,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 		return c.watchStartup(ctx, state.Name, desired)
 	}
 
-	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
 		// No published port here almost always means the container
 		// already died (Docker clears bindings once it stops).
@@ -2302,7 +2341,7 @@ func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredServi
 			if c.desiredSuperseded(ctx, desired) {
 				return errSuperseded
 			}
-			if desired.HostPort == nil {
+			if desired.HostPort == nil && len(desired.PublishedPorts) == 0 {
 				c.reviveIfDead(ctx, []string{candidate}, desired, false)
 			}
 		}
@@ -2354,10 +2393,14 @@ func (c *Controller) abortSuperseded(ctx context.Context, target string, release
 func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
 	readiness := readinessProbeFor(desired)
 	if readiness == nil {
+		// The container list can lag an exit a live inspect already sees.
+		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
+			return crash
+		}
 		return nil
 	}
 
-	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
 		// Not evaluated, not failed: an unreachable node must never flip a
 		// serving app unhealthy.
@@ -2557,11 +2600,12 @@ func (c *Controller) removeContainers(ctx context.Context, cs []docker.Container
 // port binding a service with exactly one declared port produces.
 // Exported so internal/api's health-discovery endpoint (apps_health_discover.go)
 // can resolve the same address without reimplementing this lookup.
-func PrimaryAddr(state *docker.ContainerState) (string, error) {
-	if len(state.Ports) == 0 {
-		return "", fmt.Errorf("container %s has no published ports to probe", state.Name)
+func PrimaryAddr(state *docker.ContainerState, port int) (string, error) {
+	p, ok := docker.PrimaryPort(state.Ports, port)
+	if !ok {
+		return "", fmt.Errorf("container %s has no published tcp port to probe", state.Name)
 	}
-	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), nil
+	return "127.0.0.1:" + strconv.Itoa(p.HostPort), nil
 }
 
 // hashLen is the number of hex characters ContainerName keeps from the
@@ -2734,6 +2778,16 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		}
 		spec.Ports = []docker.PortBinding{binding}
 	}
+	if len(desired.PublishedPorts) > 0 {
+		// Same bind address rule as the routed port, so a UDP port is private unless the service is public.
+		hostIP, err := bindaddr.Resolve(desired.BindAddress)
+		if err != nil {
+			return docker.ContainerSpec{}, fmt.Errorf("bind address: %w", err)
+		}
+		for _, p := range desired.PublishedPorts {
+			spec.Ports = append(spec.Ports, docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: hostIP, Protocol: p.EffectiveProtocol()})
+		}
+	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{
 			MemoryBytes:     desired.Resources.MemoryBytes,
@@ -2745,6 +2799,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			spec.GPU = &docker.GPURequest{Count: g.Count, DeviceIDs: g.DeviceIDs}
 		}
 	}
+	spec.ShmSizeBytes, spec.Labels = shmSpec(desired, spec.Labels)
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}

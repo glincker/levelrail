@@ -1,0 +1,19 @@
+services:
+  archivebox:
+    image: archivebox/archivebox:0.9.76
+    ports: ["5797"]
+    environment:
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      PUBLIC_ADD_VIEW: "False"
+      ARCHIVEDOTORG_ENABLED: "True"
+    volumes:
+      - data:/data
+      - tmp:/tmp/archivebox
+    shm_size: 1gb
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --max-time 5 'http://admin.archivebox.localhost:5797/health/' | grep -q OK"]
+      interval: 30s
+      timeout: 20s
+      retries: 15
+      start_period: 60s

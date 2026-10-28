@@ -1,0 +1,15 @@
+id: backrest
+name: Backrest
+description: A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly.
+icon: archive
+category: Backups
+documentation_url: https://garethgeorge.github.io/backrest/
+recommended_memory_bytes: 268435456
+domains:
+  - service: backrest
+    port: 9898
+    description: Public address of the Backrest web UI.
+healthcheck:
+  service: backrest
+  port: 9898
+  path: /

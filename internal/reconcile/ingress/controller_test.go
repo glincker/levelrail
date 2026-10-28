@@ -644,7 +644,7 @@ func TestController_Reconcile_InspectError_SkippedNotFailed(t *testing.T) {
 
 func TestController_Reconcile_TwoServicesDistinctDomains_BothRouted(t *testing.T) {
 	web := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	api := store.DesiredService{Name: "api", Image: "img:v2", Port: 8080, Domains: []string{"api.example.com"}}
+	api := store.DesiredService{Name: "api", Image: "img:v2", Port: 80, Domains: []string{"api.example.com"}}
 
 	rt := newFakeRuntime()
 	rt.seedRunning(application.ContainerName(web.Name, web.Image, ""), 11111)

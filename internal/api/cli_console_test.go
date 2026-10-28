@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/cliconsole"
@@ -136,13 +137,17 @@ func TestConsoleTokenAbilities(t *testing.T) {
 		in   []string
 		want []string
 	}{
-		{[]string{AbilityRoot}, []string{AbilityRoot}},
+		{[]string{AbilityRoot}, []string{AbilityRead, AbilityWrite, AbilityDeploy}},
 		{[]string{AbilityRead, AbilitySignInApprove, AbilitySecretsReveal}, []string{AbilityRead}},
+		{[]string{AbilityReadSensitive, AbilityWriteSensitive, AbilityWrite}, []string{AbilityWrite}},
 	}
 	for _, tc := range tests {
 		got := consoleTokenAbilities(tc.in)
-		if len(got) != len(tc.want) || got[0] != tc.want[0] {
+		if !slices.Equal(got, tc.want) {
 			t.Fatalf("consoleTokenAbilities(%v) = %v, want %v", tc.in, got, tc.want)
+		}
+		if hasAbility(got, AbilityRoot) || hasAbility(got, AbilityReadSensitive) || slices.Contains(got, AbilitySecretsReveal) {
+			t.Fatalf("console token %v carries root, sensitive or reveal access", got)
 		}
 	}
 }

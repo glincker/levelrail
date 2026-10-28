@@ -40,6 +40,7 @@ type ServiceHealth struct {
 	Readiness    *ServiceProbe `json:"readiness,omitempty"`
 	Liveness     *ServiceProbe `json:"liveness,omitempty"`
 	ReadyTimeout int64         `json:"ready_timeout,omitempty"`
+	Restart      string        `json:"restart,omitempty"`
 }
 
 // ServiceHooks mirrors internal/api's appResource.Hooks field
@@ -96,6 +97,9 @@ type AppResource struct {
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
 	// and update, like Resources/Health above.
 	Hooks *ServiceHooks `json:"hooks,omitempty"`
+	// PublishedPorts mirrors internal/api's appResource.PublishedPorts:
+	// ports bound straight on the host (UDP), settable on create.
+	PublishedPorts []PublishedPort `json:"published_ports,omitempty"`
 	// NodeID mirrors internal/api's appResource.NodeID: response-only on
 	// update, but settable at create time as an explicit placement
 	// override (omitted entirely lets the server auto-place via simple
@@ -406,6 +410,13 @@ type RejectDeployApprovalRequest struct {
 type DeployApprovalDecisionResult struct {
 	Approval DeployApprovalResource `json:"approval"`
 	App      AppResource            `json:"app"`
+}
+
+// PublishedPort is one host-published port, protocol tcp or udp.
+type PublishedPort struct {
+	ContainerPort int    `json:"container_port"`
+	HostPort      int    `json:"host_port"`
+	Protocol      string `json:"protocol,omitempty"`
 }
 
 // ComposeDeployResult mirrors internal/api's composeDeployResponse
@@ -1655,6 +1666,7 @@ type ServiceTemplateListItem struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
 	Slogan                 string `json:"slogan"`
+	Description            string `json:"description,omitempty"`
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
@@ -1673,6 +1685,7 @@ type ServiceTemplateDetail struct {
 	ID                     string               `json:"id"`
 	Name                   string               `json:"name"`
 	Slogan                 string               `json:"slogan"`
+	Description            string               `json:"description,omitempty"`
 	Category               string               `json:"category"`
 	DocumentationURL       string               `json:"documentation_url"`
 	Compose                string               `json:"compose"`
@@ -3872,9 +3885,12 @@ type DeployAttemptResource struct {
 	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *DeployFailure `json:"failure,omitempty"`
-	// Outcome is set by GetDeploy only: in_progress, healthy, failed,
-	// canceled, superseded or blocked.
-	Outcome string `json:"outcome,omitempty"`
+	// Outcome is in_progress, healthy, failed, canceled, superseded or
+	// blocked; OutcomeReason is the one-line why.
+	Outcome       string `json:"outcome,omitempty"`
+	OutcomeReason string `json:"outcome_reason,omitempty"`
+	// RolloutCrashLoopRestarts is the server's crash-loop failure threshold.
+	RolloutCrashLoopRestarts int `json:"rollout_crash_loop_restarts,omitempty"`
 	// Phase is the stored attempt status when GetDeploy reports a derived
 	// Status (building, rolling_out, failed).
 	Phase string `json:"phase,omitempty"`

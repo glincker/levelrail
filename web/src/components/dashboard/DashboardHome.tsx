@@ -26,7 +26,6 @@ import { AppsPanel } from './AppsPanel'
 import { CopyRetryDialog } from './CopyRetryDialog'
 import { StatusStrip } from './StatusStrip'
 import { WidgetFrame } from './WidgetFrame'
-import { QuickStart } from './QuickStart'
 import { ResourcesSection } from './ResourcesSection'
 import { RecommendationsLine } from './RecommendationsLine'
 import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
@@ -210,7 +209,6 @@ export function DashboardHome({
         {hasApps ? null : (
           <>
             <RecommendationsLine showSetup={isRoot} />
-            <QuickStart />
             <PlatformCapabilities />
           </>
         )}

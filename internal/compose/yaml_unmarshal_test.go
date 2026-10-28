@@ -227,7 +227,27 @@ func TestPort_UnmarshalYAML(t *testing.T) {
 		},
 		{
 			name:    "long mapping form unsupported protocol",
-			yaml:    "target: 80\nprotocol: udp\n",
+			yaml:    "target: 80\nprotocol: sctp\n",
+			wantErr: true,
+		},
+		{
+			name: "long mapping form udp",
+			yaml: "target: 51820\npublished: 51820\nprotocol: udp\n",
+			want: Port{ContainerPort: 51820, HostPort: 51820, Protocol: "udp"},
+		},
+		{
+			name: "short form udp",
+			yaml: "\"3478:3478/udp\"",
+			want: Port{ContainerPort: 3478, HostPort: 3478, Protocol: "udp"},
+		},
+		{
+			name: "short form explicit tcp",
+			yaml: "\"8080:80/tcp\"",
+			want: Port{ContainerPort: 80, HostPort: 8080},
+		},
+		{
+			name:    "short form sctp",
+			yaml:    "\"9000/sctp\"",
 			wantErr: true,
 		},
 		{

@@ -705,3 +705,20 @@ func TestBuildHostConfig_CPUGuardrails(t *testing.T) {
 		t.Errorf("a spec without guardrails must not set them: %+v", plain)
 	}
 }
+
+func TestBuildHostConfig_ShmSizeFromLabel(t *testing.T) {
+	if got := buildHostConfig(ContainerSpec{ShmSizeBytes: 1 << 30}, nat.PortMap{}); got.ShmSize != 1<<30 {
+		t.Errorf("spec shm = %d, want 1 GiB", got.ShmSize)
+	}
+	// A remote agent receives the size only through the label.
+	viaLabel := ContainerSpec{Labels: map[string]string{ShmSizeLabelKey: "268435456"}}
+	if got := buildHostConfig(viaLabel, nat.PortMap{}); got.ShmSize != 256<<20 {
+		t.Errorf("label shm = %d, want 256 MiB", got.ShmSize)
+	}
+	for _, bad := range []string{"", "-5", "lots", "99999999999999999999"} {
+		spec := ContainerSpec{Labels: map[string]string{ShmSizeLabelKey: bad}}
+		if got := buildHostConfig(spec, nat.PortMap{}); got.ShmSize != 0 {
+			t.Errorf("label %q shm = %d, want Docker's default", bad, got.ShmSize)
+		}
+	}
+}

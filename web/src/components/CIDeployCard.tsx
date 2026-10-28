@@ -16,81 +16,17 @@ import {
   CollapsiblePanel,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { InfoTip } from '@/components/kit'
 import {
   ciDeployKeys,
-  useAddCITrust,
   useCITrusts,
   useCIWorkflow,
   useRemoveCITrust,
 } from '../queries/ciDeploy'
 import { useUpdateDashboardUrl } from '../queries/dashboardUrl'
-
-const DEFAULT_REF = 'refs/heads/main'
-
-function TrustForm({ appName }: { appName: string }) {
-  const { t } = useTranslation('deploys')
-  const add = useAddCITrust(appName)
-  const [repository, setRepository] = useState('')
-  const [refPattern, setRefPattern] = useState(DEFAULT_REF)
-  const [environment, setEnvironment] = useState('')
-
-  function submit() {
-    add.mutate(
-      { repository, ref_pattern: refPattern, environment },
-      {
-        onSuccess: () => {
-          setRepository('')
-          toast.add({ title: t('ciDeploy.toast.trusted'), type: 'success' })
-        },
-        onError: (error) => {
-          toast.add({
-            title: t('ciDeploy.toast.trustError'),
-            description: error.message,
-            type: 'error',
-          })
-        },
-      },
-    )
-  }
-
-  return (
-    <div className="grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto]">
-      <Input
-        value={repository}
-        placeholder={t('ciDeploy.repositoryPlaceholder')}
-        aria-label={t('ciDeploy.repositoryLabel')}
-        onChange={(e) => {
-          setRepository(e.target.value)
-        }}
-      />
-      <Input
-        value={refPattern}
-        aria-label={t('ciDeploy.refLabel')}
-        onChange={(e) => {
-          setRefPattern(e.target.value)
-        }}
-      />
-      <Input
-        value={environment}
-        placeholder={t('ciDeploy.environmentPlaceholder')}
-        aria-label={t('ciDeploy.environmentLabel')}
-        onChange={(e) => {
-          setEnvironment(e.target.value)
-        }}
-      />
-      <Button
-        type="button"
-        onClick={submit}
-        disabled={repository.trim() === '' || add.isPending}
-      >
-        {t('ciDeploy.trust')}
-      </Button>
-    </div>
-  )
-}
+import { ciProviderOf, jobSnippet, type CIProvider } from '../lib/ciProviders'
+import { CIProviderPicker, CITrustForm } from './CITrustForm'
 
 function TrustList({ appName }: { appName: string }) {
   const { t } = useTranslation('deploys')
@@ -109,14 +45,30 @@ function TrustList({ appName }: { appName: string }) {
           key={trust.id}
           className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
         >
-          <span className="min-w-0 truncate">
-            <span className="font-medium">{trust.repository}</span>
-            <span className="text-muted-foreground">
-              {' '}
-              {trust.ref_pattern}
-              {trust.environment !== '' &&
-                ` (${t('ciDeploy.environmentLabel')}: ${trust.environment})`}
+          <span className="min-w-0">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                {t(`ciDeploy.providers.${ciProviderOf(trust.provider)}`)}
+              </span>
+              <span className="truncate font-medium">{trust.repository}</span>
+              <span className="truncate text-muted-foreground">
+                {trust.ref_pattern}
+                {trust.environment !== '' &&
+                  ` (${t(`ciDeploy.environmentLabel.${ciProviderOf(trust.provider)}`)}: ${trust.environment})`}
+              </span>
             </span>
+            {trust.issuer && (
+              <span className="block truncate text-xs text-muted-foreground">
+                {t('ciDeploy.issuerShown', { issuer: trust.issuer })}
+              </span>
+            )}
+            {ciProviderOf(trust.provider) === 'gitlab' &&
+              trust.protected_ref_only === false && (
+                <span className="flex items-start gap-1 text-xs text-destructive">
+                  <WarningIcon className="mt-0.5 size-3.5 shrink-0" />
+                  {t('ciDeploy.unprotectedWarning')}
+                </span>
+              )}
           </span>
           <Button
             type="button"
@@ -189,7 +141,52 @@ function DashboardUrlFix({ appName }: { appName: string }) {
   )
 }
 
-function WorkflowPanel({ appName }: { appName: string }) {
+const cliRepo: Record<CIProvider, string> = {
+  github: 'owner/name',
+  gitlab: 'group/project',
+  circleci: '<PROJECT_ID> --org-id <ORG_ID>',
+}
+
+function ProviderSnippet({
+  provider,
+  appName,
+  apiUrl,
+}: {
+  provider: CIProvider
+  appName: string
+  apiUrl: string
+}) {
+  const { t } = useTranslation('deploys')
+  const snippet = jobSnippet(
+    provider,
+    appName,
+    apiUrl === '' ? '$LEVELRAIL_API_URL' : apiUrl,
+  )
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium">
+        {t(`ciDeploy.snippetTitle.${provider}`)}
+      </p>
+      <CodeBlock
+        code={snippet.code}
+        language={snippet.language}
+        label={t(`ciDeploy.snippetTitle.${provider}`)}
+        maxHeight="md"
+      />
+      <p className="text-xs text-muted-foreground">
+        {t('ciDeploy.snippetNote')}
+      </p>
+    </div>
+  )
+}
+
+function WorkflowPanel({
+  appName,
+  provider,
+}: {
+  appName: string
+  provider: CIProvider
+}) {
   const { t } = useTranslation('deploys')
   const workflow = useCIWorkflow(appName)
 
@@ -209,19 +206,29 @@ function WorkflowPanel({ appName }: { appName: string }) {
       {workflow.data.needs_dashboard_url && (
         <DashboardUrlFix appName={appName} />
       )}
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium">{t('ciDeploy.workflowTitle')}</p>
-        <Button type="button" variant="outline" size="sm" onClick={copy}>
-          <CopyIcon className="size-4" />
-          {t('ciDeploy.copy')}
-        </Button>
-      </div>
-      <CodeBlock
-        code={workflow.data.yaml}
-        language="yaml"
-        label={t('ciDeploy.workflowTitle')}
-        maxHeight="lg"
-      />
+      {provider === 'github' ? (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">{t('ciDeploy.workflowTitle')}</p>
+            <Button type="button" variant="outline" size="sm" onClick={copy}>
+              <CopyIcon className="size-4" />
+              {t('ciDeploy.copy')}
+            </Button>
+          </div>
+          <CodeBlock
+            code={workflow.data.yaml}
+            language="yaml"
+            label={t('ciDeploy.workflowTitle')}
+            maxHeight="lg"
+          />
+        </>
+      ) : (
+        <ProviderSnippet
+          provider={provider}
+          appName={appName}
+          apiUrl={workflow.data.api_url}
+        />
+      )}
       <Collapsible>
         <CollapsibleTrigger className="text-xs text-muted-foreground hover:text-foreground">
           {t('ciDeploy.cliToggle')}
@@ -229,7 +236,7 @@ function WorkflowPanel({ appName }: { appName: string }) {
         <CollapsiblePanel>
           <CodeBlock
             className="mt-2"
-            code={`levelrail-cli apps github-actions trust add ${appName} --repo owner/name\nlevelrail-cli apps github-actions workflow ${appName}`}
+            code={`levelrail-cli apps ci trust add ${appName} --provider ${provider} --repo ${cliRepo[provider]}\nlevelrail-cli apps ci workflow ${appName}`}
             language="bash"
             label={t('ciDeploy.cliToggle')}
             prompt
@@ -244,6 +251,7 @@ function WorkflowPanel({ appName }: { appName: string }) {
 // may deploy this app through a short-lived OIDC token (no stored secret).
 export function CIDeployCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploys')
+  const [provider, setProvider] = useState<CIProvider>('github')
   return (
     <Card>
       <CardHeader>
@@ -257,8 +265,9 @@ export function CIDeployCard({ appName }: { appName: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <TrustList appName={appName} />
-        <TrustForm appName={appName} />
-        <WorkflowPanel appName={appName} />
+        <CIProviderPicker provider={provider} onChange={setProvider} />
+        <CITrustForm key={provider} appName={appName} provider={provider} />
+        <WorkflowPanel appName={appName} provider={provider} />
       </CardContent>
     </Card>
   )

@@ -4,7 +4,12 @@ import { z } from 'zod'
 import { PlugsIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useTranslation } from 'react-i18next'
+import {
+  formatPublishedPortsInput,
+  parsePublishedPorts,
+} from '../lib/publishedPortsInput'
+import { PublishedPortError } from './PublishedPortError'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -65,6 +70,7 @@ const portSchema = z
       ),
     bindAddressMode: z.enum(BIND_ADDRESS_MODES),
     customBindAddress: z.string().trim(),
+    publishedPorts: z.string().trim(),
   })
   .refine(
     (data) =>
@@ -95,6 +101,7 @@ function toFieldValues(app: AppDetail): PortFormInput {
   return {
     port: app.port,
     hostPort: app.host_port ? String(app.host_port) : '',
+    publishedPorts: formatPublishedPortsInput(app.published_ports),
     ...toBindAddressFields(app.bind_address),
   }
 }
@@ -106,20 +113,27 @@ function toFieldValues(app: AppDetail): PortFormInput {
 // others and must not let a background refetch stomp unsaved edits in a
 // sibling editor.
 export function PortEditor({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('https')
   const updateApp = useUpdateApp(app.name)
-  const { control, register, handleSubmit, watch, formState } = useForm<
-    PortFormInput,
-    unknown,
-    PortFormOutput
-  >({
-    resolver: zodResolver(portSchema),
-    values: toFieldValues(app),
-    resetOptions: { keepDirtyValues: true },
-  })
+  const { control, register, handleSubmit, watch, setError, formState } =
+    useForm<PortFormInput, unknown, PortFormOutput>({
+      resolver: zodResolver(portSchema),
+      values: toFieldValues(app),
+      resetOptions: { keepDirtyValues: true },
+    })
 
   const bindAddressMode = watch('bindAddressMode')
 
   const onSubmit = handleSubmit((values) => {
+    const parsed = parsePublishedPorts(values.publishedPorts)
+    if (!parsed.ok) {
+      setError('publishedPorts', {
+        message: t(`portEditor.errors.${parsed.error.kind}`, {
+          entry: parsed.error.entry,
+        }),
+      })
+      return
+    }
     const bindAddress =
       values.bindAddressMode === 'custom'
         ? values.customBindAddress
@@ -130,6 +144,7 @@ export function PortEditor({ app }: { app: AppDetail }) {
         port: values.port,
         host_port: values.hostPort === '' ? null : Number(values.hostPort),
         bind_address: bindAddress,
+        published_ports: parsed.ports,
       },
       {
         onSuccess: () => {
@@ -218,6 +233,28 @@ export function PortEditor({ app }: { app: AppDetail }) {
               </FieldDescription>
             </Field>
 
+            <Field
+              className="max-w-72"
+              data-invalid={formState.errors.publishedPorts ? true : undefined}
+            >
+              <FieldLabel htmlFor="app-published-ports">
+                {t('portEditor.publishedPorts')}
+              </FieldLabel>
+              <Input
+                id="app-published-ports"
+                placeholder={t('portEditor.publishedPortsPlaceholder')}
+                spellCheck={false}
+                {...register('publishedPorts')}
+                aria-invalid={!!formState.errors.publishedPorts}
+              />
+              {formState.errors.publishedPorts ? null : (
+                <FieldDescription>
+                  {t('portEditor.publishedPortsHint')}
+                </FieldDescription>
+              )}
+              <FieldError errors={[formState.errors.publishedPorts]} />
+            </Field>
+
             {bindAddressMode === 'custom' ? (
               <Field
                 className="max-w-48"
@@ -245,9 +282,7 @@ export function PortEditor({ app }: { app: AppDetail }) {
             </Button>
           </div>
           {updateApp.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{updateApp.error.message}</AlertDescription>
-            </Alert>
+            <PublishedPortError error={updateApp.error} />
           ) : null}
         </form>
       </CardContent>

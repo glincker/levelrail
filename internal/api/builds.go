@@ -467,6 +467,7 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 	}
 	if svc.Health != nil {
 		out.Health = specHealthFromStore(*svc.Health)
+		out.Restart = svc.Health.Restart
 	}
 	if svc.Egress != nil {
 		out.Egress = specEgressFromStore(*svc.Egress)

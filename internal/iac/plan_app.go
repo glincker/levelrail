@@ -104,10 +104,13 @@ func (p *planner) planApp(r *Resource) {
 		return
 	}
 	liveMap := toMap(appFromWire(live.wire, idNames{p.st}))
-	for _, k := range []string{"project", "environment", "volumes"} {
+	for _, k := range []string{"project", "environment", "volumes", "publishedPorts", "restart"} {
 		if _, want := f[k]; !want {
 			delete(liveMap, k)
 		}
+	}
+	if _, want := f["publishedPorts"]; want && liveMap["publishedPorts"] == nil {
+		liveMap["publishedPorts"] = []any{}
 	}
 	if want, _ := f["image"].(string); want != "" {
 		if have, _ := liveMap["image"].(string); sameDeclaredImage(want, have) {

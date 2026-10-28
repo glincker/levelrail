@@ -73,30 +73,31 @@ type wireDatabase struct {
 }
 
 type wireApp struct {
-	Name          string                    `json:"name"`
-	Image         string                    `json:"image"`
-	Port          int                       `json:"port"`
-	HostPort      *int                      `json:"host_port,omitempty"`
-	BindAddress   string                    `json:"bind_address"`
-	Domains       []string                  `json:"domains,omitempty"`
-	Env           map[string]string         `json:"env,omitempty"`
-	SecretEnv     []string                  `json:"secret_env,omitempty"`
-	VaultEnv      map[string]map[string]any `json:"vault_env,omitempty"`
-	Resources     *store.ServiceResources   `json:"resources,omitempty"`
-	Health        *store.ServiceHealth      `json:"health,omitempty"`
-	Hooks         *store.ServiceHooks       `json:"hooks,omitempty"`
-	Strategy      string                    `json:"strategy"`
-	Replicas      int                       `json:"replicas"`
-	Labels        map[string]string         `json:"labels,omitempty"`
-	Command       []string                  `json:"command,omitempty"`
-	ProjectID     string                    `json:"project_id,omitempty"`
-	EnvironmentID string                    `json:"environment_id,omitempty"`
-	Tags          []string                  `json:"tags,omitempty"`
-	Volumes       []map[string]any          `json:"volumes,omitempty"`
-	BindMounts    []map[string]any          `json:"bind_mounts,omitempty"`
-	Egress        map[string]any            `json:"egress,omitempty"`
-	EnvDirty      bool                      `json:"env_dirty"`
-	DatabaseEnv   map[string]wireDBRef      `json:"database_env,omitempty"`
+	Name           string                    `json:"name"`
+	Image          string                    `json:"image"`
+	Port           int                       `json:"port"`
+	HostPort       *int                      `json:"host_port,omitempty"`
+	PublishedPorts []store.PublishedPort     `json:"published_ports,omitempty"`
+	BindAddress    string                    `json:"bind_address"`
+	Domains        []string                  `json:"domains,omitempty"`
+	Env            map[string]string         `json:"env,omitempty"`
+	SecretEnv      []string                  `json:"secret_env,omitempty"`
+	VaultEnv       map[string]map[string]any `json:"vault_env,omitempty"`
+	Resources      *store.ServiceResources   `json:"resources,omitempty"`
+	Health         *store.ServiceHealth      `json:"health,omitempty"`
+	Hooks          *store.ServiceHooks       `json:"hooks,omitempty"`
+	Strategy       string                    `json:"strategy"`
+	Replicas       int                       `json:"replicas"`
+	Labels         map[string]string         `json:"labels,omitempty"`
+	Command        []string                  `json:"command,omitempty"`
+	ProjectID      string                    `json:"project_id,omitempty"`
+	EnvironmentID  string                    `json:"environment_id,omitempty"`
+	Tags           []string                  `json:"tags,omitempty"`
+	Volumes        []map[string]any          `json:"volumes,omitempty"`
+	BindMounts     []map[string]any          `json:"bind_mounts,omitempty"`
+	Egress         map[string]any            `json:"egress,omitempty"`
+	EnvDirty       bool                      `json:"env_dirty"`
+	DatabaseEnv    map[string]wireDBRef      `json:"database_env,omitempty"`
 }
 
 type wireDBRef struct {

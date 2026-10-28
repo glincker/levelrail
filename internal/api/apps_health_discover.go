@@ -82,7 +82,7 @@ func (rt *Router) handleDiscoverAppHealth(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	addr, err := application.PrimaryAddr(state)
+	addr, err := application.PrimaryAddr(state, svc.Port)
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())
 		return

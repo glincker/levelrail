@@ -247,8 +247,8 @@ func (rt *Router) handleStartCanary(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Router) canaryBlockReason(ctx context.Context, svc store.DesiredService) string {
 	switch {
-	case svc.HostPort != nil:
-		return "an app with a pinned host port cannot run two releases at once"
+	case svc.HostPort != nil, len(svc.PublishedPorts) > 0:
+		return "an app with a pinned or published host port cannot run two releases at once"
 	case svc.Replicas > 1:
 		return "canary needs a single-replica app"
 	case svc.ImageIDRef != "":

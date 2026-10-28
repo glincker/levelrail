@@ -243,9 +243,14 @@ type deployAttemptResource struct {
 	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *failure.Failure `json:"failure,omitempty"`
-	// Outcome is set by the single-deploy endpoint only: in_progress, healthy,
-	// failed, canceled, superseded or blocked.
+	// Outcome is in_progress, healthy, failed, canceled, superseded or
+	// blocked, on every response that carries an attempt.
 	Outcome string `json:"outcome,omitempty"`
+	// OutcomeReason is a one-line why behind Outcome.
+	OutcomeReason string `json:"outcome_reason,omitempty"`
+	// RolloutCrashLoopRestarts is the restart count at which a never-serving
+	// rollout counts as failed, read-only so clients apply the same rule.
+	RolloutCrashLoopRestarts int `json:"rollout_crash_loop_restarts,omitempty"`
 	// Phase is the stored attempt status when the single-deploy endpoint
 	// reports a derived Status (building, rolling_out, failed).
 	Phase string `json:"phase,omitempty"`
@@ -336,11 +341,13 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	supply := rt.supplyChainRecords(r.Context(), ids)
 	deployURLs := rt.deployURLsByAttempt(r.Context(), name)
 	held := rt.heldBuildIDs(r.Context(), name)
+	conds := rt.rolloutConditions(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	chainPos := rerunChainPositions(attempts)
 	liveID := newestSucceededID(attempts)
-	for _, a := range attempts {
+	for i, a := range attempts {
 		res := toDeployAttemptResource(a)
+		applyDeployOutcome(&res, a, i == 0, conds)
 		if isRedeployOfEarlierImage(a, attempts) {
 			res.Trigger = store.DeploymentTriggerRollback
 		}

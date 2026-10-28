@@ -250,3 +250,72 @@ describe('computeRolloutSubStages', () => {
     expect(cleanup.status).toBe('pending')
   })
 })
+
+describe('computeDeployStages crash loop rollout', () => {
+  const loopMsg = (n: number) =>
+    `"web" keeps exiting (${n} restarts), next restart in 20s`
+  const loop = (
+    n: number,
+    at = '2026-01-01T00:00:10Z',
+  ): ReconcileCondition => ({
+    ...condition('CrashLoopBackOff', at),
+    Status: 'False',
+    Message: loopMsg(n),
+  })
+  const rollout = (a: DeployAttempt, c: ReconcileCondition[]) =>
+    computeDeployStages(a, c, true)[1]
+
+  it('fails a first deploy crash looping at the restart threshold', () => {
+    const s = rollout(baseAttempt, [loop(2)])
+    expect(s.status).toBe('failed')
+    expect(s.detail).toBe(loopMsg(2))
+  })
+
+  it('stays running for one restart that may still recover', () => {
+    expect(rollout(baseAttempt, [loop(1)]).status).toBe('running')
+  })
+
+  it('stays running when the crash loop predates the attempt finishing', () => {
+    expect(rollout(baseAttempt, [loop(5, '2026-01-01T00:00:01Z')]).status).toBe(
+      'running',
+    )
+  })
+
+  it('does not flip an attempt that already reached serving', () => {
+    const serving: DeployAttempt = { ...baseAttempt, rollout_state: 'serving' }
+    expect(rollout(serving, [loop(9)]).status).not.toBe('failed')
+  })
+
+  it('uses the server outcome when present', () => {
+    const failed: DeployAttempt = { ...baseAttempt, outcome: 'failed' }
+    expect(rollout(failed, []).status).toBe('failed')
+    const healthy: DeployAttempt = { ...baseAttempt, outcome: 'healthy' }
+    expect(rollout(healthy, [loop(9)]).status).toBe('done')
+  })
+
+  it('lets a server in_progress outcome win over a local crash loop match', () => {
+    const a: DeployAttempt = { ...baseAttempt, outcome: 'in_progress' }
+    expect(rollout(a, [loop(9)]).status).toBe('running')
+  })
+
+  it('shows the server reason on a failed outcome', () => {
+    const a: DeployAttempt = {
+      ...baseAttempt,
+      outcome: 'failed',
+      outcome_reason: 'crash looping',
+    }
+    const s = rollout(a, [])
+    expect(s.status).toBe('failed')
+    expect(s.detail).toBe('crash looping')
+  })
+
+  it('reads the crash loop threshold from the server value', () => {
+    const a: DeployAttempt = { ...baseAttempt, rollout_crash_loop_restarts: 4 }
+    expect(rollout(a, [loop(3)]).status).toBe('running')
+    expect(rollout(a, [loop(4)]).status).toBe('failed')
+  })
+
+  it('falls back to the local rule on an older server', () => {
+    expect(rollout(baseAttempt, [loop(2)]).status).toBe('failed')
+  })
+})

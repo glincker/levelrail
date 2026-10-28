@@ -54,8 +54,8 @@ func appsGitHubActionsUsage(prog string) string {
   %[1]s apps github-actions get <app> [flags]      show what the deploy action reports back to GitHub
   %[1]s apps github-actions set <app> [flags]      change the environment name and which reports are on
   %[1]s apps github-actions workflow <app> [flags] print a deploy workflow (OIDC login, wait, rollback on failure)
-  %[1]s apps github-actions trust list|add|remove <app> [flags]   which repositories may deploy the app from CI
-  %[1]s apps github-actions token <app> [flags]    swap the job OIDC identity for a 15 minute deploy token (used by the action)
+  %[1]s apps github-actions trust list|add|remove <app> [flags]   which repositories may deploy the app from CI (also "%[1]s apps ci trust")
+  %[1]s apps github-actions token <app> [flags]    deprecated alias of "%[1]s apps ci token", which also takes --provider
   %[1]s apps github-actions start <app> [flags]    open a GitHub deployment and check run (used by the action)
   %[1]s apps github-actions finish <app> [flags]   close them with the deploy outcome (used by the action)
 

@@ -74,6 +74,43 @@ func (v *githubOIDCVerifier) VerifyStack(ctx context.Context, rawToken, audience
 	}, nil
 }
 
+// verifyStackAnyProvider picks the verifier by issuer like app exchanges: GitHub's fixed one, or a GitLab or
+// CircleCI issuer that a trust on this stack names exactly. Any other issuer is refused before a key fetch.
+func (rt *Router) verifyStackAnyProvider(ctx context.Context, stackName, raw, audience string) (CIStackClaims, error) {
+	iss := unverifiedCIIssuer(raw)
+	if iss == "" || iss == githubActionsOIDCIssuer {
+		return rt.verifyStackIdentity(ctx, raw, audience)
+	}
+	db, ts := rt.stackGateDB(), rt.ciStackTrusts()
+	if db == nil || ts == nil {
+		return CIStackClaims{}, errors.New("api: stack oidc trusts are not available")
+	}
+	stack, err := db.GetStackByName(ctx, stackName)
+	if err != nil {
+		return CIStackClaims{}, errors.New("api: stack oidc issuer is not configured")
+	}
+	all, err := ts.ListCIStackTrusts(ctx, stack.ID)
+	if err != nil {
+		return CIStackClaims{}, fmt.Errorf("api: list stack trusts: %w", err)
+	}
+	for _, t := range all {
+		if p := ciProviderName(t.Provider); p == ciProviderGitHub || t.Issuer != iss {
+			continue
+		}
+		spec, err := ciProviderSpecFor(ciProviderName(t.Provider), t.Issuer)
+		if err != nil {
+			return CIStackClaims{}, err
+		}
+		pv, ok := rt.ciVerifier.(ciProviderVerifier)
+		if !ok {
+			pv = defaultCIJWTVerifier()
+		}
+		c, err := pv.VerifyProvider(ctx, raw, spec, audience)
+		return CIStackClaims{CIClaims: c}, err
+	}
+	return CIStackClaims{}, errors.New("api: stack oidc issuer is not configured on any trust of this stack")
+}
+
 func (rt *Router) verifyStackIdentity(ctx context.Context, raw, audience string) (CIStackClaims, error) {
 	switch v := rt.ciVerifier.(type) {
 	case nil:
@@ -157,28 +194,37 @@ func globMatch(pattern, value string) bool {
 }
 
 type stackTrustRequest struct {
+	Provider       string   `json:"provider,omitempty"`
+	Issuer         string   `json:"issuer,omitempty"`
+	OrgID          string   `json:"org_id,omitempty"`
 	Repository     string   `json:"repository"`
 	RefPattern     string   `json:"ref_pattern"`
 	Environment    string   `json:"environment"`
 	SubjectPattern string   `json:"subject_pattern"`
 	Verbs          []string `json:"verbs"`
+	// ProtectedRefOnly is a pointer so an omitted value takes the provider default (true for GitLab).
+	ProtectedRefOnly *bool `json:"protected_ref_only,omitempty"`
 }
 
 type stackTrustResource struct {
-	ID             string    `json:"id"`
-	Stack          string    `json:"stack"`
-	Repository     string    `json:"repository"`
-	RefPattern     string    `json:"ref_pattern"`
-	Environment    string    `json:"environment"`
-	SubjectPattern string    `json:"subject_pattern"`
-	Verbs          []string  `json:"verbs"`
-	CreatedBy      string    `json:"created_by"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID               string    `json:"id"`
+	Provider         string    `json:"provider"`
+	Issuer           string    `json:"issuer,omitempty"`
+	ProtectedRefOnly bool      `json:"protected_ref_only,omitempty"`
+	Warning          string    `json:"warning,omitempty"`
+	Stack            string    `json:"stack"`
+	Repository       string    `json:"repository"`
+	RefPattern       string    `json:"ref_pattern"`
+	Environment      string    `json:"environment"`
+	SubjectPattern   string    `json:"subject_pattern"`
+	Verbs            []string  `json:"verbs"`
+	CreatedBy        string    `json:"created_by"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 func toStackTrustResource(stack string, t store.CIStackTrust) stackTrustResource {
 	return stackTrustResource{
-		ID: t.ID, Stack: stack, Repository: t.Repository, RefPattern: t.RefPattern, Environment: t.Environment,
+		ID: t.ID, Stack: stack, Provider: ciProviderName(t.Provider), Issuer: t.Issuer, ProtectedRefOnly: t.ProtectedRefOnly, Repository: t.Repository, RefPattern: t.RefPattern, Environment: t.Environment,
 		SubjectPattern: t.SubjectPattern, Verbs: t.Verbs, CreatedBy: t.CreatedBy, CreatedAt: t.CreatedAt,
 	}
 }
@@ -190,8 +236,16 @@ func validateStackTrust(req *stackTrustRequest) string {
 	req.RefPattern = strings.TrimSpace(req.RefPattern)
 	req.Environment = strings.TrimSpace(req.Environment)
 	req.SubjectPattern = strings.TrimSpace(req.SubjectPattern)
-	if !ciRepositoryPattern.MatchString(req.Repository) {
-		return "repository must be an exact owner/name"
+	shared := ciTrustRequest{
+		Provider: req.Provider, Issuer: req.Issuer, OrgID: req.OrgID, Repository: req.Repository,
+		Environment: req.Environment, ProtectedRefOnly: req.ProtectedRefOnly,
+	}
+	if msg := validateStackProvider(&shared); msg != "" {
+		return msg
+	}
+	req.Provider, req.Issuer, req.OrgID, req.ProtectedRefOnly, req.Environment = shared.Provider, shared.Issuer, shared.OrgID, shared.ProtectedRefOnly, shared.Environment
+	if req.Provider != ciProviderGitHub && req.SubjectPattern != "" {
+		return "subject_pattern applies to github trusts only"
 	}
 	parts := strings.Split(req.RefPattern, "/")
 	if !validGlob(req.RefPattern) || len(parts) < 3 || parts[0] != "refs" || (parts[1] != "heads" && parts[1] != "tags" && parts[1] != "pull") {
@@ -199,6 +253,9 @@ func validateStackTrust(req *stackTrustRequest) string {
 	}
 	if strings.Contains(req.Environment, "*") || len(req.Environment) > maxGitHubEnvironmentLen {
 		return "environment must be an exact name"
+	}
+	if req.Provider != ciProviderGitHub && parts[1] == "pull" {
+		return "gitlab and circleci trusts take branch or tag refs only"
 	}
 	if req.SubjectPattern != "" && (!validGlob(req.SubjectPattern) || !strings.HasPrefix(req.SubjectPattern, "repo:"+req.Repository+":")) {
 		return "subject_pattern must start with repo:<repository>: and hold at most one * per segment"
@@ -220,8 +277,18 @@ func validateStackTrust(req *stackTrustRequest) string {
 		if req.Environment == "" {
 			return "an apply trust needs an environment"
 		}
+		if req.Provider == ciProviderGitLab && (req.ProtectedRefOnly == nil || !*req.ProtectedRefOnly) {
+			return "a gitlab apply trust needs protected_ref_only"
+		}
 	}
 	return ""
+}
+
+// validateStackProvider runs the app-trust provider rules; GitHub keeps the stricter exact owner/name form.
+func validateStackProvider(req *ciTrustRequest) string {
+	req.Provider = ciProviderName(strings.ToLower(strings.TrimSpace(req.Provider)))
+	req.Issuer, req.OrgID = strings.TrimSpace(req.Issuer), strings.TrimSpace(req.OrgID)
+	return validateCIProvider(req)
 }
 
 // stackForTrust resolves the stack of a trust route, writing the error itself.
@@ -267,6 +334,7 @@ func (rt *Router) handleCreateStackTrust(w http.ResponseWriter, r *http.Request)
 	t := store.CIStackTrust{
 		ID: id, StackID: stack.ID, Repository: req.Repository, RefPattern: req.RefPattern, Environment: req.Environment,
 		SubjectPattern: req.SubjectPattern, Verbs: req.Verbs, CreatedBy: actor, CreatedAt: time.Now().UTC(),
+		Provider: req.Provider, Issuer: req.Issuer, ProtectedRefOnly: req.ProtectedRefOnly != nil && *req.ProtectedRefOnly,
 	}
 	if err := ts.SaveCIStackTrust(r.Context(), t); err != nil {
 		if errors.Is(err, store.ErrCIStackTrustExists) {
@@ -279,8 +347,13 @@ func (rt *Router) handleCreateStackTrust(w http.ResponseWriter, r *http.Request)
 	rt.auditStack(r, auditStackTrustCreate, map[string]any{
 		"stack": stack.Name, "trust_id": t.ID, "repository": t.Repository, "ref_pattern": t.RefPattern,
 		"environment": t.Environment, "subject_pattern": t.SubjectPattern, "verbs": t.Verbs,
+		"provider": ciProviderName(t.Provider), "issuer": t.Issuer, "protected_ref_only": t.ProtectedRefOnly,
 	})
-	writeJSON(w, http.StatusCreated, toStackTrustResource(stack.Name, t))
+	res := toStackTrustResource(stack.Name, t)
+	if t.Provider == ciProviderGitLab && !t.ProtectedRefOnly {
+		res.Warning = ciGitLabUnprotectedWarning
+	}
+	writeJSON(w, http.StatusCreated, res)
 }
 
 // handleListStackTrusts handles GET /api/v1/stacks/{name}/oidc-trusts (root).
@@ -325,10 +398,7 @@ func (rt *Router) handleDeleteStackTrust(w http.ResponseWriter, r *http.Request)
 // stackTrustMatches reports whether every claim constraint of t holds. An empty environment
 // constraint is open, but only plan trusts can be saved that way.
 func stackTrustMatches(t store.CIStackTrust, c CIClaims) bool {
-	if t.Repository != c.Repository || !globMatch(t.RefPattern, c.Ref) {
-		return false
-	}
-	if t.Environment != "" && t.Environment != c.Environment {
+	if !ciIdentityAllowed(t.Provider, t.Issuer, t.Repository, t.Environment, t.ProtectedRefOnly, c) || !globMatch(t.RefPattern, c.Ref) {
 		return false
 	}
 	return t.SubjectPattern == "" || globMatch(t.SubjectPattern, c.Subject)
@@ -401,7 +471,7 @@ func (rt *Router) handleStackOIDCExchange(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, msgStackOIDCNeedsContext)
 		return
 	}
-	claims, err := rt.verifyStackIdentity(r.Context(), req.IDToken, audience)
+	claims, err := rt.verifyStackAnyProvider(r.Context(), req.Stack, req.IDToken, audience)
 	if err != nil {
 		rt.logger.Info("api: stack oidc exchange: token rejected", slog.String("stack", clipClaim(req.Stack)), slog.String("error", err.Error()))
 		writeError(w, http.StatusUnauthorized, "identity token rejected")
@@ -468,6 +538,7 @@ func (rt *Router) mintStackOIDCToken(w http.ResponseWriter, r *http.Request, sta
 		"stack": stack.Name, "trust_id": trust.ID, "verbs": trust.Verbs, "token_id": rec.ID, "expires_at": expires.UTC().Format(time.RFC3339),
 		"repository": clipClaim(claims.Repository), "ref": clipClaim(claims.Ref), "environment": clipClaim(claims.Environment),
 		"sha": clipClaim(claims.SHA), "run_id": clipClaim(claims.RunID), "subject": clipClaim(claims.Subject),
+		"provider": ciProviderName(claims.Provider),
 	})
 	writeJSON(w, http.StatusOK, stackExchangeResponse{Token: raw, ExpiresAt: expires, Stack: stack.Name, Verbs: trust.Verbs})
 }

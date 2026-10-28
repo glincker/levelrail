@@ -33,6 +33,19 @@
         "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "host_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "bind_address": { "type": "string", "minLength": 1 },
+        "published_ports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["container_port", "host_port"],
+            "properties": {
+              "container_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "host_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "protocol": { "enum": ["tcp", "udp"] }
+            }
+          }
+        },
         "health": { "$ref": "#/$defs/health" },
         "resources": { "$ref": "#/$defs/resources" },
         "env": {
@@ -82,7 +95,8 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
-        }
+        },
+        "restart": { "type": "string" }
       }
     },
     "contextConfig": {

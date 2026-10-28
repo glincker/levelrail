@@ -1,0 +1,64 @@
+services:
+  authelia:
+    image: authelia/authelia:4.39.28
+    ports: ["9091"]
+    environment:
+      X_AUTHELIA_CONFIG_FILTERS: template
+      PORTAL_URL: ${SERVICE_FQDN_AUTHELIA:-https://auth.localhost}
+      ADMIN_PASSWORD: ${SERVICE_PASSWORD_ADMIN}
+      AUTHELIA_SESSION_SECRET: ${SERVICE_PASSWORD_SESSION}
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: ${SERVICE_PASSWORD_STORAGE}
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET: ${SERVICE_PASSWORD_JWT}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        mkdir -p /config /data
+        cat > /config/configuration.yml <<'CFG'
+        server:
+          address: tcp://0.0.0.0:9091
+        authentication_backend:
+          file:
+            path: /data/users.yml
+        access_control:
+          default_policy: one_factor
+        session:
+          cookies:
+            - domain: '{{ env "PORTAL_URL" | trimPrefix "https://" | trimPrefix "http://" }}'
+              authelia_url: 'https://{{ env "PORTAL_URL" | trimPrefix "https://" | trimPrefix "http://" }}'
+        storage:
+          local:
+            path: /data/db.sqlite3
+        notifier:
+          filesystem:
+            filename: /data/notification.txt
+        CFG
+        # Rebuilt only when no user has a password; hashes of any algorithm are kept, an empty one refuses to start
+        if sed "s/[\"']//g" /data/users.yml 2>/dev/null | grep -Eq '^[[:space:]]*password:[[:space:]]*[^[:space:]~]'; then
+          if sed "s/[\"']//g" /data/users.yml | grep -Eqx '[[:space:]]*password:[[:space:]]*(~|null)?[[:space:]]*'; then
+            echo "users.yml has a user with an empty password: set a hash or remove that user" >&2
+            exit 1
+          fi
+        else
+          rm -f /data/users.yml /data/admin.digest
+          [ -n "$ADMIN_PASSWORD" ] || exit 1
+          # mkpasswd reads the password from stdin so it never appears in argv
+          printf '%s' "$ADMIN_PASSWORD" | mkpasswd -P 0 -m sha512 > /data/admin.digest || { echo "authelia template: could not hash the admin password (mkpasswd failed or returned an invalid hash); not writing users.yml" >&2; rm -f /data/admin.digest; exit 1; }
+          # octal 044 is the dollar sign: the digest must start with the sha512-crypt prefix
+          grep -Eq '^[[:punct:]]6[[:punct:]][./A-Za-z0-9]{1,16}[[:punct:]][./A-Za-z0-9]{86}' /data/admin.digest || { echo "authelia template: could not hash the admin password (mkpasswd failed or returned an invalid hash); not writing users.yml" >&2; rm -f /data/admin.digest; exit 1; }
+          [ -z "`cut -c1,3 /data/admin.digest | tr -d '\044\n'`" ] || { echo "authelia template: could not hash the admin password (mkpasswd failed or returned an invalid hash); not writing users.yml" >&2; rm -f /data/admin.digest; exit 1; }
+          { printf 'users:\n  admin:\n    displayname: Admin\n    email: admin@localhost\n    groups:\n      - admins\n    password: "'; tr -d '\n' < /data/admin.digest; printf '"\n'; } > /data/users.yml.tmp
+          mv /data/users.yml.tmp /data/users.yml
+          rm -f /data/admin.digest
+        fi
+        unset ADMIN_PASSWORD
+        exec authelia --config /config/configuration.yml
+    volumes:
+      - data:/data
+      - config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:9091/api/health | grep -q OK"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s

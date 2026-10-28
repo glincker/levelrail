@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { TemplateDescription } from '@/components/templates/TemplateDescription'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -20,6 +21,7 @@ import { TemplateServices } from '../../components/templates/TemplateServices'
 import { TemplateWhatYouGet } from '../../components/templates/TemplateWhatYouGet'
 import { TemplateDeployForm } from '../../components/templates/TemplateDeployForm'
 import { RelatedTemplates } from '../../components/templates/RelatedTemplates'
+import { TemplateDeployResult } from '../../components/templates/TemplateDeployResult'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 import { TemplateLogoTile } from '../../components/TemplateLogoTile'
 import { RamFitBadge } from '../../components/RamFitBadge'
@@ -48,7 +50,9 @@ function TemplateDetailRoute() {
   const { t } = useTranslation('templates')
   const { id } = Route.useParams()
   const { data: template } = useServiceTemplate(id)
-  const deployTemplateNow = useDeployTemplateNow()
+  const deployTemplateNow = useDeployTemplateNow(undefined, {
+    showResult: true,
+  })
   const preview = useComposePreview(template?.compose ?? '', [])
   const services = useMemo(
     () => (preview.data?.valid ? preview.data.services : []),
@@ -97,6 +101,10 @@ function TemplateDetailRoute() {
             <Badge variant="outline">{template.category}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">{template.slogan}</p>
+          <TemplateDescription
+            description={template.description}
+            slogan={template.slogan}
+          />
           <div className="flex flex-wrap items-center gap-2">
             {template.recommended_memory_bytes ? (
               <>
@@ -206,6 +214,11 @@ function TemplateDetailRoute() {
           />
         </aside>
       </div>
+      <TemplateDeployResult
+        result={deployTemplateNow.deployed?.response ?? null}
+        templateId={deployTemplateNow.deployed?.templateId}
+        onClose={deployTemplateNow.clearDeployed}
+      />
     </div>
   )
 }

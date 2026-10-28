@@ -2,6 +2,7 @@ package iac
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -66,6 +67,29 @@ type appFields struct {
 	Jobs        map[string]jobFields `json:"jobs,omitempty"`
 	// Volumes maps a logical volume name to its mount path; named volumes only.
 	Volumes map[string]string `json:"volumes,omitempty"`
+	// PublishedPorts is nil when undeclared, so live ports stay unmanaged; an empty list clears them.
+	PublishedPorts *[]spec.PublishedPort `json:"publishedPorts,omitempty"`
+	Restart        string                `json:"restart,omitempty"`
+}
+
+// normPorts spells out the protocol and sorts, so live and declared lists compare equal.
+func normPorts(in []spec.PublishedPort) []spec.PublishedPort {
+	out := make([]spec.PublishedPort, 0, len(in))
+	for _, p := range in {
+		p.Protocol = p.EffectiveProtocol()
+		out = append(out, p)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.HostPort != b.HostPort {
+			return a.HostPort < b.HostPort
+		}
+		if a.Protocol != b.Protocol {
+			return a.Protocol < b.Protocol
+		}
+		return a.ContainerPort < b.ContainerPort
+	})
+	return out
 }
 
 var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true, "connections": true, "volumes": true}
@@ -219,6 +243,13 @@ func appFromWire(a wireApp, names idNames) appFields {
 	}
 	if a.HostPort != nil {
 		f.HostPort = *a.HostPort
+	}
+	if len(a.PublishedPorts) > 0 {
+		ports := normPorts(a.PublishedPorts)
+		f.PublishedPorts = &ports
+	}
+	if a.Health != nil {
+		f.Restart = a.Health.Restart
 	}
 	for _, v := range a.Volumes {
 		n, _ := v["name"].(string)

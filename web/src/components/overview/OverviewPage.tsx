@@ -27,6 +27,7 @@ import { useSetupDismissed } from './useSetupDismissed'
 import { computeOverviewLayout, type OverviewSection } from './overviewLayout'
 import { computeSetup } from './suggestions'
 import { AppAccessCard } from '../AppAccessCard'
+import { AppAccessDetails } from '../templates/AppAccessDetails'
 import { useAppUrls } from '../../queries/appUrls'
 import { pickOpenUrl } from '../appAccessRows'
 import { useAppTraffic } from '../../queries/appTraffic'
@@ -133,7 +134,12 @@ export function OverviewPage({
         anchorId="overview-attention"
       />
     ),
-    access: <AppAccessCard appName={app.name} />,
+    access: (
+      <div className="space-y-6">
+        <AppAccessCard appName={app.name} />
+        <AppAccessDetails app={app} />
+      </div>
+    ),
     kpis: (
       <section
         aria-label="Live traffic and resources"
@@ -183,6 +189,7 @@ export function OverviewPage({
 
   return (
     <div className="space-y-6">
+      {actions.confirmDialog}
       <OverviewHero
         app={app}
         conditions={conditions}

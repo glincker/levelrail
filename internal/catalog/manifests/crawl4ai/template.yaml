@@ -1,0 +1,22 @@
+id: crawl4ai
+name: Crawl4AI
+description: An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header.
+icon: spider
+category: AI
+documentation_url: https://docs.crawl4ai.com/core/docker-deployment/
+recommended_memory_bytes: 2147483648
+env:
+  - key: API_TOKEN
+    label: API token
+    description: Send it as a Bearer token on every API call except /health.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: crawl4ai
+    port: 11235
+    description: Address of the Crawl4AI API and playground.
+healthcheck:
+  service: crawl4ai
+  port: 11235
+  path: /health

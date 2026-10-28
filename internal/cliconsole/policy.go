@@ -8,35 +8,52 @@ import (
 	"github.com/GLINCKER/levelrail/internal/hostdiag"
 )
 
-// deniedCommands are command paths that only make sense on an operator's own
-// machine: they read or write local files, local config, or need a TTY.
-var deniedCommands = []string{
-	"auth", "login", "up", "profile", "completion", "init", "tui", "proxy", "migrate",
-	"import", "apply", "diff", "export", "update",
-	"tokens create",
-	"pipelines validate", "pipelines save",
-	"apps exec",
-	"env pull", "env push",
-	"logs fetch",
-	"backups download", "app-volume-backups download", "assets upload",
-	"control-plane-backups download", "control-plane-backups keys", "control-plane-backups escrow",
-	"secrets generate-master-key", "secrets rotate-master-key",
-}
-
-// allowedUnderDenied re-opens a read-only leaf under a denied group.
-var allowedUnderDenied = map[string]bool{"auth whoami": true}
-
-// deniedFlags read or write local paths, stdin or local env, or redirect the
-// CLI's own credentials and target; the console supplies those itself.
+// deniedFlags read or write local paths, stdin or local env, launch local
+// processes, or redirect the CLI's own credentials and target. They are
+// refused on every command, on top of the command allowlist.
 var deniedFlags = map[string]bool{
-	"file": true, "f": true, "out": true, "o": true, "out-dir": true, "output-file": true,
+	"file": true, "f": true, "out": true, "o": true, "out-dir": true, "output-file": true, "output": true,
 	"env-file": true, "var-file": true, "key-file": true, "new-key-file": true, "cert-file": true,
 	"body-file": true, "ssh-key": true, "extract": true, "dir": true, "dynamic-dir": true,
 	"upload": true, "mcp-binary": true, "password-stdin": true, "token-stdin": true,
 	"hf-token-from-env": true, "tok-env": true, "interactive": true, "i": true,
 	"token": true, "api-url": true, "profile": true, "profile-name": true,
 	"target-api-url": true, "target-token": true, "target-profile": true, "debug": true,
+	"input": true, "include": true, "exclude": true, "manifest": true, "signature": true, "config": true,
+	"redirects": true, "headers-file": true, "bin": true, "binary": true, "image": true, "launch": true,
+	"csv": true, "ratchet": true, "record": true, "fix": true, "static": true, "path": true,
+	"cwd": true, "workdir": true, "context": true, "dockerfile": true, "script": true, "exec": true,
+	"cmd": true, "command": true, "socket": true, "kubeconfig": true, "ca": true, "cacert": true,
 }
+
+// deniedFlagSuffixes catch path-like flags by name, so a new one is refused by default.
+var deniedFlagSuffixes = []string{"file", "files", "-path", "-dir", "-dirs", "-stdin", "-from-env", "-cert", "-socket", "-binary", "-bin"}
+
+// FlagDenied reports whether the console refuses flag name on every command.
+func FlagDenied(name string) bool {
+	if deniedFlags[name] {
+		return true
+	}
+	for _, s := range deniedFlagSuffixes {
+		if strings.HasSuffix(name, s) {
+			return true
+		}
+	}
+	return false
+}
+
+var allowed = func() map[string]bool {
+	m := make(map[string]bool, len(allowlist))
+	for _, e := range allowlist {
+		m[e.Path] = true
+	}
+	return m
+}()
+
+// Allowlist returns the reviewed command table, for docs and the drift test.
+func Allowlist() []AllowEntry { return append([]AllowEntry(nil), allowlist...) }
+
+func commandDenied(path string) bool { return !allowed[path] }
 
 // DeniedFlags returns the refused flag names, sorted, for docs and tests.
 func DeniedFlags() []string {
@@ -48,19 +65,8 @@ func DeniedFlags() []string {
 	return out
 }
 
-func commandDenied(path string) bool {
-	if allowedUnderDenied[path] {
-		return false
-	}
-	for _, d := range deniedCommands {
-		if path == d || strings.HasPrefix(path, d+" ") {
-			return true
-		}
-	}
-	return false
-}
-
-// Check vets argv against the CLI command tree and the console's denylists.
+// Check vets argv against the CLI command tree, the command allowlist and
+// the flag deny rules.
 // It returns the matched command path, for audit.
 func Check(argv []string) (string, error) {
 	if len(argv) == 0 {
@@ -110,6 +116,9 @@ func Check(argv []string) (string, error) {
 	return path, nil
 }
 
+// DispatchArgs is the argv the CLI dispatches on after it removes scope flags.
+func DispatchArgs(argv []string) []string { return stripScopeFlags(argv) }
+
 // stripScopeFlags mirrors the CLI's extractScopeFlags: --team anywhere,
 // --project only before the first positional word.
 func stripScopeFlags(argv []string) []string {
@@ -147,9 +156,15 @@ func checkArgs(args []string) error {
 		if a == "--" {
 			return reject("\"--\" pass-through arguments are not available in the web console")
 		}
+		if a == "-" || strings.HasPrefix(a, "@") {
+			return reject("stdin and @file arguments are not available in the web console")
+		}
 		name, isFlag := flagName(a)
-		if isFlag && deniedFlags[name] {
-			return reject("flag --%s reads or writes local files or credentials and is not available in the web console", name)
+		if isFlag && FlagDenied(name) {
+			return reject("flag --%s reads or writes local files, launches processes or changes credentials and is not available in the web console", name)
+		}
+		if _, v, inline := strings.Cut(a, "="); isFlag && inline && (v == "-" || strings.HasPrefix(v, "@")) {
+			return reject("stdin and @file arguments are not available in the web console")
 		}
 	}
 	return nil
@@ -180,13 +195,13 @@ type Command struct {
 func Commands() []Command {
 	out := []Command{}
 	for name, node := range clitree.Tree {
-		if commandDenied(canonical(name)) && !hasAllowedChild(canonical(name)) {
+		if !hasAllowed(canonical(name)) {
 			continue
 		}
 		c := Command{Name: name, Subcommands: []string{}}
 		if node != nil {
 			for sub := range node.Subs {
-				if !commandDenied(canonical(name) + " " + sub) {
+				if hasAllowed(canonical(name) + " " + sub) {
 					c.Subcommands = append(c.Subcommands, sub)
 				}
 			}
@@ -206,9 +221,10 @@ func Commands() []Command {
 // IsHost reports whether a parsed line belongs to the in-process host diagnostics.
 func IsHost(argv []string) bool { return len(argv) > 0 && argv[0] == hostdiag.Command }
 
-func hasAllowedChild(top string) bool {
-	for p := range allowedUnderDenied {
-		if strings.HasPrefix(p, top+" ") {
+// hasAllowed reports whether path or any command under it is allowlisted.
+func hasAllowed(path string) bool {
+	for p := range allowed {
+		if p == path || strings.HasPrefix(p, path+" ") {
 			return true
 		}
 	}

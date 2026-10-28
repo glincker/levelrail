@@ -6494,10 +6494,13 @@ func (x *WatchEventsRequest) GetWatchId() string {
 // apart from "already exited or OOM-killed" the same way a local one
 // can.
 type ExitState struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Running       bool                   `protobuf:"varint,1,opt,name=running,proto3" json:"running,omitempty"`
-	OomKilled     bool                   `protobuf:"varint,2,opt,name=oom_killed,json=oomKilled,proto3" json:"oom_killed,omitempty"`
-	ExitCode      int32                  `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Running   bool                   `protobuf:"varint,1,opt,name=running,proto3" json:"running,omitempty"`
+	OomKilled bool                   `protobuf:"varint,2,opt,name=oom_killed,json=oomKilled,proto3" json:"oom_killed,omitempty"`
+	ExitCode  int32                  `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	// started_at and finished_at are unset by agents older than v0.8.9 and for a never-started container.
+	StartedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	FinishedAt    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6551,6 +6554,20 @@ func (x *ExitState) GetExitCode() int32 {
 		return x.ExitCode
 	}
 	return 0
+}
+
+func (x *ExitState) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *ExitState) GetFinishedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.FinishedAt
+	}
+	return nil
 }
 
 type InspectExitStateRequest struct {
@@ -7732,12 +7749,16 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x14unsupported_provider\x18\x02 \x01(\bR\x13unsupportedProvider\x12\x1a\n" +
 	"\bprovider\x18\x03 \x01(\tR\bprovider\"/\n" +
 	"\x12WatchEventsRequest\x12\x19\n" +
-	"\bwatch_id\x18\x01 \x01(\tR\awatchId\"a\n" +
+	"\bwatch_id\x18\x01 \x01(\tR\awatchId\"\xd9\x01\n" +
 	"\tExitState\x12\x18\n" +
 	"\arunning\x18\x01 \x01(\bR\arunning\x12\x1d\n" +
 	"\n" +
 	"oom_killed\x18\x02 \x01(\bR\toomKilled\x12\x1b\n" +
-	"\texit_code\x18\x03 \x01(\x05R\bexitCode\"-\n" +
+	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x129\n" +
+	"\n" +
+	"started_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12;\n" +
+	"\vfinished_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"finishedAt\"-\n" +
 	"\x17InspectExitStateRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"e\n" +
 	"\x18InspectExitStateResponse\x12\x14\n" +
@@ -8020,26 +8041,28 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	82,  // 101: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
 	83,  // 102: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
 	102, // 103: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	85,  // 104: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
-	88,  // 105: levelrail.agent.v1.DeviceConfig.peers:type_name -> levelrail.agent.v1.PeerConfig
-	89,  // 106: levelrail.agent.v1.ApplyMeshRequest.config:type_name -> levelrail.agent.v1.DeviceConfig
-	90,  // 107: levelrail.agent.v1.ApplyMeshResponse.identity:type_name -> levelrail.agent.v1.NodeIdentity
-	95,  // 108: levelrail.agent.v1.MeshStatusResponse.peers:type_name -> levelrail.agent.v1.MeshPeerStatus
-	2,   // 109: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	11,  // 110: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	5,   // 111: levelrail.agent.v1.AgentService.Renew:input_type -> levelrail.agent.v1.RenewRequest
-	7,   // 112: levelrail.agent.v1.AgentService.Reenroll:input_type -> levelrail.agent.v1.ReenrollRequest
-	9,   // 113: levelrail.agent.v1.AgentService.CheckIdentity:input_type -> levelrail.agent.v1.CheckIdentityRequest
-	3,   // 114: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	15,  // 115: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	6,   // 116: levelrail.agent.v1.AgentService.Renew:output_type -> levelrail.agent.v1.RenewResponse
-	8,   // 117: levelrail.agent.v1.AgentService.Reenroll:output_type -> levelrail.agent.v1.ReenrollResponse
-	10,  // 118: levelrail.agent.v1.AgentService.CheckIdentity:output_type -> levelrail.agent.v1.CheckIdentityResponse
-	114, // [114:119] is the sub-list for method output_type
-	109, // [109:114] is the sub-list for method input_type
-	109, // [109:109] is the sub-list for extension type_name
-	109, // [109:109] is the sub-list for extension extendee
-	0,   // [0:109] is the sub-list for field type_name
+	103, // 104: levelrail.agent.v1.ExitState.started_at:type_name -> google.protobuf.Timestamp
+	103, // 105: levelrail.agent.v1.ExitState.finished_at:type_name -> google.protobuf.Timestamp
+	85,  // 106: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
+	88,  // 107: levelrail.agent.v1.DeviceConfig.peers:type_name -> levelrail.agent.v1.PeerConfig
+	89,  // 108: levelrail.agent.v1.ApplyMeshRequest.config:type_name -> levelrail.agent.v1.DeviceConfig
+	90,  // 109: levelrail.agent.v1.ApplyMeshResponse.identity:type_name -> levelrail.agent.v1.NodeIdentity
+	95,  // 110: levelrail.agent.v1.MeshStatusResponse.peers:type_name -> levelrail.agent.v1.MeshPeerStatus
+	2,   // 111: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	11,  // 112: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	5,   // 113: levelrail.agent.v1.AgentService.Renew:input_type -> levelrail.agent.v1.RenewRequest
+	7,   // 114: levelrail.agent.v1.AgentService.Reenroll:input_type -> levelrail.agent.v1.ReenrollRequest
+	9,   // 115: levelrail.agent.v1.AgentService.CheckIdentity:input_type -> levelrail.agent.v1.CheckIdentityRequest
+	3,   // 116: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	15,  // 117: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	6,   // 118: levelrail.agent.v1.AgentService.Renew:output_type -> levelrail.agent.v1.RenewResponse
+	8,   // 119: levelrail.agent.v1.AgentService.Reenroll:output_type -> levelrail.agent.v1.ReenrollResponse
+	10,  // 120: levelrail.agent.v1.AgentService.CheckIdentity:output_type -> levelrail.agent.v1.CheckIdentityResponse
+	116, // [116:121] is the sub-list for method output_type
+	111, // [111:116] is the sub-list for method input_type
+	111, // [111:111] is the sub-list for extension type_name
+	111, // [111:111] is the sub-list for extension extendee
+	0,   // [0:111] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }

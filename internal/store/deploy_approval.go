@@ -31,6 +31,9 @@ const (
 	DeployApprovalStatusApproved = "approved"
 	DeployApprovalStatusRejected = "rejected"
 	DeployApprovalStatusExpired  = "expired"
+	// DeployApprovalStatusApproving is held by one approver while the change
+	// applies, so a racing approve, reject or expiry cannot land on the row.
+	DeployApprovalStatusApproving = "approving"
 )
 
 // DeployApproval is one pending-or-decided two-person approval gate on a
@@ -194,6 +197,50 @@ func (db *DB) DecideDeployApproval(ctx context.Context, id, newStatus, approvedB
 	n, err := res.RowsAffected()
 	if err != nil {
 		return false, fmt.Errorf("store: decide deploy approval %q: %w", id, err)
+	}
+	return n > 0, nil
+}
+
+// ClaimDeployApproval moves a pending, unexpired approval to approving for one
+// decider; only the caller that gets ok=true may apply the gated change.
+// claimedAt is stored in decided_at and identifies this claim later.
+func (db *DB) ClaimDeployApproval(ctx context.Context, id, approvedByType, approvedBy, approvedByName, claimedAt string) (bool, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_approvals
+		SET status = ?, approved_by_type = ?, approved_by = ?, approved_by_name = ?, decided_at = ?
+		WHERE id = ? AND status = ? AND expires_at > ?
+	`, DeployApprovalStatusApproving, approvedByType, approvedBy, approvedByName, claimedAt,
+		id, DeployApprovalStatusPending, claimedAt)
+	return deployApprovalAffected(res, err, "claim deploy approval", id)
+}
+
+// FinishDeployApproval marks this claim approved once its change applied.
+func (db *DB) FinishDeployApproval(ctx context.Context, id, claimedAt, decidedAt string) (bool, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_approvals SET status = ?, decided_at = ?
+		WHERE id = ? AND status = ? AND decided_at = ?
+	`, DeployApprovalStatusApproved, decidedAt, id, DeployApprovalStatusApproving, claimedAt)
+	return deployApprovalAffected(res, err, "finish deploy approval", id)
+}
+
+// ReleaseDeployApproval returns this claim to pending with no decider, after
+// its apply failed or its claimer vanished, so someone can decide it again.
+func (db *DB) ReleaseDeployApproval(ctx context.Context, id, claimedAt string) (bool, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_approvals
+		SET status = ?, approved_by_type = '', approved_by = '', approved_by_name = '', decided_at = ''
+		WHERE id = ? AND status = ? AND decided_at = ?
+	`, DeployApprovalStatusPending, id, DeployApprovalStatusApproving, claimedAt)
+	return deployApprovalAffected(res, err, "release deploy approval", id)
+}
+
+func deployApprovalAffected(res sql.Result, err error, op, id string) (bool, error) {
+	if err != nil {
+		return false, fmt.Errorf("store: %s %q: %w", op, id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: %s %q: %w", op, id, err)
 	}
 	return n > 0, nil
 }

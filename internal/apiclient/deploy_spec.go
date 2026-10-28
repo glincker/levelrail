@@ -92,6 +92,7 @@ type DeploySpecService struct {
 	Replicas  int                             `json:"replicas,omitempty"`
 	Strategy  string                          `json:"strategy,omitempty"`
 	Hooks     *DeploySpecServiceHooks         `json:"hooks,omitempty"`
+	Restart   string                          `json:"restart,omitempty"`
 }
 
 // DeploySpecRequest mirrors internal/api's deploySpecRequest

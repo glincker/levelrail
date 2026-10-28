@@ -1,6 +1,7 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +31,10 @@ export interface ConfirmDialogProps {
   /** Blocks confirm for a reason the caller already explains in the body. */
   confirmDisabled?: boolean
   error?: string | null
+  /** Open with Cancel focused, so a stray Enter or Space never confirms. */
+  focusCancel?: boolean
+  /** Solid fill for a destructive confirm instead of the pale default. */
+  solidConfirm?: boolean
   onConfirm: () => void
   /** Extra controls rendered under the consequences, above the typed field. */
   children?: ReactNode
@@ -49,9 +54,12 @@ export function ConfirmDialog({
   pending = false,
   confirmDisabled = false,
   error,
+  focusCancel = false,
+  solidConfirm = false,
   onConfirm,
   children,
 }: ConfirmDialogProps) {
+  const cancelRef = useRef<HTMLButtonElement>(null)
   const { t } = useTranslation('common')
   const [typed, setTyped] = useState('')
   const inputId = useId()
@@ -64,7 +72,10 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent
+        initialFocus={focusCancel ? cancelRef : undefined}
+        className="sm:max-w-sm"
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (
@@ -107,8 +118,10 @@ export function ConfirmDialog({
         ) : null}
         <DialogFooter>
           <Button
+            ref={cancelRef}
             type="button"
             variant="outline"
+            className="max-sm:min-h-11"
             onClick={() => {
               handleOpenChange(false)
             }}
@@ -119,6 +132,11 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={tone === 'destructive' ? 'destructive' : 'default'}
+            className={cn(
+              'max-sm:min-h-11',
+              solidConfirm &&
+                'bg-destructive text-white hover:bg-destructive/90 dark:bg-destructive dark:hover:bg-destructive/90',
+            )}
             writeAction
             disabled={pending || !matches || confirmDisabled}
             onClick={onConfirm}

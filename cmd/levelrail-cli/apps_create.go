@@ -269,6 +269,9 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
 	health, err := toServiceHealth(svc.Health)
+	if err == nil {
+		health, err = withRestart(health, svc.Restart)
+	}
 	if err != nil {
 		return createPlan{}, newValidationError("service %q health: %v", key, err)
 	}
@@ -288,6 +291,8 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			Command:     svc.Command,
 			Replicas:    svc.Replicas,
 			Strategy:    svc.Strategy,
+
+			PublishedPorts: toPublishedPorts(svc.PublishedPorts),
 		},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
@@ -334,6 +339,9 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
 	health, err := toServiceHealth(svc.Health)
+	if err == nil {
+		health, err = withRestart(health, svc.Restart)
+	}
 	if err != nil {
 		return createPlan{}, newValidationError("service %q health: %v", key, err)
 	}
@@ -353,6 +361,8 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			Command:     svc.Command,
 			Replicas:    svc.Replicas,
 			Strategy:    svc.Strategy,
+
+			PublishedPorts: toPublishedPorts(svc.PublishedPorts),
 		},
 		Volumes: svc.Volumes,
 	}, nil
@@ -536,6 +546,19 @@ func toServiceResources(r *spec.Resources) (*serviceResources, error) {
 	}
 	out.CPUSetCPUs = r.CPUSet
 	return &out, nil
+}
+
+// withRestart carries app.yaml's service-level restart: into the stored health, where the reconciler reads it.
+func withRestart(h *serviceHealth, restart string) (*serviceHealth, error) {
+	policy, err := spec.ParseRestartPolicy(restart)
+	if err != nil || !spec.IsRunToCompletionRestart(policy) {
+		return h, err
+	}
+	if h == nil {
+		h = &serviceHealth{}
+	}
+	h.Restart = policy
+	return h, nil
 }
 
 func toServiceHealth(h *spec.Health) (*serviceHealth, error) {
@@ -895,6 +918,8 @@ func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 	if errors.As(err, &apiErr) {
 		if apiErr.Fix != "" {
 			_, _ = fmt.Fprintf(stderr, "fix: %s\n", apiErr.Fix)
+		} else if hint := publishedPortHint(apiErr.Code); hint != "" {
+			_, _ = fmt.Fprintf(stderr, "hint: %s\n", hint)
 		}
 		if apiErr.RequestID != "" {
 			_, _ = fmt.Fprintf(stderr, "request id: %s\n", apiErr.RequestID)
@@ -1062,4 +1087,15 @@ func applyCreateHealth(f createFlags, body *appResource, static bool) error {
 	}
 	body.Health = &health
 	return nil
+}
+
+func toPublishedPorts(in []spec.PublishedPort) []publishedPort {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]publishedPort, len(in))
+	for i, p := range in {
+		out[i] = publishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: p.EffectiveProtocol()}
+	}
+	return out
 }

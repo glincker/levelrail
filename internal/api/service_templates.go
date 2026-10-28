@@ -21,6 +21,7 @@ type serviceTemplateListItem struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
 	Slogan                 string `json:"slogan"`
+	Description            string `json:"description,omitempty"`
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
@@ -57,6 +58,7 @@ type serviceTemplateDetail struct {
 	ID                     string               `json:"id"`
 	Name                   string               `json:"name"`
 	Slogan                 string               `json:"slogan"`
+	Description            string               `json:"description,omitempty"`
 	Category               string               `json:"category"`
 	DocumentationURL       string               `json:"documentation_url"`
 	Compose                string               `json:"compose"`
@@ -78,6 +80,7 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			ID:                     tpl.ID,
 			Name:                   tpl.Name,
 			Slogan:                 tpl.Slogan,
+			Description:            tpl.Description,
 			Category:               tpl.Category,
 			DocumentationURL:       tpl.DocumentationURL,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
@@ -123,6 +126,7 @@ type templateView struct {
 	ID                     string
 	Name                   string
 	Slogan                 string
+	Description            string
 	Category               string
 	DocumentationURL       string
 	Compose                string
@@ -147,6 +151,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			ID:                     tpl.ID,
 			Name:                   tpl.Name,
 			Slogan:                 tpl.Slogan,
+			Description:            tpl.Description,
 			Category:               tpl.Category,
 			DocumentationURL:       tpl.DocumentationURL,
 			Compose:                tpl.Compose,

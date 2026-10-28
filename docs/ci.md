@@ -28,7 +28,7 @@ Whole-tree scanner tests have no import edge to what they scan, so
 `scripts/ci-guards.txt` lists them and any non-test Go change selects them.
 
 A `main` push runs the same impact-based jobs as a PR (`Build, vet`, `Lint`,
-every `Test (*)` job, `Coverage gate`, `Web (tsc, eslint)`, `install.sh`),
+every `Test (*)` job, `Web (tsc, eslint)`, `install.sh`),
 scoped against `github.event.before` and falling back to `--full` when that
 SHA is missing or unresolvable. The merge queue is gone, so this is the only
 post-merge verification of the merged tree. Docs-only pushes never trigger
@@ -190,10 +190,11 @@ The fleet test deploys `LEVELRAIL_FLEET_PARALLEL` templates at once (default
 3, `1` for strictly sequential). Each template gets its own app id, network
 and volumes, and teardown asserts nothing leaked per template.
 
-The coverage gate follows the plan: a full run checks the 70% aggregate
-for `internal/`, a scoped run checks the changed-line gate only, at a
-lower 50% bar (a partial profile makes the aggregate meaningless, same as the
-pre-push hook).
+Coverage never blocks or fails a PR. `Coverage gate` runs on push to `main`
+only, is `continue-on-error`, and is not a need of `CI required`. On those
+runs a full plan checks the 70% aggregate for `internal/`, a scoped plan the
+changed-line gate at 50%. The `kit/` coverage gates follow the same rule. The
+Codecov statuses are informational and there is no PR comment (`codecov.yml`).
 
 ## What runs where
 
@@ -271,9 +272,25 @@ never reach it. It has its own lane instead:
 
 ## Required checks
 
-`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check`, `install-sh` and the macOS and Windows CLI installer jobs. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
+`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `web-check`, `install-sh` and the macOS and Windows CLI installer jobs. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
 
-Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)`, `Coverage gate` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
+Six jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
+
+### Draft PRs
+
+A draft PR runs only the cheap checks: `Detect changed areas`, `Plan Go work`,
+`Build, vet`, `Lint`, `Web (tsc, eslint)` and the other workflows (secret scan,
+hygiene). The heavy jobs are skipped: every `Test (*)` lane, `Test (internal/api)`,
+`Test (everything else)`, the quarantine lane, `Web tests`, `Kit`, the Terraform
+provider job and the installer jobs. `CI required` reports success for those
+draft skips only. Mark the PR ready for review to run the full suite: the
+workflow listens for `ready_for_review`, so the conversion starts a full run.
+Set the repo variable `CI_ON_DRAFTS=true` to run everything on drafts too.
+
+On a ready PR, `CI required` also fails when the planner says a job is needed
+(Go tests planned, kit, provider, vitest or installer changes) and that job was
+skipped, so a non-draft PR cannot merge without the heavy lanes. Branch
+protection should keep requiring `CI required`.
 
 ## Other workflows on a PR
 
@@ -304,8 +321,15 @@ failing.
 | Dependency review | `pr-security.yml` | PRs touching a lockfile or `go.mod` | Fails on a new high or critical advisory only |
 | gitleaks | `secret-scan.yml` | Every PR and `main` push | The one scanner that blocks |
 
-SonarCloud's automatic analysis (the GitHub App mode) must be switched off
-in the project settings, because SonarCloud rejects a CI scan while it is on.
+SonarCloud is off by default: the `SonarCloud scan` job in `sonar.yml` only
+runs when the repository variable `SONAR_ENABLED` is `true` (repository
+settings, Secrets and variables, Variables). Set it to re-enable the scan;
+otherwise the job shows as skipped. `sonar.yml` is not part of `CI required`,
+so a skipped scan blocks nothing. The `SonarCloud Code Analysis` status check
+comes from the Sonar GitHub app, not from this repo, and the owner must switch
+off automatic analysis in the SonarCloud project settings to stop it. When the
+scan is re-enabled, automatic analysis must stay off, because SonarCloud
+rejects a CI scan while it is on.
 Web coverage is not uploaded yet: vitest has no coverage provider in
 `web/package.json`.
 

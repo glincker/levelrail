@@ -8,8 +8,18 @@ import getStartedEn from '../../locales/en/getStarted.json'
 import { FirstDeploy } from './FirstDeploy'
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: { children: ReactNode; to: string }) => (
-    <a href={to}>{children}</a>
+  Link: ({
+    children,
+    to,
+    className,
+  }: {
+    children: ReactNode
+    to: string
+    className?: string
+  }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
   ),
 }))
 vi.mock('../CreateResourceWizard', () => ({
@@ -84,9 +94,23 @@ describe('FirstDeploy', () => {
     stubFetch(200)
     renderIt()
     expect(
-      await screen.findByText(/https:\/\/sample-app\.1-2-3-4\.sslip\.io/),
+      await screen.findByText(/http:\/\/sample-app\.1-2-3-4\.sslip\.io/),
     ).toBeTruthy()
     expect(screen.getByText('https card')).toBeTruthy()
+  })
+
+  it('keeps import and git reachable as secondary links', () => {
+    stubFetch(200)
+    renderIt()
+    expect(
+      screen.getByRole('link', { name: /Import it/ }).getAttribute('href'),
+    ).toBe('/settings/import-platform')
+    expect(
+      screen.getByRole('link', { name: /Connect GitHub/ }).getAttribute('href'),
+    ).toBe('/settings/github-app')
+    expect(screen.getByRole('link', { name: /Import it/ })).toHaveClass(
+      'min-h-11',
+    )
   })
 
   it('tracks the app after the sample deploys', async () => {
@@ -113,5 +137,19 @@ describe('FirstDeploy', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Deploy sample app' }))
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+  })
+
+  it('keeps all three paths reachable in a compact row with 44px touch targets', () => {
+    stubFetch(200)
+    renderIt()
+    for (const name of [
+      'Deploy sample app',
+      'Browse templates',
+      'Deploy a repo',
+    ]) {
+      const button = screen.getByRole('button', { name })
+      expect(button.parentElement?.className).toContain('[&_button]:min-h-11')
+      expect(button.closest('[class*="items-center"]')).not.toBeNull()
+    }
   })
 })

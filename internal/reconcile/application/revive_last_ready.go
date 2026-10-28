@@ -30,6 +30,10 @@ func (c *Controller) reviveLastReady(ctx context.Context, targets []string, desi
 // for the start of a pass, where a running desired container may be a healthy
 // release (not yet judged) and must keep older stopped ones where they are.
 func (c *Controller) reviveIfDead(ctx context.Context, targets []string, desired *store.DesiredService, skipIfTargetRunning bool) {
+	// Reviving an older one-shot would rerun a finished migration.
+	if desired.RunsToCompletion() {
+		return
+	}
 	hist, ok := c.store.(attemptHistory)
 	if !ok {
 		return
@@ -49,6 +53,9 @@ func (c *Controller) reviveIfDead(ctx context.Context, targets []string, desired
 			return
 		}
 		if desired.HostPort != nil && holdsHostPort(cs, *desired.HostPort) {
+			return
+		}
+		if holdsAnyHostPort(cs, desired.PublishedPorts) {
 			return
 		}
 	}

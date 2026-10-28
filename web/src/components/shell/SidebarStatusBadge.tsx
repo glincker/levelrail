@@ -83,6 +83,10 @@ export function SidebarStatusBadgeView({ status }: { status: ShellStatus }) {
   )
 }
 
+// An available update is shown once, on the version line; the logo badge stays a health signal.
 export function SidebarStatusBadge() {
-  return <SidebarStatusBadgeView status={useShellStatus()} />
+  const status = useShellStatus()
+  return (
+    <SidebarStatusBadgeView status={status === 'update' ? 'healthy' : status} />
+  )
 }

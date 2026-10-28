@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/failure"
 )
 
 const waitTimelineLimit = 20
@@ -103,6 +105,8 @@ var rolloutDoneReasons = map[string]bool{
 	"AlreadyRunning": true,
 	// The static site is published; there is no container to converge.
 	"StaticSitePublished": true,
+	// A run-to-completion service exited 0; only those services report it.
+	"Completed": true,
 }
 
 // Pure: a failure reason at or after FinishedAt beats a done reason; no FinishedAt means pending.
@@ -124,6 +128,19 @@ func computeRolloutOutcome(attempt deployAttemptResource, conditions []condition
 	for i := range conditions {
 		c := &conditions[i]
 		if rolloutFailureReasons[c.Reason] && !c.LastTransitionTime.Before(reference) {
+			return rolloutOutcome{state: "failed", condition: c}
+		}
+	}
+	for i := range conditions {
+		c := &conditions[i]
+		if c.Reason == "CompletionTimeout" && !c.LastTransitionTime.Before(reference) && !completedSince(conditions, c.LastTransitionTime) {
+			return rolloutOutcome{state: "failed", condition: c}
+		}
+	}
+	limit := failure.RolloutCrashLoopRestarts(os.LookupEnv)
+	for i := range conditions {
+		c := &conditions[i]
+		if failure.IsRolloutCrashLoop(c.Reason, c.Message, limit) && !c.LastTransitionTime.Before(reference) {
 			return rolloutOutcome{state: "failed", condition: c}
 		}
 	}
@@ -282,6 +299,9 @@ func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			_, _ = fmt.Fprintf(stdout, "%q %s\n", name, rolloutResultLabel(outcome.result))
 		} else {
 			_, _ = fmt.Fprintf(stdout, "%q failed to converge (%s)\n", name, result.Reason)
+			if outcome.condition != nil && outcome.condition.Message != "" {
+				_, _ = fmt.Fprintf(stdout, "reason: %s\n", outcome.condition.Message)
+			}
 		}
 	})
 	if outcome.state == "succeeded" {
@@ -314,4 +334,14 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, exitDeployFailed, exitDeployTimeout)
+}
+
+// completedSince lets a one-shot that finishes after its CompletionTimeout flip the rollout back to done.
+func completedSince(conditions []conditionResource, t time.Time) bool {
+	for i := range conditions {
+		if conditions[i].Reason == "Completed" && !conditions[i].LastTransitionTime.Before(t) {
+			return true
+		}
+	}
+	return false
 }

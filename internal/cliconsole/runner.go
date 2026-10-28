@@ -24,6 +24,7 @@ type Runner struct {
 	Experimental   string
 	Timeout        time.Duration
 	MaxOutputBytes int64
+	MaxLineBytes   int
 	RunAsUser      string
 }
 
@@ -74,6 +75,8 @@ func (r *Runner) Run(ctx context.Context, argv []string, token string, emit func
 	cmd.Dir = home
 	cmd.Env = Env(r.APIURL, token, home, r.Experimental)
 	cmd.Stdin = nil
+	// Only stdout and stderr reach the child; Go marks every other fd close-on-exec.
+	cmd.ExtraFiles = nil
 	configureProcess(cmd, cred)
 	cmd.WaitDelay = 2 * time.Second
 
@@ -92,8 +95,14 @@ func (r *Runner) Run(ctx context.Context, argv []string, token string, emit func
 	oc := &outputCap{limit: r.MaxOutputBytes, emit: emit, kill: cancel}
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go func() { defer wg.Done(); oc.pump(StreamStdout, stdout) }()
-	go func() { defer wg.Done(); oc.pump(StreamStderr, stderr) }()
+	go func() {
+		defer wg.Done()
+		oc.pump(StreamStdout, stdout, &lineFilter{maxLine: r.MaxLineBytes, secrets: []string{token}})
+	}()
+	go func() {
+		defer wg.Done()
+		oc.pump(StreamStderr, stderr, &lineFilter{maxLine: r.MaxLineBytes, secrets: []string{token}})
+	}()
 	wg.Wait()
 	waitErr := cmd.Wait()
 
@@ -133,14 +142,20 @@ type outputCap struct {
 	kill      context.CancelFunc
 }
 
-func (c *outputCap) pump(stream string, rd io.Reader) {
+// pump sanitizes before counting, so the cap and the browser see the same bytes.
+func (c *outputCap) pump(stream string, rd io.Reader, f *lineFilter) {
 	buf := make([]byte, 16<<10)
 	for {
 		n, err := rd.Read(buf)
 		if n > 0 {
-			c.write(stream, buf[:n])
+			if out := f.write(buf[:n]); len(out) > 0 {
+				c.write(stream, out)
+			}
 		}
 		if err != nil {
+			if out := f.flush(); len(out) > 0 {
+				c.write(stream, out)
+			}
 			return
 		}
 	}

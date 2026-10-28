@@ -19,6 +19,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
 
 # PR runs cancel superseded pushes; main and merge queue runs never cancel.
@@ -50,6 +51,8 @@ jobs:
       installer: ${{ steps.detect.outputs.installer }}
       workflows: ${{ steps.detect.outputs.workflows }}
       planner: ${{ steps.detect.outputs.planner }}
+      # Draft PRs skip the heavy jobs; CI_ON_DRAFTS=true opts back in.
+      draft: ${{ github.event.pull_request.draft == true && vars.CI_ON_DRAFTS != 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -202,6 +205,7 @@ jobs:
         run: |
           scripts/test-ci-go-plan.sh
           scripts/test-ci-changes.sh
+          scripts/test-ci-required-verdict.sh
 
       - name: go build
         if: needs.plan.outputs.scope != 'none'
@@ -254,6 +258,7 @@ jobs:
     # scoped by the same impact detection as a PR. See docs/ci.md.
     if: >-
       needs.plan.result == 'success'
+      && needs.changes.outputs.draft != 'true'
       && needs.plan.outputs.has_tests == 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
@@ -334,7 +339,7 @@ jobs:
     name: Test (internal/api)
     needs: [changes, plan, test-go]
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || contains(needs.plan.outputs.api_checks, 'Test ('))))
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     permissions:
@@ -363,7 +368,7 @@ jobs:
     name: Test (everything else)
     needs: [changes, plan, test-go]
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || contains(needs.plan.outputs.rest_checks, 'Test ('))))
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     permissions:
@@ -396,6 +401,7 @@ jobs:
     # Not a required check, but still a real test run.
     if: >-
       needs.plan.result == 'success'
+      && needs.changes.outputs.draft != 'true'
       && needs.plan.outputs.quarantine == 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     continue-on-error: true
@@ -425,11 +431,14 @@ jobs:
           RERUNS: '0'
         run: scripts/ci-go-test.sh quarantined ./...
 
+  # Informational: never runs on a PR, never a need of ci-required, and a
+  # low number on main reports but does not fail the run.
   coverage-gate:
     name: Coverage gate
     needs: [changes, plan, test-go]
+    continue-on-error: true
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && github.event_name == 'push' && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || needs.plan.outputs.has_tests == 'true')))
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -582,7 +591,7 @@ jobs:
   kit:
     name: Kit (vet, lint, test)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.kit == 'true') }}
+    if: ${{ !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || needs.changes.outputs.kit == 'true') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
@@ -627,11 +636,15 @@ jobs:
       - name: go test
         run: go -C kit test -short -timeout=5m -coverprofile="$GITHUB_WORKSPACE/kit-coverage.out" ./...
 
+      # Coverage never blocks a PR: kit gates report on push only.
       - name: Coverage gate (70% for kit/)
+        if: github.event_name == 'push'
+        continue-on-error: true
         run: scripts/check-coverage.sh kit-coverage.out kit/ 70
 
       - name: Changed-line coverage gate (50% for kit/)
-        if: env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
+        if: github.event_name == 'push' && env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
+        continue-on-error: true
         run: scripts/check-changed-file-coverage.sh kit-coverage.out "$BASE" kit/ 50
 
   # integrations/terraform-provider/ is its own module: vet and unit tests only. The
@@ -639,7 +652,7 @@ jobs:
   tfprovider:
     name: Terraform provider (vet, test)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.tfprovider == 'true') }}
+    if: ${{ !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || needs.changes.outputs.tfprovider == 'true') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
@@ -782,6 +795,7 @@ jobs:
     needs: changes
     if: >-
       ${{ !cancelled() && needs.changes.result == 'success'
+      && needs.changes.outputs.draft != 'true'
       && needs.changes.outputs.web == 'full'
       && (needs.changes.outputs.vitest == 'full' || needs.changes.outputs.vitest == 'changed') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
@@ -825,7 +839,7 @@ jobs:
   install-sh:
     name: install.sh (${{ matrix.image }})
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    if: needs.changes.outputs.installer == 'true' && needs.changes.outputs.draft != 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 25
     strategy:
@@ -866,7 +880,7 @@ jobs:
   install-cli-macos:
     name: install-cli.sh (macOS)
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    if: needs.changes.outputs.installer == 'true' && needs.changes.outputs.draft != 'true'
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
@@ -891,7 +905,7 @@ jobs:
   install-cli-windows:
     name: install-cli.ps1 (Windows)
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    if: needs.changes.outputs.installer == 'true' && needs.changes.outputs.draft != 'true'
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
@@ -938,25 +952,18 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
+    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
     if: always()
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 3
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts/ci-required-verdict.sh
+          sparse-checkout-cone-mode: false
+
       - name: Evaluate required jobs
         env:
           NEEDS: ${{ toJSON(needs) }}
-        run: |
-          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"$NEEDS"
-          fail=0
-          if [ "$(jq -r '.changes.result' <<<"$NEEDS")" != success ]; then
-            echo "::error::changes: change detection did not succeed"
-            fail=1
-          fi
-          bad="$(jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key' <<<"$NEEDS")"
-          if [ -n "$bad" ]; then
-            echo "::error::failed or cancelled: $(echo "$bad" | paste -sd' ' -)"
-            fail=1
-          fi
-          [ "$fail" -eq 0 ] || exit 1
-          echo "all required jobs for this change passed"
+        run: scripts/ci-required-verdict.sh

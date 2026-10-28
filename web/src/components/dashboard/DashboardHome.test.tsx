@@ -185,16 +185,14 @@ describe('DashboardHome', () => {
     ).toBeInTheDocument()
   })
 
-  it('first run shows the single first-deploy path and the adaptive quick start', async () => {
+  it('first run shows the single first-deploy path and no separate quick start list', async () => {
     routeFetch({})
     renderHome([])
     expect(
       await screen.findByRole('button', { name: 'Deploy sample app' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Metrics' })).toBeInTheDocument()
-    expect(screen.getByText('Import anything')).toBeInTheDocument()
-    expect(screen.getByText('Deploy a template')).toBeInTheDocument()
-    expect(screen.getByText('Connect Git')).toBeInTheDocument()
+    expect(screen.queryByText('Quick start')).not.toBeInTheDocument()
     expect(screen.queryByText('Add a node')).not.toBeInTheDocument()
     expect(screen.getByText('What Acme does')).toBeInTheDocument()
     expect(

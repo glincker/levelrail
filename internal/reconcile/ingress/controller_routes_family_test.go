@@ -107,8 +107,8 @@ func TestController_LoadBalancer_OnlyHeldReleaseServesDuringCutover(t *testing.T
 	staleName := application.ReplicaContainerName(svc.Name, "img:v0", "", 0)
 	base := time.Now().Add(-time.Hour)
 	rt := &prefixRuntime{fakeRuntime: newFakeRuntime(), byPrefix: []docker.ContainerState{
-		{Name: staleName, Image: "img:v0", Created: base.Add(time.Minute), Running: true, Ports: []docker.PortBinding{{HostPort: 31001}}},
-		{Name: heldName, Image: "img:v1", Created: base, Running: true, Ports: []docker.PortBinding{{HostPort: 31000}}},
+		{Name: staleName, Image: "img:v0", Created: base.Add(time.Minute), Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 31001}}},
+		{Name: heldName, Image: "img:v1", Created: base, Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 31000}}},
 	}}
 	applier := &fakeApplier{}
 	st := &fakeStore{

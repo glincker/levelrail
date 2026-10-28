@@ -1,0 +1,27 @@
+id: archivebox
+name: ArchiveBox
+description: A self-hosted web archiver that saves pages as HTML, PDF, screenshots, WARC and media so links never rot. Creates the admin account on first start.
+icon: archive
+category: Productivity
+documentation_url: https://github.com/ArchiveBox/ArchiveBox/wiki/Docker
+recommended_memory_bytes: 1610612736
+env:
+  - key: ADMIN_USERNAME
+    label: Admin username
+    description: Login of the admin account created on first start.
+    default: admin
+    required: true
+  - key: ADMIN_PASSWORD
+    label: Admin password
+    description: Password of the admin account created on first start.
+    generate: password
+    length: 24
+    secret: true
+domains:
+  - service: archivebox
+    port: 5797
+    description: Public address of ArchiveBox.
+healthcheck:
+  service: archivebox
+  port: 5797
+  path: /health/

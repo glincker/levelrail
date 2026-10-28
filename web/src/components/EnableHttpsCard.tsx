@@ -211,8 +211,9 @@ function StatusBody({
 }
 
 /** EnableHttpsCard is the one-click zero-DNS HTTPS flow for the dashboard. */
-export function EnableHttpsCard() {
+export function EnableHttpsCard({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation('https')
+  const [expanded, setExpanded] = useState(false)
   const {
     data: status,
     refetch,
@@ -226,6 +227,35 @@ export function EnableHttpsCard() {
   const showForm = status?.state === 'off' || retrying
   const initialEmail =
     status?.default_email ?? (username?.includes('@') ? username : '')
+  if (
+    compact &&
+    !expanded &&
+    status?.state === 'off' &&
+    status.suggested_domain &&
+    !retrying
+  ) {
+    return (
+      <Card>
+        <CardContent className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-0.5">
+          <p className="flex min-w-0 items-center gap-2 text-sm font-medium">
+            <LockKeyIcon aria-hidden="true" className="size-4 shrink-0" />
+            <span className="truncate">{t('card.title')}</span>
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            aria-expanded={false}
+            onClick={() => setExpanded(true)}
+          >
+            {t('card.setUp')}
+          </Button>
+          <p className="col-span-2 text-xs text-muted-foreground sm:col-span-1 sm:col-start-1">
+            {t('card.compactHint')}
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
   return (
     <Card>
       <CardHeader>

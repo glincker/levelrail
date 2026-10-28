@@ -132,7 +132,7 @@ A command's own subject is a positional argument or `--name`. `--app` is a scope
 `levelrail-cli help` lists the 13 everyday verbs (`up`, `deploy`, `rollback`, `logs`, `env`, `domains`, `db`, `backup`, `restore`, `apps`, `status`, `open`, `login`). `levelrail-cli help advanced` lists everything else. There is one CLI: the simple verbs are shortcuts over the same commands, and every flag of the longer forms still works.
 
 ```
-levelrail-cli up [dir] [--name N] [--port P] [--domain D] [--with postgres,redis] [--replicas N] [--strategy S] [--memory 512Mi] [--cpu 0.5] [--repo URL] [--ref BRANCH] [--secret KEY=VALUE] [--dry-run] [--yes] [flags]
+levelrail-cli up [dir] [--name N] [--port P] [--domain D] [--with postgres,redis] [--replicas N] [--strategy S] [--memory 512Mi] [--cpu 0.5] [--repo URL] [--ref BRANCH] [--secret KEY=VALUE] [--allow-unpushed] [--no-wait] [--timeout D] [--dry-run] [--yes] [flags]
 ```
 Deploy a directory with one command. See the [one command quickstart](/quickstart-one-command).
 
@@ -203,6 +203,7 @@ levelrail-cli apps delete <name> [flags]
 
 - `apps create` registers an existing image or triggers a real build from a git repository; `--file` reads an [app spec](/app-spec-reference), `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting. Flags-only creates can set health with `--readiness-path|exec|preset|interval|timeout|expected-status`, the same `--liveness-*` set plus `--liveness-failures`, and `--ready-timeout`; they follow the same rules as `apps health set`.
 - `apps status` shows an app's current reconcile conditions; `apps overview` shows CPU, memory, traffic and errors for every app (or the names given) in one request; `apps network` shows the live traffic path (container port, host port, running).
+- `apps create --file` sends a service's `published_ports` (container_port, host_port, protocol tcp or udp). `apps get`, `apps list` and `apps deploy-compose` show them as `53/udp`, and `--json` carries `published_ports`. Refusals print the server message plus a hint.
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
 

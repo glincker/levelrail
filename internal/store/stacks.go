@@ -480,6 +480,21 @@ func (db *DB) SetStackRevisionStatus(ctx context.Context, stackID string, number
 	return nil
 }
 
+// FailPendingStackRevision fails a revision only while it still awaits
+// approval, so a reject or expiry never lands on an apply already running.
+func (db *DB) FailPendingStackRevision(ctx context.Context, stackID string, number int, result []byte, now time.Time) (bool, error) {
+	res, err := db.ExecContext(ctx, `UPDATE stack_revisions SET status = ?, finished_at = ?, result_json = COALESCE(?, result_json)
+		WHERE stack_id = ? AND number = ? AND status = ?`, StackRevFailed, stackTime(now), nullBytes(result), stackID, number, StackRevPendingApproval)
+	if err != nil {
+		return false, fmt.Errorf("store: fail pending revision: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: fail pending revision: %w", err)
+	}
+	return n > 0, nil
+}
+
 func nullBytes(b []byte) any {
 	if b == nil {
 		return nil

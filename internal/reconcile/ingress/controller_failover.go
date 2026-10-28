@@ -53,7 +53,7 @@ func (c *Controller) failoverRoute(ctx context.Context, svc store.DesiredService
 		if docker.SameImageRef(prev[i].Image, cur.Image) {
 			continue
 		}
-		if d, found := dialAddr(&prev[i]); found && d != dial {
+		if d, found := dialAddr(&prev[i], svc.Port); found && d != dial {
 			prevDial, ok = d, true
 			break
 		}

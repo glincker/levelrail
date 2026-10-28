@@ -44,7 +44,7 @@ func TestHandleDiscoverAppHealth_FindsTheRealWorkingPath(t *testing.T) {
 
 	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{
 		ID: "c1", Name: "web", Running: true,
-		Ports: []docker.PortBinding{{HostPort: containerPort(t, srv)}},
+		Ports: []docker.PortBinding{{ContainerPort: 22, HostPort: 2222}, {ContainerPort: 3000, HostPort: containerPort(t, srv)}},
 	}}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -92,7 +92,7 @@ func TestHandleDiscoverAppHealth_NoMatch(t *testing.T) {
 
 	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{
 		ID: "c1", Name: "web", Running: true,
-		Ports: []docker.PortBinding{{HostPort: containerPort(t, srv)}},
+		Ports: []docker.PortBinding{{ContainerPort: 22, HostPort: 2222}, {ContainerPort: 3000, HostPort: containerPort(t, srv)}},
 	}}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)

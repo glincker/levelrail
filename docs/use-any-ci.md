@@ -23,7 +23,7 @@ levelrail-cli apps wait my-app --timeout 5m
 
 `apps deploy` requires `--image` here; add `--confirm` to deploy into a protected environment. `apps wait` also takes `--attempt-id` and `--poll-interval` (default `3s`).
 
-Create the token once and store it in your CI's secret store:
+On GitHub Actions, GitLab CI and CircleCI you can skip the stored token and use [OIDC](#oidc-support) instead. Elsewhere, create the token once and store it in your CI's secret store:
 
 ```bash
 levelrail-cli tokens create --name ci --preset deployer --expires-in-days 90
@@ -63,10 +63,10 @@ Each file builds an image, pushes it, deploys it pinned by digest and waits for 
 | CI | File | Auth |
 | --- | --- | --- |
 | GitHub Actions | [ci-examples/github-actions-oidc.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/github-actions-oidc.yml) | OIDC, no stored Levelrail secret |
-| GitLab CI | [ci-examples/gitlab-ci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/gitlab-ci.yml) | API token in a masked variable |
-| CircleCI | [ci-examples/circleci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/circleci.yml) | API token in a restricted context |
+| GitLab CI | [ci-examples/gitlab-ci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/gitlab-ci.yml) | OIDC (`id_tokens`), no stored Levelrail secret |
+| CircleCI | [ci-examples/circleci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/circleci.yml) | OIDC, no stored Levelrail secret |
 
-The GitHub file needs a CI trust on the app once: `levelrail-cli apps github-actions trust add my-app --repo example/my-app --ref refs/heads/main`. The job then runs `levelrail-cli apps github-actions token my-app`, which swaps the job's identity token for a deploy token that expires after 15 minutes.
+Each file needs a CI trust on the app once (see [OIDC support](#oidc-support)). The job then runs `levelrail-cli apps ci token my-app --provider <github|gitlab|circleci>`, which swaps the job's identity token for a deploy token that expires after 15 minutes. On GitLab and CircleCI the token is read from `LEVELRAIL_ID_TOKEN`, or from the variable named by `--id-token-env`. `apps github-actions token` and `apps github-actions trust` still work as deprecated aliases of `apps ci token` and `apps ci trust`.
 
 ## Deploy by digest from a build-complete hook
 
@@ -81,7 +81,7 @@ curl -fsS -X POST "$LEVELRAIL_API_URL/api/v1/apps/my-app/deploys" \
 ```
 
 - `image` takes `name:tag`, `name@sha256:digest` or `name:tag@sha256:digest`. Pin by digest so a re-pushed tag can never change what runs.
-- The token needs the `deploy` ability on the app, the same as the CLI. An OIDC exchange token from GitHub works here too.
+- The token needs the `deploy` ability on the app, the same as the CLI. An OIDC exchange token from GitHub, GitLab or CircleCI works here too.
 - The `Idempotency-Key` makes a retried hook apply once: a repeat with the same key and body within 24 hours replays the first response, and the same key with a different body is refused.
 - Deploy freezes, protected environment approvals (add `"confirm": true`), deploy policies and rate limits apply exactly as they do to any other deploy, and the call is recorded in the audit log.
 - A `202` means accepted. Poll `GET /api/v1/apps/my-app/deploy-attempts`, or run `levelrail-cli apps wait my-app`, to learn whether it became healthy.
@@ -90,11 +90,60 @@ The CLI equivalent is `levelrail-cli apps deploy my-app --image registry.example
 
 ## OIDC support
 
-[Deploy without a stored secret](/github-actions#deploy-without-a-stored-secret-oidc) works on GitHub Actions only. The control plane accepts identity tokens only from `https://token.actions.githubusercontent.com` and matches them by GitHub repository, ref and environment (`internal/api/ci_oidc.go`). GitLab ID tokens, CircleCI OIDC and Buildkite OIDC are not accepted today, so the templates below use an API token. Supporting another CI would need a verifier for that issuer and a mapping from its claims to repository, ref and environment.
+A CI trust lets one pipeline identity deploy one app. The exchange endpoint (`POST /api/v1/ci/oidc-exchange`) verifies the job's identity token, finds a trust on the app that matches it, and returns a token that can only read and deploy that app for 15 minutes. With no matching trust the answer is `403` and nothing is granted.
+
+| Provider | Trust flags | Repository is | Ref and environment are matched against |
+| --- | --- | --- | --- |
+| GitHub Actions | `--repo owner/name` | `repository` | `ref`, `environment` |
+| GitLab CI | `--provider gitlab --repo group/project`, `--issuer` for self-managed, `--no-protected-ref` to opt out | `project_path` | `ref` and `ref_type` (as `refs/heads/<branch>` or `refs/tags/<tag>`), `environment`, `ref_protected` |
+| CircleCI | `--provider circleci --org-id <ORG_ID> --repo <PROJECT_ID>` | `oidc.circleci.com/project-id` | `oidc.circleci.com/vcs-ref`, and `--environment <CONTEXT_ID>` must appear in `oidc.circleci.com/context-ids` |
+
+```bash
+levelrail-cli apps ci trust add my-app --repo example/my-app --ref refs/heads/main
+levelrail-cli apps ci trust add my-app --provider gitlab --repo example/my-app --ref refs/heads/main
+levelrail-cli apps ci trust add my-app --provider gitlab --issuer https://gitlab.example.com --repo team/my-app --ref 'refs/tags/v*'
+levelrail-cli apps ci trust add my-app --provider circleci --org-id <ORG_ID> --repo <PROJECT_ID> --ref refs/heads/main --environment <CONTEXT_ID>
+levelrail-cli apps ci trust list my-app
+```
+
+The same fields go to `POST /api/v1/apps/{name}/ci/trusts` as `provider`, `issuer`, `org_id`, `repository`, `ref_pattern`, `environment` and `protected_ref_only`.
+
+How tokens are checked:
+
+- **Issuers are an allowlist.** GitHub's issuer is fixed. A GitLab or CircleCI token is only considered when its `iss` equals, exactly, the issuer of a trust on that app (`https://gitlab.com`, your self-managed URL, or `https://oidc.circleci.com/org/<ORG_ID>`). Keys are fetched from that configured issuer (`<issuer>/oauth/discovery/keys` on GitLab, `<issuer>/.well-known/jwks-pub.json` on CircleCI), never from a URL inside the token.
+- **Audience.** The token's `aud` must be the dashboard URL set in Settings. Set it in `id_tokens` on GitLab, and with `circleci run oidc get --claims '{"aud":"..."}'` on CircleCI (the default CircleCI token's audience is the organization ID, which is refused).
+- **Signatures.** Only RS256 and ES256 are accepted, the token must name its key with `kid`, and `exp`, `nbf` and `iat` are checked.
+- **Key fetching** uses https only, refuses hosts that resolve to private, loopback or link-local addresses, does not follow redirects to other hosts, and refetches on an unknown key at most once per refresh interval.
+- **GitLab safe defaults.** A GitLab trust accepts only protected branches and tags (`ref_protected`), unless it is created with `--no-protected-ref` (API: `"protected_ref_only": false`); the response then carries a warning, because any developer who can push a matching branch or tag could deploy. Pipelines with `pipeline_source` `merge_request_event` or `external_pull_request_event` are always refused, since a merge request from a fork can run in the parent project with its project path and a branch named `main`. When the trust names an environment, the token must also carry `environment_protected: true`, because any job can declare an environment.
+- **Who may add a trust.** The caller needs `write:sensitive` and `deploy` on the app, so a trust never grants more than its creator holds. A self-managed GitLab issuer (anything other than `https://gitlab.com`) needs a root user, since whoever runs that issuer can mint tokens.
+- **Token age.** Tokens older than `APP_CI_OIDC_MAX_TOKEN_AGE` (default `1h`) are refused, and so are tokens without `iat` while a maximum age applies.
+- **Audit.** Trust create and delete write `ci_oidc_trust.created` and `ci_oidc_trust.deleted` audit entries with the provider and issuer. Every issued token writes `ci_oidc_exchange.issued`; refusals write `ci_oidc_exchange.refused` with the reason, at most one row per app, provider and reason per `APP_CI_OIDC_AUDIT_WINDOW` (default `1m`, with a suppressed count). Entries carry the app, provider and a hash of the subject, never the token.
+- **Logs** carry the app, the trust ID and a shortened subject, never the token.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `APP_CI_OIDC_CLOCK_SKEW` | `1m` | Allowed clock drift for `exp`, `nbf` and `iat` |
+| `APP_CI_OIDC_MAX_TOKEN_AGE` | `1h` | Refuse tokens whose `iat` is older than this, or that have no `iat`; `0` or `off` disables it |
+| `APP_CI_OIDC_AUDIT_WINDOW` | `1m` | One refused-exchange audit row per app, provider and reason per window |
+| `APP_CI_OIDC_AUDIT_MAX_KEYS` | `1000` | Most refusal windows tracked at once; past this, refusals are not audited until one closes |
+| `APP_CI_OIDC_JWKS_TIMEOUT` | `10s` | Timeout for one key fetch |
+| `APP_CI_OIDC_JWKS_MAX_BYTES` | `262144` | Largest key set accepted |
+| `APP_CI_OIDC_JWKS_MIN_REFRESH` | `5m` | Shortest gap between two key fetches for one issuer |
+| `APP_CI_OIDC_JWKS_TTL` | `1h` | How long fetched keys are reused |
+
+These variables apply to GitLab and CircleCI. GitHub tokens are verified as before. Buildkite OIDC is not accepted yet; use an API token there.
+
+### Stacks
+
+Stack trusts (`POST /api/v1/stacks/{name}/oidc-trusts`, root only) take the same `provider`, `issuer`, `org_id` and `protected_ref_only` fields and the same checks as app trusts, for plan and apply from GitLab CI and CircleCI. An apply trust additionally needs an exact branch or tag ref and an environment (a protected one on GitLab), and a GitLab apply trust always requires protected refs; a plan-only GitLab trust may opt out and then returns the warning. Merge request pipelines are refused. Create and exchange write `stack.oidc_trust_create` and `stack.oidc_exchange` audit entries with the provider and issuer. Stack trusts have no CLI command yet; use the API.
+
+### Downgrading
+
+Rolling back to v0.8.8 or earlier makes the older control plane ignore the `provider` column, so it would treat a GitLab or CircleCI trust row as a GitHub trust on the same path. Delete every non-GitHub trust (`apps ci trust list` then `trust remove`) before you downgrade.
 
 ## GitLab CI
 
-Store `LEVELRAIL_API_URL` and `LEVELRAIL_TOKEN` under **Settings > CI/CD > Variables**, masked, and protected if you deploy only from protected branches.
+Set `LEVELRAIL_API_URL` under **Settings > CI/CD > Variables** (not a secret). Add the trust once, then request an ID token for the control plane in the job.
 
 ```yaml
 deploy:
@@ -103,6 +152,9 @@ deploy:
   services: [docker:27-dind]
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  id_tokens:
+    LEVELRAIL_ID_TOKEN:
+      aud: $LEVELRAIL_API_URL
   variables:
     IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     LEVELRAIL_CLI_INSTALL_DIR: /usr/local/bin
@@ -112,15 +164,17 @@ deploy:
     - docker push "$IMAGE"
     - apk add --no-cache curl
     - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - LEVELRAIL_TOKEN=$(levelrail-cli apps ci token my-app --provider gitlab)
+    - export LEVELRAIL_TOKEN
     - levelrail-cli apps deploy my-app --image "$IMAGE"
     - levelrail-cli apps wait my-app --timeout 5m
 ```
 
-`CI_PIPELINE_ID` is read for the idempotency key, so no extra flag is needed. The control plane must be able to pull `$IMAGE`, so add the registry credentials to the app first.
+`CI_PIPELINE_ID` is read for the idempotency key, so no extra flag is needed. The control plane must be able to pull `$IMAGE`, so add the registry credentials to the app first. To keep using an API token instead, store it as a masked, protected variable `LEVELRAIL_TOKEN` and drop the `id_tokens` block and the token lines.
 
 ## CircleCI
 
-Store both variables in **Project Settings > Environment Variables** or in a context.
+Put `LEVELRAIL_API_URL` in a context (here `levelrail`) and require that context's ID in the trust with `--environment`.
 
 ```yaml
 version: 2.1
@@ -144,6 +198,10 @@ jobs:
           command: |
             curl -fsSL https://levelrail.com/install-cli.sh | sh
             export PATH="$LEVELRAIL_CLI_INSTALL_DIR:$PATH"
+            LEVELRAIL_ID_TOKEN=$(circleci run oidc get --claims "{\"aud\":\"$LEVELRAIL_API_URL\"}")
+            export LEVELRAIL_ID_TOKEN
+            LEVELRAIL_TOKEN=$(levelrail-cli apps ci token my-app --provider circleci)
+            export LEVELRAIL_TOKEN
             levelrail-cli apps deploy my-app \
               --image "ghcr.io/example/my-app:$CIRCLE_SHA1" \
               --idempotency-key "circle-$CIRCLE_WORKFLOW_ID"
@@ -152,6 +210,7 @@ workflows:
   main:
     jobs:
       - deploy:
+          context: levelrail
           filters:
             branches:
               only: main
@@ -224,6 +283,8 @@ steps:
 
 | Symptom | Likely cause and fix |
 | --- | --- |
+| Exit 4, `401` from `apps ci token` | The identity token was refused: its issuer is not on a trust of this app, its audience is not the dashboard URL, it expired, or the key fetch failed. |
+| Exit 4, `403` from `apps ci token` | No trust matches the project, ref or environment (or the GitLab ref is not protected while the trust requires it). Check `apps github-actions trust list`. |
 | Exit 4, `401` | The token is missing, wrong, revoked or expired. Check `LEVELRAIL_TOKEN` reaches the step (masked or protected variables are not exposed to unprotected branches). |
 | Exit 4, `403` | The token lacks the `deploy` ability for this app, or an IAM policy denies it. Create it with `--preset deployer`. |
 | Exit 4, `409` on deploy | The app is in a protected environment. Add `--confirm` to `apps deploy`. |

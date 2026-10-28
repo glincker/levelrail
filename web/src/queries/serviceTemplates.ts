@@ -53,6 +53,8 @@ export interface ServiceTemplateListItem {
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus
 // the full compose.yaml body.
 export interface ServiceTemplateDetail extends ServiceTemplateListItem {
+  // Optional operator setup notes, plain text with newlines.
+  description?: string
   compose: string
   manifest?: TemplateManifest
   requirements: TemplateRequirements

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -165,9 +164,9 @@ func environmentLabel(e store.Environment) string {
 	return e.Name
 }
 
-// applyMoveApproval runs an approved environment move and records the
+// applyMoveApproval runs a claimed environment move; the caller records the
 // decision. The approval's Image column carries the target environment id.
-func (rt *Router) applyMoveApproval(ctx context.Context, a store.DeployApproval, deciderType, deciderID, deciderName string) (deployApprovalDecisionResponse, error) {
+func (rt *Router) applyMoveApproval(ctx context.Context, a store.DeployApproval) (deployApprovalDecisionResponse, error) {
 	kind := environmentMoveApp
 	if a.Action == store.DeployApprovalActionMoveDatabase {
 		kind = environmentMoveDatabase
@@ -186,15 +185,7 @@ func (rt *Router) applyMoveApproval(ctx context.Context, a store.DeployApproval,
 		}
 		return deployApprovalDecisionResponse{}, err
 	}
-	decidedAt := store.FormatAuditTime(time.Now())
-	if _, err := rt.deployApprovals.DecideDeployApproval(ctx, a.ID, store.DeployApprovalStatusApproved, deciderType, deciderID, deciderName, "", decidedAt); err != nil {
-		rt.logger.Warn("api: record deploy approval decision failed", slog.String("error", err.Error()), slog.String("id", a.ID))
-	}
-	final, err := rt.deployApprovals.GetDeployApproval(ctx, a.ID)
-	if err != nil {
-		return deployApprovalDecisionResponse{}, err
-	}
-	resp := deployApprovalDecisionResponse{Approval: toDeployApprovalResource(final)}
+	var resp deployApprovalDecisionResponse
 	if kind == environmentMoveApp {
 		if svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName); err == nil {
 			resp.App = toAppResource(*svc)

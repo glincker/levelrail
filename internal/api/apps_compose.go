@@ -18,6 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -127,6 +128,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	}
 
 	services, healthWarnings, err := compose.ToDesiredServices(name, file)
+	if errors.Is(err, spec.ErrInvalidPublishedPort) {
+		writeCodedError(w, http.StatusBadRequest, codePublishedPortInvalid, err.Error())
+		return composeDeployResponse{}, false
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
@@ -143,6 +148,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		key := strings.TrimPrefix(services[i].Name, name+"-")
 		services[i].SecretEnv = append(services[i].SecretEnv, store.SecretEnvRefsFromNames(secretEnv[key])...)
 		services[i].IsTrial = isTrial
+		services[i].TemplateID = opts.templateID
 	}
 
 	// Loaded before this deploy writes anything: staleComposeServices
@@ -156,6 +162,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
 		return composeDeployResponse{}, false
 	}
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, name, previousServices, services)
+	if !portsOK {
+		return composeDeployResponse{}, false
+	}
+	defer portsRelease()
 	serviceNames := make([]string, 0, len(services))
 	for _, svc := range services {
 		serviceNames = append(serviceNames, svc.Name)
@@ -214,7 +225,8 @@ func composeConfigChanged(prev, next store.DesiredService) bool {
 		!slices.Equal(prev.Command, next.Command) ||
 		!slices.Equal(prev.Entrypoint, next.Entrypoint) ||
 		prev.Port != next.Port ||
-		!ptrIntEqual(prev.HostPort, next.HostPort)
+		!ptrIntEqual(prev.HostPort, next.HostPort) ||
+		!slices.Equal(prev.PublishedPorts, next.PublishedPorts)
 }
 
 func ptrIntEqual(a, b *int) bool {
