@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -35,15 +33,18 @@ func crashLoopLine(conditions []conditionResource, forCrash bool) string {
 }
 
 // fetchAppStatus prefers the status route and falls back to the bare
-// conditions list on a server that does not have it.
+// conditions list when it fails or reports nothing, so older servers keep working.
 func fetchAppStatus(ctx context.Context, client *Client, name string) (apiclient.AppStatus, error) {
 	st, err := client.GetAppStatus(ctx, name)
-	var apiErr *apiclient.APIError
-	if err == nil || !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusNotFound {
-		return st, err
+	if err == nil && (len(st.Conditions) > 0 || st.Outcome != "") {
+		return st, nil
 	}
 	conds, cerr := client.GetDeployStatus(ctx, name)
-	return apiclient.AppStatus{Conditions: conds}, cerr
+	if cerr != nil {
+		return st, err
+	}
+	st.Conditions = conds
+	return st, nil
 }
 
 // statusOutcomeLine prints the server's reason when it sent an outcome and

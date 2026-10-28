@@ -37,7 +37,7 @@ func runAPIResources(prog string, args []string, stdout, stderr io.Writer, _ fun
 	jsonOut := fs.Bool("json", false, "print the result as JSON to stdout and nothing else")
 	outputFlag, queryFlag := bindOutputQueryFlags(fs)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s api-resources [flags]\n\nLists every resource kind a document can declare, from the embedded schema. Works offline.\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s api-resources [flags]\n\nLists every resource kind a document can declare, from the embedded schema. Works offline.\n\nFlags:\n  --json            print the result as JSON, nothing else\n  --output string   output format\n  --query string    JMESPath filter\n", prog)
 	}
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if errors.Is(err, flag.ErrHelp) {

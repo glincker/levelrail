@@ -39,6 +39,10 @@ apps_env.go runAppsEnvImport --dry-run
 apps_env.go runAppsEnvImport --keep-existing
 apps_env_health.go runAppsEnvHistory --limit
 apps_exposure.go runAppsExposure --preview
+apps_files.go runAppsFilesRm --apply
+apps_files.go runAppsFilesSet --apply
+apps_files.go runAppsFilesSet --mode
+apps_files.go runAppsFilesSet --secret
 apps_git_source.go runAppsGitSourceSet --base-directory
 apps_git_source.go runAppsGitSourceSet --branch
 apps_git_source.go runAppsGitSourceSet --build-path
@@ -50,9 +54,11 @@ apps_git_source_build.go runAppsGitSourceAffected --branch
 apps_git_source_build.go runAppsGitSourceDetect --apply
 apps_git_source_build.go runAppsGitSourceDetect --branch
 apps_git_source_build.go runAppsGitSourceDetect --package
+apps_git_source_settings.go runAppsGitSourceSettings --ci-check
 apps_git_source_settings.go runAppsGitSourceSettings --paths
 apps_git_source_settings.go runAppsGitSourceSettings --paths-ignore
 apps_git_source_settings.go runAppsGitSourceSettings --report-status
+apps_git_source_settings.go runAppsGitSourceSettings --wait-for-ci
 apps_list.go runAppsList --environment
 apps_log_drain.go runAppsLogDrainSet --disabled
 apps_schedule.go runAppsScheduleHistory --limit
@@ -77,6 +83,7 @@ auth_sign_in.go runAuthDecide --match
 backups_schedule.go runBackupsScheduleSet --retain
 backups_schedule.go runBackupsScheduleSet --retain-days
 cloudflare_tunnel.go runCloudflareTunnelSet --enabled
+config_contexts.go configFlagSet --json
 containers_orphans.go runOrphanReport --dry-run
 databases_link.go runDatabasesLink --env-var
 databases_link.go runDatabasesLink --field
@@ -141,6 +148,7 @@ import_apps.go runImportApps --wait
 import_cutover.go runImportCutover --api-url
 import_cutover.go runImportCutover --profile
 import_cutover.go runImportCutover --wait
+import_k8s.go runImportK8s --json
 jobs.go runJobsVerb --background
 jobs.go runJobsVerb --catch-up
 jobs.go runJobsVerb --catch-up-lookback
@@ -162,6 +170,13 @@ jobs.go runJobsVerb --status
 jobs.go runJobsVerb --timeout
 jobs.go runJobsVerb --timezone
 jobs.go runJobsVerb --warn-after
+jobs_run.go runJobsOneShot --backoff-limit
+jobs_run.go runJobsOneShot --command
+jobs_run.go runJobsOneShot --completions
+jobs_run.go runJobsOneShot --parallelism
+jobs_run.go runJobsOneShot --poll
+jobs_run.go runJobsOneShot --timeout
+jobs_run.go runJobsOneShot --wait
 lb.go runLBSet --algorithm
 lb.go runLBSet --cookie-name
 lb.go runLBSet --drain-timeout

@@ -213,6 +213,11 @@ func configUsage(prog string) string {
   %[1]s config current-context [flags]     print the active profile name
   %[1]s config use-context <name> [flags]  make a profile the default
 
+Flags (all verbs):
+  --json            print the result as JSON, nothing else
+  --output string   output format
+  --query string    JMESPath filter
+
 A context is a credentials profile. The --profile flag and the APP_PROFILE
 environment variable still win over the saved current context.
 `, prog)

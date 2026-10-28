@@ -42,6 +42,7 @@ var Tree = map[string]*Node{
 		"deploy-spec":             nil,
 		"group":                   nil,
 		"hook-runs":               nil,
+		"files":                   {Subs: map[string]*Node{"ls": nil, "set": nil, "rm": nil}},
 		"rollback":                nil,
 		"auto-rollback":           {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil}},
 		"sleep":                   {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil, "wake": nil, "now": nil, "list": nil, "history": nil}},
@@ -388,7 +389,7 @@ var Tree = map[string]*Node{
 	"assets":         {Subs: map[string]*Node{"buckets": {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "set": nil, "probe": nil, "delete": nil}}, "usage": nil, "ls": nil, "upload": nil, "url": nil, "rm": nil}},
 	"stack":          {Subs: map[string]*Node{"templates": nil, "init": nil, "list": nil, "show": nil, "create": nil, "plan": nil, "apply": nil, "history": nil, "show-revision": nil, "diff": nil, "rollback": nil, "approve": nil, "reject": nil, "pin": nil, "unpin": nil, "unlock": nil, "delete": nil, "settings": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
-	"import":         {Subs: map[string]*Node{"config": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
+	"import":         {Subs: map[string]*Node{"config": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "k8s": nil, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
