@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -374,6 +375,10 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// approvalBeforeClaim is a test seam run after an approval was loaded and
+// checked but before it is claimed, so a test can race another decision in.
+var approvalBeforeClaim func()
+
 // applyAndDecideApproval runs a's gated action through the exact path
 // an unprotected deploy/promote already uses (executeConfirmedDeploy,
 // deploys.go; setDesiredImage+recordInstantDeployAttempt, promote.go),
@@ -382,8 +387,51 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 // dashboard click and a verified Slack/Discord click can never apply an
 // approval differently.
 func (rt *Router) applyAndDecideApproval(ctx context.Context, a store.DeployApproval, deciderType, deciderID, deciderName string) (deployApprovalDecisionResponse, error) {
+	if approvalBeforeClaim != nil {
+		approvalBeforeClaim()
+	}
+	// Claim first: only the one caller that wins this swap applies anything.
+	claimedAt := store.FormatAuditTime(time.Now())
+	ok, err := rt.deployApprovals.ClaimDeployApproval(ctx, a.ID, deciderType, deciderID, deciderName, claimedAt)
+	if err != nil {
+		return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: claim failed: %w", err)
+	}
+	if !ok {
+		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "deploy approval " + a.ID + " is no longer pending"}
+	}
+	resp, err := rt.applyClaimedApproval(ctx, a)
+	if err != nil {
+		rt.releaseApprovalClaim(ctx, a.ID, claimedAt, "apply failed: "+err.Error())
+		return deployApprovalDecisionResponse{}, err
+	}
+	fin := context.WithoutCancel(ctx)
+	if done, err := rt.deployApprovals.FinishDeployApproval(fin, a.ID, claimedAt, store.FormatAuditTime(time.Now())); err != nil || !done {
+		rt.logger.Warn("api: record deploy approval decision failed", slog.Any("error", err), slog.Bool("claim_held", done), slog.String("id", a.ID))
+	}
+	final, err := rt.deployApprovals.GetDeployApproval(fin, a.ID)
+	if err != nil {
+		return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: reload failed: %w", err)
+	}
+	resp.Approval = toDeployApprovalResource(final)
+	return resp, nil
+}
+
+// releaseApprovalClaim puts a claimed approval back to pending and audits why,
+// so a failed apply never leaves the row stuck in approving.
+func (rt *Router) releaseApprovalClaim(ctx context.Context, id, claimedAt, why string) {
+	ctx = context.WithoutCancel(ctx)
+	ok, err := rt.deployApprovals.ReleaseDeployApproval(ctx, id, claimedAt)
+	if err != nil || !ok {
+		rt.logger.Warn("api: release deploy approval claim failed", slog.Any("error", err), slog.String("id", id))
+		return
+	}
+	rt.auditSystemEvent(ctx, "deploy-approval", "deploy_approval.released", id+" back to pending: "+why)
+}
+
+// applyClaimedApproval runs a's gated change; the caller holds its claim.
+func (rt *Router) applyClaimedApproval(ctx context.Context, a store.DeployApproval) (deployApprovalDecisionResponse, error) {
 	if a.Action == store.DeployApprovalActionMoveApp || a.Action == store.DeployApprovalActionMoveDatabase {
-		return rt.applyMoveApproval(ctx, a, deciderType, deciderID, deciderName)
+		return rt.applyMoveApproval(ctx, a)
 	}
 	svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName)
 	if errors.Is(err, store.ErrServiceNotFound) {
@@ -421,17 +469,7 @@ func (rt *Router) applyAndDecideApproval(ctx context.Context, a store.DeployAppr
 	if err != nil {
 		return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: apply failed: %w", err)
 	}
-
-	decidedAt := store.FormatAuditTime(time.Now())
-	if _, err := rt.deployApprovals.DecideDeployApproval(ctx, a.ID, store.DeployApprovalStatusApproved, deciderType, deciderID, deciderName, "", decidedAt); err != nil {
-		rt.logger.Warn("api: record deploy approval decision failed", slog.String("error", err.Error()), slog.String("id", a.ID))
-	}
-
-	final, err := rt.deployApprovals.GetDeployApproval(ctx, a.ID)
-	if err != nil {
-		return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: reload failed: %w", err)
-	}
-	return deployApprovalDecisionResponse{Approval: toDeployApprovalResource(final), App: toAppResource(updated)}, nil
+	return deployApprovalDecisionResponse{App: toAppResource(updated)}, nil
 }
 
 // approvalFreezeNote refuses to apply an approved deploy during a
@@ -530,11 +568,14 @@ func (rt *Router) RunDeployApprovalExpirySweep(ctx context.Context, interval tim
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
+	// Runs at boot too, so a claim a crash left behind is recovered early.
+	rt.logStaleClaimRecovery(ctx)
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
+			rt.logStaleClaimRecovery(ctx)
 			n, err := rt.sweepExpiredDeployApprovals(ctx)
 			if err != nil {
 				rt.logger.Warn("api: deploy approval expiry sweep tick failed", slog.String("error", err.Error()))
@@ -543,6 +584,70 @@ func (rt *Router) RunDeployApprovalExpirySweep(ctx context.Context, interval tim
 			}
 		}
 	}
+}
+
+const defaultDeployApprovalClaimTimeout = 15 * time.Minute
+
+// deployApprovalClaimTimeout is how long an approving claim may stand before
+// recovery treats its claimer as gone (APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT).
+func deployApprovalClaimTimeout() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT")); err == nil && d > 0 {
+		return d
+	}
+	return defaultDeployApprovalClaimTimeout
+}
+
+func (rt *Router) logStaleClaimRecovery(ctx context.Context) {
+	n, err := rt.recoverStaleApprovalClaims(ctx)
+	if err != nil {
+		rt.logger.Warn("api: deploy approval claim recovery failed", slog.String("error", err.Error()))
+	} else if n > 0 {
+		rt.logger.Info("api: recovered stale deploy approval claims", slog.Int("count", n))
+	}
+}
+
+// recoverStaleApprovalClaims settles approving rows older than the claim
+// timeout: approved when the deploy or promote already landed (the target
+// image is desired), otherwise back to pending so a person decides again.
+func (rt *Router) recoverStaleApprovalClaims(ctx context.Context) (int, error) {
+	claimed, err := rt.deployApprovals.ListDeployApprovals(ctx, store.DeployApprovalStatusApproving, "")
+	if err != nil {
+		return 0, err
+	}
+	cutoff := store.FormatAuditTime(time.Now().Add(-deployApprovalClaimTimeout()))
+	n := 0
+	for _, a := range claimed {
+		if a.DecidedAt >= cutoff {
+			continue
+		}
+		if rt.approvalAlreadyApplied(ctx, a) {
+			ok, err := rt.deployApprovals.FinishDeployApproval(ctx, a.ID, a.DecidedAt, store.FormatAuditTime(time.Now()))
+			if err != nil {
+				return n, err
+			}
+			if ok {
+				rt.auditSystemEvent(ctx, "deploy-approval", "deploy_approval.recovered", a.ID+" approved: its change had already applied")
+				n++
+			}
+			continue
+		}
+		before := n
+		rt.releaseApprovalClaim(ctx, a.ID, a.DecidedAt, "claim older than the claim timeout")
+		if got, err := rt.deployApprovals.GetDeployApproval(ctx, a.ID); err == nil && got.Status == store.DeployApprovalStatusPending {
+			n = before + 1
+		}
+	}
+	return n, nil
+}
+
+// approvalAlreadyApplied reports whether a deploy or promote's image is
+// already desired; moves are idempotent, so they are simply decided again.
+func (rt *Router) approvalAlreadyApplied(ctx context.Context, a store.DeployApproval) bool {
+	if a.Action != store.DeployApprovalActionDeploy && a.Action != store.DeployApprovalActionPromote {
+		return false
+	}
+	svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName)
+	return err == nil && svc.Image == a.Image
 }
 
 func (rt *Router) sweepExpiredDeployApprovals(ctx context.Context) (int, error) {
