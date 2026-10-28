@@ -110,7 +110,7 @@ func WithReadinessRequeue(p *PendingReadiness, delay time.Duration) Option {
 // defersReadiness reports whether this run probes once instead of blocking.
 // A release with nothing to probe keeps its short startup watch.
 func (c *Controller) defersReadiness(desired *store.DesiredService) bool {
-	return c.deferReadiness && c.deployReadinessProbeFor(desired) != nil
+	return c.deferReadiness && !desired.RunsToCompletion() && c.deployReadinessProbeFor(desired) != nil
 }
 
 // startedAt is when name last started, from the runtime when it reports it.

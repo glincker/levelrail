@@ -804,13 +804,21 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 			break
 		}
 	}
+	completed := !allRunning && c.oneShotsDone(ctx, targets, desired)
 
 	stale, err := c.staleContainers(ctx, targets)
 	if err != nil {
 		return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
 	}
 
+	if completed && len(stale) == 0 {
+		return ready(ReasonCompleted), nil
+	}
 	if allRunning && len(stale) == 0 {
+		if desired.RunsToCompletion() {
+			err := fmt.Errorf("%s is still running to completion", c.serviceName)
+			return notReady(ReasonRunningToComplete, err), nil
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
 
@@ -914,6 +922,9 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
 		c.recordAdoptedCutover(ctx, targets[0], desired)
+		if desired.RunsToCompletion() {
+			return ready(ReasonCompleted), nil
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
 
@@ -1015,6 +1026,12 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
 		}
 		state = nil
+	}
+
+	if desired.RunsToCompletion() && state != nil {
+		if out, done, err := c.settleOneShot(ctx, target, state, desired); done {
+			return out, err
+		}
 	}
 
 	if c.defersReadiness(desired) && state != nil && !state.Running {
@@ -1171,7 +1188,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	var readyErr error
-	if c.defersReadiness(desired) {
+	if desired.RunsToCompletion() {
+		readyErr = c.awaitCompletion(ctx, state.Name, desired)
+	} else if c.defersReadiness(desired) {
 		c.noteImplicitReadiness(ctx, state.Name, desired, c.deployReadinessProbeFor(desired))
 		now := time.Now()
 		pending, err := c.probeCandidate(ctx, state, desired, c.startedAt(ctx, state, now))

@@ -258,6 +258,10 @@ func gateFailureMessage(name, reason string, obs deploysafety.GateObservation, c
 // container, and for any restart of one with no readiness probe: being
 // running is its only readiness, so an instant exit would otherwise pass.
 func (c *Controller) stabilityGateForNew(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, created bool) error {
+	// A one-shot is meant to exit inside the window; awaitCompletion already judged it.
+	if desired.RunsToCompletion() {
+		return nil
+	}
 	if !created && c.deployReadinessProbeFor(desired) != nil {
 		return nil
 	}
