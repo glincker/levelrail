@@ -4,19 +4,18 @@ package catalog
 // uses the project's s6 image so hbbs and hbbr run in one container with a shell.
 var catalogRustDeskTemplates = []Template{
 	{
-		ID:                     "rustdesk-server",
-		Name:                   "RustDesk Server",
-		Slogan:                 "Self-hosted RustDesk ID and relay servers (AGPL-3.0). Set RUSTDESK_RELAY to host:21117, set a public bind per port in Network settings, open TCP 21115-21117 and UDP 21116, read id_ed25519.pub in the data volume.",
+		ID:     "rustdesk-server",
+		Name:   "RustDesk Server",
+		Slogan: "Self-hosted RustDesk ID and relay servers (AGPL-3.0).",
+		Description: "Set RUSTDESK_RELAY to your public host:21117, or the container refuses to start.\n" +
+			"Published ports bind privately by default: set a public bind for each one in the app's Network settings.\n" +
+			"Open TCP 21115-21117 and UDP 21116 in the host or cloud firewall.\n" +
+			"After first start, read id_ed25519.pub in the data volume and give it to every client as the Key.\n" +
+			"Licence: AGPL-3.0.",
 		Category:               "Infrastructure",
 		DocumentationURL:       "https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/",
 		RecommendedMemoryBytes: 134217728, // 128Mi
-		Compose: `# Ports are for RustDesk clients on your network, not the HTTP proxy.
-# The platform binds published ports privately by default: open the app's
-# Network settings and set the public bind for each published port, and allow
-# TCP 21115-21117 and UDP 21116 in the host or cloud firewall.
-# RUSTDESK_RELAY (your public host:21117) is required: the container exits with a log line if it is empty.
-# After first start, read id_ed25519.pub in the data volume and give that key
-# to every client (ID/Relay server settings, Key field). AGPL-3.0.
+		Compose: `# Ports serve RustDesk clients directly, not the HTTP proxy. Setup notes are in the description.
 services:
   rustdesk:
     image: rustdesk/rustdesk-server-s6:1.1.16

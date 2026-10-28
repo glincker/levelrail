@@ -117,9 +117,12 @@ var catalogBatch4Templates = []Template{
 		// exactly this case (no bind mount available here): it sets
 		// allow_anonymous, fine for a mesh-internal broker, not for one
 		// exposed publicly without a reverse-proxy auth layer in front.
-		ID:                     "mosquitto",
-		Name:                   "Eclipse Mosquitto",
-		Slogan:                 "A lightweight MQTT broker for connecting IoT devices, sensors, and home automation hubs.",
+		ID:     "mosquitto",
+		Name:   "Eclipse Mosquitto",
+		Slogan: "A lightweight MQTT broker for connecting IoT devices, sensors, and home automation hubs.",
+		Description: "Anonymous access is off: clients log in with the generated MQTT_USER and MQTT_PASSWORD from the app's environment.\n" +
+			"Port 1883 is plain MQTT without TLS and binds privately by default.\n" +
+			"To reach it from other machines, set a public bind in the app's Network settings and open TCP 1883 in the firewall.",
 		Category:               "IoT",
 		DocumentationURL:       "https://mosquitto.org/documentation/",
 		RecommendedMemoryBytes: 134217728, // 128Mi
