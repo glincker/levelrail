@@ -2,7 +2,6 @@ package compose
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -103,7 +102,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			warnings = append(warnings, warning)
 		}
 		d.Health = health.toStoreHealth()
-		if policy := normalizeRestart(svc.Restart); store.IsRunToCompletionRestart(policy) {
+		if policy, err := store.ParseRestartPolicy(svc.Restart); err == nil && store.IsRunToCompletionRestart(policy) {
 			if d.Health == nil {
 				d.Health = &store.ServiceHealth{}
 			}
@@ -149,9 +148,4 @@ func splitPorts(ports []Port) (int, []spec.PublishedPort, error) {
 // volume).
 func volumeName(appName, serviceKey, logicalName string) string {
 	return "app-" + appName + "-" + serviceKey + "-" + logicalName
-}
-
-// normalizeRestart folds case and spacing so `restart: On-Failure:3` reads like Docker reads it.
-func normalizeRestart(v string) string {
-	return strings.ToLower(strings.TrimSpace(v))
 }

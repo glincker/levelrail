@@ -75,7 +75,7 @@ services:
     restart: unless-stopped
 `,
 			wants: []Notice{
-				{Level: NoticeLevelNote, Message: `service "web": restart: "on-failure:3" runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff`},
+				{Level: NoticeLevelNote, Message: `service "web": restart: "on-failure:3" runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff (N is accepted and ignored, there is no retry cap)`},
 				{Level: NoticeLevelWarning, Message: "networks: is declared but not enforced; every service in this app shares one network and can already reach every other service, regardless of any networks: assignment"},
 			},
 		},

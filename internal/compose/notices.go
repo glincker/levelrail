@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -32,7 +33,7 @@ type Notice struct {
 //
 //   - restart: (NoticeLevelNote): an explicit "no" or "on-failure[:N]"
 //     runs the service to completion (exit 0 is done, not restarted);
-//     an unrecognized value is warned about and kept running.
+//     an unrecognized value (on-failure:abc too) is warned about and ignored.
 //   - networks: (NoticeLevelWarning): every service in an app already
 //     shares one flat Docker network (internal/reconcile/application's
 //     NetworkName, one per app, not per compose network), so a compose
@@ -96,13 +97,15 @@ func (f *File) declaresDependsOn() bool {
 // restartNotice explains what an explicit restart: value does here. always and
 // unless-stopped match the platform's own keep-running default, so they need none.
 func restartNotice(service, raw string) (Notice, bool) {
-	policy := normalizeRestart(raw)
+	policy, err := store.ParseRestartPolicy(raw)
 	switch {
-	case policy == "" || policy == "always" || policy == "unless-stopped":
+	case err != nil:
+		return Notice{Level: NoticeLevelWarning, Message: fmt.Sprintf("service %q: restart: %q is not a recognized policy and is ignored; the service is kept running like restart: always", service, raw)}, true
+	case policy == "" || policy == store.RestartPolicyAlways || policy == store.RestartPolicyUnlessStopped:
 		return Notice{}, false
-	case store.IsRunToCompletionRestart(policy):
-		return Notice{Level: NoticeLevelNote, Message: fmt.Sprintf("service %q: restart: %q runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff", service, raw)}, true
+	case strings.HasPrefix(policy, store.RestartPolicyOnFailure+":"):
+		return Notice{Level: NoticeLevelNote, Message: fmt.Sprintf("service %q: restart: %q runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff (N is accepted and ignored, there is no retry cap)", service, raw)}, true
 	default:
-		return Notice{Level: NoticeLevelWarning, Message: fmt.Sprintf("service %q: restart: %q is not a recognized policy; the service is kept running like restart: always", service, raw)}, true
+		return Notice{Level: NoticeLevelNote, Message: fmt.Sprintf("service %q: restart: %q runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff", service, raw)}, true
 	}
 }
