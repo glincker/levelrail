@@ -148,6 +148,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		key := strings.TrimPrefix(services[i].Name, name+"-")
 		services[i].SecretEnv = append(services[i].SecretEnv, store.SecretEnvRefsFromNames(secretEnv[key])...)
 		services[i].IsTrial = isTrial
+		services[i].TemplateID = opts.templateID
 	}
 
 	// Loaded before this deploy writes anything: staleComposeServices

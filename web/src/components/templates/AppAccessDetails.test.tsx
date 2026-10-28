@@ -48,6 +48,14 @@ function respond(url: string, init?: RequestInit): Response {
   if (url.includes('/urls')) {
     return json({ app: 'a', addresses: [], running: true })
   }
+  if (url.endsWith('/service-templates/authelia')) {
+    return json({
+      id: 'authelia',
+      name: 'Authelia',
+      slogan: 'SSO',
+      description: 'Open the setup page and create the first admin.',
+    })
+  }
   return json({}, 404)
 }
 
@@ -101,6 +109,15 @@ describe('AppAccessDetails', () => {
     await renderCard({ ...app([]), is_trial: true })
     expect(screen.getByText(templates.access.title)).toBeTruthy()
     expect(screen.getByText(templates.result.noCredentials)).toBeTruthy()
+  })
+
+  it('shows the template setup notes when the app records its template', async () => {
+    await renderCard({ ...app([]), template_id: 'authelia' })
+    expect(
+      await screen.findByText(
+        'Open the setup page and create the first admin.',
+      ),
+    ).toBeTruthy()
   })
 
   it('keeps the secret out of the DOM until revealed', async () => {

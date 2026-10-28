@@ -42,7 +42,7 @@ export function TemplateAccessCard({
   const { t } = useTranslation('templates')
   const urls = useAppUrls(app.name)
   const settings = useEnvSettings(app.name)
-  const template = useServiceTemplate(templateId ?? '')
+  const template = useServiceTemplate(templateId ?? app.template_id ?? '')
   const revealed = useRevealedValues()
   const showError = useCallback(
     (error: unknown) => {

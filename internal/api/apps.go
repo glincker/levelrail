@@ -216,6 +216,8 @@ type appResource struct {
 	// handleDeployServiceTemplateNow at create time, never through this
 	// endpoint.
 	IsTrial bool `json:"is_trial,omitempty"`
+	// TemplateID is the catalog template the app was deployed from; response-only, set at deploy time.
+	TemplateID string `json:"template_id,omitempty"`
 	// LogDrain is response-only, the same boundary NodeID/ProjectID/
 	// StorageTargetID already establish above: set it via PUT/DELETE
 	// /api/v1/apps/{name}/log-drain (apps_log_drain.go) instead.
@@ -345,6 +347,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Suspended:           svc.Suspended,
 		AppID:               svc.AppID,
 		IsTrial:             svc.IsTrial,
+		TemplateID:          svc.TemplateID,
 		LogDrain:            svc.LogDrain,
 		PreviewEnvOverrides: svc.PreviewEnvOverrides,
 		EnvDirty:            svc.EnvDirty,

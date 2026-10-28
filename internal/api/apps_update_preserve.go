@@ -57,6 +57,7 @@ func mergeOmittedAppFields(req *appResource, existing store.DesiredService, sent
 // secret_env and vault_env clear only on [] or {}: absent or null keeps them, so no client drops a secret binding by accident.
 func preserveUnsentAppFields(desired *store.DesiredService, existing store.DesiredService, req appResource, imageChanged bool) {
 	desired.DatabaseEnv = existing.DatabaseEnv
+	desired.TemplateID = existing.TemplateID
 	desired.Volumes = existing.Volumes
 	desired.BindMounts = existing.BindMounts
 	desired.Entrypoint = existing.Entrypoint

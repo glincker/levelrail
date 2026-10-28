@@ -2,9 +2,10 @@ import type { AppDetail } from '../../types/appDetail'
 
 const GENERATED_KEY = /^SERVICE_(PASSWORD|USER|FQDN)_/
 
-/** The API records no template id on an app, so generated service keys or the trial flag mark a template app. */
+/** A recorded template id marks a template app; older apps fall back to generated service keys or the trial flag. */
 export function hasTemplateAccess(app: AppDetail): boolean {
   return (
+    (app.template_id ?? '') !== '' ||
     app.is_trial === true ||
     (app.secret_env ?? []).some((key) => GENERATED_KEY.test(key))
   )

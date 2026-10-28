@@ -215,6 +215,8 @@ export interface AppDetail {
   // (internal/api/service_templates.go's handleDeployServiceTemplateNow).
   // Response-only and never flips after create, drives TrialAppBanner.
   is_trial?: boolean
+  // template_id is the catalog template the app was deployed from; omitted for apps that predate it.
+  template_id?: string
   // log_drain carries `omitempty` on the Go side and is response-only
   // (internal/api/apps.go's appResource own doc comment): forwards this
   // app's container logs to an external HTTP or syslog sink, additive

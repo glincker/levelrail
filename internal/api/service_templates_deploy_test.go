@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -140,4 +141,33 @@ func deployTemplateNow(t *testing.T, rt *Router, cookie *http.Cookie, id string)
 		t.Fatalf("decode: %v", err)
 	}
 	return got.AppID
+}
+
+func TestOneClickDeploySetsTemplateIDAndPutKeepsIt(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/service-templates/redis-cache-starter/deploy", ""))
+	var got composeDeployResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || len(got.Services) == 0 {
+		t.Fatalf("deploy: %v, body = %s", err, rec.Body.String())
+	}
+	name := got.Services[0].Name
+
+	svc, err := db.GetDesiredService(context.Background(), name)
+	if err != nil || svc.TemplateID != "redis-cache-starter" {
+		t.Fatalf("TemplateID = %q, err = %v, want redis-cache-starter", svc.TemplateID, err)
+	}
+
+	put := httptest.NewRecorder()
+	body := `{"name":"` + name + `","image":"` + svc.Image + `","port":` + strconv.Itoa(svc.Port) + `,"template_id":"hijacked"}`
+	rt.Handler().ServeHTTP(put, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/"+name, body))
+	if put.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d body = %s", put.Code, put.Body.String())
+	}
+	after, err := db.GetDesiredService(context.Background(), name)
+	if err != nil || after.TemplateID != "redis-cache-starter" {
+		t.Fatalf("after PUT TemplateID = %q, err = %v, want it kept", after.TemplateID, err)
+	}
 }
