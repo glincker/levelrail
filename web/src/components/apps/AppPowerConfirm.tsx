@@ -49,6 +49,8 @@ export function AppPowerConfirm({
       pendingLabel={t('appPower.pending')}
       tone={stop ? 'destructive' : 'default'}
       pending={pending}
+      focusCancel
+      solidConfirm={stop}
       onConfirm={() => {
         if (!stop) writeSkipRestartConfirm(skip)
         onConfirm()
