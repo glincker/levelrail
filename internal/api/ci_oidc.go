@@ -237,6 +237,10 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAppForCI(w, r, name) {
 		return
 	}
+	if ok, msg := rt.ciTrustCallerMay(r, name, req); !ok {
+		writeError(w, http.StatusForbidden, msg)
+		return
+	}
 	trustID, err := store.NewCIOIDCTrustID()
 	if err != nil {
 		rt.internalError(w, "create ci trust", err)
@@ -262,6 +266,7 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "save ci trust", err)
 		return
 	}
+	rt.auditCITrust(r.Context(), r, auditActionCITrustCreated, t)
 	res := toCITrustResource(t)
 	if t.Provider == ciProviderGitLab && !t.ProtectedRefOnly {
 		res.Warning = ciGitLabUnprotectedWarning
@@ -283,6 +288,7 @@ func (rt *Router) handleDeleteCITrust(w http.ResponseWriter, r *http.Request) {
 	if err := rt.policies.DeletePolicy(r.Context(), t.PolicyID); err != nil && !errors.Is(err, store.ErrPolicyNotFound) {
 		rt.logger.Warn("api: delete ci trust policy failed", slog.String("trust_id", t.ID), slog.String("error", err.Error()))
 	}
+	rt.auditCITrust(r.Context(), r, auditActionCITrustDeleted, t)
 	w.WriteHeader(http.StatusNoContent)
 }
 
