@@ -71,13 +71,26 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_app",
-		Description: "Point an app at a new image tag. Asynchronous: watch with get_app_status. Protected environments need confirm and yield pending_approval until another human approves.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
+		Description: "Point an app at a new image tag. Asynchronous: watch with get_app_status, or wait=true for the outcome and failure diagnosis. Protected environments need confirm and yield pending_approval until another human approves.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppWaitInput) (*mcp.CallToolResult, deployAppOutput, error) {
 		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
-			return nil, apiclient.DeployTriggerResult{}, fmt.Errorf("deploy app %q to image %q: %w", in.Name, in.Image, err)
+			return nil, deployAppOutput{}, fmt.Errorf("deploy app %q to image %q: %w", in.Name, in.Image, err)
 		}
-		return nil, result, nil
+		out := deployAppOutput{DeployTriggerResult: result}
+		if in.Wait && result.PendingApproval == nil {
+			target := result.DeployID
+			if target == "" {
+				target = "latest"
+				out.WaitNote = "server returned no deploy_id; waited on the newest deploy, which may be another one"
+			}
+			w, err := waitDeploy(ctx, client, in.Name, target, in.MaxWaitSeconds)
+			if err != nil {
+				return nil, out, fmt.Errorf("deploy app %q started, wait failed: %w", in.Name, err)
+			}
+			out.Wait = &w
+		}
+		return nil, out, nil
 	})
 
 	addTool(server, &mcp.Tool{
@@ -321,6 +334,18 @@ type deployAppInput struct {
 	Name    string `json:"name" jsonschema:"the app's name"`
 	Image   string `json:"image" jsonschema:"image reference to deploy, e.g. registry.example.com/org/app:tag"`
 	Confirm bool   `json:"confirm,omitempty" jsonschema:"true to confirm a protected environment, else 409"`
+}
+
+type deployAppWaitInput struct {
+	deployAppInput
+	Wait           bool `json:"wait,omitempty" jsonschema:"block for the outcome"`
+	MaxWaitSeconds int  `json:"max_wait_seconds,omitempty" jsonschema:"wait cap in seconds"`
+}
+
+type deployAppOutput struct {
+	apiclient.DeployTriggerResult
+	Wait     *waitForDeployOutput `json:"wait,omitempty" jsonschema:"set when wait=true"`
+	WaitNote string               `json:"wait_note,omitempty"`
 }
 
 type rollbackToDeployInput struct {

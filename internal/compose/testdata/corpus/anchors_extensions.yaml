@@ -1,0 +1,30 @@
+x-common: &common
+  restart: unless-stopped
+  logging:
+    driver: json-file
+  environment:
+    TZ: UTC
+x-levelrail-note: "extension fields are ignorable by spec"
+services:
+  a:
+    <<: *common
+    image: ghcr.io/acme/a:1.0.0
+    x-custom: kept-by-user
+  b:
+    <<: *common
+    image: ghcr.io/acme/b:1.0.0
+    hostname: bee
+    ports:
+      - target: 8080
+        published: 8081
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: data
+        target: /data
+        volume:
+          nocopy: true
+volumes:
+  data:
+    driver: local

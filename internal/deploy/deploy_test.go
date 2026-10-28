@@ -984,3 +984,15 @@ func TestPipeline_Deploy_Dockerfile_NoCache(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildFailure_NoDoubledPrefix(t *testing.T) {
+	for name, inner := range map[string]error{
+		"prefixed":   errors.New("build: source builds are not supported"),
+		"unprefixed": errors.New("solve failed"),
+	} {
+		got := buildFailure("web", inner).Error()
+		if strings.Contains(got, "build: build:") || !strings.Contains(got, "build: ") {
+			t.Errorf("%s: message %q has a doubled or missing build prefix", name, got)
+		}
+	}
+}

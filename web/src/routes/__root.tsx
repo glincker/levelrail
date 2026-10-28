@@ -76,9 +76,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       !PUBLIC_ROUTE_PATHS.includes(location.pathname)
     ) {
       // Keep the full target so a deep link such as /deploy?repo=... survives sign-in.
+      // The hash (first-run #setup= token) rides along on its own, never inside ?redirect=.
       redirect({
         to: '/login',
-        search: location.pathname === '/' ? {} : { redirect: location.href },
+        hash: location.hash || undefined,
+        search:
+          location.pathname === '/'
+            ? {}
+            : { redirect: location.pathname + location.searchStr },
         throw: true,
       })
     }

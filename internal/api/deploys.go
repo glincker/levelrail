@@ -63,6 +63,9 @@ type deployTriggerRequest struct {
 type deployTriggerResult struct {
 	*appResource
 	PendingApproval *deployApprovalResource `json:"pending_approval,omitempty"`
+	// DeployID is the attempt this trigger created, so a waiter follows it
+	// rather than whichever deploy is newest.
+	DeployID string `json:"deploy_id,omitempty"`
 }
 
 // handleTriggerDeploy handles POST /api/v1/apps/{name}/deploys. It
@@ -201,7 +204,8 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 
-	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf})
+	var attemptID string
+	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf, attemptID: &attemptID})
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if errors.Is(err, docker.ErrImageNotFound) {
@@ -220,7 +224,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		rt.recordOperatorRollback(r.Context(), name)
 	}
 	res := toAppResource(updated)
-	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
+	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res, DeployID: attemptID})
 }
 
 // recordOperatorRollback marks the newest attempt as an operator's choice so
@@ -259,6 +263,8 @@ type confirmedDeployOptions struct {
 	rerunOf string
 	// source overrides the attempt trigger; empty keeps the image default.
 	source string
+	// attemptID, when set, receives the id of the attempt the deploy saved.
+	attemptID *string
 }
 
 func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
@@ -266,6 +272,9 @@ func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.Des
 	recreate := rt.redeployNeedsRecreate(ctx, existing)
 	trigger := rt.imageTrigger(ctx, existing, opts.pull, opts.reason)
 	trigger.RerunOf = opts.rerunOf
+	if opts.attemptID != nil {
+		trigger.Store = attemptRecordingStore{deployTriggerImageStore{rt}, opts.attemptID}
+	}
 	if opts.source != "" {
 		trigger.Source = opts.source
 	}
@@ -305,6 +314,21 @@ func (s deployTriggerImageStore) SaveDesiredService(ctx context.Context, svc sto
 
 func (s deployTriggerImageStore) SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error {
 	return s.rt.deployAttempts.SaveDeployAttempt(ctx, a)
+}
+
+// attemptRecordingStore remembers the id of the attempt it saved, so the
+// trigger response names it. A failed save leaves the id empty.
+type attemptRecordingStore struct {
+	deployTriggerImageStore
+	savedID *string
+}
+
+func (s attemptRecordingStore) SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error {
+	if err := s.deployTriggerImageStore.SaveDeployAttempt(ctx, a); err != nil {
+		return err
+	}
+	*s.savedID = a.ID
+	return nil
 }
 
 // SaveDeployTraceStep lets deploy.ImageTrigger write its trace through the

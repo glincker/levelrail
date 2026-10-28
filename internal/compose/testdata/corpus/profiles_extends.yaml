@@ -1,0 +1,19 @@
+services:
+  app:
+    image: ghcr.io/acme/app:2.0.0
+    ports: ["3000"]
+  debug:
+    image: ghcr.io/acme/app:2.0.0
+    profiles: ["debug"]
+    extends:
+      service: app
+    tty: true
+    stdin_open: true
+  migrate:
+    image: ghcr.io/acme/app:2.0.0
+    profiles: [tools, debug]
+    command: ["migrate", "up"]
+    depends_on:
+      app:
+        condition: service_started
+        restart: true

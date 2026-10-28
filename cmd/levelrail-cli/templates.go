@@ -61,8 +61,10 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "templates list", "print the result as a JSON array to stdout and nothing else", stderr)
 	var custom bool
 	fs.BoolVar(&custom, "custom", false, "list your own saved templates (apps save-as-template) instead of the built-in catalog")
+	var verifiedOnly bool
+	fs.BoolVar(&verifiedOnly, "verified", false, "only list templates that passed the last live smoke run")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [--verified] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -85,6 +87,15 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list service templates: %w", err))
 	}
+	if verifiedOnly {
+		kept := result[:0]
+		for _, t := range result {
+			if t.Verified {
+				kept = append(kept, t)
+			}
+		}
+		result = kept
+	}
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printTemplatesTable(stdout, result) })
 }
 
@@ -94,11 +105,18 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tRAM\tGPU\tSLOGAN")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tRAM\tGPU\tVERIFIED\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), t.Slogan)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), t.Slogan)
 	}
 	_ = tw.Flush()
+}
+
+func verifiedColumn(v bool) string {
+	if v {
+		return "yes"
+	}
+	return "-"
 }
 
 func gpuColumn(requires bool) string {

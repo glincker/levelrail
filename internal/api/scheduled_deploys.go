@@ -264,6 +264,10 @@ func (rt *Router) requestScheduledDeployApproval(ctx context.Context, env store.
 		RequestedByType: d.CreatedByType, RequestedBy: d.CreatedBy, RequestedByName: d.CreatedByName,
 		CreatedAt: store.FormatAuditTime(now), ExpiresAt: store.FormatAuditTime(now.Add(rt.effectiveDeployApprovalTTL())),
 	}
+	// Unresolved here means unrecorded; the decide path then looks it up strictly.
+	if human, err := rt.approvalHuman(ctx, d.CreatedByType, d.CreatedBy); err == nil {
+		a.RequesterUserID, a.RequesterRecorded = human, true
+	}
 	if err := rt.deployApprovals.SaveDeployApproval(ctx, a); err != nil {
 		return "", fmt.Errorf("save deploy approval: %w", err)
 	}

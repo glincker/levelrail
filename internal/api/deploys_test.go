@@ -445,3 +445,30 @@ func TestHandleTriggerDeploy_MissingImageFailsPull(t *testing.T) {
 		t.Fatalf("a failed pull must not record a deploy attempt, got %d", len(attempts))
 	}
 }
+
+func TestHandleTriggerDeploy_ReturnsCreatedAttemptID(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d %s", rec.Code, rec.Body.String())
+	}
+	var got struct {
+		DeployID string `json:"deploy_id"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil || len(attempts) != 1 {
+		t.Fatalf("attempts = %v %v", attempts, err)
+	}
+	if got.DeployID == "" || got.DeployID != attempts[0].ID {
+		t.Errorf("deploy_id = %q, want the created attempt %q", got.DeployID, attempts[0].ID)
+	}
+}

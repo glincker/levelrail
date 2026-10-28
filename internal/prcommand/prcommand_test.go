@@ -40,6 +40,8 @@ func TestParse(t *testing.T) {
 		{"shell injection", "/levelrail redeploy; rm -rf /", "", nil},
 		{"newline injection in verb", "/levelrail\nredeploy", "", nil},
 		{"unknown verb", "/levelrail destroy", "", nil},
+		{"help", "/levelrail help", Help, nil},
+		{"help with argument", "/levelrail help redeploy", "", nil},
 		{"preview alone", "/levelrail preview", "", nil},
 		{"no space", "/levelrailredeploy", "", nil},
 		{"prefix typo", "/levelrails redeploy", "", nil},

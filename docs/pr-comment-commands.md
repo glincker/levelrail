@@ -18,6 +18,7 @@ A command is a comment line that starts with the command at the first column, ou
 | `/levelrail rollback` | Rolls back to the newest earlier successful deploy of a different image. |
 | `/levelrail status` | Replies with the running image, the latest deploy and any freeze. Changes nothing. |
 | `/levelrail preview redeploy` | Rebuilds this pull request's preview environment. Needs previews on. |
+| `/levelrail help` | Replies with the supported commands. Only users with write access get the reply. |
 
 Send one command per comment. A comment with two commands runs neither. There is no way to name an app in the comment: the app is the one whose webhook received the event.
 
@@ -63,12 +64,15 @@ The webhook on the repository must also deliver the **Issue comments** event. Ad
 | `APP_PR_COMMENT_PERMISSION_CACHE` | 1m | How long a positive permission answer is reused. |
 | `APP_PR_COMMENT_LOG_RETENTION` | 720h | How long handled comment ids are remembered. |
 | `APP_PR_COMMENT_RUN_TIMEOUT` | 30m | Upper bound for one command's deploy work. |
+| `APP_PR_COMMENT_MAX_BODY_BYTES` | 4096 | Longest comment body that is scanned for a command. A longer comment is ignored, and audited as `body_too_large` when it mentions a command. |
+| `APP_PR_COMMENT_REFUSAL_AUDIT_WINDOW` | 10m | A refused comment writes at most one audit row per app and GitHub login in this window. The next row carries a `suppressed` count of the refusals dropped in between. Redelivered comments and apps where the feature was never configured write none. |
+| `APP_PR_COMMENT_REFUSAL_AUDIT_MAX_KEYS` | 10000 | Upper bound on app and login pairs tracked for that window. |
 
 ## What happens on a comment
 
 1. The webhook signature is verified with the same per-app secret as push deploys. An unsigned or wrongly signed delivery is rejected with 401.
 2. The kill switch and the app setting are checked. Off means the event is ignored.
-3. Only a newly created comment on a pull request counts. Edits, deletes and plain issues are ignored.
+3. Only a newly created comment on a pull request counts. Edits, deletes and plain issues are ignored, and so is a comment longer than `APP_PR_COMMENT_MAX_BODY_BYTES`.
 4. Comments from bots, from GitHub Apps, and comments carrying Levelrail's own reply marker are ignored.
 5. The comment id is recorded. A redelivered webhook, or an operator replay, finds it already handled and does nothing.
 6. The per-user and per-pull-request limits are applied before any call to GitHub.
@@ -85,13 +89,15 @@ The webhook on the repository must also deliver the **Issue comments** event. Ad
 | A drive-by commenter deploys | Write or admin permission is confirmed with GitHub for every command, cached for a short time, and fails closed on any API error. |
 | A pull request from a fork runs code paths with the base repo's trust | Refused unless the owner turned on fork commands for that app. The head repository comes from the GitHub API. A deleted fork counts as a fork. |
 | A bot loop, or Levelrail answering itself | Bot accounts, GitHub App comments and comments with Levelrail's reply marker are ignored. |
-| Free text picks the target | The comment cannot name an app. Only the four fixed commands parse, and quoted text, indented text and code blocks never match. |
+| Free text picks the target | The comment cannot name an app. Only the five fixed commands parse, and quoted text, indented text and code blocks never match. |
 | A flood of comments | Per-user and per-pull-request limits held in bounded memory, and a bounded table of handled comment ids. |
 | Replay of the same delivery | Comment ids are recorded once per app. |
 | Bypassing a freeze, an approval or a policy | Freezes, running-deploy guards, protected environments and deploy policy are checked first. A frozen app, or one that needs approval, gets a reply saying why and nothing runs. There is no override from a comment. |
 | Markdown, mentions or links injected through the reply | Echoed values are reduced to plain word characters, shown in code spans, and cut to a short length. |
 | A stolen permission after a role change | Permission answers are cached for `APP_PR_COMMENT_PERMISSION_CACHE` only. Refusals are never cached. |
 | An abused installation | `APP_PR_COMMENT_COMMANDS_DISABLED` turns the feature off for the whole control plane without a deploy. |
+
+Every refused command writes an audit log entry with the action `pr_comment_command.refused`, the GitHub login as `github:<login>`, the repository, the pull request number, the parsed command and a reason such as `commands_off`, `no_write_access`, `permission_lookup_failed`, `rate_limited_user`, `rate_limited_pull_request`, `bot`, `fork_commands_off` or `blocked` (a freeze, an approval requirement or a policy). The comment body is never stored, and every recorded value is reduced to plain characters. Comments that hold no command are not audited.
 
 Secrets are never logged or echoed. Logs carry the app name, pull request number and GitHub login.
 

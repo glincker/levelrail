@@ -1,0 +1,25 @@
+services:
+  web:
+    image: nginx:1.27-alpine
+    container_name: site-web
+    ports:
+      - "8080:80"
+    volumes:
+      - app:/var/www/html:ro
+    depends_on:
+      - php
+    restart: unless-stopped
+    networks: [frontend]
+  php:
+    image: php:8.3-fpm-alpine
+    working_dir: /var/www/html
+    user: "1000:1000"
+    expose:
+      - "9000"
+    volumes:
+      - app:/var/www/html
+    networks: [frontend]
+volumes:
+  app:
+networks:
+  frontend:

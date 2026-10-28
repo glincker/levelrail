@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -565,5 +566,92 @@ services:
 	}
 	if len(svc.Volumes) != 1 || svc.Volumes[0].ContainerPath != "/usr/share/nginx/html" {
 		t.Errorf("Volumes = %+v, want one entry mounted at /usr/share/nginx/html", svc.Volumes)
+	}
+}
+
+func composeMemYAML(mem string) string {
+	return "services:\n  web:\n    image: nginx:1.27\n    mem_limit: " + mem + "\n  redis:\n    image: redis:7\n    mem_limit: " + mem + "\n"
+}
+
+func composeQuotaDeploy(t *testing.T, rt *Router, cookie *http.Cookie, body string) (int, string) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", body))
+	return rec.Code, rec.Body.String()
+}
+
+func TestHandleDeployCompose_Quota_OverLimitRefusedNothingSaved(t *testing.T) {
+	t.Setenv(envQuotaDefaultMemoryMB, "512")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("300m"))
+	if code != http.StatusConflict {
+		t.Fatalf("status = %d %s, want 409", code, body)
+	}
+	var e codedError
+	if err := json.Unmarshal([]byte(body), &e); err != nil {
+		t.Fatal(err)
+	}
+	if e.Code != quotaExceededCode || !strings.Contains(e.Error, "memory quota") {
+		t.Errorf("error = %+v, want the apps create quota shape naming memory", e)
+	}
+	for _, name := range []string{"myapp-web", "myapp-redis"} {
+		if _, err := db.GetDesiredService(context.Background(), name); err == nil {
+			t.Errorf("refused deploy left %s behind", name)
+		}
+	}
+	if _, err := db.GetAppByName(context.Background(), "myapp"); err == nil {
+		t.Error("refused deploy left the app row behind")
+	}
+}
+
+func TestHandleDeployCompose_Quota_UnderLimitAndRedeployNoDoubleCount(t *testing.T) {
+	t.Setenv(envQuotaDefaultMemoryMB, "512")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	for i := range 2 {
+		if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("200m")); code != http.StatusOK {
+			t.Fatalf("deploy %d = %d %s, want 200", i, code, body)
+		}
+	}
+}
+
+func TestHandleDeployCompose_Quota_ProjectGrowthRefused(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	const proj = "proj_compose"
+	if err := db.SaveProject(ctx, store.Project{ID: proj, Name: "shop", CreatedAt: "2026-10-01T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("200m")); code != http.StatusOK {
+		t.Fatalf("first deploy = %d %s", code, body)
+	}
+	for _, name := range []string{"myapp-web", "myapp-redis"} {
+		if err := db.UpdateServiceProject(ctx, name, proj); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("1g")); code != http.StatusOK {
+		t.Fatalf("project without quota = %d %s, want 200", code, body)
+	}
+	if err := db.SetQuota(ctx, quota.ScopeProject, proj, quota.Amounts{MemoryBytes: 2560 << 20}); err != nil {
+		t.Fatal(err)
+	}
+	if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("1g")); code != http.StatusOK {
+		t.Fatalf("same-size redeploy = %d %s, want 200", code, body)
+	}
+	code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("1500m"))
+	if code != http.StatusConflict || !strings.Contains(body, "memory quota") {
+		t.Fatalf("growth = %d %s, want 409 naming memory", code, body)
+	}
+	svc, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if svc.Resources == nil || svc.Resources.MemoryBytes != 1<<30 {
+		t.Errorf("refused growth changed resources to %+v", svc.Resources)
 	}
 }

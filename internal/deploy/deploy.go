@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -332,7 +333,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 	res, err := p.builder.Build(ctx, buildReq, progress)
 	cacheDone()
 	if err != nil {
-		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
+		return "", buildFailure(req.ServiceName, err)
 	}
 
 	return p.finishDeploy(ctx, req, res)
@@ -373,7 +374,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		if errors.As(err, &unsupported) {
 			return "", fmt.Errorf("deploy: service %q: railpack %s", req.ServiceName, unsupported.Detail())
 		}
-		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
+		return "", buildFailure(req.ServiceName, err)
 	}
 
 	return p.finishDeploy(ctx, req, res)
@@ -550,4 +551,13 @@ func (p *Pipeline) validateEnv(ctx context.Context, serviceName string, env map[
 		}
 	}
 	return nil
+}
+
+// buildFailure adds the build: prefix only when the builder error lacks one,
+// so the journal never reads "build: build:".
+func buildFailure(service string, err error) error {
+	if strings.HasPrefix(err.Error(), "build:") {
+		return fmt.Errorf("deploy: service %q: %w", service, err)
+	}
+	return fmt.Errorf("deploy: service %q: build: %w", service, err)
 }

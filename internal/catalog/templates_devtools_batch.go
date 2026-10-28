@@ -220,7 +220,7 @@ var devtoolsBatchTemplates = []Template{
       REGISTRY_AUTH: htpasswd
       REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/registry.htpasswd
-    command: ["/bin/sh", "-c", 'apk add --no-cache apache2-utils >/dev/null 2>&1 && mkdir -p /auth && htpasswd -Bbc /auth/registry.htpasswd "$$HTPASSWD_USER" "$$HTPASSWD_PASS" && exec registry serve /etc/distribution/config.yml']
+    command: ["/bin/sh", "-c", 'apk add --no-cache apache2-utils >/dev/null 2>&1 && mkdir -p /auth && htpasswd -Bbc /auth/registry.htpasswd "$HTPASSWD_USER" "$HTPASSWD_PASS" && exec registry serve /etc/distribution/config.yml']
     volumes:
       - registry_auth_data:/var/lib/registry
     healthcheck:

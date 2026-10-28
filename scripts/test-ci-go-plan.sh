@@ -88,6 +88,7 @@ run_case() {
 
 run "docs only" - "scope=none" "has_tests=false" "live=smoke" -- docs/ci.md README.md
 run "docs only with label" CI_LIVE_LABEL=true "scope=none" "has_tests=false" -- docs/ci.md
+run "docs read by a Go test run that test" - "scope=some" "has_tests=true" -- docs/use-any-ci.md
 run "api change runs e2e but not the fleet or reconcile lanes" - "scope=some" "live=smoke" has:api-1 has:e2e lacks:e2e-fleet lacks:e2e-reconcile \
 	check:"Test (e2e)" nocheck:"Test (e2e-fleet)" nocheck:"Test (e2e-reconcile)" -- internal/api/apps.go
 run "api change with ci:live label is full" CI_LIVE_LABEL=true "live=full" "live_reason=PR label ci:live" has:e2e-fleet has:e2e \

@@ -1,0 +1,27 @@
+# .gitlab-ci.yml
+# Build, push and deploy by digest. GitLab ID tokens are not accepted by the
+# control plane yet, so this uses an API token stored as a masked, protected
+# CI/CD variable LEVELRAIL_TOKEN (create it with: levelrail-cli tokens create --name gitlab --preset deployer --expires-in-days 90).
+# LEVELRAIL_API_URL is a plain CI/CD variable.
+stages: [deploy]
+
+deploy:
+  stage: deploy
+  image: docker:27
+  services: [docker:27-dind]
+  resource_group: production
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  variables:
+    APP: my-app
+    IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    LEVELRAIL_CLI_INSTALL_DIR: /usr/local/bin
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build -t "$IMAGE" .
+    - docker push "$IMAGE"
+    - PINNED=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE")
+    - apk add --no-cache curl
+    - curl -fsSL https://levelrail.com/install-cli.sh | sh
+    - levelrail-cli apps deploy "$APP" --image "$PINNED"
+    - levelrail-cli apps wait "$APP" --timeout 5m

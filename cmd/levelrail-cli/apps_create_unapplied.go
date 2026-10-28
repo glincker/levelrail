@@ -29,6 +29,6 @@ func checkUnappliedSections(fileSpec *spec.Spec, key, prog, file string) error {
 	if len(items) == 0 {
 		return nil
 	}
-	return newValidationError("%s has sections that apps create does not apply: %s. databases: not applied by apps create; use %q for each database, link it with %q, then remove those sections from %s and rerun",
+	return newValidationError("%s has sections that apps create does not apply: %s. databases: not applied by apps create; use %q for each database, link it with %q, then remove those sections from %s and rerun. import config emits a file without them plus the command sequence",
 		file, strings.Join(items, ", "), prog+" databases create --name NAME --engine ENGINE --version VERSION", prog+" databases link NAME APP", file)
 }

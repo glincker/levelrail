@@ -14,6 +14,7 @@ import { useComposePreview } from '../../queries/composeStack'
 import { TemplateFacts } from '../../components/templates/TemplateFacts'
 import { TemplateRequirementsCard } from '../../components/templates/TemplateRequirementsCard'
 import { TemplateStackFile } from '../../components/templates/TemplateStackFile'
+import { TemplateVerifiedBadge } from '../../components/templates/TemplateVerifiedBadge'
 import { TemplateTrustBadges } from '../../components/templates/TemplateTrustBadges'
 import { TemplateServices } from '../../components/templates/TemplateServices'
 import { TemplateWhatYouGet } from '../../components/templates/TemplateWhatYouGet'
@@ -109,6 +110,7 @@ function TemplateDetailRoute() {
                 />
               </>
             ) : null}
+            {template.verified ? <TemplateVerifiedBadge /> : null}
             <TemplateTrustBadges images={images} />
             {template.requires_gpu ? (
               <Badge variant="muted">{t('detail.needsGpu')}</Badge>

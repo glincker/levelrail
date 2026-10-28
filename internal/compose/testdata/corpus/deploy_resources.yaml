@@ -1,0 +1,24 @@
+services:
+  worker:
+    image: ghcr.io/acme/worker:3.1.0
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+  gpu:
+    image: ollama/ollama:0.5.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ulimits:
+      nofile: 65535
+    shm_size: 1gb

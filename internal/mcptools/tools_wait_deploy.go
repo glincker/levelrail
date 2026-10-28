@@ -18,6 +18,8 @@ const (
 
 	defaultWaitWindow   = 55 * time.Second
 	defaultWaitInterval = 2 * time.Second
+
+	deployOutcomeFailed = "failed"
 )
 
 func envSeconds(key string, def time.Duration) time.Duration {
@@ -39,32 +41,44 @@ type waitForDeployOutput struct {
 	DeployID  string                          `json:"deploy_id"`
 	App       string                          `json:"app"`
 	Failure   *apiclient.DeployFailure        `json:"failure,omitempty"`
+	Diagnosis *compactDiagnosis               `json:"diagnosis,omitempty"`
 	Deploy    apiclient.DeployAttemptResource `json:"deploy"`
 }
 
-func registerWaitDeployTool(server *mcp.Server, client *apiclient.Client) {
-	window := envSeconds(EnvWaitWindow, defaultWaitWindow)
-	interval := envSeconds(EnvWaitInterval, defaultWaitInterval)
+// waitDeploy blocks up to the env-bounded window (or maxSeconds if smaller)
+// and returns the settled or still-running deploy, with a diagnosis on failure.
+func waitDeploy(ctx context.Context, client *apiclient.Client, name, deployID string, maxSeconds int) (waitForDeployOutput, error) {
+	limit := envSeconds(EnvWaitWindow, defaultWaitWindow)
+	if maxSeconds > 0 && time.Duration(maxSeconds)*time.Second < limit {
+		limit = time.Duration(maxSeconds) * time.Second
+	}
+	res, err := client.WaitForDeploy(ctx, name, deployID, apiclient.WaitOptions{Interval: envSeconds(EnvWaitInterval, defaultWaitInterval), Window: limit})
+	if err != nil {
+		return waitForDeployOutput{}, err
+	}
+	status := res.Deploy.Outcome
+	if !res.Done {
+		status = apiclient.DeployOutcomeInProgress
+	}
+	out := waitForDeployOutput{
+		Status: status, PollAgain: !res.Done, DeployID: res.Deploy.ID, App: res.Deploy.ServiceName,
+		Failure: res.Deploy.Failure, Deploy: res.Deploy,
+	}
+	if status == deployOutcomeFailed {
+		out.Diagnosis = buildDiagnosis(ctx, client, name, res.Deploy.ID, res.Deploy.Failure)
+	}
+	return out, nil
+}
 
+func registerWaitDeployTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "wait_for_deploy",
 		Description: "Wait for a deploy to finish: returns healthy, failed, canceled, superseded or blocked (with the failure). Blocks about 55 seconds; if still running returns in_progress with poll_again and deploy_id, so call again.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in waitForDeployInput) (*mcp.CallToolResult, waitForDeployOutput, error) {
-		limit := window
-		if in.MaxWaitSeconds > 0 && time.Duration(in.MaxWaitSeconds)*time.Second < limit {
-			limit = time.Duration(in.MaxWaitSeconds) * time.Second
-		}
-		res, err := client.WaitForDeploy(ctx, in.Name, in.DeployID, apiclient.WaitOptions{Interval: interval, Window: limit})
+		out, err := waitDeploy(ctx, client, in.Name, in.DeployID, in.MaxWaitSeconds)
 		if err != nil {
 			return nil, waitForDeployOutput{}, fmt.Errorf("wait for deploy of app %q: %w", in.Name, err)
 		}
-		status := res.Deploy.Outcome
-		if !res.Done {
-			status = apiclient.DeployOutcomeInProgress
-		}
-		return nil, waitForDeployOutput{
-			Status: status, PollAgain: !res.Done, DeployID: res.Deploy.ID, App: res.Deploy.ServiceName,
-			Failure: res.Deploy.Failure, Deploy: res.Deploy,
-		}, nil
+		return nil, out, nil
 	})
 }

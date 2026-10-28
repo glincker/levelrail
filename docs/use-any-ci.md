@@ -56,6 +56,38 @@ levelrail-cli apps deploy my-app --image "$IMAGE" --idempotency-key "ci-$BUILD_I
 
 The CLI retries HTTP 429 and 503 for requests that carry an idempotency key, waiting for `Retry-After`. `LEVELRAIL_RETRY_MAX` (default `3`, `0` turns retry off) and `LEVELRAIL_RETRY_MAX_WAIT` (default `60s`) bound it. See [Deploy from your computer](/deploy-from-cli#safe-retries-in-ci).
 
+## Ready-to-copy pipelines
+
+Each file builds an image, pushes it, deploys it pinned by digest and waits for the rollout to be healthy. A test in the CLI parses every file and fails if a command or flag it uses no longer exists, so they stay current.
+
+| CI | File | Auth |
+| --- | --- | --- |
+| GitHub Actions | [ci-examples/github-actions-oidc.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/github-actions-oidc.yml) | OIDC, no stored Levelrail secret |
+| GitLab CI | [ci-examples/gitlab-ci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/gitlab-ci.yml) | API token in a masked variable |
+| CircleCI | [ci-examples/circleci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/circleci.yml) | API token in a restricted context |
+
+The GitHub file needs a CI trust on the app once: `levelrail-cli apps github-actions trust add my-app --repo example/my-app --ref refs/heads/main`. The job then runs `levelrail-cli apps github-actions token my-app`, which swaps the job's identity token for a deploy token that expires after 15 minutes.
+
+## Deploy by digest from a build-complete hook
+
+If your CI already built and pushed the image and you would rather call the API than install the CLI, send the deploy straight to the same endpoint `apps deploy` uses. There is no separate webhook to set up:
+
+```bash
+curl -fsS -X POST "$LEVELRAIL_API_URL/api/v1/apps/my-app/deploys" \
+  -H "Authorization: Bearer $LEVELRAIL_TOKEN" \
+  -H "Idempotency-Key: ci-$BUILD_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"image": "registry.example.com/team/my-app@sha256:<digest>"}'
+```
+
+- `image` takes `name:tag`, `name@sha256:digest` or `name:tag@sha256:digest`. Pin by digest so a re-pushed tag can never change what runs.
+- The token needs the `deploy` ability on the app, the same as the CLI. An OIDC exchange token from GitHub works here too.
+- The `Idempotency-Key` makes a retried hook apply once: a repeat with the same key and body within 24 hours replays the first response, and the same key with a different body is refused.
+- Deploy freezes, protected environment approvals (add `"confirm": true`), deploy policies and rate limits apply exactly as they do to any other deploy, and the call is recorded in the audit log.
+- A `202` means accepted. Poll `GET /api/v1/apps/my-app/deploy-attempts`, or run `levelrail-cli apps wait my-app`, to learn whether it became healthy.
+
+The CLI equivalent is `levelrail-cli apps deploy my-app --image registry.example.com/team/my-app@sha256:<digest>`.
+
 ## OIDC support
 
 [Deploy without a stored secret](/github-actions#deploy-without-a-stored-secret-oidc) works on GitHub Actions only. The control plane accepts identity tokens only from `https://token.actions.githubusercontent.com` and matches them by GitHub repository, ref and environment (`internal/api/ci_oidc.go`). GitLab ID tokens, CircleCI OIDC and Buildkite OIDC are not accepted today, so the templates below use an API token. Supporting another CI would need a verifier for that issuer and a mapping from its claims to repository, ref and environment.

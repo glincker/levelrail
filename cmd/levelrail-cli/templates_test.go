@@ -178,3 +178,19 @@ func TestRun_Templates_Help(t *testing.T) {
 		t.Errorf("stdout = %q, want usage text", stdout)
 	}
 }
+
+func TestRun_Templates_List_VerifiedFilter(t *testing.T) {
+	srv := newListEchoServer(t, nil, []serviceTemplateListItem{
+		{ID: "grafana", Name: "Grafana", Category: "Monitoring", Slogan: "Dashboards", Verified: true},
+		{ID: "untested-thing", Name: "Untested", Category: "Misc", Slogan: "Maybe"},
+	})
+
+	all, _ := runCLIExpectOK(t, []string{"templates", "list", "--api-url", srv.URL})
+	if !strings.Contains(all, "VERIFIED") || !strings.Contains(all, "untested-thing") {
+		t.Errorf("unfiltered list = %q, want VERIFIED column and both rows", all)
+	}
+	only, _ := runCLIExpectOK(t, []string{"templates", "list", "--verified", "--api-url", srv.URL})
+	if !strings.Contains(only, "grafana") || strings.Contains(only, "untested-thing") {
+		t.Errorf("--verified list = %q, want only grafana", only)
+	}
+}

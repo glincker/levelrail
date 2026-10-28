@@ -15,7 +15,13 @@ const (
 	Rollback        Command = "rollback"
 	Status          Command = "status"
 	PreviewRedeploy Command = "preview redeploy"
+	Help            Command = "help"
 )
+
+// Supported returns every accepted command in the order help lists them.
+func Supported() []Command {
+	return []Command{Status, Redeploy, Rollback, PreviewRedeploy, Help}
+}
 
 // Prefix starts every command line.
 const Prefix = "/levelrail"
@@ -95,6 +101,8 @@ func parseLine(line string) (Command, bool) {
 		return Status, true
 	case string(PreviewRedeploy):
 		return PreviewRedeploy, true
+	case string(Help):
+		return Help, true
 	}
 	return "", false
 }

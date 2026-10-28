@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -86,6 +87,9 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 	if !rt.newDeviceApproval || rt.trustedDeviceFor(r, user.ID) || !rt.approvalRequiredFor(r.Context(), user.ID, method) {
 		return nil, nil
 	}
+	// Concurrent sign-ins see each other's not yet held sessions, so unserialized
+	// every one refuses first-login trust and the last slips through untrusted.
+	defer lockApprovalDecision(rt, user.ID)()
 	ctx := r.Context()
 	if rt.firstLoginTrusted(ctx, r, user, token, method) {
 		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionFirstLoginTrust, approvalAuditPrefix+"first_login#"+clientKindFromUserAgent(r.UserAgent()), http.StatusOK)
@@ -118,6 +122,45 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 		return nil, err
 	}
 	return &approvalHold{approval: a}, nil
+}
+
+type approvalDecisionKey struct {
+	rt     *Router
+	userID string
+}
+
+type approvalDecisionLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+var (
+	approvalDecisionsMu sync.Mutex
+	approvalDecisions   = map[approvalDecisionKey]*approvalDecisionLock{}
+)
+
+// lockApprovalDecision serializes holdForApproval per account within this
+// process and returns the unlock; entries are dropped once nobody waits.
+func lockApprovalDecision(rt *Router, userID string) func() {
+	key := approvalDecisionKey{rt: rt, userID: userID}
+	approvalDecisionsMu.Lock()
+	l, ok := approvalDecisions[key]
+	if !ok {
+		l = &approvalDecisionLock{}
+		approvalDecisions[key] = l
+	}
+	l.refs++
+	approvalDecisionsMu.Unlock()
+	l.mu.Lock()
+	return func() {
+		l.mu.Unlock()
+		approvalDecisionsMu.Lock()
+		l.refs--
+		if l.refs == 0 {
+			delete(approvalDecisions, key)
+		}
+		approvalDecisionsMu.Unlock()
+	}
 }
 
 // pendingApprovalForBrowser finds the still-open approval this browser (or

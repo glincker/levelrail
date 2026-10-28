@@ -61,6 +61,9 @@ type File struct {
 	// values an operator would reasonably expect to reach a container.
 	HasSecrets bool
 	HasConfigs bool
+	// Unsupported lists keys that parsed but are not read, so Notices can
+	// report them instead of dropping them silently.
+	Unsupported []UnsupportedKey
 }
 
 // Service is one entry under services:.
@@ -107,7 +110,10 @@ type Service struct {
 	Secrets []any
 	Configs []any
 	// Profiles gates the service behind compose profiles (ApplyProfiles).
-	Profiles   []string
+	Profiles []string
+	// MemLimit and CPUs are the mem_limit: and cpus: shorthands for a hard cap.
+	MemLimit   yamlScalarString
+	CPUs       yamlScalarString
 	HostAccess HostAccess
 	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
 	// such as recreate for an app that locks its state volume. Empty means default.
@@ -174,11 +180,12 @@ func Parse(data []byte) (*File, error) {
 	}
 
 	f := &File{
-		Version:    raw.Version,
-		Services:   make(map[string]Service, len(raw.Services)),
-		Domains:    raw.Domains,
-		HasSecrets: len(raw.Secrets) > 0,
-		HasConfigs: len(raw.Configs) > 0,
+		Version:     raw.Version,
+		Services:    make(map[string]Service, len(raw.Services)),
+		Domains:     raw.Domains,
+		HasSecrets:  len(raw.Secrets) > 0,
+		HasConfigs:  len(raw.Configs) > 0,
+		Unsupported: findUnsupported(data),
 	}
 	healthy, err := parseDependsOnConditions(data)
 	if err != nil {

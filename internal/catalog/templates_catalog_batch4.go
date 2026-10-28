@@ -130,11 +130,11 @@ var catalogBatch4Templates = []Template{
     environment:
       MQTT_USER: $SERVICE_USER_MQTT
       MQTT_PASSWORD: $SERVICE_PASSWORD_MQTT
-    command: ["sh", "-c", "mosquitto_passwd -b -c /tmp/passwd \"$$MQTT_USER\" \"$$MQTT_PASSWORD\" && chown mosquitto:mosquitto /tmp/passwd && printf 'listener 1883\\nallow_anonymous false\\npassword_file /tmp/passwd\\npersistence true\\npersistence_location /mosquitto/data/\\n' > /tmp/mosquitto.conf && exec mosquitto -c /tmp/mosquitto.conf"]
+    command: ["sh", "-c", "mosquitto_passwd -b -c /tmp/passwd \"$MQTT_USER\" \"$MQTT_PASSWORD\" && chown mosquitto:mosquitto /tmp/passwd && printf 'listener 1883\\nallow_anonymous false\\npassword_file /tmp/passwd\\npersistence true\\npersistence_location /mosquitto/data/\\n' > /tmp/mosquitto.conf && exec mosquitto -c /tmp/mosquitto.conf"]
     volumes:
       - mosquitto_data:/mosquitto/data
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_pub -h 127.0.0.1 -u \"$$MQTT_USER\" -P \"$$MQTT_PASSWORD\" -t healthcheck -m ping -q 0 || exit 1"]
+      test: ["CMD-SHELL", "mosquitto_pub -h 127.0.0.1 -u \"$MQTT_USER\" -P \"$MQTT_PASSWORD\" -t healthcheck -m ping -q 0 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

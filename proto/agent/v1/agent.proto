@@ -511,6 +511,8 @@ message ContainerState {
   map<string, string> labels = 6;
   // created is unset by agents older than v0.8.7; the control plane reads that as unknown.
   google.protobuf.Timestamp created = 7;
+  // image_id is empty from agents older than v0.8.8; the control plane reads that as unknown.
+  string image_id = 8;
 }
 
 message ImageInfo {

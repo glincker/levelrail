@@ -1500,9 +1500,10 @@ EOF
 }
 
 # interactive_output is true only for a human terminal; cloud-init and CI
-# capture stdout into logs that must never hold the setup token.
+# capture stdout into logs that must never hold the setup token. Cloud-init
+# runs have no TTY, so the TTY check already covers them.
 interactive_output() {
-	[ -t 1 ] && [ "${CI:-}" != "true" ] && [ -z "${CLOUD_INIT_SESSION:-}" ]
+	[ -t 1 ] && [ "${CI:-}" != "true" ]
 }
 
 print_token_hidden() {
