@@ -66,7 +66,7 @@ Each file builds an image, pushes it, deploys it pinned by digest and waits for 
 | GitLab CI | [ci-examples/gitlab-ci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/gitlab-ci.yml) | OIDC (`id_tokens`), no stored Levelrail secret |
 | CircleCI | [ci-examples/circleci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/circleci.yml) | OIDC, no stored Levelrail secret |
 
-Each file needs a CI trust on the app once (see [OIDC support](#oidc-support)). The job then runs `levelrail-cli apps github-actions token my-app`, which swaps the job's identity token for a deploy token that expires after 15 minutes. On GitLab and CircleCI add `--id-token-env LEVELRAIL_ID_TOKEN`, the variable that holds the job's token. The command keeps its `github-actions` name for every provider.
+Each file needs a CI trust on the app once (see [OIDC support](#oidc-support)). The job then runs `levelrail-cli apps ci token my-app --provider <github|gitlab|circleci>`, which swaps the job's identity token for a deploy token that expires after 15 minutes. On GitLab and CircleCI the token is read from `LEVELRAIL_ID_TOKEN`, or from the variable named by `--id-token-env`. `apps github-actions token` and `apps github-actions trust` still work as deprecated aliases of `apps ci token` and `apps ci trust`.
 
 ## Deploy by digest from a build-complete hook
 
@@ -99,11 +99,11 @@ A CI trust lets one pipeline identity deploy one app. The exchange endpoint (`PO
 | CircleCI | `--provider circleci --org-id <ORG_ID> --repo <PROJECT_ID>` | `oidc.circleci.com/project-id` | `oidc.circleci.com/vcs-ref`, and `--environment <CONTEXT_ID>` must appear in `oidc.circleci.com/context-ids` |
 
 ```bash
-levelrail-cli apps github-actions trust add my-app --repo example/my-app --ref refs/heads/main
-levelrail-cli apps github-actions trust add my-app --provider gitlab --repo example/my-app --ref refs/heads/main
-levelrail-cli apps github-actions trust add my-app --provider gitlab --issuer https://gitlab.example.com --repo team/my-app --ref 'refs/tags/v*'
-levelrail-cli apps github-actions trust add my-app --provider circleci --org-id <ORG_ID> --repo <PROJECT_ID> --ref refs/heads/main --environment <CONTEXT_ID>
-levelrail-cli apps github-actions trust list my-app
+levelrail-cli apps ci trust add my-app --repo example/my-app --ref refs/heads/main
+levelrail-cli apps ci trust add my-app --provider gitlab --repo example/my-app --ref refs/heads/main
+levelrail-cli apps ci trust add my-app --provider gitlab --issuer https://gitlab.example.com --repo team/my-app --ref 'refs/tags/v*'
+levelrail-cli apps ci trust add my-app --provider circleci --org-id <ORG_ID> --repo <PROJECT_ID> --ref refs/heads/main --environment <CONTEXT_ID>
+levelrail-cli apps ci trust list my-app
 ```
 
 The same fields go to `POST /api/v1/apps/{name}/ci/trusts` as `provider`, `issuer`, `org_id`, `repository`, `ref_pattern`, `environment` and `protected_ref_only`.
@@ -133,9 +133,13 @@ How tokens are checked:
 
 These variables apply to GitLab and CircleCI. GitHub tokens are verified as before. Buildkite OIDC is not accepted yet; use an API token there.
 
+### Stacks
+
+Stack trusts (`POST /api/v1/stacks/{name}/oidc-trusts`, root only) take the same `provider`, `issuer`, `org_id` and `protected_ref_only` fields and the same checks as app trusts, for plan and apply from GitLab CI and CircleCI. An apply trust additionally needs an exact branch or tag ref and an environment (a protected one on GitLab), and a GitLab apply trust always requires protected refs; a plan-only GitLab trust may opt out and then returns the warning. Merge request pipelines are refused. Create and exchange write `stack.oidc_trust_create` and `stack.oidc_exchange` audit entries with the provider and issuer. Stack trusts have no CLI command yet; use the API.
+
 ### Downgrading
 
-Rolling back to v0.8.8 or earlier makes the older control plane ignore the `provider` column, so it would treat a GitLab or CircleCI trust row as a GitHub trust on the same path. Delete every non-GitHub trust (`apps github-actions trust list` then `trust remove`) before you downgrade.
+Rolling back to v0.8.8 or earlier makes the older control plane ignore the `provider` column, so it would treat a GitLab or CircleCI trust row as a GitHub trust on the same path. Delete every non-GitHub trust (`apps ci trust list` then `trust remove`) before you downgrade.
 
 ## GitLab CI
 
@@ -160,7 +164,7 @@ deploy:
     - docker push "$IMAGE"
     - apk add --no-cache curl
     - curl -fsSL https://levelrail.com/install-cli.sh | sh
-    - LEVELRAIL_TOKEN=$(levelrail-cli apps github-actions token my-app --id-token-env LEVELRAIL_ID_TOKEN)
+    - LEVELRAIL_TOKEN=$(levelrail-cli apps ci token my-app --provider gitlab)
     - export LEVELRAIL_TOKEN
     - levelrail-cli apps deploy my-app --image "$IMAGE"
     - levelrail-cli apps wait my-app --timeout 5m
@@ -196,7 +200,7 @@ jobs:
             export PATH="$LEVELRAIL_CLI_INSTALL_DIR:$PATH"
             LEVELRAIL_ID_TOKEN=$(circleci run oidc get --claims "{\"aud\":\"$LEVELRAIL_API_URL\"}")
             export LEVELRAIL_ID_TOKEN
-            LEVELRAIL_TOKEN=$(levelrail-cli apps github-actions token my-app --id-token-env LEVELRAIL_ID_TOKEN)
+            LEVELRAIL_TOKEN=$(levelrail-cli apps ci token my-app --provider circleci)
             export LEVELRAIL_TOKEN
             levelrail-cli apps deploy my-app \
               --image "ghcr.io/example/my-app:$CIRCLE_SHA1" \
@@ -279,8 +283,8 @@ steps:
 
 | Symptom | Likely cause and fix |
 | --- | --- |
-| Exit 4, `401` from `apps github-actions token` | The identity token was refused: its issuer is not on a trust of this app, its audience is not the dashboard URL, it expired, or the key fetch failed. |
-| Exit 4, `403` from `apps github-actions token` | No trust matches the project, ref or environment (or the GitLab ref is not protected while the trust requires it). Check `apps github-actions trust list`. |
+| Exit 4, `401` from `apps ci token` | The identity token was refused: its issuer is not on a trust of this app, its audience is not the dashboard URL, it expired, or the key fetch failed. |
+| Exit 4, `403` from `apps ci token` | No trust matches the project, ref or environment (or the GitLab ref is not protected while the trust requires it). Check `apps github-actions trust list`. |
 | Exit 4, `401` | The token is missing, wrong, revoked or expired. Check `LEVELRAIL_TOKEN` reaches the step (masked or protected variables are not exposed to unprotected branches). |
 | Exit 4, `403` | The token lacks the `deploy` ability for this app, or an IAM policy denies it. Create it with `--preset deployer`. |
 | Exit 4, `409` on deploy | The app is in a protected environment. Add `--confirm` to `apps deploy`. |

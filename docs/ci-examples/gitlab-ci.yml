@@ -2,7 +2,7 @@
 # Build, push and deploy by digest with no stored Levelrail token: the job's
 # GitLab ID token is swapped for a deploy token that expires after 15 minutes.
 # One-time setup on the control plane:
-#   levelrail-cli apps github-actions trust add my-app --provider gitlab \
+#   levelrail-cli apps ci trust add my-app --provider gitlab \
 #     --repo example/my-app --ref refs/heads/main --protected-ref
 # On a self-managed GitLab add --issuer https://gitlab.example.com.
 # LEVELRAIL_API_URL is a plain CI/CD variable holding the dashboard URL set in
@@ -30,7 +30,7 @@ deploy:
     - PINNED=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE")
     - apk add --no-cache curl
     - curl -fsSL https://levelrail.com/install-cli.sh | sh
-    - LEVELRAIL_TOKEN=$(levelrail-cli apps github-actions token "$APP" --id-token-env LEVELRAIL_ID_TOKEN)
+    - LEVELRAIL_TOKEN=$(levelrail-cli apps ci token "$APP" --provider gitlab)
     - export LEVELRAIL_TOKEN
     - levelrail-cli apps deploy "$APP" --image "$PINNED"
     - levelrail-cli apps wait "$APP" --timeout 5m

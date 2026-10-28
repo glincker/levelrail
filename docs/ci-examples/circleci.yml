@@ -3,7 +3,7 @@
 # CircleCI OIDC token is swapped for a deploy token that expires after 15 minutes.
 # One-time setup on the control plane (IDs are under Organization Settings,
 # Project Settings and the context's page):
-#   levelrail-cli apps github-actions trust add my-app --provider circleci \
+#   levelrail-cli apps ci trust add my-app --provider circleci \
 #     --org-id <ORG_ID> --repo <PROJECT_ID> --ref refs/heads/main --environment <CONTEXT_ID>
 # The context named levelrail holds LEVELRAIL_API_URL (the dashboard URL set
 # in Settings, not a secret) and is the context the trust requires.
@@ -34,7 +34,7 @@ jobs:
             export PATH="$LEVELRAIL_CLI_INSTALL_DIR:$PATH"
             LEVELRAIL_ID_TOKEN=$(circleci run oidc get --claims "{\"aud\":\"$LEVELRAIL_API_URL\"}")
             export LEVELRAIL_ID_TOKEN
-            LEVELRAIL_TOKEN=$(levelrail-cli apps github-actions token "$APP" --id-token-env LEVELRAIL_ID_TOKEN)
+            LEVELRAIL_TOKEN=$(levelrail-cli apps ci token "$APP" --provider circleci)
             export LEVELRAIL_TOKEN
             levelrail-cli apps deploy "$APP" \
               --image "$(cat /tmp/pinned-image)" \
