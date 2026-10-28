@@ -272,3 +272,55 @@ func TestCompletedExit_RequiresStartAndFinishWhenReported(t *testing.T) {
 		}
 	}
 }
+
+// byNameStore serves each service its own desired state.
+type byNameStore struct {
+	svcs map[string]*store.DesiredService
+}
+
+func (s byNameStore) GetDesiredService(_ context.Context, name string) (*store.DesiredService, error) {
+	if svc, ok := s.svcs[name]; ok {
+		return svc, nil
+	}
+	return nil, store.ErrServiceNotFound
+}
+
+func (byNameStore) ListAppStreamsForService(context.Context, string) ([]store.AppStream, error) {
+	return nil, nil
+}
+
+// A held previous release of the migration that exited 0 must not unblock the
+// dependent while the new release's migration runs or has failed.
+func TestDependsOnCompleted_IgnoresHeldOldRelease(t *testing.T) {
+	now := time.Now()
+	ran := func(code int) *docker.ExitState {
+		return &docker.ExitState{ExitCode: code, StartedAt: now.Add(-time.Minute), FinishedAt: now}
+	}
+	rt := newFakeRuntime(0)
+	oldDep := replicaContainerName("myapp-migrate", "img:v1", "", 0)
+	newDep := replicaContainerName("myapp-migrate", "img:v2", "", 0)
+	rt.seed(oldDep, false)
+	rt.setExitState(oldDep, ran(0))
+	rt.seed(newDep, true)
+	rt.setExitState(newDep, &docker.ExitState{Running: true, StartedAt: now})
+	migrate := &store.DesiredService{Name: "myapp-migrate", AppID: "myapp", Image: "img:v2", Replicas: 1, Health: &store.ServiceHealth{Restart: "no"}}
+	st := byNameStore{svcs: map[string]*store.DesiredService{"myapp-web": completedDependent(), "myapp-migrate": migrate}}
+	c := New("myapp-web", st, rt, WithStartupWatch(0))
+
+	res, _ := c.Reconcile(context.Background())
+	if cond := conditionOf(t, res); cond.Reason != reasonWaitingForCompletion || rt.createCalls != 0 {
+		t.Fatalf("new migration running: condition = %+v, creates = %d, want %s and no create", cond, rt.createCalls, reasonWaitingForCompletion)
+	}
+
+	rt.crashContainer(newDep, false, 1)
+	rt.setExitState(newDep, ran(1))
+	res, _ = c.Reconcile(context.Background())
+	if cond := conditionOf(t, res); cond.Reason != reasonDependencyFailed || rt.createCalls != 0 {
+		t.Fatalf("new migration failed: condition = %+v, creates = %d, want %s and no create", cond, rt.createCalls, reasonDependencyFailed)
+	}
+
+	rt.setExitState(newDep, ran(0))
+	if _, err := c.Reconcile(context.Background()); err != nil || rt.createCalls == 0 {
+		t.Fatalf("new migration exited 0: error = %v, creates = %d, want the dependent started", err, rt.createCalls)
+	}
+}

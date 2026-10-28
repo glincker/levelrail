@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -119,9 +120,14 @@ func (c *Controller) completionBlock(ctx context.Context, desired *store.Desired
 		res := notReady("DependencyCheckFailed", fmt.Errorf("check dependency %q: %w", dep, err))
 		return &res
 	}
+	current, err := c.currentTargets(ctx, depName)
+	if err != nil {
+		res := notReady("DependencyCheckFailed", fmt.Errorf("check dependency %q: %w", dep, err))
+		return &res
+	}
 	var failed *readinessCrashError
 	for _, s := range states {
-		if !ownsContainer(depName, s.Name) {
+		if !ownsContainer(depName, s.Name) || (current != nil && !current[s.Name]) {
 			continue
 		}
 		if c.completedExit(ctx, s.Name) != nil {
@@ -145,4 +151,26 @@ func (c *Controller) completionBlock(ctx context.Context, desired *store.Desired
 	res := waitingFor(dep, depName, reasonWaitingForCompletion, "run to completion")
 	c.traceDependencyWait(ctx, desired, dep, reasonWaitingForCompletion, res.Conditions[0].Message)
 	return res
+}
+
+// currentTargets names depName's containers for its desired release, so a
+// held older release that exited 0 cannot satisfy a newer migration. nil
+// (dependency not found) judges every container of depName.
+func (c *Controller) currentTargets(ctx context.Context, depName string) (map[string]bool, error) {
+	dep, err := c.store.GetDesiredService(ctx, depName)
+	if errors.Is(err, store.ErrServiceNotFound) || (err == nil && dep == nil) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("load %s: %w", depName, err)
+	}
+	replicas := dep.Replicas
+	if replicas <= 0 {
+		replicas = store.DefaultReplicas
+	}
+	out := make(map[string]bool, replicas)
+	for i := range replicas {
+		out[replicaContainerName(depName, NameImage(*dep), dep.RestartNonce, i)] = true
+	}
+	return out, nil
 }
