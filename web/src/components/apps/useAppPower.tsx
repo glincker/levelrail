@@ -46,7 +46,7 @@ export function useAppPower(app: AppDetail): AppPower {
   const name = app.name
   const transition = usePowerTransition(name)
   const active = transition !== undefined
-  const { data: conditions } = useQuery({
+  const { data: conditions, dataUpdatedAt } = useQuery({
     ...deployStatusQueryOptions(name),
     refetchInterval: POWER_TIMING.pollMs,
     enabled: active,
@@ -81,7 +81,11 @@ export function useAppPower(app: AppDetail): AppPower {
           type: 'success',
         })
       }
-    } else if (out.state === 'failed') {
+    } else if (
+      out.state === 'failed' &&
+      cur.failStreak + (dataUpdatedAt === cur.lastPollAt ? 0 : 1) >=
+        POWER_TIMING.failPolls
+    ) {
       if (endPowerTransition(name)) {
         toast.add({
           title: t('appPower.restartFailed', { name }),
@@ -91,7 +95,13 @@ export function useAppPower(app: AppDetail): AppPower {
         })
       }
     } else {
-      if (out.busy && !cur.seenBusy) {
+      if (dataUpdatedAt !== cur.lastPollAt) {
+        updatePowerTransition(name, {
+          lastPollAt: dataUpdatedAt,
+          failStreak: out.state === 'failed' ? cur.failStreak + 1 : 0,
+        })
+      }
+      if (out.state === 'pending' && out.busy && !cur.seenBusy) {
         updatePowerTransition(name, { seenBusy: true })
       }
       if (!cur.slow && at - cur.startedAt >= POWER_TIMING.timeoutMs) {
@@ -109,7 +119,7 @@ export function useAppPower(app: AppDetail): AppPower {
         })
       }
     }
-  }, [conditions, tick, name, t, navigate])
+  }, [conditions, dataUpdatedAt, tick, name, t, navigate])
 
   const fail = (error: Error) => {
     toast.add({ title: error.message, type: 'error' })

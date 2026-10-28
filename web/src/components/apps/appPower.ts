@@ -29,12 +29,35 @@ export interface PowerTiming {
   graceMs: number
   timeoutMs: number
   pollMs: number
+  /** A terminal failure must show on this many consecutive polls. */
+  failPolls: number
 }
 
 export const POWER_TIMING: PowerTiming = {
   graceMs: Number(import.meta.env.VITE_APP_POWER_GRACE_MS ?? 4000),
   timeoutMs: Number(import.meta.env.VITE_APP_POWER_TIMEOUT_MS ?? 120000),
   pollMs: Number(import.meta.env.VITE_APP_POWER_POLL_MS ?? 2000),
+  failPolls: Number(import.meta.env.VITE_APP_POWER_FAIL_POLLS ?? 3),
+}
+
+// The reconciler keeps these while it works toward healthy: backoff between
+// restarts, probe still running, one-shot still running, a superseded pass.
+const IN_PROGRESS_REASONS = new Set([
+  'CrashLoopBackOff',
+  'ReadinessPending',
+  'RunningNotReady',
+  'RunningToCompletion',
+  'Superseded',
+  'NodeRecovering',
+])
+
+/** First condition that is a real failure rather than the app still coming up. */
+export function terminalFailure(
+  conditions: ReconcileCondition[],
+): ReconcileCondition | undefined {
+  return conditions.find(
+    (c) => c.Status === 'False' && !IN_PROGRESS_REASONS.has(c.Reason),
+  )
 }
 
 export interface PowerTransition {
@@ -43,6 +66,10 @@ export interface PowerTransition {
   seenBusy: boolean
   /** The wait ran past the timeout; still tracked, buttons re-enabled. */
   slow: boolean
+  /** Consecutive polls that showed a terminal failure. */
+  failStreak: number
+  /** Query update stamp last counted, so a clock tick never counts twice. */
+  lastPollAt: number
 }
 
 export type PowerOutcome =
@@ -67,13 +94,10 @@ export function evaluatePower(
   }
   if (label === 'Healthy' && settled) return { state: 'done' }
   if ((label === 'Attention needed' || label === 'Node offline') && settled) {
-    const bad = conditions.find((c) => c.Status === 'False')
-    return {
-      state: 'failed',
-      reason: bad ? `${bad.Reason}: ${bad.Message}` : label,
-    }
+    const bad = terminalFailure(conditions)
+    if (bad) return { state: 'failed', reason: `${bad.Reason}: ${bad.Message}` }
   }
-  return { state: 'pending', busy: label === 'Reconciling' }
+  return { state: 'pending', busy: label !== 'Healthy' }
 }
 
 const transitions = new Map<string, PowerTransition>()
@@ -90,13 +114,22 @@ export function beginPowerTransition(
   kind: PowerKind,
   now = Date.now(),
 ): void {
-  transitions.set(name, { kind, startedAt: now, seenBusy: false, slow: false })
+  transitions.set(name, {
+    kind,
+    startedAt: now,
+    seenBusy: false,
+    slow: false,
+    failStreak: 0,
+    lastPollAt: 0,
+  })
   emit()
 }
 
 export function updatePowerTransition(
   name: string,
-  patch: Partial<Pick<PowerTransition, 'seenBusy' | 'slow'>>,
+  patch: Partial<
+    Pick<PowerTransition, 'seenBusy' | 'slow' | 'failStreak' | 'lastPollAt'>
+  >,
 ): void {
   const cur = transitions.get(name)
   if (!cur) return

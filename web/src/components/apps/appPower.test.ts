@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ReconcileCondition } from '../../types/deploy'
 import { evaluatePower, type PowerTransition } from './appPower'
 
-const timing = { graceMs: 1000, timeoutMs: 5000, pollMs: 100 }
+const timing = { graceMs: 1000, timeoutMs: 5000, pollMs: 100, failPolls: 3 }
 const cond = (
   Status: ReconcileCondition['Status'],
   Reason = 'Ok',
@@ -18,6 +18,8 @@ const restart = (seenBusy = false): PowerTransition => ({
   startedAt: 0,
   seenBusy,
   slow: false,
+  failStreak: 0,
+  lastPollAt: 0,
 })
 
 describe('evaluatePower', () => {
@@ -47,6 +49,16 @@ describe('evaluatePower', () => {
       timing,
     )
     expect(out).toEqual({ state: 'failed', reason: 'CrashLoop: msg' })
+  })
+
+  it('treats a crash backoff as in progress, not a failure', () => {
+    const out = evaluatePower(
+      restart(true),
+      [cond('False', 'CrashLoopBackOff')],
+      200,
+      timing,
+    )
+    expect(out.state).toBe('pending')
   })
 
   it('stop finishes when the app reports stopped', () => {

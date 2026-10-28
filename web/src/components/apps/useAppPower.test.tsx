@@ -1,10 +1,18 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, type MockInstance, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  type MockInstance,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import type { AppDetail } from '../../types/appDetail'
 import { CommonI18n } from '../../test/commonI18n'
-import { resetPowerTransitions } from './appPower'
+import { POWER_TIMING, resetPowerTransitions } from './appPower'
 import { useAppPower } from './useAppPower'
 
 function urlOf(input: RequestInfo | URL): string {
@@ -20,7 +28,7 @@ vi.mock('@/components/ui/toast', async (orig) => ({
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }))
 vi.mock('./appPower', async (orig) => ({
   ...(await orig<typeof import('./appPower')>()),
-  POWER_TIMING: { graceMs: 100, timeoutMs: 60000, pollMs: 50 },
+  POWER_TIMING: { graceMs: 100, timeoutMs: 60000, pollMs: 50, failPolls: 3 },
 }))
 
 function Harness({ app }: { app: AppDetail }) {
@@ -136,9 +144,6 @@ describe('useAppPower progress', () => {
   }
 
   const healthy = [{ Type: 'Ready', Status: 'True', Reason: 'Ok', Message: '' }]
-  const broken = [
-    { Type: 'Ready', Status: 'False', Reason: 'CrashLoop', Message: 'exit 1' },
-  ]
 
   it('shows progress, blocks a second click, then reports restarted', async () => {
     const spy = run(healthy)
@@ -159,7 +164,14 @@ describe('useAppPower progress', () => {
   })
 
   it('reports the failure reason with a logs action', async () => {
-    run(broken)
+    run([
+      {
+        Type: 'Ready',
+        Status: 'False',
+        Reason: 'ReadinessFailed',
+        Message: 'exit 1',
+      },
+    ])
     await userEvent.click(screen.getByText('restart'))
     expect(screen.queryByRole('dialog')).toBeNull()
     await waitFor(
@@ -167,11 +179,135 @@ describe('useAppPower progress', () => {
         expect(toastAdd).toHaveBeenCalledWith(
           expect.objectContaining({
             title: '"web" did not come back',
-            description: 'CrashLoop: exit 1',
+            description: 'ReadinessFailed: exit 1',
             type: 'error',
           }),
         ),
       { timeout: 6000 },
     )
+  })
+})
+
+interface ToastCall {
+  title: string
+  type: string
+  description?: string
+  actionProps?: unknown
+}
+
+describe('useAppPower false failures and timeout', () => {
+  const healthy = [{ Type: 'Ready', Status: 'True', Reason: 'Ok', Message: '' }]
+  const bad = (Reason: string) => [
+    { Type: 'Ready', Status: 'False', Reason, Message: 'boom' },
+  ]
+  let current: unknown[] = healthy
+  let unmount: () => void = () => undefined
+
+  function start() {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve(
+            urlOf(input).endsWith('/deploys') ? current : { name: 'web' },
+          ),
+      } as unknown as Response),
+    )
+    window.localStorage.setItem('app-power:skip-restart-confirm', '1')
+    const client = new QueryClient({
+      defaultOptions: { mutations: { retry: false } },
+    })
+    const view = render(
+      <CommonI18n>
+        <QueryClientProvider client={client}>
+          <Harness app={{ name: 'web', suspended: false } as AppDetail} />
+        </QueryClientProvider>
+      </CommonI18n>,
+    )
+    unmount = view.unmount
+  }
+
+  async function advance(ms: number) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms)
+    })
+  }
+
+  async function click() {
+    fireEvent.click(screen.getByText('restart'))
+    await advance(0)
+  }
+
+  const calls = () => toastAdd.mock.calls.map(([arg]) => arg as ToastCall)
+  const titles = () => calls().map((c) => c.title)
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    toastAdd.mockClear()
+    current = healthy
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+    window.localStorage.clear()
+    resetPowerTransitions()
+    POWER_TIMING.timeoutMs = 60000
+  })
+
+  it('does not report a terminal failure that clears within the streak', async () => {
+    current = bad('ReadinessFailed')
+    start()
+    await click()
+    await advance(120)
+    current = healthy
+    await advance(1000)
+    expect(titles()).not.toContain('"web" did not come back')
+    expect(titles()).toContain('"web" restarted.')
+  })
+
+  it('never reports a transient reason as a failure', async () => {
+    current = bad('CrashLoopBackOff')
+    start()
+    await click()
+    await advance(5000)
+    expect(titles()).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Restarting...' })).toBeDisabled()
+  })
+
+  it('reports a persistent terminal failure once with the reason', async () => {
+    current = bad('ExitedDuringStableWindow')
+    start()
+    await click()
+    await advance(5000)
+    const fails = calls().filter((c) => c.type === 'error')
+    expect(fails).toHaveLength(1)
+    expect(fails[0]?.description).toBe('ExitedDuringStableWindow: boom')
+    expect(fails[0]?.actionProps).toBeDefined()
+  })
+
+  it('past the timeout shows Still restarting, re-enables, no failure', async () => {
+    POWER_TIMING.timeoutMs = 1000
+    current = bad('ReadinessPending')
+    start()
+    await click()
+    await advance(500)
+    expect(screen.getByRole('button', { name: 'Restarting...' })).toBeDisabled()
+    await advance(3000)
+    expect(titles()).toContain('"web" is still restarting')
+    expect(
+      screen.getByRole('button', { name: 'Still restarting...' }),
+    ).toBeEnabled()
+    expect(calls().some((c) => c.type === 'error')).toBe(false)
+  })
+
+  it('does not update state after unmount', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    current = bad('ReadinessPending')
+    start()
+    await click()
+    unmount()
+    await advance(5000)
+    expect(err).not.toHaveBeenCalled()
   })
 })
