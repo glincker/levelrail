@@ -13,6 +13,7 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /.well-known/jwks.json", rt.handleOIDCJWKS)
 	mux.Handle(rt.authEngine.Prefix()+"/", rt.authEngine.Handler())
 	rt.registerCoreRoutes(mux)
+	rt.registerV2Routes(mux)
 	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)
