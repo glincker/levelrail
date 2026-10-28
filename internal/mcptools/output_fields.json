@@ -298,6 +298,15 @@
   "swap_group",
   "updated_at"
  ],
+ "deploy_template": [
+  "app",
+  "notices",
+  "reveal",
+  "secret_keys",
+  "services",
+  "wait",
+  "wait_note"
+ ],
  "deployments_summary": [
   "counts",
   "duration",

@@ -130,6 +130,7 @@ var toolTable = map[string]Meta{
 	"get_app_schedule_history":              {clsR, "scheduled", 0},
 	"deploy_app":                            {clsM, "deploys", outb},
 	"deploy_compose":                        {clsM, "deploys", outb},
+	"deploy_template":                       {clsM, "deploys", outb},
 	"rollback_app":                          {clsD, "deploys", 0},
 	"rollback_app_to_deploy":                {clsD, "deploys", 0},
 	"cancel_deploy":                         {clsD, "deploys", 0},

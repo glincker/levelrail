@@ -28,7 +28,7 @@ const (
 
 // deployTierTools are the tools whose API route needs the deploy ability, not write.
 var deployTierTools = map[string]struct{}{
-	"deploy_app": {}, "deploy_compose": {}, "rollback_app": {}, "rollback_app_to_deploy": {},
+	"deploy_app": {}, "deploy_compose": {}, "deploy_template": {}, "rollback_app": {}, "rollback_app_to_deploy": {},
 	"cancel_deploy": {}, "start_canary": {}, "promote_canary": {}, "abort_canary": {},
 	"restart_app": {}, "promote_app": {}, "approve_deploy_approval": {}, "reject_deploy_approval": {},
 }
