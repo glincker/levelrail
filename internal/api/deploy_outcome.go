@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -38,7 +39,8 @@ func presentedDeployStatus(stored, outcome string) string {
 	return stored
 }
 
-var rolloutDoneReasons = map[string]bool{"Deployed": true, "AlreadyRunning": true, "StaticSitePublished": true}
+// Completed is only emitted for a run-to-completion service that exited 0.
+var rolloutDoneReasons = map[string]bool{"Deployed": true, "AlreadyRunning": true, "StaticSitePublished": true, application.ReasonCompleted: true}
 
 // computeDeployOutcome derives one deploy's outcome. It is keyed on the
 // attempt: a serving rollout state is proof this attempt's image is running,

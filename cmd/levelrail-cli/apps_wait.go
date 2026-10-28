@@ -103,6 +103,8 @@ var rolloutDoneReasons = map[string]bool{
 	"AlreadyRunning": true,
 	// The static site is published; there is no container to converge.
 	"StaticSitePublished": true,
+	// A run-to-completion service exited 0; only those services report it.
+	"Completed": true,
 }
 
 // Pure: a failure reason at or after FinishedAt beats a done reason; no FinishedAt means pending.
