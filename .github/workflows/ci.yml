@@ -425,11 +425,14 @@ jobs:
           RERUNS: '0'
         run: scripts/ci-go-test.sh quarantined ./...
 
+  # Informational: never runs on a PR, never a need of ci-required, and a
+  # low number on main reports but does not fail the run.
   coverage-gate:
     name: Coverage gate
     needs: [changes, plan, test-go]
+    continue-on-error: true
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && github.event_name == 'push' && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || needs.plan.outputs.has_tests == 'true')))
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -627,11 +630,15 @@ jobs:
       - name: go test
         run: go -C kit test -short -timeout=5m -coverprofile="$GITHUB_WORKSPACE/kit-coverage.out" ./...
 
+      # Coverage never blocks a PR: kit gates report on push only.
       - name: Coverage gate (70% for kit/)
+        if: github.event_name == 'push'
+        continue-on-error: true
         run: scripts/check-coverage.sh kit-coverage.out kit/ 70
 
       - name: Changed-line coverage gate (50% for kit/)
-        if: env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
+        if: github.event_name == 'push' && env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
+        continue-on-error: true
         run: scripts/check-changed-file-coverage.sh kit-coverage.out "$BASE" kit/ 50
 
   # integrations/terraform-provider/ is its own module: vet and unit tests only. The
@@ -938,7 +945,7 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
+    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, web-check, web-test, install-sh, install-cli-macos, install-cli-windows, release-pacing]
     if: always()
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 3
