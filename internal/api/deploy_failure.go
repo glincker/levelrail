@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -61,7 +62,22 @@ func rolloutFailureCondition(a store.DeployAttempt, conds []reconcile.Condition)
 			return &failure.Condition{Reason: c.Reason, Message: c.Message}
 		}
 	}
+	for _, c := range conds {
+		if c.Reason == application.ReasonCompletionTimeout && !c.LastTransitionTime.Before(*a.FinishedAt) && !completedSince(conds, c.LastTransitionTime) {
+			return &failure.Condition{Reason: c.Reason, Message: c.Message}
+		}
+	}
 	return nil
+}
+
+// completedSince lets a one-shot that finishes after its CompletionTimeout flip the rollout back to done.
+func completedSince(conds []reconcile.Condition, t time.Time) bool {
+	for _, c := range conds {
+		if c.Reason == application.ReasonCompleted && !c.LastTransitionTime.Before(t) {
+			return true
+		}
+	}
+	return false
 }
 
 // classifyAttempt classifies attempt with the full signal set: build or

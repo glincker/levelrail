@@ -131,6 +131,12 @@ func computeRolloutOutcome(attempt deployAttemptResource, conditions []condition
 	}
 	for i := range conditions {
 		c := &conditions[i]
+		if c.Reason == "CompletionTimeout" && !c.LastTransitionTime.Before(reference) && !completedSince(conditions, c.LastTransitionTime) {
+			return rolloutOutcome{state: "failed", condition: c}
+		}
+	}
+	for i := range conditions {
+		c := &conditions[i]
 		if rolloutDoneReasons[c.Reason] && !c.LastTransitionTime.Before(reference) {
 			return rolloutOutcome{state: "succeeded", condition: c}
 		}
@@ -316,4 +322,14 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, exitDeployFailed, exitDeployTimeout)
+}
+
+// completedSince lets a one-shot that finishes after its CompletionTimeout flip the rollout back to done.
+func completedSince(conditions []conditionResource, t time.Time) bool {
+	for i := range conditions {
+		if conditions[i].Reason == "Completed" && !conditions[i].LastTransitionTime.Before(t) {
+			return true
+		}
+	}
+	return false
 }
