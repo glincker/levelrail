@@ -7,7 +7,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { GlobeIcon, PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import { DOMAIN_PATTERN } from '../lib/domainWizard'
 import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
-import { DomainWizard } from './DomainWizard'
+import { DomainStepper } from './domains/DomainStepper'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { useCertificates } from '../queries/certificates'
@@ -139,7 +139,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
             {wizardOpen ? t('wizard.close') : t('wizard.open')}
           </Button>
         </div>
-        {wizardOpen ? <DomainWizard app={app} /> : null}
+        {wizardOpen ? <DomainStepper appName={app.name} /> : null}
         <DomainEnvironmentTabs appName={app.name}>
           <form
             onSubmit={(e) => {
