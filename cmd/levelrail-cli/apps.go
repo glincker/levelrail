@@ -143,6 +143,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsOverview(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "tunnel":
+		return runAppsTunnel(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec-access":
 		return runAppsExecAccess(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "log-drain":
@@ -328,6 +330,7 @@ func appsUsage(prog string) string {
   %[1]s apps resource-usage [flags]   rank every app by latest CPU/memory/network usage
   %[1]s apps overview [name ...] [flags]   CPU, memory, traffic and errors for every app in one request
   %[1]s apps exec <name> --<cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps tunnel <name> [--service s] [--port p] [--local-port n]   reach a private app port from 127.0.0.1
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
