@@ -6,6 +6,9 @@
     "errorTitle": "Could not open the template",
     "browse": "Browse templates"
   },
+  "description": {
+    "label": "Setup notes"
+  },
   "verified": {
     "badge": "Verified",
     "hint": "Passed the last live smoke test: it started and its health check passed.",

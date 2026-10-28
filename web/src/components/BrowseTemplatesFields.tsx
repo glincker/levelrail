@@ -20,6 +20,7 @@ import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { formatBytes } from '../lib/format'
 import { RamFitBadge } from './RamFitBadge'
 import { ServiceTemplateGrid } from './ServiceTemplateGrid'
+import { TemplateDescription } from './templates/TemplateDescription'
 import { TemplateRequirementsCard } from './templates/TemplateRequirementsCard'
 import { needsAcknowledgement } from '../lib/templateRequirements'
 import { useDeployTemplateNow } from '../hooks/useDeployTemplateNow'
@@ -271,6 +272,10 @@ export function BrowseTemplatesFields({
               <p className="text-xs text-muted-foreground">
                 {templateDetail.data.slogan}
               </p>
+              <TemplateDescription
+                description={templateDetail.data.description}
+                slogan={templateDetail.data.slogan}
+              />
               {templateDetail.data.documentation_url ? (
                 <a
                   href={templateDetail.data.documentation_url}

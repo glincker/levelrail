@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { TemplateDescription } from '@/components/templates/TemplateDescription'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -97,6 +98,10 @@ function TemplateDetailRoute() {
             <Badge variant="outline">{template.category}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">{template.slogan}</p>
+          <TemplateDescription
+            description={template.description}
+            slogan={template.slogan}
+          />
           <div className="flex flex-wrap items-center gap-2">
             {template.recommended_memory_bytes ? (
               <>
