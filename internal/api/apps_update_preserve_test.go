@@ -110,3 +110,23 @@ func TestAppsPutRoundTripIsNoOp(t *testing.T) {
 		t.Fatalf("round trip produced drift: fields %v vs %v, env_dirty %v", store.AppliedFields(*got), store.AppliedFields(before), got.EnvDirty)
 	}
 }
+
+func TestAppsPutUnicodeFoldedKeysCountAsSent(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedFullApp(t, db)
+
+	// A long s (U+017F) and a Kelvin sign (U+212A) fold to "s" and "k", so json decodes them into
+	// labels and hooks; they must count as sent and not be refilled from storage.
+	putFullApp(t, rt, cookie, `{"label\u017f":{"team":"new"},"hoo\u212as":{"pre_deploy":"other"}}`)
+	got, err := db.GetDesiredService(t.Context(), "full")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Labels["team"] != "new" {
+		t.Fatalf("labels = %v, want team=new", got.Labels)
+	}
+	if got.Hooks == nil || got.Hooks.PreDeploy != "other" {
+		t.Fatalf("hooks = %+v, want pre_deploy other", got.Hooks)
+	}
+}

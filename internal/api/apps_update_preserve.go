@@ -23,10 +23,21 @@ func decodeAppUpdate(w http.ResponseWriter, r *http.Request, req *appResource) (
 	}
 	sent := make(map[string]bool, len(keys))
 	for k := range keys {
-		// encoding/json matches field names case-insensitively, so presence must too.
-		sent[strings.ToLower(k)] = true
+		// encoding/json folds names with Unicode simple folding (EqualFold), so a
+		// lowercase pass would miss keys such as a long s and drop a sent field.
+		for _, name := range appUpdateFields {
+			if strings.EqualFold(k, name) {
+				sent[name] = true
+			}
+		}
 	}
 	return sent, true
+}
+
+// appUpdateFields lists the keys mergeOmittedAppFields can fill from storage.
+var appUpdateFields = []string{
+	"image", "port", "host_port", "published_ports", "bind_address", "domains", "env",
+	"resources", "health", "hooks", "strategy", "replicas", "labels", "command",
 }
 
 // mergeOmittedAppFields fills every settable field the body left out with
