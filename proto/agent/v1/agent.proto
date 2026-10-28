@@ -919,6 +919,9 @@ message ExitState {
   bool running = 1;
   bool oom_killed = 2;
   int32 exit_code = 3;
+  // started_at and finished_at are unset by agents older than v0.8.9 and for a never-started container.
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp finished_at = 5;
 }
 
 message InspectExitStateRequest {

@@ -81,13 +81,16 @@ func (h *IdentityHolder) Set(id *Identity) {
 func LocalAgentInfo() *agentpb.AgentInfo {
 	return &agentpb.AgentInfo{
 		Version: version.Version, Commit: buildCommit(), Os: runtime.GOOS, Arch: runtime.GOARCH,
-		Capabilities: []string{CapContainerSpecSecurity},
+		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes},
 	}
 }
 
 // CapContainerSpecSecurity means the agent applies userns, security-opt,
 // device, user and bind mount fields of a container spec.
 const CapContainerSpecSecurity = "container_spec_security"
+
+// CapExitTimes means the agent sends exit state start and finish times, so zero means never started.
+const CapExitTimes = "exit_times"
 
 // ErrAgentLacksCapability is returned when a spec needs a feature the node's
 // agent did not advertise, so it would be silently dropped.

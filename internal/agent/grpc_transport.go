@@ -90,6 +90,11 @@ func (t *GRPCTransport) InspectExitState(ctx context.Context, name string) (*doc
 	return exitStateFromPB(got.GetState()), nil
 }
 
+// ReportsExitTimes lets run-to-completion treat zero exit times as never started; older agents keep the old rule.
+func (t *GRPCTransport) ReportsExitTimes() bool {
+	return t.caps.has(CapExitTimes)
+}
+
 // Create implements Transport (docker.Runtime).
 func (t *GRPCTransport) Create(ctx context.Context, spec docker.ContainerSpec) (string, error) {
 	if spec.NeedsSecurityCapability() && !t.caps.has(CapContainerSpecSecurity) {
