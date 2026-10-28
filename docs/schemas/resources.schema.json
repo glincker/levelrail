@@ -1175,6 +1175,9 @@
         "resources": {
           "$ref": "#/$defs/resources"
         },
+        "restart": {
+          "type": "string"
+        },
         "routes": {
           "items": {
             "$ref": "#/$defs/route"

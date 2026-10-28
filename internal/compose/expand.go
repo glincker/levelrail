@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // ExpandBuildService parses the compose file at svc.Build.Path (relative
@@ -118,6 +119,9 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 		return spec.Service{}, "", err
 	}
 	s.Health = health.toSpecHealth()
+	if policy, err := spec.ParseRestartPolicy(csvc.Restart); err == nil && store.IsRunToCompletionRestart(policy) {
+		s.Restart = policy
+	}
 
 	return s, warning, nil
 }

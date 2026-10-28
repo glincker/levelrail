@@ -78,6 +78,9 @@ func (s *Spec) Validate() error {
 }
 
 func (svc *Service) validate(name string) error {
+	if _, err := ParseRestartPolicy(svc.Restart); err != nil {
+		return fmt.Errorf("spec: service %q: %w", name, err)
+	}
 	if err := svc.validateBuild(name); err != nil {
 		return err
 	}

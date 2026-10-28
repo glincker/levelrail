@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -97,7 +98,7 @@ func (f *File) declaresDependsOn() bool {
 // restartNotice explains what an explicit restart: value does here. always and
 // unless-stopped match the platform's own keep-running default, so they need none.
 func restartNotice(service, raw string) (Notice, bool) {
-	policy, err := store.ParseRestartPolicy(raw)
+	policy, err := spec.ParseRestartPolicy(raw)
 	switch {
 	case err != nil:
 		return Notice{Level: NoticeLevelWarning, Message: fmt.Sprintf("service %q: restart: %q is not a recognized policy and is ignored; the service is kept running like restart: always", service, raw)}, true

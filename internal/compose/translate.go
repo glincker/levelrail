@@ -102,7 +102,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			warnings = append(warnings, warning)
 		}
 		d.Health = health.toStoreHealth()
-		if policy, err := store.ParseRestartPolicy(svc.Restart); err == nil && store.IsRunToCompletionRestart(policy) {
+		if policy, err := spec.ParseRestartPolicy(svc.Restart); err == nil && store.IsRunToCompletionRestart(policy) {
 			if d.Health == nil {
 				d.Health = &store.ServiceHealth{}
 			}

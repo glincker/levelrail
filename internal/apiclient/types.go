@@ -40,6 +40,7 @@ type ServiceHealth struct {
 	Readiness    *ServiceProbe `json:"readiness,omitempty"`
 	Liveness     *ServiceProbe `json:"liveness,omitempty"`
 	ReadyTimeout int64         `json:"ready_timeout,omitempty"`
+	Restart      string        `json:"restart,omitempty"`
 }
 
 // ServiceHooks mirrors internal/api's appResource.Hooks field

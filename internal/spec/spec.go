@@ -128,6 +128,9 @@ type Service struct {
 	// the reference and cycle checks.
 	DependsOn []string `yaml:"dependsOn,omitempty"`
 
+	// Restart "no" or "on-failure[:N]" runs the service to completion, as in compose.
+	Restart string `yaml:"restart,omitempty"`
+
 	// Jobs are cron-scheduled commands run for this service, each in a
 	// fresh container of its image (or exec'd into the running one), kept
 	// in step with this list on every deploy. Nil leaves jobs created

@@ -269,6 +269,9 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
 	health, err := toServiceHealth(svc.Health)
+	if err == nil {
+		health, err = withRestart(health, svc.Restart)
+	}
 	if err != nil {
 		return createPlan{}, newValidationError("service %q health: %v", key, err)
 	}
@@ -336,6 +339,9 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
 	health, err := toServiceHealth(svc.Health)
+	if err == nil {
+		health, err = withRestart(health, svc.Restart)
+	}
 	if err != nil {
 		return createPlan{}, newValidationError("service %q health: %v", key, err)
 	}
@@ -540,6 +546,19 @@ func toServiceResources(r *spec.Resources) (*serviceResources, error) {
 	}
 	out.CPUSetCPUs = r.CPUSet
 	return &out, nil
+}
+
+// withRestart carries app.yaml's service-level restart: into the stored health, where the reconciler reads it.
+func withRestart(h *serviceHealth, restart string) (*serviceHealth, error) {
+	policy, err := spec.ParseRestartPolicy(restart)
+	if err != nil || !spec.IsRunToCompletionRestart(policy) {
+		return h, err
+	}
+	if h == nil {
+		h = &serviceHealth{}
+	}
+	h.Restart = policy
+	return h, nil
 }
 
 func toServiceHealth(h *spec.Health) (*serviceHealth, error) {

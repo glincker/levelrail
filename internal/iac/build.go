@@ -448,6 +448,9 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	if svc.Build.RegistryCredential != "" {
 		s.at(p+"build.registryCredential", "registry credentials are not supported by apply yet")
 	}
+	if svc.Restart != "" {
+		s.at(p+"restart", "restart is not supported by apply yet; set it in app.yaml or the compose file")
+	}
 }
 
 func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string) {
