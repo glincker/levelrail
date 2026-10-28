@@ -568,6 +568,35 @@ func (c *Client) ClearAppEgressPolicy(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, nil)
 }
 
+// ListAppFiles calls GET /api/v1/apps/{name}/files. Secret files come back
+// redacted: path and mode only.
+func (c *Client) ListAppFiles(ctx context.Context, name string) (AppFilesResource, error) {
+	var out AppFilesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/files", nil, &out)
+	return out, err
+}
+
+// SetAppFile calls PUT /api/v1/apps/{name}/files, adding or replacing one
+// file; apply restarts the app so the change is live now.
+func (c *Client) SetAppFile(ctx context.Context, name string, req SetAppFileRequest, apply bool) (AppFilesResource, error) {
+	var out AppFilesResource
+	suffix := ""
+	if apply {
+		suffix = "?apply=restart"
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/files"+suffix, req, &out)
+	return out, err
+}
+
+// DeleteAppFile calls DELETE /api/v1/apps/{name}/files?path=.
+func (c *Client) DeleteAppFile(ctx context.Context, name, filePath string, apply bool) error {
+	q := "?path=" + url.QueryEscape(filePath)
+	if apply {
+		q += "&apply=restart"
+	}
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/files"+q, nil, nil)
+}
+
 // SetAppVolumes calls PUT /api/v1/apps/{name}/volumes: attaches (or
 // removes) a named Docker volume outside a redeploy, replacing name's
 // whole desired volume list with req.Volumes.
