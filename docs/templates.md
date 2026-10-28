@@ -59,3 +59,7 @@ The card shows the app address, the generated credentials, and the template's se
 ## Caveats
 
 Each template's Compose body is checked structurally in the test suite (parse, validation, expansion into services, dependency cycles, health check presence). Templates are reference wiring, not production-ready apps: the `web`, `api` and `worker` services run a minimal server built from their base image's own runtime (Node's `http` module, Python's `http.server`) so that nothing needs installing at start. Replace them with your own image.
+
+## Shipping a config file with a template
+
+Apps that need a config file at start declare it as a top-level Compose `configs:` entry with inline `content:` and reference it from the service with a `target:` path. The file is written into the container before it starts. `file:` and `external:` sources are not supported. See [App files](/app-files) for limits and editing after install.

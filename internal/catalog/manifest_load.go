@@ -184,7 +184,11 @@ func ValidateCompose(body []byte) (map[string]bool, error) {
 	if len(unresolved) > 0 {
 		return nil, fmt.Errorf("unresolved variable %s", unresolved[0].String())
 	}
-	if _, _, err := compose.ToDesiredServices("validate", f); err != nil {
+	desired, _, err := compose.ToDesiredServices("validate", f)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkTemplateFiles(desired); err != nil {
 		return nil, err
 	}
 	out := make(map[string]bool, len(f.Services))
