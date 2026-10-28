@@ -15,12 +15,12 @@ export function TemplateDescription({
   const text = description?.trim()
   if (!text || text === slogan?.trim()) return null
   return (
-    <div className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+    <div className="min-w-0 rounded-md border border-border bg-muted/40 p-2 text-xs break-words [overflow-wrap:anywhere] text-muted-foreground">
       <p className="mb-1 flex items-center gap-1 font-medium text-foreground">
         <InfoIcon className="size-3" aria-hidden="true" />
         {t('description.label')}
       </p>
-      <p className="whitespace-pre-line">{text}</p>
+      <p className="min-w-0 whitespace-pre-line">{text}</p>
     </div>
   )
 }

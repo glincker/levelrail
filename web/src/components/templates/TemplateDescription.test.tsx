@@ -33,3 +33,16 @@ describe('TemplateDescription', () => {
     expect(again.container.firstChild).toBeNull()
   })
 })
+
+describe('TemplateDescription long text', () => {
+  it('wraps a 200 character unbroken token inside its box', async () => {
+    const token = 'x'.repeat(200)
+    await renderDescription(`Visit https://example.com/${token}`)
+    const body = screen.getByText(/Visit https/)
+    const box = body.parentElement
+    expect(body.className).toContain('whitespace-pre-line')
+    expect(box?.className).toContain('min-w-0')
+    expect(box?.className).toContain('break-words')
+    expect(box?.className).toContain('[overflow-wrap:anywhere]')
+  })
+})

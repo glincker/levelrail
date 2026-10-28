@@ -89,7 +89,7 @@ export function TemplateAccessCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 text-sm">
+    <div className="flex min-w-0 flex-col gap-3 text-sm [overflow-wrap:anywhere]">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="font-medium">{t('result.address')}</span>
         {address ? (
@@ -108,7 +108,10 @@ export function TemplateAccessCard({
         )}
       </div>
 
-      <section aria-labelledby="tpl-creds" className="flex flex-col gap-1.5">
+      <section
+        aria-labelledby="tpl-creds"
+        className="flex min-w-0 flex-col gap-1.5"
+      >
         <h3 id="tpl-creds" className="flex items-center gap-1 font-medium">
           <KeyIcon className="size-3.5" aria-hidden="true" />
           {t('result.credentials')}
@@ -122,7 +125,7 @@ export function TemplateAccessCard({
             <p className="text-xs text-muted-foreground">
               {t('result.credentialsHint')}
             </p>
-            <ul className="flex flex-col gap-1.5">
+            <ul className="flex min-w-0 flex-col gap-1.5">
               {keys.map((key) => (
                 <TemplateCredentialRow
                   key={key}
