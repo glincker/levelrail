@@ -12,11 +12,25 @@ vi.mock('@tanstack/react-router', () => ({
     <a href={to}>{children}</a>
   ),
 }))
+const networkState = vi.hoisted(() => ({
+  data: undefined as { fallback_url?: string } | undefined,
+}))
+const attemptsState = vi.hoisted(() => ({
+  data: undefined as object[] | undefined,
+}))
+const redeploy = vi.hoisted(() => vi.fn())
 vi.mock('../../queries/appNetwork', () => ({
-  useAppNetwork: () => ({ data: undefined }),
+  useAppNetwork: () => ({ data: networkState.data }),
+}))
+vi.mock('../../queries/deployAttempts', () => ({
+  deployAttemptsQueryOptions: () => ({ queryKey: ['attempts'] }),
+}))
+vi.mock('../../queries/deploys', () => ({
+  useTriggerDeploy: () => ({ mutate: redeploy, isPending: false }),
 }))
 const urlsState = vi.hoisted(() => ({
-  data: undefined as { addresses: object[] } | undefined,
+  data: undefined as
+    { addresses: object[]; http_fallback_url?: string } | undefined,
 }))
 const httpsState = vi.hoisted(() => ({
   data: undefined as { state: string } | undefined,
@@ -26,7 +40,9 @@ vi.mock('../../queries/appUrls', () => ({
 }))
 vi.mock('../../hooks/useIsRoot', () => ({ useIsRoot: () => true }))
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({ data: httpsState.data }),
+  useQuery: (o: { queryKey?: string[] }) => ({
+    data: o.queryKey?.[0] === 'attempts' ? attemptsState.data : httpsState.data,
+  }),
 }))
 vi.mock('../../queries/httpsStatus', () => ({
   httpsStatusQueryOptions: () => ({}),
@@ -49,10 +65,13 @@ const app = {
   status: { label: 'Starting' },
 } as unknown as AppListEntry
 
-function renderPhase(phase: 'deploying' | 'slow' | 'live') {
+function renderPhase(
+  phase: 'deploying' | 'slow' | 'live' | 'failed',
+  target: AppListEntry = app,
+) {
   return render(
     <I18nextProvider i18n={i18n}>
-      <FirstAppStatus app={app} phase={phase} />
+      <FirstAppStatus app={target} phase={phase} />
     </I18nextProvider>,
   )
 }
@@ -139,5 +158,93 @@ describe('FirstAppStatus live state', () => {
     expect(
       screen.getByRole('link', { name: getStartedEn.first.status.goLive }),
     ).toHaveAttribute('href', '/apps/$name/go-live')
+  })
+})
+
+describe('FirstAppStatus address priority', () => {
+  const fallback = 'https://sample-app.203-0-113-5.sslip.io'
+  const direct = {
+    kind: 'public',
+    url: 'http://203.0.113.5:8080',
+    reachable_hint: 'reachable',
+  }
+  const reset = () => {
+    httpsState.data = { state: 'off' }
+    networkState.data = { fallback_url: fallback }
+    urlsState.data = { addresses: [] }
+  }
+  const href = (text: string) => screen.getByText(text).closest('a')
+
+  it('prefers a custom domain over everything', () => {
+    reset()
+    urlsState.data = { addresses: [direct] }
+    renderPhase('live', { ...app, domains: ['app.example.com'] })
+    expect(href('https://app.example.com')).toBeInTheDocument()
+    expect(screen.queryByText(/certificate/)).not.toBeInTheDocument()
+  })
+
+  it('prefers a direct address over the https fallback', () => {
+    reset()
+    urlsState.data = { addresses: [direct] }
+    renderPhase('live')
+    expect(href(direct.url)).toBeInTheDocument()
+    expect(screen.queryByText(/certificate/)).not.toBeInTheDocument()
+  })
+
+  it('uses the plain-http route before the https fallback', () => {
+    reset()
+    urlsState.data = {
+      addresses: [],
+      http_fallback_url: 'http://sample-app.203-0-113-5.sslip.io',
+    }
+    renderPhase('live')
+    expect(href('http://sample-app.203-0-113-5.sslip.io')).toBeInTheDocument()
+  })
+
+  it('falls back to https with a non-alarming certificate note', () => {
+    reset()
+    renderPhase('live')
+    expect(href(fallback)).toBeInTheDocument()
+    expect(
+      screen.getByText(/browser will warn about the certificate/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: getStartedEn.first.status.certAction }),
+    ).toHaveAttribute('href', '#enable-https')
+  })
+
+  it('drops the note once HTTPS is issued', () => {
+    reset()
+    httpsState.data = { state: 'issued' }
+    renderPhase('live')
+    expect(href(fallback)).toBeInTheDocument()
+    expect(screen.queryByText(/certificate/)).not.toBeInTheDocument()
+  })
+})
+
+describe('FirstAppStatus failed state', () => {
+  it('shows the failure cause and fix with a retry and logs link', () => {
+    attemptsState.data = [
+      {
+        failure: {
+          cause: 'Image pull failed',
+          suggested_fix: 'Check the registry credentials',
+          retryable: true,
+          deploy_id: 'dep_1',
+        },
+      },
+    ]
+    renderPhase('failed')
+    expect(screen.getByText('Image pull failed')).toBeInTheDocument()
+    expect(
+      screen.getByText('Check the registry credentials'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: getStartedEn.first.status.viewLogs }),
+    ).toBeInTheDocument()
+    screen
+      .getByRole('button', { name: getStartedEn.first.status.retry })
+      .click()
+    expect(redeploy).toHaveBeenCalled()
   })
 })

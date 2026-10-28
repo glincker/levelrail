@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +15,9 @@ import { useAppUrls } from '../../queries/appUrls'
 import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useDiagnosis } from '../../queries/diagnosis'
-import { openableUrl } from '../../lib/firstApp'
+import { SAMPLE_APP, firstAppAddress } from '../../lib/firstApp'
+import { deployAttemptsQueryOptions } from '../../queries/deployAttempts'
+import { useTriggerDeploy } from '../../queries/deploys'
 import type { AppPhase } from '../../lib/firstApp'
 
 /** FirstAppStatus renders the tracked app's deploy progress, its live URL, or its diagnosis. */
@@ -36,14 +39,23 @@ export function FirstAppStatus({
     enabled: isRoot,
     retry: false,
   })
-  const url = openableUrl(
+  const address = firstAppAddress(
     app,
     network,
     urls,
     window.location.hostname,
     https?.state === 'issued',
   )
+  const url = address?.url
   const failed = phase === 'failed'
+  const { data: attempts } = useQuery({
+    ...deployAttemptsQueryOptions(app.name),
+    enabled: failed,
+  })
+  const failure = attempts?.find((a) => a.failure)?.failure
+  const redeploy = useTriggerDeploy(app.name)
+  const [retried, setRetried] = useState(false)
+  const canRetry = app.name === SAMPLE_APP.name && failure?.retryable !== false
   const { data: diagnosis, isLoading: diagnosing } = useDiagnosis(
     app.name,
     undefined,
@@ -106,6 +118,14 @@ export function FirstAppStatus({
             {t('first.status.noAddress')}
           </p>
         )}
+        {address?.certWarning ? (
+          <p className="text-xs text-muted-foreground">
+            {t('first.status.certNote')}{' '}
+            <a href="#enable-https" className="underline underline-offset-2">
+              {t('first.status.certAction')}
+            </a>
+          </p>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           {appLinks}
           {onDone ? (
@@ -125,12 +145,20 @@ export function FirstAppStatus({
           <WarningCircleIcon className="size-5 text-destructive" />
           {t('first.status.failed', { name: app.name })}
         </p>
-        {diagnosing ? (
+        {failure ? (
+          <div className="space-y-1 text-sm">
+            <p className="text-foreground">{failure.cause}</p>
+            {failure.suggested_fix ? (
+              <p className="text-muted-foreground">{failure.suggested_fix}</p>
+            ) : null}
+          </div>
+        ) : null}
+        {diagnosing && !failure ? (
           <p className="text-xs text-muted-foreground">
             {t('first.status.diagnosing')}
           </p>
         ) : null}
-        {diagnosis ? (
+        {diagnosis && !failure ? (
           <div className="space-y-1.5 text-sm">
             <p className="text-foreground">{diagnosis.explanation}</p>
             {diagnosis.suggestion ? (
@@ -147,6 +175,20 @@ export function FirstAppStatus({
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
+          {canRetry ? (
+            <Button
+              size="sm"
+              disabled={redeploy.isPending || retried}
+              onClick={() =>
+                redeploy.mutate(
+                  { image: SAMPLE_APP.image, rerunOf: failure?.deploy_id },
+                  { onSuccess: () => setRetried(true) },
+                )
+              }
+            >
+              {t('first.status.retry')}
+            </Button>
+          ) : null}
           {appLinks}
           {onDone ? (
             <Button size="sm" variant="ghost" onClick={onDone}>

@@ -78,17 +78,38 @@ export function directUrl(urls: AppUrls | undefined): string | undefined {
   )
 }
 
-/** openableUrl prefers a direct address while HTTPS is not issued, since the automatic https name has no certificate yet. */
-export function openableUrl(
+export type AddressKind = 'domain' | 'direct' | 'http' | 'fallback' | 'host'
+
+export interface FirstAppAddress {
+  url: string
+  kind: AddressKind
+  /** True when the https name is opened before its certificate exists. */
+  certWarning: boolean
+}
+
+/** firstAppAddress picks one openable address: domain, direct, plain-http route, then the https name. */
+export function firstAppAddress(
   app: AppListEntry,
   network: AppNetwork | undefined,
   urls: AppUrls | undefined,
   hostname: string,
   httpsIssued: boolean,
-): string | undefined {
-  const hasDomain = (app.domains ?? []).length > 0
-  if (!httpsIssued && !hasDomain) {
-    return directUrl(urls) ?? liveUrl(app, network, hostname)
+): FirstAppAddress | undefined {
+  const [domain] = app.domains ?? []
+  if (domain) {
+    return { url: `https://${domain}`, kind: 'domain', certWarning: false }
   }
-  return liveUrl(app, network, hostname)
+  if (httpsIssued && network?.fallback_url) {
+    return { url: network.fallback_url, kind: 'fallback', certWarning: false }
+  }
+  const direct = directUrl(urls)
+  if (direct) return { url: direct, kind: 'direct', certWarning: false }
+  if (urls?.http_fallback_url) {
+    return { url: urls.http_fallback_url, kind: 'http', certWarning: false }
+  }
+  if (network?.fallback_url) {
+    return { url: network.fallback_url, kind: 'fallback', certWarning: true }
+  }
+  const url = liveUrl(app, network, hostname)
+  return url ? { url, kind: 'host', certWarning: false } : undefined
 }
