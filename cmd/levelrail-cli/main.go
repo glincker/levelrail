@@ -25,13 +25,13 @@ func main() {
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	rawLookupEnv = lookupEnv
-	lookupEnv = envAliasLookup(lookupEnv)
+	lookupEnv = currentContextLookup(prog, envAliasLookup(lookupEnv))
 	ciMode = forceCI || ciEnv(rawLookupEnv)
 	if colorDisabled(rawLookupEnv, ciMode) {
 		_ = os.Setenv(envNoColor, "1")
 	}
 	args, debug := extractDebugFlag(args)
-	args, scopeFlags = extractScopeFlags(args)
+	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
 	if debug {
@@ -252,6 +252,14 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runProxy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-engine":
 		return runAuthEngine(prog, args[1:], stdout, stderr, lookupEnv)
+	case "explain":
+		return runExplain(prog, args[1:], stdout, stderr, lookupEnv)
+	case "api-resources":
+		return runAPIResources(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollout":
+		return runRollout(prog, args[1:], stdout, stderr, lookupEnv)
+	case "config":
+		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":
@@ -467,6 +475,10 @@ Usage:
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|install|status|apply|verify|disable [flags] let this server manage its routes in that proxy (Traefik)
+  %[1]s explain <kind[.field]>                                 document a resource kind or field from the embedded schema
+  %[1]s api-resources                                         list resource kinds
+  %[1]s rollout status|history|undo|restart <app>             kubectl style aliases over deploy commands
+  %[1]s config get-contexts|current-context|use-context       switch between saved profiles
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not

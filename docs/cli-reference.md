@@ -2015,3 +2015,16 @@ The complete feature overview.
 
 </Card>
 </CardGroup>
+
+## kubectl style commands
+
+```
+levelrail-cli explain app.spec.service
+levelrail-cli api-resources
+levelrail-cli rollout status|history|undo|restart <app>
+levelrail-cli config get-contexts|current-context|use-context <name>
+levelrail-cli -n <project> apps list
+levelrail-cli -A apps list
+```
+
+`explain` documents a resource kind or field from the embedded schema and works offline; `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.
