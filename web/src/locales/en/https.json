@@ -2,7 +2,7 @@
   "card": {
     "title": "Free HTTPS, no DNS setup",
     "description": "Serve this dashboard and your apps over HTTPS with a real Let's Encrypt certificate. Nothing to configure at a registrar.",
-    "compactHint": "Until it is on, addresses are plain http and not secure.",
+    "compactHint": "Until it is on, browsers flag your addresses as not secure.",
     "setUp": "Set up",
     "noPublicIp": "This server's public IP address is not known, so a zero-DNS hostname cannot be built. Set APP_PUBLIC_HOST to the IP on the control plane and restart it, or use your own domain below.",
     "httpSignInNote": "After it is on, sign in over the https address.",

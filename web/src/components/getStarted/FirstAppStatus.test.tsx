@@ -206,11 +206,11 @@ describe('FirstAppStatus address priority', () => {
     renderPhase('live')
     expect(href(fallback)).toBeInTheDocument()
     expect(
-      screen.getByText(/browser will warn about the certificate/),
+      screen.getByText(getStartedEn.first.status.certNote),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: getStartedEn.first.status.certAction }),
-    ).toHaveAttribute('href', '#enable-https')
+      screen.queryByRole('link', { name: /https/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('drops the note once HTTPS is issued', () => {
@@ -251,6 +251,7 @@ describe('FirstAppStatus failed state', () => {
 
 describe('FirstAppStatus touch targets', () => {
   it('gives the dashboard button a 44px minimum height on phones', () => {
+    window.history.pushState({}, '', '/get-started')
     render(
       <I18nextProvider i18n={i18n}>
         <FirstAppStatus app={app} phase="live" onDone={vi.fn()} />
@@ -260,5 +261,32 @@ describe('FirstAppStatus touch targets', () => {
       name: getStartedEn.first.status.done,
     })
     expect(done.className).toContain('max-sm:min-h-11')
+  })
+})
+
+describe('FirstAppStatus on the dashboard', () => {
+  it('hides the dashboard shortcut when already there', () => {
+    window.history.pushState({}, '', '/')
+    render(
+      <I18nextProvider i18n={i18n}>
+        <FirstAppStatus app={app} phase="live" onDone={vi.fn()} />
+      </I18nextProvider>,
+    )
+    expect(
+      screen.queryByRole('button', { name: getStartedEn.first.status.done }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the shortcut on other pages', () => {
+    window.history.pushState({}, '', '/get-started')
+    render(
+      <I18nextProvider i18n={i18n}>
+        <FirstAppStatus app={app} phase="live" onDone={vi.fn()} />
+      </I18nextProvider>,
+    )
+    expect(
+      screen.getByRole('button', { name: getStartedEn.first.status.done }),
+    ).toBeInTheDocument()
+    window.history.pushState({}, '', '/')
   })
 })

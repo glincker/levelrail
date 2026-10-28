@@ -47,6 +47,8 @@ export function FirstAppStatus({
     https?.state === 'issued',
   )
   const url = address?.url
+  // On the dashboard the card itself is the destination, so the shortcut would be a no-op link.
+  const onDashboard = window.location.pathname === '/'
   const failed = phase === 'failed'
   const { data: attempts } = useQuery({
     ...deployAttemptsQueryOptions(app.name),
@@ -124,18 +126,12 @@ export function FirstAppStatus({
         )}
         {address?.certWarning ? (
           <p className="text-xs text-muted-foreground">
-            {t('first.status.certNote')}{' '}
-            <a
-              href="#enable-https"
-              className="inline-flex items-center underline underline-offset-2 max-sm:min-h-11"
-            >
-              {t('first.status.certAction')}
-            </a>
+            {t('first.status.certNote')}
           </p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           {appLinks}
-          {onDone ? (
+          {onDone && !onDashboard ? (
             <Button
               size="sm"
               className="max-sm:min-h-11"
@@ -203,7 +199,7 @@ export function FirstAppStatus({
             </Button>
           ) : null}
           {appLinks}
-          {onDone ? (
+          {onDone && !onDashboard ? (
             <Button
               size="sm"
               className="max-sm:min-h-11"
