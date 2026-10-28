@@ -20,6 +20,8 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/settings/ingress", rt.requireAbility(AbilityRoot, rt.handleUpdateIngressSettings))
 	mux.HandleFunc("GET /api/v1/settings/dashboard-url", rt.requireAbility(AbilityRead, rt.handleGetDashboardURL))
 	mux.HandleFunc("PUT /api/v1/settings/dashboard-url", rt.requireAbility(AbilityRoot, rt.handleUpdateDashboardURL))
+	mux.HandleFunc("GET /api/v1/settings/heartbeat", rt.requireAbility(AbilityRoot, rt.handleGetHeartbeat))
+	mux.HandleFunc("PUT /api/v1/settings/heartbeat", rt.requireAbility(AbilityRoot, rt.handlePutHeartbeat))
 
 	// Platform-level DNS check (ingress_settings.go): runDomainCheck
 	// against the platform's own PrimaryDomain instead of a per-app one.

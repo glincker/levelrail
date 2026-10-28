@@ -85,6 +85,7 @@ func bootAndServe(ctx context.Context, stop context.CancelFunc, logger *slog.Log
 	s.startReconciler()
 	s.startTelemetry()
 	s.startAlerting()
+	s.startHeartbeat()
 	s.startSchedulers()
 	return s.serve()
 }

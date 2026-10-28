@@ -3279,5 +3279,28 @@
         "credentialHint": "Use the password your mail server gives you."
       }
     }
+  },
+  "heartbeat": {
+    "title": "Off-host heartbeat",
+    "description": "Pings a monitor you choose while this server is healthy, so you are alerted when the pings stop, even if the whole box is down.",
+    "url": "Ping URL",
+    "urlPlaceholder": "https://hc-ping.com/your-uuid",
+    "urlHint": "From Healthchecks, Uptime Kuma push or similar. Stored encrypted and never shown again.",
+    "urlSet": "Pinging {{host}}. Paste a new URL to replace it.",
+    "failUrl": "Failure URL (optional)",
+    "failUrlHint": "Called instead when the server knows it is unhealthy.",
+    "body": "Send status details (version, uptime)",
+    "save": "Save",
+    "clear": "Turn off",
+    "saved": "Heartbeat saved",
+    "envManaged": "Set by APP_HEARTBEAT_URL on the server. Unset it to manage the heartbeat here.",
+    "noKey": "Storing the URL needs a configured master key.",
+    "result": {
+      "none": "No ping yet",
+      "ok": "Last ping sent",
+      "fail_reported": "Failure reported",
+      "unhealthy": "Held back, unhealthy",
+      "error": "Last ping failed"
+    }
   }
 }

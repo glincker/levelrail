@@ -122,6 +122,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/heartbeat"
 	"github.com/GLINCKER/levelrail/internal/imagelife"
 	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/placement"
@@ -741,6 +742,7 @@ type Router struct {
 	doctorHTTPPort               int                      // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
 	doctorHTTPSPort              int                      // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookBodies                webhookBodySeen          // recent signed webhook bodies, replay guard
+	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
