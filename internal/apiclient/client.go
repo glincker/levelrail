@@ -802,6 +802,15 @@ func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]ConditionR
 	return out, err
 }
 
+// GetAppStatus calls GET /api/v1/apps/{name}/status: the same conditions as
+// GetDeployStatus plus the server's outcome for the newest deploy. Servers
+// without the route answer 404 and callers fall back to GetDeployStatus.
+func (c *Client) GetAppStatus(ctx context.Context, name string) (AppStatus, error) {
+	var out AppStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/status", nil, &out)
+	return out, err
+}
+
 // DiagnoseApp calls GET /api/v1/apps/{name}/diagnose
 // (internal/api/diagnose.go's handleDiagnoseApp): a read-only,
 // deterministic explanation of the app's newest deploy failure or

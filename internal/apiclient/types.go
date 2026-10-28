@@ -449,6 +449,16 @@ type ConditionResource struct {
 	LastTransitionTime time.Time `json:"LastTransitionTime"`
 }
 
+// AppStatus mirrors internal/api's appStatusResource. The outcome fields
+// are empty for an app with no deploys or an older server.
+type AppStatus struct {
+	Conditions               []ConditionResource `json:"conditions"`
+	DeployID                 string              `json:"deploy_id,omitempty"`
+	Outcome                  string              `json:"outcome,omitempty"`
+	OutcomeReason            string              `json:"outcome_reason,omitempty"`
+	RolloutCrashLoopRestarts int                 `json:"rollout_crash_loop_restarts,omitempty"`
+}
+
 // NetworkResource mirrors internal/api's networkResource
 // (internal/api/network.go): the live traffic path, container's declared
 // port plus whatever host port Docker currently has bound.
