@@ -1,11 +1,11 @@
 ---
 title: "CLI console (beta)"
 tag: "Beta"
-description: "The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a command allowlist, an audit row per line and no shell."
+description: "The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a reviewed command allowlist, an audit row per line and no shell."
 "og:url": "https://docs.levelrail.com/cli-console"
 ---
 
-The CLI console is a terminal-style panel in the dashboard that runs `levelrail-cli` commands against your control plane. It is not a shell: a typed line is split into words, checked against the CLI command tree and a denylist, and started as the CLI binary with no shell in between. Pipes, redirects, chaining, substitutions and environment assignments are refused.
+The CLI console is a terminal-style panel in the dashboard that runs `levelrail-cli` commands against your control plane. It is not a shell: a typed line is split into words, checked against a reviewed command allowlist and flag deny rules, and started as the CLI binary with no shell in between. Pipes, redirects, chaining, substitutions and environment assignments are refused.
 
 It is a browser feature only. There is no CLI command or MCP tool that opens a console; from a terminal you run `levelrail-cli` directly.
 
@@ -38,13 +38,17 @@ If the user loses the `root` ability while a session is open, the server ends th
 
 ## What it can run
 
-Everything in the CLI command tree except the denied set below. That includes commands that change things (`apps restart`, `deploy`, `rollback`, `system restart`): the console acts with your own full permissions, so treat an open console like a root session.
+Only the command paths in the reviewed allowlist, `internal/cliconsole/allowlist.go` (236 of the CLI's 1488 leaf commands). Every entry has a one-line reason and was reviewed as API-only: it takes no host path, file, directory, URL to fetch or program to launch, and does not print secret values by default. Most entries are reads (`list`, `get`, `show`, `status`, `logs`, `metrics`, `history`, `wait`); the few writes are `apps restart`, `apps rollback`, `apps projects restart`, `compose redeploy` and `models restart`. Everything else, including `deploy`, `dev`, `functions dev`, `databases connect`, `images lint`, `bench`, `plugins` and `storage ... upload`, is refused. A new CLI command is refused until someone adds it to the table.
 
-The session runs with a token minted for you, valid for the session only and revoked when it ends. It carries `root` when you have it, which the route requires. The CLI is pointed at the control plane's own loopback address.
+The session runs with a token minted for you, valid for the session only and revoked when it ends. It never carries `root`, `read:sensitive`, `write:sensitive`, `secrets:reveal` or `signin:approve`: a root caller gets `read`, `write` and `deploy`. Endpoints that need `root` or a sensitive ability answer `403` inside the console. The CLI is pointed at the control plane's own loopback address.
 
-Refused as a command or subcommand because they need your machine, local files or a TTY: `auth` (except `auth whoami`), `login`, `up`, `profile`, `completion`, `init`, `tui`, `proxy`, `migrate`, `import`, `apply`, `diff`, `export`, `update`, `tokens create`, `pipelines validate`, `pipelines save`, `apps exec`, `env pull`, `env push`, `logs fetch`, `backups download`, `app-volume-backups download`, `assets upload`, `control-plane-backups download`, `control-plane-backups keys`, `control-plane-backups escrow`, `secrets generate-master-key`, `secrets rotate-master-key`.
+Refused flags, on every command, because they read or write local paths, stdin or local environment, launch programs, or redirect the CLI's own credentials and target: any flag whose name ends in `file`, `files`, `-path`, `-dir`, `-dirs`, `-stdin`, `-from-env`, `-cert`, `-socket`, `-bin` or `-binary`, plus a fixed list that includes `--file`, `-f`, `--out`, `-o`, `--output`, `--input`, `--include`, `--exclude`, `--manifest`, `--signature`, `--config`, `--redirects`, `--bin`, `--image`, `--launch`, `--csv`, `--ratchet`, `--record`, `--fix`, `--static`, `--path`, `--dir`, `--token`, `--api-url`, `--profile`, `--interactive` and `--debug` (the full list is `deniedFlags` in `internal/cliconsole/policy.go`). Any argument containing `file:`, a bare `--`, a bare `-` (stdin), an argument or flag value starting with `@`, and `--flag=-` are refused too.
 
-Refused flags, because they read or write local paths, stdin or local environment, or redirect the CLI's own credentials and target: `--file`, `-f`, `--out`, `-o`, `--out-dir`, `--output-file`, `--env-file`, `--var-file`, `--key-file`, `--new-key-file`, `--cert-file`, `--body-file`, `--ssh-key`, `--extract`, `--dir`, `--dynamic-dir`, `--upload`, `--mcp-binary`, `--password-stdin`, `--token-stdin`, `--hf-token-from-env`, `--tok-env`, `--interactive`, `-i`, `--token`, `--api-url`, `--profile`, `--profile-name`, `--target-api-url`, `--target-token`, `--target-profile`, `--debug`. Any argument containing `file:` and a bare `--` are refused too.
+### Drift tests
+
+- `TestCheckDeniesByDefault` (`internal/cliconsole`) walks the whole CLI command tree and fails if any path outside the allowlist passes the check, or if an allowlist entry has no reason or is no longer a CLI command.
+- `TestConsoleAllowlistFlagsReviewed` (`cmd/levelrail-cli`) runs `-h` for every allowlisted command and fails when one accepts a flag that looks like a path, URL or launch flag (a deliberately broader pattern than the deny rules) and the console does not refuse it. A flag that only filters an API response is listed with a reason in `reviewedSafeFlags`. It also fails if fewer than half of the allowlisted commands print their flags, so it cannot pass blind.
+- `TestConsoleScopeStripMatchesCLI` (`cmd/levelrail-cli`) checks, for every allowlisted command, that the console removes `--team` and `--project` exactly as the CLI's own dispatch does, so the check vets the command the CLI will run.
 
 Other line rules: at most 4096 bytes and 64 words; no newlines or control characters; quotes and backslashes work as in a POSIX shell but nothing is expanded; `` ` ``, `$(` and `${` are refused; a subcommand must come right after its command, before flags.
 
@@ -62,6 +66,7 @@ A small read-only `host` namespace (`host df`, `host free`, `host uptime`, `host
 | Time one command may run | 2 minutes | `APP_CLI_CONSOLE_COMMAND_TIMEOUT` |
 | Total session length | 1 hour | `APP_CLI_CONSOLE_MAX_SESSION` |
 | Output of one command | 1 MiB | `APP_CLI_CONSOLE_MAX_OUTPUT_BYTES` |
+| One output line | 4096 bytes | `APP_CLI_CONSOLE_MAX_LINE_BYTES` |
 | Sessions opened per minute, per user and per IP | 6 | `APP_CLI_CONSOLE_OPENS_PER_MINUTE` |
 | Unprivileged account when the control plane is root | `nobody` | `APP_CLI_CONSOLE_USER` |
 | CLI binary path | `levelrail-cli` next to the control plane | `APP_CLI_BINARY` |
@@ -71,10 +76,13 @@ One command runs at a time per session; a second `run` while one is active is re
 ## Security notes
 
 - **No shell.** The CLI binary is started directly with the checked words. Its location is `APP_CLI_BINARY` (an absolute path) or the file next to the control plane, never `PATH`, and it must be an executable regular file that is not group or world writable.
-- **Clean environment.** The child inherits nothing from the control plane. It gets only the loopback API address, the session token, a throwaway home directory, and the enabled beta feature list. The home directory is removed after each command.
-- **Least privilege.** When the control plane runs as root, the child is dropped to the unprivileged account above and the console refuses to run if that account is missing or is uid 0. Each command is in its own process group.
-- **Audit.** Every typed line writes an audit row, actor, address and client kind included: `cli_console.run` with the exit code, duration and a note (timed out, cancelled, output truncated), or `cli_console.rejected` with the reason. The line is stored with secret-looking values masked: flag values whose name looks secret, `KEY=VALUE` pairs with a secret-looking key, URL credentials, and all values after the first positional word of secret-like commands (`secret`, `env`, `vault`, `password`, `credential`, `users`). Audit lines are cut at 512 bytes.
-- **Output is not scanned.** The mask applies to the audit row only. What a command prints is streamed to you as is, so a command that prints a value prints it. Whether a revealing command needs its own step-up inside the CLI session is not verified here.
+- **Clean environment.** The child inherits nothing from the control plane. It gets only the loopback API address, the session token, a throwaway home directory that is also its working directory (mode 0700), and the enabled beta feature list. Stdin is empty, no file descriptors beyond stdout and stderr are passed, and the child is in its own session and process group. The home directory is removed after each command.
+- **What is guaranteed, per deployment mode.**
+  - *Control plane runs as root:* the child is dropped to the unprivileged account above with no supplementary groups, so it cannot read the data directory or the Docker socket by file permissions. The console refuses to run if that account is missing or is uid 0.
+  - *Control plane runs as a non-root user (the official image runs `USER nonroot`):* a non-root process cannot switch users, so the child runs as the same uid and could read whatever the control plane can, data directory included. Here the guarantee rests on the allowlist and flag rules: only API-only commands run, none takes a host path, and the drift tests above keep it that way. It is not an operating system boundary.
+- **Output is sanitized.** Everything streamed to the browser passes through one filter, line by line: terminal escape sequences (CSI, OSC, other ESC sequences) and control bytes are stripped, the session token, `KEY=VALUE` and JSON pairs with a secret-looking key, URL credentials, bearer tokens and private key blocks are masked, and each line is cut at 4096 bytes (`APP_CLI_CONSOLE_MAX_LINE_BYTES`). The same filter runs on the audit row.
+- **Least privilege.** Each command is in its own process group, killed as a group on cancel or timeout.
+- **Audit.** Every typed line writes an audit row, actor, address and client kind included: `cli_console.run` with the exit code, duration and a note (timed out, cancelled, output truncated), or `cli_console.rejected` with the reason. The line is stored with secret-looking values masked: flag values whose name looks secret, `KEY=VALUE` pairs with a secret-looking key, URL credentials, and all values after the first positional word of secret-like commands (`secret`, `env`, `vault`, `password`, `credential`, `users`). Audit lines are cut at 512 bytes. The masking is pattern based: a secret in an unusual shape can get through.
 - **Not on the demo instance.** The console routes are blocked in demo mode.
 
 ## Troubleshooting
@@ -101,14 +109,15 @@ More than 6 opens in a minute answers with a rate-limit response and a retry tim
 
 ### A command is refused
 
-Read the reason. Commands that need local files (`up`, `apply`, `env pull`) belong on your own machine with a local CLI. Put the subcommand right after the command and before flags.
+Read the reason. Only allowlisted commands run; commands that need local files (`up`, `apply`, `deploy`, `env pull`) belong on your own machine with a local CLI. Put the subcommand right after the command and before flags.
 
 ## What is missing before it leaves beta
 
 - **No end-to-end test.** There are unit tests for the line parser, policy, redaction and runner (`internal/cliconsole`), and API tests for the gate order, step-up, rate limit and a session that runs and revokes its token (`internal/api/cli_console*_test.go`). Nothing in `test/e2e` drives a real browser session, and the dashboard component has tests only for the quick actions table.
 - **No recorded run on a real host.** The root-to-unprivileged user drop, process-group kill and the loopback address behind a proxy have not been exercised on a live server. Non-unix builds use a stub: not verified.
-- **No output scanning.** Secrets in command output are not masked (see above).
-- **Allowlist drift.** The denylist is hand-kept next to the CLI tree. A new CLI command that reads local files is allowed until someone adds it, so it needs a test that fails when the tree grows an unreviewed path-reading command.
-- **Parity.** The console is dashboard only. There is no API route to run a line without a browser session, which is intended. Not verified: whether the denied set matches every current CLI command.
+- **Output masking is pattern based.** A secret printed in a shape the filter does not know is shown.
+- **Same uid without root.** On a non-root control plane the child is not isolated by the operating system (see above). Not verified on a live host: whether any allowlisted command reads a file through a code path its flags do not show.
+- **Allowlist review is by command and flag name.** Each allowlisted command was classified from its name and its `-h` flags, not by reading every code path. Root-only endpoints behind allowlisted reads answer `403` because the session token has no `root`; which ones do is not verified.
+- **Parity.** The console is dashboard only. There is no API route to run a line without a browser session, which is intended.
 
 See [feature status](/feature-status) for how beta is defined.
