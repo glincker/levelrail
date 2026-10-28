@@ -8,6 +8,7 @@ import { LazyTemplatesDiagram } from '../../components/banners/LazyDiagrams'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { TemplateDeployPrefill } from '../../components/templates/TemplateDeployPrefill'
+import { TemplateDeployResult } from '../../components/templates/TemplateDeployResult'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 
 // Standalone, shareable "what's in the catalog" page, separate from the
@@ -33,7 +34,9 @@ function TemplatesPage() {
   const { t } = useTranslation('templates')
   const navigate = useNavigate()
   const { deploy } = Route.useSearch()
-  const deployTemplateNow = useDeployTemplateNow()
+  const deployTemplateNow = useDeployTemplateNow(undefined, {
+    showResult: true,
+  })
   const newFromTemplate = (
     <CreateResourceWizard
       initialSelected="browse-templates"
@@ -71,6 +74,11 @@ function TemplatesPage() {
         }}
         deployingId={deployTemplateNow.pendingId}
         emptyAction={newFromTemplate}
+      />
+      <TemplateDeployResult
+        result={deployTemplateNow.deployed?.response ?? null}
+        templateId={deployTemplateNow.deployed?.templateId}
+        onClose={deployTemplateNow.clearDeployed}
       />
     </PageTemplate>
   )

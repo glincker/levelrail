@@ -275,5 +275,31 @@
     "preview": "Preview of the compose file this template deploys",
     "download": "Download",
     "label": "Template compose file"
+  },
+  "result": {
+    "title": "{{name}} is deploying",
+    "deployFailed": "Deploy failed",
+    "address": "Address",
+    "addressPending": "The address appears once the app is running.",
+    "credentials": "Generated credentials",
+    "credentialsHint": "Created for this app. Shown only when you ask, then hidden again.",
+    "noCredentials": "This template generated no credentials.",
+    "reveal": "Reveal {{key}}",
+    "hide": "Hide {{key}}",
+    "copy": "Copy {{key}}",
+    "copied": "Copied",
+    "hidesIn": "Hides in {{seconds}}s",
+    "revealDenied": "Revealing values needs owner or admin access, or is turned off for this app.",
+    "openEnvironment": "Open Environment",
+    "nextSteps": "Next steps",
+    "openApp": "Open app",
+    "viewLogs": "View logs",
+    "close": "Close",
+    "accessDetails": "Access details",
+    "toastDeployed": "\"{{name}}\" deployed",
+    "toastRunning_one": "{{count}} service running now.",
+    "toastRunning_other": "{{count}} services running now.",
+    "services_one": "{{count}} service starting",
+    "services_other": "{{count}} services starting"
   }
 }

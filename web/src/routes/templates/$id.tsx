@@ -21,6 +21,7 @@ import { TemplateServices } from '../../components/templates/TemplateServices'
 import { TemplateWhatYouGet } from '../../components/templates/TemplateWhatYouGet'
 import { TemplateDeployForm } from '../../components/templates/TemplateDeployForm'
 import { RelatedTemplates } from '../../components/templates/RelatedTemplates'
+import { TemplateDeployResult } from '../../components/templates/TemplateDeployResult'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 import { TemplateLogoTile } from '../../components/TemplateLogoTile'
 import { RamFitBadge } from '../../components/RamFitBadge'
@@ -49,7 +50,9 @@ function TemplateDetailRoute() {
   const { t } = useTranslation('templates')
   const { id } = Route.useParams()
   const { data: template } = useServiceTemplate(id)
-  const deployTemplateNow = useDeployTemplateNow()
+  const deployTemplateNow = useDeployTemplateNow(undefined, {
+    showResult: true,
+  })
   const preview = useComposePreview(template?.compose ?? '', [])
   const services = useMemo(
     () => (preview.data?.valid ? preview.data.services : []),
@@ -211,6 +214,11 @@ function TemplateDetailRoute() {
           />
         </aside>
       </div>
+      <TemplateDeployResult
+        result={deployTemplateNow.deployed?.response ?? null}
+        templateId={deployTemplateNow.deployed?.templateId}
+        onClose={deployTemplateNow.clearDeployed}
+      />
     </div>
   )
 }
