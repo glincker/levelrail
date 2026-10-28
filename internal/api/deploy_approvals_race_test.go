@@ -153,10 +153,37 @@ func TestDeployApprovalRace_CrashAfterApplyRecoversAsApproved(t *testing.T) {
 	if err := db.SaveDesiredService(ctx, *svc); err != nil {
 		t.Fatalf("save: %v", err)
 	}
+	attemptID, _ := store.NewDeployAttemptID()
+	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{ID: attemptID, ServiceName: "web", Image: requestPendingApprovalImage, Status: store.DeployAttemptStatusSucceeded, StartedAt: time.Now().Add(-time.Minute)}); err != nil {
+		t.Fatalf("save attempt: %v", err)
+	}
 	if n, err := rt.recoverStaleApprovalClaims(ctx); err != nil || n != 1 {
 		t.Fatalf("recover = %d %v", n, err)
 	}
 	if a, _ := db.GetDeployApproval(ctx, id); a.Status != store.DeployApprovalStatusApproved || a.ApprovedBy != "someone" {
 		t.Fatalf("applied stale claim: status %q approver %q, want approved", a.Status, a.ApprovedBy)
+	}
+}
+
+// A same-tag redeploy already matches the desired image before it applies,
+// so a crash before the apply must return the row to pending.
+func TestDeployApprovalRace_SameTagCrashBeforeApplyIsPending(t *testing.T) {
+	rt, db, _, _, id := raceFixture(t)
+	t.Setenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT", "1m")
+	ctx := context.Background()
+	svc, _ := db.GetDesiredService(ctx, "web")
+	svc.Image = requestPendingApprovalImage
+	if err := db.SaveDesiredService(ctx, *svc); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	stale := store.FormatAuditTime(time.Now().Add(-2 * time.Minute))
+	if ok, _ := db.ClaimDeployApproval(ctx, id, store.PrincipalTypeUser, "someone", "someone", stale); !ok {
+		t.Fatal("claim failed")
+	}
+	if _, err := rt.recoverStaleApprovalClaims(ctx); err != nil {
+		t.Fatalf("recover: %v", err)
+	}
+	if a, _ := db.GetDeployApproval(ctx, id); a.Status != store.DeployApprovalStatusPending {
+		t.Fatalf("same-tag claim with no apply: status %q, want pending", a.Status)
 	}
 }

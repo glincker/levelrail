@@ -640,14 +640,32 @@ func (rt *Router) recoverStaleApprovalClaims(ctx context.Context) (int, error) {
 	return n, nil
 }
 
-// approvalAlreadyApplied reports whether a deploy or promote's image is
-// already desired; moves are idempotent, so they are simply decided again.
+// approvalAlreadyApplied reports whether a deploy or promote landed after
+// its claim: its image is desired and an attempt for it started since. A
+// desired image alone is not proof (a same-tag redeploy already matches);
+// moves are idempotent, so they are simply decided again.
 func (rt *Router) approvalAlreadyApplied(ctx context.Context, a store.DeployApproval) bool {
 	if a.Action != store.DeployApprovalActionDeploy && a.Action != store.DeployApprovalActionPromote {
 		return false
 	}
 	svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName)
-	return err == nil && svc.Image == a.Image
+	if err != nil || svc.Image != a.Image {
+		return false
+	}
+	claimed, err := time.Parse(time.RFC3339Nano, a.DecidedAt)
+	if err != nil {
+		return false
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, a.ServiceName)
+	if err != nil {
+		return false
+	}
+	for _, at := range attempts {
+		if at.Image == a.Image && !at.StartedAt.Before(claimed) {
+			return true
+		}
+	}
+	return false
 }
 
 func (rt *Router) sweepExpiredDeployApprovals(ctx context.Context) (int, error) {
