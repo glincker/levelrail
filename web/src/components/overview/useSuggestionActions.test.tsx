@@ -25,7 +25,10 @@ function mockFetch() {
 }
 
 describe('useSuggestionActions', () => {
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    window.localStorage.clear()
+  })
 
   it('apply_pending posts to the apply-pending endpoint', async () => {
     const spy = mockFetch()
@@ -38,6 +41,7 @@ describe('useSuggestionActions', () => {
   })
 
   it('restart posts to the restart endpoint (env_dirty fallback)', async () => {
+    window.localStorage.setItem('app-power:skip-restart-confirm', '1')
     const spy = mockFetch()
     const { result } = renderHook(() => useSuggestionActions(app), { wrapper })
     act(() => result.current.run.restart())

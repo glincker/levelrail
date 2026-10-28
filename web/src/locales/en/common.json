@@ -938,5 +938,21 @@
     "version": "Version",
     "envKey": "Variable name, row {{row}}",
     "envValue": "Variable value, row {{row}}"
+  },
+  "appPower": {
+    "restartTitle": "Restart {{name}}?",
+    "restartDescription": "Containers are replaced with fresh ones, so the app is briefly down.",
+    "restartConsequenceRequests": "In-flight requests may fail while it comes back.",
+    "restartConsequencePolicy": "The restart policy brings it back on its own if it exits.",
+    "restartConfirm": "Restart",
+    "restartSkip": "Don't ask again for restart",
+    "stopTitle": "Stop {{name}}?",
+    "stopDescription": "The app stops serving traffic until you start it again.",
+    "stopConsequenceRequests": "In-flight requests are dropped.",
+    "stopConsequencePolicy": "The restart policy will not bring it back. Config, env and domains are kept.",
+    "stopConfirm": "Stop",
+    "pending": "Working...",
+    "starting": "Starting \"{{name}}\".",
+    "applying": "Applying changes."
   }
 }

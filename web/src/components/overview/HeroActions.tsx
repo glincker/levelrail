@@ -163,6 +163,7 @@ export function HeroActions({
         ]}
       />
 
+      {actions.confirmDialog}
       <PromoteAppDialog
         appName={app.name}
         projectId={app.project_id}

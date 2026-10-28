@@ -84,6 +84,7 @@ export function AppActionBar({
             : t('appActions.restart', { defaultValue: 'Restart' })}
         </span>
       </Button>
+      {actions.confirmDialog}
       <ActionMenu
         trigger={
           <Button
