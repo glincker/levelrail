@@ -495,33 +495,45 @@ func TestHandleDeployCompose_NoNoticesForPlainFile(t *testing.T) {
 	}
 }
 
-func TestHandleDeployCompose_RestartAndNetworksSurfaceAsNotices(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
+func TestHandleDeployCompose_RestartAndNetworksNotices(t *testing.T) {
+	cases := []struct {
+		name    string
+		restart string
+		levels  []string
+	}{
+		{"always is the platform default: networks warning only", "always", []string{"warning"}},
+		{"no runs to completion: note then networks warning", `"no"`, []string{"note", "warning"}},
+		{"unrecognized value warns: restart warning then networks warning", "sometimes", []string{"warning", "warning"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
 
-	yaml := "services:\n" +
-		"  web:\n" +
-		"    image: nginx:1.27\n" +
-		"    restart: always\n" +
-		"    networks: [frontend]\n"
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+			yaml := "services:\n" +
+				"  web:\n" +
+				"    image: nginx:1.27\n" +
+				"    restart: " + tc.restart + "\n" +
+				"    networks: [frontend]\n"
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
 
-	var got composeDeployResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	if len(got.Notices) != 2 {
-		t.Fatalf("Notices = %+v, want 2 entries (one restart note, one networks warning)", got.Notices)
-	}
-	if got.Notices[0].Level != "note" {
-		t.Errorf("Notices[0].Level = %q, want note", got.Notices[0].Level)
-	}
-	if got.Notices[1].Level != "warning" {
-		t.Errorf("Notices[1].Level = %q, want warning", got.Notices[1].Level)
+			var got composeDeployResponse
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if len(got.Notices) != len(tc.levels) {
+				t.Fatalf("Notices = %+v, want levels %v", got.Notices, tc.levels)
+			}
+			for i, lvl := range tc.levels {
+				if got.Notices[i].Level != lvl {
+					t.Errorf("Notices[%d].Level = %q, want %q", i, got.Notices[i].Level, lvl)
+				}
+			}
+		})
 	}
 }
 
