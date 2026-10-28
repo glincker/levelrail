@@ -290,3 +290,34 @@ describe('FirstAppStatus on the dashboard', () => {
     window.history.pushState({}, '', '/')
   })
 })
+
+describe('FirstAppStatus crash loop outcome', () => {
+  it('shows the failed state with the reason and actions when the server outcome is failed', () => {
+    attemptsState.data = [
+      {
+        id: 'dep_1',
+        outcome: 'failed',
+        outcome_reason: '"sample-app" keeps exiting (3 restarts)',
+      },
+    ]
+    renderPhase('deploying')
+    expect(screen.getByText(/is not healthy/)).toBeInTheDocument()
+    expect(
+      screen.getByText('"sample-app" keeps exiting (3 restarts)'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: getStartedEn.first.status.retry }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: getStartedEn.first.status.viewLogs }),
+    ).toBeInTheDocument()
+    attemptsState.data = undefined
+  })
+
+  it('keeps deploying while the outcome is in progress', () => {
+    attemptsState.data = [{ id: 'dep_1', outcome: 'in_progress' }]
+    renderPhase('deploying')
+    expect(screen.queryByText(/is not healthy/)).not.toBeInTheDocument()
+    attemptsState.data = undefined
+  })
+})

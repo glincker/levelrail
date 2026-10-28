@@ -292,4 +292,30 @@ describe('computeDeployStages crash loop rollout', () => {
     const healthy: DeployAttempt = { ...baseAttempt, outcome: 'healthy' }
     expect(rollout(healthy, [loop(9)]).status).toBe('done')
   })
+
+  it('lets a server in_progress outcome win over a local crash loop match', () => {
+    const a: DeployAttempt = { ...baseAttempt, outcome: 'in_progress' }
+    expect(rollout(a, [loop(9)]).status).toBe('running')
+  })
+
+  it('shows the server reason on a failed outcome', () => {
+    const a: DeployAttempt = {
+      ...baseAttempt,
+      outcome: 'failed',
+      outcome_reason: 'crash looping',
+    }
+    const s = rollout(a, [])
+    expect(s.status).toBe('failed')
+    expect(s.detail).toBe('crash looping')
+  })
+
+  it('reads the crash loop threshold from the server value', () => {
+    const a: DeployAttempt = { ...baseAttempt, rollout_crash_loop_restarts: 4 }
+    expect(rollout(a, [loop(3)]).status).toBe('running')
+    expect(rollout(a, [loop(4)]).status).toBe('failed')
+  })
+
+  it('falls back to the local rule on an older server', () => {
+    expect(rollout(baseAttempt, [loop(2)]).status).toBe('failed')
+  })
 })

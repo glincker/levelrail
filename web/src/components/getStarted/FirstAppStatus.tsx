@@ -15,7 +15,11 @@ import { useAppUrls } from '../../queries/appUrls'
 import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useDiagnosis } from '../../queries/diagnosis'
-import { SAMPLE_APP, firstAppAddress } from '../../lib/firstApp'
+import {
+  APP_POLL_INTERVAL_MS,
+  SAMPLE_APP,
+  firstAppAddress,
+} from '../../lib/firstApp'
 import { deployAttemptsQueryOptions } from '../../queries/deployAttempts'
 import { useTriggerDeploy } from '../../queries/deploys'
 import type { AppPhase } from '../../lib/firstApp'
@@ -49,11 +53,16 @@ export function FirstAppStatus({
   const url = address?.url
   // On the dashboard the card itself is the destination, so the shortcut would be a no-op link.
   const onDashboard = window.location.pathname === '/'
-  const failed = phase === 'failed'
+  // The server's deploy outcome also fails a crash-looping app whose status
+  // summary still reads as starting.
   const { data: attempts } = useQuery({
     ...deployAttemptsQueryOptions(app.name),
-    enabled: failed,
+    enabled: phase !== 'live' && phase !== 'none',
+    refetchInterval: APP_POLL_INTERVAL_MS,
   })
+  const newest = attempts?.[0]
+  const failed =
+    phase === 'failed' || (phase !== 'live' && newest?.outcome === 'failed')
   const failure = attempts?.find((a) => a.failure)?.failure
   const redeploy = useTriggerDeploy(app.name)
   const [retried, setRetried] = useState(false)
@@ -161,6 +170,9 @@ export function FirstAppStatus({
             ) : null}
           </div>
         ) : null}
+        {!failure && newest?.outcome_reason ? (
+          <p className="text-sm text-foreground">{newest.outcome_reason}</p>
+        ) : null}
         {diagnosing && !failure ? (
           <p className="text-xs text-muted-foreground">
             {t('first.status.diagnosing')}
@@ -190,7 +202,10 @@ export function FirstAppStatus({
               disabled={redeploy.isPending || retried}
               onClick={() =>
                 redeploy.mutate(
-                  { image: SAMPLE_APP.image, rerunOf: failure?.deploy_id },
+                  {
+                    image: SAMPLE_APP.image,
+                    rerunOf: failure?.deploy_id ?? newest?.id,
+                  },
                   { onSuccess: () => setRetried(true) },
                 )
               }

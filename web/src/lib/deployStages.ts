@@ -57,16 +57,16 @@ const ROLLOUT_FAILURE_REASONS = [
 // Deployed. Treating only "Deployed" as done here left every such
 // redeploy (e.g. re-triggering the same image tag) stuck on "running"
 // forever, since that condition transition never occurs.
-// Mirrors the server default of APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS; used
-// only when the attempt carries no server outcome (older servers, list rows).
+// Mirrors the server default of APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS; last
+// fallback when an older server sends neither an outcome nor the threshold.
 const CRASHLOOP_RESTARTS = 2
 const CRASHLOOP_REASON = 'CrashLoopBackOff'
 const CRASHLOOP_MESSAGE_RE = /\((\d+) restarts\), next restart in (\S+)/
 
-function isRolloutCrashLoop(c: ReconcileCondition): boolean {
+function isRolloutCrashLoop(c: ReconcileCondition, limit: number): boolean {
   if (c.Reason !== CRASHLOOP_REASON) return false
   const m = CRASHLOOP_MESSAGE_RE.exec(c.Message)
-  return m !== null && Number(m[1]) >= CRASHLOOP_RESTARTS
+  return m !== null && Number(m[1]) >= limit
 }
 
 const ROLLOUT_DONE_REASONS = ['Deployed', 'AlreadyRunning']
@@ -144,13 +144,28 @@ function computeRolloutStage(
     }
   }
 
+  // The server's outcome is authoritative; the rules below only serve
+  // older servers that do not send one.
+  if (attempt.outcome === 'healthy') {
+    return { key, label, status: 'done', startedAt: attempt.finished_at }
+  }
+  if (attempt.outcome === 'failed') {
+    return {
+      key,
+      label,
+      status: 'failed',
+      detail: attempt.outcome_reason,
+      startedAt: attempt.finished_at,
+    }
+  }
+  if (attempt.outcome === 'in_progress') {
+    return { key, label, status: 'running', startedAt: attempt.finished_at }
+  }
+
   // attempt.status === 'succeeded' and this is the latest attempt: the
   // build finished, so a condition transition at or after finished_at
   // reflects the reconciler reacting to this exact attempt's desired
   // state, not one left over from an earlier deploy.
-  if (attempt.outcome === 'healthy') {
-    return { key, label, status: 'done', startedAt: attempt.finished_at }
-  }
   const referenceMs = attempt.finished_at
     ? new Date(attempt.finished_at).getTime()
     : null
@@ -177,17 +192,19 @@ function computeRolloutStage(
       ? undefined
       : conditions.find(
           (c) =>
-            isRolloutCrashLoop(c) &&
-            isAtOrAfter(c.LastTransitionTime, referenceMs),
+            isRolloutCrashLoop(
+              c,
+              attempt.rollout_crash_loop_restarts ?? CRASHLOOP_RESTARTS,
+            ) && isAtOrAfter(c.LastTransitionTime, referenceMs),
         )
-  if (attempt.outcome === 'failed' || crashLoop) {
+  if (crashLoop) {
     return {
       key,
       label,
       status: 'failed',
-      detail: crashLoop?.Message,
+      detail: crashLoop.Message,
       startedAt: attempt.finished_at,
-      finishedAt: crashLoop?.LastTransitionTime,
+      finishedAt: crashLoop.LastTransitionTime,
     }
   }
 
