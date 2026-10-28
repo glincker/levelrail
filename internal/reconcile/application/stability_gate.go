@@ -254,10 +254,11 @@ func gateFailureMessage(name, reason string, obs deploysafety.GateObservation, c
 	}
 }
 
-// stabilityGateForNew runs the stability gate only for a freshly created
-// container, never for a restart of an existing one.
+// stabilityGateForNew runs the stability gate for a freshly created
+// container, and for any restart of one with no readiness probe: being
+// running is its only readiness, so an instant exit would otherwise pass.
 func (c *Controller) stabilityGateForNew(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, created bool) error {
-	if !created {
+	if !created && c.deployReadinessProbeFor(desired) != nil {
 		return nil
 	}
 	return c.stabilityGate(ctx, state, desired)

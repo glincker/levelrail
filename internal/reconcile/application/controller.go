@@ -1216,7 +1216,7 @@ func (c *Controller) readinessVerdict(ctx context.Context, target string, state 
 		c.retained.NoteReady(c.serviceName)
 	}
 	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
-	// A crash restart of the same container already proved itself once, so it
+	// A crash restart of a probed container already proved itself once, so it
 	// only needs readiness, not another stability window of downtime.
 	if err := c.stabilityGateForNew(ctx, state, desired, created); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
@@ -2364,6 +2364,10 @@ func (c *Controller) abortSuperseded(ctx context.Context, target string, release
 func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
 	readiness := readinessProbeFor(desired)
 	if readiness == nil {
+		// The container list can lag an exit a live inspect already sees.
+		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
+			return crash
+		}
 		return nil
 	}
 
