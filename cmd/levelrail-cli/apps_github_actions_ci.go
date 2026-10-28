@@ -40,8 +40,9 @@ func runAppsGitHubActionsWorkflow(prog string, args []string, stdout, stderr io.
 
 func runAppsGitHubActionsToken(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps github-actions token", "print the token as JSON to stdout and nothing else", stderr)
-	var audience string
+	var audience, idTokenEnv string
 	fs.StringVar(&audience, "audience", "", "audience to request from GitHub (default: the API URL)")
+	fs.StringVar(&idTokenEnv, "id-token-env", "", "read the identity token from this environment variable instead of GitHub (GitLab id_tokens, CircleCI OIDC)")
 	_, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
@@ -50,20 +51,28 @@ func runAppsGitHubActionsToken(prog string, args []string, stdout, stderr io.Wri
 	if !ok {
 		return exitUsage
 	}
-	reqURL, _ := lookupEnv("ACTIONS_ID_TOKEN_REQUEST_URL")
-	reqToken, _ := lookupEnv("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-	if reqURL == "" || reqToken == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("no GitHub OIDC credentials: give the job permissions: id-token: write"))
-	}
 	client := apiClientFromFlags(prog, apiURLFlag, "", profileFlag, lookupEnv)
-	if audience == "" {
-		audience = strings.TrimRight(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)), "/")
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), ciIDTokenTimeout)
 	defer cancel()
-	idToken, err := fetchGitHubIDToken(ctx, reqURL, reqToken, audience)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
+	var idToken string
+	if idTokenEnv != "" {
+		idToken, _ = lookupEnv(idTokenEnv)
+		if idToken = strings.TrimSpace(idToken); idToken == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("%s is empty: request an identity token for the control plane URL in the job first", idTokenEnv))
+		}
+	} else {
+		reqURL, _ := lookupEnv("ACTIONS_ID_TOKEN_REQUEST_URL")
+		reqToken, _ := lookupEnv("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+		if reqURL == "" || reqToken == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("no GitHub OIDC credentials: give the job permissions: id-token: write, or pass --id-token-env on another CI"))
+		}
+		if audience == "" {
+			audience = strings.TrimRight(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)), "/")
+		}
+		var err error
+		if idToken, err = fetchGitHubIDToken(ctx, reqURL, reqToken, audience); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
 	}
 	out, err := client.ExchangeCIToken(ctx, rest[0], idToken)
 	if err != nil {
@@ -148,16 +157,29 @@ func printCITrusts(stdout io.Writer, trusts []apiclient.CITrust) {
 		if env == "" {
 			env = "any"
 		}
-		_, _ = fmt.Fprintf(stdout, "%s  %s  %s  environment %s\n", t.ID, t.Repository, t.RefPattern, env)
+		provider := t.Provider
+		if provider == "" {
+			provider = "github"
+		}
+		protected := ""
+		if t.ProtectedRefOnly {
+			protected = "  protected refs only"
+		}
+		_, _ = fmt.Fprintf(stdout, "%s  %s  %s  %s  environment %s%s\n", t.ID, provider, t.Repository, t.RefPattern, env, protected)
 	}
 }
 
 func runCITrustAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps github-actions trust add", "print the new trust as JSON to stdout and nothing else", stderr)
-	var repo, ref, environment string
-	fs.StringVar(&repo, "repo", "", "GitHub repository, owner/name (required)")
+	var repo, ref, environment, provider, issuer, orgID string
+	var protectedRef bool
+	fs.StringVar(&provider, "provider", "github", "CI provider: github, gitlab or circleci")
+	fs.StringVar(&repo, "repo", "", "GitHub owner/name, GitLab project path, or CircleCI project ID (required)")
 	fs.StringVar(&ref, "ref", "refs/heads/main", "ref glob allowed to deploy, e.g. refs/heads/main or refs/tags/v*")
-	fs.StringVar(&environment, "environment", "", "GitHub environment the job must run in (default any)")
+	fs.StringVar(&environment, "environment", "", "environment the job must run in, or for circleci a context ID it must use (default any)")
+	fs.StringVar(&issuer, "issuer", "", "gitlab: issuer URL of a self-managed instance (default https://gitlab.com)")
+	fs.StringVar(&orgID, "org-id", "", "circleci: organization ID (required for circleci)")
+	fs.BoolVar(&protectedRef, "protected-ref", false, "gitlab: only accept pipelines on protected branches or tags")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
@@ -170,7 +192,9 @@ func runCITrustAdd(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, jsonOut, newValidationError("--repo is required"))
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	t, err := client.CreateCITrust(context.Background(), rest[0], apiclient.CITrustRequest{Repository: repo, RefPattern: ref, Environment: environment})
+	t, err := client.CreateCITrust(context.Background(), rest[0], apiclient.CITrustRequest{
+		Provider: provider, Issuer: issuer, OrgID: orgID, Repository: repo, RefPattern: ref, Environment: environment, ProtectedRefOnly: protectedRef,
+	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("add ci trust for %s: %w", rest[0], err))
 	}

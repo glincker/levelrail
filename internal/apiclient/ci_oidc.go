@@ -8,18 +8,25 @@ import (
 
 // CITrust mirrors internal/api's ciTrustResource.
 type CITrust struct {
-	ID          string    `json:"id"`
-	Repository  string    `json:"repository"`
-	RefPattern  string    `json:"ref_pattern"`
-	Environment string    `json:"environment"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID               string    `json:"id"`
+	Provider         string    `json:"provider"`
+	Issuer           string    `json:"issuer,omitempty"`
+	Repository       string    `json:"repository"`
+	RefPattern       string    `json:"ref_pattern"`
+	Environment      string    `json:"environment"`
+	ProtectedRefOnly bool      `json:"protected_ref_only,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 // CITrustRequest is the body of POST /api/v1/apps/{name}/ci/trusts.
 type CITrustRequest struct {
-	Repository  string `json:"repository"`
-	RefPattern  string `json:"ref_pattern"`
-	Environment string `json:"environment,omitempty"`
+	Provider         string `json:"provider,omitempty"`
+	Issuer           string `json:"issuer,omitempty"`
+	OrgID            string `json:"org_id,omitempty"`
+	Repository       string `json:"repository"`
+	RefPattern       string `json:"ref_pattern"`
+	Environment      string `json:"environment,omitempty"`
+	ProtectedRefOnly bool   `json:"protected_ref_only,omitempty"`
 }
 
 // CIWorkflow mirrors internal/api's ciWorkflowResource.
