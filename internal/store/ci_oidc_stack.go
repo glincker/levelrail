@@ -32,6 +32,10 @@ type CIStackTrust struct {
 	Verbs          []string
 	CreatedBy      string
 	CreatedAt      time.Time
+	// Provider is github, gitlab or circleci; Issuer is empty for github, whose issuer is fixed.
+	Provider         string
+	Issuer           string
+	ProtectedRefOnly bool
 }
 
 // NewCIStackTrustID mints a random trust id.
@@ -43,14 +47,16 @@ func NewCIStackTrustID() (string, error) {
 	return "cst_" + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-const ciStackTrustColumns = `id, stack_id, repository, ref_pattern, environment, subject_pattern, verbs, created_by, created_at`
+const ciStackTrustColumns = `id, stack_id, repository, ref_pattern, environment, subject_pattern, verbs, created_by, created_at, provider, issuer, protected_ref_only`
 
 func scanCIStackTrust(scan func(dest ...any) error) (CIStackTrust, error) {
 	var t CIStackTrust
 	var verbs, created string
-	if err := scan(&t.ID, &t.StackID, &t.Repository, &t.RefPattern, &t.Environment, &t.SubjectPattern, &verbs, &t.CreatedBy, &created); err != nil {
+	var protected int
+	if err := scan(&t.ID, &t.StackID, &t.Repository, &t.RefPattern, &t.Environment, &t.SubjectPattern, &verbs, &t.CreatedBy, &created, &t.Provider, &t.Issuer, &protected); err != nil {
 		return CIStackTrust{}, err
 	}
+	t.ProtectedRefOnly = protected != 0
 	t.Verbs = strings.Split(verbs, ",")
 	// A row whose verbs no longer parse is an error, so the exchange fails closed.
 	if !ValidStackVerbs(t.Verbs) {
@@ -66,8 +72,8 @@ func (db *DB) SaveCIStackTrust(ctx context.Context, t CIStackTrust) error {
 		return ErrInvalidCIStackTrust
 	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO ci_stack_trusts (`+ciStackTrustColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, t.ID, t.StackID, t.Repository, t.RefPattern, t.Environment, t.SubjectPattern, strings.Join(t.Verbs, ","), t.CreatedBy, t.CreatedAt.UTC().Format(time.RFC3339Nano))
+		INSERT INTO ci_stack_trusts (`+ciStackTrustColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, t.ID, t.StackID, t.Repository, t.RefPattern, t.Environment, t.SubjectPattern, strings.Join(t.Verbs, ","), t.CreatedBy, t.CreatedAt.UTC().Format(time.RFC3339Nano), providerOrGitHub(t.Provider), t.Issuer, t.ProtectedRefOnly)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return ErrCIStackTrustExists
@@ -117,4 +123,11 @@ func (db *DB) DeleteCIStackTrust(ctx context.Context, stackID, id string) (CISta
 		return CIStackTrust{}, fmt.Errorf("store: delete ci stack trust: %w", err)
 	}
 	return t, nil
+}
+
+func providerOrGitHub(p string) string {
+	if p == "" {
+		return "github"
+	}
+	return p
 }

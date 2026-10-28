@@ -313,30 +313,36 @@ func (rt *Router) saveCIPolicy(ctx context.Context, trustID, app string) (string
 
 // ciTrustMatches is the policy gate: provider, issuer, repository, ref and environment must all match, else deny.
 func ciTrustMatches(t store.CIOIDCTrust, c CIClaims) bool {
-	provider := ciProviderName(t.Provider)
-	if provider != ciProviderName(c.Provider) || t.Repository != c.Repository || c.Ref == "" {
+	if !ciIdentityAllowed(t.Provider, t.Issuer, t.Repository, t.Environment, t.ProtectedRefOnly, c) {
 		return false
 	}
-	if provider != ciProviderGitHub && (t.Issuer == "" || t.Issuer != c.Issuer) {
+	ok, err := path.Match(t.RefPattern, c.Ref)
+	return err == nil && ok
+}
+
+// ciIdentityAllowed holds every provider rule except the ref glob, shared by app and stack trusts.
+func ciIdentityAllowed(trustProvider, trustIssuer, repository, environment string, protectedOnly bool, c CIClaims) bool {
+	provider := ciProviderName(trustProvider)
+	if provider != ciProviderName(c.Provider) || repository != c.Repository || c.Ref == "" {
 		return false
 	}
-	if ok, err := path.Match(t.RefPattern, c.Ref); err != nil || !ok {
+	if provider != ciProviderGitHub && (trustIssuer == "" || trustIssuer != c.Issuer) {
 		return false
 	}
-	if t.ProtectedRefOnly && !c.RefProtected {
+	if protectedOnly && !c.RefProtected {
 		return false
 	}
-	if t.Environment == "" {
+	if environment == "" {
 		return true
 	}
 	switch provider {
 	case ciProviderCircleCI:
-		return slices.Contains(c.ContextIDs, t.Environment)
+		return slices.Contains(c.ContextIDs, environment)
 	case ciProviderGitLab:
 		// Any job may declare an environment; only a protected one limits who can run it.
-		return c.EnvironmentProtected && t.Environment == c.Environment
+		return c.EnvironmentProtected && environment == c.Environment
 	}
-	return t.Environment == c.Environment
+	return environment == c.Environment
 }
 
 type ciExchangeRequest struct {
