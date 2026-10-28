@@ -265,5 +265,26 @@ func (c *Controller) stabilityGateForNew(ctx context.Context, state *docker.Cont
 	if !created && c.deployReadinessProbeFor(desired) != nil {
 		return nil
 	}
+	if !created {
+		return c.restartSettle(ctx, state.Name)
+	}
 	return c.stabilityGate(ctx, state, desired)
+}
+
+// restartSettle is a crash restart's whole gate: one live inspect after a
+// gate tick. A full stable window here would stall the reconcile loop.
+func (c *Controller) restartSettle(ctx context.Context, name string) error {
+	tick := c.gateTick
+	if tick <= 0 {
+		tick = defaultGateTick
+	}
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("restart settle for %s: %w", name, ctx.Err())
+	case <-time.After(tick):
+	}
+	if crash := c.exitedCrash(ctx, name); crash != nil {
+		return crash
+	}
+	return nil
 }

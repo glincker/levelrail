@@ -138,3 +138,45 @@ func TestExitedReadiness_PortlessDeployExitFailsDeploy(t *testing.T) {
 		t.Fatal("previous release stopped, want it still serving")
 	}
 }
+
+// A worker that crashes in steady state is restarted without a full stable
+// window and without failing the deploy that already succeeded.
+func TestExitedReadiness_SteadyStateCrashIsNotARollout(t *testing.T) {
+	rt := &exitOnStartRuntime{fakeRuntime: newFakeRuntime(0), exitCode: 2, exitImg: "img:v1"}
+	target := replicaContainerName("web", "img:v1", "", 0)
+	rt.seed(target, false)
+	rt.containers[target].Image = "img:v1"
+	rt.crashContainer(target, false, 2)
+	rec := &fakeGateRecorder{}
+	c := New("web", &fakeStore{svc: portlessWorker()}, rt,
+		WithStabilityGate(deploysafety.Effective{SuccessThreshold: 1, StableWindow: 3 * time.Second}, nil),
+		WithGateTick(20*time.Millisecond), WithStartupWatch(0), WithGateRecorder(rec))
+
+	start := time.Now()
+	res, err := c.Reconcile(context.Background())
+	if took := time.Since(start); took > time.Second {
+		t.Fatalf("Reconcile took %s, want a restart not to wait out the 3s stable window", took)
+	}
+	if cond := conditionOf(t, res); err == nil || cond.Status == reconcile.ConditionTrue || !exitedReason(cond.Reason) {
+		t.Fatalf("err = %v condition = %+v, want not Ready with an exit reason", err, cond)
+	}
+	if len(rec.reasons) != 0 {
+		t.Fatalf("rollout failure reasons = %v, want none for a steady-state crash", rec.reasons)
+	}
+}
+
+func TestExitedReadiness_FirstDeployInstantExitFails(t *testing.T) {
+	rt := &exitOnStartRuntime{fakeRuntime: newFakeRuntime(0), exitCode: 2, exitImg: "img:v1"}
+	rec := &fakeGateRecorder{}
+	c := New("web", &fakeStore{svc: portlessWorker()}, rt,
+		WithStabilityGate(deploysafety.Effective{SuccessThreshold: 1, StableWindow: 300 * time.Millisecond}, nil),
+		WithGateTick(20*time.Millisecond), WithStartupWatch(0), WithGateRecorder(rec))
+
+	res, err := c.Reconcile(context.Background())
+	if cond := conditionOf(t, res); err == nil || cond.Status == reconcile.ConditionTrue {
+		t.Fatalf("err = %v condition = %+v, want the first deploy to fail", err, cond)
+	}
+	if len(rec.reasons) == 0 {
+		t.Fatal("no rollout failure reason recorded, want the first deploy marked failed")
+	}
+}

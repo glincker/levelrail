@@ -1245,8 +1245,13 @@ func (c *Controller) readinessVerdict(ctx context.Context, target string, state 
 	if err := c.stabilityGateForNew(ctx, state, desired, created); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
 		c.traceAbort(ctx, desired, target, reason, err)
-		c.recordRolloutFailure(ctx, desired, err)
-		c.markGateFailure(ctx, desired, reason)
+		// A steady-state crash is not a rollout: it must not fail an earlier, succeeded deploy.
+		if created {
+			c.recordRolloutFailure(ctx, desired, err)
+			c.markGateFailure(ctx, desired, reason)
+		} else if crash := (*readinessCrashError)(nil); errors.As(err, &crash) {
+			c.captureExit(ctx, desired, target, crash.exit, crash.verdict())
+		}
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 	}
 	delete(c.handoffFailed, target)
