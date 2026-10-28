@@ -68,14 +68,63 @@ func TestRunToCompletion_NonzeroExitFailsDeploy(t *testing.T) {
 func TestRunToCompletion_NeverFinishingFailsWithinBudget(t *testing.T) {
 	// exitImg never matches, so the container stays running.
 	rt := &exitOnStartRuntime{fakeRuntime: newFakeRuntime(0), exitImg: "other:v1"}
-	c := New("migrate", &fakeStore{svc: oneShot("no")}, rt, WithReadyBudget(150*time.Millisecond), WithStartupWatch(0))
+	c := New("migrate", &fakeStore{svc: oneShot("no")}, rt, WithReadyBudget(time.Second), WithCompletionBudget(150*time.Millisecond), WithStartupWatch(0))
 
 	res, err := c.Reconcile(context.Background())
 	if err == nil {
-		t.Fatal("error = nil, want a one-shot still running past the budget to fail")
+		t.Fatal("error = nil, want a one-shot still running past the budget to be not Ready")
 	}
 	if cond := conditionOf(t, res); cond.Status == reconcile.ConditionTrue || cond.Reason != ReasonCompletionTimeout {
 		t.Fatalf("condition = %+v, want not Ready with reason %s", cond, ReasonCompletionTimeout)
+	}
+	if rt.stopCalls != 0 {
+		t.Fatalf("Stop calls = %d, want a still-running one-shot left running", rt.stopCalls)
+	}
+}
+
+// A migration longer than the ready budget must not be killed and rerun.
+func TestRunToCompletion_LongRunOutlivesReadyBudget(t *testing.T) {
+	rt := &exitOnStartRuntime{fakeRuntime: newFakeRuntime(0), exitImg: "other:v1"}
+	c := New("migrate", &fakeStore{svc: oneShot("no")}, rt, WithReadyBudget(100*time.Millisecond), WithStartupWatch(0))
+
+	res, err := c.Reconcile(context.Background())
+	if cond := conditionOf(t, res); err == nil || cond.Reason != ReasonRunningToComplete {
+		t.Fatalf("first pass: err = %v condition = %+v, want not Ready with reason %s", err, cond, ReasonRunningToComplete)
+	}
+	if rt.stopCalls != 0 {
+		t.Fatalf("Stop calls = %d, want the running migration left alone", rt.stopCalls)
+	}
+
+	target := replicaContainerName("migrate", "img:v1", "", 0)
+	now := time.Now()
+	rt.crashContainer(target, false, 0)
+	rt.setExitState(target, &docker.ExitState{ExitCode: 0, StartedAt: now.Add(-90 * time.Second), FinishedAt: now})
+	res, err = c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("after exit 0: error = %v", err)
+	}
+	if cond := conditionOf(t, res); cond.Status != reconcile.ConditionTrue || cond.Reason != ReasonCompleted {
+		t.Fatalf("after exit 0: condition = %+v, want Ready with reason %s", cond, ReasonCompleted)
+	}
+	if rt.startCalls != 1 {
+		t.Fatalf("Start calls = %d, want 1 (the migration ran once)", rt.startCalls)
+	}
+}
+
+func TestRunToCompletion_OverCompletionBudgetIsNotKilled(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := replicaContainerName("migrate", "img:v1", "", 0)
+	rt.seed(target, true)
+	rt.containers[target].Image = "img:v1"
+	rt.setExitState(target, &docker.ExitState{Running: true, StartedAt: time.Now().Add(-90 * time.Second)})
+	c := New("migrate", &fakeStore{svc: oneShot("no")}, rt, WithCompletionBudget(time.Minute), WithStartupWatch(0))
+
+	res, err := c.Reconcile(context.Background())
+	if cond := conditionOf(t, res); err == nil || cond.Status == reconcile.ConditionTrue || cond.Reason != ReasonCompletionTimeout {
+		t.Fatalf("err = %v condition = %+v, want not Ready with reason %s", err, cond, ReasonCompletionTimeout)
+	}
+	if rt.stopCalls != 0 || rt.removeCalls != 0 || !rt.containers[target].Running {
+		t.Fatalf("stop=%d remove=%d, want the over-budget one-shot left running", rt.stopCalls, rt.removeCalls)
 	}
 }
 

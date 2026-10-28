@@ -233,6 +233,7 @@ type Controller struct {
 	probeUnreachableLogged atomic.Bool
 	probeLimits            probe.Limits
 	readyBudget            time.Duration
+	completionBudget       time.Duration  // 0 reads EnvOneShotTimeout, see effectiveCompletionBudget
 	secretResolver         SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder         DeployRecorder // nil is valid: deploy frequency just isn't recorded
 	meshDNSAddr            string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
@@ -816,8 +817,8 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 	}
 	if allRunning && len(stale) == 0 {
 		if desired.RunsToCompletion() {
-			err := fmt.Errorf("%s is still running to completion", c.serviceName)
-			return notReady(ReasonRunningToComplete, err), nil
+			reason, err := c.stillRunning(ctx, targets[0], desired)
+			return notReady(reason, err), nil
 		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
@@ -1190,6 +1191,10 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	var readyErr error
 	if desired.RunsToCompletion() {
 		readyErr = c.awaitCompletion(ctx, state.Name, desired)
+		var still *completionPending
+		if errors.As(readyErr, &still) {
+			return replicaOutcome{reason: still.reason}, still
+		}
 	} else if c.defersReadiness(desired) {
 		c.noteImplicitReadiness(ctx, state.Name, desired, c.deployReadinessProbeFor(desired))
 		now := time.Now()
