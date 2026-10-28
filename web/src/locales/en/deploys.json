@@ -309,13 +309,29 @@
   "ciDeploy": {
     "title": "Deploy from CI",
     "infoTipLabel": "About deploying from CI",
-    "description": "Trust a repository and ref, then paste the generated workflow. The job swaps its GitHub identity for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
-    "noTrusts": "No repository is trusted to deploy this app yet. Add one below.",
-    "repositoryLabel": "GitHub repository",
-    "repositoryPlaceholder": "owner/name",
+    "description": "Trust a pipeline and ref, then paste the setup for your CI. The job swaps its identity (GitHub, GitLab or CircleCI) for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
+    "noTrusts": "No pipeline is trusted to deploy this app yet. Add one below.",
+    "repositoryLabel": {
+      "github": "GitHub repository",
+      "gitlab": "GitLab project path",
+      "circleci": "CircleCI project ID"
+    },
+    "repositoryPlaceholder": {
+      "github": "owner/name",
+      "gitlab": "group/project",
+      "circleci": "Project Settings > Overview"
+    },
     "refLabel": "Allowed ref",
-    "environmentLabel": "Environment",
-    "environmentPlaceholder": "Any environment",
+    "environmentLabel": {
+      "github": "Environment",
+      "gitlab": "Environment",
+      "circleci": "Context ID"
+    },
+    "environmentPlaceholder": {
+      "github": "Any environment",
+      "gitlab": "Any protected environment",
+      "circleci": "Any context"
+    },
     "trust": "Trust",
     "removeTrust": "Stop trusting {{repository}}",
     "workflowTitle": "Generated workflow",
@@ -329,8 +345,29 @@
       "removeError": "Could not remove the trust.",
       "addressError": "Could not save the dashboard address.",
       "copied": "Workflow copied.",
-      "copyFailed": "Could not copy to the clipboard."
-    }
+      "copyFailed": "Could not copy to the clipboard.",
+      "trustedLoose": "Trusted, with a looser rule."
+    },
+    "providerLabel": "CI provider",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI"
+    },
+    "orgIdLabel": "CircleCI organization ID",
+    "orgIdPlaceholder": "Organization Settings > Overview",
+    "issuerLabel": "Self-managed issuer",
+    "issuerPlaceholder": "https://gitlab.com",
+    "issuerNote": "Leave the issuer empty for gitlab.com. A self-managed GitLab issuer can only be trusted by a root user, because whoever runs it can mint tokens.",
+    "issuerShown": "Issuer {{issuer}}",
+    "protectedOnly": "Only protected branches and tags",
+    "unprotectedWarning": "This trust accepts pipelines on unprotected branches and tags: any developer who can push a matching ref can deploy.",
+    "snippetTitle": {
+      "github": "Job steps",
+      "gitlab": "GitLab CI job",
+      "circleci": "CircleCI job steps"
+    },
+    "snippetNote": "Set LEVELRAIL_API_URL to the dashboard address. It is public, not a secret."
   },
   "buildHooks": {
     "title": "Build hooks",
