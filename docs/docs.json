@@ -389,6 +389,7 @@
               "platform-as-code",
               "stacks",
               "resource-advisor",
+              "cli-console",
               "feature-flags",
               "log-archive",
               "janitor",
