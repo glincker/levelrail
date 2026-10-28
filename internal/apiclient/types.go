@@ -77,8 +77,7 @@ type AppResource struct {
 	Strategy string   `json:"strategy,omitempty"`
 	Domains  []string `json:"domains,omitempty"`
 	// Env holds MaskedEnvValue for sensitive keys; sending it back keeps the stored value.
-	// Always sent, since PUT keeps an omitted env and removing the last key must clear it.
-	Env map[string]string `json:"env"`
+	Env map[string]string `json:"env,omitempty"`
 	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
 	// env vars backed by encrypted secret storage, values held only in
 	// Secrets below or set later via PUT .../secrets/{key}, never here.
