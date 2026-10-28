@@ -43,10 +43,10 @@ func chownForChild(dir string, cred *syscall.Credential) error {
 	return nil
 }
 
-// configureProcess puts the child in its own process group so cancel and
-// timeout kill everything it started, not only the direct child.
+// configureProcess puts the child in its own session (and so process group)
+// with no controlling terminal, so cancel and timeout kill everything it started.
 func configureProcess(cmd *exec.Cmd, cred *syscall.Credential) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Credential: cred}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Credential: cred}
 	cmd.Cancel = func() error {
 		if cmd.Process == nil {
 			return nil

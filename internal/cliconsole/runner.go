@@ -75,6 +75,8 @@ func (r *Runner) Run(ctx context.Context, argv []string, token string, emit func
 	cmd.Dir = home
 	cmd.Env = Env(r.APIURL, token, home, r.Experimental)
 	cmd.Stdin = nil
+	// Only stdout and stderr reach the child; Go marks every other fd close-on-exec.
+	cmd.ExtraFiles = nil
 	configureProcess(cmd, cred)
 	cmd.WaitDelay = 2 * time.Second
 
