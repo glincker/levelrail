@@ -1900,6 +1900,8 @@ type GitSourceResource struct {
 	DeployPaths       []string `json:"deploy_paths"`
 	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
 	ReportStatus      bool     `json:"report_status"`
+	WaitForCI         bool     `json:"wait_for_ci"`
+	CIRequiredChecks  []string `json:"ci_required_checks"`
 	CreatedAt         string   `json:"created_at"`
 	UpdatedAt         string   `json:"updated_at"`
 }
@@ -1909,6 +1911,8 @@ type GitDeploySettings struct {
 	DeployPaths       []string `json:"deploy_paths"`
 	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
 	ReportStatus      bool     `json:"report_status"`
+	WaitForCI         bool     `json:"wait_for_ci"`
+	CIRequiredChecks  []string `json:"ci_required_checks"`
 }
 
 // SetGitDeploySettingsRequest mirrors internal/api's
@@ -1917,6 +1921,8 @@ type SetGitDeploySettingsRequest struct {
 	DeployPaths       *[]string `json:"deploy_paths,omitempty"`
 	DeployPathsIgnore *[]string `json:"deploy_paths_ignore,omitempty"`
 	ReportStatus      *bool     `json:"report_status,omitempty"`
+	WaitForCI         *bool     `json:"wait_for_ci,omitempty"`
+	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest

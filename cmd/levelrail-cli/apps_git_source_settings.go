@@ -16,10 +16,13 @@ import (
 func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source settings", "print the settings as JSON to stdout and nothing else", stderr)
 	var paths, ignore csvListFlag
-	var report bool
+	var report, waitCI bool
+	var ciChecks csvListFlag
 	fs.Var(&paths, "paths", "deploy only when a push changes a file matching these globs (comma separated, ** supported); empty clears the filter")
 	fs.Var(&ignore, "paths-ignore", "skip the deploy when every changed file matches these globs (comma separated); empty clears the filter")
 	fs.BoolVar(&report, "report-status", true, "post deploy and pipeline state back to the git forge (GitHub Deployments and commit statuses)")
+	fs.BoolVar(&waitCI, "wait-for-ci", false, "hold a push deploy until the commit's CI checks pass; a failure or timeout skips the deploy")
+	fs.Var(&ciChecks, "ci-check", "check name the deploy waits for (repeatable); none means every check on the commit")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source settings <name> [flags]\n\nSets which pushes deploy by the files they changed, and whether deploy and\npipeline state is reported back to the git forge. Only the flags you pass\nchange. The server kill switch APP_GIT_STATUS_ENABLED=false turns reporting\noff for every app.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -40,10 +43,15 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 			req.DeployPathsIgnore = &v
 		case "report-status":
 			req.ReportStatus = &report
+		case "wait-for-ci":
+			req.WaitForCI = &waitCI
+		case "ci-check":
+			v := []string(ciChecks)
+			req.CIRequiredChecks = &v
 		}
 	})
-	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil {
-		_, _ = fmt.Fprintf(stderr, "%s: apps git-source settings needs --paths, --paths-ignore or --report-status\n\n", prog)
+	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil {
+		_, _ = fmt.Fprintf(stderr, "%s: apps git-source settings needs --paths, --paths-ignore, --report-status, --wait-for-ci or --ci-check\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
@@ -56,6 +64,8 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 		_, _ = fmt.Fprintf(stdout, "deploy_paths:        %s\n", strings.Join(got.DeployPaths, ", "))
 		_, _ = fmt.Fprintf(stdout, "deploy_paths_ignore: %s\n", strings.Join(got.DeployPathsIgnore, ", "))
 		_, _ = fmt.Fprintf(stdout, "report_status:       %t\n", got.ReportStatus)
+		_, _ = fmt.Fprintf(stdout, "wait_for_ci:         %t\n", got.WaitForCI)
+		_, _ = fmt.Fprintf(stdout, "ci_required_checks:  %s\n", strings.Join(got.CIRequiredChecks, ", "))
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
