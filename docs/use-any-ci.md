@@ -95,12 +95,12 @@ A CI trust lets one pipeline identity deploy one app. The exchange endpoint (`PO
 | Provider | Trust flags | Repository is | Ref and environment are matched against |
 | --- | --- | --- | --- |
 | GitHub Actions | `--repo owner/name` | `repository` | `ref`, `environment` |
-| GitLab CI | `--provider gitlab --repo group/project`, `--issuer` for self-managed, `--protected-ref` | `project_path` | `ref` and `ref_type` (as `refs/heads/<branch>` or `refs/tags/<tag>`), `environment`, `ref_protected` |
+| GitLab CI | `--provider gitlab --repo group/project`, `--issuer` for self-managed, `--no-protected-ref` to opt out | `project_path` | `ref` and `ref_type` (as `refs/heads/<branch>` or `refs/tags/<tag>`), `environment`, `ref_protected` |
 | CircleCI | `--provider circleci --org-id <ORG_ID> --repo <PROJECT_ID>` | `oidc.circleci.com/project-id` | `oidc.circleci.com/vcs-ref`, and `--environment <CONTEXT_ID>` must appear in `oidc.circleci.com/context-ids` |
 
 ```bash
 levelrail-cli apps github-actions trust add my-app --repo example/my-app --ref refs/heads/main
-levelrail-cli apps github-actions trust add my-app --provider gitlab --repo example/my-app --ref refs/heads/main --protected-ref
+levelrail-cli apps github-actions trust add my-app --provider gitlab --repo example/my-app --ref refs/heads/main
 levelrail-cli apps github-actions trust add my-app --provider gitlab --issuer https://gitlab.example.com --repo team/my-app --ref 'refs/tags/v*'
 levelrail-cli apps github-actions trust add my-app --provider circleci --org-id <ORG_ID> --repo <PROJECT_ID> --ref refs/heads/main --environment <CONTEXT_ID>
 levelrail-cli apps github-actions trust list my-app
@@ -114,18 +114,28 @@ How tokens are checked:
 - **Audience.** The token's `aud` must be the dashboard URL set in Settings. Set it in `id_tokens` on GitLab, and with `circleci run oidc get --claims '{"aud":"..."}'` on CircleCI (the default CircleCI token's audience is the organization ID, which is refused).
 - **Signatures.** Only RS256 and ES256 are accepted, the token must name its key with `kid`, and `exp`, `nbf` and `iat` are checked.
 - **Key fetching** uses https only, refuses hosts that resolve to private, loopback or link-local addresses, does not follow redirects to other hosts, and refetches on an unknown key at most once per refresh interval.
+- **GitLab safe defaults.** A GitLab trust accepts only protected branches and tags (`ref_protected`), unless it is created with `--no-protected-ref` (API: `"protected_ref_only": false`); the response then carries a warning, because any developer who can push a matching branch or tag could deploy. Pipelines with `pipeline_source` `merge_request_event` or `external_pull_request_event` are always refused, since a merge request from a fork can run in the parent project with its project path and a branch named `main`. When the trust names an environment, the token must also carry `environment_protected: true`, because any job can declare an environment.
+- **Who may add a trust.** The caller needs `write:sensitive` and `deploy` on the app, so a trust never grants more than its creator holds. A self-managed GitLab issuer (anything other than `https://gitlab.com`) needs a root user, since whoever runs that issuer can mint tokens.
+- **Token age.** Tokens older than `APP_CI_OIDC_MAX_TOKEN_AGE` (default `1h`) are refused, and so are tokens without `iat` while a maximum age applies.
+- **Audit.** Trust create and delete write `ci_oidc_trust.created` and `ci_oidc_trust.deleted` audit entries with the provider and issuer. Every issued token writes `ci_oidc_exchange.issued`; refusals write `ci_oidc_exchange.refused` with the reason, at most one row per app, provider and reason per `APP_CI_OIDC_AUDIT_WINDOW` (default `1m`, with a suppressed count). Entries carry the app, provider and a hash of the subject, never the token.
 - **Logs** carry the app, the trust ID and a shortened subject, never the token.
 
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `APP_CI_OIDC_CLOCK_SKEW` | `1m` | Allowed clock drift for `exp`, `nbf` and `iat` |
-| `APP_CI_OIDC_MAX_TOKEN_AGE` | off | Refuse tokens whose `iat` is older than this |
+| `APP_CI_OIDC_MAX_TOKEN_AGE` | `1h` | Refuse tokens whose `iat` is older than this, or that have no `iat`; `0` or `off` disables it |
+| `APP_CI_OIDC_AUDIT_WINDOW` | `1m` | One refused-exchange audit row per app, provider and reason per window |
+| `APP_CI_OIDC_AUDIT_MAX_KEYS` | `1000` | Most refusal windows tracked at once; past this, refusals are not audited until one closes |
 | `APP_CI_OIDC_JWKS_TIMEOUT` | `10s` | Timeout for one key fetch |
 | `APP_CI_OIDC_JWKS_MAX_BYTES` | `262144` | Largest key set accepted |
 | `APP_CI_OIDC_JWKS_MIN_REFRESH` | `5m` | Shortest gap between two key fetches for one issuer |
 | `APP_CI_OIDC_JWKS_TTL` | `1h` | How long fetched keys are reused |
 
 These variables apply to GitLab and CircleCI. GitHub tokens are verified as before. Buildkite OIDC is not accepted yet; use an API token there.
+
+### Downgrading
+
+Rolling back to v0.8.8 or earlier makes the older control plane ignore the `provider` column, so it would treat a GitLab or CircleCI trust row as a GitHub trust on the same path. Delete every non-GitHub trust (`apps github-actions trust list` then `trust remove`) before you downgrade.
 
 ## GitLab CI
 
