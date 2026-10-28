@@ -123,6 +123,15 @@ func (s *cliConsoleSession) serve(ctx context.Context, cancel context.CancelFunc
 			case cliMsgRun:
 				idle.Reset(s.cfg.IdleTimeout)
 				if runDone != nil {
+					// A run releases its slot before its exit frame goes out, so a client that
+					// saw the exit may send the next line before the loop read runDone.
+					select {
+					case <-runDone:
+						run, runDone = nil, nil
+					default:
+					}
+				}
+				if runDone != nil {
 					_ = s.send(ctx, cancel, cliServerMessage{Type: cliMsgError, Message: "a command is already running; cancel it first"})
 					continue
 				}
@@ -131,12 +140,13 @@ func (s *cliConsoleSession) serve(ctx context.Context, cancel context.CancelFunc
 					continue
 				}
 				rctx, rcancel := context.WithCancel(ctx)
-				run = &cliActiveRun{cancel: rcancel, done: make(chan cliRunDone)}
-				runDone = run.done
+				active := &cliActiveRun{cancel: rcancel, done: make(chan cliRunDone)}
+				release := sync.OnceFunc(func() { close(active.done) })
+				run, runDone = active, active.done
 				if cliconsole.IsHost(argv) {
-					go s.executeHost(rctx, cancel, path, run.done)
+					go s.executeHost(rctx, cancel, path, release)
 				} else {
-					go s.execute(rctx, cancel, argv, path, run.done)
+					go s.execute(rctx, cancel, argv, path, release)
 				}
 			case cliMsgCancel:
 				idle.Reset(s.cfg.IdleTimeout)
@@ -174,8 +184,8 @@ func (s *cliConsoleSession) vet(ctx context.Context, cancel context.CancelFunc, 
 	return argv, path, true
 }
 
-func (s *cliConsoleSession) execute(ctx context.Context, cancel context.CancelFunc, argv []string, path string, done chan<- cliRunDone) {
-	defer close(done)
+func (s *cliConsoleSession) execute(ctx context.Context, cancel context.CancelFunc, argv []string, path string, done func()) {
+	defer done()
 	start := time.Now()
 	res, err := s.runner.Run(ctx, argv, s.token, func(stream string, data []byte) error {
 		return s.send(ctx, cancel, cliServerMessage{Type: cliMsgOutput, Stream: stream, Data: string(data)})
@@ -185,6 +195,7 @@ func (s *cliConsoleSession) execute(ctx context.Context, cancel context.CancelFu
 	if err != nil {
 		s.rt.logger.Warn("api: cli console: run failed", slog.String("user_id", s.caller.userID), slog.String("error", err.Error()))
 		s.rt.auditCLIConsole(s.req, s.caller, fmt.Sprintf("%s (failed to run, %s)", shown, took), http.StatusInternalServerError, auditActionCLIConsoleRun)
+		done()
 		_ = s.send(ctx, cancel, cliServerMessage{Type: cliMsgError, Message: "the command could not be run"})
 		return
 	}
@@ -202,6 +213,7 @@ func (s *cliConsoleSession) execute(ctx context.Context, cancel context.CancelFu
 		_ = s.send(ctx, cancel, cliServerMessage{Type: cliMsgOutput, Stream: cliconsole.StreamStderr, Data: fmt.Sprintf("\n[stopped after %s]\n", s.cfg.CommandTimeout)})
 	}
 	code := res.ExitCode
+	done()
 	// The session context may be cancelled already; exit then goes nowhere, which is fine.
 	_ = s.send(context.WithoutCancel(ctx), cancel, cliServerMessage{Type: cliMsgExit, Code: &code})
 }

@@ -42,8 +42,8 @@ type hostDiagResult struct {
 
 // executeHost answers a host line in process, through the same output cap,
 // audit row and exit frame as a CLI run.
-func (s *cliConsoleSession) executeHost(ctx context.Context, cancel context.CancelFunc, path string, done chan<- cliRunDone) {
-	defer close(done)
+func (s *cliConsoleSession) executeHost(ctx context.Context, cancel context.CancelFunc, path string, done func()) {
+	defer done()
 	start := time.Now()
 	sub := strings.TrimPrefix(path, hostdiag.Command+" ")
 	info := s.rt.hostDiagInfo()
@@ -88,5 +88,6 @@ func (s *cliConsoleSession) executeHost(ctx context.Context, cancel context.Canc
 			return
 		}
 	}
+	done()
 	_ = s.send(context.WithoutCancel(ctx), cancel, cliServerMessage{Type: cliMsgExit, Code: &code})
 }
