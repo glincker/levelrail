@@ -69,6 +69,7 @@ export function FirstAppStatus({
       {showOpenApp ? (
         <Button
           size="sm"
+          className="max-sm:min-h-11"
           variant="outline"
           render={<Link to="/apps/$name" params={{ name: app.name }} />}
         >
@@ -77,6 +78,7 @@ export function FirstAppStatus({
       ) : null}
       <Button
         size="sm"
+        className="max-sm:min-h-11"
         variant="outline"
         render={<Link to="/apps/$name/logs" params={{ name: app.name }} />}
       >
@@ -85,6 +87,7 @@ export function FirstAppStatus({
       {phase === 'live' ? (
         <Button
           size="sm"
+          className="max-sm:min-h-11"
           variant="outline"
           render={<Link to="/apps/$name/go-live" params={{ name: app.name }} />}
         >
@@ -107,6 +110,7 @@ export function FirstAppStatus({
         {url ? (
           <Button
             size="sm"
+            className="max-sm:min-h-11"
             render={<a href={url} target="_blank" rel="noreferrer" />}
             nativeButton={false}
           >
@@ -121,7 +125,10 @@ export function FirstAppStatus({
         {address?.certWarning ? (
           <p className="text-xs text-muted-foreground">
             {t('first.status.certNote')}{' '}
-            <a href="#enable-https" className="underline underline-offset-2">
+            <a
+              href="#enable-https"
+              className="inline-flex items-center underline underline-offset-2 max-sm:min-h-11"
+            >
               {t('first.status.certAction')}
             </a>
           </p>
@@ -129,7 +136,12 @@ export function FirstAppStatus({
         <div className="flex flex-wrap gap-2">
           {appLinks}
           {onDone ? (
-            <Button size="sm" variant="ghost" onClick={onDone}>
+            <Button
+              size="sm"
+              className="max-sm:min-h-11"
+              variant="ghost"
+              onClick={onDone}
+            >
               {t('first.status.done')}
             </Button>
           ) : null}
@@ -178,6 +190,7 @@ export function FirstAppStatus({
           {canRetry ? (
             <Button
               size="sm"
+              className="max-sm:min-h-11"
               disabled={redeploy.isPending || retried}
               onClick={() =>
                 redeploy.mutate(
@@ -191,7 +204,12 @@ export function FirstAppStatus({
           ) : null}
           {appLinks}
           {onDone ? (
-            <Button size="sm" variant="ghost" onClick={onDone}>
+            <Button
+              size="sm"
+              className="max-sm:min-h-11"
+              variant="ghost"
+              onClick={onDone}
+            >
               {t('first.status.done')}
             </Button>
           ) : null}

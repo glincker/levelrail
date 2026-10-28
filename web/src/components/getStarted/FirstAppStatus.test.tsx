@@ -248,3 +248,17 @@ describe('FirstAppStatus failed state', () => {
     expect(redeploy).toHaveBeenCalled()
   })
 })
+
+describe('FirstAppStatus touch targets', () => {
+  it('gives the dashboard button a 44px minimum height on phones', () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <FirstAppStatus app={app} phase="live" onDone={vi.fn()} />
+      </I18nextProvider>,
+    )
+    const done = screen.getByRole('button', {
+      name: getStartedEn.first.status.done,
+    })
+    expect(done.className).toContain('max-sm:min-h-11')
+  })
+})

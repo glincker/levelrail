@@ -55,7 +55,7 @@ export function AppPowerConfirm({
       }}
     >
       {stop ? null : (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-sm:min-h-11">
           <Checkbox
             id="app-power-skip"
             checked={skip}
@@ -63,7 +63,10 @@ export function AppPowerConfirm({
               setSkip(next === true)
             }}
           />
-          <Label htmlFor="app-power-skip" className="text-sm font-normal">
+          <Label
+            htmlFor="app-power-skip"
+            className="flex-1 text-sm font-normal max-sm:min-h-11 max-sm:items-center"
+          >
             {t('appPower.restartSkip')}
           </Label>
         </div>

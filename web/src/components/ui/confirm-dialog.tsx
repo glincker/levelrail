@@ -109,6 +109,7 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant="outline"
+            className="max-sm:min-h-11"
             onClick={() => {
               handleOpenChange(false)
             }}
@@ -119,6 +120,7 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={tone === 'destructive' ? 'destructive' : 'default'}
+            className="max-sm:min-h-11"
             writeAction
             disabled={pending || !matches || confirmDisabled}
             onClick={onConfirm}
