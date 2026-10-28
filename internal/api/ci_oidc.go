@@ -377,12 +377,14 @@ func (rt *Router) handleCIOIDCExchange(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		rt.logger.Info("api: ci exchange: token rejected", slog.String("app", req.App), slog.String("error", err.Error()))
+		rt.auditCIExchange(r.Context(), r, ciExchangeAuditDetail{App: clipClaim(req.App), Provider: ciUnverifiedProvider(req.IDToken), Reason: ciExchangeReasonRejected})
 		writeError(w, http.StatusUnauthorized, "identity token rejected")
 		return
 	}
 	match := firstCITrustMatch(candidates, claims)
 	if match == nil {
 		rt.logger.Info("api: ci exchange: no trust", slog.String("app", req.App), slog.String("provider", ciProviderName(claims.Provider)), slog.String("subject", ciLogSubject(claims.Subject)))
+		rt.auditCIExchange(r.Context(), r, ciExchangeAuditDetail{App: req.App, Provider: ciProviderName(claims.Provider), Reason: ciExchangeReasonNoTrust, Subject: ciRedactedSubject(claims.Subject)})
 		writeError(w, http.StatusForbidden, "no CI trust on this app matches the repository, ref and environment of the workflow")
 		return
 	}
@@ -406,6 +408,10 @@ func (rt *Router) handleCIOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.logger.Info("api: ci exchange: token issued", slog.String("app", req.App), slog.String("trust_id", match.ID), slog.String("provider", ciProviderName(claims.Provider)), slog.String("subject", ciLogSubject(claims.Subject)), slog.String("token_id", rec.ID))
+	rt.auditCIExchange(r.Context(), r, ciExchangeAuditDetail{
+		App: req.App, Provider: ciProviderName(claims.Provider), Reason: ciExchangeReasonIssued,
+		Subject: ciRedactedSubject(claims.Subject), TrustID: match.ID, TokenID: rec.ID,
+	})
 	writeJSON(w, http.StatusOK, ciExchangeResponse{Token: raw, ExpiresAt: expires})
 }
 

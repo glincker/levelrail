@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"os"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,18 +23,24 @@ import (
 )
 
 const (
-	envCIOIDCClockSkew      = "APP_CI_OIDC_CLOCK_SKEW"
-	envCIOIDCMaxTokenAge    = "APP_CI_OIDC_MAX_TOKEN_AGE" //nolint:gosec // env var name, not a credential
-	envCIOIDCJWKSTimeout    = "APP_CI_OIDC_JWKS_TIMEOUT"
-	envCIOIDCJWKSMaxBytes   = "APP_CI_OIDC_JWKS_MAX_BYTES"
-	envCIOIDCJWKSMinRefresh = "APP_CI_OIDC_JWKS_MIN_REFRESH"
-	envCIOIDCJWKSTTL        = "APP_CI_OIDC_JWKS_TTL"
-	maxCIJWKSRedirects      = 3
+	envCIOIDCClockSkew       = "APP_CI_OIDC_CLOCK_SKEW"
+	envCIOIDCMaxTokenAge     = "APP_CI_OIDC_MAX_TOKEN_AGE" //nolint:gosec // env var name, not a credential
+	envCIOIDCJWKSTimeout     = "APP_CI_OIDC_JWKS_TIMEOUT"
+	envCIOIDCJWKSMaxBytes    = "APP_CI_OIDC_JWKS_MAX_BYTES"
+	envCIOIDCJWKSMinRefresh  = "APP_CI_OIDC_JWKS_MIN_REFRESH"
+	envCIOIDCJWKSTTL         = "APP_CI_OIDC_JWKS_TTL"
+	maxCIJWKSRedirects       = 3
+	defaultCIOIDCMaxTokenAge = time.Hour
 )
 
 var (
-	ciSigningAlgs        = []jose.SignatureAlgorithm{jose.RS256, jose.ES256}
-	ciCGNATPrefix        = netip.MustParsePrefix("100.64.0.0/10")
+	ciSigningAlgs = []jose.SignatureAlgorithm{jose.RS256, jose.ES256}
+	// CGNAT, IETF protocol, benchmarking, reserved, NAT64 and 6to4: the last two can wrap a private IPv4 address.
+	ciBlockedPrefixes = []netip.Prefix{
+		netip.MustParsePrefix("100.64.0.0/10"), netip.MustParsePrefix("192.0.0.0/24"), netip.MustParsePrefix("198.18.0.0/15"),
+		netip.MustParsePrefix("240.0.0.0/4"), netip.MustParsePrefix("64:ff9b::/96"), netip.MustParsePrefix("64:ff9b:1::/48"),
+		netip.MustParsePrefix("2002::/16"),
+	}
 	errCIJWKSBlockedAddr = errors.New("api: jwks host resolves to a private, loopback or link-local address")
 	errCIJWKSRedirect    = errors.New("api: jwks redirect to another host or scheme refused")
 	errCIOIDCUnknownKey  = errors.New("api: ci oidc token signed with an unknown key")
@@ -51,7 +59,7 @@ type ciOIDCConfig struct {
 func ciOIDCConfigFromEnv() ciOIDCConfig {
 	return ciOIDCConfig{
 		ClockSkew:    envDuration(envCIOIDCClockSkew, time.Minute),
-		MaxTokenAge:  envDurationOrOff(envCIOIDCMaxTokenAge, 0),
+		MaxTokenAge:  ciMaxTokenAgeFromEnv(),
 		FetchTimeout: envDuration(envCIOIDCJWKSTimeout, 10*time.Second),
 		MaxJWKSBytes: int64(envInt(envCIOIDCJWKSMaxBytes, 256<<10)),
 		MinRefresh:   envDuration(envCIOIDCJWKSMinRefresh, 5*time.Minute),
@@ -101,7 +109,20 @@ func ciPublicAddr(ip netip.Addr) bool {
 	ip = ip.Unmap()
 	return ip.IsValid() && !ip.IsLoopback() && !ip.IsPrivate() && !ip.IsLinkLocalUnicast() &&
 		!ip.IsLinkLocalMulticast() && !ip.IsInterfaceLocalMulticast() && !ip.IsMulticast() &&
-		!ip.IsUnspecified() && !ciCGNATPrefix.Contains(ip) && (!ip.Is4() || ip.As4()[0] != 0)
+		!ip.IsUnspecified() && !slices.ContainsFunc(ciBlockedPrefixes, func(p netip.Prefix) bool { return p.Contains(ip) }) &&
+		(!ip.Is4() || ip.As4()[0] != 0)
+}
+
+// ciMaxTokenAgeFromEnv defaults to an hour and fails closed: only an explicit 0 or off disables the age check.
+func ciMaxTokenAgeFromEnv() time.Duration {
+	raw := strings.TrimSpace(os.Getenv(envCIOIDCMaxTokenAge))
+	if raw == "0" || strings.EqualFold(raw, "off") {
+		return 0
+	}
+	if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+		return d
+	}
+	return defaultCIOIDCMaxTokenAge
 }
 
 // newCIJWKSClient checks the address after DNS resolution, so a rebinding hostname cannot reach the host network.
