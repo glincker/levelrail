@@ -4,6 +4,7 @@ import {
   ArrowClockwiseIcon,
   CopyIcon,
   DotsThreeIcon,
+  KeyIcon,
   LinkIcon,
   PauseIcon,
   PlayIcon,
@@ -12,6 +13,8 @@ import {
   TrashIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { ActionMenu } from '@/components/kit'
+import { AppAccessDetailsDialog } from '../templates/AppAccessDetails'
+import { hasTemplateAccess } from '../templates/templateAccess'
 import { Button } from '@/components/ui/button'
 import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
@@ -46,6 +49,8 @@ export function AppActionBar({
   const [cloneOpen, setCloneOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [linkOpen, setLinkOpen] = useState(false)
+  const [accessOpen, setAccessOpen] = useState(false)
+  const { t: tt } = useTranslation('templates')
   const gitSource = useGitSource(app.name).data
   const { t: tn } = useTranslation('newApp')
   const { t: tm } = useTranslation('maintenance')
@@ -140,6 +145,18 @@ export function AppActionBar({
               setCloneOpen(true)
             },
           },
+          ...(hasTemplateAccess(app)
+            ? [
+                {
+                  id: 'access-details',
+                  label: tt('access.open'),
+                  icon: <KeyIcon />,
+                  onSelect: () => {
+                    setAccessOpen(true)
+                  },
+                },
+              ]
+            : []),
           ...(gitSource
             ? [
                 {
@@ -179,6 +196,11 @@ export function AppActionBar({
           onOpenChange: setCloneOpen,
           hideTrigger: true,
         }}
+      />
+      <AppAccessDetailsDialog
+        app={app}
+        open={accessOpen}
+        onOpenChange={setAccessOpen}
       />
       {linkOpen && gitSource ? (
         <DeployLinkDialog

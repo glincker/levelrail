@@ -25,7 +25,7 @@ export function TemplateCredentialRow({
   const { t } = useTranslation('templates')
   return (
     <li className="flex min-w-0 flex-wrap max-sm:[&_button]:min-h-11 max-sm:[&_button]:min-w-11 items-center gap-2">
-      <code className="shrink-0 font-mono text-xs text-muted-foreground">
+      <code className="min-w-0 break-words font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]">
         {secretKey}
       </code>
       {value === undefined ? (
@@ -34,7 +34,7 @@ export function TemplateCredentialRow({
         </span>
       ) : (
         <code
-          className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-0.5 font-mono text-sm"
+          className="min-w-0 flex-1 break-words rounded-md bg-muted px-2 py-0.5 font-mono text-sm [overflow-wrap:anywhere]"
           title={value}
         >
           {value}

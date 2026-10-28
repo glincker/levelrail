@@ -28,6 +28,8 @@ export interface TemplateAccessCardProps {
   app: AppDetail
   templateId?: string
   onNavigate?: () => void
+  /** Hide the open/logs/environment links when already on the app page. */
+  hideLinks?: boolean
 }
 
 /** Address, generated credentials (revealed on demand), setup notes and next steps for a freshly deployed app. */
@@ -35,6 +37,7 @@ export function TemplateAccessCard({
   app,
   templateId,
   onNavigate,
+  hideLinks = false,
 }: TemplateAccessCardProps) {
   const { t } = useTranslation('templates')
   const urls = useAppUrls(app.name)
@@ -156,34 +159,36 @@ export function TemplateAccessCard({
         slogan={template.data?.slogan}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          to="/apps/$name"
-          params={{ name: app.name }}
-          onClick={onNavigate}
-          className={buttonVariants({ size: 'sm' })}
-        >
-          <ArrowSquareOutIcon aria-hidden="true" />
-          {t('result.openApp')}
-        </Link>
-        <Link
-          to="/apps/$name/logs"
-          params={{ name: app.name }}
-          onClick={onNavigate}
-          className={buttonVariants({ variant: 'outline', size: 'sm' })}
-        >
-          <ScrollIcon aria-hidden="true" />
-          {t('result.viewLogs')}
-        </Link>
-        <Link
-          to="/apps/$name/environment"
-          params={{ name: app.name }}
-          onClick={onNavigate}
-          className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-        >
-          {t('result.openEnvironment')}
-        </Link>
-      </div>
+      {hideLinks ? null : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/apps/$name"
+            params={{ name: app.name }}
+            onClick={onNavigate}
+            className={buttonVariants({ size: 'sm' })}
+          >
+            <ArrowSquareOutIcon aria-hidden="true" />
+            {t('result.openApp')}
+          </Link>
+          <Link
+            to="/apps/$name/logs"
+            params={{ name: app.name }}
+            onClick={onNavigate}
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+          >
+            <ScrollIcon aria-hidden="true" />
+            {t('result.viewLogs')}
+          </Link>
+          <Link
+            to="/apps/$name/environment"
+            params={{ name: app.name }}
+            onClick={onNavigate}
+            className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+          >
+            {t('result.openEnvironment')}
+          </Link>
+        </div>
+      )}
 
       <StepUpDialog
         scope={gate.pending?.scope ?? null}

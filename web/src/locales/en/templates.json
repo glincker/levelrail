@@ -301,5 +301,26 @@
     "toastRunning_other": "{{count}} services running now.",
     "services_one": "{{count}} service starting",
     "services_other": "{{count}} services starting"
+  },
+  "access": {
+    "title": "Access details",
+    "description": "Address, generated logins and setup notes for this app.",
+    "open": "Open access details"
+  },
+  "wizard": {
+    "deployedUnder_one": "{{count}} service deployed under \"{{app}}\".",
+    "deployedUnder_other": "{{count}} services deployed under \"{{app}}\".",
+    "created": "Created",
+    "view": "View",
+    "done": "Done",
+    "back": "Back to templates",
+    "ramRecommended": "RAM recommended",
+    "documentation": "Documentation",
+    "name": "Name",
+    "namePlaceholder": "e.g. my-stack",
+    "nameHint": "Groups every service this template defines under one app name.",
+    "composeHint": "Pre-filled from the template. Edit it if you need to before deploying.",
+    "deploying": "Deploying...",
+    "deploy": "Deploy"
   }
 }
