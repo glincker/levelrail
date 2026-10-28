@@ -891,40 +891,23 @@ func httpsURL(host string, port int) string {
 	return "https://" + host + ":" + strconv.Itoa(port)
 }
 
-// validateAppUpdate reads omitted published_ports as the stored list, and
-// lets a service deployed without a port (compose worker, UDP-only) stay so.
-func (rt *Router) validateAppUpdate(ctx context.Context, req appResource) error {
-	storedPortless := false
-	if req.Port == 0 {
-		if existing, err := rt.apps.GetDesiredService(ctx, req.Name); err == nil {
-			storedPortless = existing.Port == 0
-			if req.PublishedPorts == nil {
-				req.PublishedPorts = existing.PublishedPorts
-			}
-		}
-	}
-	return validateAppResourceWith(req, storedPortless)
+// validateAppUpdate lets a service deployed without a port (compose
+// worker, UDP-only) stay so; req already carries the merged stored fields.
+func validateAppUpdate(req appResource, existing store.DesiredService) error {
+	return validateAppResourceWith(req, req.Port == 0 && existing.Port == 0)
 }
 
-// handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
-// SaveDesiredService itself: there is no partial-update semantics here,
-// matching how store.DesiredService is already documented to work.
+// handleUpdateApp handles PUT /api/v1/apps/{name}. A field the body omits
+// keeps its stored value; an explicit empty value or null clears it.
 func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req appResource
-	if !decodeReq(w, r, &req) {
+	sent, ok := decodeAppUpdate(w, r, &req)
+	if !ok {
 		return
 	}
 	req.Name = name // the path is authoritative, not whatever the body claims
-
-	if err := rt.validateAppUpdate(r.Context(), req); err != nil {
-		writeAppInvalid(w, err)
-		return
-	}
-	if !rt.requireWildcardDNS01(w, r, req.Domains) {
-		return
-	}
 	if len(req.Secrets) > 0 {
 		writeError(w, http.StatusBadRequest, "secret values cannot be set through this endpoint: use PUT /api/v1/apps/{name}/secrets/{key}")
 		return
@@ -937,6 +920,15 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		rt.internalError(w, "api: update app: check existing failed", err, slog.String("name", name))
+		return
+	}
+	mergeOmittedAppFields(&req, *existing, sent)
+
+	if err := validateAppUpdate(req, *existing); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
+	if !rt.requireWildcardDNS01(w, r, req.Domains) {
 		return
 	}
 
@@ -959,9 +951,6 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	imageChanged := req.Image != existing.Image
 	desired := req.toDesiredService()
-	if req.PublishedPorts == nil {
-		desired.PublishedPorts = existing.PublishedPorts
-	}
 	appID := existing.AppID
 	if appID == "" {
 		appID = name

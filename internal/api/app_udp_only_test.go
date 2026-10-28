@@ -75,7 +75,7 @@ func TestPublishedPorts_UDPOnlyApp(t *testing.T) {
 	if rec := do(http.MethodPost, "/api/v1/apps", `{"name":"web","image":"alpine:3.20","port":80}`); rec.Code >= 300 {
 		t.Fatalf("create web: status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	if rec := do(http.MethodPut, "/api/v1/apps/web", `{"image":"alpine:3.20"}`); rec.Code != http.StatusBadRequest {
+	if rec := do(http.MethodPut, "/api/v1/apps/web", `{"image":"alpine:3.20","port":0}`); rec.Code != http.StatusBadRequest {
 		t.Errorf("dropping the port of a web app: status = %d, body = %s, want 400", rec.Code, rec.Body.String())
 	}
 }

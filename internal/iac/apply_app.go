@@ -77,8 +77,8 @@ func (x *executor) createApp(ctx context.Context, r *Resource, f map[string]any,
 	return x.afterApp(ctx, r, fields, nil, false, setSecrets)
 }
 
-// updateApp saves the merged app through PUT (a full replace) starting from
-// the live body, so settings apply does not manage survive the write.
+// updateApp saves the merged app through PUT starting from the live body,
+// so settings apply does not manage survive the write.
 func (x *executor) updateApp(ctx context.Context, r *Resource, f map[string]any, live *liveApp, prune bool, setSecrets []string) error {
 	var fields appFields
 	if err := remarshal(f, &fields); err != nil {
@@ -93,13 +93,9 @@ func (x *executor) updateApp(ctx context.Context, r *Resource, f map[string]any,
 		merged.Labels = mergeEnv(lw.Labels, fields.Labels)
 	}
 	body := copyFields(live.raw)
+	// An unset field goes as an explicit null: PUT keeps omitted fields, and apply must clear them.
 	for k, v := range appBody(merged) {
 		body[k] = v
-	}
-	for k, v := range body {
-		if v == nil {
-			delete(body, k)
-		}
 	}
 	if prune && len(merged.SecretEnv) == 0 && len(lw.SecretEnv) > 0 {
 		body["secret_env"] = []string{}

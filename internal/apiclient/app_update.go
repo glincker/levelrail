@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-// UpdateApp calls PUT /api/v1/apps/{name} with the full app, returning the
-// saved app. The server replaces the whole desired state, so callers should
+// UpdateApp calls PUT /api/v1/apps/{name} with the app, returning the
+// saved app. The server keeps fields the body omits; callers should still
 // start from GetApp and change only the fields they mean to.
 func (c *Client) UpdateApp(ctx context.Context, name string, app AppResource) (AppResource, error) {
 	var out AppResource

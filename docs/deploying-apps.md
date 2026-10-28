@@ -307,10 +307,20 @@ Two related options:
 ### Save semantics
 
 <Warning>
-`PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with what the request body carries, the same as applying an `app.yaml`.
+`PUT /api/v1/apps/{name}` changes only the top-level fields the body carries. An omitted field keeps its stored value. An explicit empty value (`[]`, `{}`, `""`) or `null` clears it. Nested objects such as `health` or `resources` are replaced whole when sent.
 </Warning>
 
-A save keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, and the pinned image ID. `secret_env` and `vault_env` change only when the body carries them. Omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
+| Field | Omitted | `[]`, `{}` or `null` |
+| --- | --- | --- |
+| `image`, `port` | kept | rejected, except `port: 0` on a service stored without one |
+| `bind_address`, `strategy`, `replicas` | kept | reset to the default |
+| `host_port`, `published_ports`, `domains`, `env`, `labels`, `command` | kept | cleared |
+| `resources`, `health`, `hooks` | kept | cleared (a compose `restart` policy survives) |
+| `secret_env`, `vault_env` | kept | `[]` or `{}` clears, `null` keeps |
+
+A body with only `{"env": {"MODE": "dev"}}` changes the env and nothing else. A GET followed by an unchanged PUT is a no-op: the container is not recreated.
+
+A save also keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, dependencies, and the pinned image ID. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
 
 Fields with their own endpoints cannot be moved by an ordinary edit: `node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, and `log_drain`. An edit can never silently move an app between nodes or projects.
 
