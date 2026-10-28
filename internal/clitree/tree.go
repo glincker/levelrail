@@ -24,6 +24,7 @@ var Tree = map[string]*Node{
 		"pr-status": {Subs: map[string]*Node{"enable": nil, "disable": nil}},
 	}},
 	"apps": {Subs: map[string]*Node{
+		"upgrade-plan":            nil,
 		"freeze":                  {Subs: map[string]*Node{"set": nil, "show": nil, "clear": nil}},
 		"lock":                    nil,
 		"unlock":                  nil,
@@ -392,6 +393,7 @@ var Tree = map[string]*Node{
 	"import":         {Subs: map[string]*Node{"config": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "k8s": nil, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
+		"heartbeat":     {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"email":         {Subs: map[string]*Node{"get": nil, "set": nil, "providers": {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "rm": nil, "test": nil, "promote": nil, "reveal": nil}}, "branding": {Subs: map[string]*Node{"get": nil, "set": nil, "preview": nil}}}},
 		"edge":          {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
