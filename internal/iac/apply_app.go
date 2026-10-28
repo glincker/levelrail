@@ -23,8 +23,19 @@ func appBody(f appFields) map[string]any {
 	} else {
 		delete(body, "host_port")
 	}
+	if f.PublishedPorts != nil {
+		body["published_ports"] = *f.PublishedPorts
+	}
 	setOrClear(body, "resources", resourcesToStore(f.Resources), f.Resources != nil)
-	setOrClear(body, "health", healthToStore(f.Health), f.Health != nil)
+	health := healthToStore(f.Health)
+	if f.Restart != "" {
+		if health == nil {
+			health = &store.ServiceHealth{}
+		}
+		health.Restart = f.Restart
+	}
+	// An unsent health keeps the stored restart: the API merges it back on PUT.
+	setOrClear(body, "health", health, health != nil)
 	var hooks *store.ServiceHooks
 	if f.Hooks != nil {
 		hooks = &store.ServiceHooks{PreDeploy: f.Hooks.PreDeploy, PostDeploy: f.Hooks.PostDeploy}

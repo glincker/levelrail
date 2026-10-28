@@ -388,6 +388,11 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	if opts.Source != "" {
 		f.Tags = sortedUnique(append(f.Tags, tagManagedPre+opts.Source))
 	}
+	if svc.PublishedPorts != nil {
+		ports := normPorts(svc.PublishedPorts)
+		f.PublishedPorts = &ports
+	}
+	f.Restart, _ = spec.ParseRestartPolicy(svc.Restart)
 	var err error
 	f.Resources = resourcesFromSpec(svc.Resources)
 	if f.Health, err = healthFromSpec(svc.Health); err != nil {
@@ -447,9 +452,6 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	}
 	if svc.Build.RegistryCredential != "" {
 		s.at(p+"build.registryCredential", "registry credentials are not supported by apply yet")
-	}
-	if svc.Restart != "" {
-		s.at(p+"restart", "restart is not supported by apply yet; set it in app.yaml or the compose file")
 	}
 }
 

@@ -55,20 +55,22 @@ type outBuild struct {
 }
 
 type outService struct {
-	Build       outBuild          `yaml:"build"`
-	Domains     []string          `yaml:"domains,omitempty"`
-	Port        int               `yaml:"port,omitempty"`
-	HostPort    int               `yaml:"host_port,omitempty"`
-	BindAddress string            `yaml:"bind_address,omitempty"`
-	Health      *healthFields     `yaml:"health,omitempty"`
-	Resources   *resourceFields   `yaml:"resources,omitempty"`
-	Env         map[string]any    `yaml:"env,omitempty"`
-	Replicas    int               `yaml:"replicas,omitempty"`
-	Strategy    string            `yaml:"strategy,omitempty"`
-	Labels      map[string]string `yaml:"labels,omitempty"`
-	Hooks       *hookFields       `yaml:"hooks,omitempty"`
-	Command     []string          `yaml:"command,omitempty"`
-	Volumes     []outVolume       `yaml:"volumes,omitempty"`
+	Build          outBuild             `yaml:"build"`
+	Domains        []string             `yaml:"domains,omitempty"`
+	Port           int                  `yaml:"port,omitempty"`
+	HostPort       int                  `yaml:"host_port,omitempty"`
+	PublishedPorts []spec.PublishedPort `yaml:"published_ports,omitempty"`
+	Restart        string               `yaml:"restart,omitempty"`
+	BindAddress    string               `yaml:"bind_address,omitempty"`
+	Health         *healthFields        `yaml:"health,omitempty"`
+	Resources      *resourceFields      `yaml:"resources,omitempty"`
+	Env            map[string]any       `yaml:"env,omitempty"`
+	Replicas       int                  `yaml:"replicas,omitempty"`
+	Strategy       string               `yaml:"strategy,omitempty"`
+	Labels         map[string]string    `yaml:"labels,omitempty"`
+	Hooks          *hookFields          `yaml:"hooks,omitempty"`
+	Command        []string             `yaml:"command,omitempty"`
+	Volumes        []outVolume          `yaml:"volumes,omitempty"`
 }
 
 type outVolume struct {
@@ -223,7 +225,10 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 	}
 	f := appFromWire(a, idNames{e.st})
 	svc := outService{Build: outBuild{Type: spec.BuildImage, Image: f.Image}, Domains: f.Domains, Port: f.Port, HostPort: f.HostPort,
-		Health: f.Health, Resources: f.Resources, Labels: f.Labels, Hooks: f.Hooks, Command: f.Command}
+		Health: f.Health, Resources: f.Resources, Labels: f.Labels, Hooks: f.Hooks, Command: f.Command, Restart: f.Restart}
+	if f.PublishedPorts != nil {
+		svc.PublishedPorts = *f.PublishedPorts
+	}
 	if f.BindAddress != bindaddr.Default {
 		svc.BindAddress = f.BindAddress
 	}
