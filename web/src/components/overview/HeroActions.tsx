@@ -116,14 +116,18 @@ export function HeroActions({
         items={[
           {
             id: 'restart',
-            label: actions.restarting ? 'Restarting...' : 'Restart',
+            label: actions.restartLabel,
             icon: <ArrowClockwiseIcon />,
             disabled: actions.restarting,
             onSelect: actions.restart,
           },
           {
             id: 'toggle',
-            label: app.suspended ? 'Start' : 'Stop',
+            label: app.suspended
+              ? 'Start'
+              : actions.stopping
+                ? 'Stopping...'
+                : 'Stop',
             icon: app.suspended ? <PlayIcon /> : <PauseIcon />,
             disabled: actions.togglingRunning,
             onSelect: actions.toggleRunning,

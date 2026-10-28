@@ -8,6 +8,7 @@ import {
   PauseIcon,
   PlayIcon,
   RocketLaunchIcon,
+  SpinnerIcon,
   TrashIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { ActionMenu } from '@/components/kit'
@@ -77,12 +78,15 @@ export function AppActionBar({
         disabled={actions.restarting}
         onClick={actions.restart}
       >
-        <ArrowClockwiseIcon aria-hidden="true" />
-        <span className="max-md:sr-only">
-          {actions.restarting
-            ? t('appActions.restarting', { defaultValue: 'Restarting...' })
-            : t('appActions.restart', { defaultValue: 'Restart' })}
-        </span>
+        {actions.restarting || actions.slowRestart ? (
+          <SpinnerIcon
+            aria-hidden="true"
+            className="animate-spin motion-reduce:animate-none"
+          />
+        ) : (
+          <ArrowClockwiseIcon aria-hidden="true" />
+        )}
+        <span className="max-md:sr-only">{actions.restartLabel}</span>
       </Button>
       {actions.confirmDialog}
       <ActionMenu
@@ -113,7 +117,9 @@ export function AppActionBar({
               ? t('appActions.wake', { defaultValue: 'Wake now' })
               : app.suspended
                 ? t('appActions.start', { defaultValue: 'Start' })
-                : t('appActions.stop', { defaultValue: 'Stop' }),
+                : actions.stopping
+                  ? t('appPower.stopping')
+                  : t('appActions.stop', { defaultValue: 'Stop' }),
             icon: app.suspended ? <PlayIcon /> : <PauseIcon />,
             disabled: asleep ? wake.isPending : actions.togglingRunning,
             onSelect: asleep ? () => wake.mutate() : actions.toggleRunning,

@@ -952,7 +952,17 @@
     "stopConsequencePolicy": "The restart policy will not bring it back. Config, env and domains are kept.",
     "stopConfirm": "Stop",
     "pending": "Working...",
-    "starting": "Starting \"{{name}}\".",
-    "applying": "Applying changes."
+    "applying": "Applying changes.",
+    "restarting": "Restarting...",
+    "stillRestarting": "Still restarting...",
+    "stopping": "Stopping...",
+    "restarted": "\"{{name}}\" restarted.",
+    "stopped": "\"{{name}}\" stopped.",
+    "restartFailed": "\"{{name}}\" did not come back",
+    "stillRestartingToast": "\"{{name}}\" is still restarting",
+    "stillRestartingHint": "It has not reported healthy yet. Check the logs.",
+    "stillStoppingToast": "\"{{name}}\" is still stopping",
+    "viewLogs": "View logs",
+    "starting": "Starting \"{{name}}\"."
   }
 }
