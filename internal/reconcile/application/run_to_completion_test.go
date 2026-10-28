@@ -223,3 +223,52 @@ func TestDependsOnStarted_CompletedDependencyCounts(t *testing.T) {
 		t.Fatalf("error = %v, creates = %d, want the dependent started", err, rt.createCalls)
 	}
 }
+
+// timedRuntime reports exit times, as the local Docker client does.
+type timedRuntime struct{ *exitOnStartRuntime }
+
+func (timedRuntime) ReportsExitTimes() bool { return true }
+
+// A created, never started container reports exit 0 with no start time: it did not complete.
+func TestRunToCompletion_CreatedNeverStartedIsStarted(t *testing.T) {
+	inner := &exitOnStartRuntime{fakeRuntime: newFakeRuntime(0), exitCode: 0, exitImg: "img:v1"}
+	rt := timedRuntime{inner}
+	target := replicaContainerName("migrate", "img:v1", "", 0)
+	inner.seed(target, false)
+	inner.containers[target].Image = "img:v1"
+	inner.setExitState(target, &docker.ExitState{ExitCode: 0})
+	c := New("migrate", &fakeStore{svc: oneShot("no")}, rt, WithStartupWatch(0))
+
+	res, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("error = %v", err)
+	}
+	if inner.startCalls != 1 {
+		t.Fatalf("Start calls = %d, want the never-started one-shot started once", inner.startCalls)
+	}
+	if cond := conditionOf(t, res); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Ready after it ran and exited 0", cond)
+	}
+}
+
+func TestCompletedExit_RequiresStartAndFinishWhenReported(t *testing.T) {
+	now := time.Now()
+	timed := timedRuntime{&exitOnStartRuntime{fakeRuntime: newFakeRuntime(0)}}
+	untimed := newFakeRuntime(0)
+	cases := []struct {
+		name string
+		src  docker.ExitStateInspector
+		es   *docker.ExitState
+		want bool
+	}{
+		{"timed created", timed, &docker.ExitState{}, false},
+		{"timed ran", timed, &docker.ExitState{StartedAt: now.Add(-time.Second), FinishedAt: now}, true},
+		{"untimed transport", untimed, &docker.ExitState{}, true},
+		{"nonzero", timed, &docker.ExitState{ExitCode: 1, StartedAt: now, FinishedAt: now}, false},
+	}
+	for _, tc := range cases {
+		if got := CompletedExit(tc.src, tc.es); got != tc.want {
+			t.Errorf("%s: CompletedExit = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}

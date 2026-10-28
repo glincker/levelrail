@@ -217,7 +217,7 @@ func (w *Watcher) observe(ctx context.Context, svc *store.DesiredService, attemp
 					continue
 				}
 				// A one-shot that exited 0 finished its job; it did not crash.
-				if svc.RunsToCompletion() && !es.Running && !es.OOMKilled && es.ExitCode == 0 {
+				if svc.RunsToCompletion() && application.CompletedExit(inspector, es) {
 					continue
 				}
 				obs.OOMKilled = obs.OOMKilled || es.OOMKilled

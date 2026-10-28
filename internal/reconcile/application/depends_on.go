@@ -127,7 +127,8 @@ func (c *Controller) completionBlock(ctx context.Context, desired *store.Desired
 		if c.completedExit(ctx, s.Name) != nil {
 			return nil
 		}
-		if crash := c.exitedCrash(ctx, s.Name); crash != nil && failed == nil {
+		// Exit 0 that is not a completion is a created, never started container: still pending.
+		if crash := c.exitedCrash(ctx, s.Name); crash != nil && failed == nil && (crash.exit.ExitCode != 0 || crash.exit.OOMKilled) {
 			failed = crash
 		}
 	}

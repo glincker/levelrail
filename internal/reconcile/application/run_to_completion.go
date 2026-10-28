@@ -82,10 +82,34 @@ func (c *Controller) completedExit(ctx context.Context, name string) *docker.Exi
 		return nil
 	}
 	es, err := inspector.InspectExitState(ctx, name)
-	if err != nil || es == nil || es.Running || es.OOMKilled || es.ExitCode != 0 {
+	if err != nil || !CompletedExit(inspector, es) {
 		return nil
 	}
 	return es
+}
+
+// CompletedExit reports whether es is a container that ran and exited 0. A
+// created, never started one reads the same except for its zero start and
+// finish times, which only a transport that reports times can tell apart.
+func CompletedExit(src docker.ExitStateInspector, es *docker.ExitState) bool {
+	if es == nil || es.Running || es.OOMKilled || es.ExitCode != 0 {
+		return false
+	}
+	if es.StartedAt.IsZero() || es.FinishedAt.IsZero() {
+		return !reportsExitTimes(src)
+	}
+	return true
+}
+
+// exitTimesReporter lets a runtime declare that it fills StartedAt and FinishedAt.
+type exitTimesReporter interface{ ReportsExitTimes() bool }
+
+func reportsExitTimes(src docker.ExitStateInspector) bool {
+	if r, ok := src.(exitTimesReporter); ok {
+		return r.ReportsExitTimes()
+	}
+	_, local := src.(*docker.Client)
+	return local
 }
 
 // settleOneShot handles an existing container of a run-to-completion service.
