@@ -304,8 +304,15 @@ failing.
 | Dependency review | `pr-security.yml` | PRs touching a lockfile or `go.mod` | Fails on a new high or critical advisory only |
 | gitleaks | `secret-scan.yml` | Every PR and `main` push | The one scanner that blocks |
 
-SonarCloud's automatic analysis (the GitHub App mode) must be switched off
-in the project settings, because SonarCloud rejects a CI scan while it is on.
+SonarCloud is off by default: the `SonarCloud scan` job in `sonar.yml` only
+runs when the repository variable `SONAR_ENABLED` is `true` (repository
+settings, Secrets and variables, Variables). Set it to re-enable the scan;
+otherwise the job shows as skipped. `sonar.yml` is not part of `CI required`,
+so a skipped scan blocks nothing. The `SonarCloud Code Analysis` status check
+comes from the Sonar GitHub app, not from this repo, and the owner must switch
+off automatic analysis in the SonarCloud project settings to stop it. When the
+scan is re-enabled, automatic analysis must stay off, because SonarCloud
+rejects a CI scan while it is on.
 Web coverage is not uploaded yet: vitest has no coverage provider in
 `web/package.json`.
 

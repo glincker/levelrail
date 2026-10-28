@@ -2,6 +2,7 @@ name: sonar
 
 # Advisory SonarCloud analysis. Never on a PR, never in `CI required`.
 # The scan step is continue-on-error so a failed analysis never paints a commit red.
+# Off unless the repository variable SONAR_ENABLED is 'true'.
 # Every step skips with a notice when SONAR_TOKEN is not set.
 on:
   push:
@@ -25,6 +26,7 @@ permissions:
 jobs:
   scan:
     name: SonarCloud scan
+    if: ${{ vars.SONAR_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
