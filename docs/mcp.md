@@ -64,6 +64,10 @@ All are `read` class and available in every mode. Tools marked untrusted return 
 
 [Preview environments](/previews) are listed by the existing `list_preview_environments`.
 
+## Stack tools
+
+Stacks are declarative resource files applied as numbered revisions under an apply lease. The `stacks` toolset has four tools. `list_stacks` and `get_stack` (resources, lock, drift, last apply) and `plan_stack` (a dry run that returns the change list and plan hash, and changes nothing) are `read` class. `apply_stack` is `mutate` class, needs a token with write access to the stack, and is refused locally unless `confirm` is `true`; pass the `expected_plan_hash` from `plan_stack` so it only proceeds if nothing moved. A second apply while one holds the lease gets a 409 conflict. Replies carry counts, resource names and revision status only. Secret values are not accepted by these tools and never returned: files reference them with `secretRef`, and values are set through the app env tools or the CLI.
+
 These four are on demand: none is in the default session, enable the toolset first with `enable_toolset`.
 
 | Tool | Toolset | Answers |
