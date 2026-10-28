@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -161,6 +162,9 @@ func printTemplateDetailHuman(out io.Writer, t serviceTemplateDetail) {
 	_, _ = fmt.Fprintf(out, "category:          %s\n", t.Category)
 	_, _ = fmt.Fprintf(out, "slogan:            %s\n", t.Slogan)
 	_, _ = fmt.Fprintf(out, "documentation_url: %s\n", t.DocumentationURL)
+	if t.Description != "" && t.Description != t.Slogan {
+		_, _ = fmt.Fprintf(out, "description:\n  %s\n", strings.ReplaceAll(t.Description, "\n", "\n  "))
+	}
 	if t.RecommendedMemoryBytes > 0 {
 		_, _ = fmt.Fprintf(out, "recommended_ram:   %s\n", formatRecommendedMemory(t.RecommendedMemoryBytes))
 	}

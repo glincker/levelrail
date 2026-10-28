@@ -194,3 +194,16 @@ func TestRun_Templates_List_VerifiedFilter(t *testing.T) {
 		t.Errorf("--verified list = %q, want only grafana", only)
 	}
 }
+
+func TestRun_Templates_Get_Description(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(serviceTemplateDetail{ID: "rustdesk-server", Name: "RustDesk", Slogan: "Short", Description: "Set RELAY.\nOpen TCP 21117.", Compose: "services: {}\n"})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"templates", "get", "rustdesk-server", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "description:\n  Set RELAY.\n  Open TCP 21117.\n") {
+		t.Errorf("stdout = %q, want an indented description block", stdout)
+	}
+}
