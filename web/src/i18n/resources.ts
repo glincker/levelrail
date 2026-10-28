@@ -109,6 +109,7 @@ import type models from '../locales/en/models.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
 import type secretScan from '../locales/en/secretScan.json'
+import type appFiles from '../locales/en/appFiles.json'
 import type sso from '../locales/en/sso.json'
 import type cdn from '../locales/en/cdn.json'
 
@@ -213,6 +214,7 @@ declare module 'i18next' {
       aiAssistant: typeof aiAssistant
       demo: typeof demo
       secretScan: typeof secretScan
+      appFiles: typeof appFiles
       maintenance: typeof maintenance
       buildPerformance: typeof buildPerformance
       janitor: typeof janitor

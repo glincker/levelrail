@@ -92,6 +92,7 @@ export const NAMESPACES = [
   'aiAssistant',
   'demo',
   'secretScan',
+  'appFiles',
   'maintenance',
   'buildPerformance',
   'janitor',
