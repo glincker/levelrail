@@ -276,6 +276,22 @@ never reach it. It has its own lane instead:
 
 Six jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
 
+### Draft PRs
+
+A draft PR runs only the cheap checks: `Detect changed areas`, `Plan Go work`,
+`Build, vet`, `Lint`, `Web (tsc, eslint)` and the other workflows (secret scan,
+hygiene). The heavy jobs are skipped: every `Test (*)` lane, `Test (internal/api)`,
+`Test (everything else)`, the quarantine lane, `Web tests`, `Kit`, the Terraform
+provider job and the installer jobs. `CI required` reports success for those
+draft skips only. Mark the PR ready for review to run the full suite: the
+workflow listens for `ready_for_review`, so the conversion starts a full run.
+Set the repo variable `CI_ON_DRAFTS=true` to run everything on drafts too.
+
+On a ready PR, `CI required` also fails when the planner says a job is needed
+(Go tests planned, kit, provider, vitest or installer changes) and that job was
+skipped, so a non-draft PR cannot merge without the heavy lanes. Branch
+protection should keep requiring `CI required`.
+
 ## Other workflows on a PR
 
 | Workflow | On a PR | Why |

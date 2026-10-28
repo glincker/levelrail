@@ -19,6 +19,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
 
 # PR runs cancel superseded pushes; main and merge queue runs never cancel.
@@ -50,6 +51,8 @@ jobs:
       installer: ${{ steps.detect.outputs.installer }}
       workflows: ${{ steps.detect.outputs.workflows }}
       planner: ${{ steps.detect.outputs.planner }}
+      # Draft PRs skip the heavy jobs; CI_ON_DRAFTS=true opts back in.
+      draft: ${{ github.event.pull_request.draft == true && vars.CI_ON_DRAFTS != 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -254,6 +257,7 @@ jobs:
     # scoped by the same impact detection as a PR. See docs/ci.md.
     if: >-
       needs.plan.result == 'success'
+      && needs.changes.outputs.draft != 'true'
       && needs.plan.outputs.has_tests == 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
@@ -334,7 +338,7 @@ jobs:
     name: Test (internal/api)
     needs: [changes, plan, test-go]
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || contains(needs.plan.outputs.api_checks, 'Test ('))))
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     permissions:
@@ -363,7 +367,7 @@ jobs:
     name: Test (everything else)
     needs: [changes, plan, test-go]
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || contains(needs.plan.outputs.rest_checks, 'Test ('))))
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     permissions:
@@ -396,6 +400,7 @@ jobs:
     # Not a required check, but still a real test run.
     if: >-
       needs.plan.result == 'success'
+      && needs.changes.outputs.draft != 'true'
       && needs.plan.outputs.quarantine == 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     continue-on-error: true
@@ -585,7 +590,7 @@ jobs:
   kit:
     name: Kit (vet, lint, test)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.kit == 'true') }}
+    if: ${{ !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || needs.changes.outputs.kit == 'true') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
@@ -646,7 +651,7 @@ jobs:
   tfprovider:
     name: Terraform provider (vet, test)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.tfprovider == 'true') }}
+    if: ${{ !cancelled() && needs.changes.outputs.draft != 'true' && (needs.changes.result != 'success' || needs.changes.outputs.tfprovider == 'true') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
@@ -789,6 +794,7 @@ jobs:
     needs: changes
     if: >-
       ${{ !cancelled() && needs.changes.result == 'success'
+      && needs.changes.outputs.draft != 'true'
       && needs.changes.outputs.web == 'full'
       && (needs.changes.outputs.vitest == 'full' || needs.changes.outputs.vitest == 'changed') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
@@ -832,7 +838,7 @@ jobs:
   install-sh:
     name: install.sh (${{ matrix.image }})
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    if: needs.changes.outputs.installer == 'true' && needs.changes.outputs.draft != 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 25
     strategy:
@@ -873,7 +879,7 @@ jobs:
   install-cli-macos:
     name: install-cli.sh (macOS)
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    if: needs.changes.outputs.installer == 'true' && needs.changes.outputs.draft != 'true'
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
@@ -898,7 +904,7 @@ jobs:
   install-cli-windows:
     name: install-cli.ps1 (Windows)
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    if: needs.changes.outputs.installer == 'true' && needs.changes.outputs.draft != 'true'
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
@@ -964,6 +970,30 @@ jobs:
           if [ -n "$bad" ]; then
             echo "::error::failed or cancelled: $(echo "$bad" | paste -sd' ' -)"
             fail=1
+          fi
+          # Skipped means "area not affected" unless the PR is ready: then a
+          # skip of a job the planner says is needed must not pass. Drafts skip
+          # the heavy jobs on purpose, so they are exempt.
+          if [ "$(jq -r '.changes.outputs.draft' <<<"$NEEDS")" != true ]; then
+            out() { jq -r --arg j "$1" --arg k "$2" '.[$j].outputs[$k] // ""' <<<"$NEEDS"; }
+            res() { jq -r --arg j "$1" '.[$j].result' <<<"$NEEDS"; }
+            expect() {
+              if [ "$(res "$1")" = skipped ]; then
+                echo "::error::$1 was skipped but the planner expects it to run"
+                fail=1
+              fi
+            }
+            if [ "$(out changes go)" = true ] && [ "$(out plan has_tests)" = true ]; then expect test-go; fi
+            if [ "$(out changes kit)" = true ]; then expect kit; fi
+            if [ "$(out changes tfprovider)" = true ]; then expect tfprovider; fi
+            if [ "$(out changes web)" = full ]; then
+              case "$(out changes vitest)" in full|changed) expect web-test ;; esac
+            fi
+            if [ "$(out changes installer)" = true ]; then
+              expect install-sh
+              expect install-cli-macos
+              expect install-cli-windows
+            fi
           fi
           [ "$fail" -eq 0 ] || exit 1
           echo "all required jobs for this change passed"
