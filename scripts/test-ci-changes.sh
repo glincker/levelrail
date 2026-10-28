@@ -43,6 +43,8 @@ case_ "go.mod runs every Go lane and lint" "go=true go_full=true lint=all" -- go
 case_ "go.sum runs every Go lane and lint" "go=true go_full=true lint=all" -- go.sum
 case_ "ci.yml runs everything" "full=true go_full=true web=full kit=true tfprovider=true installer=true workflows=true lint=all planner=true" -- .github/workflows/ci.yml
 case_ "the change detector runs everything" "full=true go_full=true web=full" -- scripts/ci-changes.sh
+case_ "the required verdict script runs everything and the planner tests" "full=true go_full=true planner=true" -- scripts/ci-required-verdict.sh
+case_ "the verdict table test runs everything and the planner tests" "full=true planner=true" -- scripts/test-ci-required-verdict.sh
 case_ "the Go planner reruns every Go lane, not web" "go=true go_full=true web=none full=false" -- scripts/ci-go-plan.sh
 case_ "the shard splitter reruns every Go lane" "go=true go_full=true web=none" -- scripts/ci-shard-names.sh
 case_ "planner tests alone run the planner tests, no Go lane" "go=true go_full=false planner=true web=none" -- scripts/test-ci-go-plan.sh

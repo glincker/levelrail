@@ -50,7 +50,7 @@ fi
 
 for f in "${files[@]}"; do
 	case "$f" in
-	.github/workflows/ci.yml | scripts/ci-changes.sh | scripts/ci-lane-*.sh)
+	.github/workflows/ci.yml | scripts/ci-changes.sh | scripts/ci-lane-*.sh | scripts/ci-required-verdict.sh | scripts/test-ci-required-verdict.sh)
 		set_full "CI pipeline changed: $f"
 		;;
 	scripts/test-ci-*.sh | scripts/ci-test-weights.txt | scripts/refresh-test-weights.sh)
