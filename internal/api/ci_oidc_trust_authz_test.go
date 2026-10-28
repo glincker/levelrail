@@ -60,3 +60,27 @@ func TestCITrustCreateNeedsDeployAndRootForCustomIssuer(t *testing.T) {
 		t.Fatalf("trust create audit rows = %d, want 3", created)
 	}
 }
+
+func TestCITrustUniquePerProviderAndIssuer(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	post := func(body string) int {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/ci/trusts", body))
+		return rec.Code
+	}
+	for _, c := range []struct {
+		body string
+		want int
+	}{
+		{`{"repository":"acme/web","ref_pattern":"refs/heads/main"}`, http.StatusCreated},
+		{`{"provider":"gitlab","repository":"acme/web","ref_pattern":"refs/heads/main"}`, http.StatusCreated},
+		{`{"provider":"gitlab","issuer":"https://gitlab.example.com","repository":"acme/web","ref_pattern":"refs/heads/main"}`, http.StatusCreated},
+		{`{"provider":"gitlab","repository":"acme/web","ref_pattern":"refs/heads/main"}`, http.StatusConflict},
+	} {
+		if got := post(c.body); got != c.want {
+			t.Errorf("%s = %d, want %d", c.body, got, c.want)
+		}
+	}
+}

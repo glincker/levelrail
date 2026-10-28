@@ -14,7 +14,7 @@ import (
 // ErrCIOIDCTrustNotFound is returned when no trust matches the id and app.
 var ErrCIOIDCTrustNotFound = errors.New("store: ci oidc trust not found")
 
-// ErrCIOIDCTrustExists is returned when the same repository, ref and environment is already trusted for the app.
+// ErrCIOIDCTrustExists is returned when the same provider, issuer, repository, ref and environment is already trusted for the app.
 var ErrCIOIDCTrustExists = errors.New("store: ci oidc trust already exists")
 
 // CIOIDCTrust lets one repository ref (and optional environment) deploy one app with a short-lived token.

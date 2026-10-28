@@ -260,7 +260,7 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 	if err := rt.ciTrusts.SaveCIOIDCTrust(r.Context(), t); err != nil {
 		_ = rt.policies.DeletePolicy(r.Context(), policyID)
 		if errors.Is(err, store.ErrCIOIDCTrustExists) {
-			writeError(w, http.StatusConflict, "that repository, ref and environment is already trusted for this app")
+			writeError(w, http.StatusConflict, "that provider, issuer, repository, ref and environment is already trusted for this app")
 			return
 		}
 		rt.internalError(w, "save ci trust", err)
