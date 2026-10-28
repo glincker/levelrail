@@ -116,7 +116,7 @@ func gitLabTestClaims(issuer string, mut func(map[string]any)) map[string]any {
 	c := map[string]any{
 		"iss": issuer, "aud": ciTestAudience, "sub": "project_path:acme/web:ref_type:branch:ref:main",
 		"project_path": "acme/web", "namespace_path": "acme", "ref": "main", "ref_type": "branch",
-		"ref_protected": "true", "environment": "production", "pipeline_source": "push", "job_id": "42",
+		"ref_protected": "true", "environment": "production", "environment_protected": "true", "pipeline_source": "push", "job_id": "42",
 		"exp": now.Add(5 * time.Minute).Unix(), "nbf": now.Add(-time.Minute).Unix(), "iat": now.Add(-time.Minute).Unix(),
 	}
 	if mut != nil {

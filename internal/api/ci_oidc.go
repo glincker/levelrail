@@ -46,11 +46,12 @@ type CIClaims struct {
 	Ref         string
 	Environment string
 	Subject     string
-	// Provider is empty for GitHub; Issuer, RefProtected and ContextIDs are set only by the GitLab and CircleCI verifiers.
-	Provider     string
-	Issuer       string
-	RefProtected bool
-	ContextIDs   []string
+	// Provider is empty for GitHub; the fields below are set only by the GitLab and CircleCI verifiers.
+	Provider             string
+	Issuer               string
+	RefProtected         bool
+	EnvironmentProtected bool
+	ContextIDs           []string
 }
 
 // CIIDTokenVerifier checks a CI identity token's signature, issuer, audience and expiry.
@@ -70,17 +71,25 @@ type ciTrustResource struct {
 	Environment      string    `json:"environment"`
 	ProtectedRefOnly bool      `json:"protected_ref_only,omitempty"`
 	CreatedAt        time.Time `json:"created_at"`
+	Warning          string    `json:"warning,omitempty"`
 }
 
 // ciTrustRequest: repository is owner/name on GitHub, the project path on GitLab and the project ID on CircleCI.
 type ciTrustRequest struct {
-	Provider         string `json:"provider,omitempty"`
-	Issuer           string `json:"issuer,omitempty"`
-	OrgID            string `json:"org_id,omitempty"`
-	Repository       string `json:"repository"`
-	RefPattern       string `json:"ref_pattern"`
-	Environment      string `json:"environment"`
-	ProtectedRefOnly bool   `json:"protected_ref_only,omitempty"`
+	Provider    string `json:"provider,omitempty"`
+	Issuer      string `json:"issuer,omitempty"`
+	OrgID       string `json:"org_id,omitempty"`
+	Repository  string `json:"repository"`
+	RefPattern  string `json:"ref_pattern"`
+	Environment string `json:"environment"`
+	// ProtectedRefOnly is a pointer so an omitted value takes the provider default (true for GitLab).
+	ProtectedRefOnly *bool `json:"protected_ref_only,omitempty"`
+}
+
+const ciGitLabUnprotectedWarning = "this trust accepts pipelines on unprotected branches and tags: any developer who can push a matching ref can deploy"
+
+func (req ciTrustRequest) protectedRefOnly() bool {
+	return req.ProtectedRefOnly != nil && *req.ProtectedRefOnly
 }
 
 func toCITrustResource(t store.CIOIDCTrust) ciTrustResource {
@@ -135,7 +144,7 @@ func validateCITrust(req *ciTrustRequest) string {
 func validateCIProvider(req *ciTrustRequest) string {
 	switch req.Provider {
 	case ciProviderGitHub:
-		if req.Issuer != "" || req.OrgID != "" || req.ProtectedRefOnly {
+		if req.Issuer != "" || req.OrgID != "" || req.protectedRefOnly() {
 			return "issuer, org_id and protected_ref_only apply to gitlab and circleci trusts only"
 		}
 		if !ciRepositoryPattern.MatchString(req.Repository) {
@@ -144,6 +153,9 @@ func validateCIProvider(req *ciTrustRequest) string {
 	case ciProviderGitLab:
 		if req.OrgID != "" {
 			return "org_id applies to circleci trusts only"
+		}
+		if req.ProtectedRefOnly == nil {
+			req.ProtectedRefOnly = new(true)
 		}
 		if req.Issuer == "" {
 			req.Issuer = gitLabDefaultIssuer
@@ -157,7 +169,7 @@ func validateCIProvider(req *ciTrustRequest) string {
 			return "repository must be the GitLab project path, such as group/project or group/subgroup/project"
 		}
 	case ciProviderCircleCI:
-		if req.ProtectedRefOnly {
+		if req.protectedRefOnly() {
 			return "protected_ref_only applies to gitlab trusts only"
 		}
 		if !ciUUIDPattern.MatchString(req.OrgID) {
@@ -239,7 +251,7 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 	t := store.CIOIDCTrust{
 		ID: trustID, ServiceName: name, Repository: req.Repository, RefPattern: req.RefPattern,
 		Environment: req.Environment, PolicyID: policyID, CreatedBy: actor, CreatedAt: time.Now().UTC(),
-		Provider: req.Provider, Issuer: req.Issuer, ProtectedRefOnly: req.ProtectedRefOnly,
+		Provider: req.Provider, Issuer: req.Issuer, ProtectedRefOnly: req.protectedRefOnly(),
 	}
 	if err := rt.ciTrusts.SaveCIOIDCTrust(r.Context(), t); err != nil {
 		_ = rt.policies.DeletePolicy(r.Context(), policyID)
@@ -250,7 +262,11 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "save ci trust", err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toCITrustResource(t))
+	res := toCITrustResource(t)
+	if t.Provider == ciProviderGitLab && !t.ProtectedRefOnly {
+		res.Warning = ciGitLabUnprotectedWarning
+	}
+	writeJSON(w, http.StatusCreated, res)
 }
 
 // handleDeleteCITrust handles DELETE /api/v1/apps/{name}/ci/trusts/{id}.
@@ -307,8 +323,12 @@ func ciTrustMatches(t store.CIOIDCTrust, c CIClaims) bool {
 	if t.Environment == "" {
 		return true
 	}
-	if provider == ciProviderCircleCI {
+	switch provider {
+	case ciProviderCircleCI:
 		return slices.Contains(c.ContextIDs, t.Environment)
+	case ciProviderGitLab:
+		// Any job may declare an environment; only a protected one limits who can run it.
+		return c.EnvironmentProtected && t.Environment == c.Environment
 	}
 	return t.Environment == c.Environment
 }

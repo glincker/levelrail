@@ -52,6 +52,10 @@ func gitLabCIClaims(spec ciProviderSpec, subject string, all map[string]json.Raw
 	if ns := claimString(all, "namespace_path"); ns != "" && !strings.HasPrefix(project, ns+"/") {
 		return CIClaims{}, errors.New("api: gitlab id token project_path is outside its namespace_path")
 	}
+	// A merge request pipeline runs the source branch's CI file, which may come from a fork.
+	if src := claimString(all, "pipeline_source"); src == "merge_request_event" || src == "external_pull_request_event" {
+		return CIClaims{}, fmt.Errorf("api: gitlab %s pipelines may not deploy", src)
+	}
 	var full string
 	switch claimString(all, "ref_type") {
 	case "branch":
@@ -63,7 +67,8 @@ func gitLabCIClaims(spec ciProviderSpec, subject string, all map[string]json.Raw
 	}
 	return CIClaims{
 		Provider: ciProviderGitLab, Issuer: spec.Issuer, Repository: project, Ref: full,
-		Environment: claimString(all, "environment"), RefProtected: claimBool(all, "ref_protected"), Subject: subject,
+		Environment: claimString(all, "environment"), RefProtected: claimBool(all, "ref_protected"),
+		EnvironmentProtected: claimBool(all, "environment_protected"), Subject: subject,
 	}, nil
 }
 

@@ -16,17 +16,19 @@ type CITrust struct {
 	Environment      string    `json:"environment"`
 	ProtectedRefOnly bool      `json:"protected_ref_only,omitempty"`
 	CreatedAt        time.Time `json:"created_at"`
+	Warning          string    `json:"warning,omitempty"`
 }
 
 // CITrustRequest is the body of POST /api/v1/apps/{name}/ci/trusts.
 type CITrustRequest struct {
-	Provider         string `json:"provider,omitempty"`
-	Issuer           string `json:"issuer,omitempty"`
-	OrgID            string `json:"org_id,omitempty"`
-	Repository       string `json:"repository"`
-	RefPattern       string `json:"ref_pattern"`
-	Environment      string `json:"environment,omitempty"`
-	ProtectedRefOnly bool   `json:"protected_ref_only,omitempty"`
+	Provider    string `json:"provider,omitempty"`
+	Issuer      string `json:"issuer,omitempty"`
+	OrgID       string `json:"org_id,omitempty"`
+	Repository  string `json:"repository"`
+	RefPattern  string `json:"ref_pattern"`
+	Environment string `json:"environment,omitempty"`
+	// ProtectedRefOnly nil takes the server default, which is true for GitLab.
+	ProtectedRefOnly *bool `json:"protected_ref_only,omitempty"`
 }
 
 // CIWorkflow mirrors internal/api's ciWorkflowResource.

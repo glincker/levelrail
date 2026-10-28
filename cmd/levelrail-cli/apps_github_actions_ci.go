@@ -172,14 +172,15 @@ func printCITrusts(stdout io.Writer, trusts []apiclient.CITrust) {
 func runCITrustAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps github-actions trust add", "print the new trust as JSON to stdout and nothing else", stderr)
 	var repo, ref, environment, provider, issuer, orgID string
-	var protectedRef bool
+	var protectedRef, noProtectedRef bool
 	fs.StringVar(&provider, "provider", "github", "CI provider: github, gitlab or circleci")
 	fs.StringVar(&repo, "repo", "", "GitHub owner/name, GitLab project path, or CircleCI project ID (required)")
 	fs.StringVar(&ref, "ref", "refs/heads/main", "ref glob allowed to deploy, e.g. refs/heads/main or refs/tags/v*")
 	fs.StringVar(&environment, "environment", "", "environment the job must run in, or for circleci a context ID it must use (default any)")
 	fs.StringVar(&issuer, "issuer", "", "gitlab: issuer URL of a self-managed instance (default https://gitlab.com)")
 	fs.StringVar(&orgID, "org-id", "", "circleci: organization ID (required for circleci)")
-	fs.BoolVar(&protectedRef, "protected-ref", false, "gitlab: only accept pipelines on protected branches or tags")
+	fs.BoolVar(&protectedRef, "protected-ref", true, "gitlab: only accept pipelines on protected branches or tags")
+	fs.BoolVar(&noProtectedRef, "no-protected-ref", false, "gitlab: also accept unprotected branches and tags (not recommended)")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
@@ -191,15 +192,22 @@ func runCITrustAdd(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if repo == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--repo is required"))
 	}
+	var protected *bool
+	if provider == "gitlab" {
+		protected = new(protectedRef && !noProtectedRef)
+	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	t, err := client.CreateCITrust(context.Background(), rest[0], apiclient.CITrustRequest{
-		Provider: provider, Issuer: issuer, OrgID: orgID, Repository: repo, RefPattern: ref, Environment: environment, ProtectedRefOnly: protectedRef,
+		Provider: provider, Issuer: issuer, OrgID: orgID, Repository: repo, RefPattern: ref, Environment: environment, ProtectedRefOnly: protected,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("add ci trust for %s: %w", rest[0], err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, t, func() {
 		_, _ = fmt.Fprintf(stdout, "trusted %s %s to deploy %s (%s)\n", t.Repository, t.RefPattern, rest[0], t.ID)
+		if t.Warning != "" {
+			_, _ = fmt.Fprintf(stderr, "warning: %s\n", t.Warning)
+		}
 	})
 }
 
