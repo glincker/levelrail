@@ -52,6 +52,14 @@
     "viewDatabase": "View database",
     "closeToast": "Close notification"
   },
+  "deployApprovalStatus": {
+    "all": "All",
+    "pending": "Pending",
+    "approving": "Applying",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "expired": "Expired"
+  },
   "tableLabels": {
     "appServices": "App services",
     "bindMounts": "Bind mounts",

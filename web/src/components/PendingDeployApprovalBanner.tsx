@@ -8,6 +8,7 @@ import {
   useRejectDeployApproval,
 } from '../queries/deployApprovals'
 import { ApiError } from '../lib/apiError'
+import { canDecideApproval } from '../lib/deployApprovalStatus'
 
 // PendingDeployApprovalBanner surfaces a blocked deploy/promote directly
 // on the app it targets, not just in the /approvals queue: the
@@ -33,7 +34,7 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
   const reject = useRejectDeployApproval()
 
   const approval = pending.data?.[0]
-  if (!approval) {
+  if (!approval || !canDecideApproval(approval.status)) {
     return null
   }
 
