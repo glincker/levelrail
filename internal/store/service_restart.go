@@ -26,3 +26,23 @@ func (s DesiredService) DependsOnCompleted() []string {
 	}
 	return s.Health.DependsOnCompleted
 }
+
+// KeepComposeHealth returns next with prev's compose-only fields (Restart,
+// DependsOnCompleted) where next left them unset. Writers that cannot express
+// those fields use it so a probe edit or rollback never reruns a finished one-shot.
+func KeepComposeHealth(next, prev *ServiceHealth) *ServiceHealth {
+	if prev == nil || (prev.Restart == "" && len(prev.DependsOnCompleted) == 0) {
+		return next
+	}
+	out := ServiceHealth{}
+	if next != nil {
+		out = *next
+	}
+	if out.Restart == "" {
+		out.Restart = prev.Restart
+	}
+	if len(out.DependsOnCompleted) == 0 {
+		out.DependsOnCompleted = prev.DependsOnCompleted
+	}
+	return &out
+}
