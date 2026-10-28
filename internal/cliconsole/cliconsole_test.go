@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/clitree"
 )
 
 func TestParseLine(t *testing.T) {
@@ -73,7 +75,7 @@ func TestCheck(t *testing.T) {
 		{"db list", "databases list", false},
 		{"apps deploys list web", "apps deploys list", false},
 		{"auth whoami", "auth whoami", false},
-		{"upgrade --plan", "upgrade", false},
+		{"upgrade --plan", "upgrade", true},
 		{"help", "help", false},
 		{"apps get web --team ops", "apps get", false},
 		{"nosuch", "", true},
@@ -115,6 +117,31 @@ func TestCheck(t *testing.T) {
 		{"iam policies create --name p --document=FILE://x", "", true},
 		{"models deploy m --hf-token-from-env HOME", "", true},
 		{"audit-log --output-file /tmp/a", "", true},
+		// Review findings: host reads, writes and launches stay refused.
+		{"deploy /data --static --include master.key --app x --yes", "", true},
+		{"deploy /data --app x --yes", "deploy", true},
+		{"bench results upload /data/x.json", "bench results upload", true},
+		{"storage buckets upload b k /data/master.key", "", true},
+		{"apps log-pipeline preview web --input /data/x", "", true},
+		{"apps log-pipeline preview web", "apps log-pipeline preview", true},
+		{"plugins install x --manifest /data/m", "", true},
+		{"static-routes set web --redirects /data/r", "", true},
+		{"sso saml set --idp-cert-file /data/c", "", true},
+		{"images lint /data/Dockerfile --fix", "", true},
+		{"bench soak --csv /tmp/x", "", true},
+		{"dev --bin /bin/sh", "", true},
+		{"dev", "dev", true},
+		{"functions dev /data --image alpine", "", true},
+		{"databases connect pg --launch", "", true},
+		{"databases connect pg", "databases connect", true},
+		{"apps get web --x=@/data/master.key", "", true},
+		{"apps get @/data/master.key", "", true},
+		{"apps get -", "", true},
+		{"apps get web --name=-", "", true},
+		{"apps get web --some-path /x", "", true},
+		{"apps list --cache-dir /x", "", true},
+		{"apps logs web --follow", "apps logs", false},
+		{"apps restart web", "apps restart", false},
 	}
 	for _, tc := range tests {
 		argv, err := ParseLine(tc.line)
@@ -129,6 +156,57 @@ func TestCheck(t *testing.T) {
 			t.Fatalf("Check(%q) path = %q, want %q", tc.line, path, tc.wantPath)
 		}
 	}
+}
+
+// TestCheckDeniesByDefault walks the whole CLI tree: only allowlisted paths pass.
+func TestCheckDeniesByDefault(t *testing.T) {
+	var walk func(prefix []string, nodes map[string]*clitree.Node)
+	walk = func(prefix []string, nodes map[string]*clitree.Node) {
+		for name, n := range nodes {
+			words := append(append([]string(nil), prefix...), name)
+			path := canonical(words[0])
+			if len(words) > 1 {
+				path += " " + strings.Join(words[1:], " ")
+			}
+			_, err := Check(words)
+			if want := allowed[path]; want != (err == nil) {
+				t.Errorf("Check(%q) err = %v, allowlisted = %v", path, err, want)
+			}
+			if n != nil {
+				walk(words, n.Subs)
+			}
+		}
+	}
+	walk(nil, clitree.Tree)
+	seen := map[string]bool{}
+	for _, e := range Allowlist() {
+		if e.Reason == "" || seen[e.Path] {
+			t.Errorf("allowlist entry %q is duplicated or has no reason", e.Path)
+		}
+		seen[e.Path] = true
+		if !treeHas(e.Path) {
+			t.Errorf("allowlist entry %q is not a CLI command", e.Path)
+		}
+	}
+}
+
+func treeHas(path string) bool {
+	words := strings.Fields(path)
+	nodes := clitree.Tree
+	for i, w := range words {
+		n, ok := nodes[w]
+		if !ok {
+			return false
+		}
+		if i == len(words)-1 {
+			return true
+		}
+		if n == nil {
+			return false
+		}
+		nodes = n.Subs
+	}
+	return false
 }
 
 func TestCommandsHideDenied(t *testing.T) {
