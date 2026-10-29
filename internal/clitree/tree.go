@@ -19,6 +19,7 @@ var Tree = map[string]*Node{
 	"git":      {Subs: map[string]*Node{"remote": {Subs: map[string]*Node{"add": nil, "show": nil, "rotate": nil, "branch": nil, "revoke": nil}}}},
 	"bench":    {Subs: map[string]*Node{"run": nil, "soak": nil, "results": {Subs: map[string]*Node{"list": nil, "show": nil, "compare": nil, "upload": nil, "delete": nil}}, "chaos": {Subs: map[string]*Node{"list": nil, "run": nil, "report": nil, "disk": nil, "free-space": nil}}}},
 	"rollback": nil,
+	"restart":  nil,
 	"previews": {Subs: map[string]*Node{
 		"list": nil, "delete": nil, "teardown": nil, "extend": nil, "settings": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,
 		"pr-status": {Subs: map[string]*Node{"enable": nil, "disable": nil}},
@@ -243,7 +244,7 @@ var Tree = map[string]*Node{
 	}},
 	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},
 	"push-subscriptions": {Subs: map[string]*Node{"list": nil, "revoke": nil}},
-	"env":                {Subs: map[string]*Node{"set": nil, "pull": nil, "push": nil}},
+	"env":                {Subs: map[string]*Node{"set": nil, "unset": nil, "pull": nil, "push": nil}},
 	"shared-env":         {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"firewall": {Subs: map[string]*Node{"list": nil, "allow": nil, "deny": nil, "delete": nil, "exposure": nil, "restrict": nil, "unrestrict": nil,
@@ -442,7 +443,7 @@ const (
 )
 
 // simpleVerbs sits beside Tree, not on Node, because most leaves are nil nodes.
-var simpleVerbs = []string{"up", "deploy", "rollback", "logs", "env", "domains", "db", "backup", "restore", "apps", "status", "open", "login"}
+var simpleVerbs = []string{"up", "deploy", "rollback", "restart", "logs", "env", "domains", "db", "backup", "restore", "apps", "status", "open", "login"}
 
 // SimpleVerbs returns the short-help verbs in display order.
 func SimpleVerbs() []string { return append([]string(nil), simpleVerbs...) }
