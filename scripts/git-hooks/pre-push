@@ -20,6 +20,11 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# git exports these to hooks; tests that spawn their own git repos inherit
+# them and act on this checkout instead (TestCheckPushed fails in foreground).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY \
+	GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE GIT_QUARANTINE_PATH
+
 # Opt-in: detach the checks and return at once, but never for pushes to main or master.
 if [ "${LEVELRAIL_PUSH_BACKGROUND:-off}" = on ] && [ -z "${LEVELRAIL_PUSH_DETACHED:-}" ]; then
 	to_main=0
