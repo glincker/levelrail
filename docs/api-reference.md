@@ -669,6 +669,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/rollout | AbilityRead | handleGetRollout |
 | PUT | /api/v1/apps/{name}/rollout | AbilityDeploy | handlePutRollout |
 | DELETE | /api/v1/apps/{name}/rollout | AbilityDeploy | handleDeleteRollout |
+| GET | /api/v1/apps/{name}/releases | AbilityRead | handleListAppReleases |
 
 </Accordion>
 
