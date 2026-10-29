@@ -16,12 +16,13 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
 	var to, target string
 	var preview, confirm, includeEnv, force, overrideFreeze bool
-	var overrideReason, idemKey string
+	var overrideReason, idemKey, releaseID string
 	fs.BoolVar(&includeEnv, "include-env", false, "also apply added and removed plain env keys (values of keys both apps have stay as they are)")
 	fs.BoolVar(&force, "force", false, "promote even if the source app is unhealthy or its last deploy failed")
 	fs.BoolVar(&overrideFreeze, "override-freeze", false, "promote even though a deploy freeze window is active")
 	fs.StringVar(&overrideReason, "override-reason", "", "required with --override-freeze, recorded on the deploy")
 	fs.StringVar(&idemKey, "idempotency-key", "", "override the derived Idempotency-Key so a retried run is applied once")
+	fs.StringVar(&releaseID, "release", "", "promote this release id of the app, from \"releases list\" (server needs APP_RELEASE_BINDINGS=on)")
 	fs.StringVar(&to, "to", "", "destination environment ID (required)")
 	fs.StringVar(&target, "target", "", "target app name, when more than one app in --to belongs to the same project")
 	fs.BoolVar(&preview, "preview", false, "show what promoting would change, without applying it")
@@ -56,7 +57,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	ctx = apiclient.WithIdempotencyKey(ctx, idemKey)
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
-		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm, IncludeEnv: includeEnv, Force: force, OverrideFreeze: overrideFreeze, OverrideReason: overrideReason})
+		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm, IncludeEnv: includeEnv, Force: force, ReleaseID: releaseID, OverrideFreeze: overrideFreeze, OverrideReason: overrideReason})
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote app %q: %w", name, err))
@@ -155,6 +156,7 @@ Flags:
   --override-freeze          promote even though a deploy freeze window is active
   --override-reason string   required with --override-freeze, recorded on the deploy
   --include-env              also apply added and removed plain env keys (values never overwrite the target)
+  --release string           promote this release id of the app instead of its bound one
   --force                    promote even if the source is unhealthy or its last deploy failed
   --preview                 show what would change, don't apply it
   --dry-run                 alias for --preview

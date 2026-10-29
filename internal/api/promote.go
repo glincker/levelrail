@@ -100,6 +100,8 @@ type promoteTriggerRequest struct {
 	IncludeEnv bool `json:"include_env,omitempty"`
 	// Force promotes even when the source is unhealthy or its last deploy failed.
 	Force bool `json:"force,omitempty"`
+	// ReleaseID promotes this release of the source app instead of its bound one.
+	ReleaseID string `json:"release_id,omitempty"`
 	freezeOverride
 }
 
@@ -139,6 +141,11 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rel := rt.promotionRelease(r.Context(), res.source)
+	if req.ReleaseID != "" {
+		if rel, ok = rt.requestedRelease(w, r, res.source.Name, req.ReleaseID); !ok {
+			return
+		}
+	}
 	sigRef := promoteImageRef(res.source)
 	if rel != nil {
 		sigRef = rel.ImageRef

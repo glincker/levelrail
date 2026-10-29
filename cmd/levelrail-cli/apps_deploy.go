@@ -42,7 +42,7 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 // two commands over one underlying mechanism.
 func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader, cfg deployOrRollbackConfig) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cfg.cmdLabel, "print the updated app as JSON to stdout and nothing else", stderr)
-	var image, idemKey, at string
+	var image, idemKey, at, releaseID string
 	var confirm, diff bool
 	var extra deployExtraFlags
 	fs.StringVar(&image, "image", "", cfg.imageHelp)
@@ -50,6 +50,9 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	fs.BoolVar(&diff, "diff", false, "show what this deploy would change (config, env keys, image) against the last successful deploy and exit without deploying")
 	fs.StringVar(&idemKey, "idempotency-key", "", "override the derived Idempotency-Key so a retried run is applied once")
 	extra.register(fs)
+	if cfg.knownImagesOnly {
+		fs.StringVar(&releaseID, "release", "", "roll back to this release id of the app, from \"releases list\" (needs release bindings enabled on the server)")
+	}
 	var src sourceDeployFlags
 	if cfg.fromSource {
 		fs.StringVar(&at, "at", "", "schedule the deploy once instead of running it now: an RFC 3339 time or \"in 2h\"; use with --image, or --latest --branch NAME")
@@ -112,7 +115,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		}
 		image = unpinnedImage(current.Image)
 	}
-	if image == "" && cfg.knownImagesOnly {
+	if image == "" && cfg.knownImagesOnly && releaseID == "" {
 		previous, err := previousDeployImage(ctx, client, name)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
@@ -120,10 +123,10 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		_, _ = fmt.Fprintf(stderr, "rolling back to the previous successful deploy, image %s\n", previous)
 		image = previous
 	}
-	if image == "" {
+	if image == "" && releaseID == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required (or --pull to re-resolve the current tag)"))
 	}
-	if cfg.knownImagesOnly {
+	if cfg.knownImagesOnly && releaseID == "" {
 		resolved, err := checkRollbackTarget(ctx, client, prog, name, image)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
@@ -136,7 +139,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	}
 	ctx = apiclient.WithIdempotencyKey(ctx, idemKey)
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
-		return client.DeployAppWith(ctx, name, extra.request(image, confirm))
+		return client.DeployAppWith(ctx, name, withRelease(extra.request(image, confirm), releaseID))
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, err))
@@ -154,6 +157,11 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
 		printAppHuman(stdout, updated)
 	})
+}
+
+func withRelease(req apiclient.DeployTriggerRequest, releaseID string) apiclient.DeployTriggerRequest {
+	req.ReleaseID = releaseID
+	return req
 }
 
 func showPendingDeployDiff(ctx context.Context, client *Client, name, image string, stdout, stderr io.Writer, jsonOut bool, of outputFlags) int {
