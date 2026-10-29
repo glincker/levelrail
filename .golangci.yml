@@ -27,7 +27,27 @@ linters:
     - noctx
     - forbidigo
     - errorlint
+    - depguard
+    - nolintlint
   settings:
+    depguard:
+      rules:
+        # The CLI and MCP server are pure HTTP clients (AGENTS.md): no direct
+        # store or container access. functions_dev.go is the one existing
+        # exception (local functions dev loop), do not add more.
+        cli-http-only:
+          files:
+            - "**/cmd/levelrail-cli/**"
+            - "**/cmd/levelrail-mcp/**"
+            - "!**/cmd/levelrail-cli/functions_dev.go"
+          deny:
+            - pkg: github.com/GLINCKER/levelrail/internal/store
+              desc: the CLI and MCP server talk to the API over HTTP only
+            - pkg: github.com/GLINCKER/levelrail/internal/docker
+              desc: the CLI and MCP server talk to the API over HTTP only
+    nolintlint:
+      require-explanation: true
+      require-specific: true
     forbidigo:
       analyze-types: true
       forbid:
