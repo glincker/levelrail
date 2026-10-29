@@ -634,6 +634,10 @@
         "title": "Control plane backup",
         "description": "Snapshots, off-box backups, key escrow and restore drills for this instance."
       },
+      "dr-report": {
+        "title": "Recovery report",
+        "description": "Plan and run whole-server recovery, then review what was restored."
+      },
       "control-plane-health": {
         "title": "Control plane health",
         "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
@@ -3328,6 +3332,53 @@
       "fail_reported": "Failure reported",
       "unhealthy": "Held back, unhealthy",
       "error": "Last ping failed"
+    }
+  },
+  "rehydrate": {
+    "title": "Recovery report",
+    "description": "After the control plane is restored, pull every database and app volume back from its latest backup.",
+    "helpLabel": "Whole-server recovery guide",
+    "actionsTitle": "Recover data",
+    "actionsDescription": "Plan is a dry run. Run overwrites live databases and volumes with their latest backup.",
+    "allowStale": "Allow backups older than the age limit",
+    "plan": "Plan (dry run)",
+    "run": "Run recovery",
+    "confirmTitle": "Overwrite live data?",
+    "confirmBody": "Each database and volume with a usable backup is replaced by that backup. Review the plan first.",
+    "confirm": "Restore now",
+    "cancel": "Cancel",
+    "started": "Recovery started",
+    "empty": "No plan or run yet. Start with a dry run.",
+    "noItems": "No databases or app volumes to restore.",
+    "summary": "{{restorable}} to restore, {{succeeded}} done, {{failed}} failed, {{blocked}} blocked, {{skipped}} skipped. Data loss window: {{window}}.",
+    "backupAge": "backup {{age}} old",
+    "mode": {
+      "plan": "Plan",
+      "run": "Run"
+    },
+    "state": {
+      "planned": "Ready to run",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "partial": "Partly restored",
+      "failed": "Failed"
+    },
+    "kind": {
+      "database": "Database",
+      "volume": "App volume"
+    },
+    "itemStatus": {
+      "planned": "Planned",
+      "running": "Running",
+      "succeeded": "Restored",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "blocked": "Blocked"
+    },
+    "reason": {
+      "no_backup": "No successful backup found",
+      "backup_too_old": "Latest backup is older than the age limit",
+      "engine_keeps_no_data": "Keeps no data on disk"
     }
   }
 }
