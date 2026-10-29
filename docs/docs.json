@@ -414,6 +414,7 @@
               "app-spec-reference",
               "feature-catalog",
               "cli-reference",
+              "cli-kubectl-parity",
               "cli-tui",
               "environment-variables",
               "environment-and-secrets",
