@@ -146,6 +146,12 @@ func (rt *Router) handlePutPredeploySnapshotSettings(w http.ResponseWriter, r *h
 	if req.TargetID != "" && !rt.loadBackupTarget(w, r, req.TargetID, "api: set predeploy snapshot settings: load backup target failed") {
 		return
 	}
+	if req.Mode == store.PredeployModeRequire && rt.backupTargets != nil {
+		if _, err := rt.snapshotTargetID(r.Context(), req.TargetID); err != nil {
+			writeError(w, http.StatusBadRequest, "mode require needs a backup target, so a deploy is never blocked by a snapshot that cannot run: "+err.Error())
+			return
+		}
+	}
 	if err := rt.predeploySnapshots.SetPredeploySnapshotSettings(r.Context(), name, store.PredeploySnapshotSettings{Mode: req.Mode, TargetID: req.TargetID}); err != nil {
 		rt.internalError(w, "api: set predeploy snapshot settings failed", err, slog.String("name", name))
 		return
