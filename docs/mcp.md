@@ -58,6 +58,7 @@ All are `read` class and available in every mode. Tools marked untrusted return 
 | `backups_health` | Per resource backup state, last backup and verified restore, target warnings. Unhealthy first. | no |
 | `list_backup_drills` | Restore drill history. | yes |
 | `get_upgrade_readiness` | Upgrade plan: breaking changes and whether it can be applied. Never applies one. | yes |
+| `get_template_upgrade_plan` | Risk, blockers and changes if a template app moved to the current template. Never applies one. | no |
 | `list_node_moves` | Status of app and database moves between nodes. | yes |
 | `list_teams` | Teams the token can see, honouring the configured scope. | no |
 | `list_team_members` | Members and roles of one team. | no |

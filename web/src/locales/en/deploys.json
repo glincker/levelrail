@@ -162,6 +162,27 @@
   "templateUpgrade": {
     "badge": "Template update available",
     "blocked": "needs manual steps",
+    "apply": "Upgrade",
+    "applying": "Starting",
+    "confirmTitle": "Upgrade to the current template?",
+    "confirmBody": "Risk: {{risk}}. A fresh volume backup is required. The release is watched and rolled back automatically if it crash loops or fails.",
+    "envCount_one": "{{count}} env change",
+    "envCount_other": "{{count}} env changes",
+    "volumeCount_one": "{{count}} volume",
+    "volumeCount_other": "{{count}} volumes",
+    "status": {
+      "unchanged": "no change",
+      "changed": "changed",
+      "added": "new service",
+      "removed": "removed"
+    },
+    "run": {
+      "watching": "Upgrading, watching the new release",
+      "succeeded": "Upgrade finished and the app is healthy",
+      "rolled_back": "Upgrade failed and was rolled back",
+      "rollback_failed": "Upgrade failed and the rollback was refused",
+      "refused": "Upgrade was refused, nothing changed"
+    },
     "risk": {
       "none": "No changes",
       "low": "Low risk",

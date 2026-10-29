@@ -14,7 +14,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | --- | ---: | ---: |
 | account | 5 | 351 |
 | alerts | 10 | 1125 |
-| apps | 16 | 1901 |
+| apps | 17 | 1970 |
 | audit | 2 | 256 |
 | backups | 14 | 1134 |
 | builds | 5 | 469 |
@@ -56,7 +56,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **254** | **25351** |
+| **total** | **255** | **25420** |
 
 ## Default session (progressive disclosure)
 

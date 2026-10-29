@@ -46,7 +46,7 @@ func call(t *testing.T, s *mcp.ClientSession, name string, args map[string]any) 
 func TestExpansionReadToolsRegisteredAndReadOnly(t *testing.T) {
 	want := []string{
 		"investigate_app", "failure_context", "domain_doctor", "traffic_summary", "backups_health",
-		"get_upgrade_readiness", "list_node_moves", "list_teams", "list_team_members", "list_backup_drills",
+		"get_upgrade_readiness", "get_template_upgrade_plan", "list_node_moves", "list_teams", "list_team_members", "list_backup_drills",
 	}
 	for _, mode := range []Mode{ModeReadOnly, ModeStandard, ModeFull} {
 		got := map[string]bool{}

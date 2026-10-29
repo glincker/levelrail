@@ -1,8 +1,8 @@
 # Template upgrades
 
 Apps deployed from a catalog template can be checked against the current
-catalog entry. This release ships the read-only planner. Applying an upgrade
-is the next slice.
+catalog entry. The planner is read-only; the apply step deploys the new spec,
+watches the release and rolls back on failure.
 
 ## Reading the plan
 
@@ -40,12 +40,38 @@ Domains, resources and bind mounts are user-owned and never part of a plan.
 
 `automatic` is true only when there are changes, no blockers and the risk is not high.
 
-## For the apply slice
+## Applying an upgrade
 
-`templateupgrade.Build` is pure, so an executor can call it again right before
-applying. The intended order: take a backup of the app's volumes, re-plan,
-refuse if `blockers` is not empty or `automatic` is false, apply `services` in
-order (changed first, added last), keep entries marked `preserved` or
-`keep_user` untouched, and roll back to the previous compose revision on
-failure. The plan has a stable order, so it can be recorded in the audit log
-as is.
+- API: `POST /api/v1/apps/{name}/template-upgrade` with `{"accept_risk": true}` (deploy permission), then `GET /api/v1/apps/{name}/template-upgrade/run` for progress.
+- CLI: `levelrail-cli apps upgrade <app> --yes` (without `--yes` it only prints the plan). It follows the run; `--no-wait` returns at once.
+- Dashboard: the Upgrade button next to the badge on the app Overview opens the risk diff and shows progress.
+- MCP: `get_template_upgrade_plan` reads the plan; it never applies one.
+
+The apply step re-plans first and refuses (HTTP 409 with a code) when:
+
+- the plan has blockers (`upgrade_blocked`),
+- the plan is high risk and `accept_risk` is not set (`upgrade_risk_unacknowledged`),
+- a named volume of the app has no successful backup newer than the allowed age (`upgrade_backup_required`, lists the volumes),
+- the app has services the template does not know (`upgrade_user_services`),
+- another upgrade of the app is running (`upgrade_in_progress`).
+
+The new spec is the catalog template with your choices carried over: a pinned
+image tag, env values you changed and env variables you added. It is deployed
+through the normal compose path, so it appears in compose history as a new
+revision. The release is then watched: it succeeds when every service stays
+running for the stable period, and fails on a failed deploy attempt, a crash
+loop (the stack stays failed or degraded for the configured number of polls) or
+a timeout. A failure re-applies the revision that ran before the upgrade as a
+rollback revision. Volume data is not rolled back; restore from the backup if a
+migration changed it. The run state is kept in memory, so it resets when the
+control plane restarts.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_TEMPLATE_UPGRADE_BACKUP_REQUIRED` | `true` | Require a fresh backup for every named volume before applying. |
+| `APP_TEMPLATE_UPGRADE_BACKUP_MAX_AGE` | `24h` | How old the newest successful volume backup may be. |
+| `APP_TEMPLATE_UPGRADE_CHECK_INTERVAL` | `1h` | How often the dashboard re-checks for a newer template. |
+| `APP_TEMPLATE_UPGRADE_WATCH_INTERVAL` | `5s` | Poll interval while watching a release. |
+| `APP_TEMPLATE_UPGRADE_WATCH_TIMEOUT` | `10m` | Give up and roll back after this long. |
+| `APP_TEMPLATE_UPGRADE_STABLE_FOR` | `30s` | How long the stack must stay running to count as healthy. |
+| `APP_TEMPLATE_UPGRADE_FAIL_POLLS` | `6` | Consecutive failed or degraded polls that count as a crash loop. |

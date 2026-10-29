@@ -99,6 +99,7 @@ var toolTable = map[string]Meta{
 	"backups_health":                        {clsR, "backups", 0},
 	"list_backup_drills":                    {clsR, "backups", unt},
 	"get_upgrade_readiness":                 {clsR, "system", unt},
+	"get_template_upgrade_plan":             {clsR, "apps", 0},
 	"list_node_moves":                       {clsR, "nodes", unt},
 	"list_teams":                            {clsR, "teams", 0},
 	"list_team_members":                     {clsR, "teams", 0},

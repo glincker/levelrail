@@ -1208,6 +1208,17 @@
   "level",
   "protections"
  ],
+ "get_template_upgrade_plan": [
+  "app_id",
+  "automatic",
+  "blockers",
+  "from_version",
+  "has_changes",
+  "risk",
+  "services",
+  "template_id",
+  "to_version"
+ ],
  "get_upgrade_readiness": [
   "breaking",
   "can_apply",
