@@ -2012,6 +2012,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
 | POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
 | POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
+| POST | /api/v1/control-plane/rehydrate/plan | AbilityRoot | handleRehydratePlan |
+| POST | /api/v1/control-plane/rehydrate/run | AbilityRoot | handleRehydrateRun |
+| GET | /api/v1/control-plane/rehydrate/report | AbilityRoot | handleRehydrateReport |
 
 ## See also
 

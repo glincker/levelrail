@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1787 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1790 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1005,6 +1005,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/compliance/evidence-packs/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyEvidencePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
+	{Method: "POST", Path: "/api/v1/control-plane/rehydrate/plan", Ability: "AbilityRoot", Group: "Other", Handler: "handleRehydratePlan", Description: "Whole-server recovery: plan is a dry run, run pulls data back over live databases and volumes. Operator only."},
+	{Method: "GET", Path: "/api/v1/control-plane/rehydrate/report", Ability: "AbilityRoot", Group: "Other", Handler: "handleRehydrateReport", Description: ""},
+	{Method: "POST", Path: "/api/v1/control-plane/rehydrate/run", Ability: "AbilityRoot", Group: "Other", Handler: "handleRehydrateRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/costs/app-caps", Ability: "AbilityRead", Group: "Other", Handler: "handleListSpendCaps", Description: ""},
 	{Method: "GET", Path: "/api/v1/costs/budgets", Ability: "AbilityRead", Group: "Other", Handler: "handleListCostBudgets", Description: ""},
 	{Method: "POST", Path: "/api/v1/costs/budgets", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateCostBudget", Description: ""},
