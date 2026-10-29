@@ -403,6 +403,9 @@ func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finish
 	if n == 0 {
 		return db.requireDeployAttempt(ctx, id)
 	}
+	if status == DeployAttemptStatusSucceeded {
+		db.notifyAttempt(ctx, id)
+	}
 	return nil
 }
 
