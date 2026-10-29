@@ -1,11 +1,11 @@
 ---
 title: "Self-host VictoriaMetrics with Docker"
 sidebarTitle: "VictoriaMetrics"
-description: "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs."
+description: "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host."
 "og:url": "https://docs.levelrail.com/self-host/victoriametrics"
 ---
 
-A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs.
+A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.
 
 This page describes the Levelrail template for VictoriaMetrics (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.victoriametrics.com.
 
@@ -29,7 +29,6 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`victoriametrics`): 8428:8428.
 - Stores data in named volumes (`victoriametrics`): victoriametrics_data.
 
 What Levelrail adds around it:

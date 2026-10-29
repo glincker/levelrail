@@ -1,0 +1,67 @@
+---
+title: "Self-host RustDesk Server with Docker"
+sidebarTitle: "RustDesk Server"
+description: "Self-hosted RustDesk ID and relay servers (AGPL-3.0)."
+"og:url": "https://docs.levelrail.com/self-host/rustdesk-server"
+---
+
+Self-hosted RustDesk ID and relay servers (AGPL-3.0).
+
+This page describes the Levelrail template for RustDesk Server (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `rustdesk` | `rustdesk/rustdesk-server-s6:1.1.16` | 21115, 21116, 21116, 21117 | `rustdesk_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `rustdesk` | `ENCRYPTED_ONLY` | Preset in the template |
+| `rustdesk` | `RELAY` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`rustdesk`): 21115:21115, 21116:21116, 21117:21117.
+- Stores data in named volumes (`rustdesk`): rustdesk_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy RustDesk Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select RustDesk Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy rustdesk-server --name my-rustdesk-server
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+- [Elasticsearch](/self-host/elasticsearch)
+- [etcd](/self-host/etcd)
+
+All templates are listed in the [self-host gallery](/self-host).

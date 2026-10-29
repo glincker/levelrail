@@ -25,7 +25,7 @@ Recommended memory: about 256 MiB.
 | `postgres` | `POSTGRES_DB` | Preset in the template |
 | `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
 | `postgres` | `POSTGRES_USER` | Preset in the template |
-| `supertokens` | `API_KEYS` | Preset in the template |
+| `supertokens` | `API_KEYS` | Generated at deploy |
 | `supertokens` | `POSTGRESQL_CONNECTION_URI` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
@@ -38,7 +38,7 @@ What this template needs:
 
 - Image is not pinned to a version tag, so a redeploy can pull different code (`supertokens`): registry.supertokens.io/supertokens/supertokens-postgresql:latest.
 - Publishes ports directly on the host (`supertokens`): 3567:3567.
-- Passwords and keys are generated at deploy time (`postgres`, `supertokens`): POSTGRESQL_CONNECTION_URI, POSTGRES_PASSWORD.
+- Passwords and keys are generated at deploy time (`postgres`, `supertokens`): API_KEYS, POSTGRESQL_CONNECTION_URI, POSTGRES_PASSWORD.
 - Stores data in named volumes (`postgres`): supertokens_postgres_data.
 
 What Levelrail adds around it:
@@ -66,9 +66,9 @@ See the [service template catalog](/templates-and-registry) for how templates wo
 ## More Security templates
 
 - [2FAuth](/self-host/2fauth)
+- [Authelia](/self-host/authelia)
 - [authentik](/self-host/authentik)
 - [Cap](/self-host/cap-captcha)
 - [Cryptgeon](/self-host/cryptgeon)
-- [Infisical](/self-host/infisical)
 
 All templates are listed in the [self-host gallery](/self-host).

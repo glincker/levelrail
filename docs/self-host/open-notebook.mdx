@@ -1,0 +1,77 @@
+---
+title: "Self-host Open Notebook with Docker"
+sidebarTitle: "Open Notebook"
+description: "An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install."
+"og:url": "https://docs.levelrail.com/self-host/open-notebook"
+---
+
+An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
+
+This page describes the Levelrail template for Open Notebook (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/lfnovo/open-notebook/blob/main/docs/1-INSTALLATION/docker-compose.md.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `open_notebook` | `lfnovo/open_notebook:1.15.0` | 8502, 5055 | `notebook_data -&#62; /app/data` |
+| `surrealdb` | `surrealdb/surrealdb:v2.6.5` | none | `surreal_data -&#62; /home/nonroot` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `open_notebook` | `API_URL` | Preset in the template |
+| `open_notebook` | `OPEN_NOTEBOOK_ENCRYPTION_KEY` | Generated at deploy |
+| `open_notebook` | `OPEN_NOTEBOOK_PASSWORD` | Generated at deploy |
+| `open_notebook` | `SURREAL_DATABASE` | Preset in the template |
+| `open_notebook` | `SURREAL_NAMESPACE` | Preset in the template |
+| `open_notebook` | `SURREAL_PASSWORD` | Generated at deploy |
+| `open_notebook` | `SURREAL_URL` | Preset in the template |
+| `open_notebook` | `SURREAL_USER` | Preset in the template |
+| `surrealdb` | `SURREAL_PASS` | Generated at deploy |
+| `surrealdb` | `SURREAL_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`open_notebook`, `surrealdb`): OPEN_NOTEBOOK_ENCRYPTION_KEY, OPEN_NOTEBOOK_PASSWORD, SURREAL_PASSWORD, SURREAL_PASS.
+- Stores data in named volumes (`open_notebook`, `surrealdb`): notebook_data, surreal_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Open Notebook with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Open Notebook. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy open-notebook --name my-open-notebook
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Crawl4AI](/self-host/crawl4ai)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+
+All templates are listed in the [self-host gallery](/self-host).

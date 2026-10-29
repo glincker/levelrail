@@ -1,0 +1,62 @@
+---
+title: "Self-host Gatus with Docker"
+sidebarTitle: "Gatus"
+description: "Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services."
+"og:url": "https://docs.levelrail.com/self-host/gatus"
+---
+
+Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services.
+
+This page describes the Levelrail template for Gatus (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/TwiN/gatus#configuration.
+
+Recommended memory: about 64 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `gatus` | `twinproduction/gatus:v5.12.1` | 8080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Gatus with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Gatus. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gatus --name my-gatus
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,75 @@
+---
+title: "Self-host Headscale with Docker"
+sidebarTitle: "Headscale"
+description: "Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create)."
+"og:url": "https://docs.levelrail.com/self-host/headscale"
+---
+
+Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create).
+
+This page describes the Levelrail template for Headscale (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://headscale.net/stable/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `headscale` | `headscale/headscale:v0.29.6` | 8080 | `data -&#62; /var/lib/headscale` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `headscale` | `HEADSCALE_DATABASE_SQLITE_PATH` | Preset in the template |
+| `headscale` | `HEADSCALE_DATABASE_TYPE` | Preset in the template |
+| `headscale` | `HEADSCALE_DERP_URLS` | Preset in the template |
+| `headscale` | `HEADSCALE_DNS_BASE_DOMAIN` | Preset in the template |
+| `headscale` | `HEADSCALE_DNS_OVERRIDE_LOCAL_DNS` | Preset in the template |
+| `headscale` | `HEADSCALE_LISTEN_ADDR` | Preset in the template |
+| `headscale` | `HEADSCALE_NOISE_PRIVATE_KEY_PATH` | Preset in the template |
+| `headscale` | `HEADSCALE_PREFIXES_V4` | Preset in the template |
+| `headscale` | `HEADSCALE_PREFIXES_V6` | Preset in the template |
+| `headscale` | `HEADSCALE_SERVER_URL` | Preset in the template |
+| `headscale` | `HEADSCALE_UNIX_SOCKET` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`headscale`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Headscale with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Headscale. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy headscale --name my-headscale
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+- [Elasticsearch](/self-host/elasticsearch)
+- [etcd](/self-host/etcd)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,70 @@
+---
+title: "Self-host ArchiveBox with Docker"
+sidebarTitle: "ArchiveBox"
+description: "A self-hosted web archiver that saves pages as HTML, PDF, screenshots, WARC and media so links never rot. Creates the admin account on first start."
+"og:url": "https://docs.levelrail.com/self-host/archivebox"
+---
+
+A self-hosted web archiver that saves pages as HTML, PDF, screenshots, WARC and media so links never rot. Creates the admin account on first start.
+
+This page describes the Levelrail template for ArchiveBox (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/ArchiveBox/ArchiveBox/wiki/Docker.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `archivebox` | `archivebox/archivebox:0.9.76` | 5797 | `data -&#62; /data`<br />`tmp -&#62; /tmp/archivebox` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `archivebox` | `ADMIN_PASSWORD` | Generated at deploy |
+| `archivebox` | `ADMIN_USERNAME` | Preset in the template |
+| `archivebox` | `ARCHIVEDOTORG_ENABLED` | Preset in the template |
+| `archivebox` | `PUBLIC_ADD_VIEW` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`archivebox`): ADMIN_PASSWORD.
+- Stores data in named volumes (`archivebox`): data, tmp.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy ArchiveBox with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ArchiveBox. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy archivebox --name my-archivebox
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+- [BookStack](/self-host/bookstack)
+
+All templates are listed in the [self-host gallery](/self-host).

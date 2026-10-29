@@ -30,7 +30,7 @@ type Service struct {
 // Values are never exported.
 type EnvVar struct {
 	Service string `json:"service"`
-	Key     string `json:"key"`
+	Key     string `json:"name"`
 	Kind    string `json:"kind"`
 }
 

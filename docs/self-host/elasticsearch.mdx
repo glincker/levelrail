@@ -1,11 +1,11 @@
 ---
 title: "Self-host Elasticsearch with Docker"
 sidebarTitle: "Elasticsearch"
-description: "A distributed, RESTful search and analytics engine for full-text search and log analytics."
+description: "A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host."
 "og:url": "https://docs.levelrail.com/self-host/elasticsearch"
 ---
 
-A distributed, RESTful search and analytics engine for full-text search and log analytics.
+A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.
 
 This page describes the Levelrail template for Elasticsearch (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html.
 
@@ -33,7 +33,6 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`elasticsearch`): 9200:9200.
 - Stores data in named volumes (`elasticsearch`): elasticsearch_data.
 
 What Levelrail adds around it:
@@ -63,6 +62,6 @@ See the [service template catalog](/templates-and-registry) for how templates wo
 - [Cloudflare DDNS](/self-host/cloudflare-ddns)
 - [Consul](/self-host/consul)
 - [etcd](/self-host/etcd)
-- [NATS](/self-host/nats)
+- [Headscale](/self-host/headscale)
 
 All templates are listed in the [self-host gallery](/self-host).

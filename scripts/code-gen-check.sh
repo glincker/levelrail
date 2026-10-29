@@ -14,9 +14,9 @@ run() {
 }
 
 run go run ./scripts/gen-api-reference
-# Template generators are stale on the tree today (docs/template-catalog.md,
-# gen-template-gallery/templates.json, docs/self-host). Opt in once regenerated.
-if [ "${CODEGEN_INCLUDE_TEMPLATES:-off}" = on ]; then
+# Template generators feed docs/template-catalog.md, gen-template-gallery/templates.json
+# and docs/self-host. CODEGEN_SKIP_TEMPLATES=1 opts out for local iteration.
+if [ "${CODEGEN_SKIP_TEMPLATES:-off}" != on ]; then
 	run go run ./scripts/gen-template-catalog-docs
 	run go run ./scripts/gen-template-gallery
 	run node scripts/gen-docs-pages.mjs

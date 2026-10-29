@@ -1,0 +1,65 @@
+---
+title: "Self-host RSSHub with Docker"
+sidebarTitle: "RSSHub"
+description: "Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access."
+"og:url": "https://docs.levelrail.com/self-host/rsshub"
+---
+
+Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access.
+
+This page describes the Levelrail template for RSSHub (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.rsshub.app/deploy/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `rsshub` | `diygod/rsshub:2026-10-26` | 1200 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `rsshub` | `CACHE_TYPE` | Preset in the template |
+| `rsshub` | `NODE_ENV` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy RSSHub with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select RSSHub. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy rsshub --name my-rsshub
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+
+All templates are listed in the [self-host gallery](/self-host).

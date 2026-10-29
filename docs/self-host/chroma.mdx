@@ -1,11 +1,11 @@
 ---
 title: "Self-host Chroma with Docker"
 sidebarTitle: "Chroma"
-description: "A developer-friendly embedding database for AI applications, served over a simple HTTP API."
+description: "A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host."
 "og:url": "https://docs.levelrail.com/self-host/chroma"
 ---
 
-A developer-friendly embedding database for AI applications, served over a simple HTTP API.
+A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host.
 
 This page describes the Levelrail template for Chroma (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.trychroma.com.
 
@@ -33,7 +33,6 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`chroma`): 8000:8000.
 - Stores data in named volumes (`chroma`): chroma_data.
 
 What Levelrail adds around it:
