@@ -211,8 +211,6 @@
   "appTabs": {
     "sections": "App sections",
     "pages": "Pages in {{section}}",
-    "more": "More",
-    "moreLabel": "Other sections",
     "showAll": "Show all tabs ({{count}} hidden)",
     "showLess": "Hide tabs that do not apply",
     "groups": {

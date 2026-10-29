@@ -2,8 +2,10 @@
 # Icon and logo rules for the web app.
 #   1. Brand, vendor and product marks come from @thesvg/react only, through
 #      BrandIcon / BrandTile (named brands) or lib/templateLogos.ts (catalog).
-#   2. UI icons (actions, navigation, status) are Phosphor only, imported from
-#      @phosphor-icons/react/dist/ssr. Type-only imports of Icon are fine.
+#   2. UI icons (actions, navigation, status) come from @thesvg/ui-react for all
+#      new code, in the glass look (the *GlassIcon exports). The goal is to remove
+#      Phosphor entirely. Existing Phosphor imports (@phosphor-icons/react/dist/ssr) stay
+#      until their file is touched; add no new ones. Type-only imports of Icon are fine.
 #   3. No other icon library, no hand-drawn vendor SVGs, no raster logos.
 # Usage: scripts/check-icon-rules.sh [file...]   (default: every web/src ts and tsx)
 
