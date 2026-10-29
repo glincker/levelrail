@@ -77,7 +77,7 @@ export function DashboardTabBar({
       <div
         role="tablist"
         aria-label={t('tabs.label')}
-        className="flex min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain"
+        className="flex min-w-0 items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {visible.map((id) => {
           const active = id === selected
