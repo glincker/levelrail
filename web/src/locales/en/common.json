@@ -966,5 +966,24 @@
     "stillStoppingToast": "\"{{name}}\" is still stopping",
     "viewLogs": "View logs",
     "starting": "Starting \"{{name}}\"."
+  },
+  "resourceLabels": {
+    "title": "Labels",
+    "description": "Free-form key and value pairs for grouping and filtering. They do not change how the resource runs.",
+    "empty": "No labels yet.",
+    "edit": "Edit labels",
+    "save": "Save labels",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "saved": "Labels saved",
+    "keyPlaceholder": "key",
+    "valuePlaceholder": "value",
+    "add": "Add label",
+    "remove": "Remove label {{key}}",
+    "duplicate": "Each key can be used once.",
+    "incomplete": "Fill in both the key and the value, or remove the row.",
+    "filterLabel": "Filter by label",
+    "filterPlaceholder": "env=prod,tier!=db",
+    "filterInvalid": "That selector could not be read."
   }
 }

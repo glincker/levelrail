@@ -20,6 +20,7 @@ import { DatabasePoolerCard } from '../../../components/DatabasePoolerCard'
 import { useProjectListOptional } from '../../../queries/projects'
 import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ResourceLabelsCard } from '../../../components/ResourceLabelsCard'
 import { DatabaseLinksCard } from '../../../components/databases/DatabaseLinksCard'
 const ConnectionCard = lazy(() =>
   import('../../../components/databases/overview/ConnectionCard').then((m) => ({
@@ -63,6 +64,7 @@ function OverviewSection() {
         <ProvisioningPanel name={name} hideWhenReady />
       </Suspense>
       <StatusHeader database={database} conditions={conditions} />
+      <ResourceLabelsCard path="databases" name={name} />
       <Card>
         <CardHeader>
           <CardTitle>{t('status.details')}</CardTitle>

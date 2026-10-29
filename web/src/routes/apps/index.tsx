@@ -50,6 +50,8 @@ import {
 import { Button } from '../../components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { routeErrorMessage } from '../../lib/apiError'
+import { LabelFilterInput } from '../../components/LabelFilterInput'
+import { useLabelMatches } from '../../queries/resourceLabels'
 
 // The loader primes the Query cache; the component only reads it. The
 // list is virtualized unconditionally (project rule for lists that can
@@ -124,7 +126,15 @@ function AppListPage() {
     }),
     [summary],
   )
-  const filteredApps = apps
+  const [labelSelector, setLabelSelector] = useState('')
+  const labelMatches = useLabelMatches('apps', labelSelector)
+  const filteredApps = useMemo(
+    () =>
+      labelMatches.data
+        ? apps.filter((app) => labelMatches.data.has(app.name))
+        : apps,
+    [apps, labelMatches.data],
+  )
 
   const setStatus = (next: StatusFilter) => {
     void navigate({ search: next ? { status: next } : {}, replace: true })
@@ -229,6 +239,11 @@ function AppListPage() {
             filters={filters}
             environments={environments}
             onChange={setFilters}
+          />
+          <LabelFilterInput
+            value={labelSelector}
+            onChange={setLabelSelector}
+            invalid={labelMatches.isError}
           />
         </div>
       ) : null}
