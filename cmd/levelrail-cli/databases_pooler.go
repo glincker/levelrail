@@ -33,6 +33,10 @@ func databasesPoolerUsage(prog string) string {
   %[1]s databases pooler enable <database> [--pool-size N] [--max-client-conn N]   run a transaction pooler beside a Postgres database
   %[1]s databases pooler disable <database> [flags]   remove the pooler, apps go back to the direct URL
 
+Flags for enable:
+  --pool-size N        server connections per database (0 keeps the default)
+  --max-client-conn N  client connections the pooler accepts (0 keeps the default)
+
 Linked apps get the pooled URL from the "url" field; "direct_url" always
 bypasses the pooler, use it for migrations.
 `, prog)
@@ -49,6 +53,9 @@ func runDatabasesPoolerVerb(prog, verb string, args []string, stdout, stderr io.
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <database> [flags]\n\nFlags:\n", prog, cmd)
 		fs.PrintDefaults()
+		if verb == "enable" {
+			_, _ = fmt.Fprint(stderr, "\nTuning: --pool-size N and --max-client-conn N override the control plane defaults for this database.\n")
+		}
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {

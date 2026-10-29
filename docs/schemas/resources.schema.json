@@ -349,6 +349,14 @@
           "properties": {
             "enabled": {
               "type": "boolean"
+            },
+            "max_client_conn": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "pool_size": {
+              "minimum": 1,
+              "type": "integer"
             }
           },
           "type": "object"
