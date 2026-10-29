@@ -204,8 +204,16 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 
+	var snapshotIDs []string
+	if rollbackTo == "" {
+		var snapOK bool
+		if snapshotIDs, snapOK = rt.runPredeploySnapshots(r.Context(), w, existing); !snapOK {
+			return
+		}
+	}
 	var attemptID string
 	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf, attemptID: &attemptID})
+	rt.attachPredeploySnapshots(r.Context(), name, snapshotIDs, attemptID)
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if errors.Is(err, docker.ErrImageNotFound) {
