@@ -80,7 +80,7 @@ function QuickLinkCard({
       size="sm"
       className="h-full gap-1 p-3 transition-colors hover:bg-muted/50"
     >
-      <LinkIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+      <LinkIcon className="size-5 text-muted-foreground" aria-hidden="true" />
       <p className="text-sm font-medium text-foreground">{label}</p>
       <p className="text-xs text-muted-foreground">{description}</p>
     </Card>

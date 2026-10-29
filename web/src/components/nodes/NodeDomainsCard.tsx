@@ -58,7 +58,7 @@ function RiskRow({ risk }: { risk: DomainRisk }) {
   return (
     <li className="flex items-start gap-2 text-xs">
       <Icon
-        className={`mt-0.5 size-3.5 shrink-0 ${risk.level === 'warn' ? 'text-tone-warning' : 'text-muted-foreground'}`}
+        className={`mt-0.5 size-4.5 shrink-0 ${risk.level === 'warn' ? 'text-tone-warning' : 'text-muted-foreground'}`}
       />
       <span className="text-foreground">{risk.message}</span>
     </li>

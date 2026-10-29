@@ -104,7 +104,7 @@ export function PlatformCapabilities() {
                   setSelectedKey(capability.key)
                 }}
               >
-                <ItemIcon className="size-3.5" aria-hidden="true" />
+                <ItemIcon className="size-4.5" aria-hidden="true" />
                 {capability.label}
               </Button>
             )
@@ -115,7 +115,7 @@ export function PlatformCapabilities() {
           className="flex items-start gap-2.5 rounded-lg bg-muted/40 p-3"
         >
           <SelectedIcon
-            className="mt-0.5 size-4 shrink-0 text-primary"
+            className="mt-0.5 size-5 shrink-0 text-primary"
             aria-hidden="true"
           />
           <p className="text-sm text-muted-foreground">{selected.detail}</p>

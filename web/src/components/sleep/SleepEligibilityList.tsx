@@ -27,7 +27,7 @@ function Row({
     <li className="flex flex-wrap items-start gap-3 py-2">
       <Icon
         aria-hidden="true"
-        className={`mt-0.5 size-4 shrink-0 ${kind === 'blocker' ? 'text-tone-danger' : 'text-tone-warning'}`}
+        className={`mt-0.5 size-5 shrink-0 ${kind === 'blocker' ? 'text-tone-danger' : 'text-tone-warning'}`}
       />
       <div className="min-w-0 flex-1 space-y-0.5">
         <p className="text-sm font-medium text-foreground">

@@ -124,7 +124,7 @@ export function AlgorithmCards({
               <MiniDiagram lines={meta.lines} />
               <span className="min-w-0 pr-5">
                 <span className="flex items-center gap-1.5 text-sm font-medium">
-                  <Icon className="size-4" aria-hidden />
+                  <Icon className="size-5" aria-hidden />
                   {o.label}
                 </span>
                 <span className="block text-xs text-muted-foreground">

@@ -89,7 +89,7 @@ function RolloutRow({
       )}
       <StageIcon
         className={cn(
-          'relative z-10 mt-0.5 size-4 shrink-0 bg-background',
+          'relative z-10 mt-0.5 size-5 shrink-0 bg-background',
           ICON_CLASS[stage.status],
         )}
         aria-hidden="true"

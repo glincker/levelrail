@@ -31,8 +31,8 @@ export function ControlPlaneDrChecklistView({
               <Icon
                 className={
                   ok
-                    ? 'size-4 shrink-0 text-emerald-600'
-                    : 'size-4 shrink-0 text-muted-foreground'
+                    ? 'size-5 shrink-0 text-emerald-600'
+                    : 'size-5 shrink-0 text-muted-foreground'
                 }
                 aria-hidden="true"
               />

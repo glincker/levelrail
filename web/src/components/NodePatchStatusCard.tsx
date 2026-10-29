@@ -99,7 +99,7 @@ export function NodePatchStatusCard({ nodeId }: Readonly<{ nodeId: string }>) {
       <CardContent>
         <div className="flex items-center gap-2">
           <Badge variant={variant}>
-            <StatusIcon className="size-3" />
+            <StatusIcon className="size-3.5" />
             {label}
           </Badge>
           {data?.checked_at ? (

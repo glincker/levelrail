@@ -117,7 +117,7 @@ export function StatusStrip({
                 TONE[tone].text,
               )}
             >
-              <Icon aria-hidden="true" className="size-5" />
+              <Icon aria-hidden="true" className="size-6" />
               {label}
             </span>
           )}

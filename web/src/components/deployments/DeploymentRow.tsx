@@ -35,7 +35,7 @@ export function StatusCell({ d, now }: { d: Deployment; now: number }) {
         icon={
           <Icon
             className={cn(
-              'size-3.5',
+              'size-4.5',
               v.spin && 'animate-spin motion-reduce:animate-none',
             )}
             aria-hidden="true"

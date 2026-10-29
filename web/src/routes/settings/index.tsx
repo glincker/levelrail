@@ -31,7 +31,7 @@ function HubCardLink({ item }: { item: LabelledSettingsItem }) {
     <Card className="h-full rounded-[var(--glinui-radius-lg)] transition-colors hover:ring-foreground/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <item.icon className="size-4" />
+          <item.icon className="size-5" />
           {item.title}
           {item.locked ? (
             <Badge variant="muted">{t('shell.locked.badge')}</Badge>

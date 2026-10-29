@@ -85,7 +85,7 @@ export function SignInRequestFacts({
     >
       <Fact
         inline={compact}
-        icon={<DeviceIcon className="size-4" />}
+        icon={<DeviceIcon className="size-5" />}
         label={t('request.factDevice')}
       >
         {deviceTitle(request.user_agent, t)}

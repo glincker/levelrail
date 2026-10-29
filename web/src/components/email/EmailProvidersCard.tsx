@@ -61,7 +61,7 @@ export function ProviderStatusChip({ provider }: { provider: EmailProvider }) {
   const Icon = HEALTH_ICON[health]
   return (
     <Badge variant={HEALTH_VARIANT[health]}>
-      <Icon className="size-3" aria-hidden="true" />
+      <Icon className="size-3.5" aria-hidden="true" />
       {t(`emailProviders.health.${health}`)}
     </Badge>
   )

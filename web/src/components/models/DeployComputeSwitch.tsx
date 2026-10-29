@@ -53,7 +53,7 @@ export function DeployComputeSwitch({
               }}
               className="sr-only"
             />
-            <o.icon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <o.icon className="mt-0.5 size-6 shrink-0" aria-hidden="true" />
             <span>
               <span className="block font-medium text-foreground">
                 {o.label}

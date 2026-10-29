@@ -156,7 +156,7 @@ function GeneralSettingsPage() {
                     }
                     nativeButton={false}
                   >
-                    <LifebuoyIcon />
+                    <LifebuoyIcon size="1.4em" />
                     <span>Support</span>
                   </Button>
                 ) : null}

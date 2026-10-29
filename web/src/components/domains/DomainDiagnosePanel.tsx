@@ -178,7 +178,7 @@ function CheckRow({
     <li className="py-2">
       <div className="flex items-start gap-2">
         <StateIcon
-          className={`mt-0.5 size-4 shrink-0 ${className}`}
+          className={`mt-0.5 size-5 shrink-0 ${className}`}
           aria-hidden="true"
         />
         <div className="min-w-0 flex-1">

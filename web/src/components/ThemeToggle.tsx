@@ -49,7 +49,7 @@ export function ThemeToggle() {
       <DropdownMenuContent aria-label={t('shell.theme.menu')}>
         {THEMES.map(({ value, icon: ItemIcon }) => (
           <DropdownMenuItem key={value} onClick={() => setTheme(value)}>
-            <ItemIcon />
+            <ItemIcon size="1.4em" />
             <span className="flex-1">{t(`shell.theme.${value}`)}</span>
             {value === theme ? (
               <CheckGlassIcon size="1.4em" aria-hidden="true" />

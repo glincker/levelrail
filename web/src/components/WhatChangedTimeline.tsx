@@ -60,7 +60,7 @@ export function WhatChangedTimeline({
             className="flex items-start gap-2 text-sm"
           >
             <Icon
-              className={`mt-0.5 size-4 shrink-0 ${SEVERITY_TEXT[e.severity]}`}
+              className={`mt-0.5 size-5 shrink-0 ${SEVERITY_TEXT[e.severity]}`}
               aria-hidden="true"
             />
             <div className="min-w-0">

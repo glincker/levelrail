@@ -93,7 +93,7 @@ export function LockedOutDialog() {
           />
         }
       >
-        <LifebuoyIcon className="size-3.5" aria-hidden="true" />
+        <LifebuoyIcon className="size-4.5" aria-hidden="true" />
         {t('lockedOut.link')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -109,7 +109,7 @@ export function LockedOutDialog() {
             >
               <div className="flex items-start gap-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <r.icon className="size-4" aria-hidden="true" />
+                  <r.icon className="size-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">

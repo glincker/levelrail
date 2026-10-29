@@ -41,7 +41,7 @@ function DeltaChip({ delta }: { delta: MetricDelta }) {
         t.text,
       )}
     >
-      <Arrow className="size-3" aria-hidden="true" />
+      <Arrow className="size-3.5" aria-hidden="true" />
       {formatDeltaPercent(delta.value)}
       <span className="sr-only">
         {delta.direction === 'up' ? ' up' : ' down'},{' '}

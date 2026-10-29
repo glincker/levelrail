@@ -111,7 +111,7 @@ export function ResolverAnswers({
                   </td>
                   <td className={cn('py-1.5', MATCH_TONE[match])}>
                     <span className="inline-flex items-center gap-1">
-                      <MatchIcon aria-hidden="true" className="size-4" />
+                      <MatchIcon aria-hidden="true" className="size-5" />
                       {t(`resolvers.${match}`)}
                     </span>
                   </td>

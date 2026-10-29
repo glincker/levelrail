@@ -222,7 +222,7 @@ function CheckRow({ check }: { check: PreflightCheck }) {
   return (
     <li className="space-y-1.5 rounded-lg border border-border p-2.5">
       <div className="flex items-center gap-2">
-        <Icon className={`size-4 shrink-0 ${STATUS_TONE[check.status]}`} />
+        <Icon className={`size-5 shrink-0 ${STATUS_TONE[check.status]}`} />
         <span className="text-sm font-medium text-foreground">
           {t(`onboarding.checks.${check.id}`, { defaultValue: check.id })}
         </span>

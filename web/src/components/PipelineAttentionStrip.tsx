@@ -35,8 +35,8 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
         status={row.status}
         className={
           pending
-            ? 'size-4 text-amber-600 dark:text-amber-400'
-            : 'size-4 text-destructive'
+            ? 'size-5 text-amber-600 dark:text-amber-400'
+            : 'size-5 text-destructive'
         }
       />
       <Link

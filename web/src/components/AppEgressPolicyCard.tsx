@@ -420,7 +420,7 @@ function StatusBadge({
   const Icon = STATUS_ICON[status]
   return (
     <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
-      <Icon className="size-3" />
+      <Icon className="size-3.5" />
       {liveStatusLabel(reason)}
     </Badge>
   )

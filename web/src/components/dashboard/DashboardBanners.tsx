@@ -18,7 +18,7 @@ export function NoticeRows({ notices }: { notices: DashboardNotice[] }) {
           >
             <Icon
               aria-hidden="true"
-              className={cn('size-4 shrink-0', TONE[n.tone].text)}
+              className={cn('size-5 shrink-0', TONE[n.tone].text)}
             />
             <span className="min-w-0 flex-1 text-sm">
               <span className="font-medium text-foreground">{n.title}</span>

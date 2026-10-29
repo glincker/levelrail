@@ -45,7 +45,7 @@ export function NodeStatusCard({ node }: { node: NodeResource }) {
         <StatusPill
           tone={TONE_BY_STATUS[node.status]}
           label={t(`status.${node.status}`)}
-          icon={<Icon aria-hidden="true" />}
+          icon={<Icon size="1.4em" aria-hidden="true" />}
         />
         <span className="min-w-0 flex-1 basis-48 text-sm text-muted-foreground">
           {t(`detail.statusCard.${node.status}`)}

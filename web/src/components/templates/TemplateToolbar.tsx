@@ -166,7 +166,7 @@ export function TemplateToolbar({
                   : 'text-foreground/70 hover:text-foreground',
               )}
             >
-              <DensityIcon className="size-4" aria-hidden="true" />
+              <DensityIcon className="size-5" aria-hidden="true" />
               <span className="max-sm:sr-only">
                 {t(`marketplace.density.${key}`)}
               </span>

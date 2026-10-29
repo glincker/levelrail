@@ -50,7 +50,7 @@ function StatusPill({ status }: { status: EmailDelivery['status'] }) {
   const Icon = status === 'sent' ? CircleCheckGlassIcon : CircleAlertGlassIcon
   return (
     <Badge variant={variant}>
-      <Icon className="size-3" aria-hidden="true" />
+      <Icon className="size-3.5" aria-hidden="true" />
       {t(`emailDelivery.log.statuses.${status}`)}
     </Badge>
   )

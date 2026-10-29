@@ -73,7 +73,7 @@ export function AuthGateAllowEditor({
             return (
               <li key={`${r.kind}:${r.subject}`}>
                 <Badge variant="muted" className="gap-1">
-                  <Icon className="size-3" aria-hidden="true" />
+                  <Icon className="size-3.5" aria-hidden="true" />
                   <span className="sr-only">
                     {t(`authGate.allowKind.${r.kind}`)}
                   </span>

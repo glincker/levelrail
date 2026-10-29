@@ -101,7 +101,7 @@ function ResourceRow({
     <li className="flex flex-col gap-1 rounded-lg border border-border bg-card px-3 py-2 text-sm">
       <div className="flex min-w-0 items-center gap-1.5">
         <Icon
-          className="size-3.5 shrink-0 text-muted-foreground"
+          className="size-4.5 shrink-0 text-muted-foreground"
           aria-label={label}
         />
         {title}

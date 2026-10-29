@@ -44,7 +44,7 @@ export function PipelineStepList({
             >
               <PipelineStatusIcon
                 status={s.status}
-                className="size-4 shrink-0"
+                className="size-5 shrink-0"
               />
               <span className="truncate text-foreground">{s.name}</span>
               <span className="text-xs text-muted-foreground">{s.kind}</span>

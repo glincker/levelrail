@@ -211,7 +211,7 @@ export function DomainCheckPanel({
         </span>
         {meta ? (
           <Badge variant={meta.variant} className="shrink-0">
-            {StatusIcon ? <StatusIcon className="size-3" /> : null}
+            {StatusIcon ? <StatusIcon className="size-3.5" /> : null}
             {meta.label}
           </Badge>
         ) : null}

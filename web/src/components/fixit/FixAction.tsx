@@ -222,7 +222,7 @@ function FixResultLine({ result }: { result: FixResult }) {
       role="status"
       className={`flex items-start gap-1.5 text-xs ${good ? 'text-foreground' : 'text-destructive'}`}
     >
-      <Icon className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+      <Icon className="mt-px size-4.5 shrink-0" aria-hidden="true" />
       {t(`outcome.${result.outcome}`, { detail: result.detail })}
     </p>
   )

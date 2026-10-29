@@ -310,7 +310,7 @@ export function LogSearchPanel({
               setWrap((w) => !w)
             }}
           >
-            <TextAlignLeftIcon className="size-3.5" aria-hidden="true" />
+            <TextAlignLeftIcon className="size-4.5" aria-hidden="true" />
             {t('explorer.wrap')}
           </Button>
           <a

@@ -78,7 +78,7 @@ function Gate({
     <li className="space-y-1 rounded-md border p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Icon
-          className={`size-4 shrink-0 ${statusTone[gate.status]}`}
+          className={`size-5 shrink-0 ${statusTone[gate.status]}`}
           aria-hidden
         />
         <span className="font-medium">

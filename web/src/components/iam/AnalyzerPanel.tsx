@@ -76,7 +76,7 @@ function FindingCard({
             tone.text,
           )}
         >
-          <Icon className="size-5" aria-hidden="true" />
+          <Icon className="size-6" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
           <p className={cn('text-xs font-medium uppercase', tone.text)}>

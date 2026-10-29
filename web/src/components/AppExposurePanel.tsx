@@ -436,7 +436,7 @@ function ProbeRow({ target }: { target: ProbeTarget }) {
     <li className="flex items-start gap-2">
       <Icon
         className={cn(
-          'mt-0.5 size-4 shrink-0',
+          'mt-0.5 size-5 shrink-0',
           target.ok ? 'text-success' : 'text-destructive',
         )}
         aria-hidden="true"

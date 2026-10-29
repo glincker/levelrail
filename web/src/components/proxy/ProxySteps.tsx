@@ -53,7 +53,7 @@ export function ProxySteps({ steps }: { steps: ProxyStep[] }) {
               />
             )}
             <Icon
-              className={cn('relative size-5.5 shrink-0 bg-card', tone)}
+              className={cn('relative size-6 shrink-0 bg-card', tone)}
               aria-hidden="true"
             />
             <div className="min-w-0">

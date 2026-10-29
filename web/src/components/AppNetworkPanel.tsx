@@ -313,7 +313,7 @@ function PathNode({
           : 'border-border bg-background text-foreground'
       }`}
     >
-      <NodeIcon className="size-4 shrink-0" />
+      <NodeIcon className="size-5 shrink-0" />
       <div className="min-w-0 leading-tight">
         <p className="truncate text-xs font-medium">{label}</p>
         {sublabel ? (

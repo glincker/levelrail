@@ -70,7 +70,7 @@ function DeployStageRow({ stage }: { stage: DeployStage }) {
   return (
     <li className="flex items-start gap-3">
       <StatusIcon
-        className={`mt-0.5 size-4 shrink-0 ${STATUS_ICON_CLASS[stage.status]}`}
+        className={`mt-0.5 size-5 shrink-0 ${STATUS_ICON_CLASS[stage.status]}`}
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1">

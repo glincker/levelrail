@@ -64,7 +64,7 @@ function OutcomeIcon({
     <Icon
       aria-hidden="true"
       className={cn(
-        'pointer-events-none absolute top-0 size-3 -translate-x-1/2',
+        'pointer-events-none absolute top-0 size-3.5 -translate-x-1/2',
         status === 'failed' ? 'text-tone-danger' : 'text-tone-neutral',
       )}
       style={style}

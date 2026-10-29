@@ -49,7 +49,7 @@ export function DeployStatusCard({
       <div className="flex items-start gap-3">
         <StateIcon
           className={cn(
-            'mt-0.5 size-5 shrink-0',
+            'mt-0.5 size-6 shrink-0',
             TONE[state.tone].text,
             spinning &&
               !state.stuck &&

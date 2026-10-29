@@ -584,7 +584,7 @@ export function EditAlertRuleDialog({
                     {KIND_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         <option.Icon
-                          className="size-3.5 text-muted-foreground"
+                          className="size-4.5 text-muted-foreground"
                           aria-hidden="true"
                         />
                         {isAlertKindCopyKind(option.value)

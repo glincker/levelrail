@@ -58,7 +58,7 @@ export function HelpMenu() {
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem render={<Link to="/help" />}>
-          <LifebuoyIcon />
+          <LifebuoyIcon size="1.4em" />
           {t('shell.help.docs')}
         </DropdownMenuItem>
         <DropdownMenuItem

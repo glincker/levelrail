@@ -150,7 +150,7 @@ export function TemplateCard(props: TemplateCardProps & { compact?: boolean }) {
             category.toneClass,
           )}
         >
-          <CategoryIcon className="size-3.5" aria-hidden="true" />
+          <CategoryIcon className="size-4.5" aria-hidden="true" />
           {template.category}
         </span>
       </span>

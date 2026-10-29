@@ -78,30 +78,40 @@ export function PageBanner({
   const compact = size === 'compact'
   const headerRef = useParallax()
 
+  // Three stacked copies fake depth: two dim, offset copies behind the sharp front one.
+  const layer = (depth: string, cls: string) => (
+    <div
+      className={cn(
+        'absolute inset-0 transition-transform duration-300 ease-out motion-reduce:transition-none [&_svg]:size-full',
+        depth,
+        cls,
+      )}
+    >
+      {icon}
+    </div>
+  )
   const iconArt = icon ? (
     <div
       aria-hidden="true"
       className={cn(
-        'pointer-events-none absolute inset-y-0 left-0 hidden items-center [perspective:900px] sm:flex',
-        compact ? 'w-40' : 'w-72',
-        '[mask-image:linear-gradient(to_right,black_55%,transparent_100%)]',
+        'pointer-events-none absolute left-0 hidden [perspective:700px] sm:block',
+        compact ? '-bottom-4 -left-2 size-32' : '-bottom-10 -left-4 size-56',
+        '[mask-image:linear-gradient(to_right,black_40%,transparent_100%)]',
       )}
     >
       <div
         className={cn(
-          'absolute -left-10 size-72 rounded-full bg-[radial-gradient(closest-side,var(--iso-glow-warm),transparent)] opacity-80 transition-transform duration-300 ease-out motion-reduce:transition-none',
-          '[transform:translate3d(calc(var(--px,0)*10px),calc(var(--py,0)*8px),0)]',
-          compact && 'size-40',
-        )}
-      />
-      <div
-        className={cn(
-          'relative ml-4 text-foreground/85 drop-shadow-[0_18px_28px_rgba(0,0,0,0.28)] transition-transform duration-300 ease-out motion-reduce:transition-none [&_svg]:size-full',
-          '[transform:translate3d(calc(var(--px,0)*22px),calc(var(--py,0)*14px),0)_rotateY(calc(var(--px,0)*-10deg))_rotateX(calc(var(--py,0)*8deg))]',
-          compact ? 'size-24' : 'size-44',
+          'absolute inset-0 text-foreground/80 [transform-style:preserve-3d]',
+          '[transform:translate3d(calc(var(--px,0)*14px),calc(var(--py,0)*10px),0)_rotateY(calc(-26deg+var(--px,0)*-8deg))_rotateX(calc(12deg+var(--py,0)*6deg))_rotateZ(-10deg)]',
+          'transition-transform duration-300 ease-out motion-reduce:transition-none',
         )}
       >
-        {icon}
+        {layer(
+          '[transform:translate3d(18px,22px,-40px)]',
+          'text-foreground/20 blur-[2px]',
+        )}
+        {layer('[transform:translate3d(9px,11px,-20px)]', 'text-foreground/35')}
+        {layer('', 'opacity-55 drop-shadow-[0_14px_22px_rgba(0,0,0,0.35)]')}
       </div>
     </div>
   ) : null
@@ -132,18 +142,18 @@ export function PageBanner({
       ref={headerRef}
       data-testid={compact ? 'page-banner-compact' : 'page-banner-full'}
       className={cn(
-        'relative isolate flex items-stretch overflow-hidden rounded-2xl border border-border bg-card',
+        'relative isolate flex items-stretch overflow-hidden rounded-2xl border border-border bg-card [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
         className,
       )}
     >
       {iconArt}
       <div
         className={cn(
-          'relative z-10 flex min-w-0 flex-1 gap-x-3',
+          'z-10 flex min-w-0 flex-1 gap-x-3',
           compact
             ? 'min-h-[5.5rem] flex-wrap items-center px-4 py-4'
             : 'min-h-44 flex-col justify-center gap-y-3 px-6 py-7 md:max-w-xl md:flex-none',
-          icon && (compact ? 'sm:pl-32' : 'sm:pl-60'),
+          icon && (compact ? 'sm:pl-24' : 'sm:pl-28'),
         )}
       >
         <div

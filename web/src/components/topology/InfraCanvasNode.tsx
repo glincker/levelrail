@@ -154,7 +154,7 @@ function InfraCanvasNodeBase({
       )}
     >
       <Icon
-        className="size-4 shrink-0 text-muted-foreground"
+        className="size-5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
       <span className="min-w-0 flex-1">

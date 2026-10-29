@@ -99,8 +99,8 @@ export function ConfirmChangesDialog({
                       aria-hidden="true"
                       className={
                         change.kind === 'delete'
-                          ? 'mt-0.5 size-4 shrink-0 text-destructive'
-                          : 'mt-0.5 size-4 shrink-0 text-muted-foreground'
+                          ? 'mt-0.5 size-5 shrink-0 text-destructive'
+                          : 'mt-0.5 size-5 shrink-0 text-muted-foreground'
                       }
                     />
                     <span className="min-w-0">

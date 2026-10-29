@@ -36,7 +36,7 @@ function IssueRow({ issue }: { issue: AttentionItem }) {
     <li className="flex items-start gap-2.5 rounded-lg px-2 py-2">
       <Icon
         aria-hidden="true"
-        className={`mt-0.5 size-4 shrink-0 ${
+        className={`mt-0.5 size-5 shrink-0 ${
           critical ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'
         }`}
       />

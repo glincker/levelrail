@@ -38,7 +38,7 @@ function PresetCard({
     >
       <preset.Icon
         aria-hidden="true"
-        className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+        className="mt-0.5 size-6 shrink-0 text-muted-foreground"
       />
       <span className="min-w-0 space-y-0.5">
         <span className="block text-sm font-medium">

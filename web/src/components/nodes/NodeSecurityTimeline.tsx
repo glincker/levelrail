@@ -38,7 +38,7 @@ function EventRow({ e }: { e: NodeSecurityEvent }) {
   return (
     <li className="flex items-start gap-2 py-2">
       <Icon
-        className={`mt-0.5 size-4 shrink-0 ${OUTCOME_TONE[e.outcome]}`}
+        className={`mt-0.5 size-5 shrink-0 ${OUTCOME_TONE[e.outcome]}`}
         aria-label={t(`trust.outcome.${e.outcome}`)}
       />
       <div className="min-w-0 flex-1">

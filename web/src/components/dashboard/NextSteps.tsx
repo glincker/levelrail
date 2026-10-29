@@ -87,7 +87,7 @@ function StepRow({
           aria-hidden="true"
           className={cn('mt-0.5 shrink-0 [&_svg]:size-6', TONE[tone].text)}
         >
-          <Icon />
+          <Icon size="1.4em" />
         </span>
         <span className="min-w-0">
           <span className="block text-sm font-medium break-words text-foreground">

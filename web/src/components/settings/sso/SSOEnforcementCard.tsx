@@ -40,7 +40,7 @@ export function SSOEnforcementCard({ settings }: { settings: SSOSettings }) {
         </div>
       </Field>
       <Alert>
-        <LifebuoyIcon />
+        <LifebuoyIcon size="1.4em" />
         <AlertDescription>{t('enforce.breakGlass')}</AlertDescription>
       </Alert>
     </FormSection>

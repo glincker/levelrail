@@ -41,7 +41,7 @@ export function CordonNodeDialog({
             setOpen(true)
           }}
         >
-          <TriggerIcon className="size-3.5" aria-hidden="true" />
+          <TriggerIcon className="size-4.5" aria-hidden="true" />
           {t(`${key}.trigger`)}
         </Button>
       )}

@@ -19,7 +19,7 @@ export function StatusBadge({
   const resolved = tone ? TONE_BADGE_VARIANT[tone] : variant
   return (
     <Badge variant={resolved} className="shrink-0">
-      <StatusIcon className="size-3" aria-hidden="true" />
+      <StatusIcon className="size-3.5" aria-hidden="true" />
       {label}
     </Badge>
   )

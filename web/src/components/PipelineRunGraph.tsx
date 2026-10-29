@@ -97,7 +97,7 @@ function MemberButton({
         <PipelineStatusIcon
           status={member.status}
           spin={false}
-          className={cn('size-4', ICON_TONE[member.status])}
+          className={cn('size-5', ICON_TONE[member.status])}
         />
       </g>
       <text
@@ -157,7 +157,7 @@ function NodeView({
             <PipelineStatusIcon
               status={node.status}
               spin={false}
-              className={cn('size-4', ICON_TONE[node.status])}
+              className={cn('size-5', ICON_TONE[node.status])}
             />
           </g>
           <text

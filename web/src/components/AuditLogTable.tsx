@@ -95,7 +95,7 @@ function AbilityCell({
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
       <FriendlyIcon
-        className="size-3.5 shrink-0 text-muted-foreground"
+        className="size-4.5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
       <span>{t(friendly.labelKey)}</span>

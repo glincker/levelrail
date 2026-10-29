@@ -177,7 +177,7 @@ export function AccountMenu() {
             {t('shell.accountMenu.changelog')}
           </DropdownMenuLinkItem>
           <DropdownMenuLinkItem render={<Link to="/help" />}>
-            <LifebuoyIcon />
+            <LifebuoyIcon size="1.4em" />
             {t('shell.accountMenu.help')}
           </DropdownMenuLinkItem>
           {brand.DocsURL ? (

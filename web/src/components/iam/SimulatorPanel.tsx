@@ -88,7 +88,7 @@ function Result({ sim }: { sim: Simulation }) {
             tone.text,
           )}
         >
-          <Icon className="size-5" aria-hidden="true" />
+          <Icon className="size-6" aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-foreground">

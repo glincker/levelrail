@@ -50,7 +50,7 @@ function DeltaRow({
             tone.text,
           )}
         >
-          <Icon className="size-3" aria-hidden="true" />
+          <Icon className="size-3.5" aria-hidden="true" />
         </span>
         <span className="text-foreground">
           {t(`impact.${kind}`, {

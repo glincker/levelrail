@@ -82,7 +82,7 @@ export function LogLevelChips({
                 onToggle(bucket)
               }}
             >
-              {Icon ? <Icon className="size-3.5" aria-hidden="true" /> : null}
+              {Icon ? <Icon className="size-4.5" aria-hidden="true" /> : null}
               {label}
               <span className="tabular-nums opacity-80">
                 {counts[bucket].toLocaleString()}
@@ -107,7 +107,7 @@ export function LogLevelGutter({
     <span
       className={`flex w-16 shrink-0 items-center gap-1 self-stretch border-l-2 pl-1.5 text-[0.65rem] uppercase ${gutter}`}
     >
-      {Icon ? <Icon className="size-3" aria-hidden="true" /> : null}
+      {Icon ? <Icon className="size-3.5" aria-hidden="true" /> : null}
       {level ?? ''}
     </span>
   )

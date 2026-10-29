@@ -70,7 +70,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
           <Badge variant={STATUS_BADGE_VARIANT[score.status]} className="gap-1">
             {(() => {
               const Icon = STATUS_ICON[score.status]
-              return <Icon size="1em" aria-hidden="true" />
+              return <Icon size="1.4em" aria-hidden="true" />
             })()}
             {t(STATUS_LABEL_KEY[score.status])}
           </Badge>
@@ -127,7 +127,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
                     className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0"
                   >
                     <Icon
-                      className={`mt-0.5 size-4 shrink-0 ${STATUS_ICON_CLASS[category.status]}`}
+                      className={`mt-0.5 size-5 shrink-0 ${STATUS_ICON_CLASS[category.status]}`}
                       aria-hidden="true"
                     />
                     <div className="flex-1 space-y-0.5">

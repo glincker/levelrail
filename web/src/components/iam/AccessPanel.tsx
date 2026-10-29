@@ -63,7 +63,7 @@ function PrincipalRow({
         onClick={onSelect}
         className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        <Icon className="size-5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm text-foreground">
             {p.name}

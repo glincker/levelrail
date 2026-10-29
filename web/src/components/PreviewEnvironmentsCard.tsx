@@ -84,7 +84,9 @@ function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
   return (
     <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
       <StatusIcon
-        className={status === 'deploying' ? 'size-3 animate-spin' : 'size-3'}
+        className={
+          status === 'deploying' ? 'size-3.5 animate-spin' : 'size-3.5'
+        }
         aria-hidden="true"
       />
       {STATUS_LABEL[status]}

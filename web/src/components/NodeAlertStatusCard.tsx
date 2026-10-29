@@ -70,7 +70,7 @@ export function NodeAlertStatusCard({ nodeId }: Readonly<{ nodeId: string }>) {
                 <dt className="text-sm text-muted-foreground">{row.label}</dt>
                 <dd>
                   <Badge variant={variant}>
-                    <StatusIcon className="size-3" />
+                    <StatusIcon className="size-3.5" />
                     {label}
                   </Badge>
                 </dd>

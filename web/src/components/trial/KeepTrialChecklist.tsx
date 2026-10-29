@@ -146,7 +146,7 @@ export function KeepTrialChecklist({
             >
               <div className="flex min-w-0 items-start gap-2">
                 <Icon
-                  className={`mt-0.5 size-4 shrink-0 ${STATE_CLASS[item.state]}`}
+                  className={`mt-0.5 size-5 shrink-0 ${STATE_CLASS[item.state]}`}
                   aria-label={t(
                     item.state === 'done' ? 'dialog.done' : 'dialog.todo',
                   )}

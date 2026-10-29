@@ -72,6 +72,7 @@ export function DomainStatusBadge({
         className={cn(size === 'sm' && 'px-1.5 text-[11px]', className)}
       >
         <StatusIcon
+          size="1.4em"
           aria-hidden="true"
           className={cn(
             status === 'going_live' &&

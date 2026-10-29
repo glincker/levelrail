@@ -56,7 +56,7 @@ export function TemplateCategoryRail({
               )}
             >
               <ItemIcon
-                className={cn('size-4 shrink-0', tone)}
+                className={cn('size-5 shrink-0', tone)}
                 aria-hidden="true"
               />
               <span className="min-w-0 flex-1 truncate">{label}</span>

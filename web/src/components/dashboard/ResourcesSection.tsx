@@ -261,7 +261,7 @@ function ConsumerRow({
     <>
       <Icon
         aria-label={t(`resources.kind.${c.kind}`)}
-        className="size-4 shrink-0 text-muted-foreground"
+        className="size-5 shrink-0 text-muted-foreground"
       />
       <span className="min-w-0 flex-1 truncate text-sm font-medium">
         {c.name}

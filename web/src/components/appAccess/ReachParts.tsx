@@ -26,7 +26,7 @@ export function ScopeChip({ scope }: { scope: ReachScope }) {
   const Icon = SCOPE_ICON[scope]
   return (
     <Badge variant="muted">
-      <Icon aria-hidden="true" />
+      <Icon size="1.4em" aria-hidden="true" />
       {t(`scope.${scope}`)}
     </Badge>
   )
@@ -49,7 +49,7 @@ export function SecurityChip({ security }: { security: ReachSecurity }) {
         : 'outline'
   return (
     <Badge variant={variant} className="whitespace-normal text-left">
-      <Icon aria-hidden="true" />
+      <Icon size="1.4em" aria-hidden="true" />
       {t(`security.${security}`)}
     </Badge>
   )

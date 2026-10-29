@@ -66,7 +66,7 @@ export function DoctorCheckRow({
             />
           ) : null}
           <Badge variant={silenced ? 'muted' : meta.variant}>
-            <StatusIcon />
+            <StatusIcon size="1.4em" />
             {meta.label}
           </Badge>
         </div>

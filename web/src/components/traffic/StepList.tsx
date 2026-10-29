@@ -90,7 +90,7 @@ export function StepList({
               <StepIcon
                 aria-hidden="true"
                 className={cn(
-                  'mt-0.5 size-4 shrink-0',
+                  'mt-0.5 size-5 shrink-0',
                   STATE_TONE[step.state],
                   step.state === 'active' &&
                     'animate-spin motion-reduce:animate-none',

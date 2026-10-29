@@ -74,7 +74,7 @@ export function ReviewStep({
                 aria-label={t('review.willCreate')}
               />
               <Icon
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <span className="min-w-0 text-sm">

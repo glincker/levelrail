@@ -377,7 +377,7 @@ export function DomainNameCell({
               }
               title={label}
             >
-              <flag.icon className="size-3.5" aria-hidden="true" />
+              <flag.icon className="size-4.5" aria-hidden="true" />
               <span className="sr-only">{label}</span>
             </span>
           )

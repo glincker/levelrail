@@ -212,7 +212,7 @@ export function DockHeader({
           aria-pressed={maximized}
           onClick={onToggleMaximize}
         >
-          <MaxIcon />
+          <MaxIcon size="1.4em" />
         </Button>
       )}
       <Button

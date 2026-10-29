@@ -35,7 +35,7 @@ export function ColumnTypeIcon({
   return (
     <span title={label} className="inline-flex shrink-0">
       <Icon
-        className="size-3.5 text-muted-foreground"
+        className="size-4.5 text-muted-foreground"
         aria-label={label}
         role="img"
       />

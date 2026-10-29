@@ -59,7 +59,7 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
         </p>
       </div>
       <Badge variant={meta.variant}>
-        <StatusIcon aria-hidden="true" />
+        <StatusIcon size="1.4em" aria-hidden="true" />
         {meta.label}
       </Badge>
     </div>

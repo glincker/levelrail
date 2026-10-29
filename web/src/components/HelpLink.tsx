@@ -91,9 +91,10 @@ export function HelpLink({
             href={href}
             {...externalProps}
             aria-label={label}
+            data-slot="help-link"
             className={cn(
-              buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
-              'text-muted-foreground hover:text-foreground',
+              buttonVariants({ variant: 'ghost', size: 'icon' }),
+              'size-9 text-foreground/70 hover:text-foreground [&_svg]:size-6',
               className,
             )}
           >

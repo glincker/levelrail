@@ -68,7 +68,7 @@ export function MoreWays({
               )}
             >
               <WayIcon
-                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+                className="mt-0.5 size-6 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <span className="min-w-0">

@@ -31,6 +31,7 @@ function StatusPill({ status }: { status: HeroStatus }) {
   return (
     <Badge variant={variant} role="status">
       <Icon
+        size="1.4em"
         aria-hidden="true"
         className={
           status === 'checking' ? 'animate-spin motion-reduce:animate-none' : ''

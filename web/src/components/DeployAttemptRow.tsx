@@ -297,7 +297,7 @@ export function DeployAttemptRow({
         >
           <StatusIcon
             className={cn(
-              'size-5',
+              'size-6',
               attempt.status === 'running' &&
                 'animate-spin motion-reduce:animate-none',
             )}

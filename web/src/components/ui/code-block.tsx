@@ -203,7 +203,7 @@ export function CodeBlock({
                 setWrapped((v) => !v)
               }}
             >
-              <TextAlignLeftIcon aria-hidden="true" />
+              <TextAlignLeftIcon size="1.4em" aria-hidden="true" />
               {t('codeBlock.wrap')}
             </Button>
           ) : null}
