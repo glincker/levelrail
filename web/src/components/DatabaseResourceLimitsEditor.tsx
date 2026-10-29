@@ -242,7 +242,7 @@ export function DatabaseResourceLimitsEditor({
       />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CpuGlassIcon className="size-4.5" />
+          <CpuGlassIcon className="size-5" />
           Resource limits
         </CardTitle>
         <CardDescription>

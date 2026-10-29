@@ -231,7 +231,7 @@ export function CommandPalette({
         >
           <DialogTitle className="sr-only">{t('title')}</DialogTitle>
           <div className="flex flex-wrap items-center gap-2 border-b border-border px-3">
-            <SearchGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
+            <SearchGlassIcon className="size-5 shrink-0 text-muted-foreground" />
             <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
             <Input
               ref={inputRef}

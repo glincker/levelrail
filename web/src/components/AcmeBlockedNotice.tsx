@@ -13,7 +13,7 @@ export function AcmeBlockedNotice({ settings }: { settings: IngressSettings }) {
   if (!settings.acme_blocked) return null
   return (
     <Alert variant="destructive" className="mb-4">
-      <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
       <AlertTitle>{t('acmeBlocked.title')}</AlertTitle>
       <AlertDescription className="space-y-3">
         <p>

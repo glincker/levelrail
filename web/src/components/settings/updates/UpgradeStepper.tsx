@@ -28,21 +28,21 @@ function StatusIcon({
   const cls = 'size-4 shrink-0'
   switch (status) {
     case 'done':
-      return <CircleCheckGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <CircleCheckGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'current':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(cls, motion && 'animate-spin')}
           aria-hidden
         />
       )
     case 'failed':
-      return <CircleAlertGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <CircleAlertGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'blocked':
-      return <LockGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <LockGlassIcon size="1.4em" className={cls} aria-hidden />
     default:
-      return <CircleGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <CircleGlassIcon size="1.4em" className={cls} aria-hidden />
   }
 }
 

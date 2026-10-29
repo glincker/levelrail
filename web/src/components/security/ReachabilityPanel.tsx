@@ -129,7 +129,7 @@ export function ReachabilityPanel() {
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2">
-            <GlobeGlassIcon className="size-4.5 text-muted-foreground" />
+            <GlobeGlassIcon className="size-5 text-muted-foreground" />
             {t('reach.title')}
           </CardTitle>
           <CardDescription>{t('reach.description')}</CardDescription>
@@ -149,7 +149,7 @@ export function ReachabilityPanel() {
             })
           }
         >
-          <RefreshCwGlassIcon className="size-4.5" />
+          <RefreshCwGlassIcon className="size-5" />
           {recheck.isPending ? t('reach.rechecking') : t('reach.recheck')}
         </Button>
       </CardHeader>
@@ -165,7 +165,7 @@ export function ReachabilityPanel() {
         {rep ? (
           rep.findings.length === 0 ? (
             <p className="flex items-center gap-2 text-sm">
-              <CircleCheckGlassIcon className="size-4.5 text-green-700 dark:text-green-400" />
+              <CircleCheckGlassIcon className="size-5 text-green-700 dark:text-green-400" />
               {t('reach.clean', { count: rep.restricted_ports })}
             </p>
           ) : (

@@ -40,7 +40,7 @@ function TokensPage() {
 
   return (
     <PageTemplate
-      icon={<KeyGlassIcon size="1.2em" />}
+      icon={<KeyGlassIcon size="1.4em" />}
       eyebrow={t('tokensPage.eyebrow')}
       title={t('tokensPage.title')}
       description={t('tokensPage.description')}

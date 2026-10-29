@@ -130,7 +130,7 @@ export function BrowserPushField({
             void handleEnable()
           }}
         >
-          <BellRingGlassIcon className="size-4" aria-hidden="true" />
+          <BellRingGlassIcon className="size-5" aria-hidden="true" />
           {ready
             ? 'Enabled on this browser'
             : createSubscription.isPending
@@ -140,7 +140,7 @@ export function BrowserPushField({
         {ready ? (
           <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
             <CircleCheckGlassIcon
-              className="size-4 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden="true"
             />
             Ready
@@ -150,7 +150,7 @@ export function BrowserPushField({
       {publicKeyError ? (
         <span className="flex items-center gap-1 text-xs text-destructive">
           <TriangleAlertGlassIcon
-            className="size-4 text-tone-warning"
+            className="size-5 text-tone-warning"
             aria-hidden="true"
           />
           Browser push is not configured on this control plane (no master key
@@ -160,7 +160,7 @@ export function BrowserPushField({
       {error ? (
         <span className="flex items-center gap-1 text-xs text-destructive">
           <TriangleAlertGlassIcon
-            className="size-4 text-tone-warning"
+            className="size-5 text-tone-warning"
             aria-hidden="true"
           />
           {error}

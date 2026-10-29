@@ -136,7 +136,7 @@ export function StandaloneDomainForm({
               https://{domain || t('standalone.domainPlaceholder')}
             </span>
             <ArrowRightGlassIcon
-              className="size-4 shrink-0 text-muted-foreground"
+              className="size-5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
             <span className="break-all">{v?.target_url ?? target}</span>
@@ -166,7 +166,7 @@ export function StandaloneDomainForm({
         >
           <p className="flex items-start gap-2 font-medium">
             <TriangleAlertGlassIcon
-              className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+              className="mt-0.5 size-5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {t('standalone.confirmTitle')}

@@ -77,19 +77,16 @@ export function UpgradeGlobalBar() {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {finished ? (
           ok ? (
-            <CircleCheckGlassIcon
-              className="size-4.5 text-success"
-              aria-hidden
-            />
+            <CircleCheckGlassIcon className="size-5 text-success" aria-hidden />
           ) : (
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden
             />
           )
         ) : (
           <RefreshCwGlassIcon
-            className={cn('size-4.5 text-primary', motion && 'animate-spin')}
+            className={cn('size-5 text-primary', motion && 'animate-spin')}
             aria-hidden
           />
         )}

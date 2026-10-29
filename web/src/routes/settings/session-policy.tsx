@@ -95,7 +95,7 @@ function SessionPolicyPage() {
 
   return (
     <PageTemplate
-      icon={<ClockGlassIcon size="1.2em" />}
+      icon={<ClockGlassIcon size="1.4em" />}
       eyebrow={t('policy.eyebrow')}
       title={t('policy.title')}
       description={t('policy.description')}
@@ -127,7 +127,7 @@ function SessionPolicyPage() {
               size="sm"
               onClick={() => setEditing(team)}
             >
-              <SettingsGlassIcon size="1.2em" aria-hidden="true" />
+              <SettingsGlassIcon size="1.4em" aria-hidden="true" />
               {t('policy.edit')}
             </Button>
           </li>

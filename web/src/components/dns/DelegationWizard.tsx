@@ -44,7 +44,7 @@ function Stepper({ step }: { step: WizardStep }) {
           )}
         >
           <span className="font-mono">
-            {i < current ? <CheckGlassIcon size="1.2em" /> : i + 1}
+            {i < current ? <CheckGlassIcon size="1.4em" /> : i + 1}
           </span>
           {t(`wizard.step.${s}`)}
         </li>
@@ -69,9 +69,9 @@ function NameServerList({ servers }: { servers: string[] }) {
         onClick={() => copy(servers.join('\n'))}
       >
         {copied ? (
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
         ) : (
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
         )}
         {copied ? t('wizard.copied') : t('wizard.copyAll')}
       </Button>

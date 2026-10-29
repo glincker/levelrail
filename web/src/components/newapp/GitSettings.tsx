@@ -76,7 +76,7 @@ export function GitSettings({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <SettingsGlassIcon size="1.2em" aria-hidden="true" />
+        <SettingsGlassIcon size="1.4em" aria-hidden="true" />
         {t('gitSettings.open')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 gap-3 p-3">
@@ -138,7 +138,7 @@ export function GitSettings({
                 refresh.mutate()
               }}
             >
-              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
               {refresh.isPending
                 ? t('source.repos.refreshing')
                 : t('source.repos.refresh')}
@@ -177,7 +177,7 @@ export function GitSettings({
               <div className="flex items-center gap-2">
                 <GitBranchGlassIcon
                   aria-hidden="true"
-                  className="size-4.5 shrink-0 text-muted-foreground"
+                  className="size-5 shrink-0 text-muted-foreground"
                 />
                 <Select
                   value={defaults.branch}

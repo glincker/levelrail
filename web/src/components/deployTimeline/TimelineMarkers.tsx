@@ -253,7 +253,7 @@ export function AlertMarker({
       className="absolute bottom-0.5 -translate-x-1/2 text-tone-warning"
       style={{ left: `${String(left)}%` }}
     >
-      <BellRingGlassIcon aria-hidden="true" className="size-3.5" />
+      <BellRingGlassIcon aria-hidden="true" className="size-4.5" />
     </span>
   )
 }

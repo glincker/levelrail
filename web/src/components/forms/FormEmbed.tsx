@@ -43,7 +43,7 @@ export function FormEmbed({
     <div className="space-y-3">
       {form.endpoint_source === 'local' && (
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertTitle>{t('embed.noPublicUrl.title')}</AlertTitle>
           <AlertDescription>
             {t('embed.noPublicUrl.body')}

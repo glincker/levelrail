@@ -247,7 +247,7 @@ export function EmailBrandingCard() {
                         })
                       }
                     >
-                      <TrashGlassIcon className="size-4" aria-hidden="true" />
+                      <TrashGlassIcon className="size-5" aria-hidden="true" />
                     </Button>
                   </div>
                 ))}
@@ -268,7 +268,7 @@ export function EmailBrandingCard() {
                     })
                   }
                 >
-                  <PlusGlassIcon className="size-4" aria-hidden="true" />
+                  <PlusGlassIcon className="size-5" aria-hidden="true" />
                   {t('emailBranding.addLink')}
                 </Button>
               </div>
@@ -302,7 +302,7 @@ export function EmailBrandingCard() {
                 })
               }
             >
-              <SaveGlassIcon className="size-4" aria-hidden="true" />
+              <SaveGlassIcon className="size-5" aria-hidden="true" />
               {save.isPending
                 ? t('emailBranding.saving')
                 : t('emailBranding.save')}

@@ -23,7 +23,7 @@ export function ResourceAdvisorTile() {
     <Card data-testid="advisor-tile">
       <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
         <div className="flex min-w-0 items-start gap-3">
-          <LightbulbGlassIcon className="mt-0.5 size-5.5 shrink-0 text-muted-foreground" />
+          <LightbulbGlassIcon className="mt-0.5 size-6 shrink-0 text-muted-foreground" />
           <div className="min-w-0 space-y-1">
             <p className="flex items-center gap-2 text-sm font-medium text-foreground">
               {t('tile.title')}
@@ -76,7 +76,7 @@ export function OptimiseHint({
       className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
       data-testid="optimise-hint"
     >
-      <LightbulbGlassIcon className="size-4.5" />
+      <LightbulbGlassIcon className="size-5" />
       {t('hint.count', { count, name })}
       {kind === 'app' ? (
         <Link to="/apps/$name/resources" params={{ name }} className={cls}>

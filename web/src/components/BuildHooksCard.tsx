@@ -70,7 +70,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LinkGlassIcon className="size-4.5 text-muted-foreground" />
+          <LinkGlassIcon className="size-5 text-muted-foreground" />
           {t('buildHooks.title')}
           <InfoTip label={t('buildHooks.infoTipLabel')}>
             {t('buildHooks.description')}
@@ -96,7 +96,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                 variant="outline"
                 onClick={() => copy(revealedUrl)}
               >
-                <CopyGlassIcon className="size-4.5" />
+                <CopyGlassIcon className="size-5" />
                 {t('buildHooks.copy')}
               </Button>
             </div>
@@ -145,7 +145,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                       })
                     }
                   >
-                    <RefreshCwGlassIcon className="size-4.5" />
+                    <RefreshCwGlassIcon className="size-5" />
                     {t('buildHooks.rotate')}
                   </Button>
                   <Button
@@ -167,7 +167,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                       })
                     }}
                   >
-                    <TrashGlassIcon className="size-4.5" />
+                    <TrashGlassIcon className="size-5" />
                     {confirming === hook.id
                       ? t('buildHooks.confirmRevoke')
                       : t('buildHooks.revoke')}

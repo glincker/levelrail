@@ -48,13 +48,13 @@ function PluginsPage() {
 
   return (
     <PageTemplate
-      icon={<PlugGlassIcon size="1.2em" />}
+      icon={<PlugGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       helpPath="/plugins"
       actions={
         <Button type="button" onClick={() => setInstalling(true)}>
-          <PlusGlassIcon size="1.2em" aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('install')}
         </Button>
       }
@@ -77,7 +77,7 @@ function PluginsPage() {
           ) : plugins.length === 0 ? (
             <EmptyState
               className="gap-2 border-0 bg-transparent py-4"
-              icon={<PlugGlassIcon className="size-5.5" />}
+              icon={<PlugGlassIcon className="size-6" />}
               title={t('empty.title')}
               description={t('empty.description')}
               action={

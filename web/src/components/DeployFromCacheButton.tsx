@@ -29,7 +29,7 @@ export function DeployFromCacheButton({ appName }: { appName: string }) {
         })
       }
     >
-      <DatabaseGlassIcon className="size-4" data-icon="inline-start" />
+      <DatabaseGlassIcon className="size-5" data-icon="inline-start" />
       {deploy.isPending ? t('fromCache.pending') : t('fromCache.action')}
     </Button>
   )

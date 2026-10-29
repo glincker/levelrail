@@ -47,7 +47,7 @@ export function TestFixPanel({
     <Alert variant="destructive">
       <CircleAlertGlassIcon
         className="text-tone-danger"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
       <AlertTitle>{t('fix.title')}</AlertTitle>

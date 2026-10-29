@@ -76,7 +76,7 @@ function OrganizationDetailPage() {
 
       {orgProjects.length === 0 ? (
         <EmptyState
-          icon={<FolderGlassIcon className="size-5.5" />}
+          icon={<FolderGlassIcon className="size-6" />}
           title="No projects filed under this organization yet"
           description="File a project into this organization from the project's own detail page."
           action={

@@ -32,9 +32,9 @@ function FixAction({ check }: { check: TakeoverCheck }) {
         }}
       >
         {copied ? (
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
         ) : (
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
         )}
         {copied ? t('takeover.copied') : t('takeover.copyCommand')}
       </Button>

@@ -103,7 +103,7 @@ export function SharedEnvSecretsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockGlassIcon className="size-4.5" />
+          <LockGlassIcon className="size-5" />
           Secret shared variables
         </CardTitle>
         <CardDescription>
@@ -135,7 +135,7 @@ export function SharedEnvSecretsCard({
                   }}
                   aria-label={`Remove ${k.key}`}
                 >
-                  <XGlassIcon className="size-4.5" />
+                  <XGlassIcon className="size-5" />
                 </Button>
               </li>
             ))}

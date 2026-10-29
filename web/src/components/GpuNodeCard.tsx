@@ -25,7 +25,7 @@ export function GpuNodeCard({ node }: { node: GpuNode }) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <CpuGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
+            <CpuGlassIcon className="size-5 shrink-0" aria-hidden="true" />
             <span className="truncate">{node.name}</span>
             {node.is_local ? <Badge variant="outline">this host</Badge> : null}
           </h3>
@@ -39,7 +39,7 @@ export function GpuNodeCard({ node }: { node: GpuNode }) {
         {runtimeMissing ? (
           <Badge variant="warning">
             <TriangleAlertGlassIcon
-              className="size-3.5 text-tone-warning"
+              className="size-4.5 text-tone-warning"
               aria-hidden="true"
             />
             nvidia runtime missing
@@ -47,7 +47,7 @@ export function GpuNodeCard({ node }: { node: GpuNode }) {
         ) : (
           <Badge variant="success">
             <CircleCheckGlassIcon
-              className="size-3.5 text-tone-success"
+              className="size-4.5 text-tone-success"
               aria-hidden="true"
             />
             ready

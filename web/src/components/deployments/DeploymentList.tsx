@@ -149,7 +149,7 @@ export function DeploymentList({
         cell: (d) =>
           !isRollback(d) && d.commit_sha ? (
             <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
-              <CommitGraphGlassIcon className="size-4" aria-hidden="true" />
+              <CommitGraphGlassIcon className="size-5" aria-hidden="true" />
               {shortSha(d.commit_sha)}
             </span>
           ) : null,
@@ -163,7 +163,7 @@ export function DeploymentList({
           !isRollback(d) && d.branch ? (
             <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
               <GitBranchGlassIcon
-                className="size-4 shrink-0"
+                className="size-5 shrink-0"
                 aria-hidden="true"
               />
               <span className="truncate">{d.branch}</span>

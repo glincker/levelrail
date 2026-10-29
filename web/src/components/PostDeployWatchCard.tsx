@@ -48,7 +48,7 @@ export function PostDeployWatchCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RotateCcwGlassIcon className="size-4.5 text-muted-foreground" />
+          <RotateCcwGlassIcon className="size-5 text-muted-foreground" />
           {t('autoRollback.title')}
           <InfoTip label={t('autoRollback.infoTipLabel')}>
             {t('autoRollback.description')}

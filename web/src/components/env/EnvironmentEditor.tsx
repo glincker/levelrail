@@ -283,7 +283,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
         <EnvPolicyNotice settings={policy} />
         {app.env_dirty ? (
           <Alert>
-            <RefreshCwGlassIcon size="1.2em" aria-hidden />
+            <RefreshCwGlassIcon size="1.4em" aria-hidden />
             <AlertTitle>{t('redeploy.title')}</AlertTitle>
             <AlertDescription>{t('redeploy.description')}</AlertDescription>
             <AlertAction>
@@ -353,7 +353,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
             ) : null}
             {ownRows.length === 0 && !adding ? (
               <EmptyState
-                icon={<ListGlassIcon size="1.2em" />}
+                icon={<ListGlassIcon size="1.4em" />}
                 title={t('empty.title')}
                 description={t('empty.description')}
               />

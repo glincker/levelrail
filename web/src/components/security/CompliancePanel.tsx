@@ -98,7 +98,7 @@ function ReviewsCard() {
             icon={
               <ShieldCheckGlassIcon
                 className="text-tone-success"
-                size="1.2em"
+                size="1.4em"
               />
             }
             title={t('review.title')}
@@ -209,7 +209,7 @@ function PacksCard() {
         </form>
         {(data ?? []).length === 0 ? (
           <EmptyState
-            icon={<FileArchiveGlassIcon size="1.2em" />}
+            icon={<FileArchiveGlassIcon size="1.4em" />}
             title={t('packs.title')}
             description={t('packs.empty')}
           />

@@ -131,9 +131,9 @@ function StepRow({
     <li className="space-y-2 py-3">
       <div className="flex flex-wrap items-center gap-2">
         {done ? (
-          <CircleCheckGlassIcon className="size-5.5 text-tone-success" />
+          <CircleCheckGlassIcon className="size-6 text-tone-success" />
         ) : (
-          <CircleGlassIcon className="size-5.5 text-muted-foreground" />
+          <CircleGlassIcon className="size-6 text-muted-foreground" />
         )}
         <span className="font-medium">{t(`steps.${step.id}`)}</span>
         <Badge variant={done ? 'success' : 'muted'}>

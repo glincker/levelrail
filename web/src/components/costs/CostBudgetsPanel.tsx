@@ -138,7 +138,7 @@ function BudgetRow({ b }: { b: CostBudgetStatus }) {
             aria-label={t('budgets.remove', { name: b.name })}
             onClick={() => setConfirm(true)}
           >
-            <TrashGlassIcon size="1.2em" />
+            <TrashGlassIcon size="1.4em" />
           </Button>
         </div>
       </div>

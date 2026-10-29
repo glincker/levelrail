@@ -128,7 +128,7 @@ export function AttachIntegrationDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button type="button" size="sm" />}>
-        <PlugGlassIcon className="size-4" aria-hidden="true" />
+        <PlugGlassIcon className="size-5" aria-hidden="true" />
         Attach integration
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -153,7 +153,7 @@ export function AttachIntegrationDialog({
                 setSelected(null)
               }}
             >
-              <ArrowLeftGlassIcon size="1.2em" />
+              <ArrowLeftGlassIcon size="1.4em" />
               Back
             </Button>
 
@@ -219,7 +219,7 @@ export function AttachIntegrationDialog({
           <div className="space-y-4">
             <div className="relative">
               <SearchGlassIcon
-                className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
+                className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
               />
               <Input

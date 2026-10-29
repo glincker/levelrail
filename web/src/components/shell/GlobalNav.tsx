@@ -76,7 +76,7 @@ function PinButton({
         if (!blocked) pin.onToggle(item.id)
       }}
     >
-      <PinGlassIcon size="1.2em" aria-hidden="true" />
+      <PinGlassIcon size="1.4em" aria-hidden="true" />
     </SidebarMenuAction>
   )
 }

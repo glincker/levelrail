@@ -120,7 +120,7 @@ export function AlertingQuickSetupPrompt({
 
   return (
     <Alert>
-      <BellRingGlassIcon size="1.2em" />
+      <BellRingGlassIcon size="1.4em" />
       <AlertTitle>Turn on platform-wide alerting</AlertTitle>
       <AlertDescription>
         Certificate expiry, node patch status, node disk space, and node
@@ -185,7 +185,7 @@ export function AlertingQuickSetupPrompt({
           title="Dismiss for now"
           onClick={dismiss}
         >
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
         </Button>
       </AlertAction>
     </Alert>

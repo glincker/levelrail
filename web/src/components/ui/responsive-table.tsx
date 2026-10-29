@@ -109,7 +109,7 @@ function RowActions<T>({
             size="icon-sm"
             aria-label={actionsLabel?.(row) ?? 'Row actions'}
           >
-            <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
+            <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         }
         items={items}

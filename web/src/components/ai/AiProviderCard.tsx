@@ -78,7 +78,7 @@ export function AiProviderCard({
         <ProviderPill provider={provider} />
         {active ? (
           <Badge variant="accent" className="shrink-0">
-            <ZapGlassIcon className="size-3.5" aria-hidden="true" />
+            <ZapGlassIcon className="size-4.5" aria-hidden="true" />
             {t('aiAssistantPage.card.active')}
           </Badge>
         ) : null}

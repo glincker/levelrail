@@ -26,7 +26,7 @@ export function GetStartedNavItem() {
           isActive={pathname === '/get-started'}
           tooltip={label}
         >
-          <RocketGlassIcon size="1.2em" />
+          <RocketGlassIcon size="1.4em" />
           <span>{t('nav.label')}</span>
           <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {guide?.ready_percent ?? 0}%

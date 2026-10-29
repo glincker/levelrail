@@ -71,7 +71,7 @@ function AiChatMessageRow({
   if (message.role === 'tool') {
     return (
       <div className="flex items-start gap-2 pl-1 text-sm text-muted-foreground">
-        <WrenchGlassIcon className="mt-0.5 size-4 shrink-0" />
+        <WrenchGlassIcon className="mt-0.5 size-5 shrink-0" />
         <p className="whitespace-pre-wrap">{message.content}</p>
       </div>
     )
@@ -89,9 +89,9 @@ function AiChatMessageRow({
         aria-hidden="true"
       >
         {isUser ? (
-          <UserGlassIcon className="size-4" />
+          <UserGlassIcon className="size-5" />
         ) : (
-          <BotGlassIcon className="size-4" />
+          <BotGlassIcon className="size-5" />
         )}
       </span>
       <div

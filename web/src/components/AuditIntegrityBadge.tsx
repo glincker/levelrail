@@ -27,7 +27,7 @@ export function AuditIntegrityBadge() {
       >
         <ShieldCheckGlassIcon
           className="text-tone-success"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         {t('integrity.intact')}
@@ -41,7 +41,7 @@ export function AuditIntegrityBadge() {
       >
         <ShieldAlertGlassIcon
           className="text-tone-warning"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         {t('integrity.failed')}

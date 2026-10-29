@@ -14,7 +14,7 @@ export function ShortcutsHelp() {
       <PopoverTrigger
         render={
           <Button variant="ghost" size="sm" className="hidden md:inline-flex">
-            <KeyboardGlassIcon size="1.2em" aria-hidden="true" />
+            <KeyboardGlassIcon size="1.4em" aria-hidden="true" />
             Shortcuts
           </Button>
         }

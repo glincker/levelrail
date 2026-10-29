@@ -45,7 +45,7 @@ export function TrialAppBanner({ app }: { app: TrialApp }) {
     <div className="flex flex-col gap-2 rounded-lg border border-tone-accent-border bg-tone-accent-soft p-3 text-tone-accent sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2">
         <FlaskConicalGlassIcon
-          className="mt-0.5 size-4.5 shrink-0"
+          className="mt-0.5 size-5 shrink-0"
           aria-hidden="true"
         />
         <div className="text-sm">
@@ -63,7 +63,7 @@ export function TrialAppBanner({ app }: { app: TrialApp }) {
             setKeepOpen(true)
           }}
         >
-          <PinGlassIcon className="size-4" aria-hidden="true" />
+          <PinGlassIcon className="size-5" aria-hidden="true" />
           {t('banner.keep')}
         </Button>
         <Button
@@ -72,7 +72,7 @@ export function TrialAppBanner({ app }: { app: TrialApp }) {
           variant="destructive"
           onClick={() => setDeleteOpen(true)}
         >
-          <TrashGlassIcon className="size-4" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('banner.delete')}
         </Button>
       </div>

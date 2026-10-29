@@ -48,7 +48,7 @@ export function DiskUsageCard({ status }: { status: SystemStatus }) {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <ServerGlassIcon className="size-4.5" />
+            <ServerGlassIcon className="size-5" />
           </div>
           <div>
             <CardTitle>Data directory</CardTitle>

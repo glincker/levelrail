@@ -175,7 +175,7 @@ export function SplitTestingPanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FlaskConicalGlassIcon className="size-4.5 text-muted-foreground" />
+          <FlaskConicalGlassIcon className="size-5 text-muted-foreground" />
           {t('title')}
           <InfoTip label={t('title')}>{t('description')}</InfoTip>
         </CardTitle>

@@ -140,7 +140,7 @@ export function RuleNoiseDialog({
           />
         }
       >
-        <SlidersHorizontalGlassIcon className="size-4" aria-hidden="true" />
+        <SlidersHorizontalGlassIcon className="size-5" aria-hidden="true" />
         Noise
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

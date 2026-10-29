@@ -47,7 +47,7 @@ function NotificationChannelsPage() {
 
   return (
     <PageTemplate
-      icon={<WebhookGlassIcon size="1.2em" />}
+      icon={<WebhookGlassIcon size="1.4em" />}
       eyebrow={t('channelsPage.eyebrow')}
       title={t('channelsPage.title')}
       description={t('channelsPage.description')}

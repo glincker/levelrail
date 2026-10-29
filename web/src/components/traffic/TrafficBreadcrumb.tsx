@@ -56,7 +56,7 @@ export function TrafficBreadcrumb() {
           search={parent.search}
           className={`${CRUMB_LINK_CLASS} flex items-center gap-1 text-xs sm:hidden`}
         >
-          <ChevronLeftGlassIcon className="size-4" aria-hidden="true" />
+          <ChevronLeftGlassIcon className="size-5" aria-hidden="true" />
           {text(parent)}
         </Link>
       ) : null}
@@ -68,7 +68,7 @@ export function TrafficBreadcrumb() {
           <span key={crumb.id} className="flex items-center gap-1.5">
             {index > 0 ? (
               <ChevronRightGlassIcon
-                className="size-3.5 shrink-0 text-muted-foreground/50"
+                className="size-4.5 shrink-0 text-muted-foreground/50"
                 aria-hidden="true"
               />
             ) : null}

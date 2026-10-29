@@ -87,7 +87,7 @@ export function SAMLTestResult({
       'response_invalid'
     return (
       <Alert variant="destructive">
-        <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+        <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         <AlertTitle>{t(`saml.test.failure.${key}.title`)}</AlertTitle>
         <AlertDescription className="space-y-1">
           <p>
@@ -110,12 +110,12 @@ export function SAMLTestResult({
       <div className="flex items-center gap-2 text-sm font-medium">
         {ev.allowed ? (
           <CircleCheckGlassIcon
-            className="size-5.5 text-success"
+            className="size-6 text-success"
             aria-hidden="true"
           />
         ) : (
           <CircleAlertGlassIcon
-            className="size-5.5 text-destructive"
+            className="size-6 text-destructive"
             aria-hidden="true"
           />
         )}

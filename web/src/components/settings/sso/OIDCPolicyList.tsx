@@ -79,7 +79,7 @@ export function OIDCPolicyList({
     <FormSection title={t('oidc.title')} description={t('oidc.description')}>
       {policies.length === 0 ? (
         <EmptyState
-          icon={<KeyGlassIcon className="size-5.5" />}
+          icon={<KeyGlassIcon className="size-6" />}
           title={t('oidc.emptyTitle')}
           description={t('oidc.emptyBody')}
           compact
@@ -115,7 +115,7 @@ export function OIDCPolicyList({
                 size="sm"
                 onClick={() => setEditing(p.provider)}
               >
-                <SettingsGlassIcon size="1.2em" aria-hidden="true" />
+                <SettingsGlassIcon size="1.4em" aria-hidden="true" />
                 {t('list.configure')}
               </Button>
             </li>

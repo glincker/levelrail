@@ -358,7 +358,7 @@ export function BuildCacheCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LayersGlassIcon className="size-4.5" aria-hidden="true" />
+          <LayersGlassIcon className="size-5" aria-hidden="true" />
           {appName === '' ? t('buildCache.titleAll') : t('buildCache.title')}
         </CardTitle>
         <CardDescription>{t('buildCache.description')}</CardDescription>

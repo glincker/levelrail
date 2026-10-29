@@ -56,7 +56,7 @@ export function EmailSecretField({
         <div className="mt-1.5 flex flex-wrap items-start gap-2">
           <Badge variant="success" className="h-7">
             <CircleCheckGlassIcon
-              className="size-3.5 text-tone-success"
+              className="size-4.5 text-tone-success"
               aria-hidden="true"
             />
             {t('emailProviders.secret.set')}
@@ -71,7 +71,7 @@ export function EmailSecretField({
             }}
             aria-label={t('emailProviders.secret.replaceLabel', { label })}
           >
-            <KeyGlassIcon size="1.2em" aria-hidden="true" />
+            <KeyGlassIcon size="1.4em" aria-hidden="true" />
             {t('emailProviders.secret.replace')}
           </Button>
           {providerId ? (

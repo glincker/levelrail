@@ -101,7 +101,7 @@ export function LogEntryDetail({
               void navigator.clipboard.writeText(entry.message)
             }}
           >
-            <CopyGlassIcon className="size-4" aria-hidden="true" />
+            <CopyGlassIcon className="size-5" aria-hidden="true" />
           </Button>
           <Button
             type="button"
@@ -110,7 +110,7 @@ export function LogEntryDetail({
             aria-label={t('explorer.closeDetail')}
             onClick={onClose}
           >
-            <XGlassIcon className="size-4" aria-hidden="true" />
+            <XGlassIcon className="size-5" aria-hidden="true" />
           </Button>
         </div>
       </div>

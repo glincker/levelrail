@@ -80,7 +80,7 @@ function ResultRow({
     return (
       <li className="flex items-start gap-2 py-2 text-sm">
         <CircleAlertGlassIcon
-          className="mt-0.5 size-4.5 shrink-0 text-destructive"
+          className="mt-0.5 size-5 shrink-0 text-destructive"
           aria-hidden="true"
         />
         <div className="min-w-0">
@@ -94,7 +94,7 @@ function ResultRow({
     <li className="py-2 text-sm">
       <div className="flex items-center gap-2">
         <CircleCheckGlassIcon
-          className="size-4.5 shrink-0 text-emerald-600"
+          className="size-5 shrink-0 text-emerald-600"
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1 truncate font-mono">
@@ -111,9 +111,9 @@ function ResultRow({
           }}
         >
           {open ? (
-            <ChevronDownGlassIcon size="1.2em" />
+            <ChevronDownGlassIcon size="1.4em" />
           ) : (
-            <ChevronRightGlassIcon size="1.2em" />
+            <ChevronRightGlassIcon size="1.4em" />
           )}
           {open
             ? t('page.addDialog.hideRecord')
@@ -308,7 +308,7 @@ function AddDomainsBody({
               }}
             >
               <RefreshCwGlassIcon
-                size="1.2em"
+                size="1.4em"
                 className={verifying ? 'animate-spin' : undefined}
               />
               {verifying
@@ -437,7 +437,7 @@ function AddDomainsBody({
         <Button type="submit" disabled={!canSubmit}>
           {isSubmitting ? (
             <LoaderCircleGlassIcon
-              size="1.2em"
+              size="1.4em"
               className="animate-spin"
               aria-hidden="true"
             />

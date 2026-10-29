@@ -132,7 +132,7 @@ export function AddNodeMethodList({
                     </Badge>
                     <ArrowRightGlassIcon
                       aria-hidden="true"
-                      className="size-4.5 text-muted-foreground"
+                      className="size-5 text-muted-foreground"
                     />
                   </span>
                 }
@@ -177,7 +177,7 @@ export function AddNodeMethodList({
         <Row
           mark={
             <span className="flex size-(--glinr-tile-size) shrink-0 items-center justify-center rounded-lg border border-border bg-background">
-              <TerminalGlassIcon aria-hidden="true" className="size-5.5" />
+              <TerminalGlassIcon aria-hidden="true" className="size-6" />
             </span>
           }
           title={t('nodeProviders.addNodeDialog.sshTitle')}
@@ -186,14 +186,14 @@ export function AddNodeMethodList({
           trailing={
             <ArrowRightGlassIcon
               aria-hidden="true"
-              className="size-4.5 shrink-0 text-muted-foreground"
+              className="size-5 shrink-0 text-muted-foreground"
             />
           }
         />
         <Row
           mark={
             <span className="flex size-(--glinr-tile-size) shrink-0 items-center justify-center rounded-lg border border-border bg-background">
-              <ServerGlassIcon aria-hidden="true" className="size-5.5" />
+              <ServerGlassIcon aria-hidden="true" className="size-6" />
             </span>
           }
           title={t('nodeProviders.addNodeDialog.manualTitle')}
@@ -202,7 +202,7 @@ export function AddNodeMethodList({
           trailing={
             <ArrowRightGlassIcon
               aria-hidden="true"
-              className="size-4.5 shrink-0 text-muted-foreground"
+              className="size-5 shrink-0 text-muted-foreground"
             />
           }
         />

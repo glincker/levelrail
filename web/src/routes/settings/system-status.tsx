@@ -45,7 +45,7 @@ function SummaryBanner({
   if (fail === 0 && warn === 0) {
     return (
       <Alert>
-        <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+        <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
         <AlertTitle>{t('doctorPage.allPassedTitle')}</AlertTitle>
         <AlertDescription>{t('doctorPage.allPassedBody')}</AlertDescription>
       </Alert>
@@ -53,7 +53,7 @@ function SummaryBanner({
   }
   return (
     <Alert variant={fail > 0 ? 'destructive' : 'default'}>
-      <CircleXGlassIcon className="text-tone-danger" size="1.2em" />
+      <CircleXGlassIcon className="text-tone-danger" size="1.4em" />
       <AlertTitle>
         {fail > 0
           ? t('doctorPage.failedTitle', { count: fail })
@@ -83,7 +83,7 @@ function DoctorPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <ActivityGlassIcon className="size-4.5" />
+          <ActivityGlassIcon className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader
@@ -99,7 +99,7 @@ function DoctorPage() {
                 disabled={state.running}
               >
                 <RefreshCwGlassIcon
-                  size="1.2em"
+                  size="1.4em"
                   className={state.running ? 'animate-spin' : ''}
                 />
                 {t('doctorPage.rerun')}
@@ -129,7 +129,7 @@ function DoctorPage() {
 
       {state.error ? (
         <Alert variant="destructive">
-          <CircleXGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleXGlassIcon className="text-tone-danger" size="1.4em" />
           <AlertTitle>{t('doctorPage.streamErrorTitle')}</AlertTitle>
           <AlertDescription>{t('doctorPage.streamErrorBody')}</AlertDescription>
         </Alert>
@@ -143,7 +143,7 @@ function DoctorPage() {
       {state.running ? null : <DoctorFixAll onDone={rerun} />}
 
       <Alert>
-        <InfoGlassIcon className="text-tone-info" size="1.2em" />
+        <InfoGlassIcon className="text-tone-info" size="1.4em" />
         <AlertTitle>{t('doctorPage.ingressTitle')}</AlertTitle>
         <AlertDescription>
           {t('doctorPage.ingressBody')}{' '}

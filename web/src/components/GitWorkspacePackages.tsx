@@ -125,7 +125,7 @@ export function GitWorkspacePackages({
           onClick={runCheck}
         >
           {check.isPending ? (
-            <LoaderGlassIcon className="size-4.5 animate-spin" />
+            <LoaderGlassIcon className="size-5 animate-spin" />
           ) : null}
           {check.isPending ? t('workspace.checking') : t('workspace.check')}
         </Button>

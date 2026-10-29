@@ -38,9 +38,9 @@ export function PublishLockToggle({ appName }: { appName: string }) {
       }
     >
       {data.locked ? (
-        <LockOpenGlassIcon className="size-4" data-icon="inline-start" />
+        <LockOpenGlassIcon className="size-5" data-icon="inline-start" />
       ) : (
-        <LockGlassIcon className="size-4" data-icon="inline-start" />
+        <LockGlassIcon className="size-5" data-icon="inline-start" />
       )}
       {data.locked ? t('publishLock.unlock') : t('publishLock.lock')}
     </Button>
@@ -58,7 +58,7 @@ export function PublishLockBanner({ appName }: { appName: string }) {
   const held = data.held_builds.length
   return (
     <Alert>
-      <LockGlassIcon size="1.2em" />
+      <LockGlassIcon size="1.4em" />
       <AlertTitle>{t('publishLock.bannerTitle')}</AlertTitle>
       <AlertDescription>
         {t('publishLock.bannerBody', {

@@ -30,7 +30,7 @@ export function FootprintCard({ idle }: { idle: IdleFootprint }) {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <CpuGlassIcon size="1.2em" aria-hidden="true" />
+            <CpuGlassIcon size="1.4em" aria-hidden="true" />
             {t('title')}
           </CardTitle>
           <Badge variant={STATUS_VARIANT[idle.status]}>

@@ -15,12 +15,12 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
             <li key={e.id} className="flex items-start gap-2 text-sm">
               {e.failed ? (
                 <CircleAlertGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-tone-danger"
+                  className="mt-0.5 size-5 shrink-0 text-tone-danger"
                   aria-hidden="true"
                 />
               ) : (
                 <ClockGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-muted-foreground"
+                  className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                   aria-hidden="true"
                 />
               )}

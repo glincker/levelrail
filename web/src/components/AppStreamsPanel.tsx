@@ -48,7 +48,7 @@ export function AppStreamsPanel({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <PlugGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('page.title')}
@@ -61,7 +61,7 @@ export function AppStreamsPanel({ appName }: { appName: string }) {
         {streams.length === 0 ? (
           <EmptyState
             className="py-8"
-            icon={<PlugGlassIcon className="size-5.5" />}
+            icon={<PlugGlassIcon className="size-6" />}
             title={t('empty.title')}
             description={t('empty.description')}
           />
@@ -154,7 +154,7 @@ function StreamsTable({
             remove(stream)
           }}
         >
-          <TrashGlassIcon size="1.2em" aria-hidden="true" />
+          <TrashGlassIcon size="1.4em" aria-hidden="true" />
           {deleteStream.isPending ? t('remove.removing') : t('remove.trigger')}
         </Button>
       )}
@@ -246,7 +246,7 @@ function AddStreamForm({ appName }: { appName: string }) {
           containerPort.trim() === ''
         }
       >
-        <PlusGlassIcon size="1.2em" aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {createStream.isPending ? t('add.submitting') : t('add.submit')}
       </Button>
 
@@ -254,7 +254,7 @@ function AddStreamForm({ appName }: { appName: string }) {
         <Alert variant="destructive" className="w-full">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           <AlertDescription>{createStream.error.message}</AlertDescription>

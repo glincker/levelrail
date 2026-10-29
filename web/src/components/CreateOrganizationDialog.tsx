@@ -56,13 +56,13 @@ export function CreateOrganizationDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         New organization
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UniversityGlassIcon className="size-4.5 text-muted-foreground" />
+            <UniversityGlassIcon className="size-5 text-muted-foreground" />
             New organization
           </DialogTitle>
           <DialogDescription>
@@ -88,7 +88,7 @@ export function CreateOrganizationDialog() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>
                 {createOrganization.error.message}

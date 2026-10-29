@@ -78,7 +78,7 @@ export function TopList({
                         size="icon-sm"
                         aria-label={t('topList.actionsFor', { key: row.key })}
                       >
-                        <EllipsisGlassIcon size="1.2em" />
+                        <EllipsisGlassIcon size="1.4em" />
                       </Button>
                     }
                     items={menuFor(row)}

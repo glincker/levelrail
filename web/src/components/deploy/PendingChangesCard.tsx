@@ -55,7 +55,7 @@ export function PendingChangesCard({
       className="space-y-2 rounded-lg border bg-muted/30 p-3"
     >
       <h3 className="flex items-center gap-1.5 text-sm font-medium">
-        <GitCompareGlassIcon className="size-4.5" aria-hidden="true" />
+        <GitCompareGlassIcon className="size-5" aria-hidden="true" />
         {t('pending.title')}
       </h3>
       {empty ? (

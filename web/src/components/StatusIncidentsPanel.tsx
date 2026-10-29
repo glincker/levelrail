@@ -192,7 +192,7 @@ function CreateIncidentForm() {
         </p>
       ) : null}
       <Button type="submit" size="sm" disabled={create.isPending}>
-        <CirclePlusGlassIcon className="size-4.5" aria-hidden="true" />
+        <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
         Publish
       </Button>
     </form>

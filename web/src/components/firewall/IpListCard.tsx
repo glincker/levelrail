@@ -131,9 +131,9 @@ export function IpListCard({
             compact
             icon={
               block ? (
-                <BanGlassIcon className="size-5.5" />
+                <BanGlassIcon className="size-6" />
               ) : (
-                <ShieldCheckGlassIcon className="size-5.5 text-tone-success" />
+                <ShieldCheckGlassIcon className="size-6 text-tone-success" />
               )
             }
             title={
@@ -181,7 +181,7 @@ export function IpListCard({
                   })}
                   onClick={() => remove(r)}
                 >
-                  <TrashGlassIcon size="1.2em" />
+                  <TrashGlassIcon size="1.4em" />
                 </Button>
               </div>
             )}

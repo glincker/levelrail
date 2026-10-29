@@ -86,7 +86,7 @@ function DetachVolumeButton({
         }
       >
         <TrashGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
       </DialogTrigger>
@@ -94,7 +94,7 @@ function DetachVolumeButton({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Detach &ldquo;{volume.name}&rdquo;?
@@ -192,7 +192,7 @@ export function AppVolumesEditor({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ServerGlassIcon className="size-4.5" aria-hidden="true" />
+          <ServerGlassIcon className="size-5" aria-hidden="true" />
           Volumes
         </CardTitle>
         <CardDescription>

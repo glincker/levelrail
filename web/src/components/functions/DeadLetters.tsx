@@ -72,7 +72,7 @@ export function DeadLetters() {
                   retry.mutate(inv.id, { onError })
                 }}
               >
-                <RotateCwGlassIcon size="1.2em" />
+                <RotateCwGlassIcon size="1.4em" />
                 {t('triggers.dead.retry')}
               </Button>
               <Button
@@ -84,7 +84,7 @@ export function DeadLetters() {
                   discard.mutate(inv.id, { onError })
                 }}
               >
-                <TrashGlassIcon size="1.2em" />
+                <TrashGlassIcon size="1.4em" />
                 {t('triggers.dead.discard')}
               </Button>
             </li>

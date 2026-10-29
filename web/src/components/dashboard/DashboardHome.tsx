@@ -64,7 +64,7 @@ function UsageDetails() {
         {t('usageDetails.title')}
         <ChevronDownGlassIcon
           aria-hidden="true"
-          className={`size-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`size-5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open ? (
@@ -125,7 +125,7 @@ function StartView({
                 setEditing((v) => !v)
               }}
             >
-              <SlidersHorizontalGlassIcon size="1.2em" />
+              <SlidersHorizontalGlassIcon size="1.4em" />
               {editing ? t('customize.done') : null}
             </Button>
           </span>

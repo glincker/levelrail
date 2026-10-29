@@ -55,7 +55,7 @@ export function PredeploySnapshotCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CameraGlassIcon className="size-4.5 text-muted-foreground" />
+          <CameraGlassIcon className="size-5 text-muted-foreground" />
           {t('predeploySnapshot.title')}
           <InfoTip
             label={t('predeploySnapshot.infoTipLabel')}

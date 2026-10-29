@@ -278,7 +278,7 @@ function FieldHint({
             className="inline-flex items-center gap-0.5"
           >
             {linkText}
-            <ExternalLinkGlassIcon className="size-3.5" aria-hidden="true" />
+            <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
           </a>
         </>
       ) : null}

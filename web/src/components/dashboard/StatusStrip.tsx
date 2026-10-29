@@ -46,7 +46,7 @@ function OfflineNodes({
         TONE.danger.text,
       )}
     >
-      <ServerGlassIcon aria-hidden="true" className="size-5.5" />
+      <ServerGlassIcon aria-hidden="true" className="size-6" />
       {t('strip.nodeOffline', { count: nodes.length, names })}
       {since ? (
         <span className="font-normal">
@@ -135,7 +135,7 @@ export function StatusStrip({
                 <ChevronDownGlassIcon
                   aria-hidden="true"
                   className={cn(
-                    'size-3.5 transition-transform',
+                    'size-4.5 transition-transform',
                     open && 'rotate-180',
                   )}
                 />

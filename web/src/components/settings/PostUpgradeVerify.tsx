@@ -46,9 +46,9 @@ export function PostUpgradeVerify() {
             }
           >
             {data.ok ? (
-              <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+              <CircleCheckGlassIcon className="size-5 text-tone-success" />
             ) : (
-              <CircleXGlassIcon className="size-4.5 text-tone-danger" />
+              <CircleXGlassIcon className="size-5 text-tone-danger" />
             )}
             {data.ok
               ? warned.length > 0

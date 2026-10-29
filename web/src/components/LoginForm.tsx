@@ -199,13 +199,13 @@ export function LoginForm({
 
       {isRateLimited ? (
         <Alert variant="destructive">
-          <ClockGlassIcon size="1.2em" />
+          <ClockGlassIcon size="1.4em" />
           <AlertTitle>Too many attempts</AlertTitle>
           <AlertDescription>Try again in {secondsRemaining}s.</AlertDescription>
         </Alert>
       ) : login.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{login.error.message}</AlertDescription>
         </Alert>
       ) : null}

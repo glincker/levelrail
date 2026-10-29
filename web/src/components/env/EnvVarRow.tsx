@@ -61,7 +61,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
         </span>
         {row.sensitive && row.type === 'plain' ? (
           <Badge variant="outline" className="gap-1">
-            <LockGlassIcon size="1.2em" aria-hidden />
+            <LockGlassIcon size="1.4em" aria-hidden />
             {t('sensitive.badge')}
           </Badge>
         ) : null}
@@ -79,7 +79,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
               size="sm"
               onClick={props.onOverride}
             >
-              <PlusGlassIcon size="1.2em" />
+              <PlusGlassIcon size="1.4em" />
               {t('actions.override')}
             </Button>
           </div>
@@ -92,7 +92,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
               props.onChange({ ...row, removed: false })
             }}
           >
-            <ReplyGlassIcon size="1.2em" />
+            <ReplyGlassIcon size="1.4em" />
             {t('actions.undoRemove')}
           </Button>
         ) : (
@@ -136,7 +136,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                 />
               }
             >
-              <EllipsisGlassIcon size="1.2em" />
+              <EllipsisGlassIcon size="1.4em" />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {existingPlain ? (
@@ -147,7 +147,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                         props.onSensitivity(false)
                       }}
                     >
-                      <ShieldOffGlassIcon size="1.2em" />
+                      <ShieldOffGlassIcon size="1.4em" />
                       {t('actions.markPlain')}
                     </DropdownMenuItem>
                   ) : (
@@ -158,7 +158,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                     >
                       <ShieldCheckGlassIcon
                         className="text-tone-success"
-                        size="1.2em"
+                        size="1.4em"
                       />
                       {t('actions.markSensitive')}
                     </DropdownMenuItem>
@@ -172,7 +172,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                   </DropdownMenuItem>
                   {props.canConvert ? (
                     <DropdownMenuItem onClick={props.onConvert}>
-                      <LockGlassIcon size="1.2em" />
+                      <LockGlassIcon size="1.4em" />
                       {t('actions.convert')}
                     </DropdownMenuItem>
                   ) : null}
@@ -184,7 +184,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                   props.onChange({ ...row, removed: true })
                 }}
               >
-                <TrashGlassIcon size="1.2em" />
+                <TrashGlassIcon size="1.4em" />
                 {t('actions.remove')}
               </DropdownMenuItem>
             </DropdownMenuContent>

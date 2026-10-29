@@ -36,7 +36,7 @@ export function AiChatHistoryMenu({
       <DropdownMenuTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <RestoreGlassIcon size="1.2em" />
+        <RestoreGlassIcon size="1.4em" />
         History
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -53,7 +53,7 @@ export function AiChatHistoryMenu({
                   onResume(session.id)
                 }}
               >
-                <RestoreGlassIcon size="1.2em" />
+                <RestoreGlassIcon size="1.4em" />
                 <span className="truncate">
                   {session.id === activeSessionId
                     ? 'Current session'
@@ -69,7 +69,7 @@ export function AiChatHistoryMenu({
                   deleteSession.mutate(session.id)
                 }}
               >
-                <TrashGlassIcon size="1.2em" />
+                <TrashGlassIcon size="1.4em" />
                 Delete this session
               </DropdownMenuItem>
             </div>

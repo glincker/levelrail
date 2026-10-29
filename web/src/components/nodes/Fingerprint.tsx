@@ -36,9 +36,9 @@ export function Fingerprint({ value }: { value?: string }) {
         }}
       >
         {copied ? (
-          <CheckGlassIcon className="size-4" aria-hidden="true" />
+          <CheckGlassIcon className="size-5" aria-hidden="true" />
         ) : (
-          <CopyGlassIcon className="size-4" aria-hidden="true" />
+          <CopyGlassIcon className="size-5" aria-hidden="true" />
         )}
       </Button>
     </span>

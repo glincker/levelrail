@@ -13,7 +13,7 @@ function EmailLogPage() {
   const { t } = useTranslation('settings')
   return (
     <PageTemplate
-      icon={<FileSearchGlassIcon size="1.2em" />}
+      icon={<FileSearchGlassIcon size="1.4em" />}
       eyebrow={t('emailPage.eyebrow')}
       title={t('emailDelivery.log.title')}
       description={t('emailDelivery.log.description')}
@@ -24,7 +24,7 @@ function EmailLogPage() {
           to="/settings/email"
           className={buttonVariants({ variant: 'outline', size: 'sm' })}
         >
-          <ArrowLeftGlassIcon className="size-4" aria-hidden="true" />
+          <ArrowLeftGlassIcon className="size-5" aria-hidden="true" />
           {t('emailDelivery.log.back')}
         </Link>
       }

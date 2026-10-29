@@ -99,11 +99,11 @@ export function DeploySuggestions({
             s.severity === 'warning' ? (
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
                 aria-hidden="true"
               />
             ) : (
-              <LightbulbGlassIcon size="1.2em" aria-hidden="true" />
+              <LightbulbGlassIcon size="1.4em" aria-hidden="true" />
             )
           }
           title={t(copyKey(s, 'title'), s.params)}

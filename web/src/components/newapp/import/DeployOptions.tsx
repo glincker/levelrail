@@ -193,7 +193,7 @@ export function DeployOptions({
                       })
                     }}
                   >
-                    <TrashGlassIcon aria-hidden="true" className="size-4.5" />
+                    <TrashGlassIcon aria-hidden="true" className="size-5" />
                   </Button>
                 </div>
                 {job.preset === 'custom' ? (
@@ -225,7 +225,7 @@ export function DeployOptions({
               setNextId(nextId + 1)
             }}
           >
-            <PlusGlassIcon aria-hidden="true" className="size-4.5" />
+            <PlusGlassIcon aria-hidden="true" className="size-5" />
             {t('deployOptions.jobs.add')}
           </Button>
         </CollapsiblePanel>

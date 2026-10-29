@@ -62,25 +62,25 @@ function KindIcon({ kind }: { kind: ActivityKind }) {
   const cls = 'size-4 text-muted-foreground'
   switch (kind) {
     case 'sign_in':
-      return <LogInGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+      return <LogInGlassIcon size="1.4em" className={cls} aria-hidden="true" />
     case 'security':
       return (
-        <ShieldCheckGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+        <ShieldCheckGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
     case 'sessions':
       return (
         <TabletSmartphoneGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cls}
           aria-hidden="true"
         />
       )
     case 'tokens':
     case 'token_use':
-      return <KeyGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+      return <KeyGlassIcon size="1.4em" className={cls} aria-hidden="true" />
     default:
       return (
-        <CircleUserGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+        <CircleUserGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
   }
 }
@@ -207,7 +207,7 @@ export function MyActivityCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('common.loadFailed')}</span>
@@ -224,7 +224,7 @@ export function MyActivityCard() {
         ) : rows.length === 0 ? (
           <EmptyState
             compact
-            icon={<RestoreGlassIcon className="size-5.5" />}
+            icon={<RestoreGlassIcon className="size-6" />}
             title={
               filter === 'all'
                 ? t('activity.emptyTitle')

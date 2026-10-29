@@ -32,7 +32,7 @@ function EmailMessagesPage() {
       writeAction
       onClick={() => setComposing(true)}
     >
-      <PlusGlassIcon size="1.2em" data-icon="inline-start" />
+      <PlusGlassIcon size="1.4em" data-icon="inline-start" />
       {t('messages.compose')}
     </Button>
   )
@@ -57,7 +57,7 @@ function EmailMessagesPage() {
       ) : null}
       {!isLoading && !error && broadcasts.length === 0 ? (
         <EmptyState
-          icon={<MailGlassIcon className="size-5.5" />}
+          icon={<MailGlassIcon className="size-6" />}
           title={t('messages.history.empty.title')}
           description={t('messages.history.empty.description')}
           action={composeButton}

@@ -30,7 +30,7 @@ export function IngressConnectivityCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+          <PlugGlassIcon className="size-5" aria-hidden="true" />
           {t('connectivityCard.title')}
         </CardTitle>
         <CardDescription>{t('connectivityCard.description')}</CardDescription>
@@ -80,7 +80,7 @@ export function IngressConnectivityCard() {
           }}
         >
           <RefreshCwGlassIcon
-            className={isFetching ? 'size-4 animate-spin' : 'size-4'}
+            className={isFetching ? 'size-5 animate-spin' : 'size-5'}
             aria-hidden="true"
           />
           {t('connectivityCard.check')}

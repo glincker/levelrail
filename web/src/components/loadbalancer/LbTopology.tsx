@@ -65,9 +65,9 @@ export function LbTopology({
           onClick={() => onPausedChange(!paused)}
         >
           {animate ? (
-            <PauseGlassIcon size="1.2em" data-icon="inline-start" />
+            <PauseGlassIcon size="1.4em" data-icon="inline-start" />
           ) : (
-            <PlayGlassIcon size="1.2em" data-icon="inline-start" />
+            <PlayGlassIcon size="1.4em" data-icon="inline-start" />
           )}
           {reduced ? 'Motion off' : animate ? 'Pause' : 'Play'}
         </Button>

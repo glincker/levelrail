@@ -53,7 +53,7 @@ export function WidgetFrame({
           }}
           className="cursor-grab rounded p-1 hover:bg-muted active:cursor-grabbing"
         >
-          <GripVerticalGlassIcon className="size-4.5" />
+          <GripVerticalGlassIcon className="size-5" />
         </span>
         <span className="flex-1 font-medium text-foreground">{name}</span>
         <button
@@ -65,7 +65,7 @@ export function WidgetFrame({
           }}
           className="rounded p-1 hover:bg-muted disabled:opacity-40"
         >
-          <ArrowUpGlassIcon className="size-4.5" />
+          <ArrowUpGlassIcon className="size-5" />
         </button>
         <button
           type="button"
@@ -76,7 +76,7 @@ export function WidgetFrame({
           }}
           className="rounded p-1 hover:bg-muted disabled:opacity-40"
         >
-          <ArrowDownGlassIcon className="size-4.5" />
+          <ArrowDownGlassIcon className="size-5" />
         </button>
         <button
           type="button"
@@ -87,7 +87,7 @@ export function WidgetFrame({
           }}
           className={cn('rounded p-1 hover:bg-muted disabled:opacity-40')}
         >
-          <EyeOffGlassIcon className="size-4.5" />
+          <EyeOffGlassIcon className="size-5" />
         </button>
       </div>
       {children}

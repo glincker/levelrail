@@ -365,7 +365,7 @@ export function FindingsStep({
               >
                 <CircleCheckGlassIcon
                   className="text-tone-success"
-                  size="1.2em"
+                  size="1.4em"
                   aria-hidden="true"
                 />
                 {t('findings.advanced.validateDirectory')}

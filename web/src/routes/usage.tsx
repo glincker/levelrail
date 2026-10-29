@@ -67,7 +67,7 @@ function UsagePage() {
               />
             }
           >
-            <DownloadGlassIcon size="1.2em" />
+            <DownloadGlassIcon size="1.4em" />
             {t('export.csv')}
           </Button>
         </>
@@ -100,13 +100,13 @@ function UsagePage() {
         <>
           {!data.telemetry_available ? (
             <EmptyState
-              icon={<CoinsGlassIcon size="1.2em" />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.noTelemetryTitle')}
               description={t('empty.noTelemetryDescription')}
             />
           ) : !data.configured ? (
             <EmptyState
-              icon={<CoinsGlassIcon size="1.2em" />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.notConfiguredTitle')}
               description={
                 settingsForbidden || !canPrice

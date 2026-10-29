@@ -91,7 +91,7 @@ export function EventWebhookDeliveries({ webhookId }: { webhookId: string }) {
                 })
               }}
             >
-              <RotateCwGlassIcon className="size-4" aria-hidden="true" />
+              <RotateCwGlassIcon className="size-5" aria-hidden="true" />
               {t('deliveries.replay')}
             </Button>
           ) : null}

@@ -53,7 +53,7 @@ export function TemplateServices({
                 </Badge>
                 {s.port ? (
                   <Badge variant="outline">
-                    <PlugGlassIcon className="size-3.5" aria-hidden="true" />
+                    <PlugGlassIcon className="size-4.5" aria-hidden="true" />
                     {t('detail.deployed.port', { port: s.port })}
                   </Badge>
                 ) : null}
@@ -71,7 +71,7 @@ export function TemplateServices({
               {volumes.length > 0 ? (
                 <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
                   <ServerGlassIcon
-                    className="mt-0.5 size-4 shrink-0"
+                    className="mt-0.5 size-5 shrink-0"
                     aria-label={t('install.volumes')}
                   />
                   <span className="min-w-0 font-mono break-all">
@@ -93,7 +93,7 @@ export function TemplateServices({
                       >
                         {e.secret || kind !== 'optional' ? (
                           <KeyGlassIcon
-                            className="size-3.5"
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                         ) : null}

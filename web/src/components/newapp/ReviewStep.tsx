@@ -70,7 +70,7 @@ export function ReviewStep({
           return (
             <li key={c.id} className="flex items-start gap-3 px-3 py-2">
               <PlusGlassIcon
-                className="mt-0.5 size-4.5 shrink-0 text-tone-success"
+                className="mt-0.5 size-5 shrink-0 text-tone-success"
                 aria-label={t('review.willCreate')}
               />
               <Icon
@@ -131,7 +131,7 @@ export function ReviewStep({
           disabled={deploying || missing.length > 0}
           onClick={onDeploy}
         >
-          <RocketGlassIcon size="1.2em" />
+          <RocketGlassIcon size="1.4em" />
           {deploying ? t('review.deploying') : t('review.deploy')}
         </Button>
       </div>

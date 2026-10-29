@@ -93,7 +93,7 @@ export function ConditionRow({
           aria-label={t('builder.removeCondition', { n })}
           onClick={onRemove}
         >
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
         </Button>
       </div>
       {nameError || valueError ? (

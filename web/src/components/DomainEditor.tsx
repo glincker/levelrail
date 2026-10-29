@@ -115,7 +115,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
+          <GlobeGlassIcon className="size-5" aria-hidden="true" />
           {t('editor.title')}
         </CardTitle>
         <CardDescription>
@@ -192,7 +192,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                             remove(index)
                           }}
                         >
-                          <XGlassIcon size="1.2em" aria-hidden="true" />
+                          <XGlassIcon size="1.4em" aria-hidden="true" />
                           <span className="sr-only">{t('editor.remove')}</span>
                         </Button>
                       </Field>
@@ -285,7 +285,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                   append({ value: '' })
                 }}
               >
-                <PlusGlassIcon size="1.2em" aria-hidden="true" />
+                <PlusGlassIcon size="1.4em" aria-hidden="true" />
                 {t('editor.add')}
               </Button>
               <Button type="submit" size="sm" disabled={updateApp.isPending}>

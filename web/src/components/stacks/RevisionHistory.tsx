@@ -123,7 +123,7 @@ export function RevisionHistory({
                   onApprove(r)
                 }}
               >
-                <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                <CheckGlassIcon size="1.4em" aria-hidden="true" />
               </Button>
             ) : null}
             {isRoot && r.status === 'pending_approval' ? (
@@ -136,7 +136,7 @@ export function RevisionHistory({
                   onReject(r.number)
                 }}
               >
-                <XGlassIcon size="1.2em" aria-hidden="true" />
+                <XGlassIcon size="1.4em" aria-hidden="true" />
               </Button>
             ) : null}
             <Button
@@ -148,7 +148,7 @@ export function RevisionHistory({
                 onView(r.number)
               }}
             >
-              <EyeGlassIcon size="1.2em" aria-hidden="true" />
+              <EyeGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -159,7 +159,7 @@ export function RevisionHistory({
                 onDiff(r.number)
               }}
             >
-              <GitCompareGlassIcon size="1.2em" aria-hidden="true" />
+              <GitCompareGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -171,7 +171,7 @@ export function RevisionHistory({
                 onRollback(r.number)
               }}
             >
-              <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />
+              <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -185,9 +185,9 @@ export function RevisionHistory({
               }}
             >
               {pinned ? (
-                <PinGlassIcon size="1.2em" aria-hidden="true" />
+                <PinGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <PinGlassIcon size="1.2em" aria-hidden="true" />
+                <PinGlassIcon size="1.4em" aria-hidden="true" />
               )}
             </Button>
           </span>

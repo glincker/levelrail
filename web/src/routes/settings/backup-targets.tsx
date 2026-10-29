@@ -30,7 +30,7 @@ function BackupTargetsPage() {
 
   return (
     <PageTemplate
-      icon={<UploadGlassIcon size="1.2em" />}
+      icon={<UploadGlassIcon size="1.4em" />}
       eyebrow={t('backupTargetsPage.eyebrow')}
       title={t('backupTargetsPage.title')}
       description={t('backupTargetsPage.description')}

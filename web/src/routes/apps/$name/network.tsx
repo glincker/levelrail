@@ -45,7 +45,7 @@ function NetworkSectionSkeleton() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Share2GlassIcon className="size-4.5" />
+            <Share2GlassIcon className="size-5" />
             Network
           </CardTitle>
           <Skeleton className="h-4 w-72" />

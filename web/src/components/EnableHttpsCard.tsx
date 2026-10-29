@@ -138,14 +138,14 @@ function StatusBody({
     return (
       <div className="space-y-3">
         <p className="flex items-center gap-2 text-sm" role="status">
-          <LoaderCircleGlassIcon className="size-4.5 animate-spin" />
+          <LoaderCircleGlassIcon className="size-5 animate-spin" />
           {t('card.pending', { domain: status.domain })}
         </p>
         {closed.length > 0 ? (
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertTitle>{t('card.preflightTitle')}</AlertTitle>
             <AlertDescription>
@@ -165,7 +165,7 @@ function StatusBody({
     return (
       <div className="space-y-3">
         <p className="flex items-center gap-2 text-sm font-medium">
-          <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+          <CircleCheckGlassIcon className="size-5 text-tone-success" />
           {t('card.issued', { domain: status.domain })}
         </p>
         <p className="text-xs text-muted-foreground">
@@ -175,7 +175,7 @@ function StatusBody({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{t('card.stagingIssued')}</AlertDescription>
           </Alert>
@@ -194,7 +194,7 @@ function StatusBody({
   return (
     <div className="space-y-3">
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         <AlertTitle>{t('card.failedTitle')}</AlertTitle>
         <AlertDescription>
           <p>{t(`hint.${status.hint ?? 'unknown'}`)}</p>
@@ -244,7 +244,7 @@ export function EnableHttpsCard({ compact = false }: { compact?: boolean }) {
       <Card>
         <CardContent className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-0.5">
           <p className="flex min-w-0 items-center gap-2 text-sm font-medium">
-            <LockGlassIcon aria-hidden="true" className="size-4.5 shrink-0" />
+            <LockGlassIcon aria-hidden="true" className="size-5 shrink-0" />
             <span className="truncate">{t('card.title')}</span>
           </p>
           <Button
@@ -266,7 +266,7 @@ export function EnableHttpsCard({ compact = false }: { compact?: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockGlassIcon className="size-4.5" />
+          <LockGlassIcon className="size-5" />
           {t('card.title')}
         </CardTitle>
         {status?.state === 'off' && !status.suggested_domain ? (

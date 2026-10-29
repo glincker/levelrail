@@ -82,7 +82,7 @@ export function DomainDnsRecordsControl({
           className="flex items-center gap-1.5 text-left"
         >
           <Badge variant="muted" className="shrink-0">
-            <GlobeGlassIcon className="size-3.5" aria-hidden="true" />
+            <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
             {isLoading
               ? t('recordsControl.title')
               : notConfigured
@@ -97,7 +97,7 @@ export function DomainDnsRecordsControl({
           aria-expanded={false}
           onClick={() => setOpen(true)}
         >
-          <GlobeGlassIcon className="size-4" aria-hidden="true" />
+          <GlobeGlassIcon className="size-5" aria-hidden="true" />
           {t('recordsControl.manage')}
         </Button>
       </div>
@@ -108,7 +108,7 @@ export function DomainDnsRecordsControl({
     <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 font-medium text-foreground">
-          <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
+          <GlobeGlassIcon className="size-5" aria-hidden="true" />
           {data?.zone
             ? t('recordsControl.titleForZone', {
                 zone: data.zone.replace(/\.$/, ''),
@@ -131,7 +131,7 @@ export function DomainDnsRecordsControl({
       ) : notConfigured ? (
         <Alert>
           <CircleAlertGlassIcon
-            className="size-4.5 text-tone-danger"
+            className="size-5 text-tone-danger"
             aria-hidden="true"
           />
           <AlertDescription>{t('recordsControl.noProvider')}</AlertDescription>
@@ -244,7 +244,7 @@ export function DomainDnsRecordsControl({
                   })
                 }}
               >
-                <PlusGlassIcon size="1.2em" aria-hidden="true" />
+                <PlusGlassIcon size="1.4em" aria-hidden="true" />
                 <span className="sr-only">{t('recordsControl.addRecord')}</span>
               </Button>
             </Field>

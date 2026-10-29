@@ -53,7 +53,7 @@ export function TemplateRequirementsCard({
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2 text-sm">
           <ShieldCheckGlassIcon
-            className="size-4.5 text-tone-success"
+            className="size-5 text-tone-success"
             aria-hidden="true"
           />
           {t('requirements.title')}
@@ -67,7 +67,7 @@ export function TemplateRequirementsCard({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>
               {t('requirements.elevatedWarning')}
@@ -97,7 +97,7 @@ export function TemplateRequirementsCard({
         <Collapsible>
           <CollapsibleTrigger className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             {t('requirements.showAll')}
-            <ChevronDownGlassIcon className="size-3.5" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsiblePanel>
             <div className="mt-2 space-y-3">

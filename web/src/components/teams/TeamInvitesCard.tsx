@@ -184,7 +184,7 @@ export function TeamInvitesCard({
                   )
               }}
             >
-              <CopyGlassIcon size="1.2em" aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
               {t('invites.copy')}
             </Button>
           </div>

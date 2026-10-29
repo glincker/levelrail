@@ -31,7 +31,7 @@ export function ConnectionBanner() {
 
   return (
     <Alert variant="destructive" className="rounded-none border-x-0 border-t-0">
-      <WifiOffGlassIcon size="1.2em" />
+      <WifiOffGlassIcon size="1.4em" />
       <AlertTitle>Can&apos;t reach the control plane. Retrying...</AlertTitle>
       <AlertDescription>
         <span role="status" aria-live="polite">
@@ -51,7 +51,7 @@ export function ConnectionBanner() {
           >
             {state.probing ? (
               <LoaderCircleGlassIcon
-                size="1.2em"
+                size="1.4em"
                 className="motion-safe:animate-spin"
               />
             ) : null}
@@ -68,7 +68,7 @@ export function ConnectionBanner() {
           title="Dismiss for now"
           onClick={dismissConnectionBanner}
         >
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
         </Button>
       </AlertAction>
     </Alert>

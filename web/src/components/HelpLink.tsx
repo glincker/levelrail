@@ -78,7 +78,7 @@ export function HelpLink({
         )}
       >
         {label}
-        {external ? <ExternalLinkGlassIcon className="size-4" /> : null}
+        {external ? <ExternalLinkGlassIcon className="size-5" /> : null}
       </a>
     )
   }
@@ -97,7 +97,7 @@ export function HelpLink({
               className,
             )}
           >
-            <CircleQuestionMarkGlassIcon size="1.2em" />
+            <CircleQuestionMarkGlassIcon size="1.4em" />
           </a>
         }
       />

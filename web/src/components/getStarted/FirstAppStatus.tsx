@@ -119,7 +119,7 @@ export function FirstAppStatus({
         <p className="flex items-center gap-2 text-sm text-foreground">
           <CircleCheckGlassIcon
             aria-hidden="true"
-            className="size-5.5 shrink-0 text-tone-success"
+            className="size-6 shrink-0 text-tone-success"
           />
           {t('first.status.liveDetail', { name: app.name })}
         </p>
@@ -131,7 +131,7 @@ export function FirstAppStatus({
             nativeButton={false}
           >
             {url}
-            <ExternalLinkGlassIcon size="1.2em" />
+            <ExternalLinkGlassIcon size="1.4em" />
           </Button>
         ) : (
           <p className="text-xs text-muted-foreground">
@@ -165,7 +165,7 @@ export function FirstAppStatus({
     return (
       <div className="space-y-3 rounded-lg border border-destructive/40 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <CircleAlertGlassIcon className="size-5.5 text-destructive" />
+          <CircleAlertGlassIcon className="size-6 text-destructive" />
           {t('first.status.failed', { name: app.name })}
         </p>
         {failure ? (
@@ -238,7 +238,7 @@ export function FirstAppStatus({
   return (
     <div className="space-y-3 rounded-lg border border-border p-4">
       <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <LoaderCircleGlassIcon className="size-5.5 animate-spin text-primary motion-reduce:animate-none" />
+        <LoaderCircleGlassIcon className="size-6 animate-spin text-primary motion-reduce:animate-none" />
         {t('first.status.deploying', { name: app.name })}
       </p>
       <p className="text-sm text-muted-foreground">

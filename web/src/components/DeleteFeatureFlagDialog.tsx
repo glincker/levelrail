@@ -20,7 +20,7 @@ export function DeleteFeatureFlagDialog({
     <ConfirmAction
       trigger={(openDialog) => (
         <Button variant="destructive" size="sm" onClick={openDialog}>
-          <TrashGlassIcon className="size-4" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('confirmAction.featureFlag.trigger', { defaultValue: 'Delete' })}
         </Button>
       )}

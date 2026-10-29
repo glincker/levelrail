@@ -85,7 +85,7 @@ export function SleepFleetCard() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <MoonGlassIcon className="size-5.5" aria-hidden="true" />
+              <MoonGlassIcon className="size-6" aria-hidden="true" />
             </span>
             <div>
               <h3 className="text-sm font-semibold text-foreground">

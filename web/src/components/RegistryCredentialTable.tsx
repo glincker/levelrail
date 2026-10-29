@@ -113,7 +113,7 @@ function TestButton({ credential }: { credential: RegistryCredential }) {
         })
       }}
     >
-      <PlugGlassIcon className="size-4" aria-hidden="true" />
+      <PlugGlassIcon className="size-5" aria-hidden="true" />
       {testCredential.isPending
         ? t('registryPage.table.testing')
         : t('registryPage.table.test')}
@@ -136,7 +136,7 @@ export function RegistryCredentialTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<PackageGlassIcon className="size-5.5" />}
+        icon={<PackageGlassIcon className="size-6" />}
         title={t('registryPage.empty.title')}
         description={t('registryPage.empty.body')}
         action={action}

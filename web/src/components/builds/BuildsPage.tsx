@@ -30,7 +30,7 @@ export function BuildsPage() {
       width="wide"
       banner={
         <PageBanner
-          icon={<HammerGlassIcon size="1.2em" />}
+          icon={<HammerGlassIcon size="1.4em" />}
           titleKey="buildCenter:title"
           descriptionKey={
             isEmpty ? 'buildCenter:banner.description' : 'buildCenter:subtitle'
@@ -43,7 +43,7 @@ export function BuildsPage() {
                   setPruneOpen(true)
                 }}
               >
-                <BroomGlassIcon size="1.2em" />
+                <BroomGlassIcon size="1.4em" />
                 {t('actions.freeCache')}
               </Button>
             ) : null

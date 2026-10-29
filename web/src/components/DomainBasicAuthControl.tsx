@@ -87,13 +87,13 @@ export function DomainBasicAuthControl({
           {protectedNow ? (
             <EnforcedBadge domain={domain} control="basic_auth">
               <Badge variant="success" className="shrink-0">
-                <LockGlassIcon className="size-3.5" />
+                <LockGlassIcon className="size-4.5" />
                 Basic auth on
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <LockOpenGlassIcon className="size-3.5" />
+              <LockOpenGlassIcon className="size-4.5" />
               Not protected
             </Badge>
           )}
@@ -104,7 +104,7 @@ export function DomainBasicAuthControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <LockGlassIcon className="size-4" />
+          <LockGlassIcon className="size-5" />
           {open ? 'Hide' : protectedNow ? 'Manage' : 'Protect with basic auth'}
         </Button>
       </div>

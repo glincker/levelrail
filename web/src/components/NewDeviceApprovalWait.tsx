@@ -103,7 +103,7 @@ export function NewDeviceApprovalWait({
         >
           <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
             <ShieldCheckGlassIcon
-              className="size-5.5 text-tone-success"
+              className="size-6 text-tone-success"
               aria-hidden="true"
             />
           </span>
@@ -130,7 +130,7 @@ export function NewDeviceApprovalWait({
             </div>
           ) : null}
           <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-            <CountdownGlassIcon className="size-4.5" aria-hidden="true" />
+            <CountdownGlassIcon className="size-5" aria-hidden="true" />
             <span aria-hidden="true" data-testid="approval-countdown">
               {t('approval.countdown', { time: formatRemaining(remaining) })}
             </span>
@@ -150,7 +150,7 @@ export function NewDeviceApprovalWait({
         </section>
       ) : (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>
             {effective === 'denied'
               ? t('approval.denied')

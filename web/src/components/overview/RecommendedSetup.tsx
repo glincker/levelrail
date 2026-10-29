@@ -45,7 +45,7 @@ export function RecommendedSetup({
         <span className="flex items-center gap-2 text-muted-foreground">
           {t('setup.progress', { done, total: items.length })}
           <ChevronDownGlassIcon
-            className="size-4.5 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+            className="size-5 transition-transform group-open:rotate-180 motion-reduce:transition-none"
             aria-hidden="true"
           />
         </span>
@@ -57,7 +57,7 @@ export function RecommendedSetup({
               {i.done ? (
                 <span className="flex items-center gap-2 py-1 text-muted-foreground line-through">
                   <CircleCheckGlassIcon
-                    className="size-4.5 text-tone-success"
+                    className="size-5 text-tone-success"
                     aria-hidden="true"
                   />
                   {i.label}
@@ -68,7 +68,7 @@ export function RecommendedSetup({
                   params={{ name: app.name }}
                   className="flex items-center gap-2 rounded-md py-1 hover:bg-muted"
                 >
-                  <CircleGlassIcon className="size-4.5" aria-hidden="true" />
+                  <CircleGlassIcon className="size-5" aria-hidden="true" />
                   {i.label}
                 </Link>
               )}
@@ -86,7 +86,7 @@ export function RecommendedSetup({
           onClick={onHide}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <XGlassIcon className="size-3.5" aria-hidden="true" />
+          <XGlassIcon className="size-4.5" aria-hidden="true" />
           {t('setup.hide')}
         </button>
       </div>

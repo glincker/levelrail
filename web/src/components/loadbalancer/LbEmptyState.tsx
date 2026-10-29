@@ -18,14 +18,14 @@ function Diagram({ replicas }: { replicas: number }) {
     >
       <span className="rounded-lg border px-2.5 py-1">Clients</span>
       <ArrowRightGlassIcon
-        className="size-4 text-muted-foreground"
+        className="size-5 text-muted-foreground"
         aria-hidden
       />
       <span className="rounded-lg border border-tone-accent-border bg-tone-accent-soft px-2.5 py-1">
         Proxy
       </span>
       <ArrowRightGlassIcon
-        className="size-4 text-muted-foreground"
+        className="size-5 text-muted-foreground"
         aria-hidden
       />
       <span className="flex gap-1">
@@ -57,7 +57,7 @@ export function LbEmptyState({
   return (
     <div className="space-y-6">
       <EmptyState
-        icon={<SplitGlassIcon size="1.2em" />}
+        icon={<SplitGlassIcon size="1.4em" />}
         title="Spread traffic across replicas"
         description="Health checks, retries and clean cutovers. Least connections with passive failure detection is a good start. Add an active health check once your app serves one."
         action={

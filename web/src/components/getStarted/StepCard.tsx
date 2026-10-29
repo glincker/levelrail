@@ -16,12 +16,12 @@ import type { SetupGuideStep, SetupGuideState } from '../../lib/setupGuide'
 import { isOpen } from '../../lib/setupGuide'
 
 const STATE_ICON: Record<SetupGuideState, ReactNode> = {
-  todo: <CircleDashedGlassIcon className="size-5.5 text-muted-foreground" />,
-  in_progress: <LoaderCircleGlassIcon className="size-5.5 text-tone-info" />,
-  done: <CircleCheckGlassIcon className="size-5.5 text-tone-success" />,
-  skipped: <CircleMinusGlassIcon className="size-5.5 text-muted-foreground" />,
+  todo: <CircleDashedGlassIcon className="size-6 text-muted-foreground" />,
+  in_progress: <LoaderCircleGlassIcon className="size-6 text-tone-info" />,
+  done: <CircleCheckGlassIcon className="size-6 text-tone-success" />,
+  skipped: <CircleMinusGlassIcon className="size-6 text-muted-foreground" />,
   not_applicable: (
-    <CircleMinusGlassIcon className="size-5.5 text-muted-foreground" />
+    <CircleMinusGlassIcon className="size-6 text-muted-foreground" />
   ),
 }
 
@@ -104,7 +104,7 @@ export function StepCard({
                   nativeButton={false}
                 >
                   {t(`steps.${step.id}.cta`)}
-                  <ArrowRightGlassIcon size="1.2em" aria-hidden="true" />
+                  <ArrowRightGlassIcon size="1.4em" aria-hidden="true" />
                 </Button>
               ))
             ) : step.state !== 'not_applicable' ? (
@@ -162,7 +162,7 @@ function StepMeta({
     <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
       {parts.length > 0 ? (
         <span className="inline-flex items-center gap-1">
-          <ClockGlassIcon aria-hidden="true" className="size-4" />
+          <ClockGlassIcon aria-hidden="true" className="size-5" />
           {parts.join(' · ')}
         </span>
       ) : null}

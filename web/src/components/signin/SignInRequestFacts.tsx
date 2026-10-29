@@ -92,7 +92,7 @@ export function SignInRequestFacts({
       </Fact>
       <Fact
         inline={compact}
-        icon={<LocateGlassIcon className="size-4.5" />}
+        icon={<LocateGlassIcon className="size-5" />}
         label={t('request.factWhere')}
       >
         <span className="font-mono">{request.requester_ip}</span>
@@ -102,7 +102,7 @@ export function SignInRequestFacts({
       </Fact>
       <Fact
         inline={compact}
-        icon={<CountdownGlassIcon className="size-4.5" />}
+        icon={<CountdownGlassIcon className="size-5" />}
         label={t('request.factWhen')}
       >
         <time
@@ -115,7 +115,7 @@ export function SignInRequestFacts({
       {compact ? null : (
         <Fact
           inline={compact}
-          icon={<CountdownGlassIcon className="size-4.5" />}
+          icon={<CountdownGlassIcon className="size-5" />}
           label={t('request.factExpires')}
         >
           <span className="tabular-nums" aria-hidden="true">

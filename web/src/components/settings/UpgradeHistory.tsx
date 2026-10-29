@@ -91,7 +91,7 @@ function HistoryRow({
               })
             }}
           >
-            <CheckGlassIcon className="size-4.5" />
+            <CheckGlassIcon className="size-5" />
             {t('upgradeHistory.acknowledge')}
           </Button>
         </div>
@@ -106,7 +106,7 @@ function HistoryRow({
         {item.from_version !== '' ? (
           <>
             <VersionChip value={item.from_version} />
-            <ArrowRightGlassIcon className="size-4 text-muted-foreground" />
+            <ArrowRightGlassIcon className="size-5 text-muted-foreground" />
           </>
         ) : null}
         <VersionChip value={item.to_version} />
@@ -165,7 +165,7 @@ function HistoryRow({
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
             {t('upgradeHistory.releasePage')}
-            <ExternalLinkGlassIcon className="size-4" />
+            <ExternalLinkGlassIcon className="size-5" />
           </a>
         ) : item.kind === 'development' ? (
           <span className="text-xs text-muted-foreground">
@@ -180,7 +180,7 @@ function HistoryRow({
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
             {t('upgradeHistory.compare')}
-            <ExternalLinkGlassIcon className="size-4" />
+            <ExternalLinkGlassIcon className="size-5" />
           </a>
         ) : null}
         {item.rollback_available ? (
@@ -192,7 +192,7 @@ function HistoryRow({
               onRollback(item.from_version)
             }}
           >
-            <RotateCcwGlassIcon className="size-4.5" />
+            <RotateCcwGlassIcon className="size-5" />
             {t('upgradeHistory.rollbackTo', { version: item.from_version })}
           </Button>
         ) : null}
@@ -206,9 +206,9 @@ function HistoryRow({
             }}
           >
             {open ? (
-              <ChevronDownGlassIcon className="size-4" />
+              <ChevronDownGlassIcon className="size-5" />
             ) : (
-              <ChevronRightGlassIcon className="size-4" />
+              <ChevronRightGlassIcon className="size-5" />
             )}
             {t('upgradeHistory.notes')}
           </button>

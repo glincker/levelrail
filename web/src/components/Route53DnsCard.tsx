@@ -99,7 +99,7 @@ export function Route53DnsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudGlassIcon className="size-4.5" />
+          <CloudGlassIcon className="size-5" />
           Wildcard domains (Route53 DNS-01)
         </CardTitle>
         <CardDescription>

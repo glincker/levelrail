@@ -52,7 +52,7 @@ export function TemplateCredentialRow({
                 onCopy(value)
               }}
             >
-              <CopyGlassIcon size="1.2em" aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -61,7 +61,7 @@ export function TemplateCredentialRow({
               aria-label={t('result.hide', { key: secretKey })}
               onClick={onHide}
             >
-              <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
+              <EyeOffGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           </>
         ) : canReveal ? (
@@ -72,7 +72,7 @@ export function TemplateCredentialRow({
             aria-label={t('result.reveal', { key: secretKey })}
             onClick={onReveal}
           >
-            <EyeGlassIcon size="1.2em" aria-hidden="true" />
+            <EyeGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         ) : null}
       </span>

@@ -97,7 +97,7 @@ export function IacExportCard() {
               variant="outline"
               onClick={() => download(text, `${fileName}.yaml`)}
             >
-              <DownloadGlassIcon className="size-4.5" />
+              <DownloadGlassIcon className="size-5" />
               Download
             </Button>
           ) : null}

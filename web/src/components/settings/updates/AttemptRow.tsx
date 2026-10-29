@@ -41,7 +41,7 @@ export function AttemptRow({
       >
         <ChevronRightGlassIcon
           className={cn(
-            'size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none',
+            'size-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none',
             open && 'rotate-90',
           )}
           aria-hidden="true"
@@ -55,7 +55,7 @@ export function AttemptRow({
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           <VersionLabel value={attempt.from_version} />
           <ArrowRightGlassIcon
-            className="size-4 shrink-0 text-muted-foreground"
+            className="size-5 shrink-0 text-muted-foreground"
             aria-label={t('selfUpgrade.to')}
           />
           <VersionLabel value={attempt.to_version} />

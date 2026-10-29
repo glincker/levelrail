@@ -62,7 +62,7 @@ export function AddNodeDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         {t('join.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -156,7 +156,7 @@ export function ManualEnrollFields({
         </DialogHeader>
 
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-          <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
+          <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
           <p className="text-sm">{t('join.singleUse', { time: expires })}</p>
         </div>
 
@@ -247,10 +247,10 @@ export function ManualEnrollFields({
               onClick={onBack}
               aria-label={t('join.back')}
             >
-              <ArrowLeftGlassIcon size="1.2em" />
+              <ArrowLeftGlassIcon size="1.4em" />
             </Button>
           ) : null}
-          <ServerGlassIcon className="size-4.5 text-muted-foreground" />
+          <ServerGlassIcon className="size-5 text-muted-foreground" />
           {t('join.title')}
         </DialogTitle>
         <DialogDescription>{t('join.description')}</DialogDescription>
@@ -363,7 +363,7 @@ export function ManualEnrollFields({
 
       {createJoinToken.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{createJoinToken.error.message}</AlertDescription>
         </Alert>
       ) : null}

@@ -86,7 +86,7 @@ export function FunctionVersionsTab({ name }: Readonly<{ name: string }>) {
                       )
                     }
                   >
-                    <RotateCcwGlassIcon size="1.2em" aria-hidden />
+                    <RotateCcwGlassIcon size="1.4em" aria-hidden />
                     {t('detail.versions.rollback')}
                   </Button>
                   <Button
@@ -101,7 +101,7 @@ export function FunctionVersionsTab({ name }: Readonly<{ name: string }>) {
                       })
                     }
                   >
-                    <PinGlassIcon size="1.2em" aria-hidden />
+                    <PinGlassIcon size="1.4em" aria-hidden />
                     {t('detail.versions.pin')}
                   </Button>
                 </div>

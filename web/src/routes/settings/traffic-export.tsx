@@ -12,7 +12,7 @@ function TrafficExportPage() {
   const { t } = useTranslation('trafficExport')
   return (
     <PageTemplate
-      icon={<Share2GlassIcon size="1.2em" />}
+      icon={<Share2GlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
     >

@@ -53,7 +53,7 @@ export function TemplateFeaturedStrip({
           }}
         >
           <ChevronDownGlassIcon
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
             className={cn('transition-transform', !open && '-rotate-90')}
           />
@@ -126,7 +126,7 @@ export function TemplateFeaturedStrip({
                     onDeployNow(template)
                   }}
                 >
-                  <RocketGlassIcon size="1.2em" aria-hidden="true" />
+                  <RocketGlassIcon size="1.4em" aria-hidden="true" />
                   {deploying
                     ? t('marketplace.card.deploying')
                     : t('marketplace.card.deploy')}

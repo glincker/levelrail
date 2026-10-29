@@ -92,7 +92,7 @@ export function SuppressionCard() {
                   writeAction
                   onClick={() => remove.mutate(s.email)}
                 >
-                  <TrashGlassIcon size="1.2em" />
+                  <TrashGlassIcon size="1.4em" />
                 </Button>
               </li>
             ))}

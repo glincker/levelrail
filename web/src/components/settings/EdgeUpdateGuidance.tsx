@@ -74,7 +74,7 @@ export function EdgeUpdateGuidance({
             className="inline-flex items-center gap-1 font-mono text-primary hover:underline"
           >
             {t('edge.commit', { commit: edge.commit.slice(0, 7) })}
-            <ExternalLinkGlassIcon className="size-4" />
+            <ExternalLinkGlassIcon className="size-5" />
           </a>
         ) : edge.commit ? (
           <span className="font-mono">

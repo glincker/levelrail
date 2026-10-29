@@ -29,9 +29,9 @@ export function RuleCodeView({ code }: { code: string }) {
           onClick={() => void copy()}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
           ) : (
-            <CopyGlassIcon size="1.2em" />
+            <CopyGlassIcon size="1.4em" />
           )}
           {copied ? t('builder.copied') : t('builder.copy')}
         </Button>

@@ -223,7 +223,7 @@ export function UsersCard({
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-1.5 text-sm">
-            <UsersGlassIcon className="size-4.5" aria-hidden="true" />
+            <UsersGlassIcon className="size-5" aria-hidden="true" />
             {t('users.title')}
           </CardTitle>
           <p className="text-xs text-muted-foreground">
@@ -231,7 +231,7 @@ export function UsersCard({
           </p>
         </div>
         <Button size="sm" onClick={() => setCreating(true)}>
-          <UserPlusGlassIcon size="1.2em" aria-hidden="true" />
+          <UserPlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('users.create')}
         </Button>
       </CardHeader>
@@ -254,7 +254,7 @@ export function UsersCard({
             />
             {onlyAdmin ? (
               <EmptyState
-                icon={<UsersGlassIcon className="size-5.5" />}
+                icon={<UsersGlassIcon className="size-6" />}
                 title={t('users.emptyTitle')}
                 description={t('users.emptyBody')}
                 action={

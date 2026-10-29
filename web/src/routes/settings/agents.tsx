@@ -23,7 +23,7 @@ function AgentsPage() {
   const brand = useBrand()
   return (
     <PageTemplate
-      icon={<PlugGlassIcon size="1.2em" />}
+      icon={<PlugGlassIcon size="1.4em" />}
       title={t('agentsPage.title')}
       description={t('agentsPage.description')}
     >

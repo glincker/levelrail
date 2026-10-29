@@ -59,7 +59,7 @@ export function FunctionDetail({ name, extraTabs = [] }: FunctionDetailProps) {
           to="/functions"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeftGlassIcon aria-hidden className="size-4.5" />
+          <ArrowLeftGlassIcon aria-hidden className="size-5" />
           {t('detail.back')}
         </Link>
         <h1 className="text-xl font-semibold">{name}</h1>

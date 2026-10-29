@@ -50,9 +50,9 @@ function CopyLine({ text, label }: { text: string; label: string }) {
         }}
       >
         {copied ? (
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
         ) : (
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
         )}
         {copied ? t('push.copied') : t('push.copy')}
       </Button>
@@ -116,7 +116,7 @@ export function GitPushRemoteCard({ appName }: { appName: string }) {
   const header = (
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
-        <GitBranchGlassIcon className="size-4.5 text-muted-foreground" />
+        <GitBranchGlassIcon className="size-5 text-muted-foreground" />
         {t('push.title')}
       </CardTitle>
       <CardDescription>{t('push.description')}</CardDescription>
@@ -229,7 +229,7 @@ export function GitPushRemoteCard({ appName }: { appName: string }) {
                   setConfirm('rotate')
                 }}
               >
-                <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+                <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
                 {t('push.rotate')}
               </Button>
               <Button
@@ -239,7 +239,7 @@ export function GitPushRemoteCard({ appName }: { appName: string }) {
                   setConfirm('revoke')
                 }}
               >
-                <BanGlassIcon className="size-4" aria-hidden="true" />
+                <BanGlassIcon className="size-5" aria-hidden="true" />
                 {t('push.revoke')}
               </Button>
             </div>

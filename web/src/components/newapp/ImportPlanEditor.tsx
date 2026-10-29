@@ -347,7 +347,7 @@ export function ImportPlanEditor({
                         }}
                       >
                         <SlidersHorizontalGlassIcon
-                          className="size-4.5"
+                          className="size-5"
                           aria-hidden
                         />
                         {t('plan.editor.envButton', { count: r.env.length })}
@@ -361,7 +361,7 @@ export function ImportPlanEditor({
                           {r.row.warnings.map((w) => (
                             <li key={w.code} className="flex items-start gap-1">
                               <TriangleAlertGlassIcon
-                                className="mt-0.5 size-3.5 shrink-0 text-tone-warning"
+                                className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
                                 aria-hidden
                               />
                               {t(`plan.warnings.${w.code}`, {
@@ -384,7 +384,7 @@ export function ImportPlanEditor({
               disabled={included.length === 0 || mutation.isPending}
               onClick={runDry}
             >
-              <RocketGlassIcon className="size-4.5" aria-hidden />
+              <RocketGlassIcon className="size-5" aria-hidden />
               {mutation.isPending
                 ? t('plan.editor.checking')
                 : t('plan.editor.review', { count: included.length })}
@@ -412,7 +412,7 @@ export function ImportPlanEditor({
               disabled={wouldCreate === 0 || mutation.isPending}
               onClick={startCreate}
             >
-              <RocketGlassIcon className="size-4.5" aria-hidden />
+              <RocketGlassIcon className="size-5" aria-hidden />
               {mutation.isPending
                 ? t('plan.editor.creating')
                 : t('plan.editor.create', { count: wouldCreate })}
@@ -435,7 +435,7 @@ export function ImportPlanEditor({
         <>
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <CircleCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden
             />
             {t('plan.editor.resultsSummary', {
@@ -452,7 +452,7 @@ export function ImportPlanEditor({
                 disabled={mutation.isPending}
                 onClick={retryFailed}
               >
-                <RotateCwGlassIcon className="size-4.5" aria-hidden />
+                <RotateCwGlassIcon className="size-5" aria-hidden />
                 {t('plan.editor.retryFailed', { count: failedRows.length })}
               </Button>
             ) : null}
@@ -631,7 +631,7 @@ function EnvEditor({
               onChange(entries.filter((x) => x.id !== e.id))
             }}
           >
-            <TrashGlassIcon className="size-4.5" aria-hidden />
+            <TrashGlassIcon className="size-5" aria-hidden />
           </Button>
         </div>
       ))}
@@ -646,7 +646,7 @@ function EnvEditor({
           ])
         }}
       >
-        <PlusGlassIcon className="size-4.5" aria-hidden />
+        <PlusGlassIcon className="size-5" aria-hidden />
         {t('plan.editor.envAdd')}
       </Button>
     </div>

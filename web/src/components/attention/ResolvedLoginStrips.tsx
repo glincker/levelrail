@@ -68,7 +68,7 @@ function Strip({ item }: { item: DeviceActivityItem }) {
     >
       <InfoGlassIcon
         aria-hidden="true"
-        className="size-5.5 shrink-0 text-tone-info"
+        className="size-6 shrink-0 text-tone-info"
       />
       <div className="min-w-0 flex-1">
         <p className="font-medium">{title}</p>

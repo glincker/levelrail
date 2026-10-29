@@ -54,7 +54,7 @@ export function MeshConnectivityPanel() {
               disabled={query.isFetching}
               onClick={() => void query.refetch()}
             >
-              <RefreshCwGlassIcon size="1.2em" />
+              <RefreshCwGlassIcon size="1.4em" />
               {t('connectivity.refresh')}
             </Button>
           </CardAction>
@@ -65,7 +65,7 @@ export function MeshConnectivityPanel() {
           <Skeleton className="h-16 w-full" />
         ) : meshOff ? (
           <EmptyState
-            icon={<WifiOffGlassIcon className="size-5.5" />}
+            icon={<WifiOffGlassIcon className="size-6" />}
             title={t('connectivity.off')}
             description={t('connectivity.offDescription')}
           />
@@ -87,7 +87,7 @@ export function MeshConnectivityPanel() {
           </Alert>
         ) : query.data.pairs.length === 0 ? (
           <EmptyState
-            icon={<WifiOffGlassIcon className="size-5.5" />}
+            icon={<WifiOffGlassIcon className="size-6" />}
             title={t('connectivity.empty')}
             description={t('connectivity.emptyDescription')}
           />

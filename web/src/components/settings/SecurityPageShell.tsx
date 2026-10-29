@@ -16,7 +16,7 @@ export function SecurityPageShell({ children }: { children: ReactNode }) {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />}
       eyebrow={t('securityPage.eyebrow')}
       title={t('securityPage.title')}
       description={t('securityPage.description')}

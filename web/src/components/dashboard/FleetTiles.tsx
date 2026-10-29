@@ -67,14 +67,14 @@ export function FleetTiles({
       <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-3 @5xl:grid-cols-5">
         <MetricTile
           label={tr('tiles.appsRunning')}
-          icon={<PackageGlassIcon className="size-4" />}
+          icon={<PackageGlassIcon className="size-5" />}
           value={`${buckets.running} / ${summary.total}`}
           tone={buckets.failing > 0 ? 'danger' : 'success'}
           onClick={() => void navigate({ to: '/apps' })}
         />
         <MetricTile
           label={tr('tiles.requests')}
-          icon={<ActivityGlassIcon className="size-4" />}
+          icon={<ActivityGlassIcon className="size-5" />}
           value={
             t.ratePerSec > 0
               ? Number(t.ratePerSec.toFixed(1))
@@ -96,7 +96,7 @@ export function FleetTiles({
         />
         <MetricTile
           label={tr('tiles.errorRate')}
-          icon={<TriangleAlertGlassIcon className="size-4 text-tone-warning" />}
+          icon={<TriangleAlertGlassIcon className="size-5 text-tone-warning" />}
           value={
             errors.kind === 'value'
               ? Number(errors.pct.toFixed(2))
@@ -108,7 +108,7 @@ export function FleetTiles({
         />
         <MetricTile
           label={tr('tiles.deploys24h')}
-          icon={<RocketGlassIcon className="size-4" />}
+          icon={<RocketGlassIcon className="size-5" />}
           value={d.total}
           series={d.total > 0 ? d.buckets : undefined}
           tone="info"
@@ -124,7 +124,7 @@ export function FleetTiles({
         />
         <MetricTile
           label={tr('tiles.nodesOnline')}
-          icon={<ServerGlassIcon className="size-4" />}
+          icon={<ServerGlassIcon className="size-5" />}
           value={`${nodeTotals.online} / ${nodeTotals.total}`}
           tone={nodeTotals.online < nodeTotals.total ? 'warning' : 'success'}
           loading={nodes.isPending}
@@ -134,7 +134,7 @@ export function FleetTiles({
         {gpuCount > 0 ? (
           <MetricTile
             label="GPUs"
-            icon={<CpuGlassIcon className="size-4" />}
+            icon={<CpuGlassIcon className="size-5" />}
             value={gpuCount}
             tone="accent"
           />

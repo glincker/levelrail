@@ -37,7 +37,7 @@ export function AlertsCard({ status }: { status: FwStatus }) {
             <p className="flex items-center gap-2 text-sm">
               <SirenGlassIcon
                 aria-hidden="true"
-                className="size-4.5 text-tone-warning"
+                className="size-5 text-tone-warning"
               />
               {t('alerts.attackOn')} <RelativeTime at={attack.until} />
             </p>
@@ -57,7 +57,7 @@ export function AlertsCard({ status }: { status: FwStatus }) {
               <p className="flex items-center gap-2 text-sm font-medium">
                 <SirenGlassIcon
                   aria-hidden="true"
-                  className="size-4.5 text-tone-warning"
+                  className="size-5 text-tone-warning"
                 />
                 {t('alerts.spikeTitle')}
               </p>
@@ -86,7 +86,7 @@ export function AlertsCard({ status }: { status: FwStatus }) {
         ) : (
           <EmptyState
             compact
-            icon={<BellGlassIcon className="size-5.5" />}
+            icon={<BellGlassIcon className="size-6" />}
             title={t('alerts.noneTitle')}
             description={t('alerts.noneHelp', { threshold: s.threshold })}
           />

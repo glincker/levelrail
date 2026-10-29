@@ -17,7 +17,7 @@ export function CreateNetworkShareDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button type="button" />}>
-        <PlusGlassIcon size="1.2em" aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {t('networkSharesPage.dialog.open')}
       </DialogTrigger>
       <DialogContent className="flex max-h-[90dvh] min-w-0 flex-col overflow-hidden sm:max-h-[90dvh] sm:max-w-xl">

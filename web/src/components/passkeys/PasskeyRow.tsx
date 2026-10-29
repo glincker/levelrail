@@ -109,7 +109,7 @@ export function PasskeyRow({
                 disabled={rename.isPending}
                 aria-label={t('row.save')}
               >
-                <CheckGlassIcon size="1.2em" />
+                <CheckGlassIcon size="1.4em" />
               </Button>
               <Button
                 type="button"
@@ -122,7 +122,7 @@ export function PasskeyRow({
                   rename.reset()
                 }}
               >
-                <XGlassIcon size="1.2em" />
+                <XGlassIcon size="1.4em" />
               </Button>
             </form>
           ) : (
@@ -138,7 +138,7 @@ export function PasskeyRow({
                   setEditing(true)
                 }}
               >
-                <PencilGlassIcon size="1.2em" />
+                <PencilGlassIcon size="1.4em" />
               </Button>
             </p>
           )}
@@ -194,7 +194,7 @@ export function PasskeyRow({
           setRemoveOpen(true)
         }}
       >
-        <TrashGlassIcon size="1.2em" />
+        <TrashGlassIcon size="1.4em" />
       </Button>
       <ConfirmDialog
         open={removeOpen}
@@ -217,7 +217,7 @@ export function PasskeyRow({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="space-y-2">
               <p className="font-medium">{t('remove.blockedTitle')}</p>
@@ -239,7 +239,7 @@ export function PasskeyRow({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{t('remove.lastWarning')}</AlertDescription>
           </Alert>

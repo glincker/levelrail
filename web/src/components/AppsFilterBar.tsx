@@ -54,7 +54,7 @@ function SavedViews({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <BookmarkGlassIcon size="1.2em" />
+        <BookmarkGlassIcon size="1.4em" />
         Views
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
@@ -86,7 +86,7 @@ function SavedViews({
                   persist(views.filter((v) => v.name !== view.name))
                 }}
               >
-                <XGlassIcon size="1.2em" />
+                <XGlassIcon size="1.4em" />
               </Button>
             </div>
           ))}

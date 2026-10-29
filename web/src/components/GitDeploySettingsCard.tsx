@@ -45,7 +45,7 @@ export function GitDeploySettingsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FunnelGlassIcon className="size-4.5 text-muted-foreground" />
+          <FunnelGlassIcon className="size-5 text-muted-foreground" />
           Deploy filters and status reporting
           <InfoTip label="About deploy filters">
             Skip deploys for pushes that only touch files you do not ship, and

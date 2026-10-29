@@ -47,7 +47,7 @@ export function RenewCertificateButton({
         })
       }}
     >
-      <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+      <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
       {renew.isPending ? 'Renewing...' : 'Renew now'}
     </Button>
   )

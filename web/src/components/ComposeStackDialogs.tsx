@@ -60,7 +60,7 @@ export function ComposeRollbackDialog({
           setOpen(true)
         }}
       >
-        <RotateCcwGlassIcon size="1.2em" />
+        <RotateCcwGlassIcon size="1.4em" />
         {t('rollback.button')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -108,7 +108,7 @@ export function ComposeRollbackDialog({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{rollback.error.message}</AlertDescription>
             </Alert>
@@ -159,7 +159,7 @@ export function ComposeDownDialog({ appId }: { appId: string }) {
           setOpen(true)
         }}
       >
-        <TrashGlassIcon size="1.2em" />
+        <TrashGlassIcon size="1.4em" />
         {t('down.button')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -184,7 +184,7 @@ export function ComposeDownDialog({ appId }: { appId: string }) {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{down.error.message}</AlertDescription>
             </Alert>

@@ -33,12 +33,12 @@ export function GitConnectionsCard({
         {connections.length === 0 ? (
           <EmptyState
             compact
-            icon={<UsersGlassIcon className="size-5.5" />}
+            icon={<UsersGlassIcon className="size-6" />}
             title={t('gitConnections.empty.title')}
             description={t(`gitConnections.empty.description.${provider}`)}
             action={
               <Button type="button" size="sm" onClick={() => setAdding(true)}>
-                <PlusGlassIcon className="size-4.5" aria-hidden="true" />
+                <PlusGlassIcon className="size-5" aria-hidden="true" />
                 {t('gitConnections.add.first')}
               </Button>
             }
@@ -59,7 +59,7 @@ export function GitConnectionsCard({
                 {t('gitConnections.scopeNote')}
               </p>
               <Button type="button" size="sm" onClick={() => setAdding(true)}>
-                <PlusGlassIcon className="size-4.5" aria-hidden="true" />
+                <PlusGlassIcon className="size-5" aria-hidden="true" />
                 {t('gitConnections.add.another')}
               </Button>
             </div>
@@ -74,7 +74,7 @@ export function GitConnectionsCard({
             variant="outline"
             onClick={() => setTokenOpen(true)}
           >
-            <KeyGlassIcon className="size-4.5" aria-hidden="true" />
+            <KeyGlassIcon className="size-5" aria-hidden="true" />
             {t('gitConnectionsHub.add.withToken')}
           </Button>
         </div>

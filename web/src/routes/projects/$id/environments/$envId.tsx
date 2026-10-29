@@ -101,7 +101,7 @@ function EnvironmentDetailPage() {
       breadcrumb={<Breadcrumbs projectId={id} environmentId={envId} />}
       title={
         <span className="flex items-center gap-2">
-          <LayersGlassIcon className="size-4.5 text-muted-foreground" />
+          <LayersGlassIcon className="size-5 text-muted-foreground" />
           {environment.name}
         </span>
       }
@@ -121,7 +121,7 @@ function EnvironmentDetailPage() {
               }
             >
               <ArrowLeftRightGlassIcon
-                className="size-4"
+                className="size-5"
                 data-icon="inline-start"
               />
               Compare
@@ -174,7 +174,7 @@ function EnvironmentDetailPage() {
 
       {envApps.length === 0 ? (
         <EmptyState
-          icon={<PackageGlassIcon className="size-5.5" />}
+          icon={<PackageGlassIcon className="size-6" />}
           title={`No apps tagged with "${environment.name}" yet`}
           description="Tag an app with this environment from the app's own Overview page."
         />

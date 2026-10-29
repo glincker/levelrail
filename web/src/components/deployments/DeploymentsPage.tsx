@@ -240,7 +240,7 @@ export function DeploymentsPage({
       width="wide"
       banner={
         <PageBanner
-          icon={<RocketGlassIcon size="1.2em" />}
+          icon={<RocketGlassIcon size="1.4em" />}
           titleKey="deploys:banner.title"
           descriptionKey={
             isEmpty
@@ -308,7 +308,7 @@ export function DeploymentsPage({
         {stream.pending.length > 0 && (
           <div className="sticky top-2 z-10 flex justify-center pb-2">
             <Button size="sm" onClick={showNew}>
-              <ArrowUpGlassIcon size="1.2em" aria-hidden="true" />
+              <ArrowUpGlassIcon size="1.4em" aria-hidden="true" />
               {stream.pending.length} new
             </Button>
           </div>
@@ -320,7 +320,7 @@ export function DeploymentsPage({
       ) : listQuery.isError && all.length === 0 ? (
         <EmptyState
           icon={
-            <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+            <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
           }
           title="Deployments could not be loaded"
           description={listQuery.error.message}
@@ -339,7 +339,7 @@ export function DeploymentsPage({
       ) : rows.length === 0 && !listQuery.hasNextPage ? (
         filtered ? (
           <EmptyState
-            icon={<RocketGlassIcon size="1.2em" />}
+            icon={<RocketGlassIcon size="1.4em" />}
             title="No deployments match"
             description="Try removing a filter or widening your search."
             action={

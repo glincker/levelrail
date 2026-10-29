@@ -95,7 +95,7 @@ export function CacheReasons({
                     fix.mutate({ domains: r.domains, headers: [header] })
                   }
                 >
-                  <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+                  <WrenchGlassIcon size="1.4em" aria-hidden="true" />
                   {t('reasons.fixVary', { header })}
                 </Button>
               ) : null}
@@ -119,7 +119,7 @@ export function CacheReasons({
               })
             }
           >
-            <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+            <WrenchGlassIcon size="1.4em" aria-hidden="true" />
             {t('reasons.nextjsFix')}
           </Button>
         </div>

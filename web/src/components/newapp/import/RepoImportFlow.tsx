@@ -212,7 +212,7 @@ export function RepoImportFlow({
         </div>
         <div className="relative">
           <SearchGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -239,7 +239,7 @@ export function RepoImportFlow({
                 reset('', null)
               }}
             >
-              <XGlassIcon size="1.2em" aria-hidden="true" />
+              <XGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           ) : null}
         </div>

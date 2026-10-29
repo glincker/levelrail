@@ -147,7 +147,7 @@ export function EngineStatsPanel({
     <div className="space-y-4">
       <EmptyState
         compact
-        icon={<DatabaseGlassIcon className="size-5.5" />}
+        icon={<DatabaseGlassIcon className="size-6" />}
         title={t('viewer.engineStats.title', { engine })}
         description={
           isCache
@@ -158,7 +158,7 @@ export function EngineStatsPanel({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ChartColumnGlassIcon className="size-4.5" aria-hidden="true" />
+            <ChartColumnGlassIcon className="size-5" aria-hidden="true" />
             {isCache
               ? t('viewer.engineStats.cacheTitle')
               : t('viewer.engineStats.objectsTitle')}

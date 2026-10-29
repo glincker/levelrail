@@ -17,7 +17,7 @@ export function SetupStepHint({ step }: { step: SetupGuideStepId }) {
   }
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-      <RocketGlassIcon aria-hidden="true" className="size-4.5" />
+      <RocketGlassIcon aria-hidden="true" className="size-5" />
       {t('hint.line', { step: t(`steps.${step}.title`) })}
       <Link
         to="/get-started"

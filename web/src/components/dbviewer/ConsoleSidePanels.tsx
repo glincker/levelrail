@@ -60,7 +60,7 @@ export function HistoryPanel({
             })
           }}
         >
-          <TrashGlassIcon className="size-4" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('viewer.console.history.clear')}
         </Button>
       </div>
@@ -141,7 +141,7 @@ export function SavedPanel({
               remove.mutate(q.id)
             }}
           >
-            <TrashGlassIcon className="size-4.5" aria-hidden="true" />
+            <TrashGlassIcon className="size-5" aria-hidden="true" />
           </Button>
         </li>
       ))}

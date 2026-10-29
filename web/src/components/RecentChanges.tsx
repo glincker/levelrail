@@ -16,17 +16,17 @@ import type { TimelineItem, Tone } from '@/components/kit'
 import { useAppChanges, type AppChange } from '../queries/appChanges'
 
 const KIND_ICON: Record<AppChange['kind'], ReactNode> = {
-  deploy: <RocketGlassIcon size="1.2em" />,
-  rollback: <UndoGlassIcon size="1.2em" />,
-  config: <SlidersHorizontalGlassIcon size="1.2em" />,
-  env: <KeyGlassIcon size="1.2em" />,
-  secret: <KeyGlassIcon size="1.2em" />,
-  domain: <GlobeGlassIcon size="1.2em" />,
-  scale: <MaximizeGlassIcon size="1.2em" />,
-  loadbalancer: <Share2GlassIcon size="1.2em" />,
-  freeze: <SnowflakeGlassIcon size="1.2em" />,
-  maintenance: <WrenchGlassIcon size="1.2em" />,
-  lifecycle: <PowerGlassIcon size="1.2em" />,
+  deploy: <RocketGlassIcon size="1.4em" />,
+  rollback: <UndoGlassIcon size="1.4em" />,
+  config: <SlidersHorizontalGlassIcon size="1.4em" />,
+  env: <KeyGlassIcon size="1.4em" />,
+  secret: <KeyGlassIcon size="1.4em" />,
+  domain: <GlobeGlassIcon size="1.4em" />,
+  scale: <MaximizeGlassIcon size="1.4em" />,
+  loadbalancer: <Share2GlassIcon size="1.4em" />,
+  freeze: <SnowflakeGlassIcon size="1.4em" />,
+  maintenance: <WrenchGlassIcon size="1.4em" />,
+  lifecycle: <PowerGlassIcon size="1.4em" />,
 }
 
 function kindTone(c: AppChange): Tone {

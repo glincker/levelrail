@@ -28,7 +28,7 @@ function OrganizationsPage() {
 
   return (
     <PageTemplate
-      icon={<UniversityGlassIcon size="1.2em" />}
+      icon={<UniversityGlassIcon size="1.4em" />}
       title={t('organizationsPage.title')}
       description={t('organizationsPage.description')}
       actions={<CreateOrganizationDialog />}

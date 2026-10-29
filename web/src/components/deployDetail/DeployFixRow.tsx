@@ -27,7 +27,7 @@ export function DeployFixRow({
   return (
     <div className="space-y-1.5" data-testid="deploy-fix-row">
       <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        <WrenchGlassIcon className="size-4" aria-hidden="true" />
+        <WrenchGlassIcon className="size-5" aria-hidden="true" />
         {t('fix.title')}
       </p>
       <p className="text-sm text-muted-foreground">{t('fix.hint')}</p>

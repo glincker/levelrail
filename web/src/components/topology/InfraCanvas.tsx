@@ -131,7 +131,7 @@ export function InfraCanvas({
           onClick={() => c.zoomBy(1.2)}
           aria-label={t('toolbar.zoomIn')}
         >
-          <SearchGlassIcon className="size-4.5" aria-hidden="true" />
+          <SearchGlassIcon className="size-5" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -139,7 +139,7 @@ export function InfraCanvas({
           onClick={() => c.zoomBy(1 / 1.2)}
           aria-label={t('toolbar.zoomOut')}
         >
-          <SearchGlassIcon className="size-4.5" aria-hidden="true" />
+          <SearchGlassIcon className="size-5" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -147,7 +147,7 @@ export function InfraCanvas({
           onClick={c.fit}
           aria-label={t('toolbar.fit')}
         >
-          <MinimizeGlassIcon className="size-4.5" aria-hidden="true" />
+          <MinimizeGlassIcon className="size-5" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -155,7 +155,7 @@ export function InfraCanvas({
           onClick={c.resetLayout}
           aria-label={t('toolbar.resetLayout')}
         >
-          <RotateCcwGlassIcon className="size-4.5" aria-hidden="true" />
+          <RotateCcwGlassIcon className="size-5" aria-hidden="true" />
         </Button>
         <span className="px-2 text-xs text-muted-foreground" aria-live="polite">
           {t('toolbar.zoomLevel', { percent: Math.round(c.view.scale * 100) })}

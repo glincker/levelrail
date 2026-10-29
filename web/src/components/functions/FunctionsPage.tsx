@@ -31,7 +31,7 @@ export function FunctionsPage() {
     body = (
       <EmptyState
         icon={
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         }
         title={t('list.error', { message: query.error.message })}
         description=""
@@ -55,7 +55,7 @@ export function FunctionsPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<ZapGlassIcon size="1.2em" />}
+        icon={<ZapGlassIcon size="1.4em" />}
         titleKey="functions:banner.title"
         descriptionKey={
           isEmpty ? 'functions:banner.description' : 'functions:description'

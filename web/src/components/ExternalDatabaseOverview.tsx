@@ -68,7 +68,7 @@ export function DeleteExternalDatabaseDialog({ name }: { name: string }) {
       }}
     >
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <TrashGlassIcon className="size-4" aria-hidden="true" />
+        <TrashGlassIcon className="size-5" aria-hidden="true" />
         {t('external.delete.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
@@ -164,7 +164,7 @@ export function ExternalDatabaseOverview({ db }: { db: ExternalDatabase }) {
               })
             }}
           >
-            <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+            <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
             {probe.isPending
               ? t('external.overview.rechecking')
               : t('external.overview.recheck')}
@@ -231,7 +231,7 @@ export function ExternalDatabaseOverview({ db }: { db: ExternalDatabase }) {
                     })
                   }}
                 >
-                  <EyeGlassIcon className="size-4" aria-hidden="true" />
+                  <EyeGlassIcon className="size-5" aria-hidden="true" />
                   {shown !== null
                     ? t('external.overview.hide')
                     : t('external.overview.reveal')}

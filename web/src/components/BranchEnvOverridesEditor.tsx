@@ -84,7 +84,7 @@ export function BranchEnvOverridesEditor({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitBranchGlassIcon className="size-4.5" />
+          <GitBranchGlassIcon className="size-5" />
           Branch env overrides
         </CardTitle>
         <CardDescription>
@@ -109,7 +109,7 @@ export function BranchEnvOverridesEditor({ appName }: { appName: string }) {
                   <span>{o.key}</span>
                   {o.secret ? (
                     <span className="flex items-center gap-1 text-muted-foreground">
-                      <LockGlassIcon className="size-4" />
+                      <LockGlassIcon className="size-5" />
                       hidden
                     </span>
                   ) : (
@@ -126,7 +126,7 @@ export function BranchEnvOverridesEditor({ appName }: { appName: string }) {
                   }}
                   aria-label={`Remove ${o.key} for ${o.branchPattern}`}
                 >
-                  <TrashGlassIcon className="size-4.5 text-muted-foreground" />
+                  <TrashGlassIcon className="size-5 text-muted-foreground" />
                 </Button>
               </li>
             ))}

@@ -59,7 +59,7 @@ export function CloudflareDnsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
+          <ShieldCheckGlassIcon className="size-5 text-tone-success" />
           Wildcard domains (Cloudflare DNS-01)
         </CardTitle>
         <CardDescription>

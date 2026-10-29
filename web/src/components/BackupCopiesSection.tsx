@@ -98,7 +98,7 @@ export function BackupCopiesSection({ targets }: { targets: BackupTarget[] }) {
               title={t('backupCopies.manifestTip')}
               data-testid="copy-manifest"
             >
-              <FileTextGlassIcon className="size-4" aria-hidden="true" />
+              <FileTextGlassIcon className="size-5" aria-hidden="true" />
               {t('backupCopies.manifest')}
             </span>
           ) : null}
@@ -145,7 +145,7 @@ export function BackupCopiesSection({ targets }: { targets: BackupTarget[] }) {
     >
       <div className="flex items-center gap-2">
         <CopyGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         <h2 className="text-base font-semibold">{t('backupCopies.title')}</h2>

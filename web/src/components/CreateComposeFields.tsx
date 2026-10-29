@@ -99,13 +99,13 @@ function BindMountHelper({ onInsert }: { onInsert: (line: string) => void }) {
     <div className="space-y-3 rounded-lg border border-border p-3">
       <div className="flex items-center gap-2">
         <ShieldAlertGlassIcon
-          className="size-4.5 text-amber-600 dark:text-amber-400"
+          className="size-5 text-amber-600 dark:text-amber-400"
           aria-hidden="true"
         />
         <p className="text-sm font-medium text-foreground">Add a bind mount</p>
       </div>
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         <AlertDescription>
           This gives the container direct access to a real directory on the host
           machine it runs on, not a Docker-managed volume. Never point this at a
@@ -301,7 +301,7 @@ export function CreateComposeFields({
       <div className="space-y-4">
         <Alert>
           <CircleCheckGlassIcon
-            size="1.2em"
+            size="1.4em"
             className="text-green-600 dark:text-green-400"
           />
           <AlertDescription>
@@ -314,10 +314,10 @@ export function CreateComposeFields({
             {notice.level === 'warning' ? (
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
             ) : (
-              <InfoGlassIcon className="text-tone-info" size="1.2em" />
+              <InfoGlassIcon className="text-tone-info" size="1.4em" />
             )}
             <AlertDescription>{notice.message}</AlertDescription>
           </Alert>
@@ -421,7 +421,7 @@ export function CreateComposeFields({
               fileInputRef.current?.click()
             }}
           >
-            <UploadGlassIcon size="1.2em" />
+            <UploadGlassIcon size="1.4em" />
             Upload file
           </Button>
           <input

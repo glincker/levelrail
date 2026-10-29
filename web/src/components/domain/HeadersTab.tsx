@@ -57,7 +57,7 @@ export function HeadersTab({
             >
               <ShieldCheckGlassIcon
                 className="text-tone-success"
-                size="1.2em"
+                size="1.4em"
               />
               {t('headers.presetSecurity')}
             </Button>

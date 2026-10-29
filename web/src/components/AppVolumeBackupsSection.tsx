@@ -166,7 +166,7 @@ function NoVolumesDeclared() {
   return (
     <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
       <ServerGlassIcon
-        className="size-5.5 text-muted-foreground"
+        className="size-6 text-muted-foreground"
         aria-hidden="true"
       />
       <p className="text-sm text-muted-foreground">

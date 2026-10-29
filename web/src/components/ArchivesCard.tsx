@@ -93,7 +93,7 @@ function BundleRow({
             onBrowse(bundle)
           }}
         >
-          <FileSearchGlassIcon className="size-4" aria-hidden="true" />
+          <FileSearchGlassIcon className="size-5" aria-hidden="true" />
           {t('browse')}
         </Button>
         <Button
@@ -119,7 +119,7 @@ function BundleRow({
           }}
         >
           <BadgeCheckGlassIcon
-            className="size-4 text-tone-success"
+            className="size-5 text-tone-success"
             aria-hidden="true"
           />
           {verify.isPending ? t('verifying') : t('verify')}
@@ -131,7 +131,7 @@ function BundleRow({
             onRestore(bundle)
           }}
         >
-          <RotateCcwGlassIcon className="size-4" aria-hidden="true" />
+          <RotateCcwGlassIcon className="size-5" aria-hidden="true" />
           {t('restore')}
         </Button>
         <Button
@@ -140,7 +140,7 @@ function BundleRow({
           nativeButton={false}
           render={<a href={archiveDownloadUrl(bundle.id)} download />}
         >
-          <DownloadGlassIcon className="size-4" aria-hidden="true" />
+          <DownloadGlassIcon className="size-5" aria-hidden="true" />
           {t('download')}
         </Button>
         <Button
@@ -150,7 +150,7 @@ function BundleRow({
             onDelete(bundle)
           }}
         >
-          <TrashGlassIcon className="size-4" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('delete')}
         </Button>
       </div>
@@ -223,7 +223,7 @@ export function ArchivesCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <ArchiveGlassIcon className="size-4.5" />
+              <ArchiveGlassIcon className="size-5" />
             </div>
             <div>
               <CardTitle>{t('title')}</CardTitle>
@@ -290,7 +290,7 @@ export function ArchivesCard() {
             {data.bundles.length === 0 ? (
               <EmptyState
                 compact
-                icon={<ArchiveGlassIcon className="size-5.5" />}
+                icon={<ArchiveGlassIcon className="size-6" />}
                 title={t('emptyTitle')}
                 description={t('empty')}
               />

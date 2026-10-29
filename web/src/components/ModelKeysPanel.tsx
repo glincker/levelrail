@@ -184,7 +184,7 @@ export function ModelKeysPanel({
                       setConfirm({ action: 'rotate', key: k })
                     }}
                   >
-                    <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+                    <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
                   </Button>
                 )}
                 {k.status === 'revoked' ? null : (
@@ -197,7 +197,7 @@ export function ModelKeysPanel({
                       setConfirm({ action: 'revoke', key: k })
                     }}
                   >
-                    <BanGlassIcon size="1.2em" aria-hidden="true" />
+                    <BanGlassIcon size="1.4em" aria-hidden="true" />
                   </Button>
                 )}
               </span>

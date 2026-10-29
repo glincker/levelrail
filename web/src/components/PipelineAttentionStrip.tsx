@@ -58,7 +58,7 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
             disabled={decide.isPending}
             onClick={() => act('approved')}
           >
-            <ThumbsUpGlassIcon size="1.2em" aria-hidden="true" />
+            <ThumbsUpGlassIcon size="1.4em" aria-hidden="true" />
             Approve
           </Button>
           <Button
@@ -67,7 +67,7 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
             disabled={decide.isPending}
             onClick={() => act('rejected')}
           >
-            <ThumbsDownGlassIcon size="1.2em" aria-hidden="true" />
+            <ThumbsDownGlassIcon size="1.4em" aria-hidden="true" />
             Reject
           </Button>
         </>
@@ -98,7 +98,7 @@ export function PipelineAttentionStrip() {
     >
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <CircleAlertGlassIcon
-          className="size-4.5 text-tone-danger"
+          className="size-5 text-tone-danger"
           aria-hidden="true"
         />
         Needs attention

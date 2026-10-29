@@ -51,7 +51,7 @@ export function DeleteAppDialog({
             setOpen(true)
           }}
         >
-          <TrashGlassIcon className="size-4" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('deleteApp.trigger')}
         </Button>
       )}

@@ -100,7 +100,7 @@ export function DangerZoneCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('danger.checkFailed')}</span>
@@ -127,7 +127,7 @@ export function DangerZoneCard() {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertTitle>{t('danger.blockedTitle')}</AlertTitle>
             <AlertDescription className="space-y-3">

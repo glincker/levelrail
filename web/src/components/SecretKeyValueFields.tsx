@@ -28,7 +28,7 @@ export function SecretNotConfiguredCard({ title }: { title: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockGlassIcon className="size-4.5" />
+          <LockGlassIcon className="size-5" />
           {title}
         </CardTitle>
       </CardHeader>
@@ -67,7 +67,7 @@ export function SecretAgeBadge({
       <span>Set {formatAge(updatedAt)}</span>
       {stale ? (
         <Badge variant="warning">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           Needs rotation
         </Badge>
       ) : null}
@@ -128,9 +128,9 @@ export function SecretKeyValueFields({
             className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
           >
             {revealValue ? (
-              <EyeOffGlassIcon className="size-4.5" />
+              <EyeOffGlassIcon className="size-5" />
             ) : (
-              <EyeGlassIcon className="size-4.5" />
+              <EyeGlassIcon className="size-5" />
             )}
           </button>
         </div>

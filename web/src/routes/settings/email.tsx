@@ -64,7 +64,7 @@ function EmailSettingsPage() {
         <EmailBrandingCard />
         <Banner
           variant="info"
-          icon={<WebhookGlassIcon size="1.2em" />}
+          icon={<WebhookGlassIcon size="1.4em" />}
           title={t('email.channelsCta')}
           action={
             <Link

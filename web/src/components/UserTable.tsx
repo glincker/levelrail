@@ -29,7 +29,7 @@ export function UserTable({ users }: { users: UserResource[] }) {
   if (users.length === 0) {
     return (
       <EmptyState
-        icon={<UserGlassIcon className="size-5.5" />}
+        icon={<UserGlassIcon className="size-6" />}
         title={t('usersPage.empty.title')}
         description={t('usersPage.empty.body')}
       />

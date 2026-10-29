@@ -179,7 +179,7 @@ export function DeployCompareView({
                     {formatChangeValue(c.field, c.from)}
                   </span>
                   <ArrowRightGlassIcon
-                    className="size-4 shrink-0 text-muted-foreground"
+                    className="size-5 shrink-0 text-muted-foreground"
                     aria-hidden="true"
                   />
                   <span className="truncate font-mono text-xs text-foreground">
@@ -197,7 +197,7 @@ export function DeployCompareView({
       <DeployCompareCommitsCard appName={appName} compare={compare} />
 
       <Alert>
-        <InfoGlassIcon className="size-4.5 text-tone-info" />
+        <InfoGlassIcon className="size-5 text-tone-info" />
         <AlertDescription>
           <p>{compare.note}</p>
           {compare.unsnapshotted_fields.length > 0 ? (
@@ -245,19 +245,19 @@ function DeployCompareEnvChangesCard({
                 <span className="flex w-40 shrink-0 items-center gap-1 font-mono text-xs font-medium text-foreground">
                   {c.kind === 'secret' ? (
                     <LockGlassIcon
-                      className="size-4 shrink-0 text-muted-foreground"
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-label="Secret value"
                     />
                   ) : null}
                   {c.kind === 'database' ? (
                     <DatabaseGlassIcon
-                      className="size-4 shrink-0 text-muted-foreground"
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-label="Database-resolved value"
                     />
                   ) : null}
                   {c.kind === 'vault' ? (
                     <VaultGlassIcon
-                      className="size-4 shrink-0 text-muted-foreground"
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-label="Vault-resolved value"
                     />
                   ) : null}
@@ -272,7 +272,7 @@ function DeployCompareEnvChangesCard({
                       {c.from || '(none)'}
                     </span>
                     <ArrowRightGlassIcon
-                      className="size-4 shrink-0 text-muted-foreground"
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-hidden="true"
                     />
                     <span className="truncate font-mono text-xs text-foreground">
@@ -371,7 +371,7 @@ function DeployCompareSideCard({
               (protectedEnv?.protected && !ackProtected)
             }
           >
-            <RotateCcwGlassIcon className="size-4" data-icon="inline-start" />
+            <RotateCcwGlassIcon className="size-5" data-icon="inline-start" />
             {triggerDeploy.isPending
               ? 'Rolling back...'
               : 'Roll back to this build'}

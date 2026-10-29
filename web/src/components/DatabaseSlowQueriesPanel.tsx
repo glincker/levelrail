@@ -122,7 +122,7 @@ export function DatabaseSlowQueriesPanel({
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <GaugeGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Slow queries
@@ -146,7 +146,7 @@ export function DatabaseSlowQueriesPanel({
       {!supported ? (
         <EmptyState
           className="mt-3"
-          icon={<GaugeGlassIcon className="size-5.5" />}
+          icon={<GaugeGlassIcon className="size-6" />}
           title="Slow query log not available for this engine"
           description={
             engine
@@ -177,7 +177,7 @@ export function DatabaseSlowQueriesPanel({
                   aria-label="Clear minimum duration filter"
                   className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  <XGlassIcon className="size-4" aria-hidden="true" />
+                  <XGlassIcon className="size-5" aria-hidden="true" />
                 </button>
               ) : null}
             </div>
@@ -192,7 +192,7 @@ export function DatabaseSlowQueriesPanel({
               </p>
             ) : filtered.length === 0 ? (
               <EmptyState
-                icon={<GaugeGlassIcon className="size-5.5" />}
+                icon={<GaugeGlassIcon className="size-6" />}
                 title="No slow queries in range"
                 description="No statement in the selected time range crossed this engine's configured slow-query threshold."
               />
@@ -271,9 +271,9 @@ function SortHeader({
       {label}
       {active ? (
         sortDir === 'asc' ? (
-          <ChevronUpGlassIcon className="size-3.5" aria-hidden="true" />
+          <ChevronUpGlassIcon className="size-4.5" aria-hidden="true" />
         ) : (
-          <ChevronDownGlassIcon className="size-3.5" aria-hidden="true" />
+          <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
         )
       ) : null}
     </button>

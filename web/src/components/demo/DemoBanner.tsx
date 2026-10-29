@@ -35,7 +35,7 @@ export function DemoBanner({ onTour }: { onTour: () => void }) {
       className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border bg-muted px-4 py-1.5 text-xs text-foreground"
     >
       <span className="flex items-center gap-1.5 font-medium">
-        <FlaskConicalGlassIcon className="size-4" aria-hidden="true" />
+        <FlaskConicalGlassIcon className="size-5" aria-hidden="true" />
         {t('banner.label')}
       </span>
       {resets ? (
@@ -59,9 +59,9 @@ export function DemoBanner({ onTour }: { onTour: () => void }) {
           >
             <span className="truncate">{info.installCommand}</span>
             {copied ? (
-              <CheckGlassIcon size="1.2em" data-icon="inline-end" />
+              <CheckGlassIcon size="1.4em" data-icon="inline-end" />
             ) : (
-              <CopyGlassIcon size="1.2em" data-icon="inline-end" />
+              <CopyGlassIcon size="1.4em" data-icon="inline-end" />
             )}
             <span className="sr-only">
               {copied ? t('banner.copied') : t('banner.copyInstall')}
@@ -84,7 +84,7 @@ export function DemoBanner({ onTour }: { onTour: () => void }) {
               />
             }
           >
-            <SocialGithubGlassIcon size="1.2em" data-icon="inline-start" />
+            <SocialGithubGlassIcon size="1.4em" data-icon="inline-start" />
             {t('banner.github')}
           </Button>
         ) : null}
@@ -104,12 +104,12 @@ export function DemoBanner({ onTour }: { onTour: () => void }) {
               />
             }
           >
-            <BookOpenGlassIcon size="1.2em" data-icon="inline-start" />
+            <BookOpenGlassIcon size="1.4em" data-icon="inline-start" />
             {t('banner.docs')}
           </Button>
         ) : null}
         <Button type="button" variant="ghost" size="xs" onClick={onTour}>
-          <MapGlassIcon size="1.2em" data-icon="inline-start" />
+          <MapGlassIcon size="1.4em" data-icon="inline-start" />
           {t('banner.tour')}
         </Button>
       </span>

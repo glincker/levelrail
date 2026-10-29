@@ -124,7 +124,7 @@ export function ErrorsPanel({ app }: { app: string }) {
           {list.data && list.data.length === 0 ? (
             <EmptyState
               compact
-              icon={<BugGlassIcon className="size-4.5" />}
+              icon={<BugGlassIcon className="size-5" />}
               title={t('list.emptyTitle')}
               description={trackingOff ? t('list.emptyOff') : t('list.empty')}
               action={

@@ -19,15 +19,15 @@ import type { DeployAttempt } from '../../types/deployAttempt'
 import type { SuggestionActionKind, SuggestionDescriptor } from './suggestions'
 
 const ICONS: Record<SuggestionActionKind, React.ReactNode> = {
-  open_health: <ActivityGlassIcon className="size-5.5" />,
-  restart: <RotateCwGlassIcon className="size-5.5" />,
-  apply_pending: <RotateCwGlassIcon className="size-5.5" />,
-  open_logs: <TerminalGlassIcon className="size-5.5" />,
-  show_fix: <WrenchGlassIcon className="size-5.5" />,
-  open_deploy: <CircleAlertGlassIcon className="size-5.5 text-tone-danger" />,
-  open_domains: <GlobeGlassIcon className="size-5.5" />,
-  open_resources: <MemoryStickGlassIcon className="size-5.5" />,
-  connect_git: <GitBranchGlassIcon className="size-5.5" />,
+  open_health: <ActivityGlassIcon className="size-6" />,
+  restart: <RotateCwGlassIcon className="size-6" />,
+  apply_pending: <RotateCwGlassIcon className="size-6" />,
+  open_logs: <TerminalGlassIcon className="size-6" />,
+  show_fix: <WrenchGlassIcon className="size-6" />,
+  open_deploy: <CircleAlertGlassIcon className="size-6 text-tone-danger" />,
+  open_domains: <GlobeGlassIcon className="size-6" />,
+  open_resources: <MemoryStickGlassIcon className="size-6" />,
+  connect_git: <GitBranchGlassIcon className="size-6" />,
 }
 
 export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {

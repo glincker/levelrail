@@ -62,7 +62,7 @@ export function ReenrollNodeDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         {t('reenroll.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -74,7 +74,7 @@ export function ReenrollNodeDialog({
         {created ? (
           <>
             <div className="flex items-start gap-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-2.5 text-tone-warning">
-              <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
+              <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
               <p className="text-sm">
                 {t('reenroll.shownOnce', {
                   time: new Date(created.expires_at).toLocaleTimeString(),
@@ -118,9 +118,9 @@ export function ReenrollNodeDialog({
                   }}
                 >
                   {copied ? (
-                    <CheckGlassIcon size="1.2em" />
+                    <CheckGlassIcon size="1.4em" />
                   ) : (
-                    <CopyGlassIcon size="1.2em" />
+                    <CopyGlassIcon size="1.4em" />
                   )}
                   {copied ? t('reenroll.copied') : t('reenroll.copy')}
                 </Button>
@@ -144,7 +144,7 @@ export function ReenrollNodeDialog({
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertDescription>{createToken.error.message}</AlertDescription>
               </Alert>

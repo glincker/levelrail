@@ -63,7 +63,7 @@ export function DeployFreezeCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SnowflakeGlassIcon className="size-4.5 text-muted-foreground" />
+          <SnowflakeGlassIcon className="size-5 text-muted-foreground" />
           Deploy freeze
           {status.frozen ? (
             <Badge variant="warning">
@@ -143,7 +143,7 @@ export function DeployFreezeCard({ appName }: { appName: string }) {
                   aria-label={`Remove freeze window ${i + 1}`}
                   onClick={() => setDraft(windows.filter((_, j) => j !== i))}
                 >
-                  <TrashGlassIcon className="size-4" />
+                  <TrashGlassIcon className="size-5" />
                 </Button>
               </li>
             ))}
@@ -172,7 +172,7 @@ export function DeployFreezeCard({ appName }: { appName: string }) {
             size="sm"
             onClick={() => setDraft([...windows, { ...EMPTY_WINDOW }])}
           >
-            <PlusGlassIcon className="size-4" data-icon="inline-start" />
+            <PlusGlassIcon className="size-5" data-icon="inline-start" />
             Add window
           </Button>
           <Button

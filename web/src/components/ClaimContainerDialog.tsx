@@ -74,7 +74,7 @@ export function ClaimContainerDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{claim.error.message}</AlertDescription>
           </Alert>

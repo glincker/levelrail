@@ -101,7 +101,7 @@ function BetaFeaturesPage() {
 
   return (
     <PageTemplate
-      icon={<FlaskConicalGlassIcon size="1.2em" />}
+      icon={<FlaskConicalGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       banners={

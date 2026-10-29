@@ -15,7 +15,7 @@ function StatusIcon({ status }: { status: PreflightStatus }) {
   if (status === 'pass') {
     return (
       <CircleCheckGlassIcon
-        className="size-4.5 text-success"
+        className="size-5 text-success"
         aria-hidden="true"
       />
     )
@@ -23,16 +23,13 @@ function StatusIcon({ status }: { status: PreflightStatus }) {
   if (status === 'warn') {
     return (
       <CircleAlertGlassIcon
-        className="size-4.5 text-warning"
+        className="size-5 text-warning"
         aria-hidden="true"
       />
     )
   }
   return (
-    <CircleXGlassIcon
-      className="size-4.5 text-destructive"
-      aria-hidden="true"
-    />
+    <CircleXGlassIcon className="size-5 text-destructive" aria-hidden="true" />
   )
 }
 

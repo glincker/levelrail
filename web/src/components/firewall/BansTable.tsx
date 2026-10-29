@@ -106,7 +106,7 @@ export function BansTable({
         ) : error ? (
           <EmptyState
             compact
-            icon={<CountdownGlassIcon className="size-5.5" />}
+            icon={<CountdownGlassIcon className="size-6" />}
             title={t('bans.loadFailed')}
             description={error.message}
             action={
@@ -123,7 +123,7 @@ export function BansTable({
         ) : rows.length === 0 ? (
           <EmptyState
             compact
-            icon={<CountdownGlassIcon className="size-5.5" />}
+            icon={<CountdownGlassIcon className="size-6" />}
             title={t('bans.emptyTitle')}
             description={t('bans.emptyHelp')}
           />

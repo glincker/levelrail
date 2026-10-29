@@ -64,7 +64,7 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
           />
         </label>
         <Button type="submit" size="sm">
-          <SearchGlassIcon className="size-4" aria-hidden="true" />
+          <SearchGlassIcon className="size-5" aria-hidden="true" />
           {t('viewer.keys.scan')}
         </Button>
       </form>

@@ -70,7 +70,7 @@ function ProjectApps({
             size="sm"
             isActive={isAppActive(pathname, app.name)}
           >
-            <LayersGlassIcon size="1.2em" />
+            <LayersGlassIcon size="1.4em" />
             <span>{app.name}</span>
           </SidebarMenuSubButton>
         </SidebarMenuSubItem>
@@ -100,7 +100,7 @@ function ProjectTreeRow({
         isActive={isProjectActive(pathname, project.id)}
         className="pr-7"
       >
-        <FolderGlassIcon size="1.2em" />
+        <FolderGlassIcon size="1.4em" />
         <span>{project.name}</span>
       </SidebarMenuSubButton>
       <button

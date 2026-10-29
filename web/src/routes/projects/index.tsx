@@ -62,7 +62,7 @@ function ProjectListPage() {
       title={t('banners.projects.title')}
       banner={
         <PageBanner
-          icon={<FolderGlassIcon size="1.2em" />}
+          icon={<FolderGlassIcon size="1.4em" />}
           titleKey="common:banners.projects.title"
           descriptionKey={
             isEmpty

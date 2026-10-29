@@ -26,7 +26,7 @@ export function DangerZoneCard({
         <CardTitle className={cn('flex items-center gap-2', TONE.danger.text)}>
           <OctagonAlertGlassIcon
             aria-hidden="true"
-            className="size-4.5 text-tone-danger"
+            className="size-5 text-tone-danger"
           />
           {title}
         </CardTitle>

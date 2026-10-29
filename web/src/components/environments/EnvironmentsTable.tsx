@@ -122,7 +122,7 @@ export function EnvironmentsTable({
                 variant="ghost"
                 aria-label={`${t('settings.edit')} ${env.name}`}
               >
-                <PencilGlassIcon size="1.2em" />
+                <PencilGlassIcon size="1.4em" />
               </Button>
             }
           />
@@ -137,7 +137,7 @@ export function EnvironmentsTable({
                 disabled={isBuiltIn(env)}
                 aria-label={`${t('settings.delete')} ${env.name}`}
               >
-                <TrashGlassIcon size="1.2em" />
+                <TrashGlassIcon size="1.4em" />
               </Button>
             }
           />

@@ -22,7 +22,7 @@ export function SetupChipView({
         className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-foreground hover:bg-muted"
       >
         {t('chip.cta')}
-        <ArrowRightGlassIcon className="size-3.5" aria-hidden="true" />
+        <ArrowRightGlassIcon className="size-4.5" aria-hidden="true" />
       </Link>
       <button
         type="button"
@@ -30,7 +30,7 @@ export function SetupChipView({
         onClick={onHide}
         className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <XGlassIcon className="size-3.5" />
+        <XGlassIcon className="size-4.5" />
       </button>
     </span>
   )

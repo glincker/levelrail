@@ -44,14 +44,14 @@ function KeyDisclosure({ encryption }: { encryption: CoverageEncryption }) {
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
         {t('safety.keyDetails')}
       </CollapsibleTrigger>
       <CollapsiblePanel>
         <div className="mt-2 space-y-2 text-sm text-muted-foreground">
           <p>{t('safety.keyHint')}</p>
           <Button type="button" size="sm" variant="outline" onClick={copy}>
-            <CopyGlassIcon className="size-4" aria-hidden="true" />
+            <CopyGlassIcon className="size-5" aria-hidden="true" />
             {t('safety.copyKey')}
           </Button>
         </div>
@@ -69,7 +69,7 @@ function KeyWarning() {
     <Alert>
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
       <AlertDescription className="space-y-2">
@@ -134,12 +134,12 @@ export function StorageSafetyCard({
         <div className="flex flex-wrap items-center gap-2">
           {encryption.enabled ? (
             <Badge variant="success">
-              <LockGlassIcon className="size-3.5" aria-hidden="true" />
+              <LockGlassIcon className="size-4.5" aria-hidden="true" />
               {t('safety.encrypted')}
             </Badge>
           ) : (
             <Badge variant="warning">
-              <LockOpenGlassIcon className="size-3.5" aria-hidden="true" />
+              <LockOpenGlassIcon className="size-4.5" aria-hidden="true" />
               {t('safety.notEncrypted')}
             </Badge>
           )}
@@ -180,7 +180,7 @@ export function StorageSafetyCard({
         <Alert key={w.target_id} variant="destructive">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           <AlertDescription>

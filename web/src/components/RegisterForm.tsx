@@ -136,7 +136,7 @@ export function RegisterForm({
 
       {adminAlreadyExists ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertTitle>An admin account already exists</AlertTitle>
           <AlertDescription>
             <button
@@ -150,7 +150,7 @@ export function RegisterForm({
         </Alert>
       ) : registerAdmin.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{registerAdmin.error.message}</AlertDescription>
         </Alert>
       ) : null}

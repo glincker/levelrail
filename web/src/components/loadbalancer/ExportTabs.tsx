@@ -95,9 +95,9 @@ function Preview({
             onClick={() => copy(data.body)}
           >
             {copied ? (
-              <CheckGlassIcon size="1.2em" data-icon="inline-start" />
+              <CheckGlassIcon size="1.4em" data-icon="inline-start" />
             ) : (
-              <CopyGlassIcon size="1.2em" data-icon="inline-start" />
+              <CopyGlassIcon size="1.4em" data-icon="inline-start" />
             )}
             {copied ? 'Copied' : 'Copy'}
           </Button>
@@ -107,7 +107,7 @@ function Preview({
             variant="outline"
             onClick={() => download(data.filename, data.body)}
           >
-            <DownloadGlassIcon size="1.2em" data-icon="inline-start" />
+            <DownloadGlassIcon size="1.4em" data-icon="inline-start" />
             Download
           </Button>
         </div>

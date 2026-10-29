@@ -105,7 +105,7 @@ export function StarterTemplatesDialog({
           }
         >
           <RocketGlassIcon
-            className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
+            className="mt-0.5 size-6 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />
           <span className="min-w-0">
@@ -119,7 +119,7 @@ export function StarterTemplatesDialog({
         </DialogTrigger>
       ) : (
         <DialogTrigger render={<Button type="button" variant="outline" />}>
-          <RocketGlassIcon size="1.2em" aria-hidden="true" />
+          <RocketGlassIcon size="1.4em" aria-hidden="true" />
           {t('starter.open')}
         </DialogTrigger>
       )}
@@ -224,7 +224,7 @@ export function StarterTemplatesDialog({
                     size="sm"
                     onClick={() => copy(f)}
                   >
-                    <CopyGlassIcon size="1.2em" aria-hidden="true" />
+                    <CopyGlassIcon size="1.4em" aria-hidden="true" />
                     {t('starter.copy')}
                   </Button>
                 </div>
@@ -238,7 +238,7 @@ export function StarterTemplatesDialog({
               <CollapsibleTrigger
                 render={<Button type="button" variant="ghost" size="sm" />}
               >
-                <TerminalGlassIcon size="1.2em" aria-hidden="true" />
+                <TerminalGlassIcon size="1.4em" aria-hidden="true" />
                 {t('starter.viaCli')}
               </CollapsibleTrigger>
               <CollapsiblePanel>

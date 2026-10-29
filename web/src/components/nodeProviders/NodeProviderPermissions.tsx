@@ -34,7 +34,7 @@ export function NodeProviderPermissions({
       <h3 className="flex items-center gap-1.5 text-sm font-medium">
         <ShieldCheckGlassIcon
           aria-hidden="true"
-          className="size-4.5 text-tone-success"
+          className="size-5 text-tone-success"
         />
         {t('nodeProviders.permissionsTitle')}
       </h3>

@@ -80,7 +80,7 @@ export function ResourceExplorer({
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-52 flex-1">
             <SearchGlassIcon
-              size="1.2em"
+              size="1.4em"
               className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
@@ -173,7 +173,7 @@ export function ResourceExplorer({
           <Skeleton className="h-64 w-full rounded-lg" />
         ) : list.isError ? (
           <EmptyState
-            icon={<LayersGlassIcon className="size-5.5" />}
+            icon={<LayersGlassIcon className="size-6" />}
             title={t('list.errorTitle')}
             description={list.error.message}
             action={
@@ -184,7 +184,7 @@ export function ResourceExplorer({
           />
         ) : items.length === 0 ? (
           <EmptyState
-            icon={<SearchGlassIcon className="size-5.5" />}
+            icon={<SearchGlassIcon className="size-6" />}
             title={t('list.emptyTitle')}
             description={t('list.emptyDescription')}
             action={

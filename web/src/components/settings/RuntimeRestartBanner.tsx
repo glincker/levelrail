@@ -37,7 +37,7 @@ export function RuntimeRestartBanner({
           setOpen(true)
         }}
       >
-        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
         {t('restart.now')}
       </Button>
     )
@@ -50,7 +50,7 @@ export function RuntimeRestartBanner({
         disabled={isFetching}
         onClick={() => void refetch()}
       >
-        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
         {t('restart.recheck')}
       </Button>
     )

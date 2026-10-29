@@ -54,7 +54,7 @@ export function DemoLoginEntry() {
           })
         }}
       >
-        <FlaskConicalGlassIcon size="1.2em" data-icon="inline-start" />
+        <FlaskConicalGlassIcon size="1.4em" data-icon="inline-start" />
         {session.isPending ? t('login.pending') : t('login.button')}
       </Button>
       {error ? (

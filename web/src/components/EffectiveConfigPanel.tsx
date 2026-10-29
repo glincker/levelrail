@@ -43,7 +43,7 @@ function Row({
       <span className="flex min-w-0 items-center gap-2">
         {secret ? (
           <LockGlassIcon
-            className="size-4 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-label={t('effective.secret')}
           />
         ) : null}

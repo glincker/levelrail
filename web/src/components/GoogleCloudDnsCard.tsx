@@ -76,7 +76,7 @@ export function GoogleCloudDnsCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudGlassIcon className="size-4.5" />
+          <CloudGlassIcon className="size-5" />
           {t('googleCloudDns.title')}
         </CardTitle>
         <CardDescription>{t('googleCloudDns.description')}</CardDescription>

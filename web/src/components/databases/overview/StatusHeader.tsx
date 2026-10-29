@@ -102,7 +102,7 @@ export function StatusHeader({
           ) : null}
           {health.action === 'start' ? (
             <Button size="sm" disabled={start.isPending} onClick={runStart}>
-              <PlayGlassIcon size="1.2em" aria-hidden="true" />
+              <PlayGlassIcon size="1.4em" aria-hidden="true" />
               {t('detail.start')}
             </Button>
           ) : null}
@@ -112,7 +112,7 @@ export function StatusHeader({
               params={{ name: database.name }}
               className={buttonVariants({ size: 'sm' })}
             >
-              <ScrollGlassIcon size="1.2em" aria-hidden="true" />
+              <ScrollGlassIcon size="1.4em" aria-hidden="true" />
               {t('status.viewLogs')}
             </Link>
           ) : null}

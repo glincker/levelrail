@@ -60,7 +60,7 @@ export function AiFallbackList({
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5"
           >
             <GripVerticalGlassIcon
-              className="size-4.5 shrink-0 text-muted-foreground"
+              className="size-5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
             <span className="w-5 text-xs text-muted-foreground tabular-nums">
@@ -84,7 +84,7 @@ export function AiFallbackList({
                 onChange(moveItem(fallback, i, i - 1))
               }}
             >
-              <ArrowUpGlassIcon size="1.2em" />
+              <ArrowUpGlassIcon size="1.4em" />
             </Button>
             <Button
               variant="ghost"
@@ -97,7 +97,7 @@ export function AiFallbackList({
                 onChange(moveItem(fallback, i, i + 1))
               }}
             >
-              <ArrowDownGlassIcon size="1.2em" />
+              <ArrowDownGlassIcon size="1.4em" />
             </Button>
             <Button
               variant="ghost"
@@ -108,7 +108,7 @@ export function AiFallbackList({
                 onChange(fallback.filter((_, j) => j !== i))
               }}
             >
-              <XGlassIcon size="1.2em" />
+              <XGlassIcon size="1.4em" />
             </Button>
           </li>
         )

@@ -101,7 +101,7 @@ export function TracesPanel({ app }: { app: string }) {
           {list.data && list.data.length === 0 ? (
             <EmptyState
               compact
-              icon={<BinaryTreeGlassIcon className="size-4.5" />}
+              icon={<BinaryTreeGlassIcon className="size-5" />}
               title={t('list.emptyTitle')}
               description={tracingOff ? t('list.emptyOff') : t('list.empty')}
               action={

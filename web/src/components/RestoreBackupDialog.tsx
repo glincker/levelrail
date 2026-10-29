@@ -88,14 +88,14 @@ export function ConfirmRestoreDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <RestoreGlassIcon className="size-4" aria-hidden="true" />
+        <RestoreGlassIcon className="size-5" aria-hidden="true" />
         Restore
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Restore &ldquo;{target}&rdquo;?

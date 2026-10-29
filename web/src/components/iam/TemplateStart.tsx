@@ -80,7 +80,7 @@ export function TemplateStart({
       className="space-y-3 rounded-xl border border-border bg-muted/30 p-4"
     >
       <h3 className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <WandGlassIcon className="size-4.5 text-muted-foreground" />
+        <WandGlassIcon className="size-5 text-muted-foreground" />
         {t('builder.template.title')}
       </h3>
       <Field>

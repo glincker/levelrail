@@ -323,7 +323,7 @@ export function SAMLConnectionForm({
             variant="destructive"
             onClick={() => setConfirmDelete(true)}
           >
-            <TrashGlassIcon size="1.2em" aria-hidden="true" />
+            <TrashGlassIcon size="1.4em" aria-hidden="true" />
             {t('form.delete')}
           </Button>
         ) : (
@@ -336,7 +336,7 @@ export function SAMLConnectionForm({
               variant="outline"
               render={<a href={samlTestStartURL(connection.id)} />}
             >
-              <FlaskConicalGlassIcon size="1.2em" aria-hidden="true" />
+              <FlaskConicalGlassIcon size="1.4em" aria-hidden="true" />
               {t('saml.test.button')}
             </Button>
           ) : null}

@@ -70,7 +70,7 @@ export function MetricTile({
   const body = (
     <>
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        {icon && <span className="[&_svg]:size-4">{icon}</span>}
+        {icon && <span className="[&_svg]:size-5">{icon}</span>}
         <span className="truncate">{label}</span>
       </div>
       <div className="flex items-baseline gap-1.5">

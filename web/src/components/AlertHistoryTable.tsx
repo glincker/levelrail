@@ -83,9 +83,9 @@ function HistoryRow({ entry }: { entry: AlertHistoryEntry }) {
               className="mr-1 inline-flex size-5 items-center justify-center rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {open ? (
-                <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+                <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
               ) : (
-                <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
+                <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
               )}
             </button>
           ) : null}
@@ -189,7 +189,7 @@ export function AlertHistoryTable({ app }: { app?: string }) {
         <p className="text-sm text-destructive">{error.message}</p>
       ) : entries.length === 0 ? (
         <EmptyState
-          icon={<RestoreGlassIcon className="size-5.5" />}
+          icon={<RestoreGlassIcon className="size-6" />}
           title="No alert history yet"
           description="Every firing, resolution and suppressed notification is recorded here."
         />

@@ -29,7 +29,7 @@ export function SnoozeButton({ ids }: { ids: string[] }) {
         })
       }}
     >
-      <BellOffGlassIcon size="1.2em" />
+      <BellOffGlassIcon size="1.4em" />
     </Button>
   )
 }

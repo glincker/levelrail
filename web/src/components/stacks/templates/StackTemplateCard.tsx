@@ -30,7 +30,7 @@ export function StackTemplateCard({
         ))}
         {template.secret_names.length > 0 ? (
           <Badge variant="warning">
-            <KeyGlassIcon size="1.2em" aria-hidden="true" />
+            <KeyGlassIcon size="1.4em" aria-hidden="true" />
             {t('templates.secretCount', {
               count: template.secret_names.length,
             })}

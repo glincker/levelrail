@@ -123,7 +123,7 @@ export function TemplateInstallForm({
           {generated.map((p) => (
             <li key={p.key} className="flex items-start gap-2 text-sm">
               <KeyGlassIcon
-                className="mt-0.5 size-4.5 shrink-0 text-muted-foreground"
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <span>
@@ -159,13 +159,13 @@ export function TemplateInstallForm({
       ))}
       {error || install.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{error ?? install.error?.message}</AlertDescription>
         </Alert>
       ) : null}
       <div className="flex justify-end">
         <Button type="submit" disabled={install.isPending}>
-          <RocketGlassIcon size="1.2em" />
+          <RocketGlassIcon size="1.4em" />
           {install.isPending ? t('install.working') : t('install.submit')}
         </Button>
       </div>

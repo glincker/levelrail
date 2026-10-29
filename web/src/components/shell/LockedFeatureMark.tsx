@@ -9,7 +9,7 @@ export function LockedFeatureMark({ id }: { id: string }) {
   return (
     <>
       <LockGlassIcon
-        className="ml-auto size-4 shrink-0 text-muted-foreground"
+        className="ml-auto size-5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
       <Badge variant="muted" className="shrink-0 whitespace-nowrap">

@@ -46,7 +46,7 @@ export function PortStep({
         />
       ) : null}
       <Button type="button" size="sm" onClick={onNext}>
-        <ArrowRightGlassIcon size="1.2em" />
+        <ArrowRightGlassIcon size="1.4em" />
         {t('stepper.port.next')}
       </Button>
     </StepBody>

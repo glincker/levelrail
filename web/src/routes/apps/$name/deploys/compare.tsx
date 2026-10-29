@@ -59,7 +59,7 @@ function DeployComparePage() {
       <Card>
         <CardContent className="pt-6">
           <EmptyState
-            icon={<GitCompareGlassIcon className="size-5.5" />}
+            icon={<GitCompareGlassIcon className="size-6" />}
             title="Nothing selected to compare"
             description="Pick two deploys (or one deploy and “compare to current”) from the deploy history list."
             action={

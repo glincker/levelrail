@@ -129,7 +129,7 @@ function DeployPoliciesPage() {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />}
       title={t('title')}
       description={t('description')}
     >

@@ -98,7 +98,7 @@ export function AgentTokensCard({ tokens }: { tokens: TokenResource[] }) {
         {agentTokens.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<BotGlassIcon size="1.2em" />}
+            icon={<BotGlassIcon size="1.4em" />}
             title="No agent tokens yet"
             description="Create one with a preset scope, then give it to your agent through the connect snippet above."
           />

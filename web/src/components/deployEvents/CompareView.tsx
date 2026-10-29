@@ -88,7 +88,7 @@ export function CompareView({ id, other }: { id: string; other: string }) {
     return (
       <EmptyState
         icon={
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         }
         title={t('compare.errorTitle')}
         description={q.error.message}

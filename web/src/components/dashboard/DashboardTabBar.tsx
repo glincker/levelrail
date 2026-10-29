@@ -124,7 +124,7 @@ export function DashboardTabBar({
               />
             }
           >
-            <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
+            <ChevronDownGlassIcon size="1.4em" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             {overflow.map((id) => (

@@ -131,7 +131,7 @@ export function RepoPreviewCard({
         </h3>
         <Badge variant="outline" className="gap-1">
           {preview.visibility === 'private' ? (
-            <LockGlassIcon aria-hidden="true" className="size-3.5" />
+            <LockGlassIcon aria-hidden="true" className="size-4.5" />
           ) : null}
           {t(`import.card.visibility.${preview.visibility ?? 'public'}`)}
         </Badge>
@@ -144,27 +144,27 @@ export function RepoPreviewCard({
       ) : null}
       <ul className="flex flex-wrap gap-2 text-xs text-muted-foreground">
         {preview.stars !== undefined ? (
-          <Chip icon={<StarGlassIcon aria-hidden="true" className="size-4" />}>
+          <Chip icon={<StarGlassIcon aria-hidden="true" className="size-5" />}>
             {preview.stars.toLocaleString(i18n.language)}
           </Chip>
         ) : null}
         {preview.forks !== undefined ? (
           <Chip
-            icon={<GitForkGlassIcon aria-hidden="true" className="size-4" />}
+            icon={<GitForkGlassIcon aria-hidden="true" className="size-5" />}
           >
             {preview.forks.toLocaleString(i18n.language)}
           </Chip>
         ) : null}
         {branch !== '' ? (
           <Chip
-            icon={<GitBranchGlassIcon aria-hidden="true" className="size-4" />}
+            icon={<GitBranchGlassIcon aria-hidden="true" className="size-5" />}
           >
             <span className="sr-only">{t('import.card.branch')}: </span>
             {branch}
           </Chip>
         ) : null}
         {preview.license ? (
-          <Chip icon={<ScaleGlassIcon aria-hidden="true" className="size-4" />}>
+          <Chip icon={<ScaleGlassIcon aria-hidden="true" className="size-5" />}>
             {preview.license}
           </Chip>
         ) : null}

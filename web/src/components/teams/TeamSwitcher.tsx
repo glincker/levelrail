@@ -50,7 +50,7 @@ export function TeamSwitcher() {
           className="w-40"
           aria-label={t('switcher.team')}
         >
-          <UsersGlassIcon size="1.2em" aria-hidden="true" />
+          <UsersGlassIcon size="1.4em" aria-hidden="true" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -17,7 +17,7 @@ const COLUMNS: ResponsiveColumn<AppBindMount>[] = [
     cell: (mount) => (
       <span className="inline-flex items-center gap-1.5 font-mono text-xs text-foreground">
         <FolderGlassIcon
-          className="size-4 shrink-0 text-muted-foreground"
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="min-w-0 break-all">{mount.host_path}</span>
@@ -72,7 +72,7 @@ export function AppBindMountsSection({
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>
             Each row below gives this app&rsquo;s container direct read
             {bindMounts.some((m) => !m.read_only) ? '/write ' : ' '}

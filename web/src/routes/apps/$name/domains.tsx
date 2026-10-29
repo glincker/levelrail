@@ -42,7 +42,7 @@ function DomainsSectionSkeleton() {
     <Card aria-hidden="true">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeGlassIcon className="size-4.5" />
+          <GlobeGlassIcon className="size-5" />
           {t('editor.title')}
         </CardTitle>
         <Skeleton className="h-4 w-72" />

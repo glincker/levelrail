@@ -70,7 +70,7 @@ export function FixReturnBanner({
         disabled={pending}
         onClick={handleRedeploy}
       >
-        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
         {t('fixReturn.redeploy')}
       </Button>
       <Link
@@ -90,7 +90,7 @@ export function FixReturnBanner({
           setDismissed(true)
         }}
       >
-        <XGlassIcon size="1.2em" aria-hidden="true" />
+        <XGlassIcon size="1.4em" aria-hidden="true" />
       </Button>
     </section>
   )

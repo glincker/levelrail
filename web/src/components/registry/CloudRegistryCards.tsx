@@ -72,7 +72,7 @@ function ConnectedRow({ credential }: { credential: RegistryCredential }) {
           disabled={refresh.isPending}
           onClick={() => refresh.mutate(credential.id)}
         >
-          <RefreshCwGlassIcon aria-hidden="true" className="size-4.5" />
+          <RefreshCwGlassIcon aria-hidden="true" className="size-5" />
           {t('registryPage.cloud.refreshNow')}
         </Button>
       </div>

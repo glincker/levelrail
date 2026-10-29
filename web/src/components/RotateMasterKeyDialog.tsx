@@ -66,7 +66,7 @@ export function RotateMasterKeyDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <KeyGlassIcon className="size-4" aria-hidden="true" />
+        <KeyGlassIcon className="size-5" aria-hidden="true" />
         Rotate master key
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -75,7 +75,7 @@ export function RotateMasterKeyDialog() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
                 <CircleCheckGlassIcon
-                  className="size-4.5 text-green-600 dark:text-green-400"
+                  className="size-5 text-green-600 dark:text-green-400"
                   aria-hidden="true"
                 />
                 Master key rotated
@@ -90,7 +90,7 @@ export function RotateMasterKeyDialog() {
               <Alert>
                 <CircleCheckGlassIcon
                   className="text-tone-success"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertTitle>Written to the master key file</AlertTitle>
                 <AlertDescription>
@@ -102,7 +102,7 @@ export function RotateMasterKeyDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertTitle>Not persisted to disk</AlertTitle>
                 <AlertDescription>
@@ -115,7 +115,7 @@ export function RotateMasterKeyDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertTitle>Follow-up needed</AlertTitle>
                 <AlertDescription>{result.warning}</AlertDescription>
@@ -143,7 +143,7 @@ export function RotateMasterKeyDialog() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5 text-destructive">
                 <TriangleAlertGlassIcon
-                  className="size-4.5 text-tone-warning"
+                  className="size-5 text-tone-warning"
                   aria-hidden="true"
                 />
                 Rotate the master key?
@@ -191,9 +191,9 @@ export function RotateMasterKeyDialog() {
                   className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   {revealKey ? (
-                    <EyeOffGlassIcon className="size-4.5" />
+                    <EyeOffGlassIcon className="size-5" />
                   ) : (
-                    <EyeGlassIcon className="size-4.5" />
+                    <EyeGlassIcon className="size-5" />
                   )}
                 </button>
               </div>

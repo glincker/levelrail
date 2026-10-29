@@ -140,7 +140,7 @@ export function InviteMemberDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
-        <MailGlassIcon size="1.2em" />
+        <MailGlassIcon size="1.4em" />
         Invite member
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -165,9 +165,9 @@ export function InviteMemberDialog({
                 onClick={copyLink}
               >
                 {copied ? (
-                  <CheckGlassIcon size="1.2em" />
+                  <CheckGlassIcon size="1.4em" />
                 ) : (
-                  <CopyGlassIcon size="1.2em" />
+                  <CopyGlassIcon size="1.4em" />
                 )}
                 {copied ? 'Copied' : 'Copy'}
               </Button>
@@ -192,7 +192,7 @@ export function InviteMemberDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <MailGlassIcon className="size-4.5 text-muted-foreground" />
+                <MailGlassIcon className="size-5 text-muted-foreground" />
                 Invite member
               </DialogTitle>
               <DialogDescription>
@@ -255,7 +255,7 @@ export function InviteMemberDialog({
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.2em"
+                    size="1.4em"
                   />
                   <AlertDescription>
                     {createInvite.error.message}

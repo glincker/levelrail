@@ -85,7 +85,7 @@ export function AuthGateAllowEditor({
                     disabled={disabled}
                     aria-label={t('authGate.allowRemove', { label })}
                   >
-                    <XGlassIcon className="size-3.5" />
+                    <XGlassIcon className="size-4.5" />
                   </button>
                 </Badge>
               </li>
@@ -140,7 +140,7 @@ export function AuthGateAllowEditor({
           onClick={add}
           disabled={disabled || value.trim() === ''}
         >
-          <PlusGlassIcon className="size-4" />
+          <PlusGlassIcon className="size-5" />
           {t('authGate.allowAdd')}
         </Button>
       </div>

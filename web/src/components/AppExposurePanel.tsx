@@ -161,7 +161,7 @@ export function AppExposurePanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugGlassIcon className="size-4.5" />
+          <PlugGlassIcon className="size-5" />
           {t('title')}
         </CardTitle>
         <CardDescription>{t('description')}</CardDescription>
@@ -325,7 +325,7 @@ function PlanView({ plan }: { plan: ExposurePlan }) {
       )}
       {plan.warnings?.includes('plain_http') && (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
+          <TriangleAlertGlassIcon className="size-5 text-tone-warning" />
           <AlertDescription>{t('plainHttpWarning')}</AlertDescription>
         </Alert>
       )}
@@ -354,7 +354,7 @@ function UrlList({
               className="flex flex-wrap items-center gap-2"
             >
               <GlobeGlassIcon
-                className="size-4.5 text-muted-foreground"
+                className="size-5 text-muted-foreground"
                 aria-hidden="true"
               />
               <span className="text-muted-foreground">

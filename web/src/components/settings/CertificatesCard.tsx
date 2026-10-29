@@ -81,7 +81,7 @@ export function CertificatesCard() {
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <ShieldCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden="true"
             />
           </div>

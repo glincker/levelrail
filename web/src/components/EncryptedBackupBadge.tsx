@@ -9,7 +9,7 @@ export function EncryptedBackupBadge({ codec }: { codec?: string }) {
   }
   return (
     <Badge variant="success" className="gap-1.5">
-      <LockGlassIcon className="size-4" aria-hidden="true" />
+      <LockGlassIcon className="size-5" aria-hidden="true" />
       {t('encryption.badge')}
     </Badge>
   )

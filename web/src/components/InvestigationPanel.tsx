@@ -47,7 +47,7 @@ export function InvestigationPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <SearchGlassIcon className="size-4.5" aria-hidden="true" />
+            <SearchGlassIcon className="size-5" aria-hidden="true" />
             {t('investigation.heading', { time: at.toLocaleString() })}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -67,7 +67,7 @@ export function InvestigationPanel({
             {t('investigation.viewLogs')}
           </Link>
           <Button type="button" variant="ghost" size="sm" onClick={onClear}>
-            <XGlassIcon className="size-4" aria-hidden="true" />
+            <XGlassIcon className="size-5" aria-hidden="true" />
             {t('investigation.clear')}
           </Button>
         </div>

@@ -51,7 +51,7 @@ function DockerGuardForm({ status }: { status: DockerGuardStatus }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShieldAlertGlassIcon
-            className="size-4.5 text-tone-warning"
+            className="size-5 text-tone-warning"
             aria-hidden="true"
           />
           {t('dockerGuard.title')}

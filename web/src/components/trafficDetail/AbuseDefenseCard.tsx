@@ -146,7 +146,7 @@ function RateFields({
         </div>
       </div>
       <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-        <LightbulbGlassIcon className="size-4 shrink-0" aria-hidden="true" />
+        <LightbulbGlassIcon className="size-5 shrink-0" aria-hidden="true" />
         <span>
           {suggestion.from_traffic
             ? t('abuse.suggestionFromPeak', {
@@ -411,7 +411,7 @@ export function AbuseDefenseCard({
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-4 pb-3">
         <ShieldCheckGlassIcon
-          className="size-4.5 text-tone-success"
+          className="size-5 text-tone-success"
           aria-hidden="true"
         />
         <h3 className="text-sm font-medium">{t('abuse.title')}</h3>

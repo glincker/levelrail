@@ -87,7 +87,7 @@ export function CloudflareTunnelCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudCheckGlassIcon className="size-4.5" />
+          <CloudCheckGlassIcon className="size-5" />
           Cloudflare Tunnel
           <StatusBadge
             variant={STATUS_VARIANT[settings.status]}

@@ -69,7 +69,7 @@ export function OAuthProviderRow({
           aria-label={t('oauthPage.copyCallbackFor', { provider: label })}
           onClick={copyCallback}
         >
-          <CopyGlassIcon size="1.2em" aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       </div>
       <Button
@@ -78,7 +78,7 @@ export function OAuthProviderRow({
         size="sm"
         onClick={() => setOpen(true)}
       >
-        <SettingsGlassIcon size="1.2em" aria-hidden="true" />
+        <SettingsGlassIcon size="1.4em" aria-hidden="true" />
         {t('oauthPage.configure')}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>

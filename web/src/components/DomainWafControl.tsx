@@ -90,13 +90,13 @@ export function DomainWafControl({
           {active ? (
             <EnforcedBadge domain={domain} control="waf">
               <Badge variant="success" className="shrink-0">
-                <ShieldCheckGlassIcon className="size-3.5 text-tone-success" />
+                <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
                 WAF/rate limit on
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <ShieldGlassIcon className="size-3.5" />
+              <ShieldGlassIcon className="size-4.5" />
               Not protected
             </Badge>
           )}
@@ -112,7 +112,7 @@ export function DomainWafControl({
             size="sm"
             onClick={() => setOpen((v) => !v)}
           >
-            <ShieldGlassIcon className="size-4" />
+            <ShieldGlassIcon className="size-5" />
             {open ? 'Hide' : active ? 'Manage' : 'Add WAF / rate limit'}
           </Button>
         </div>
@@ -161,7 +161,7 @@ export function DomainWafControl({
               <FieldDescription>
                 {effectiveMode === 'detect' ? (
                   <span className="flex items-center gap-1">
-                    <ShieldAlertGlassIcon className="size-4 shrink-0 text-tone-warning" />
+                    <ShieldAlertGlassIcon className="size-5 shrink-0 text-tone-warning" />
                     Requests matching OWASP CRS rules are logged, never
                     rejected. Switch to Block once you have reviewed logs for
                     false positives.

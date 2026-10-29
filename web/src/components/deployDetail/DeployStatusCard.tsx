@@ -71,7 +71,7 @@ export function DeployStatusCard({
       {state.disagreement ? (
         <p className="flex items-start gap-2 rounded-md bg-background/60 px-3 py-2 text-sm text-muted-foreground">
           <InfoGlassIcon
-            className="mt-0.5 size-4.5 shrink-0 text-tone-info"
+            className="mt-0.5 size-5 shrink-0 text-tone-info"
             aria-hidden="true"
           />
           {msg(state.disagreement)}

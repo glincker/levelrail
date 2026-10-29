@@ -436,11 +436,11 @@ export function NodeProviderForm({
       {result ? (
         <Alert variant={result.ok ? 'default' : 'destructive'}>
           {result.ok ? (
-            <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           ) : (
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
           )}
           <AlertDescription>{result.message}</AlertDescription>
@@ -448,7 +448,7 @@ export function NodeProviderForm({
       ) : null}
       {error ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
@@ -468,7 +468,7 @@ export function NodeProviderForm({
             disabled={!canSubmit || test.isPending}
             onClick={runTest}
           >
-            <PlugGlassIcon size="1.2em" aria-hidden="true" />
+            <PlugGlassIcon size="1.4em" aria-hidden="true" />
             {test.isPending
               ? t('nodeProviders.testing')
               : t('nodeProviders.testConnection')}

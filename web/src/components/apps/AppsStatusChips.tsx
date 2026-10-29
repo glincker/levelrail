@@ -95,8 +95,8 @@ export function ViewToggle({
       aria-label="View mode"
       className="flex items-center gap-0.5 rounded-lg border border-border p-0.5"
     >
-      {btn('table', 'Table view', <Rows2GlassIcon className="size-4.5" />)}
-      {btn('grid', 'Card view', <Grid2x2GlassIcon className="size-4.5" />)}
+      {btn('table', 'Table view', <Rows2GlassIcon className="size-5" />)}
+      {btn('grid', 'Card view', <Grid2x2GlassIcon className="size-5" />)}
     </div>
   )
 }

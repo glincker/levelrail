@@ -134,7 +134,7 @@ export function BenchmarksPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<ChartColumnGlassIcon size="1.2em" />}
+        icon={<ChartColumnGlassIcon size="1.4em" />}
         titleKey="resilience:benchmarks.title"
         descriptionKey="resilience:benchmarks.description"
         size="compact"
@@ -147,7 +147,7 @@ export function BenchmarksPage() {
               void refetch()
             }}
           >
-            <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+            <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
             {t('refresh')}
           </Button>
         }
@@ -163,7 +163,7 @@ export function BenchmarksPage() {
       ) : null}
       {data && runs.length === 0 ? (
         <EmptyState
-          icon={<ChartColumnGlassIcon className="size-5.5" />}
+          icon={<ChartColumnGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.body')}
         >
@@ -258,7 +258,7 @@ export function BenchmarksPage() {
                           setViewing(r.id)
                         }}
                       >
-                        <EyeGlassIcon size="1.2em" aria-hidden="true" />
+                        <EyeGlassIcon size="1.4em" aria-hidden="true" />
                         {t('history.view')}
                       </Button>
                       <Button
@@ -268,7 +268,7 @@ export function BenchmarksPage() {
                         aria-label={t('history.deleteRun', { id: r.id })}
                         onClick={() => setPendingDelete(r)}
                       >
-                        <TrashGlassIcon size="1.2em" aria-hidden="true" />
+                        <TrashGlassIcon size="1.4em" aria-hidden="true" />
                       </Button>
                     </TableCell>
                   </TableRow>

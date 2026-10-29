@@ -68,13 +68,13 @@ export function DeployFailureView({
       <p className="flex items-start gap-1.5 text-foreground">
         <LightbulbGlassIcon
           aria-hidden="true"
-          className="mt-0.5 size-4.5 shrink-0"
+          className="mt-0.5 size-5 shrink-0"
         />
         <span>{failure.suggested_fix}</span>
       </p>
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <RefreshCwGlassIcon aria-hidden="true" className="size-4" />
+          <RefreshCwGlassIcon aria-hidden="true" className="size-5" />
           {failure.retryable
             ? 'Retrying may succeed.'
             : 'Retrying will not help until this is fixed.'}
@@ -113,7 +113,7 @@ export function DeployFailureView({
           >
             <ChevronRightGlassIcon
               aria-hidden="true"
-              className={`size-3.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
+              className={`size-4.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
             />
             Log excerpt
           </button>

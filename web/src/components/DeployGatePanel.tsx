@@ -27,19 +27,19 @@ import type {
 const MAX_VISIBLE_EVENTS = 40
 
 const PHASE_ICON: Record<GatePhase, ReactNode> = {
-  readiness: <CountdownGlassIcon size="1.2em" aria-hidden="true" />,
+  readiness: <CountdownGlassIcon size="1.4em" aria-hidden="true" />,
   stability: (
     <ShieldCheckGlassIcon
       className="text-tone-success"
-      size="1.2em"
+      size="1.4em"
       aria-hidden="true"
     />
   ),
-  cutover: <SignpostGlassIcon size="1.2em" aria-hidden="true" />,
-  drain: <LogOutGlassIcon size="1.2em" aria-hidden="true" />,
-  watch: <EyeGlassIcon size="1.2em" aria-hidden="true" />,
-  rollback: <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />,
-  pin: <PinGlassIcon size="1.2em" aria-hidden="true" />,
+  cutover: <SignpostGlassIcon size="1.4em" aria-hidden="true" />,
+  drain: <LogOutGlassIcon size="1.4em" aria-hidden="true" />,
+  watch: <EyeGlassIcon size="1.4em" aria-hidden="true" />,
+  rollback: <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />,
+  pin: <PinGlassIcon size="1.4em" aria-hidden="true" />,
 }
 
 const STAGE_TONE: Record<GateStage, Tone> = {
@@ -97,7 +97,7 @@ export function GateView({ gate }: { gate: DeployGate }) {
     icon: PHASE_ICON[e.phase] ?? (
       <CircleCheckGlassIcon
         className="text-tone-success"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
     ),

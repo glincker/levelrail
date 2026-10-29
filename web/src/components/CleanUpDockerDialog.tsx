@@ -38,14 +38,14 @@ export function CleanUpDockerDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <BroomGlassIcon className="size-4" aria-hidden="true" />
+        <BroomGlassIcon className="size-5" aria-hidden="true" />
         Clean up now
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Clean up Docker storage?

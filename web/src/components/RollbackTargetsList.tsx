@@ -24,7 +24,7 @@ export function RollbackTargetsList({ appName }: { appName: string }) {
               className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
             >
               <PinGlassIcon
-                className="size-4 text-muted-foreground"
+                className="size-5 text-muted-foreground"
                 aria-hidden="true"
               />
               <span className="font-mono text-xs break-all">

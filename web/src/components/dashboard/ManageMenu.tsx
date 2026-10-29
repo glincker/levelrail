@@ -57,15 +57,15 @@ export function ManageMenu({
           }
         >
           {t('manage.label')}
-          <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
+          <ChevronDownGlassIcon size="1.4em" aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={onNew}>
-            <PlusGlassIcon size="1.2em" aria-hidden="true" />
+            <PlusGlassIcon size="1.4em" aria-hidden="true" />
             {t('manage.new')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onStarter}>
-            <LayoutGridGlassIcon size="1.2em" aria-hidden="true" />
+            <LayoutGridGlassIcon size="1.4em" aria-hidden="true" />
             {t('manage.starter')}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -73,7 +73,7 @@ export function ManageMenu({
               fileRef.current?.click()
             }}
           >
-            <UploadGlassIcon size="1.2em" aria-hidden="true" />
+            <UploadGlassIcon size="1.4em" aria-hidden="true" />
             {t('manage.import')}
           </DropdownMenuItem>
           {board ? (
@@ -81,23 +81,23 @@ export function ManageMenu({
               <DropdownMenuSeparator />
               {board.editable ? (
                 <DropdownMenuItem onClick={onEdit}>
-                  <PencilGlassIcon size="1.2em" aria-hidden="true" />
+                  <PencilGlassIcon size="1.4em" aria-hidden="true" />
                   {editing ? t('manage.doneEditing') : t('manage.edit')}
                 </DropdownMenuItem>
               ) : null}
               {board.editable ? (
                 <DropdownMenuItem onClick={onRename}>
-                  <TypeGlassIcon size="1.2em" aria-hidden="true" />
+                  <TypeGlassIcon size="1.4em" aria-hidden="true" />
                   {t('manage.rename')}
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem onClick={onExport}>
-                <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+                <DownloadGlassIcon size="1.4em" aria-hidden="true" />
                 {t('manage.export')}
               </DropdownMenuItem>
               {board.editable ? (
                 <DropdownMenuItem onClick={onDelete}>
-                  <TrashGlassIcon size="1.2em" aria-hidden="true" />
+                  <TrashGlassIcon size="1.4em" aria-hidden="true" />
                   {t('manage.delete')}
                 </DropdownMenuItem>
               ) : null}

@@ -82,14 +82,14 @@ function SettingsHubPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<SettingsGlassIcon size="1.2em" />}
+        icon={<SettingsGlassIcon size="1.4em" />}
         titleKey="settings:nav.title"
         descriptionKey="settings:nav.description"
         size="compact"
         action={
           <div className="relative w-full sm:w-64">
             <SearchGlassIcon
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
@@ -121,7 +121,7 @@ function SettingsHubPage() {
 
       {visible.length === 0 ? (
         <EmptyState
-          icon={<SearchGlassIcon className="size-5.5" />}
+          icon={<SearchGlassIcon className="size-6" />}
           title={t('nav.noMatchTitle', { query: query.trim() })}
           description={t('nav.noMatchDescription')}
         />

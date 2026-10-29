@@ -81,19 +81,19 @@ function LogsSection() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <TabsList className="w-fit">
           <TabsTrigger value="live" className="gap-1.5">
-            <TerminalGlassIcon className="size-4.5" aria-hidden="true" />
+            <TerminalGlassIcon className="size-5" aria-hidden="true" />
             Live
           </TabsTrigger>
           <TabsTrigger value="search" className="gap-1.5">
-            <SearchGlassIcon className="size-4.5" aria-hidden="true" />
+            <SearchGlassIcon className="size-5" aria-hidden="true" />
             Search
           </TabsTrigger>
           <TabsTrigger value="errors" className="gap-1.5">
-            <BugGlassIcon className="size-4.5" aria-hidden="true" />
+            <BugGlassIcon className="size-5" aria-hidden="true" />
             {t('explorer.tabErrors')}
           </TabsTrigger>
           <TabsTrigger value="archive" className="gap-1.5">
-            <ArchiveGlassIcon className="size-4.5" aria-hidden="true" />
+            <ArchiveGlassIcon className="size-5" aria-hidden="true" />
             Archive
           </TabsTrigger>
         </TabsList>

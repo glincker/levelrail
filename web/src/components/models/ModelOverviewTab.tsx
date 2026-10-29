@@ -39,7 +39,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         copy(value, label)
       }}
     >
-      <CopyGlassIcon size="1.2em" aria-hidden="true" />
+      <CopyGlassIcon size="1.4em" aria-hidden="true" />
       Copy
     </Button>
   )

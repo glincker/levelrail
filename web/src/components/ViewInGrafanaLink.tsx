@@ -22,7 +22,7 @@ export function ViewInGrafanaLink() {
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
       View in Grafana
-      <ExternalLinkGlassIcon size="1.2em" />
+      <ExternalLinkGlassIcon size="1.4em" />
     </a>
   )
 }

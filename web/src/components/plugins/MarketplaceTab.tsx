@@ -62,7 +62,7 @@ function EntryCard({
             <Badge variant="success">
               <CircleCheckGlassIcon
                 className="text-tone-success"
-                size="1.2em"
+                size="1.4em"
                 aria-hidden="true"
               />
               {t('marketplace.verified')}
@@ -158,7 +158,7 @@ export function MarketplaceTab() {
         <div className="relative min-w-48 flex-1">
           <SearchGlassIcon
             aria-hidden="true"
-            className="absolute top-2 left-2.5 size-4.5 text-muted-foreground"
+            className="absolute top-2 left-2.5 size-5 text-muted-foreground"
           />
           <Input
             type="search"
@@ -178,7 +178,7 @@ export function MarketplaceTab() {
           disabled={refresh.isPending}
           onClick={() => refresh.mutate('')}
         >
-          <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
           {refresh.isPending
             ? t('marketplace.rechecking')
             : t('marketplace.recheck')}
@@ -235,7 +235,7 @@ export function MarketplaceTab() {
       ) : hits.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<StoreGlassIcon className="size-5.5" />}
+          icon={<StoreGlassIcon className="size-6" />}
           title={t(
             sources.length === 0
               ? 'marketplace.noSources.title'

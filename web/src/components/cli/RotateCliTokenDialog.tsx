@@ -116,9 +116,9 @@ export function RotateCliTokenDialog({
               {p.live ? (
                 <Button type="button" onClick={p.copy}>
                   {p.copied ? (
-                    <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                    <CheckGlassIcon size="1.4em" aria-hidden="true" />
                   ) : (
-                    <CopyGlassIcon size="1.2em" aria-hidden="true" />
+                    <CopyGlassIcon size="1.4em" aria-hidden="true" />
                   )}
                   {t('connectCli.copy')}
                 </Button>

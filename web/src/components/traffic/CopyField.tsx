@@ -91,9 +91,9 @@ export function CopyField({
         onClick={() => void copy()}
       >
         {state === 'copied' ? (
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
         ) : (
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
         )}
         {state === 'copied' ? t('copy.copied') : t('copy.copy')}
       </Button>

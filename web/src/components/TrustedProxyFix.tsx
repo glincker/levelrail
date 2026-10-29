@@ -23,7 +23,7 @@ export function TrustedProxyFix() {
 
   return (
     <Alert variant="destructive">
-      <WrenchGlassIcon className="size-4.5" aria-hidden="true" />
+      <WrenchGlassIcon className="size-5" aria-hidden="true" />
       <AlertTitle>
         {t('edge.fix.title', { proxy: t(`edge.proxy.${det.proxy}`) })}
       </AlertTitle>
@@ -64,7 +64,7 @@ export function TrustedProxyFix() {
               })
             }}
           >
-            <RefreshCwGlassIcon className="size-4.5" aria-hidden="true" />
+            <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
             {t('edge.fix.recheck')}
           </Button>
         </div>

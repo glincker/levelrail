@@ -62,7 +62,7 @@ function CertificatesPage() {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />}
       eyebrow={t('certificatesPage.eyebrow')}
       title={t('certificatesPage.title')}
       description={t('certificatesPage.description')}

@@ -50,7 +50,7 @@ export function TagChips({
                 if (id) detachTag.mutate(id)
               }}
             >
-              <XGlassIcon className="size-3.5" aria-hidden="true" />
+              <XGlassIcon className="size-4.5" aria-hidden="true" />
               <span className="sr-only">Remove tag {name}</span>
             </button>
           </Badge>
@@ -61,7 +61,7 @@ export function TagChips({
           render={<Button variant="ghost" size="icon-xs" />}
           aria-label="Add tag"
         >
-          <PlusGlassIcon className="size-3.5" aria-hidden="true" />
+          <PlusGlassIcon className="size-4.5" aria-hidden="true" />
         </PopoverTrigger>
         <PopoverContent align="start" className="w-56 gap-2">
           <Input

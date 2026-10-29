@@ -71,7 +71,7 @@ export function EdgeAccessPanel({ app }: { app: string }) {
           {list.data && list.data.length === 0 ? (
             <EmptyState
               compact
-              icon={<FileSearchGlassIcon className="size-4.5" />}
+              icon={<FileSearchGlassIcon className="size-5" />}
               title={t('list.emptyTitle')}
               description={t('list.empty')}
               action={

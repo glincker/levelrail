@@ -91,16 +91,16 @@ export function RevealEmailSecret({ providerId, field }: Readonly<Props>) {
             </code>
             <Button type="button" variant="outline" size="sm" onClick={copy}>
               {copied ? (
-                <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                <CheckGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <CopyGlassIcon size="1.2em" aria-hidden="true" />
+                <CopyGlassIcon size="1.4em" aria-hidden="true" />
               )}
               {copied
                 ? t('emailDelivery.reveal.copied')
                 : t('emailDelivery.reveal.copy')}
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={hide}>
-              <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
+              <EyeOffGlassIcon size="1.4em" aria-hidden="true" />
               {t('emailDelivery.reveal.hide')}
             </Button>
           </div>
@@ -117,7 +117,7 @@ export function RevealEmailSecret({ providerId, field }: Readonly<Props>) {
             void reveal()
           }}
         >
-          <EyeGlassIcon size="1.2em" aria-hidden="true" />
+          <EyeGlassIcon size="1.4em" aria-hidden="true" />
           {t('emailDelivery.reveal.show')}
         </Button>
       )}

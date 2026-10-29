@@ -29,7 +29,7 @@ function PreflightBody({
         disabled={pending}
         onClick={run}
       >
-        <ListChecksGlassIcon size="1.2em" aria-hidden="true" />
+        <ListChecksGlassIcon size="1.4em" aria-hidden="true" />
         {pending ? 'Checking...' : label}
       </Button>
       {error ? (
@@ -49,7 +49,7 @@ export function AppPreflightCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ListChecksGlassIcon className="size-4.5" aria-hidden="true" />
+          <ListChecksGlassIcon className="size-5" aria-hidden="true" />
           Preflight
         </CardTitle>
       </CardHeader>

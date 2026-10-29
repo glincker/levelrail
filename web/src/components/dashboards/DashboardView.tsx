@@ -116,7 +116,7 @@ export function DashboardView({
       {widgets.length === 0 ? (
         <EmptyState
           compact
-          icon={<LayoutGridGlassIcon className="size-5.5" />}
+          icon={<LayoutGridGlassIcon className="size-6" />}
           title={t('empty.widgetsTitle')}
           description={t('empty.widgetsBody')}
         />

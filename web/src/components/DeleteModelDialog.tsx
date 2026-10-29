@@ -26,7 +26,7 @@ export function DeleteModelDialog({
           disabled={disabled}
           onClick={openDialog}
         >
-          <TrashGlassIcon size="1.2em" aria-hidden="true" />
+          <TrashGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       )}
       title={t('confirmAction.model.title', {

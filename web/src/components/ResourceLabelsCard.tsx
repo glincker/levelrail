@@ -57,7 +57,7 @@ export function ResourceLabelsCard({
             ) : (
               keys.map((key) => (
                 <Badge key={key} variant="muted" className="font-mono">
-                  <TagGlassIcon size="1.2em" aria-hidden="true" />
+                  <TagGlassIcon size="1.4em" aria-hidden="true" />
                   {key}={saved[key]}
                 </Badge>
               ))
@@ -94,7 +94,7 @@ export function ResourceLabelsCard({
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertDescription>{save.error.message}</AlertDescription>
               </Alert>

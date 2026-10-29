@@ -82,7 +82,7 @@ function TemplateDetailRoute() {
         to="/templates"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeftGlassIcon className="size-4" aria-hidden="true" />
+        <ArrowLeftGlassIcon className="size-5" aria-hidden="true" />
         {t('detail.back')}
       </Link>
 
@@ -131,7 +131,7 @@ function TemplateDetailRoute() {
                 className="inline-flex items-center gap-1 text-sm text-primary underline underline-offset-4"
               >
                 {t('detail.facts.docsLink')}
-                <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+                <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
               </a>
             ) : null}
           </div>
@@ -178,7 +178,7 @@ function TemplateDetailRoute() {
                   initialTemplateId={template.id}
                   trigger={
                     <Button type="button">
-                      <RocketGlassIcon size="1.2em" aria-hidden="true" />
+                      <RocketGlassIcon size="1.4em" aria-hidden="true" />
                       {t('detail.deploy.configure')}
                     </Button>
                   }
@@ -191,7 +191,7 @@ function TemplateDetailRoute() {
                     deployTemplateNow.deploy(template.id)
                   }}
                 >
-                  <RocketGlassIcon size="1.2em" aria-hidden="true" />
+                  <RocketGlassIcon size="1.4em" aria-hidden="true" />
                   {deploying
                     ? t('detail.deploy.deploying')
                     : t('detail.deploy.now')}

@@ -153,7 +153,7 @@ export function LogFilterBar({
           disabled={!draft}
           onClick={add}
         >
-          <PlusGlassIcon className="size-4" aria-hidden="true" />
+          <PlusGlassIcon className="size-5" aria-hidden="true" />
           {t('logs.addFilter')}
         </Button>
       </div>
@@ -175,7 +175,7 @@ export function LogFilterBar({
                 }}
                 className="text-muted-foreground hover:text-foreground"
               >
-                <XGlassIcon className="size-3.5" aria-hidden="true" />
+                <XGlassIcon className="size-4.5" aria-hidden="true" />
               </button>
             </li>
           ))}

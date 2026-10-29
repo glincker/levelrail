@@ -54,7 +54,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         onClick={props.onAdd}
         disabled={props.mode === 'bulk'}
       >
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         {t('toolbar.add')}
       </Button>
       <Button
@@ -64,9 +64,9 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         onClick={props.onToggleMode}
       >
         {props.mode === 'table' ? (
-          <CodeGlassIcon size="1.2em" />
+          <CodeGlassIcon size="1.4em" />
         ) : (
-          <ListGlassIcon size="1.2em" />
+          <ListGlassIcon size="1.4em" />
         )}
         {props.mode === 'table' ? t('toolbar.bulk') : t('toolbar.table')}
       </Button>
@@ -78,7 +78,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
           fileRef.current?.click()
         }}
       >
-        <UploadGlassIcon size="1.2em" />
+        <UploadGlassIcon size="1.4em" />
         {t('toolbar.import')}
       </Button>
       <input
@@ -100,7 +100,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         <DropdownMenuTrigger
           render={<Button type="button" size="sm" variant="outline" />}
         >
-          <DownloadGlassIcon size="1.2em" />
+          <DownloadGlassIcon size="1.4em" />
           {t('toolbar.export')}
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -136,7 +136,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         <PopoverTrigger
           render={<Button type="button" size="sm" variant="outline" />}
         >
-          <ShieldGlassIcon size="1.2em" />
+          <ShieldGlassIcon size="1.4em" />
           {t('toolbar.protection')}
         </PopoverTrigger>
         <PopoverContent className="w-80">

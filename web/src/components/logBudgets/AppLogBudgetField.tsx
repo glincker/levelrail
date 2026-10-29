@@ -41,7 +41,7 @@ export function AppLogBudgetField({ app }: { app: string }) {
               aria-label={t('editFor', { app })}
               onClick={() => setEditing(true)}
             >
-              <PencilGlassIcon size="1.2em" />
+              <PencilGlassIcon size="1.4em" />
             </Button>
           )}
         </>

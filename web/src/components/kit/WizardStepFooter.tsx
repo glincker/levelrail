@@ -44,7 +44,7 @@ export function WizardStepFooter({
           aria-describedby={showReason ? reasonId : undefined}
         >
           {continueLabel}
-          <ArrowRightGlassIcon size="1.2em" />
+          <ArrowRightGlassIcon size="1.4em" />
         </Button>
       </div>
       {showReason ? (
@@ -54,7 +54,7 @@ export function WizardStepFooter({
           className="flex items-start justify-end gap-1.5 text-right text-xs text-muted-foreground"
         >
           <InfoGlassIcon
-            className="mt-0.5 size-4 shrink-0 text-tone-info"
+            className="mt-0.5 size-5 shrink-0 text-tone-info"
             aria-hidden="true"
           />
           {reason}

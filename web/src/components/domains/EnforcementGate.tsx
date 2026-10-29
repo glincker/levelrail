@@ -30,7 +30,7 @@ export function EnforcedBadge({
   return (
     <Badge variant="warning" className="shrink-0">
       <TriangleAlertGlassIcon
-        className="size-3.5 text-tone-warning"
+        className="size-4.5 text-tone-warning"
         aria-hidden="true"
       />
       {t('enforcement.savedNotEnforced')}

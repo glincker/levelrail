@@ -32,7 +32,7 @@ export function OrganizationTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<UniversityGlassIcon className="size-5.5" />}
+        icon={<UniversityGlassIcon className="size-6" />}
         title="No organizations yet"
         description="Group related projects under an organization. A project with no organization is just as valid."
         action={action}
@@ -72,7 +72,7 @@ export function OrganizationTable({
           <Link to="/organizations/$id" params={{ id: org.id }}>
             <Button type="button" variant="outline" size="sm">
               View
-              <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
+              <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
             </Button>
           </Link>
           <DeleteOrganizationDialog id={org.id} name={org.name} />

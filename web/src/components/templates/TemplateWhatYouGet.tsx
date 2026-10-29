@@ -24,7 +24,7 @@ function Item({
     <div className="flex min-w-0 items-start gap-3">
       <span
         aria-hidden="true"
-        className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:size-4"
+        className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:size-5"
       >
         {icon}
       </span>
@@ -59,12 +59,12 @@ export function TemplateWhatYouGet({
         {t('what.description', { count: summary.serviceCount })}
       </p>
       <dl className="grid gap-4 sm:grid-cols-2">
-        <Item icon={<GlobeGlassIcon size="1.2em" />} label={t('what.url')}>
+        <Item icon={<GlobeGlassIcon size="1.4em" />} label={t('what.url')}>
           <span className="font-mono text-xs">
             {t('what.urlValue', { slug })}
           </span>
         </Item>
-        <Item icon={<PlugGlassIcon size="1.2em" />} label={t('what.ports')}>
+        <Item icon={<PlugGlassIcon size="1.4em" />} label={t('what.ports')}>
           {summary.ports.length > 0 ? (
             <span className="font-mono text-xs">
               {summary.ports.join(', ')}
@@ -73,7 +73,7 @@ export function TemplateWhatYouGet({
             t('what.portsNone')
           )}
         </Item>
-        <Item icon={<CpuGlassIcon size="1.2em" />} label={t('what.resources')}>
+        <Item icon={<CpuGlassIcon size="1.4em" />} label={t('what.resources')}>
           {summary.memoryBytes
             ? t('what.memory', { size: formatBytes(summary.memoryBytes) })
             : t('what.memoryNone')}
@@ -82,7 +82,7 @@ export function TemplateWhatYouGet({
             ? t('what.cpu', { count: summary.cpus })
             : t('what.cpuShared')}
         </Item>
-        <Item icon={<ServerGlassIcon size="1.2em" />} label={t('what.volumes')}>
+        <Item icon={<ServerGlassIcon size="1.4em" />} label={t('what.volumes')}>
           {summary.volumes.length > 0 ? (
             <ul className="space-y-0.5">
               {summary.volumes.map((v) => (
@@ -96,7 +96,7 @@ export function TemplateWhatYouGet({
           )}
         </Item>
         <Item
-          icon={<DatabaseGlassIcon size="1.2em" />}
+          icon={<DatabaseGlassIcon size="1.4em" />}
           label={t('what.dependencies')}
         >
           {summary.databases.length > 0
@@ -107,7 +107,7 @@ export function TemplateWhatYouGet({
         </Item>
         <Item
           icon={
-            <ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />
+            <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
           }
           label={t('what.backups')}
         >

@@ -22,7 +22,7 @@ export function AppFormsPanel({ app }: { app: string }) {
   if (sites.isSuccess && !sites.data.some((s) => s.name === app)) {
     return (
       <EmptyState
-        icon={<ClipboardListGlassIcon className="size-5.5" />}
+        icon={<ClipboardListGlassIcon className="size-6" />}
         title={t('notStatic.title')}
         description={t('notStatic.description')}
         action={
@@ -51,7 +51,7 @@ export function AppFormsPanel({ app }: { app: string }) {
         </div>
         {hasForms && (
           <Button writeAction onClick={() => setCreating(true)}>
-            <PlusGlassIcon size="1.2em" />
+            <PlusGlassIcon size="1.4em" />
             {t('new')}
           </Button>
         )}
@@ -77,12 +77,12 @@ export function AppFormsPanel({ app }: { app: string }) {
       )}
       {forms.isSuccess && forms.data.forms.length === 0 && (
         <EmptyState
-          icon={<ClipboardListGlassIcon className="size-5.5" />}
+          icon={<ClipboardListGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           action={
             <Button writeAction onClick={() => setCreating(true)}>
-              <PlusGlassIcon size="1.2em" />
+              <PlusGlassIcon size="1.4em" />
               {t('empty.cta')}
             </Button>
           }

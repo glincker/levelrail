@@ -35,7 +35,7 @@ export function TemplateGeneratedField({
   return (
     <Field>
       <FieldLabel htmlFor={id}>
-        <KeyGlassIcon className="size-4" aria-hidden="true" />
+        <KeyGlassIcon className="size-5" aria-hidden="true" />
         {prompt.label ?? prompt.key}
       </FieldLabel>
       <div className="flex flex-wrap items-center gap-2">
@@ -58,9 +58,9 @@ export function TemplateGeneratedField({
           }}
         >
           {shown ? (
-            <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
+            <EyeOffGlassIcon size="1.4em" aria-hidden="true" />
           ) : (
-            <EyeGlassIcon size="1.2em" aria-hidden="true" />
+            <EyeGlassIcon size="1.4em" aria-hidden="true" />
           )}
           {shown ? t('form.generated.hide') : t('form.generated.reveal')}
         </Button>
@@ -72,7 +72,7 @@ export function TemplateGeneratedField({
             onChange(randomSecret(prompt.length ?? 24))
           }}
         >
-          <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
           {t('form.generated.regenerate')}
         </Button>
       </div>

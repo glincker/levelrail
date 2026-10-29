@@ -81,7 +81,7 @@ export function ServerProfileCard() {
     <Card id="server-profile">
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <SlidersHorizontalGlassIcon aria-hidden="true" className="size-5.5" />
+          <SlidersHorizontalGlassIcon aria-hidden="true" className="size-6" />
           {t('profile.title')}
           <Badge variant="success">
             {t(`profile.names.${data.configured}`)}

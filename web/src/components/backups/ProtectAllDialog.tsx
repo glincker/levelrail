@@ -114,7 +114,7 @@ export function ProtectAllDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden="true"
             />
             {t('protectAll.title')}

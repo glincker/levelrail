@@ -189,7 +189,7 @@ export function PolicyBuilder({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>
                 {(catalog.error ?? resources.error)?.message}
@@ -259,7 +259,7 @@ export function PolicyBuilder({
                 <Alert>
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.2em"
+                    size="1.4em"
                   />
                   <AlertDescription>
                     {t('builder.json.advancedHint')}
@@ -303,7 +303,7 @@ export function PolicyBuilder({
                       }))
                     }
                   >
-                    <PlusGlassIcon size="1.2em" />
+                    <PlusGlassIcon size="1.4em" />
                     {t('builder.addStatement')}
                   </Button>
                 </div>
@@ -343,7 +343,7 @@ export function PolicyBuilder({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{saveError}</AlertDescription>
           </Alert>

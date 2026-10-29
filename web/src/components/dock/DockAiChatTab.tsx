@@ -17,12 +17,12 @@ function Body() {
     return <AiChatPanel onAssistantReply={noteDockReply} />
   return (
     <EmptyState
-      icon={<BotGlassIcon className="size-5.5" />}
+      icon={<BotGlassIcon className="size-6" />}
       title={t('dock.ai.notConfiguredTitle')}
       description={t('dock.ai.notConfiguredDescription')}
       action={
         <Button size="sm" render={<Link to="/settings/ai-assistant" />}>
-          <SettingsGlassIcon size="1.2em" />
+          <SettingsGlassIcon size="1.4em" />
           {t('dock.ai.configure')}
         </Button>
       }
@@ -38,12 +38,12 @@ export function DockAiChatTab() {
     return (
       <div className="flex h-full min-h-0 flex-col p-3">
         <EmptyState
-          icon={<BotGlassIcon className="size-5.5" />}
+          icon={<BotGlassIcon className="size-6" />}
           title={t('dock.ai.experimentalOffTitle')}
           description={t('dock.ai.experimentalOffDescription')}
           action={
             <Button size="sm" render={<Link to="/settings/beta-features" />}>
-              <SettingsGlassIcon size="1.2em" />
+              <SettingsGlassIcon size="1.4em" />
               {t('dock.ai.enableInSettings')}
             </Button>
           }

@@ -219,13 +219,13 @@ export function EditNotificationChannelDialog({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger render={<Button variant="outline" size="sm" />}>
-        <PencilGlassIcon className="size-4" aria-hidden="true" />
+        <PencilGlassIcon className="size-5" aria-hidden="true" />
         Edit
       </SheetTrigger>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <PencilGlassIcon className="size-4.5 text-muted-foreground" />
+            <PencilGlassIcon className="size-5 text-muted-foreground" />
             Edit channel
           </SheetTitle>
           <SheetDescription>
@@ -334,7 +334,7 @@ export function EditNotificationChannelDialog({
               }
               onClick={handleTest}
             >
-              <SendGlassIcon className="size-4" aria-hidden="true" />
+              <SendGlassIcon className="size-5" aria-hidden="true" />
               {testChannel.isPending || testExisting.isPending
                 ? 'Sending...'
                 : 'Send test message'}
@@ -342,7 +342,7 @@ export function EditNotificationChannelDialog({
             {verified ? (
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 <CircleCheckGlassIcon
-                  className="size-4 text-tone-success"
+                  className="size-5 text-tone-success"
                   aria-hidden="true"
                 />
                 Test sent
@@ -458,7 +458,7 @@ export function EditNotificationChannelDialog({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{updateChannel.error.message}</AlertDescription>
             </Alert>

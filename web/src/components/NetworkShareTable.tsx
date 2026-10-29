@@ -48,7 +48,7 @@ function TestButton({ share }: { share: NetworkShare }) {
         })
       }}
     >
-      <PlugGlassIcon className="size-4" aria-hidden="true" />
+      <PlugGlassIcon className="size-5" aria-hidden="true" />
       {testShare.isPending ? 'Testing...' : 'Test connection'}
     </Button>
   )

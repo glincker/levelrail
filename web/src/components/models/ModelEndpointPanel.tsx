@@ -198,7 +198,7 @@ export function ModelEndpointPanel({ model }: { model: ModelResource }) {
             disabled={recheck.isPending}
             onClick={doRecheck}
           >
-            <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+            <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
             {recheck.isPending ? t('endpoint.testing') : t('endpoint.recheck')}
           </Button>
         </div>

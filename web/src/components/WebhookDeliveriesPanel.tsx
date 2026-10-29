@@ -87,7 +87,7 @@ function DeliveryRow({
             disabled={replay.isPending}
             onClick={handleReplay}
           >
-            <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+            <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
             {replay.isPending ? 'Replaying...' : 'Replay'}
           </Button>
         </div>
@@ -120,7 +120,7 @@ export function WebhookDeliveriesPanel({ app }: { app: AppDetail }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <WebhookGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           Recent deliveries

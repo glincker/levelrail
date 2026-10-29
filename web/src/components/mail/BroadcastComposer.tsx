@@ -312,7 +312,7 @@ export function BroadcastComposer({
               writeAction
               onClick={() => void review()}
             >
-              <SendGlassIcon size="1.2em" data-icon="inline-start" />
+              <SendGlassIcon size="1.4em" data-icon="inline-start" />
               {t('messages.composer.review')}
             </Button>
           </DialogFooter>

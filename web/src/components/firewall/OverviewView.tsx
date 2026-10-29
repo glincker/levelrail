@@ -60,16 +60,16 @@ export function OverviewView({
             tone={tone}
             icon={
               attack?.active ? (
-                <SirenGlassIcon size="1.2em" />
+                <SirenGlassIcon size="1.4em" />
               ) : spiking ? (
                 <ShieldAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
               ) : (
                 <ShieldCheckGlassIcon
                   className="text-tone-success"
-                  size="1.2em"
+                  size="1.4em"
                 />
               )
             }

@@ -12,26 +12,26 @@ export function StateGlyphIcon({ glyph }: { glyph: UpstreamView['glyph'] }) {
   switch (glyph) {
     case 'ok':
       return (
-        <CircleCheckGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+        <CircleCheckGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
     case 'warn':
       return (
         <TriangleAlertGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cls}
           aria-hidden="true"
         />
       )
     case 'down':
       return (
-        <SquareXGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+        <SquareXGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
     case 'off':
-      return <BanGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+      return <BanGlassIcon size="1.4em" className={cls} aria-hidden="true" />
     default:
       return (
         <CircleQuestionMarkGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cls}
           aria-hidden="true"
         />

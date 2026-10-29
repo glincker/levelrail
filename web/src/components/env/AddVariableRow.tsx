@@ -165,17 +165,17 @@ export function AddVariableRow({
       {keyError ? <p className="text-xs text-destructive">{keyError}</p> : null}
       {suggestSecret ? (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <LightbulbGlassIcon aria-hidden className="size-4" />
+          <LightbulbGlassIcon aria-hidden className="size-5" />
           {t('add.suggestSecret')}
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
           {t('add.cancel')}
         </Button>
         <Button type="submit" size="sm" disabled={!ready}>
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
           {t('add.add')}
         </Button>
       </div>

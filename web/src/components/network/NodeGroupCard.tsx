@@ -43,9 +43,9 @@ function CopyAddress({ value }: { value: string }) {
       title={copied ? t('resource.copied') : t('resource.copy')}
     >
       {copied ? (
-        <CheckGlassIcon className="size-4" aria-hidden="true" />
+        <CheckGlassIcon className="size-5" aria-hidden="true" />
       ) : (
-        <CopyGlassIcon className="size-4" aria-hidden="true" />
+        <CopyGlassIcon className="size-5" aria-hidden="true" />
       )}
     </Button>
   )
@@ -113,7 +113,7 @@ function ResourceRow({
         {missingMesh ? (
           <Badge variant="warning" className="ml-auto shrink-0">
             <CircleAlertGlassIcon
-              className="size-3.5 text-tone-danger"
+              className="size-4.5 text-tone-danger"
               aria-hidden="true"
             />
             {t('resource.noMeshAddress')}
@@ -170,7 +170,7 @@ export function NodeGroupCard({
   const heading = (
     <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
       <ServerGlassIcon
-        className="size-4.5 shrink-0 text-muted-foreground"
+        className="size-5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
       <span className="truncate">{title}</span>

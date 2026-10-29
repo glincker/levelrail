@@ -30,7 +30,7 @@ export function Finding({
       {evidence ? (
         <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
           <LightbulbGlassIcon
-            className="mt-0.5 size-4 shrink-0"
+            className="mt-0.5 size-5 shrink-0"
             aria-hidden="true"
           />
           <span>{evidence}</span>
@@ -99,7 +99,7 @@ export function DatabaseFinding({
       ) : null}
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <LightbulbGlassIcon
-          className="mt-0.5 size-4 shrink-0"
+          className="mt-0.5 size-5 shrink-0"
           aria-hidden="true"
         />
         <span>{need.evidence}</span>

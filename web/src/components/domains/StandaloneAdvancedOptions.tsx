@@ -67,7 +67,7 @@ export function StandaloneAdvancedOptions({
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
         {t('standalone.advanced')}
       </CollapsibleTrigger>
       <CollapsiblePanel className="space-y-3 pt-3">

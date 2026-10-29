@@ -203,7 +203,7 @@ export function RecentActivity() {
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="flex items-center gap-2 rounded-lg border border-border px-4 py-3">
         <ChevronDownGlassIcon
-          className={`size-4.5 transition-transform ${open ? '' : '-rotate-90'}`}
+          className={`size-5 transition-transform ${open ? '' : '-rotate-90'}`}
           aria-hidden="true"
         />
         <span className="text-base font-medium">{t('activity.title')}</span>

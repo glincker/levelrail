@@ -25,7 +25,7 @@ export function ProtectedEnvironmentToggle({
   return (
     <label className="flex items-center gap-2 text-sm text-muted-foreground">
       <ShieldAlertGlassIcon
-        className={protectedFlag ? 'size-4.5 text-destructive' : 'size-4.5'}
+        className={protectedFlag ? 'size-5 text-destructive' : 'size-5'}
         aria-hidden="true"
       />
       Protected

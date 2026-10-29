@@ -34,7 +34,7 @@ export function NodeNeverConnectedAlert({ node }: { node: NodeResource }) {
   return (
     <Alert>
       <TriangleAlertGlassIcon
-        className="size-4.5 text-tone-warning"
+        className="size-5 text-tone-warning"
         aria-hidden="true"
       />
       <AlertTitle>{t('neverConnected.title')}</AlertTitle>
@@ -56,7 +56,7 @@ export function NodeNeverConnectedAlert({ node }: { node: NodeResource }) {
             })
           }}
         >
-          <BroomGlassIcon className="size-4" aria-hidden="true" />
+          <BroomGlassIcon className="size-5" aria-hidden="true" />
           {deleteNode.isPending
             ? t('neverConnected.cleaningUp')
             : t('neverConnected.cleanUp')}

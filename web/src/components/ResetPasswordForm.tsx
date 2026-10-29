@@ -54,7 +54,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
     return (
       <div className="space-y-4">
         <Alert>
-          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           <AlertTitle>Password reset</AlertTitle>
           <AlertDescription>
             Your password has been changed. Every other session was signed out.
@@ -117,7 +117,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
       {resetPassword.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{resetPassword.error.message}</AlertDescription>
         </Alert>
       ) : null}

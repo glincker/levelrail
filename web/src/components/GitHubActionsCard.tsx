@@ -108,7 +108,7 @@ export function GitHubActionsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SocialGithubGlassIcon className="size-4.5 text-muted-foreground" />
+          <SocialGithubGlassIcon className="size-5 text-muted-foreground" />
           {t('githubActions.title')}
           <InfoTip label={t('githubActions.infoTipLabel')}>
             {t('githubActions.description')}

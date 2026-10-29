@@ -33,7 +33,7 @@ export function ReverseProxyGuideCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugGlassIcon className="size-4.5" />
+          <PlugGlassIcon className="size-5" />
           {t('reverseProxy.title')}
         </CardTitle>
         <CardDescription>{t('reverseProxy.description')}</CardDescription>

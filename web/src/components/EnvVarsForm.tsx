@@ -239,7 +239,7 @@ export function EnvVarsForm({
       {unsavedGuard}
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BracesGlassIcon className="size-4.5" />
+          <BracesGlassIcon className="size-5" />
           {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -297,7 +297,7 @@ export function EnvVarsForm({
                         remove(index)
                       }}
                     >
-                      <XGlassIcon size="1.2em" />
+                      <XGlassIcon size="1.4em" />
                       <span className="sr-only">Remove variable</span>
                     </Button>
                   </div>
@@ -337,7 +337,7 @@ export function EnvVarsForm({
                 append({ key: '', value: '' })
               }}
             >
-              <PlusGlassIcon size="1.2em" />
+              <PlusGlassIcon size="1.4em" />
               Add variable
             </Button>
             {availableSharedVars && availableSharedVars.length > 0 ? (

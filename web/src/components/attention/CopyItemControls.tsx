@@ -35,7 +35,7 @@ export function CopyItemControls({
           toast.add({ title: t('copyFailure.snoozed'), type: 'info' })
         }}
       >
-        <BellOffGlassIcon size="1.2em" />
+        <BellOffGlassIcon size="1.4em" />
       </Button>
       <Button
         type="button"
@@ -55,7 +55,7 @@ export function CopyItemControls({
           })
         }}
       >
-        <XGlassIcon size="1.2em" />
+        <XGlassIcon size="1.4em" />
       </Button>
     </div>
   )

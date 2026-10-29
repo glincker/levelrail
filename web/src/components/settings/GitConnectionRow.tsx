@@ -171,7 +171,7 @@ export function GitConnectionRow({
               variant={needsAuthorization ? 'default' : 'outline'}
               onClick={() => window.location.assign(connection.authorize_path)}
             >
-              <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+              <PlugGlassIcon className="size-5" aria-hidden="true" />
               {connection.authorized
                 ? t('gitConnections.reconnect')
                 : t('gitConnections.authorize')}
@@ -183,7 +183,7 @@ export function GitConnectionRow({
             variant="outline"
             onClick={() => setRenaming(true)}
           >
-            <PencilGlassIcon className="size-4.5" aria-hidden="true" />
+            <PencilGlassIcon className="size-5" aria-hidden="true" />
             {t('gitConnections.rename.action')}
           </Button>
           {canSetDefault && !connection.is_default && connection.authorized ? (
@@ -194,7 +194,7 @@ export function GitConnectionRow({
               disabled={setDefault.isPending}
               onClick={() => setDefault.mutate(connection.id)}
             >
-              <StarGlassIcon className="size-4.5" aria-hidden="true" />
+              <StarGlassIcon className="size-5" aria-hidden="true" />
               {t('gitConnections.setDefault')}
             </Button>
           ) : null}

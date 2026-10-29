@@ -32,7 +32,7 @@ export function IngressUpstreamFields({
     <div className="space-y-3 rounded-md border border-border p-3">
       {settings.tls_terminated_upstream ? (
         <Alert>
-          <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
+          <ShieldCheckGlassIcon className="size-5 text-tone-success" />
           <AlertTitle>{t('ingressUpstream.bannerTitle')}</AlertTitle>
           <AlertDescription>
             {t('ingressUpstream.bannerBody')}

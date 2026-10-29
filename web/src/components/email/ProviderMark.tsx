@@ -14,7 +14,7 @@ export function ProviderMark({
 }) {
   const fallback = generic ? (
     <MailGlassIcon
-      className="size-4.5 text-muted-foreground"
+      className="size-5 text-muted-foreground"
       aria-hidden="true"
     />
   ) : (

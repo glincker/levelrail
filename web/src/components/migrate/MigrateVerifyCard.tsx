@@ -230,7 +230,7 @@ export function MigrateVerifyCard() {
       className="space-y-3 rounded-xl bg-linear-to-b from-card to-muted/50 p-4 text-sm shadow-card ring-1 ring-foreground/10"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <ShieldCheckGlassIcon className="size-5.5 text-muted-foreground" />
+        <ShieldCheckGlassIcon className="size-6 text-muted-foreground" />
         <h2 className="font-medium">{t('parity.title')}</h2>
         {report ? (
           <>
@@ -266,7 +266,7 @@ export function MigrateVerifyCard() {
             disabled={run.isPending}
             onClick={recheck}
           >
-            <RotateCwGlassIcon size="1.2em" />
+            <RotateCwGlassIcon size="1.4em" />
             {run.isPending ? t('parity.running') : t('parity.recheck')}
           </Button>
         ) : null}

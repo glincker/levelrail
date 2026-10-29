@@ -153,7 +153,7 @@ function ProviderRow({
             aria-label={t('emailProviders.row.editLabel', { name })}
             onClick={editing ? onClose : onEdit}
           >
-            <PencilGlassIcon size="1.2em" aria-hidden="true" />
+            <PencilGlassIcon size="1.4em" aria-hidden="true" />
             {t('emailProviders.row.edit')}
           </Button>
           <Button
@@ -167,7 +167,7 @@ function ProviderRow({
               test.mutate({ to: '', providerId: id })
             }}
           >
-            <SendGlassIcon size="1.2em" aria-hidden="true" />
+            <SendGlassIcon size="1.4em" aria-hidden="true" />
             {test.isPending
               ? t('emailDelivery.test.sending')
               : t('emailProviders.row.test')}
@@ -191,7 +191,7 @@ function ProviderRow({
                 })
               }}
             >
-              <ArrowLeftRightGlassIcon size="1.2em" aria-hidden="true" />
+              <ArrowLeftRightGlassIcon size="1.4em" aria-hidden="true" />
               {t('emailProviders.row.promote')}
             </Button>
           ) : null}
@@ -205,7 +205,7 @@ function ProviderRow({
               setConfirmRemove(true)
             }}
           >
-            <TrashGlassIcon size="1.2em" aria-hidden="true" />
+            <TrashGlassIcon size="1.4em" aria-hidden="true" />
             {t('emailProviders.row.remove')}
           </Button>
         </div>
@@ -307,7 +307,7 @@ function AddSlot({
         className={PRESS}
         onClick={onAdd}
       >
-        <PlusGlassIcon size="1.2em" aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {t(`emailProviders.add.${role}.action`)}
       </Button>
     </li>

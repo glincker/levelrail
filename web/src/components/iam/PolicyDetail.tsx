@@ -166,7 +166,7 @@ export function PolicyDetail({
             <div className="space-y-5 px-4 pb-6">
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => onEdit(policy)}>
-                  <PencilGlassIcon size="1.2em" />
+                  <PencilGlassIcon size="1.4em" />
                   {t('list.edit')}
                 </Button>
                 <Button
@@ -174,7 +174,7 @@ export function PolicyDetail({
                   variant="outline"
                   onClick={() => onAttach(policy)}
                 >
-                  <PlusGlassIcon size="1.2em" />
+                  <PlusGlassIcon size="1.4em" />
                   {t('list.attach')}
                 </Button>
                 <DeletePolicyDialog policy={policy} />
@@ -224,7 +224,7 @@ export function PolicyDetail({
                             )
                           }
                         >
-                          <UnlinkGlassIcon size="1.2em" />
+                          <UnlinkGlassIcon size="1.4em" />
                           {t('detail.detach')}
                         </Button>
                       </li>

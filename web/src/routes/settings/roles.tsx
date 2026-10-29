@@ -31,7 +31,7 @@ function RolesSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<IdCardLanyardGlassIcon size="1.2em" />}
+      icon={<IdCardLanyardGlassIcon size="1.4em" />}
       title={t('roles.title')}
       description={t('roles.description')}
       actions={

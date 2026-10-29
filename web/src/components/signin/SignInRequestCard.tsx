@@ -80,7 +80,7 @@ function RequestDetails({ id }: { id: string }) {
       >
         <ChevronDownGlassIcon
           aria-hidden="true"
-          className={cn('size-3.5 transition-transform', open && 'rotate-180')}
+          className={cn('size-4.5 transition-transform', open && 'rotate-180')}
         />
         {t('request.details')}
       </button>
@@ -101,7 +101,7 @@ function RequestDetails({ id }: { id: string }) {
                 .catch(() => undefined)
             }}
           >
-            <CopyGlassIcon size="1.2em" aria-hidden="true" />
+            <CopyGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         </div>
       ) : null}
@@ -175,9 +175,7 @@ export function SignInRequestCard({
         return (
           <Result
             tone="success"
-            icon={
-              <CircleCheckGlassIcon className="size-5.5 text-tone-success" />
-            }
+            icon={<CircleCheckGlassIcon className="size-6 text-tone-success" />}
             title={t('request.approvedTitle', { device })}
           >
             <p>{t('request.approvedBody')}</p>
@@ -187,7 +185,7 @@ export function SignInRequestCard({
         return (
           <Result
             tone="neutral"
-            icon={<CircleXGlassIcon className="size-5.5 text-tone-danger" />}
+            icon={<CircleXGlassIcon className="size-6 text-tone-danger" />}
             title={t('request.deniedTitle')}
           >
             <Link to="/security" className="underline underline-offset-2">
@@ -199,7 +197,7 @@ export function SignInRequestCard({
         return (
           <Result
             tone="neutral"
-            icon={<CountdownGlassIcon className="size-5.5" />}
+            icon={<CountdownGlassIcon className="size-6" />}
             title={t('request.expiredTitle')}
           >
             <p>{t('request.expiredBody')}</p>
@@ -209,7 +207,7 @@ export function SignInRequestCard({
         return (
           <Result
             tone="neutral"
-            icon={<InfoGlassIcon className="size-5.5 text-tone-info" />}
+            icon={<InfoGlassIcon className="size-6 text-tone-info" />}
             title={t('request.handledTitle')}
           >
             <p>{t('request.handledBody')}</p>
@@ -219,9 +217,7 @@ export function SignInRequestCard({
         return (
           <Result
             tone="danger"
-            icon={
-              <ShieldAlertGlassIcon className="size-5.5 text-tone-warning" />
-            }
+            icon={<ShieldAlertGlassIcon className="size-6 text-tone-warning" />}
             title={t('request.failedTitle')}
           >
             <p>{error}</p>
@@ -289,7 +285,7 @@ export function SignInRequestCard({
         aria-hidden="true"
         className="grid size-8 shrink-0 place-items-center rounded-lg bg-linear-to-b from-tone-warning-soft to-tone-warning-soft/60 text-tone-warning shadow-sm ring-1 ring-inset ring-tone-warning-border"
       >
-        <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
+        <ShieldCheckGlassIcon className="size-5 text-tone-success" />
       </span>
       <div className="min-w-0">
         <h3 className="text-sm leading-tight font-semibold">

@@ -38,7 +38,7 @@ export function RunScheduledTaskButton({
         })
       }}
     >
-      <PlayGlassIcon className="size-4" aria-hidden="true" />
+      <PlayGlassIcon className="size-5" aria-hidden="true" />
       {runNow.isPending ? t('run.starting') : t('run.now')}
     </Button>
   )

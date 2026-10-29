@@ -68,7 +68,7 @@ function RegistryCredentialsPage() {
 
   return (
     <PageTemplate
-      icon={<PackageGlassIcon size="1.2em" />}
+      icon={<PackageGlassIcon size="1.4em" />}
       eyebrow={t('registryPage.eyebrow')}
       title={t('registryPage.title')}
       description={t('registryPage.description')}

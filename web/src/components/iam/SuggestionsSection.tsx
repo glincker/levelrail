@@ -86,7 +86,7 @@ export function SuggestionsSection({
                 onClick={() => onOpenPrincipal(`token:${s.token_id}`)}
               >
                 {t('analyzer.openPrincipal')}
-                <ArrowRightGlassIcon size="1.2em" />
+                <ArrowRightGlassIcon size="1.4em" />
               </Button>
               {s.status === 'idle' ? (
                 <Button

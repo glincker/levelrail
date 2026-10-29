@@ -75,7 +75,7 @@ function DeployButton({
         onDeployNow(template)
       }}
     >
-      <RocketGlassIcon size="1.2em" aria-hidden="true" />
+      <RocketGlassIcon size="1.4em" aria-hidden="true" />
       {deploying
         ? t('marketplace.card.deploying')
         : template.requires_configuration
@@ -101,13 +101,13 @@ function Chips({ template }: { template: ServiceTemplateListItem }) {
       )}
       {template.needs_database && (
         <Badge variant="muted" className="gap-1 text-xs">
-          <DatabaseGlassIcon className="size-3.5" aria-hidden="true" />
+          <DatabaseGlassIcon className="size-4.5" aria-hidden="true" />
           {t('marketplace.card.database')}
         </Badge>
       )}
       {template.has_volume && (
         <Badge variant="muted" className="gap-1 text-xs">
-          <ServerGlassIcon className="size-3.5" aria-hidden="true" />
+          <ServerGlassIcon className="size-4.5" aria-hidden="true" />
           {t('marketplace.card.volume')}
         </Badge>
       )}

@@ -63,7 +63,7 @@ export function AppIntegrationsCard({ appName }: { appName: string }) {
           </div>
         ) : attached.length === 0 ? (
           <EmptyState
-            icon={<PlugGlassIcon className="size-5.5" />}
+            icon={<PlugGlassIcon className="size-6" />}
             title="No integrations attached"
             description="Attach PostHog, Sentry, and other curated tools to inject their env vars automatically at deploy time."
           />
@@ -80,7 +80,7 @@ export function AppIntegrationsCard({ appName }: { appName: string }) {
                     className="size-6"
                     fallback={
                       <PlugGlassIcon
-                        className="size-4.5 shrink-0 text-muted-foreground"
+                        className="size-5 shrink-0 text-muted-foreground"
                         aria-hidden="true"
                       />
                     }

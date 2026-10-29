@@ -124,7 +124,7 @@ export function HealthChecksPanel() {
               aria-label={t('health.delete', { id: h.id })}
               onClick={() => h.id && del.mutate(h.id)}
             >
-              <TrashGlassIcon size="1.2em" />
+              <TrashGlassIcon size="1.4em" />
             </Button>
           </li>
         ))}

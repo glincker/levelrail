@@ -175,7 +175,7 @@ function DrawerBody({
           {d.branch && (
             <Row label={t('drawer.branch')}>
               <span className="inline-flex items-center gap-1 font-mono">
-                <GitBranchGlassIcon className="size-4" aria-hidden="true" />
+                <GitBranchGlassIcon className="size-5" aria-hidden="true" />
                 {d.branch}
               </span>
             </Row>
@@ -183,7 +183,7 @@ function DrawerBody({
           {d.commit_sha && (
             <Row label={t('drawer.commit')}>
               <span className="inline-flex items-center gap-1 font-mono">
-                <CommitGraphGlassIcon className="size-4" aria-hidden="true" />
+                <CommitGraphGlassIcon className="size-5" aria-hidden="true" />
                 {shortSha(d.commit_sha)}
               </span>
             </Row>

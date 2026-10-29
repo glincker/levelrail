@@ -69,7 +69,7 @@ export function ResolverAnswers({
           onClick={onRecheck}
         >
           <RotateCwGlassIcon
-            size="1.2em"
+            size="1.4em"
             className={cn(
               checking && 'animate-spin motion-reduce:animate-none',
             )}

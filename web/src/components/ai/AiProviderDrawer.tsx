@@ -184,7 +184,7 @@ function DrawerBody({
       <div className="space-y-4 px-4">
         {!canWrite ? (
           <Alert>
-            <LockGlassIcon size="1.2em" aria-hidden="true" />
+            <LockGlassIcon size="1.4em" aria-hidden="true" />
             <AlertDescription>{t('aiAssistantPage.rootOnly')}</AlertDescription>
           </Alert>
         ) : null}
@@ -193,7 +193,7 @@ function DrawerBody({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
             />
             <AlertDescription>{provider.status_detail}</AlertDescription>
@@ -236,9 +236,9 @@ function DrawerBody({
               }}
             >
               {showKey ? (
-                <EyeOffGlassIcon size="1.2em" />
+                <EyeOffGlassIcon size="1.4em" />
               ) : (
-                <EyeGlassIcon size="1.2em" />
+                <EyeGlassIcon size="1.4em" />
               )}
             </Button>
           </div>
@@ -257,7 +257,7 @@ function DrawerBody({
                 >
                   {t('aiAssistantPage.drawer.getKey')}
                   <ExternalLinkGlassIcon
-                    className="size-3.5"
+                    className="size-4.5"
                     aria-hidden="true"
                   />
                 </a>
@@ -314,7 +314,7 @@ function DrawerBody({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
             />
             <AlertTitle>{saveError.message}</AlertTitle>
@@ -326,7 +326,7 @@ function DrawerBody({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
             />
             <AlertTitle>{save.error.message}</AlertTitle>
@@ -357,12 +357,12 @@ function DrawerBody({
               <>
                 {testOk ? (
                   <CircleCheckGlassIcon
-                    className="size-4.5 shrink-0 text-tone-success transition-[transform,opacity] duration-300 motion-reduce:transition-none starting:scale-50 starting:opacity-0"
+                    className="size-5 shrink-0 text-tone-success transition-[transform,opacity] duration-300 motion-reduce:transition-none starting:scale-50 starting:opacity-0"
                     aria-hidden="true"
                   />
                 ) : (
                   <TriangleAlertGlassIcon
-                    className="size-4.5 shrink-0 text-tone-danger"
+                    className="size-5 shrink-0 text-tone-danger"
                     aria-hidden="true"
                   />
                 )}

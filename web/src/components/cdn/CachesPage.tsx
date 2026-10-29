@@ -51,7 +51,7 @@ function Tiles({ data }: Readonly<{ data: SystemCache }>) {
           b.hits + b.misses > 0 ? (b.hits / (b.hits + b.misses)) * 100 : 0,
         )}
         tone="success"
-        icon={<RefreshCwGlassIcon size="1.2em" aria-hidden="true" />}
+        icon={<RefreshCwGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.hitRateSince')}
       />
       <MetricTile
@@ -59,19 +59,19 @@ function Tiles({ data }: Readonly<{ data: SystemCache }>) {
         value={formatSize(totals.hit_bytes)}
         series={data.series.map((b) => b.hit_bytes)}
         tone="info"
-        icon={<DownloadGlassIcon size="1.2em" aria-hidden="true" />}
+        icon={<DownloadGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.savedSince')}
       />
       <MetricTile
         label={t('tiles.entries')}
         value={formatCount(totals.entries)}
-        icon={<PackageGlassIcon size="1.2em" aria-hidden="true" />}
+        icon={<PackageGlassIcon size="1.4em" aria-hidden="true" />}
       />
       <MetricTile
         label={t('tiles.memory')}
         value={`${formatSize(limits.used_bytes)} / ${formatSize(limits.max_bytes)}`}
         unit={`${(used * 100).toFixed(0)}%`}
-        icon={<DatabaseGlassIcon size="1.2em" aria-hidden="true" />}
+        icon={<DatabaseGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.memoryInfo')}
       />
     </div>
@@ -84,7 +84,7 @@ function AppsTable({ apps }: Readonly<{ apps: SystemCacheApp[] }>) {
     return (
       <EmptyState
         compact
-        icon={<PackageGlassIcon className="size-4.5" />}
+        icon={<PackageGlassIcon className="size-5" />}
         title={t('apps.emptyTitle')}
         description={t('apps.emptyBody')}
         action={

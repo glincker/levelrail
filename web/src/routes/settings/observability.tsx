@@ -39,7 +39,7 @@ function ObservabilitySettingsPage() {
 
   return (
     <PageTemplate
-      icon={<ChartLineGlassIcon size="1.2em" />}
+      icon={<ChartLineGlassIcon size="1.4em" />}
       title={t('observabilityPage.title')}
       description={t('observabilityPage.description')}
     >

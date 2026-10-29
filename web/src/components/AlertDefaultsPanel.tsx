@@ -98,7 +98,7 @@ export function AlertDefaultsPanel() {
       </div>
       {list.length === 0 ? (
         <EmptyState
-          icon={<BellGlassIcon className="size-5.5" aria-hidden="true" />}
+          icon={<BellGlassIcon className="size-6" aria-hidden="true" />}
           title={t('defaults.emptyTitle')}
           description={t('defaults.emptyBody')}
         />

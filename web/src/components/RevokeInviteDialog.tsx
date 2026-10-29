@@ -37,7 +37,7 @@ export function RevokeInviteDialog({ invite }: { invite: InviteResource }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <TriangleAlertGlassIcon className="size-4.5 text-destructive" />
+            <TriangleAlertGlassIcon className="size-5 text-destructive" />
             Revoke invite for {invite.email}?
           </DialogTitle>
           <DialogDescription>
@@ -48,7 +48,7 @@ export function RevokeInviteDialog({ invite }: { invite: InviteResource }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{revokeInvite.error.message}</AlertDescription>
           </Alert>

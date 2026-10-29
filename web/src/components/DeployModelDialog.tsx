@@ -134,7 +134,7 @@ export function DeployModelDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusGlassIcon size="1.2em" aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {t('deploy.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl">
@@ -315,7 +315,7 @@ export function DeployModelDialog({
                   </span>
                 </span>
                 <ChevronDownGlassIcon
-                  className={`size-4.5 shrink-0 text-muted-foreground transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+                  className={`size-5 shrink-0 text-muted-foreground transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
                   aria-hidden="true"
                 />
               </CollapsibleTrigger>

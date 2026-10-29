@@ -23,7 +23,7 @@ function StepIcon({
   if (state === 'running') {
     return (
       <LoaderCircleGlassIcon
-        size="1.2em"
+        size="1.4em"
         className={cn(cls, 'text-primary', motion && 'animate-spin')}
         aria-hidden
       />
@@ -32,7 +32,7 @@ function StepIcon({
   if (state === 'ok')
     return (
       <CircleCheckGlassIcon
-        size="1.2em"
+        size="1.4em"
         className={cn(cls, 'text-success')}
         aria-hidden
       />
@@ -40,7 +40,7 @@ function StepIcon({
   if (state === 'failed')
     return (
       <CircleXGlassIcon
-        size="1.2em"
+        size="1.4em"
         className={cn(cls, 'text-destructive')}
         aria-hidden
       />
@@ -48,14 +48,14 @@ function StepIcon({
   if (state === 'skipped')
     return (
       <CircleMinusGlassIcon
-        size="1.2em"
+        size="1.4em"
         className={cn(cls, 'text-muted-foreground')}
         aria-hidden
       />
     )
   return (
     <CircleGlassIcon
-      size="1.2em"
+      size="1.4em"
       className={cn(cls, 'text-muted-foreground')}
       aria-hidden
     />

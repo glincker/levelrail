@@ -57,12 +57,12 @@ export function UpgradeResultCard({
       <div className="flex items-start gap-2">
         {ok ? (
           <CircleCheckGlassIcon
-            className="mt-0.5 size-4.5 shrink-0 text-success"
+            className="mt-0.5 size-5 shrink-0 text-success"
             aria-hidden
           />
         ) : (
           <CircleAlertGlassIcon
-            className="mt-0.5 size-4.5 shrink-0 text-destructive"
+            className="mt-0.5 size-5 shrink-0 text-destructive"
             aria-hidden
           />
         )}

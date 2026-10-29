@@ -39,7 +39,7 @@ export function StepperNav({
             >
               {done && !active ? (
                 <CircleCheckGlassIcon
-                  className="size-4 text-emerald-600 dark:text-emerald-400"
+                  className="size-5 text-emerald-600 dark:text-emerald-400"
                   aria-hidden="true"
                 />
               ) : (

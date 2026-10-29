@@ -61,12 +61,12 @@ export function HstsFixButton() {
                   <li key={h.host} className="flex items-start gap-2">
                     {h.verified ? (
                       <CircleCheckGlassIcon
-                        className="mt-0.5 size-4.5 shrink-0 text-green-600"
+                        className="mt-0.5 size-5 shrink-0 text-green-600"
                         aria-hidden="true"
                       />
                     ) : (
                       <CircleAlertGlassIcon
-                        className="mt-0.5 size-4.5 shrink-0 text-destructive"
+                        className="mt-0.5 size-5 shrink-0 text-destructive"
                         aria-hidden="true"
                       />
                     )}

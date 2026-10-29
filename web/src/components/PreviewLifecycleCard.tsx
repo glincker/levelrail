@@ -55,7 +55,7 @@ export function PreviewLifecycleCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SettingsGlassIcon className="size-4.5 text-muted-foreground" />
+          <SettingsGlassIcon className="size-5 text-muted-foreground" />
           {t('lifecycle.title')}
         </CardTitle>
         <CardDescription>{t('lifecycle.description')}</CardDescription>

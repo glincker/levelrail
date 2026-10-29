@@ -50,7 +50,7 @@ export function LogToolbar({
     <div className="flex flex-wrap items-center gap-2">
       <div className="relative min-w-48 flex-1">
         <SearchGlassIcon
-          className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground"
+          className="absolute top-1/2 left-2 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -90,7 +90,7 @@ export function LogToolbar({
       <Button type="button" size="xs" variant="outline" onClick={onJumpToError}>
         <CircleAlertGlassIcon
           className="text-tone-danger"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         Jump to first error
@@ -102,14 +102,14 @@ export function LogToolbar({
         onClick={() => void handleCopy()}
       >
         {copied ? (
-          <CheckGlassIcon size="1.2em" aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <CopyGlassIcon size="1.2em" aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
         {copied ? 'Copied' : 'Copy'}
       </Button>
       <Button type="button" size="xs" variant="outline" onClick={onDownload}>
-        <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+        <DownloadGlassIcon size="1.4em" aria-hidden="true" />
         Download
       </Button>
       <span

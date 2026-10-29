@@ -56,7 +56,7 @@ export function BuildStrainSuggestion({ nodes }: { nodes: NodeResource[] }) {
     <div>
       <Suggestion
         tone="warning"
-        icon={<GaugeGlassIcon size="1.2em" />}
+        icon={<GaugeGlassIcon size="1.4em" />}
         title="This node is under sustained load"
         detail="Builds and apps both run on this one node, so a heavy build competes with whatever else is serving traffic. Add a second node to spread that load, then route builds to it from that node's detail page."
         actions={

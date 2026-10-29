@@ -91,7 +91,7 @@ function ReleaseRow({
             onPreview(release.version)
           }}
         >
-          <RotateCcwGlassIcon className="size-4.5" />
+          <RotateCcwGlassIcon className="size-5" />
           {t('history.preview')}
         </Button>
       </div>

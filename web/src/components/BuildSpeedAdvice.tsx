@@ -96,7 +96,7 @@ export function BuildSpeedAdvice({ appName }: { appName: string }) {
   return (
     <section className="space-y-2 border-t pt-4">
       <h3 className="flex items-center gap-2 text-sm font-semibold">
-        <ZapGlassIcon aria-hidden="true" className="size-4.5" />
+        <ZapGlassIcon aria-hidden="true" className="size-5" />
         {t('speed.title')}
       </h3>
       {data.warm_known && data.time_saved_seconds > 0 ? (

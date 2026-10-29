@@ -168,7 +168,7 @@ export function CloneAppDialog({
         <DialogTrigger
           render={<Button type="button" variant="outline" size="sm" />}
         >
-          <CopyGlassIcon className="size-4" aria-hidden="true" />
+          <CopyGlassIcon className="size-5" aria-hidden="true" />
           Clone
         </DialogTrigger>
       )}
@@ -208,7 +208,7 @@ export function CloneAppDialog({
           {cloneApp.isError ? (
             <p className="flex items-start gap-1.5 text-sm text-destructive">
               <TriangleAlertGlassIcon
-                className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                className="mt-0.5 size-5 shrink-0 text-tone-warning"
                 aria-hidden="true"
               />
               {cloneApp.error.message}

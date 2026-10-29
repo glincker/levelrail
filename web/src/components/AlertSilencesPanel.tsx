@@ -103,7 +103,7 @@ function CreateSilenceDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <CirclePlusGlassIcon className="size-4.5" aria-hidden="true" />
+        <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
         {tm('silence.newSilence')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -336,7 +336,7 @@ export function AlertSilencesPanel() {
         <p className="text-sm text-destructive">{error.message}</p>
       ) : silences.length === 0 ? (
         <EmptyState
-          icon={<BellOffGlassIcon className="size-5.5" />}
+          icon={<BellOffGlassIcon className="size-6" />}
           title={tm('silence.emptyTitle')}
           description={tm('silence.emptyDescription')}
         />

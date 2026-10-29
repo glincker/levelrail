@@ -53,7 +53,7 @@ export function SavedViews({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <BookmarkGlassIcon size="1.2em" />
+        <BookmarkGlassIcon size="1.4em" />
         {t('views.button')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 space-y-3">
@@ -88,7 +88,7 @@ export function SavedViews({
                     })
                   }
                 >
-                  <TrashGlassIcon size="1.2em" />
+                  <TrashGlassIcon size="1.4em" />
                 </Button>
               </li>
             ))}

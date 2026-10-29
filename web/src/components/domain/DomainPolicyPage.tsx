@@ -91,7 +91,7 @@ export function DomainPolicyPage({
       <div className="space-y-4">
         {header}
         <EmptyState
-          icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
+          icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
           title={t('page.missingAppTitle')}
           description={t('page.missingApp')}
           action={
@@ -120,7 +120,7 @@ export function DomainPolicyPage({
       <div className="space-y-4">
         {header}
         <EmptyState
-          icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
+          icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
           title={t('page.loadFailed')}
           description={error?.message ?? ''}
           action={

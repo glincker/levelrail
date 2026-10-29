@@ -129,14 +129,14 @@ export function TwoFactorVerifyForm({
 
       {isRateLimited ? (
         <Alert variant="destructive">
-          <ClockGlassIcon size="1.2em" />
+          <ClockGlassIcon size="1.4em" />
           <AlertDescription>
             {t('twoFactor.rateLimited', { seconds: secondsRemaining })}
           </AlertDescription>
         </Alert>
       ) : verify.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{verify.error.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -155,7 +155,7 @@ export function TwoFactorVerifyForm({
           onClick={onBack}
           className="flex items-center gap-1 rounded py-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <ArrowLeftGlassIcon className="size-3.5" />
+          <ArrowLeftGlassIcon className="size-4.5" />
           {t('twoFactor.back')}
         </button>
         <button

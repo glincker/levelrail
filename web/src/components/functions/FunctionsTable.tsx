@@ -39,7 +39,7 @@ export function FunctionsTable({ items }: Readonly<{ items: FunctionItem[] }>) {
                 className="ml-2 inline-flex align-middle text-muted-foreground hover:text-foreground"
                 aria-label={t('list.visit')}
               >
-                <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+                <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
               </a>
             ) : null}
           </span>

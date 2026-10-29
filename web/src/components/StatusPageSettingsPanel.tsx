@@ -169,7 +169,7 @@ export function StatusPageSettingsPanel() {
           className="inline-flex items-center gap-1.5 text-sm text-primary underline underline-offset-2"
         >
           Open the public page
-          <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
         </a>
       ) : (
         <p className="text-sm text-muted-foreground">

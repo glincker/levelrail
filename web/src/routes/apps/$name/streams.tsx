@@ -26,7 +26,7 @@ function StreamsSectionSkeleton() {
     <Card aria-hidden="true">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugGlassIcon className="size-4.5" />
+          <PlugGlassIcon className="size-5" />
           Streams
         </CardTitle>
         <Skeleton className="h-4 w-72" />

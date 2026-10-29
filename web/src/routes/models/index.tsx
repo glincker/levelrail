@@ -71,7 +71,7 @@ function GpuSection() {
   if (nodes.length === 0) {
     return (
       <EmptyState
-        icon={<CpuGlassIcon className="size-5.5" />}
+        icon={<CpuGlassIcon className="size-6" />}
         title={t('empty.gpus.title')}
         description={t('empty.gpus.description')}
         helpPath="/ai-models#gpu-nodes"
@@ -126,7 +126,7 @@ function ModelList({
     return (
       <GhostPreview sample={<SampleRows />} className="min-h-72">
         <EmptyState
-          icon={<BotGlassIcon className="size-5.5" />}
+          icon={<BotGlassIcon className="size-6" />}
           title={t('empty.models.title')}
           description={t('empty.models.description')}
           action={<DeployModelDialog onDeployed={onDeployed} />}

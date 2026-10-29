@@ -61,7 +61,7 @@ export function SampleAppButton() {
       disabled={createApp.isPending}
       onClick={deploy}
     >
-      <RocketGlassIcon className="size-4.5" />
+      <RocketGlassIcon className="size-5" />
       {createApp.isPending ? t('sample.creating') : t('sample.cta')}
     </Button>
   )

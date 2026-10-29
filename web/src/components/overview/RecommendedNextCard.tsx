@@ -103,7 +103,7 @@ export function RecommendedNextCard({
                     dismiss(r.id)
                   }}
                 >
-                  <XGlassIcon size="1.2em" aria-hidden="true" />
+                  <XGlassIcon size="1.4em" aria-hidden="true" />
                 </Button>
               </span>
             </li>

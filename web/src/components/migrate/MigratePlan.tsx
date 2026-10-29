@@ -261,7 +261,7 @@ export function MigratePlan({ onOpenCutover }: { onOpenCutover: () => void }) {
 
       {report === null ? (
         <EmptyState
-          icon={<ArrowLeftRightGlassIcon className="size-5.5" />}
+          icon={<ArrowLeftRightGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />

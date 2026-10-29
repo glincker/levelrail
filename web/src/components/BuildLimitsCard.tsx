@@ -226,7 +226,7 @@ export function BuildLimitsCard({ appName }: { appName: string }) {
     <Card id="build-limits">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeGlassIcon aria-hidden="true" className="size-4.5" />
+          <GaugeGlassIcon aria-hidden="true" className="size-5" />
           {t('limits.title')}
         </CardTitle>
         <p className="text-sm text-muted-foreground">

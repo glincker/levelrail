@@ -15,7 +15,7 @@ export function useResourcePaletteItems(): PaletteItem[] {
         label: t('palette.open'),
         keywords: t('palette.openKeywords'),
         group: 'Actions',
-        icon: <FileSearchGlassIcon size="1.2em" />,
+        icon: <FileSearchGlassIcon size="1.4em" />,
         run: () => void navigate({ to: '/resources' }),
       },
     ],

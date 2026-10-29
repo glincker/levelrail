@@ -20,7 +20,7 @@ export function RecommendationsLineView({
           to="/status"
           className="inline-flex items-center gap-1.5 hover:text-foreground"
         >
-          <LightbulbGlassIcon aria-hidden="true" className="size-4.5" />
+          <LightbulbGlassIcon aria-hidden="true" className="size-5" />
           {t('recommendations.line', { count })}
         </Link>
       ) : null}

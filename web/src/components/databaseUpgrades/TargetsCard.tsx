@@ -85,7 +85,7 @@ export function TargetsCard({
         {targets.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<ArrowUpGlassIcon className="size-5.5" />}
+            icon={<ArrowUpGlassIcon className="size-6" />}
             title={t('targets.emptyTitle')}
             description={t('targets.empty')}
           />

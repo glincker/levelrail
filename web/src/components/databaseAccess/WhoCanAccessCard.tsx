@@ -61,7 +61,7 @@ export function WhoCanAccessCard({ databaseName }: { databaseName: string }) {
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-1.5 text-sm">
             <ShieldCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden="true"
             />
             {t('who.title')}
@@ -86,9 +86,7 @@ export function WhoCanAccessCard({ databaseName }: { databaseName: string }) {
       <CardContent className="space-y-4">
         {isLoading ? null : principals.length === 0 ? (
           <EmptyState
-            icon={
-              <ShieldCheckGlassIcon className="size-5.5 text-tone-success" />
-            }
+            icon={<ShieldCheckGlassIcon className="size-6 text-tone-success" />}
             title={t('who.emptyTitle')}
             description={t('who.emptyBody')}
           />

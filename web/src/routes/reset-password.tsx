@@ -71,7 +71,7 @@ function ResetPasswordPage() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>
                 This link is missing its reset token. Request a new one from the
@@ -83,7 +83,7 @@ function ResetPasswordPage() {
             to="/login"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeftGlassIcon className="size-4" />
+            <ArrowLeftGlassIcon className="size-5" />
             Back to sign in
           </Link>
         </CardContent>

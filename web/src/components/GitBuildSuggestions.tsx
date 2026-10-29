@@ -80,14 +80,14 @@ export function GitBuildSuggestions({
           className="flex items-center gap-2 text-sm text-muted-foreground"
           role="status"
         >
-          <LoaderGlassIcon className="size-4.5 animate-spin" />
+          <LoaderGlassIcon className="size-5 animate-spin" />
           {t('detected.loading')}
         </p>
       ) : null}
 
       {error ? (
         <div className="flex items-start gap-2 text-destructive" role="alert">
-          <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
+          <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
           <div className="space-y-1">
             <p className="text-sm">
               {t('detected.error', { error: error.message })}

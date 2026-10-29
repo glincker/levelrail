@@ -150,7 +150,7 @@ export function ModelRow({ model }: { model: ModelResource }) {
             })
           }}
         >
-          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -173,7 +173,7 @@ export function ModelRow({ model }: { model: ModelResource }) {
             })
           }}
         >
-          <KeyGlassIcon size="1.2em" aria-hidden="true" />
+          <KeyGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -189,7 +189,7 @@ export function ModelRow({ model }: { model: ModelResource }) {
             />
           }
         >
-          <GaugeGlassIcon size="1.2em" aria-hidden="true" />
+          <GaugeGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
         <DeleteModelDialog name={model.name} disabled={deleting} />
       </span>

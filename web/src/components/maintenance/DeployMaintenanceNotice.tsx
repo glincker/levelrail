@@ -10,7 +10,7 @@ export function DeployMaintenanceNotice({ appName }: { appName: string }) {
   if (!inMaintenance) return null
   return (
     <Alert>
-      <InfoGlassIcon className="text-tone-info" size="1.2em" />
+      <InfoGlassIcon className="text-tone-info" size="1.4em" />
       <AlertDescription>{t('deployNotice.text')}</AlertDescription>
     </Alert>
   )

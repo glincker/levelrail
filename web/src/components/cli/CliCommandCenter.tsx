@@ -96,9 +96,9 @@ function ConnectStep({ p }: { p: Pairing }) {
         {p.live ? (
           <Button type="button" size="sm" onClick={p.copy}>
             {p.copied ? (
-              <CheckGlassIcon size="1.2em" aria-hidden="true" />
+              <CheckGlassIcon size="1.4em" aria-hidden="true" />
             ) : (
-              <CopyGlassIcon size="1.2em" aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
             )}
             {t('connectCli.copy')}
           </Button>
@@ -179,7 +179,7 @@ export default function CliCommandCenter({
     <div className="min-w-0 space-y-5">
       <DialogHeader>
         <div className="flex flex-wrap items-center gap-2 pr-8">
-          <TerminalGlassIcon aria-hidden="true" className="size-5.5" />
+          <TerminalGlassIcon aria-hidden="true" className="size-6" />
           <DialogTitle>{t('cliModal.title')}</DialogTitle>
           <Badge
             data-testid="cli-status-chip"
@@ -213,7 +213,7 @@ export default function CliCommandCenter({
               {t('cliModal.started.title')}
               {hasRows ? (
                 <Badge variant="success">
-                  <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                  <CheckGlassIcon size="1.4em" aria-hidden="true" />
                   {t('cliModal.started.done')}
                 </Badge>
               ) : null}
@@ -221,7 +221,7 @@ export default function CliCommandCenter({
             <ChevronDownGlassIcon
               aria-hidden="true"
               className={cn(
-                'size-4.5 transition-transform motion-reduce:transition-none',
+                'size-5 transition-transform motion-reduce:transition-none',
                 showSetup && 'rotate-180',
               )}
             />
@@ -270,7 +270,7 @@ export default function CliCommandCenter({
                 }
               }}
             >
-              <PlusGlassIcon size="1.2em" aria-hidden="true" />
+              <PlusGlassIcon size="1.4em" aria-hidden="true" />
               {t('cliModal.manage.connectAnother')}
             </Button>
           ) : null}

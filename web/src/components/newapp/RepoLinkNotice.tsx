@@ -9,7 +9,7 @@ export function RepoLinkNotice({ ignored }: { ignored: string[] }) {
     <div className="space-y-3">
       <Banner
         variant="info"
-        icon={<LinkGlassIcon size="1.2em" />}
+        icon={<LinkGlassIcon size="1.4em" />}
         title={t('deployPage.banner')}
       >
         {t('deployPage.bannerBody')}

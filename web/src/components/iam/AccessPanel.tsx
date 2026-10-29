@@ -175,7 +175,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
         {shown.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<UserGlassIcon className="size-5.5" />}
+            icon={<UserGlassIcon className="size-6" />}
             title={t('access.empty.title')}
             description={t('access.empty.description')}
           />
@@ -209,7 +209,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
         {!current ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<UserGlassIcon className="size-5.5" />}
+            icon={<UserGlassIcon className="size-6" />}
             title={t('access.pickOne.title')}
             description={t('access.pickOne.description')}
           />
@@ -243,7 +243,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
                     setDialog({ mode: 'attach', keys: [principalKey(current)] })
                   }
                 >
-                  <PlusGlassIcon size="1.2em" />
+                  <PlusGlassIcon size="1.4em" />
                   {t('access.attach')}
                 </Button>
               </div>
@@ -273,7 +273,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
                           })
                         }
                       >
-                        <UnlinkGlassIcon size="1.2em" />
+                        <UnlinkGlassIcon size="1.4em" />
                         {t('detail.detach')}
                       </Button>
                     </li>

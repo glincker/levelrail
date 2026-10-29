@@ -66,21 +66,21 @@ const FIXED_OPTIONS: WizardOptionDef[] = [
     // @thesvg/react logos, so this reuses the same Phosphor icon
     // DeployTriggerForm.tsx's "Build from source" tab already uses for
     // the same concept.
-    icon: <GitBranchGlassIcon className="size-7" />,
+    icon: <GitBranchGlassIcon className="size-8" />,
   },
   {
     value: 'docker-compose',
     label: 'Docker Compose',
     description:
       'Paste or upload a compose.yaml and deploy every service it defines at once.',
-    icon: <LayersGlassIcon className="size-7" />,
+    icon: <LayersGlassIcon className="size-8" />,
   },
   {
     value: 'browse-templates',
     label: 'Browse templates',
     description:
       'Pick from a curated catalog of ready-to-deploy services like n8n, Uptime Kuma, and MinIO.',
-    icon: <PackageGlassIcon className="size-7" />,
+    icon: <PackageGlassIcon className="size-8" />,
   },
 ]
 
@@ -250,11 +250,11 @@ export function CreateResourceWizard({
   const heroEntry = pickerEntries.find((e) => e.key === selectedKey)
   const heroMark =
     selected === 'docker-image' ? (
-      <PackageGlassIcon aria-hidden="true" className="size-8" />
+      <PackageGlassIcon aria-hidden="true" className="size-9" />
     ) : selected === 'dockerfile-git' ? (
-      <GitBranchGlassIcon aria-hidden="true" className="size-8" />
+      <GitBranchGlassIcon aria-hidden="true" className="size-9" />
     ) : selected !== null && isFixedOption(selected) ? (
-      <LayersGlassIcon aria-hidden="true" className="size-8" />
+      <LayersGlassIcon aria-hidden="true" className="size-9" />
     ) : heroEntry?.brand ? (
       <BrandIcon name={heroEntry.brand} className="size-8" />
     ) : heroEntry?.flavor ? (
@@ -262,7 +262,7 @@ export function CreateResourceWizard({
         {heroEntry.label.slice(0, 2)}
       </span>
     ) : (
-      <DatabaseGlassIcon aria-hidden="true" className="size-8" />
+      <DatabaseGlassIcon aria-hidden="true" className="size-9" />
     )
   const heroChips: string[] = []
   if (heroEntry?.port)
@@ -325,7 +325,7 @@ export function CreateResourceWizard({
               </DialogHeader>
               <div className="relative">
                 <SearchGlassIcon
-                  className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
+                  className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <Input
@@ -410,7 +410,7 @@ export function CreateResourceWizard({
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
                     <PackageGlassIcon
                       aria-hidden="true"
-                      className="size-5.5 text-muted-foreground"
+                      className="size-6 text-muted-foreground"
                     />
                   </span>
                   <span className="min-w-0">

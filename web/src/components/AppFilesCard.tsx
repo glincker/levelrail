@@ -45,7 +45,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <CardTitle className="flex items-center gap-2">
-          <FileTextGlassIcon className="size-4.5" aria-hidden="true" />
+          <FileTextGlassIcon className="size-5" aria-hidden="true" />
           {t('title')}
         </CardTitle>
         <Button
@@ -54,7 +54,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
           variant="outline"
           onClick={() => setEditing('new')}
         >
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {t('add')}
         </Button>
       </CardHeader>
@@ -93,7 +93,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
                     size="icon-sm"
                     onClick={() => setEditing(file)}
                   >
-                    <PencilGlassIcon size="1.2em" />
+                    <PencilGlassIcon size="1.4em" />
                     <span className="sr-only">
                       {t('edit', { path: file.path })}
                     </span>
@@ -104,7 +104,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
                     size="icon-sm"
                     onClick={() => setDeleting(file)}
                   >
-                    <TrashGlassIcon size="1.2em" />
+                    <TrashGlassIcon size="1.4em" />
                     <span className="sr-only">
                       {t('delete', { path: file.path })}
                     </span>

@@ -171,7 +171,7 @@ export function ImportExportDialog({
                 render={<a href={exportDnsZoneUrl(zone, 'bind')} download />}
                 nativeButton={false}
               >
-                <DownloadGlassIcon size="1.2em" />
+                <DownloadGlassIcon size="1.4em" />
                 {t('import.exportBind')}
               </Button>
               <Button
@@ -179,7 +179,7 @@ export function ImportExportDialog({
                 render={<a href={exportDnsZoneUrl(zone, 'json')} download />}
                 nativeButton={false}
               >
-                <DownloadGlassIcon size="1.2em" />
+                <DownloadGlassIcon size="1.4em" />
                 {t('import.exportJson')}
               </Button>
             </div>

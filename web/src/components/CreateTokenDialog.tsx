@@ -169,7 +169,7 @@ export function CreateTokenDialog() {
           />
         ) : (
           <CreateFlowShell
-            icon={<KeyGlassIcon className="size-4.5 text-muted-foreground" />}
+            icon={<KeyGlassIcon className="size-5 text-muted-foreground" />}
             title={t('tokens.create.title')}
             description={t('tokens.create.description')}
             steps={TOKEN_STEPS}

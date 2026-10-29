@@ -77,14 +77,14 @@ export function DeployAttemptsList({
         </CardHeader>
         <CardContent>
           <EmptyState
-            icon={<RocketGlassIcon className="size-5.5" />}
+            icon={<RocketGlassIcon className="size-6" />}
             title="No deploys yet"
             description="Deploy an existing image tag, or build one from a git source."
             action={
               onDeploy ? (
                 <Button size="sm" onClick={onDeploy}>
                   <RocketGlassIcon
-                    className="size-4"
+                    className="size-5"
                     data-icon="inline-start"
                   />
                   {t('deployHistory.deployNow')}
@@ -160,7 +160,7 @@ export function DeployAttemptsList({
               />
             }
           >
-            <GitCompareGlassIcon className="size-4" data-icon="inline-start" />
+            <GitCompareGlassIcon className="size-5" data-icon="inline-start" />
             Compare selected
           </Button>
         ) : selected.length === 1 ? (
@@ -170,7 +170,7 @@ export function DeployAttemptsList({
         ) : null}
         {onDeploy ? (
           <Button size="sm" onClick={onDeploy} className="ml-auto">
-            <RocketGlassIcon className="size-4" data-icon="inline-start" />
+            <RocketGlassIcon className="size-5" data-icon="inline-start" />
             {t('deployHistory.deployNow')}
           </Button>
         ) : null}
@@ -209,7 +209,7 @@ export function DeployAttemptsList({
         {matching.length === 0 ? (
           <EmptyState
             compact
-            icon={<SearchGlassIcon className="size-5.5" />}
+            icon={<SearchGlassIcon className="size-6" />}
             title={t('deployHistory.filters.noMatch')}
             description={t('deployHistory.filters.noMatchHint')}
             action={

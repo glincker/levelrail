@@ -59,7 +59,7 @@ export function NotificationDeliveryHistoryDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <RestoreGlassIcon className="size-4" aria-hidden="true" />
+        <RestoreGlassIcon className="size-5" aria-hidden="true" />
         History
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

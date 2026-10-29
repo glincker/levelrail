@@ -24,7 +24,7 @@ export function DetailsSection({
     <Collapsible>
       <CollapsibleTrigger className="group flex items-center gap-2 py-1 text-sm font-medium">
         <ChevronRightGlassIcon
-          className="size-4 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
+          className="size-5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
           aria-hidden="true"
         />
         Configuration and diagnostics

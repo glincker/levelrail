@@ -183,7 +183,7 @@ export function SessionPolicyForm({
               })
             }
           >
-            <TrashGlassIcon size="1.2em" aria-hidden="true" />
+            <TrashGlassIcon size="1.4em" aria-hidden="true" />
             {t('policy.clear')}
           </Button>
         ) : (

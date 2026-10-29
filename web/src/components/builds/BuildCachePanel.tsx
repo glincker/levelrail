@@ -56,7 +56,7 @@ export function BuildCachePanel({ pruneOpen, onPruneOpenChange }: Props) {
                 onPruneOpenChange(true)
               }}
             >
-              <BroomGlassIcon size="1.2em" aria-hidden="true" />
+              <BroomGlassIcon size="1.4em" aria-hidden="true" />
               {t('cache.prune')}
             </Button>
           ) : null}

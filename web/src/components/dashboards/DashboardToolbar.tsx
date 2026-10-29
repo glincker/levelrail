@@ -102,14 +102,14 @@ export function DashboardToolbar({
           </Select>
         </div>
         <Button variant="outline" onClick={onRefreshNow}>
-          <RefreshCwGlassIcon size="1.2em" data-icon="inline-start" />
+          <RefreshCwGlassIcon size="1.4em" data-icon="inline-start" />
           {t('toolbar.refreshNow')}
         </Button>
       </div>
       {editing ? (
         <div className="flex flex-wrap items-end gap-4 rounded-lg border border-border p-3">
           <Button variant="outline" onClick={onAdd}>
-            <PlusGlassIcon size="1.2em" data-icon="inline-start" />
+            <PlusGlassIcon size="1.4em" data-icon="inline-start" />
             {t('toolbar.addWidget')}
           </Button>
           <div className="flex items-center gap-2">
@@ -171,7 +171,7 @@ export function DashboardToolbar({
               {t('toolbar.done')}
             </Button>
             <Button disabled={!dirty || saving} onClick={onSave}>
-              <SaveGlassIcon size="1.2em" data-icon="inline-start" />
+              <SaveGlassIcon size="1.4em" data-icon="inline-start" />
               {t('toolbar.save')}
             </Button>
           </div>

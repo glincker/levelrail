@@ -11,7 +11,7 @@ export function ImagesBanner({
   const size = empty ? 'hero' : 'compact'
   return (
     <PageBanner
-      icon={<LayersGlassIcon size="1.2em" />}
+      icon={<LayersGlassIcon size="1.4em" />}
       titleKey="images:title"
       descriptionKey={empty ? 'images:banner.description' : 'images:subtitle'}
       action={action}

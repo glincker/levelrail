@@ -21,7 +21,7 @@ export function SignaturePolicyCard({ mode }: { mode: 'off' | 'enforce' }) {
         <div className="space-y-0.5">
           <h2 className="flex items-center gap-2 text-sm font-medium">
             <BadgeCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden="true"
             />
             {t('policy.title')}

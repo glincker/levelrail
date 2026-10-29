@@ -96,7 +96,7 @@ export function MoveEnvironmentDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowLeftRightGlassIcon className="size-4" aria-hidden="true" />
+        <ArrowLeftRightGlassIcon className="size-5" aria-hidden="true" />
         {t('move.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
@@ -140,7 +140,7 @@ export function MoveEnvironmentDialog({
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <p className="flex items-start gap-2 text-foreground">
               <TriangleAlertGlassIcon
-                className="mt-0.5 size-4.5 shrink-0 text-amber-600"
+                className="mt-0.5 size-5 shrink-0 text-amber-600"
                 aria-hidden="true"
               />
               {t('move.protectedNotice', { environment: gate.name })}

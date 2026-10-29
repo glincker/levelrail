@@ -24,7 +24,7 @@ function EngineLogo({ engine }: { engine: string }) {
       <TemplateLogo
         id={logoIdForImage(engine) ?? ''}
         className="size-4"
-        fallback={<DatabaseGlassIcon className="size-4.5" aria-hidden="true" />}
+        fallback={<DatabaseGlassIcon className="size-5" aria-hidden="true" />}
       />
     </span>
   )
@@ -103,7 +103,7 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
 
       <span className="hidden min-w-0 items-center gap-1.5 text-xs lg:flex">
         <UploadGlassIcon
-          className="size-4 shrink-0 text-muted-foreground"
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span
@@ -129,7 +129,7 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
       </span>
 
       <ChevronRightGlassIcon
-        className="size-4.5 shrink-0 justify-self-end text-muted-foreground/50"
+        className="size-5 shrink-0 justify-self-end text-muted-foreground/50"
         aria-hidden="true"
       />
     </div>

@@ -51,7 +51,7 @@ export function GitRepoCard({
         </span>
         {option.private ? (
           <LockGlassIcon
-            className="size-4 shrink-0 text-muted-foreground"
+            className="size-5 shrink-0 text-muted-foreground"
             aria-label={t('picker.badges.private')}
           />
         ) : null}
@@ -65,7 +65,7 @@ export function GitRepoCard({
             />
           ) : (
             <CircleUserGlassIcon
-              className="size-3.5 shrink-0"
+              className="size-4.5 shrink-0"
               aria-hidden="true"
             />
           )}
@@ -77,7 +77,7 @@ export function GitRepoCard({
         </span>
       ) : null}
       <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-        <GitBranchGlassIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        <GitBranchGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
         <span className="truncate font-mono">{option.defaultBranch}</span>
         {option.archived ? (
           <Badge variant="muted">{t('picker.badges.archived')}</Badge>
@@ -89,7 +89,7 @@ export function GitRepoCard({
       {runningAs ? (
         <span className="flex items-center gap-1 text-xs font-medium text-primary">
           <CircleCheckGlassIcon
-            className="size-4 shrink-0 text-tone-success"
+            className="size-5 shrink-0 text-tone-success"
             aria-hidden="true"
           />
           <span className="truncate">

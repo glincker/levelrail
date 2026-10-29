@@ -48,7 +48,7 @@ function RestrictForm({
         variant="outline"
         disabled={restrict.isPending}
       >
-        <LockGlassIcon size="1.2em" />
+        <LockGlassIcon size="1.4em" />
         {t('ports.restrict')}
       </Button>
       {!stream.open_to_all ? (
@@ -137,7 +137,7 @@ export function PortsTab({ app, domain }: { app: string; domain: string }) {
                   className="flex items-center gap-1 text-xs text-destructive"
                 >
                   <TriangleAlertGlassIcon
-                    className="size-3.5 text-tone-warning"
+                    className="size-4.5 text-tone-warning"
                     aria-hidden="true"
                   />
                   {c}

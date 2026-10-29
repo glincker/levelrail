@@ -112,7 +112,7 @@ export function MyAccessCard() {
                         {c.allowed ? (
                           <span className="inline-flex items-center gap-1.5">
                             <CircleCheckGlassIcon
-                              className="size-4.5 shrink-0 text-emerald-600"
+                              className="size-5 shrink-0 text-emerald-600"
                               aria-hidden="true"
                             />
                             {t('accountPage.access.allowed')}
@@ -120,7 +120,7 @@ export function MyAccessCard() {
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                             <CircleMinusGlassIcon
-                              className="size-4.5 shrink-0"
+                              className="size-5 shrink-0"
                               aria-hidden="true"
                             />
                             {t('accountPage.access.missing', {

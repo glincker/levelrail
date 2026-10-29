@@ -46,7 +46,7 @@ export function PalettePreview({ item, onRun, onSecondary }: Props) {
       className="flex max-h-80 w-72 shrink-0 flex-col gap-3 overflow-y-auto border-l border-border bg-muted/20 p-4"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground [&_svg]:size-5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground [&_svg]:size-6">
           {item.icon}
         </span>
         <div className="min-w-0">

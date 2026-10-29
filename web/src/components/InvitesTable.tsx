@@ -27,9 +27,9 @@ function CopyLinkButton({ link }: { link: string }) {
       }}
     >
       {copied ? (
-        <CheckGlassIcon size="1.2em" />
+        <CheckGlassIcon size="1.4em" />
       ) : (
-        <CopyGlassIcon size="1.2em" />
+        <CopyGlassIcon size="1.4em" />
       )}
       {copied ? 'Copied' : 'Copy link'}
     </Button>
@@ -69,7 +69,7 @@ export function InvitesTable({
     return (
       <div className="flex items-center gap-3 py-4">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <MailGlassIcon className="size-4.5" />
+          <MailGlassIcon className="size-5" />
         </div>
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-foreground">
@@ -155,7 +155,7 @@ export function InvitesTable({
                 disabled
                 title="The invite link was only shown when this invite was created. Revoke and send a new one if it's needed again."
               >
-                <CopyGlassIcon size="1.2em" />
+                <CopyGlassIcon size="1.4em" />
                 Copy link
               </Button>
             )}

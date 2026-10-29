@@ -20,7 +20,7 @@ export function DriftBadge({
     >
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
       {t('drift.badge', { count: drift.summary.length })}

@@ -48,7 +48,7 @@ export function UpgradeNowDialog({
       <DialogTrigger
         render={<Button variant="outline" size="sm" disabled={disabled} />}
       >
-        <ArrowUpGlassIcon className="size-4" aria-hidden="true" />
+        <ArrowUpGlassIcon className="size-5" aria-hidden="true" />
         {t('targets.upgradeNow')}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">

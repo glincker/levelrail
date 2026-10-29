@@ -75,9 +75,9 @@ function RecordRow({ record }: { record: DiagnoseRecord }) {
         }}
       >
         {copied ? (
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
         ) : (
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
         )}
       </Button>
     </li>
@@ -142,7 +142,7 @@ function FixBlock({
               })
             }}
           >
-            <WrenchGlassIcon size="1.2em" />
+            <WrenchGlassIcon size="1.4em" />
             {apply.isPending ? t('diagnose.applying') : action.label}
           </Button>
         ) : null}
@@ -157,7 +157,7 @@ function FixBlock({
           </Button>
         ) : null}
         <Button type="button" size="sm" variant="outline" onClick={onApplied}>
-          <RefreshCwGlassIcon size="1.2em" />
+          <RefreshCwGlassIcon size="1.4em" />
           {t('diagnose.recheck')}
         </Button>
       </div>
@@ -272,7 +272,7 @@ export function DomainDiagnosePanel({ domain }: { domain: string }) {
           onClick={run}
         >
           <RefreshCwGlassIcon
-            size="1.2em"
+            size="1.4em"
             className={running ? 'animate-spin' : undefined}
           />
           {t('diagnose.recheck')}

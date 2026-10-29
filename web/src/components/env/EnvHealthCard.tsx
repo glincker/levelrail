@@ -88,7 +88,7 @@ export function EnvHealthCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
-            <WrenchGlassIcon className="size-4.5" aria-hidden />
+            <WrenchGlassIcon className="size-5" aria-hidden />
             {t('health.title')}
           </span>
           <Button
@@ -97,7 +97,7 @@ export function EnvHealthCard({ appName }: { appName: string }) {
             onClick={() => void check.refetch()}
             disabled={check.isFetching}
           >
-            <RotateCwGlassIcon size="1.2em" aria-hidden />
+            <RotateCwGlassIcon size="1.4em" aria-hidden />
             {t('health.recheck')}
           </Button>
         </CardTitle>
@@ -109,7 +109,7 @@ export function EnvHealthCard({ appName }: { appName: string }) {
         ) : findings.length === 0 ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <CircleCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden
             />
             {check.isLoading ? t('health.loading') : t('health.clean')}
@@ -126,8 +126,8 @@ export function EnvHealthCard({ appName }: { appName: string }) {
                     <TriangleAlertGlassIcon
                       className={
                         f.severity === 'error'
-                          ? 'size-4.5 text-destructive'
-                          : 'size-4.5 text-muted-foreground'
+                          ? 'size-5 text-destructive'
+                          : 'size-5 text-muted-foreground'
                       }
                       aria-hidden
                     />
@@ -156,7 +156,7 @@ export function EnvHealthCard({ appName }: { appName: string }) {
         )}
         <div className="space-y-2">
           <h3 className="flex items-center gap-2 text-sm font-medium">
-            <RestoreGlassIcon className="size-4.5" aria-hidden />
+            <RestoreGlassIcon className="size-5" aria-hidden />
             {t('health.historyTitle')}
           </h3>
           {history.data && history.data.length > 0 ? (

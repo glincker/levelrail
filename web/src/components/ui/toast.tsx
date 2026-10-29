@@ -131,7 +131,7 @@ function ToastClose({
       )}
       {...props}
     >
-      {children ?? <XGlassIcon size="1.2em" aria-hidden="true" />}
+      {children ?? <XGlassIcon size="1.4em" aria-hidden="true" />}
     </ToastPrimitive.Close>
   )
 }
@@ -143,7 +143,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
     icon = (
       <CircleCheckGlassIcon
         className="text-tone-success"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
     )
@@ -153,7 +153,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
     icon = (
       <InfoGlassIcon
         className="text-tone-info"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
     )
@@ -163,7 +163,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
     icon = (
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
     )
@@ -172,7 +172,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
   if (type === 'error') {
     icon = (
       <OctagonAlertGlassIcon
-        size="1.2em"
+        size="1.4em"
         className="text-destructive"
         aria-hidden="true"
       />
@@ -182,7 +182,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
   if (type === 'loading') {
     icon = (
       <LoaderGlassIcon
-        size="1.2em"
+        size="1.4em"
         className="animate-spin"
         aria-hidden="true"
       />
@@ -196,7 +196,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
   return (
     <span
       data-slot="toast-icon"
-      className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4"
+      className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-5"
     >
       {icon}
     </span>

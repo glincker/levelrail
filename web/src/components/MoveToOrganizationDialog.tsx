@@ -84,7 +84,7 @@ export function MoveToOrganizationDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowLeftRightGlassIcon className="size-4" aria-hidden="true" />
+        <ArrowLeftRightGlassIcon className="size-5" aria-hidden="true" />
         Move
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
@@ -139,7 +139,7 @@ export function MoveToOrganizationDialog({
         {setProjectOrganization.isError ? (
           <p className="flex items-start gap-1.5 text-sm text-destructive">
             <TriangleAlertGlassIcon
-              className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+              className="mt-0.5 size-5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {setProjectOrganization.error.message}

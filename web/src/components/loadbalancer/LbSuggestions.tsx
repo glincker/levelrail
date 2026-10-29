@@ -23,10 +23,10 @@ export function LbSuggestions({
           s.tone === 'warning' ? (
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
           ) : (
-            <LightbulbGlassIcon size="1.2em" />
+            <LightbulbGlassIcon size="1.4em" />
           ),
         title: s.title,
         detail: s.detail,

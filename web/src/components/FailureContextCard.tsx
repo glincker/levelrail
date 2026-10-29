@@ -33,7 +33,7 @@ function FailureBody({
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <OctagonAlertGlassIcon
-              className="size-4.5 text-tone-danger"
+              className="size-5 text-tone-danger"
               aria-hidden="true"
             />
             {crash
@@ -70,9 +70,9 @@ function FailureBody({
             }}
           >
             {copied ? (
-              <CheckGlassIcon className="size-4" aria-hidden="true" />
+              <CheckGlassIcon className="size-5" aria-hidden="true" />
             ) : (
-              <CopyGlassIcon className="size-4" aria-hidden="true" />
+              <CopyGlassIcon className="size-5" aria-hidden="true" />
             )}
             {copied ? t('logs.copied') : t('failure.copy')}
           </Button>

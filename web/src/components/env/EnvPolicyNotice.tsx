@@ -12,7 +12,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
       <Alert>
         <TriangleAlertGlassIcon
           className="text-tone-warning"
-          size="1.2em"
+          size="1.4em"
           aria-hidden
         />
         <AlertTitle>{t('policy.invalidTitle')}</AlertTitle>
@@ -23,7 +23,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
   if (settings.reveal_policy === 'disabled') {
     return (
       <Alert>
-        <InfoGlassIcon className="text-tone-info" size="1.2em" aria-hidden />
+        <InfoGlassIcon className="text-tone-info" size="1.4em" aria-hidden />
         <AlertTitle>{t('policy.disabledTitle')}</AlertTitle>
         <AlertDescription>{t('policy.disabledBody')}</AlertDescription>
       </Alert>
@@ -34,7 +34,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
       <Alert>
         <TriangleAlertGlassIcon
           className="text-tone-warning"
-          size="1.2em"
+          size="1.4em"
           aria-hidden
         />
         <AlertTitle>{t('policy.allowTitle')}</AlertTitle>
@@ -45,7 +45,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
   if (settings.secrets_write_only) {
     return (
       <Alert>
-        <InfoGlassIcon className="text-tone-info" size="1.2em" aria-hidden />
+        <InfoGlassIcon className="text-tone-info" size="1.4em" aria-hidden />
         <AlertTitle>{t('policy.writeOnlyTitle')}</AlertTitle>
         <AlertDescription>{t('policy.writeOnlyBody')}</AlertDescription>
       </Alert>

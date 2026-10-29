@@ -45,7 +45,7 @@ export function RejoinMeshButton({
         })
       }}
     >
-      <PlugGlassIcon className="size-4" aria-hidden="true" />
+      <PlugGlassIcon className="size-5" aria-hidden="true" />
       {rejoin.isPending ? 'Requesting...' : 'Rejoin'}
     </Button>
   )

@@ -70,7 +70,7 @@ function EngineTile({ entry }: { entry: PickerEntry }) {
         </span>
       ) : (
         <DatabaseGlassIcon
-          className="size-7 text-muted-foreground"
+          className="size-8 text-muted-foreground"
           aria-hidden="true"
         />
       )}
@@ -244,7 +244,7 @@ export function DatabasePicker({
         showEmpty && query ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center">
             <SearchGlassIcon
-              className="size-7 text-muted-foreground"
+              className="size-8 text-muted-foreground"
               aria-hidden="true"
             />
             <p className="text-sm font-medium text-foreground">

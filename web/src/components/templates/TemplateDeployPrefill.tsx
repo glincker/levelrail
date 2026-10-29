@@ -35,7 +35,7 @@ export function TemplateDeployPrefill({ slug }: { slug: string }) {
       query.error instanceof ApiError && query.error.status === 404
     return (
       <EmptyState
-        icon={<PackageGlassIcon className="size-5.5" />}
+        icon={<PackageGlassIcon className="size-6" />}
         title={notFound ? t('prefill.notFoundTitle') : t('prefill.errorTitle')}
         description={
           notFound

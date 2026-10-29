@@ -139,7 +139,7 @@ export function SettingsScopedSidebar() {
                 render={<Link to="/" />}
                 tooltip={t('nav.back')}
               >
-                <ArrowLeftGlassIcon size="1.2em" />
+                <ArrowLeftGlassIcon size="1.4em" />
                 <span>{t('nav.back')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -151,7 +151,7 @@ export function SettingsScopedSidebar() {
         <SidebarGroupContent>
           <div className="relative">
             <SearchGlassIcon
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
@@ -182,7 +182,7 @@ export function SettingsScopedSidebar() {
                 <SidebarGroupLabel className="cursor-pointer justify-between">
                   <span>{section.title}</span>
                   <ChevronDownGlassIcon
-                    className="size-4 shrink-0 text-sidebar-foreground/50 transition-transform group-data-panel-open/settings-section:rotate-180"
+                    className="size-5 shrink-0 text-sidebar-foreground/50 transition-transform group-data-panel-open/settings-section:rotate-180"
                     aria-hidden="true"
                   />
                 </SidebarGroupLabel>

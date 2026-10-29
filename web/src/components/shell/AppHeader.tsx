@@ -63,7 +63,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onSearch}
           >
-            <SearchGlassIcon size="1.2em" />
+            <SearchGlassIcon size="1.4em" />
             <span className="hidden flex-1 truncate text-left @xl:inline">
               {t('shell.search.placeholder')}
             </span>

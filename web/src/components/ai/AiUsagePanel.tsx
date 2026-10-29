@@ -70,7 +70,7 @@ export function AiUsagePanel({
     return (
       <EmptyState
         compact
-        icon={<ChartLineGlassIcon className="size-5.5" />}
+        icon={<ChartLineGlassIcon className="size-6" />}
         title={t('aiAssistantPage.usage.emptyTitle')}
         description={
           usage.isError

@@ -116,7 +116,7 @@ export function SleepHistoryCard({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MoonGlassIcon className="size-4.5 text-muted-foreground" />
+            <MoonGlassIcon className="size-5 text-muted-foreground" />
             {t('title')}
           </CardTitle>
         </CardHeader>
@@ -170,9 +170,9 @@ export function SleepHistoryCard({
       cell: (e) => (
         <span className="flex items-center gap-1.5">
           {e.kind === 'woke' ? (
-            <SunGlassIcon className="size-4" aria-hidden="true" />
+            <SunGlassIcon className="size-5" aria-hidden="true" />
           ) : (
-            <MoonGlassIcon className="size-4" aria-hidden="true" />
+            <MoonGlassIcon className="size-5" aria-hidden="true" />
           )}
           {t(`events.kind.${e.kind}`)}
         </span>
@@ -233,7 +233,7 @@ export function SleepHistoryCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <MoonGlassIcon className="size-4.5 text-muted-foreground" />
+          <MoonGlassIcon className="size-5 text-muted-foreground" />
           {t('title')}
           <span className="text-xs font-normal text-muted-foreground">
             {stats.currently_asleep_since ? (

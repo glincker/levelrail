@@ -75,7 +75,7 @@ export function ProxyDetectedFacts({
       </dl>
       {detected.complete || quietMissing ? null : (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertTitle>{t('proxySetup.facts.missingTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>{t('proxySetup.facts.missingBody')}</p>

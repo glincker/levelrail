@@ -26,7 +26,7 @@ export function ProtectedDeployNotice({
     >
       <div className="flex items-start gap-2">
         <ShieldAlertGlassIcon
-          className={cn('mt-0.5 size-4.5 shrink-0', TONE.warning.text)}
+          className={cn('mt-0.5 size-5 shrink-0', TONE.warning.text)}
           aria-hidden="true"
         />
         <p>{t('approval.protected', { environment: environmentName })}</p>

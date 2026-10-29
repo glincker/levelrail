@@ -54,7 +54,7 @@ export function InfraCanvasPanel({
           onClick={onClose}
           aria-label={t('panel.close')}
         >
-          <XGlassIcon className="size-4.5" aria-hidden="true" />
+          <XGlassIcon className="size-5" aria-hidden="true" />
         </Button>
       </div>
 

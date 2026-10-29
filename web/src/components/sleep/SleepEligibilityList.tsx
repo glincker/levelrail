@@ -106,7 +106,7 @@ export function SleepEligibilityList({
         <li className="flex items-center gap-3 py-2">
           <CircleCheckGlassIcon
             aria-hidden="true"
-            className="size-4.5 shrink-0 text-tone-success"
+            className="size-5 shrink-0 text-tone-success"
           />
           <p className="text-sm text-foreground">{t('appSleep.allClear')}</p>
         </li>

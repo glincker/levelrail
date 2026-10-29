@@ -37,9 +37,9 @@ export function CommandBlock({
         </code>
         <Button type="button" size="sm" variant="outline" onClick={copy}>
           {copied ? (
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
           ) : (
-            <CopyGlassIcon size="1.2em" />
+            <CopyGlassIcon size="1.4em" />
           )}
           {copied ? t('join.copied') : t('join.copy')}
         </Button>

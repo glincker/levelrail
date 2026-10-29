@@ -208,7 +208,7 @@ export function GitRepoListPicker({
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <SearchGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -230,7 +230,7 @@ export function GitRepoListPicker({
           onClick={() => refresh.mutate()}
         >
           <RefreshCwGlassIcon
-            className={cn('size-4', refresh.isPending && 'animate-spin')}
+            className={cn('size-5', refresh.isPending && 'animate-spin')}
             aria-hidden="true"
           />
           {refresh.isPending ? t('picker.refreshing') : t('picker.refresh')}

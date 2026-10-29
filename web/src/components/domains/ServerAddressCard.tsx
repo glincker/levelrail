@@ -53,9 +53,9 @@ function CopyValue({ value }: { value: string }) {
       }}
     >
       {copied ? (
-        <CheckGlassIcon size="1.2em" />
+        <CheckGlassIcon size="1.4em" />
       ) : (
-        <CopyGlassIcon size="1.2em" />
+        <CopyGlassIcon size="1.4em" />
       )}
     </Button>
   )
@@ -97,7 +97,7 @@ function Notes({ data }: { data: ServerAddress }) {
           className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400"
         >
           <CircleAlertGlassIcon
-            className="mt-0.5 size-4 shrink-0 text-tone-danger"
+            className="mt-0.5 size-5 shrink-0 text-tone-danger"
             aria-hidden="true"
           />
           <span>{n}</span>
@@ -130,7 +130,7 @@ function OverrideForm({ data }: { data: ServerAddress }) {
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <ChevronDownGlassIcon className="size-3.5" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
         {t('serverAddress.override')}
       </CollapsibleTrigger>
       <CollapsiblePanel className="space-y-2 pt-2">
@@ -299,7 +299,7 @@ export function ServerAddressCard() {
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ServerGlassIcon className="size-4.5" aria-hidden="true" />
+          <ServerGlassIcon className="size-5" aria-hidden="true" />
           {t('serverAddress.title')}
           {data ? (
             <Badge variant="muted">

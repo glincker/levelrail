@@ -52,13 +52,13 @@ export function PlatformSettingsSection({
         <ChevronRightGlassIcon
           className={
             open
-              ? 'size-4.5 shrink-0 rotate-90 transition-transform'
-              : 'size-4.5 shrink-0 transition-transform'
+              ? 'size-5 shrink-0 rotate-90 transition-transform'
+              : 'size-5 shrink-0 transition-transform'
           }
           aria-hidden="true"
         />
         <SettingsGlassIcon
-          className="size-4.5 shrink-0 text-muted-foreground"
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1">

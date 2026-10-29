@@ -117,7 +117,7 @@ export function RecordValueRows({
               aria-label={t('record.removeValue', { n: i + 1 })}
               onClick={() => onChange(rows.filter((_, j) => j !== i))}
             >
-              <TrashGlassIcon size="1.2em" />
+              <TrashGlassIcon size="1.4em" />
             </Button>
           ) : null}
         </div>
@@ -133,7 +133,7 @@ export function RecordValueRows({
             ])
           }
         >
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {t('record.addValue')}
         </Button>
       )}

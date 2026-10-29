@@ -79,7 +79,7 @@ export function DatabaseLogSearchPanel({
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <SearchGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Log search
@@ -100,7 +100,7 @@ export function DatabaseLogSearchPanel({
 
       <div className="relative mt-3">
         <SearchGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -121,7 +121,7 @@ export function DatabaseLogSearchPanel({
             aria-label="Clear search"
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <XGlassIcon className="size-4" aria-hidden="true" />
+            <XGlassIcon className="size-5" aria-hidden="true" />
           </button>
         ) : null}
       </div>

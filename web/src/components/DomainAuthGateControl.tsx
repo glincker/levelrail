@@ -135,13 +135,13 @@ export function DomainAuthGateControl({
           {on ? (
             <EnforcedBadge domain={domain} control="auth_gate">
               <Badge variant="success" className="shrink-0">
-                <ShieldCheckGlassIcon className="size-3.5 text-tone-success" />
+                <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
                 {t('authGate.badgeOn')}
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <ShieldOffGlassIcon className="size-3.5" />
+              <ShieldOffGlassIcon className="size-4.5" />
               {t('authGate.badgeOff')}
             </Badge>
           )}
@@ -152,7 +152,7 @@ export function DomainAuthGateControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <ShieldGlassIcon className="size-4" />
+          <ShieldGlassIcon className="size-5" />
           {open
             ? t('authGate.hide')
             : on
@@ -362,7 +362,7 @@ export function DomainAuthGateControl({
                       })
                     }
                   >
-                    <LogOutGlassIcon className="size-4" />
+                    <LogOutGlassIcon className="size-5" />
                     {revoke.isPending
                       ? t('authGate.revoking')
                       : t('authGate.revokeSessions')}
@@ -373,7 +373,7 @@ export function DomainAuthGateControl({
                     variant="ghost"
                     onClick={() => setShowLog((v) => !v)}
                   >
-                    <ListGlassIcon className="size-4" />
+                    <ListGlassIcon className="size-5" />
                     {showLog
                       ? t('authGate.accessLog.hide')
                       : t('authGate.accessLog.show')}

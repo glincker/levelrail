@@ -43,7 +43,7 @@ export function PageBanner({
   const tile = icon ? (
     <span
       aria-hidden="true"
-      className="flex size-(--glinr-hero-tile-size) shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border [&_svg]:size-5"
+      className="flex size-(--glinr-hero-tile-size) shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border [&_svg]:size-7"
     >
       {icon}
     </span>

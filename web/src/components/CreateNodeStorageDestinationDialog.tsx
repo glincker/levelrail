@@ -81,7 +81,7 @@ export function CreateNodeStorageDestinationDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" />}>
-        <ServerGlassIcon className="size-4.5" aria-hidden="true" />
+        <ServerGlassIcon className="size-5" aria-hidden="true" />
         {t('storageDestinations.node.add')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

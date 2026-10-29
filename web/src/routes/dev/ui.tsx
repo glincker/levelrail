@@ -68,7 +68,7 @@ function initialSuggestions(): SuggestionItem[] {
     {
       id: 'hc',
       tone: 'info',
-      icon: <ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />,
+      icon: <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
       title: 'No health check',
       detail: '/healthz responds. Add it as the readiness probe.',
       actions: [
@@ -80,7 +80,7 @@ function initialSuggestions(): SuggestionItem[] {
       id: 'mem',
       tone: 'warning',
       icon: (
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
       ),
       title: 'Memory near the limit',
       detail: 'Peaked at 92% in the last hour.',
@@ -116,7 +116,7 @@ function UiGallery() {
     {
       id: '1',
       at: ago(120),
-      icon: <RocketGlassIcon size="1.2em" />,
+      icon: <RocketGlassIcon size="1.4em" />,
       tone: 'success' as const,
       title: 'Deployed a1b2c3d',
       detail: 'Rolled out in 42s',
@@ -125,7 +125,7 @@ function UiGallery() {
     {
       id: '2',
       at: ago(3600 * 3),
-      icon: <PencilGlassIcon size="1.2em" />,
+      icon: <PencilGlassIcon size="1.4em" />,
       tone: 'info' as const,
       title: 'Env changed',
       actor: 'gagan',
@@ -135,7 +135,7 @@ function UiGallery() {
       id: '3',
       at: ago(86400 * 2),
       icon: (
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
       ),
       tone: 'danger' as const,
       title: 'Deploy failed',
@@ -149,9 +149,9 @@ function UiGallery() {
         <h1 className="text-xl font-semibold">UI kit gallery</h1>
         <Button variant="outline" onClick={() => setDark((d) => !d)}>
           {dark ? (
-            <SunGlassIcon size="1.2em" />
+            <SunGlassIcon size="1.4em" />
           ) : (
-            <MoonGlassIcon size="1.2em" />
+            <MoonGlassIcon size="1.4em" />
           )}
           {dark ? 'Light' : 'Dark'}
         </Button>
@@ -166,7 +166,7 @@ function UiGallery() {
           <StatusPill
             tone="accent"
             label="icon"
-            icon={<GlobeGlassIcon className="size-3.5" />}
+            icon={<GlobeGlassIcon className="size-4.5" />}
           />
         </div>
       </Section>
@@ -211,7 +211,7 @@ function UiGallery() {
             unit="/min"
             series={SERIES}
             tone="info"
-            icon={<GlobeGlassIcon size="1.2em" />}
+            icon={<GlobeGlassIcon size="1.4em" />}
             delta={{ value: 12, direction: 'up', goodWhen: 'up' }}
             info="Requests per minute over the last hour."
           />
@@ -270,7 +270,7 @@ function UiGallery() {
       <Section title="Suggestion and SuggestionList">
         <Suggestion
           tone="success"
-          icon={<UploadGlassIcon size="1.2em" />}
+          icon={<UploadGlassIcon size="1.4em" />}
           title="Backups are on"
           detail="Last one finished 2h ago."
           actions={[{ label: 'View', onClick: () => undefined }]}
@@ -281,7 +281,7 @@ function UiGallery() {
           icon={
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
           }
           title="Pending state"
@@ -313,7 +313,7 @@ function UiGallery() {
             (k) => (
               <EmptyState
                 key={k}
-                icon={<SettingsGlassIcon size="1.2em" />}
+                icon={<SettingsGlassIcon size="1.4em" />}
                 illustration={k}
                 title={`No ${k} yet`}
                 description="One short sentence about the next step."
@@ -322,7 +322,7 @@ function UiGallery() {
             ),
           )}
           <EmptyState
-            icon={<SettingsGlassIcon size="1.2em" />}
+            icon={<SettingsGlassIcon size="1.4em" />}
             title="Icon only"
             description="No illustration."
           />
@@ -347,7 +347,7 @@ function UiGallery() {
             {
               id: 'edit',
               label: 'Edit',
-              icon: <PencilGlassIcon size="1.2em" />,
+              icon: <PencilGlassIcon size="1.4em" />,
               onSelect: () => undefined,
               description: 'Change settings',
             },
@@ -360,7 +360,7 @@ function UiGallery() {
             {
               id: 'del',
               label: 'Delete',
-              icon: <TrashGlassIcon size="1.2em" />,
+              icon: <TrashGlassIcon size="1.4em" />,
               tone: 'danger',
               onSelect: () => undefined,
             },

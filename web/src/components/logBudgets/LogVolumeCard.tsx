@@ -71,7 +71,7 @@ function BudgetCell({ row, canEdit }: { row: LogUsageApp; canEdit: boolean }) {
           aria-label={t('editFor', { app: row.app })}
           onClick={() => setEditing(true)}
         >
-          <PencilGlassIcon size="1.2em" />
+          <PencilGlassIcon size="1.4em" />
         </Button>
       )}
       {canEdit && row.percent !== null && row.percent > 100 && (
@@ -197,7 +197,7 @@ export function LogVolumeCard() {
         {usage.data && apps.length === 0 && (
           <EmptyState
             compact
-            icon={<ScrollGlassIcon className="size-4.5" />}
+            icon={<ScrollGlassIcon className="size-5" />}
             title={t('emptyTitle')}
             description={t('emptyDescription')}
           />

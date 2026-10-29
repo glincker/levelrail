@@ -108,7 +108,7 @@ export function RepoList({
             disabled={refreshing}
             onClick={onRefresh}
           >
-            <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+            <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
             {refreshing
               ? t('source.repos.refreshing')
               : t('source.repos.refresh')}
@@ -143,7 +143,7 @@ export function RepoList({
           />
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-              <LinkGlassIcon className="size-4" aria-hidden="true" />
+              <LinkGlassIcon className="size-5" aria-hidden="true" />
               {t('source.find.useUrl')}
             </span>
             <span className="block truncate font-mono text-xs text-muted-foreground">
@@ -194,14 +194,14 @@ export function RepoList({
                         <span className="truncate">{repo.displayPath}</span>
                         {repo.private ? (
                           <LockGlassIcon
-                            className="size-4 shrink-0 text-muted-foreground"
+                            className="size-5 shrink-0 text-muted-foreground"
                             aria-label={t('source.repos.private')}
                           />
                         ) : null}
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <GitBranchGlassIcon
-                          className="size-3.5"
+                          className="size-4.5"
                           aria-hidden="true"
                         />
                         <span className="truncate font-mono">

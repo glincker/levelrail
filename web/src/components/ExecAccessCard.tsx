@@ -40,7 +40,7 @@ export function ExecAccessCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockGlassIcon className="size-4.5 text-muted-foreground" />
+          <LockGlassIcon className="size-5 text-muted-foreground" />
           Shell/exec access
         </CardTitle>
       </CardHeader>

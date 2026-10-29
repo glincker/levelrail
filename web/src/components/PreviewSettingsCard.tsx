@@ -38,7 +38,7 @@ export function PreviewSettingsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CameraGlassIcon className="size-4.5 text-muted-foreground" />
+          <CameraGlassIcon className="size-5 text-muted-foreground" />
           Deploy previews
           <InfoTip label="About deploy previews">
             A thumbnail of each deploy, shown in deploy history. The page is
@@ -258,7 +258,7 @@ function PreviewSettingsForm({
             status.mode === 'off' || !status.server_enabled || capturing
           }
         >
-          <CameraGlassIcon className="size-4" data-icon="inline-start" />
+          <CameraGlassIcon className="size-5" data-icon="inline-start" />
           {capturing ? 'Capturing...' : 'Recapture now'}
         </Button>
         <Button
@@ -267,7 +267,7 @@ function PreviewSettingsForm({
           onClick={pruneNow}
           disabled={prune.isPending}
         >
-          <TrashGlassIcon className="size-4" data-icon="inline-start" />
+          <TrashGlassIcon className="size-5" data-icon="inline-start" />
           {prune.isPending ? 'Pruning...' : 'Prune now'}
         </Button>
       </div>

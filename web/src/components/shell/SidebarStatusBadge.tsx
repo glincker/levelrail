@@ -26,15 +26,15 @@ function StatusGlyph({ status }: { status: ShellStatus }) {
   const cls = 'size-2'
   switch (status) {
     case 'healthy':
-      return <CheckGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <CheckGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'update':
-      return <ArrowUpGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <ArrowUpGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'degraded':
-      return <CircleAlertGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <CircleAlertGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'incident':
-      return <XGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <XGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'unknown':
-      return <MinusGlassIcon size="1.2em" className={cls} aria-hidden />
+      return <MinusGlassIcon size="1.4em" className={cls} aria-hidden />
     default:
       return null
   }

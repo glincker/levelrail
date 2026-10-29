@@ -212,7 +212,7 @@ export function ProjectSpendCard({
                 preview.mutate()
               }}
             >
-              <CirclePauseGlassIcon size="1.2em" aria-hidden="true" />
+              <CirclePauseGlassIcon size="1.4em" aria-hidden="true" />
               {t('actions.preview')}
             </Button>
             <Button

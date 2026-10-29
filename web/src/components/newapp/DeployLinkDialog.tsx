@@ -43,9 +43,9 @@ function CopyRow({
         <span className="text-sm font-medium">{label}</span>
         <Button type="button" variant="outline" size="sm" onClick={copy}>
           {copied ? (
-            <CheckGlassIcon size="1.2em" aria-hidden />
+            <CheckGlassIcon size="1.4em" aria-hidden />
           ) : (
-            <CopyGlassIcon size="1.2em" aria-hidden />
+            <CopyGlassIcon size="1.4em" aria-hidden />
           )}
           {copied ? t('deployLinkDialog.copied') : t('deployLinkDialog.copy')}
         </Button>

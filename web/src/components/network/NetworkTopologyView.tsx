@@ -72,7 +72,7 @@ export function NetworkTopologyView({
   if (empty) {
     return (
       <EmptyState
-        icon={<Share2GlassIcon className="size-5.5" />}
+        icon={<Share2GlassIcon className="size-6" />}
         title={t('empty.title')}
         description={t('empty.description')}
         action={

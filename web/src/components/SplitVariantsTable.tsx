@@ -133,7 +133,7 @@ export function SplitVariantsTable({
                           onClick={() => void copy(v.qa_link ?? '')}
                         >
                           <CopyGlassIcon
-                            className="size-4"
+                            className="size-5"
                             aria-hidden="true"
                           />
                           {t('table.copyQa')}
@@ -148,7 +148,7 @@ export function SplitVariantsTable({
                           onClick={() => onPromote(v)}
                         >
                           <TrophyGlassIcon
-                            className="size-4"
+                            className="size-5"
                             aria-hidden="true"
                           />
                           {t('table.promote')}

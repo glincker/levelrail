@@ -113,9 +113,9 @@ function IngressDomainCheck({ domain }: { domain: string }) {
           }
         >
           {copied ? (
-            <CheckGlassIcon className="size-4" />
+            <CheckGlassIcon className="size-5" />
           ) : (
-            <CopyGlassIcon className="size-4" />
+            <CopyGlassIcon className="size-5" />
           )}
         </Button>
         <Badge variant={data.host_inferred ? 'muted' : 'success'}>
@@ -214,7 +214,7 @@ export function IngressSettingsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeGlassIcon className="size-4.5" />
+          <GlobeGlassIcon className="size-5" />
           Platform ingress
         </CardTitle>
         <CardDescription>

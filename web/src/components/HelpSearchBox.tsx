@@ -17,7 +17,7 @@ export function HelpSearchBox({ manifest }: { manifest: DocsManifest }) {
 
   return (
     <div className="relative">
-      <SearchGlassIcon className="pointer-events-none absolute top-2.5 left-2.5 size-4.5 text-muted-foreground" />
+      <SearchGlassIcon className="pointer-events-none absolute top-2.5 left-2.5 size-5 text-muted-foreground" />
       <Input
         value={query}
         onChange={(event) => {

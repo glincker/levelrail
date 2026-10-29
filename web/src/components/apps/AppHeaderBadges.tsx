@@ -77,7 +77,7 @@ export function AppHeaderBadges({
             icon={
               <CircleAlertGlassIcon
                 className="text-tone-danger"
-                size="1.2em"
+                size="1.4em"
                 aria-hidden="true"
               />
             }
@@ -89,7 +89,7 @@ export function AppHeaderBadges({
       {app.node_offline && app.node_id ? (
         <Link to="/nodes/$id" params={{ id: app.node_id }}>
           <Badge variant="warning" title={t('badges.nodeOffline')}>
-            <ServerGlassIcon size="1.2em" aria-hidden="true" />
+            <ServerGlassIcon size="1.4em" aria-hidden="true" />
             <span>
               {t('badges.nodeOffline')}
               {offlineSince ? (
@@ -106,7 +106,7 @@ export function AppHeaderBadges({
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>
           <Chip
             label={tSleep('badge.title')}
-            icon={<MoonGlassIcon size="1.2em" aria-hidden="true" />}
+            icon={<MoonGlassIcon size="1.4em" aria-hidden="true" />}
           >
             <AsleepFor since={asleepSince} />
           </Chip>
@@ -116,7 +116,7 @@ export function AppHeaderBadges({
         <Link to="/apps/$name/network" params={{ name: app.name }}>
           <Chip
             label={portLabel}
-            icon={<PlugGlassIcon size="1.2em" aria-hidden="true" />}
+            icon={<PlugGlassIcon size="1.4em" aria-hidden="true" />}
           >
             {portLabel}
           </Chip>
@@ -126,7 +126,7 @@ export function AppHeaderBadges({
         <Link to="/nodes/$id" params={{ id: app.node_id }}>
           <Chip
             label={app.node_name ?? app.node_id}
-            icon={<ServerGlassIcon size="1.2em" aria-hidden="true" />}
+            icon={<ServerGlassIcon size="1.4em" aria-hidden="true" />}
           >
             {app.node_name ?? app.node_id}
           </Chip>
@@ -136,7 +136,7 @@ export function AppHeaderBadges({
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>
           <Chip
             label={deployedLabel}
-            icon={<RestoreGlassIcon size="1.2em" aria-hidden="true" />}
+            icon={<RestoreGlassIcon size="1.4em" aria-hidden="true" />}
           >
             {deployedLabel} <RelativeTime at={lastOk.finished_at} />
           </Chip>

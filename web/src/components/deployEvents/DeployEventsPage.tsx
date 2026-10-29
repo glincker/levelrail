@@ -93,7 +93,7 @@ export function DeployEventsPage({
     <PageTemplate
       title={t('title')}
       description={t('pageTitle', { id })}
-      icon={<RestoreGlassIcon size="1.2em" />}
+      icon={<RestoreGlassIcon size="1.4em" />}
       width="wide"
       status={
         <span className="flex flex-wrap items-center gap-2">
@@ -112,7 +112,7 @@ export function DeployEventsPage({
       }
       actions={
         <Button variant="outline" size="sm" render={<Link to="/deployments" />}>
-          <ArrowLeftGlassIcon size="1.2em" aria-hidden="true" />
+          <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
           {t('back')}
         </Button>
       }
@@ -140,7 +140,7 @@ export function DeployEventsPage({
         {waiting && connection === 'error' ? (
           <EmptyState
             icon={
-              <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+              <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
             }
             title={t('error.title')}
             description={t('error.notFound')}

@@ -82,7 +82,7 @@ export function OrphanedVolumesCard() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <ServerGlassIcon className="size-4.5" />
+              <ServerGlassIcon className="size-5" />
             </div>
             <div>
               <CardTitle>Orphaned volumes</CardTitle>
@@ -135,14 +135,14 @@ export function OrphanedVolumesCard() {
               />
             }
           >
-            <TrashGlassIcon className="size-4" aria-hidden="true" />
+            <TrashGlassIcon className="size-5" aria-hidden="true" />
             Clean up selected
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
                 <TriangleAlertGlassIcon
-                  className="size-4.5 text-tone-warning"
+                  className="size-5 text-tone-warning"
                   aria-hidden="true"
                 />
                 Delete {selectedNames.length} volume

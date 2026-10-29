@@ -52,9 +52,9 @@ function InstallCommand({ created }: { created: AgentCreated }) {
               onClick={() => copy(created.command ?? '')}
             >
               {copied ? (
-                <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                <CheckGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <CopyGlassIcon size="1.2em" aria-hidden="true" />
+                <CopyGlassIcon size="1.4em" aria-hidden="true" />
               )}
             </Button>
           </div>
@@ -262,7 +262,7 @@ export function MigrateAgentPanel() {
           ['pending', 'connected', 'lost'].includes(s.state),
         ) ? (
         <EmptyState
-          icon={<PlugGlassIcon className="size-5.5" />}
+          icon={<PlugGlassIcon className="size-6" />}
           title={t('agent.empty')}
           description={t('agent.emptyHint')}
         />

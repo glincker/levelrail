@@ -212,7 +212,7 @@ export function AppTerminal({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TerminalGlassIcon className="size-4.5" />
+            <TerminalGlassIcon className="size-5" />
             Interactive terminal
           </CardTitle>
           <CardDescription>
@@ -223,7 +223,7 @@ export function AppTerminal({
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            <LockGlassIcon className="size-5.5 shrink-0" />
+            <LockGlassIcon className="size-6 shrink-0" />
             <p>
               Shell/exec access is disabled for this app. Use the
               &quot;Shell/exec access&quot; card above to turn it back on before
@@ -239,7 +239,7 @@ export function AppTerminal({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TerminalGlassIcon className="size-4.5" />
+          <TerminalGlassIcon className="size-5" />
           Interactive terminal
         </CardTitle>
         <CardDescription>
@@ -255,12 +255,12 @@ export function AppTerminal({
           </Badge>
           {connected ? (
             <Button type="button" variant="outline" size="sm" onClick={stop}>
-              <PlugGlassIcon className="size-4" data-icon="inline-start" />
+              <PlugGlassIcon className="size-5" data-icon="inline-start" />
               Disconnect
             </Button>
           ) : (
             <Button type="button" size="sm" onClick={start}>
-              <PlugGlassIcon className="size-4" data-icon="inline-start" />
+              <PlugGlassIcon className="size-5" data-icon="inline-start" />
               {sessionId === 0 ? 'Start session' : 'Reconnect'}
             </Button>
           )}

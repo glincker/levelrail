@@ -96,7 +96,7 @@ export function ConfigureLoadBalancerDialog({
                   }}
                 >
                   <PackageGlassIcon
-                    className="size-4.5 text-muted-foreground"
+                    className="size-5 text-muted-foreground"
                     aria-hidden="true"
                   />
                   <span className="truncate">{app.name}</span>

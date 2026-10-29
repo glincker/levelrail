@@ -44,7 +44,7 @@ export function StepShell({
             onClick={onBack}
             aria-label="Back"
           >
-            <ArrowLeftGlassIcon size="1.2em" />
+            <ArrowLeftGlassIcon size="1.4em" />
           </Button>
           {title}
         </DialogTitle>
@@ -80,7 +80,7 @@ export function ProvisionProgress({
   if (status === 'failed') {
     return (
       <Alert variant="destructive">
-        <CircleXGlassIcon className="text-tone-danger" size="1.2em" />
+        <CircleXGlassIcon className="text-tone-danger" size="1.4em" />
         <AlertDescription>
           {failureReason ?? 'The provision failed.'}
         </AlertDescription>
@@ -96,7 +96,7 @@ export function ProvisionProgress({
         return (
           <li key={stage.status} className="flex items-center gap-2 text-sm">
             {done ? (
-              <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+              <CircleCheckGlassIcon className="size-5 text-tone-success" />
             ) : (
               <span
                 className={`size-4 rounded-full border ${active ? 'border-primary' : 'border-border'}`}
@@ -152,7 +152,7 @@ export function SSHProvisionProgress({
     return (
       <div className="space-y-3">
         <Alert variant="destructive">
-          <CircleXGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleXGlassIcon className="text-tone-danger" size="1.4em" />
           <AlertDescription>
             {failureReason ?? 'The provision failed.'}
           </AlertDescription>
@@ -171,7 +171,7 @@ export function SSHProvisionProgress({
           return (
             <li key={stage.status} className="flex items-center gap-2 text-sm">
               {done ? (
-                <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+                <CircleCheckGlassIcon className="size-5 text-tone-success" />
               ) : (
                 <span
                   className={`size-4 rounded-full border ${active ? 'border-primary' : 'border-border'}`}

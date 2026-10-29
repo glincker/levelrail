@@ -68,7 +68,7 @@ export function ReachRow({
         {addr.allowNetwork ? (
           <Button size="sm" variant="outline" onClick={onAllow}>
             <TriangleAlertGlassIcon
-              className="size-4 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             {t('actions.allowNetwork')}
@@ -89,9 +89,9 @@ export function ReachRow({
             onClick={() => copy(addr.value)}
           >
             {copied ? (
-              <CheckGlassIcon className="size-4" aria-hidden="true" />
+              <CheckGlassIcon className="size-5" aria-hidden="true" />
             ) : (
-              <CopyGlassIcon className="size-4" aria-hidden="true" />
+              <CopyGlassIcon className="size-5" aria-hidden="true" />
             )}
           </Button>
         ) : null}
@@ -103,7 +103,7 @@ export function ReachRow({
             aria-label={t('actions.open', { what })}
             className={buttonVariants({ size: 'icon-sm', variant: 'ghost' })}
           >
-            <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+            <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
           </a>
         ) : null}
       </div>

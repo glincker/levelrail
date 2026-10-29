@@ -56,7 +56,7 @@ function ApiExplorerPage() {
 
   return (
     <PageTemplate
-      icon={<CodeGlassIcon size="1.2em" />}
+      icon={<CodeGlassIcon size="1.4em" />}
       title={t('apiExplorerPage.title')}
       description={t('apiExplorerPage.description')}
     >
@@ -112,7 +112,7 @@ function ApiExplorerPending() {
   return (
     <PageTemplate
       title={t('apiExplorerPage.title')}
-      icon={<CodeGlassIcon size="1.2em" />}
+      icon={<CodeGlassIcon size="1.4em" />}
     >
       <ListSkeleton rows={8} />
     </PageTemplate>

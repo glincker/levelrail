@@ -21,7 +21,7 @@ export function InboxBadge() {
       render={<Link to="/inbox" />}
       nativeButton={false}
     >
-      <InboxGlassIcon size="1.2em" />
+      <InboxGlassIcon size="1.4em" />
       {unread > 0 ? (
         <span
           aria-hidden="true"

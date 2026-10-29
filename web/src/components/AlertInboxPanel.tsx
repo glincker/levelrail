@@ -75,7 +75,7 @@ export function AlertInboxPanel() {
               )
             }}
           >
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
             {t('markAllRead')}
           </Button>
         </div>
@@ -86,7 +86,7 @@ export function AlertInboxPanel() {
       ) : inbox.isError ? (
         <EmptyState
           compact
-          icon={<BellOffGlassIcon className="size-5.5" />}
+          icon={<BellOffGlassIcon className="size-6" />}
           title={t('loadError')}
           description={inbox.error.message}
           action={
@@ -103,7 +103,7 @@ export function AlertInboxPanel() {
       ) : items.length === 0 ? (
         <EmptyState
           compact
-          icon={<CheckGlassIcon className="size-5.5" />}
+          icon={<CheckGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.body')}
         />

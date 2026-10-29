@@ -61,7 +61,7 @@ export function OAuthRail({ settings }: { settings: OAuthProviderSettings[] }) {
                     copy(url)
                   }}
                 >
-                  <CopyGlassIcon size="1.2em" aria-hidden="true" />
+                  <CopyGlassIcon size="1.4em" aria-hidden="true" />
                 </Button>
               </div>
             </PageRailRow>

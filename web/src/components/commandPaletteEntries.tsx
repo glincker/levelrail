@@ -85,7 +85,7 @@ export function ResultRow({
           : 'text-foreground/90 hover:bg-muted/60',
       )}
     >
-      <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-4">
+      <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-5">
         {item.icon}
       </span>
       <span className="min-w-0 truncate">
@@ -102,7 +102,7 @@ export function ResultRow({
       </span>
       {item.locked ? (
         <LockGlassIcon
-          className="size-4 shrink-0 text-muted-foreground"
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
       ) : null}
@@ -123,7 +123,7 @@ export function ResultRow({
             item.badge ? '' : 'ml-auto',
           )}
         >
-          <XGlassIcon className="size-4" aria-hidden="true" />
+          <XGlassIcon className="size-5" aria-hidden="true" />
         </button>
       ) : null}
       {active ? (
@@ -176,7 +176,7 @@ export function ChipBar({
             className="flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-foreground hover:bg-muted/60"
           >
             {chipLabel(chip)}
-            <XGlassIcon className="size-3.5" aria-hidden="true" />
+            <XGlassIcon className="size-4.5" aria-hidden="true" />
           </button>
         </li>
       ))}

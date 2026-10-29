@@ -115,7 +115,7 @@ export function FirewallPage({
       banner={
         <PageBanner
           icon={
-            <ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />
+            <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
           }
           titleKey="firewall:page.title"
           descriptionKey="firewall:page.description"

@@ -81,12 +81,12 @@ export function RevealCredentialCard({
           </div>
           {password ? (
             <Button variant="outline" size="sm" onClick={hide}>
-              <EyeOffGlassIcon className="size-4" aria-hidden="true" />
+              <EyeOffGlassIcon className="size-5" aria-hidden="true" />
               {t('reveal.hide')}
             </Button>
           ) : (
             <Button variant="outline" size="sm" onClick={() => void reveal()}>
-              <EyeGlassIcon className="size-4" aria-hidden="true" />
+              <EyeGlassIcon className="size-5" aria-hidden="true" />
               {t('reveal.show')}
             </Button>
           )}
@@ -101,9 +101,9 @@ export function RevealCredentialCard({
               </code>
               <Button variant="outline" size="sm" onClick={copy}>
                 {copied ? (
-                  <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                  <CheckGlassIcon size="1.4em" aria-hidden="true" />
                 ) : (
-                  <CopyGlassIcon size="1.2em" aria-hidden="true" />
+                  <CopyGlassIcon size="1.4em" aria-hidden="true" />
                 )}
                 {copied ? t('credential.copied') : t('credential.copy')}
               </Button>

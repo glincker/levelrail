@@ -47,7 +47,7 @@ function BackupsPage() {
       description={t('page.description')}
       banner={
         <PageBanner
-          icon={<UploadGlassIcon size="1.2em" />}
+          icon={<UploadGlassIcon size="1.4em" />}
           titleKey="backups:page.title"
           descriptionKey={
             isEmpty ? 'backups:banner.description' : 'backups:page.description'
@@ -67,7 +67,7 @@ function BackupsPage() {
                 >
                   <ShieldCheckGlassIcon
                     className="text-tone-success"
-                    size="1.2em"
+                    size="1.4em"
                   />
                   {t('summary.protectEverything')}
                 </Button>

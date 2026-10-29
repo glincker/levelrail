@@ -338,7 +338,7 @@ export function CreateDatabaseFields({
             TONE.warning.text,
           )}
         >
-          <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
+          <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
           <p className="text-sm">
             No secrets master key is configured on this control plane. This
             database will be created but won&rsquo;t start until one is
@@ -506,7 +506,7 @@ export function CreateDatabaseFields({
         />
       ) : createDatabase.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{createDatabase.error.message}</AlertDescription>
         </Alert>
       ) : null}

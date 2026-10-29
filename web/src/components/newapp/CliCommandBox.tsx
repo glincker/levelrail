@@ -26,9 +26,9 @@ export function CliCommandBox({ command }: { command: string }) {
       </code>
       <Button type="button" size="sm" variant="outline" onClick={copy}>
         {copied ? (
-          <CheckGlassIcon className="size-4.5" aria-hidden="true" />
+          <CheckGlassIcon className="size-5" aria-hidden="true" />
         ) : (
-          <CopyGlassIcon className="size-4.5" aria-hidden="true" />
+          <CopyGlassIcon className="size-5" aria-hidden="true" />
         )}
         {copied ? t('upload.copied') : t('upload.copy')}
       </Button>

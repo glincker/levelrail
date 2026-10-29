@@ -20,7 +20,7 @@ function DnsError({ error }: ErrorComponentProps) {
   const { t } = useTranslation('dns')
   return (
     <EmptyState
-      icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
+      icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
       title={t('page.loadFailed')}
       description={routeErrorMessage(error)}
     />

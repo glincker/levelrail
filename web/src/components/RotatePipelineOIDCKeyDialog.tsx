@@ -36,14 +36,14 @@ export function RotatePipelineOIDCKeyDialog() {
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         Rotate signing key
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-amber-600"
+              className="size-5 text-amber-600"
               aria-hidden="true"
             />
             Rotate the pipeline OIDC signing key?

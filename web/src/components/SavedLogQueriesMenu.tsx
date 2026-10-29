@@ -59,7 +59,7 @@ export function SavedLogQueriesMenu({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <BookmarkGlassIcon className="size-4" aria-hidden="true" />
+        <BookmarkGlassIcon className="size-5" aria-hidden="true" />
         {t('explorer.saved')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)]">
@@ -85,13 +85,13 @@ export function SavedLogQueriesMenu({
               >
                 {q.pinned ? (
                   <PinGlassIcon
-                    className="size-4 shrink-0"
+                    className="size-5 shrink-0"
                     aria-hidden="true"
                   />
                 ) : null}
                 {q.visibility === 'instance' ? (
                   <UsersGlassIcon
-                    className="size-4 shrink-0"
+                    className="size-5 shrink-0"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -108,7 +108,7 @@ export function SavedLogQueriesMenu({
                     remove.mutate(q.id)
                   }}
                 >
-                  <TrashGlassIcon className="size-4" aria-hidden="true" />
+                  <TrashGlassIcon className="size-5" aria-hidden="true" />
                 </Button>
               ) : null}
             </div>
@@ -117,7 +117,7 @@ export function SavedLogQueriesMenu({
           {recent.length > 0 ? (
             <>
               <p className="mt-1 flex items-center gap-1 px-1 text-xs font-medium text-muted-foreground">
-                <RestoreGlassIcon className="size-4" aria-hidden="true" />
+                <RestoreGlassIcon className="size-5" aria-hidden="true" />
                 {t('explorer.recent')}
               </p>
               {recent.map((r) => (

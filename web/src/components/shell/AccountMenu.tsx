@@ -153,7 +153,7 @@ export function AccountMenu() {
             aria-label={t('shell.accountMenu.account')}
             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <SettingsGlassIcon className="size-4.5" />
+            <SettingsGlassIcon className="size-5" />
           </Link>
         </div>
         <div className="p-1">
@@ -167,13 +167,13 @@ export function AccountMenu() {
                 />
               }
             >
-              <MessageCircleGlassIcon size="1.2em" />
+              <MessageCircleGlassIcon size="1.4em" />
               {t('shell.accountMenu.feedback')}
             </DropdownMenuLinkItem>
           ) : null}
           <ThemeRow />
           <DropdownMenuLinkItem render={<Link to="/settings/updates" />}>
-            <SquarePenGlassIcon size="1.2em" />
+            <SquarePenGlassIcon size="1.4em" />
             {t('shell.accountMenu.changelog')}
           </DropdownMenuLinkItem>
           <DropdownMenuLinkItem render={<Link to="/help" />}>
@@ -186,7 +186,7 @@ export function AccountMenu() {
                 <a href={brand.DocsURL} target="_blank" rel="noreferrer" />
               }
             >
-              <BookOpenGlassIcon size="1.2em" />
+              <BookOpenGlassIcon size="1.4em" />
               {t('shell.accountMenu.docs')}
             </DropdownMenuLinkItem>
           ) : null}
@@ -197,7 +197,7 @@ export function AccountMenu() {
               logout.mutate()
             }}
           >
-            <LogOutGlassIcon size="1.2em" />
+            <LogOutGlassIcon size="1.4em" />
             {t('shell.account.signOut')}
           </DropdownMenuItem>
         </div>

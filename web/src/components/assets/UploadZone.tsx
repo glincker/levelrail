@@ -103,7 +103,7 @@ export function UploadZone({ bucketId }: Readonly<{ bucketId: string }>) {
       >
         <UploadGlassIcon
           aria-hidden="true"
-          className="size-5.5 text-muted-foreground"
+          className="size-6 text-muted-foreground"
         />
         <span className="text-muted-foreground">
           {dragging ? t('upload.dropActive') : t('upload.drop')}

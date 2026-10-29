@@ -42,7 +42,7 @@ function OAuthSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<KeyGlassIcon size="1.2em" />}
+      icon={<KeyGlassIcon size="1.4em" />}
       eyebrow={t('oauthPage.eyebrow')}
       title={t('oauthPage.title')}
       description={t('oauthPage.description')}

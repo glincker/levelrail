@@ -257,7 +257,7 @@ export function LogArchivePanel({ appName }: { appName: string }) {
           id={`archive-policy-${appName}`}
           className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"
         >
-          <ArchiveGlassIcon className="size-4.5" aria-hidden="true" />
+          <ArchiveGlassIcon className="size-5" aria-hidden="true" />
           Archive schedule for {scope}
         </h2>
         <PolicyForm

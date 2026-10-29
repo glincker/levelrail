@@ -46,14 +46,14 @@ export function HelpMenu() {
           />
         }
       >
-        <CircleQuestionMarkGlassIcon size="1.2em" />
+        <CircleQuestionMarkGlassIcon size="1.4em" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         {contextDoc ? (
           <DropdownMenuItem
             render={<Link to="/help/$" params={{ _splat: contextDoc }} />}
           >
-            <BookOpenGlassIcon size="1.2em" />
+            <BookOpenGlassIcon size="1.4em" />
             {t('shell.help.forPage')}
           </DropdownMenuItem>
         ) : null}
@@ -64,11 +64,11 @@ export function HelpMenu() {
         <DropdownMenuItem
           render={<Link to="/help/$" params={{ _splat: 'troubleshooting' }} />}
         >
-          <CircleQuestionMarkGlassIcon size="1.2em" />
+          <CircleQuestionMarkGlassIcon size="1.4em" />
           {t('shell.help.troubleshooting')}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/settings/system-status" />}>
-          <ActivityGlassIcon size="1.2em" />
+          <ActivityGlassIcon size="1.4em" />
           {t('shell.help.systemStatus')}
         </DropdownMenuItem>
         {brand.DocsURL || brand.SupportURL || brand.DiscussionsURL ? (
@@ -80,7 +80,7 @@ export function HelpMenu() {
             target="_blank"
             rel="noreferrer"
           >
-            <BookmarkGlassIcon size="1.2em" />
+            <BookmarkGlassIcon size="1.4em" />
             {tHelp('nav.docsSite')}
           </DropdownMenuLinkItem>
         ) : null}
@@ -90,7 +90,7 @@ export function HelpMenu() {
             target="_blank"
             rel="noreferrer"
           >
-            <SocialGithubGlassIcon size="1.2em" />
+            <SocialGithubGlassIcon size="1.4em" />
             {t('shell.help.report')}
           </DropdownMenuLinkItem>
         ) : null}
@@ -100,7 +100,7 @@ export function HelpMenu() {
             target="_blank"
             rel="noreferrer"
           >
-            <MessageCircleGlassIcon size="1.2em" />
+            <MessageCircleGlassIcon size="1.4em" />
             {t('shell.help.community')}
           </DropdownMenuLinkItem>
         ) : null}

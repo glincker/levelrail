@@ -133,9 +133,9 @@ export default function DeployButtonBuilder() {
           </pre>
           <Button type="button" variant="outline" size="sm" onClick={copy}>
             {copied ? (
-              <CheckGlassIcon size="1.2em" aria-hidden />
+              <CheckGlassIcon size="1.4em" aria-hidden />
             ) : (
-              <CopyGlassIcon size="1.2em" aria-hidden />
+              <CopyGlassIcon size="1.4em" aria-hidden />
             )}
             {copied ? t('deployButton.copied') : t('deployButton.copy')}
           </Button>

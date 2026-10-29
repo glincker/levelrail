@@ -92,7 +92,7 @@ export function StackDetail({
     <div className="space-y-3">
       <header className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeftGlassIcon size="1.2em" aria-hidden="true" />
+          <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
           {t('detail.back')}
         </Button>
         <h2 className="text-base font-semibold">{stack.name}</h2>
@@ -109,7 +109,7 @@ export function StackDetail({
                 setPin(null)
               }}
             >
-              <PinGlassIcon size="1.2em" aria-hidden="true" />
+              <PinGlassIcon size="1.4em" aria-hidden="true" />
               {t('actions.unpin')}
             </Button>
           ) : null}
@@ -128,7 +128,7 @@ export function StackDetail({
                 })
               }}
             >
-              <LockOpenGlassIcon size="1.2em" aria-hidden="true" />
+              <LockOpenGlassIcon size="1.4em" aria-hidden="true" />
               {t('actions.unlock')}
             </Button>
           ) : null}
@@ -140,7 +140,7 @@ export function StackDetail({
               setDeleting(true)
             }}
           >
-            <TrashGlassIcon size="1.2em" aria-hidden="true" />
+            <TrashGlassIcon size="1.4em" aria-hidden="true" />
             {t('actions.delete')}
           </Button>
         </span>

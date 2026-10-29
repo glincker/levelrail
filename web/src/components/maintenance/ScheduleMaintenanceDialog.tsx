@@ -108,7 +108,7 @@ export function ScheduleMaintenanceDialog() {
       }}
     >
       <DialogTrigger render={<Button />}>
-        <PlusGlassIcon className="size-4" aria-hidden="true" />
+        <PlusGlassIcon className="size-5" aria-hidden="true" />
         {t('schedule')}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

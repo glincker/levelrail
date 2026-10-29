@@ -30,29 +30,29 @@ const STATUS_VIEW: Record<
 > = {
   succeeded: {
     tone: 'success',
-    icon: <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />,
+    icon: <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />,
   },
   failed: {
     tone: 'danger',
-    icon: <CircleXGlassIcon className="text-tone-danger" size="1.2em" />,
+    icon: <CircleXGlassIcon className="text-tone-danger" size="1.4em" />,
   },
   running: {
     tone: 'info',
     icon: (
       <LoaderCircleGlassIcon
-        size="1.2em"
+        size="1.4em"
         className="animate-spin motion-reduce:animate-none"
       />
     ),
   },
-  held: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.2em" /> },
-  superseded: { tone: 'neutral', icon: <RocketGlassIcon size="1.2em" /> },
-  queued: { tone: 'neutral', icon: <CirclePauseGlassIcon size="1.2em" /> },
+  held: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.4em" /> },
+  superseded: { tone: 'neutral', icon: <RocketGlassIcon size="1.4em" /> },
+  queued: { tone: 'neutral', icon: <CirclePauseGlassIcon size="1.4em" /> },
   canceled: {
     tone: 'neutral',
-    icon: <CircleXGlassIcon className="text-tone-danger" size="1.2em" />,
+    icon: <CircleXGlassIcon className="text-tone-danger" size="1.4em" />,
   },
-  pending: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.2em" /> },
+  pending: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.4em" /> },
 }
 
 function Row({ row, last }: { row: DeployRow; last: boolean }) {
@@ -84,7 +84,7 @@ function Row({ row, last }: { row: DeployRow; last: boolean }) {
         </span>
         <span
           className={cn(
-            'inline-flex items-center gap-1 text-xs font-medium [&_svg]:size-4',
+            'inline-flex items-center gap-1 text-xs font-medium [&_svg]:size-5',
             TONE[view.tone].text,
           )}
         >

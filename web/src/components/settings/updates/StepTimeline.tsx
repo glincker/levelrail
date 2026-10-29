@@ -18,7 +18,7 @@ function StepIcon({ status }: { status: Row['status'] }) {
   if (status === 'failed') {
     return (
       <CircleXGlassIcon
-        className="size-4.5 text-destructive"
+        className="size-5 text-destructive"
         aria-hidden="true"
       />
     )
@@ -26,7 +26,7 @@ function StepIcon({ status }: { status: Row['status'] }) {
   if (status === 'skipped') {
     return (
       <CircleMinusGlassIcon
-        className="size-4.5 text-muted-foreground"
+        className="size-5 text-muted-foreground"
         aria-hidden="true"
       />
     )
@@ -34,14 +34,14 @@ function StepIcon({ status }: { status: Row['status'] }) {
   if (status === 'running') {
     return (
       <LoaderCircleGlassIcon
-        className="size-4.5 text-primary motion-safe:animate-spin"
+        className="size-5 text-primary motion-safe:animate-spin"
         aria-hidden="true"
       />
     )
   }
   return (
     <CircleCheckGlassIcon
-      className="size-4.5 text-emerald-600 dark:text-emerald-400"
+      className="size-5 text-emerald-600 dark:text-emerald-400"
       aria-hidden="true"
     />
   )

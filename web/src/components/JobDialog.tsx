@@ -137,12 +137,12 @@ export function JobDialog({
         render={
           isEdit ? (
             <Button variant="outline" size="sm" disabled={specManaged}>
-              <PencilGlassIcon className="size-4" aria-hidden="true" />
+              <PencilGlassIcon className="size-5" aria-hidden="true" />
               {t('dialog.edit')}
             </Button>
           ) : (
             <Button size="sm">
-              <CirclePlusGlassIcon className="size-4" aria-hidden="true" />
+              <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
               {t('dialog.createTrigger')}
             </Button>
           )

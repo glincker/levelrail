@@ -105,7 +105,7 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TagGlassIcon className="size-4.5" />
+          <TagGlassIcon className="size-5" />
           Custom labels
         </CardTitle>
         <CardDescription>
@@ -161,7 +161,7 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
                         remove(index)
                       }}
                     >
-                      <XGlassIcon size="1.2em" />
+                      <XGlassIcon size="1.4em" />
                       <span className="sr-only">Remove label</span>
                     </Button>
                   </div>
@@ -178,7 +178,7 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
                 append({ key: '', value: '' })
               }}
             >
-              <PlusGlassIcon size="1.2em" />
+              <PlusGlassIcon size="1.4em" />
               Add label
             </Button>
             <Button type="submit" size="sm" disabled={updateApp.isPending}>

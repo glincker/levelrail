@@ -77,7 +77,7 @@ export function AppEnvCompareCard({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ArrowLeftRightGlassIcon className="size-4.5 text-muted-foreground" />
+          <ArrowLeftRightGlassIcon className="size-5 text-muted-foreground" />
           {t('envCompare.title')}
         </CardTitle>
       </CardHeader>

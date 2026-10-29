@@ -233,7 +233,7 @@ export function AppImportImages({
                   running || transfer.isPending || data?.supported === false
                 }
               >
-                <ArrowLeftRightGlassIcon size="1.2em" aria-hidden />
+                <ArrowLeftRightGlassIcon size="1.4em" aria-hidden />
                 {pending < images.length
                   ? t('appImport.images.retry')
                   : t('appImport.images.move')}
@@ -245,7 +245,7 @@ export function AppImportImages({
                   disabled={cancel.isPending}
                   onClick={() => cancel.mutate(session.id)}
                 >
-                  <CircleStopGlassIcon size="1.2em" aria-hidden />
+                  <CircleStopGlassIcon size="1.4em" aria-hidden />
                   {t('appImport.images.cancel')}
                 </Button>
               ) : null}

@@ -61,7 +61,7 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         unit={t('tiles.perSecond', { rate: formatRate(data.rate_per_sec) })}
         series={data.series.map((p) => p.requests)}
         tone="accent"
-        icon={<GaugeGlassIcon size="1.2em" aria-hidden="true" />}
+        icon={<GaugeGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.requestsInfo')}
       />
       <MetricTile
@@ -72,7 +72,7 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         icon={
           <CircleAlertGlassIcon
             className="text-tone-danger"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
         }
@@ -87,7 +87,7 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         }
         series={hitRateSeries(data)}
         tone="success"
-        icon={<RefreshCwGlassIcon size="1.2em" aria-hidden="true" />}
+        icon={<RefreshCwGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.hitRateInfo', { minutes: data.cache.covered_minutes })}
       />
       <MetricTile
@@ -95,7 +95,7 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         value={formatSize(data.cache.hit_bytes)}
         series={data.cache.series.map((b) => b.hit_bytes)}
         tone="info"
-        icon={<DownloadGlassIcon size="1.2em" aria-hidden="true" />}
+        icon={<DownloadGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.savedInfo', { minutes: data.cache.covered_minutes })}
       />
     </div>
@@ -114,7 +114,7 @@ function ServedFromCard({ data }: Readonly<{ data: CdnOverview }>) {
         {data.nodes.length === 0 ? (
           <EmptyState
             compact
-            icon={<ServerGlassIcon className="size-4.5" />}
+            icon={<ServerGlassIcon className="size-5" />}
             title={t('nodes.emptyTitle')}
             description={t('nodes.emptyBody')}
             action={

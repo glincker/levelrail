@@ -317,7 +317,7 @@ export function MaintenanceWindowsPanel() {
   const { t } = useTranslation('common')
   const createLabel = (
     <>
-      <CirclePlusGlassIcon className="size-4.5" aria-hidden="true" />
+      <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
       New window
     </>
   )
@@ -336,7 +336,7 @@ export function MaintenanceWindowsPanel() {
         <p className="text-sm text-destructive">{error.message}</p>
       ) : windows.length === 0 ? (
         <EmptyState
-          icon={<CalendarGlassIcon className="size-5.5" />}
+          icon={<CalendarGlassIcon className="size-6" />}
           title="No maintenance windows"
           description="Schedule a recurring window so planned work does not page anyone."
         />

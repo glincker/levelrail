@@ -32,7 +32,7 @@ export function RestartControlPlaneButton({
   return (
     <>
       <Button variant={variant} disabled={busy} onClick={() => setOpen(true)}>
-        <RefreshCwGlassIcon className="size-4.5" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         {label ?? t('controlPlaneRestart.action')}
       </Button>
       <ConfirmDialog

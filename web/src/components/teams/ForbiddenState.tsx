@@ -14,7 +14,7 @@ export function ForbiddenState({ message }: { message?: string }) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <LockGlassIcon
-              className="size-5.5 text-muted-foreground"
+              className="size-6 text-muted-foreground"
               aria-hidden="true"
             />
             <CardTitle>{t('forbidden.title')}</CardTitle>
@@ -27,13 +27,13 @@ export function ForbiddenState({ message }: { message?: string }) {
           <div className="flex flex-wrap gap-2">
             <Link to="/settings/teams">
               <Button type="button" variant="outline" size="sm">
-                <UsersGlassIcon size="1.2em" aria-hidden="true" />
+                <UsersGlassIcon size="1.4em" aria-hidden="true" />
                 {t('forbidden.teams')}
               </Button>
             </Link>
             <Link to="/">
               <Button type="button" variant="ghost" size="sm">
-                <HouseGlassIcon size="1.2em" aria-hidden="true" />
+                <HouseGlassIcon size="1.4em" aria-hidden="true" />
                 {t('forbidden.home')}
               </Button>
             </Link>

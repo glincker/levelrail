@@ -40,7 +40,7 @@ export function RequirePasswordChangeDialog({ user }: { user: UserResource }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyGlassIcon className="size-4.5" />
+            <KeyGlassIcon className="size-5" />
             {requiring
               ? t('usersPage.passwordChange.requireTitle', {
                   email: user.email,
@@ -57,7 +57,7 @@ export function RequirePasswordChangeDialog({ user }: { user: UserResource }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{mutation.error.message}</AlertDescription>
           </Alert>

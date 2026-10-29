@@ -122,7 +122,7 @@ export function CodeLoginForm({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{request.error.message}</AlertDescription>
           </Alert>
@@ -169,7 +169,7 @@ export function CodeLoginForm({
     >
       {request.data ? (
         <Alert>
-          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           <AlertDescription>{request.data.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -215,7 +215,7 @@ export function CodeLoginForm({
       </Field>
       {redeem.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{redeem.error.message}</AlertDescription>
         </Alert>
       ) : null}

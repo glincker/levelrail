@@ -59,7 +59,7 @@ export function DelegationPanel({
           disabled={isFetching}
           onClick={() => void refetch()}
         >
-          <RotateCwGlassIcon size="1.2em" />
+          <RotateCwGlassIcon size="1.4em" />
           {isFetching ? t('delegation.checking') : t('delegation.recheck')}
         </Button>
       </div>

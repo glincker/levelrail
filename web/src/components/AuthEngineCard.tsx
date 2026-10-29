@@ -36,7 +36,7 @@ export function AuthEngineCard() {
         <CardTitle className="flex items-center gap-2">
           <ShieldCheckGlassIcon
             className="text-tone-success"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           {t('authEngine.title')}

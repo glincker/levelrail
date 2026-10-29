@@ -321,7 +321,7 @@ function LinkWidget({ w }: { w: DashboardWidget }) {
           {new URL(url).host}
         </span>
       </span>
-      <ExternalLinkGlassIcon aria-hidden="true" className="size-4.5 shrink-0" />
+      <ExternalLinkGlassIcon aria-hidden="true" className="size-5 shrink-0" />
     </a>
   )
 }

@@ -36,7 +36,7 @@ export function PinnedDigestBadge({
           render={
             <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5">
               <FingerprintPatternGlassIcon
-                className="size-3.5"
+                className="size-4.5"
                 aria-hidden="true"
               />
               {shortDigest(digest)}
@@ -54,9 +54,9 @@ export function PinnedDigestBadge({
         }}
       >
         {copied ? (
-          <CheckGlassIcon className="size-3.5" aria-hidden="true" />
+          <CheckGlassIcon className="size-4.5" aria-hidden="true" />
         ) : (
-          <CopyGlassIcon className="size-3.5" aria-hidden="true" />
+          <CopyGlassIcon className="size-4.5" aria-hidden="true" />
         )}
       </button>
       <span className="sr-only" role="status">

@@ -21,7 +21,7 @@ function DataExportPage() {
 
   return (
     <PageTemplate
-      icon={<ShareGlassIcon size="1.2em" />}
+      icon={<ShareGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       actions={notConfigured ? null : <CreateDataExportDestinationDialog />}
@@ -54,7 +54,7 @@ function DataExportPage() {
 
       {data && data.length === 0 ? (
         <EmptyState
-          icon={<ShareGlassIcon className="size-5.5" />}
+          icon={<ShareGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           className="border-0 bg-transparent py-6"

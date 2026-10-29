@@ -151,7 +151,7 @@ export function AppSloCard({
     <section className="mt-3 rounded-lg border border-border p-4">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
         <TargetGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('slo.title')}

@@ -127,7 +127,7 @@ export function SSHEnrollFields({
           onClick={phase === 'target' ? onBack : backToTarget}
           aria-label="Back"
         >
-          <ArrowLeftGlassIcon size="1.2em" />
+          <ArrowLeftGlassIcon size="1.4em" />
         </Button>
         {phase === 'verify' ? t('sshVerify.title') : 'Connect over SSH'}
       </DialogTitle>
@@ -168,7 +168,7 @@ export function SSHEnrollFields({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{preflight.error.message}</AlertDescription>
             </Alert>
@@ -246,7 +246,7 @@ export function SSHEnrollFields({
       {header}
       <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
         <div className="flex items-center gap-2 rounded-lg border border-border p-2 text-xs">
-          <ShieldCheckGlassIcon className="size-4.5 shrink-0 text-primary" />
+          <ShieldCheckGlassIcon className="size-5 shrink-0 text-primary" />
           <span className="min-w-0 flex-1 font-mono break-all">
             {host.trim()}:{portNumber}{' '}
             {t('sshVerify.pinned', {
@@ -283,7 +283,7 @@ export function SSHEnrollFields({
                 : 'border-border hover:bg-muted/50'
             }`}
           >
-            <KeyGlassIcon className="size-4.5" />
+            <KeyGlassIcon className="size-5" />
             Private key
           </button>
           <button
@@ -295,7 +295,7 @@ export function SSHEnrollFields({
                 : 'border-border hover:bg-muted/50'
             }`}
           >
-            <KeyGlassIcon className="size-4.5" />
+            <KeyGlassIcon className="size-5" />
             Password
           </button>
         </div>
@@ -389,7 +389,7 @@ export function SSHEnrollFields({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{createProvision.error.message}</AlertDescription>
           </Alert>

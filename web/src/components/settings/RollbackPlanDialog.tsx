@@ -62,7 +62,7 @@ function DataLossBlock({ plan }: { plan: RollbackPlan }) {
   const { t } = useTranslation('updates')
   return (
     <Alert variant="destructive">
-      <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
       <AlertTitle>{t('plan.dataLoss.title')}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>{t('plan.dataLoss.body')}</p>

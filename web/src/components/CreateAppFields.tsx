@@ -535,7 +535,7 @@ export function CreateAppFields({
 
       {createApp.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{createApp.error.message}</AlertDescription>
         </Alert>
       ) : null}

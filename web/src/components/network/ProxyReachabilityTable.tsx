@@ -102,7 +102,7 @@ export function ProxyReachabilityTable({
     return (
       <EmptyState
         className="py-12"
-        icon={<GlobeGlassIcon className="size-5.5" />}
+        icon={<GlobeGlassIcon className="size-6" />}
         title={t('empty.title')}
         description={t('empty.description')}
       />
@@ -113,7 +113,7 @@ export function ProxyReachabilityTable({
     <div className="space-y-3">
       {unreachableCount > 0 ? (
         <Alert variant="destructive">
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
           <AlertTitle>{t('reachable.no')}</AlertTitle>
           <AlertDescription>
             {t('unreachableBanner', { count: unreachableCount })}
@@ -155,7 +155,7 @@ function ReachableBadge({ row }: { row: NetworkProxyDomain }) {
     return (
       <Badge variant="success" className="gap-1">
         <CircleCheckGlassIcon
-          className="size-3.5 text-tone-success"
+          className="size-4.5 text-tone-success"
           aria-hidden="true"
         />
         {t('reachable.yes')}
@@ -165,7 +165,7 @@ function ReachableBadge({ row }: { row: NetworkProxyDomain }) {
   return (
     <Badge variant="destructive" className="gap-1" title={row.fix_command}>
       <CircleAlertGlassIcon
-        className="size-3.5 text-tone-danger"
+        className="size-4.5 text-tone-danger"
         aria-hidden="true"
       />
       {t('reachable.no')}

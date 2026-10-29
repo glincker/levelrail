@@ -40,7 +40,7 @@ export function StopStartAppButton({
           })
         }}
       >
-        <PlayGlassIcon className="size-4" aria-hidden="true" />
+        <PlayGlassIcon className="size-5" aria-hidden="true" />
         {wake.isPending ? 'Waking...' : 'Wake now'}
       </Button>
     )
@@ -63,7 +63,7 @@ export function StopStartAppButton({
           })
         }}
       >
-        <PlayGlassIcon className="size-4" aria-hidden="true" />
+        <PlayGlassIcon className="size-5" aria-hidden="true" />
         {startApp.isPending ? 'Starting...' : 'Start'}
       </Button>
     )
@@ -85,7 +85,7 @@ export function StopStartAppButton({
         })
       }}
     >
-      <PauseGlassIcon className="size-4" aria-hidden="true" />
+      <PauseGlassIcon className="size-5" aria-hidden="true" />
       {stopApp.isPending ? 'Stopping...' : 'Stop'}
     </Button>
   )

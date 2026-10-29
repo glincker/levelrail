@@ -27,7 +27,7 @@ export function RolloutCountsPanel({ appName }: { appName: string }) {
     >
       <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
         <LayersGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('rollout.counts.wave', { wave: p.wave, waves: p.waves })}

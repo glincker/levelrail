@@ -94,7 +94,7 @@ export function FixAction({
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <WrenchGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
+        <WrenchGlassIcon className="size-5 shrink-0" aria-hidden="true" />
         <p className="text-sm font-medium text-foreground">{fix.title}</p>
         <Badge variant={RISK_VARIANT[fix.risk]}>{t(`risk.${fix.risk}`)}</Badge>
         <Badge variant="muted">{t(`kind.${fix.kind}`)}</Badge>
@@ -179,7 +179,7 @@ export function FixAction({
             disabled={apply.isPending}
             onClick={run}
           >
-            <RefreshCwGlassIcon size="1.2em" />
+            <RefreshCwGlassIcon size="1.4em" />
             {apply.isPending ? t('rechecking') : t('recheck')}
           </Button>
         ) : null}
@@ -253,7 +253,7 @@ export function ManualFix({
         disabled={pending}
         onClick={onRecheck}
       >
-        <RefreshCwGlassIcon size="1.2em" />
+        <RefreshCwGlassIcon size="1.4em" />
         {pending ? t('rechecking') : t('recheck')}
       </Button>
       {command ? <FixCli steps={[{ command }]} /> : null}

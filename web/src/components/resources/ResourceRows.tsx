@@ -20,12 +20,12 @@ const GRID =
   'grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[1.5rem_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)]'
 
 const KIND_ICON: Record<ResourceKind, React.ReactNode> = {
-  app: <LayersGlassIcon size="1.2em" />,
-  database: <DatabaseGlassIcon size="1.2em" />,
-  node: <ServerGlassIcon size="1.2em" />,
-  domain: <GlobeGlassIcon size="1.2em" />,
-  bucket: <ArchiveGlassIcon size="1.2em" />,
-  network: <Share2GlassIcon size="1.2em" />,
+  app: <LayersGlassIcon size="1.4em" />,
+  database: <DatabaseGlassIcon size="1.4em" />,
+  node: <ServerGlassIcon size="1.4em" />,
+  domain: <GlobeGlassIcon size="1.4em" />,
+  bucket: <ArchiveGlassIcon size="1.4em" />,
+  network: <Share2GlassIcon size="1.4em" />,
 }
 
 function Row({

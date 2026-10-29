@@ -13,7 +13,7 @@ export function TemplateVerifiedBadge({ className }: { className?: string }) {
       title={t('verified.hint')}
     >
       <BadgeCheckGlassIcon
-        className="size-3.5 text-tone-success"
+        className="size-4.5 text-tone-success"
         aria-hidden="true"
       />
       {t('verified.badge')}

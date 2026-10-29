@@ -159,7 +159,7 @@ export function AuditSinkFields({
         {values.insecure ? (
           <p className="flex items-start gap-1.5 text-xs text-tone-danger">
             <TriangleAlertGlassIcon
-              className="mt-0.5 size-4 shrink-0 text-tone-warning"
+              className="mt-0.5 size-5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {t('form.insecureWarning')}

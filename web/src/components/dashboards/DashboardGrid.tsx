@@ -62,7 +62,7 @@ export function DashboardGrid({
                     aria-label={t('grid.moveEarlier', { title })}
                     onClick={() => onChange(moveWidget(widgets, w.id, -1))}
                   >
-                    <ArrowLeftGlassIcon size="1.2em" />
+                    <ArrowLeftGlassIcon size="1.4em" />
                   </Button>
                   <Button
                     type="button"
@@ -72,7 +72,7 @@ export function DashboardGrid({
                     aria-label={t('grid.moveLater', { title })}
                     onClick={() => onChange(moveWidget(widgets, w.id, 1))}
                   >
-                    <ArrowRightGlassIcon size="1.2em" />
+                    <ArrowRightGlassIcon size="1.4em" />
                   </Button>
                   {WIDGET_SIZES.map((size) => (
                     <Button
@@ -96,7 +96,7 @@ export function DashboardGrid({
                     aria-label={t('grid.remove', { title })}
                     onClick={() => onChange(removeWidget(widgets, w.id))}
                   >
-                    <TrashGlassIcon size="1.2em" />
+                    <TrashGlassIcon size="1.4em" />
                   </Button>
                 </div>
               ) : null}

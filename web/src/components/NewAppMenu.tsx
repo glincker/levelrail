@@ -39,7 +39,7 @@ export function NewAppMenu() {
       key: 'git',
       title: t('newApp.items.git.title'),
       hint: t('newApp.items.git.hint'),
-      icon: <GitBranchGlassIcon size="1.2em" />,
+      icon: <GitBranchGlassIcon size="1.4em" />,
       to: { kind: 'option', value: 'dockerfile-git' } as const,
     },
     {
@@ -53,21 +53,21 @@ export function NewAppMenu() {
       key: 'template',
       title: t('newApp.items.template.title'),
       hint: t('newApp.items.template.hint'),
-      icon: <PackageGlassIcon size="1.2em" />,
+      icon: <PackageGlassIcon size="1.4em" />,
       to: { kind: 'option', value: 'browse-templates' } as const,
     },
     {
       key: 'compose',
       title: t('newApp.items.compose.title'),
       hint: t('newApp.items.compose.hint'),
-      icon: <LayersGlassIcon size="1.2em" />,
+      icon: <LayersGlassIcon size="1.4em" />,
       to: { kind: 'option', value: 'docker-compose' } as const,
     },
     {
       key: 'database',
       title: t('newApp.items.database.title'),
       hint: t('newApp.items.database.hint'),
-      icon: <DatabaseGlassIcon size="1.2em" />,
+      icon: <DatabaseGlassIcon size="1.4em" />,
       to: { kind: 'database' } as const,
     },
   ]
@@ -81,7 +81,7 @@ export function NewAppMenu() {
             setQuick({ kind: 'start' })
           }}
         >
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {t('newApp.label')}
         </Button>
         <DropdownMenu>
@@ -94,7 +94,7 @@ export function NewAppMenu() {
               />
             }
           >
-            <ChevronDownGlassIcon size="1.2em" />
+            <ChevronDownGlassIcon size="1.4em" />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-60">
             {items.map((i) => (

@@ -28,7 +28,7 @@ export function SecretBindingCard() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <LinkGlassIcon className="size-4.5" />
+              <LinkGlassIcon className="size-5" />
             </div>
             <div className="min-w-0">
               <CardTitle className="flex items-center gap-1.5">

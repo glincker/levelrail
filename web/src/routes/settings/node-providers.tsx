@@ -57,7 +57,7 @@ function NodeProvidersSettingsPage() {
       title={t('nodeProvidersPage.title')}
       banner={
         <PageBanner
-          icon={<CloudGlassIcon size="1.2em" />}
+          icon={<CloudGlassIcon size="1.4em" />}
           titleKey="settings:nodeProvidersPage.title"
           descriptionKey={
             connected

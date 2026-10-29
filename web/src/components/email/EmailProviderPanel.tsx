@@ -171,7 +171,7 @@ export function EmailProviderPanel({
               className="inline-flex items-center gap-1 text-xs underline"
             >
               {t('emailPresets.docs')}
-              <ExternalLinkGlassIcon className="size-3.5" aria-hidden="true" />
+              <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
             </a>
           ) : null}
         </div>

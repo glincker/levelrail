@@ -40,14 +40,14 @@ export function ConfiguredStatusHeading({
   if (!connected) {
     return (
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <CircleXGlassIcon className="size-4.5 text-tone-danger" />
+        <CircleXGlassIcon className="size-5 text-tone-danger" />
         {t('gitConnection.notConnected')}
       </div>
     )
   }
   return (
     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-      <CircleCheckGlassIcon className="size-4.5 text-green-600 dark:text-green-400" />
+      <CircleCheckGlassIcon className="size-5 text-green-600 dark:text-green-400" />
       Configured
       {authorized ? (
         <Badge variant="success">authorized</Badge>
@@ -91,7 +91,7 @@ export function DisconnectConnectionDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             {title}

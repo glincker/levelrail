@@ -68,7 +68,7 @@ export function AccountSessionsCard() {
             {data.sessions.length === 0 ? (
               <EmptyState
                 compact
-                icon={<MonitorGlassIcon className="size-5.5" />}
+                icon={<MonitorGlassIcon className="size-6" />}
                 title={t('accountPage.sessions.empty')}
                 description={t('accountPage.sessions.emptyBody')}
               />
@@ -108,7 +108,7 @@ export function AccountSessionsCard() {
                   disabled={revokeOthers.isPending || data.sessions.length < 2}
                   onClick={open}
                 >
-                  <LogOutGlassIcon size="1.2em" aria-hidden="true" />
+                  <LogOutGlassIcon size="1.4em" aria-hidden="true" />
                   {t('accountPage.sessions.revokeOthers')}
                 </Button>
               )}

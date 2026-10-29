@@ -44,9 +44,9 @@ export function GitSourceWebhookBanner({
             }}
           >
             {urlCopied ? (
-              <CheckGlassIcon size="1.2em" />
+              <CheckGlassIcon size="1.4em" />
             ) : (
-              <CopyGlassIcon size="1.2em" />
+              <CopyGlassIcon size="1.4em" />
             )}
             {urlCopied ? 'Copied' : 'Copy'}
           </Button>
@@ -66,9 +66,9 @@ export function GitSourceWebhookBanner({
             }}
           >
             {secretCopied ? (
-              <CheckGlassIcon size="1.2em" />
+              <CheckGlassIcon size="1.4em" />
             ) : (
-              <CopyGlassIcon size="1.2em" />
+              <CopyGlassIcon size="1.4em" />
             )}
             {secretCopied ? 'Copied' : 'Copy'}
           </Button>

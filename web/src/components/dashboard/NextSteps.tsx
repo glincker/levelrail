@@ -85,7 +85,7 @@ function StepRow({
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <span
           aria-hidden="true"
-          className={cn('mt-0.5 shrink-0 [&_svg]:size-5', TONE[tone].text)}
+          className={cn('mt-0.5 shrink-0 [&_svg]:size-6', TONE[tone].text)}
         >
           <Icon />
         </span>
@@ -139,13 +139,13 @@ function GroupRow({
           <span
             aria-hidden="true"
             className={cn(
-              'mt-0.5 shrink-0 [&_svg]:size-5',
+              'mt-0.5 shrink-0 [&_svg]:size-6',
               TONE[group.tone].text,
             )}
           >
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
           </span>
           <span className="min-w-0">
@@ -171,7 +171,7 @@ function GroupRow({
               ? t('nextSteps.group.hide')
               : t('nextSteps.group.show', { count })}
             <ChevronDownGlassIcon
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
               className={cn('transition-transform', open && 'rotate-180')}
             />
@@ -246,7 +246,7 @@ export function NextStepsView({
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <CircleCheckGlassIcon
             aria-hidden="true"
-            className="mt-0.5 size-4.5 shrink-0 text-tone-success"
+            className="mt-0.5 size-5 shrink-0 text-tone-success"
           />
           <span>{t('nextSteps.quiet', quiet)}</span>
         </p>

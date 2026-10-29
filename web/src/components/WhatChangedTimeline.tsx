@@ -69,7 +69,7 @@ export function WhatChangedTimeline({
                 {e.likely_cause ? (
                   <span className="ml-2 inline-flex items-center gap-1 rounded bg-tone-warning-soft px-1.5 py-0.5 text-xs font-medium text-tone-warning">
                     <TriangleAlertGlassIcon
-                      className="size-3.5 text-tone-warning"
+                      className="size-4.5 text-tone-warning"
                       aria-hidden="true"
                     />
                     {t('investigation.likelyCause')}

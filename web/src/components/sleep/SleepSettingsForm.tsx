@@ -75,7 +75,7 @@ function IgnorePaths({
               className="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => onChange(paths.filter((x) => x !== p))}
             >
-              <XGlassIcon aria-hidden="true" className="size-3.5" />
+              <XGlassIcon aria-hidden="true" className="size-4.5" />
             </button>
           </li>
         ))}
@@ -101,7 +101,7 @@ function IgnorePaths({
           disabled={disabled || !draft.trim()}
           onClick={add}
         >
-          <PlusGlassIcon aria-hidden="true" className="size-4" />
+          <PlusGlassIcon aria-hidden="true" className="size-5" />
           {t('appSleep.ignore.add')}
         </Button>
       </div>

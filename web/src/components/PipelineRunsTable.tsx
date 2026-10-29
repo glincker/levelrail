@@ -104,7 +104,7 @@ export function PipelineRunsTable({
   if (error) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     )

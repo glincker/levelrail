@@ -105,31 +105,31 @@ export function GitRepoSourcePicker({
     {
       key: 'github',
       label: 'GitHub',
-      icon: <SocialGithubGlassIcon className="size-4.5" aria-hidden="true" />,
+      icon: <SocialGithubGlassIcon className="size-5" aria-hidden="true" />,
       connected: github.connected,
     },
     {
       key: 'gitlab',
       label: 'GitLab',
-      icon: <SocialGitlabGlassIcon className="size-4.5" aria-hidden="true" />,
+      icon: <SocialGitlabGlassIcon className="size-5" aria-hidden="true" />,
       connected: gitlab.connected,
     },
     {
       key: 'bitbucket',
       label: 'Bitbucket',
-      icon: <GitBranchGlassIcon className="size-4.5" aria-hidden="true" />,
+      icon: <GitBranchGlassIcon className="size-5" aria-hidden="true" />,
       connected: bitbucket.connected,
     },
     {
       key: 'gitea',
       label: 'Gitea',
-      icon: <CoffeeGlassIcon className="size-4.5" aria-hidden="true" />,
+      icon: <CoffeeGlassIcon className="size-5" aria-hidden="true" />,
       connected: gitea.connected,
     },
     {
       key: 'manual',
       label: 'URL',
-      icon: <LinkGlassIcon className="size-4.5" aria-hidden="true" />,
+      icon: <LinkGlassIcon className="size-5" aria-hidden="true" />,
       connected: true,
     },
   ]

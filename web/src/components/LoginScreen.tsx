@@ -118,7 +118,7 @@ export function LoginScreen({
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.2em"
+                    size="1.4em"
                   />
                   <AlertDescription>
                     {t('sessionLink.invalid')}
@@ -165,7 +165,7 @@ export function LoginScreen({
           <OAuthErrorBanner />
           {sessionEnded ? (
             <Alert role="status">
-              <LogOutGlassIcon size="1.2em" />
+              <LogOutGlassIcon size="1.4em" />
               <AlertDescription>{t('sessionEnded.notice')}</AlertDescription>
             </Alert>
           ) : null}
@@ -231,7 +231,7 @@ export function LoginScreen({
                   })
                 }}
               >
-                <FlaskConicalGlassIcon size="1.2em" />
+                <FlaskConicalGlassIcon size="1.4em" />
                 {quickLogin.isPending
                   ? 'Signing in...'
                   : `Quick dev login (${DEV_MODE_USERNAME}/${DEV_MODE_PASSWORD})`}

@@ -13,12 +13,12 @@ export function DockConsoleTab() {
     return (
       <div className="flex h-full min-h-0 flex-col p-3">
         <EmptyState
-          icon={<TerminalGlassIcon className="size-5.5" />}
+          icon={<TerminalGlassIcon className="size-6" />}
           title={t('cliConsole.dock.offTitle')}
           description={t('cliConsole.dock.offDescription')}
           action={
             <Button size="sm" render={<Link to="/settings/beta-features" />}>
-              <SettingsGlassIcon size="1.2em" />
+              <SettingsGlassIcon size="1.4em" />
               {t('dock.ai.enableInSettings')}
             </Button>
           }

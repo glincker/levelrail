@@ -81,7 +81,7 @@ function TeamsSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<UsersGlassIcon size="1.2em" />}
+      icon={<UsersGlassIcon size="1.4em" />}
       eyebrow={t('page.eyebrow')}
       title={t('page.title')}
       description={t('page.description')}
@@ -103,7 +103,7 @@ function TeamsSettingsPage() {
     >
       {team === undefined ? (
         <EmptyState
-          icon={<UsersGlassIcon className="size-5.5" />}
+          icon={<UsersGlassIcon className="size-6" />}
           title={t('page.title')}
           description={t('page.empty')}
           className="border-0 bg-transparent py-6"

@@ -64,7 +64,7 @@ function TestButton({ app, form }: { app: string; form: string }) {
       disabled={sendTest.isPending}
       onClick={send}
     >
-      <SendGlassIcon size="1.2em" />
+      <SendGlassIcon size="1.4em" />
       {sendTest.isPending ? t('test.sending') : t('test.button')}
     </Button>
   )
@@ -107,7 +107,7 @@ export function FormCard({
             size="sm"
             onClick={() => setConfirming(true)}
           >
-            <TrashGlassIcon size="1.2em" />
+            <TrashGlassIcon size="1.4em" />
             {t('delete.button')}
           </Button>
         </div>

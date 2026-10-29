@@ -123,7 +123,7 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
       return null
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         <AlertDescription>
           {t('stack.loadFailed', { message: stack.error.message })}
         </AlertDescription>
@@ -149,7 +149,7 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <LayersGlassIcon className="size-4.5" aria-hidden="true" />
+          <LayersGlassIcon className="size-5" aria-hidden="true" />
           {t('stack.title')}
           <Badge variant={PHASE_VARIANT[data.phase]}>
             {t(`stack.phase.${data.phase}`)}
@@ -179,7 +179,7 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
               runRedeploy()
             }}
           >
-            <RotateCwGlassIcon size="1.2em" />
+            <RotateCwGlassIcon size="1.4em" />
             {t('stack.redeployAll')}
           </Button>
           <ComposeRollbackDialog

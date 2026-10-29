@@ -77,7 +77,7 @@ function BranchDeployRow({
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <GitBranchGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           <span className="truncate font-mono text-sm">{deploy.branch}</span>
@@ -116,7 +116,7 @@ function BranchDeployRow({
             aria-label={t('list.openLabel', { branch: deploy.branch })}
             render={<a href={deploy.url} target="_blank" rel="noreferrer" />}
           >
-            <ExternalLinkGlassIcon size="1.2em" aria-hidden="true" />
+            <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
             {t('list.open')}
           </Button>
         ) : null}
@@ -137,7 +137,7 @@ function BranchDeployRow({
               aria-label={t('list.deleteLabel', { branch: deploy.branch })}
               onClick={open}
             >
-              <TrashGlassIcon size="1.2em" aria-hidden="true" />
+              <TrashGlassIcon size="1.4em" aria-hidden="true" />
               {t('list.delete')}
             </Button>
           )}
@@ -279,7 +279,7 @@ export function BranchDeploysCard({ appName }: { appName: string }) {
           ) : deploys.length === 0 && !query.isPending ? (
             <EmptyState
               compact
-              icon={<GitBranchGlassIcon className="size-5.5" />}
+              icon={<GitBranchGlassIcon className="size-6" />}
               title={t('list.emptyTitle')}
               description={
                 settings?.mode === 'off'

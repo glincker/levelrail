@@ -136,7 +136,7 @@ export function EnvVarValue({
               onChange({ ...row, value: row.original?.value ?? '' })
             }}
           >
-            <RotateCcwGlassIcon size="1.2em" />
+            <RotateCcwGlassIcon size="1.4em" />
           </Button>
         ) : null}
       </div>
@@ -158,7 +158,7 @@ export function EnvVarValue({
             onCopy(revealed)
           }}
         >
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
         </Button>
         <Button
           type="button"
@@ -167,7 +167,7 @@ export function EnvVarValue({
           aria-label={`${t('actions.hide')} ${row.key}`}
           onClick={onHide}
         >
-          <EyeOffGlassIcon size="1.2em" />
+          <EyeOffGlassIcon size="1.4em" />
         </Button>
         {expiresAt ? <Countdown until={expiresAt} /> : null}
       </div>
@@ -185,7 +185,7 @@ export function EnvVarValue({
       )}
       {storedHidden && canReveal ? (
         <Button type="button" variant="ghost" size="sm" onClick={onReveal}>
-          <EyeGlassIcon size="1.2em" />
+          <EyeGlassIcon size="1.4em" />
           {t('actions.reveal')}
         </Button>
       ) : null}
@@ -198,7 +198,7 @@ export function EnvVarValue({
             onChange({ ...row, value: '' })
           }}
         >
-          <PencilGlassIcon size="1.2em" />
+          <PencilGlassIcon size="1.4em" />
           {t('actions.replace')}
         </Button>
       ) : null}

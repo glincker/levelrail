@@ -33,7 +33,7 @@ export function DashboardUrlCard() {
     <Card id={DASHBOARD_URL_ANCHOR} className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockGlassIcon className="size-4.5" />
+          <LockGlassIcon className="size-5" />
           Dashboard URL
         </CardTitle>
         <CardDescription>
@@ -81,7 +81,7 @@ export function DashboardUrlCard() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{update.error.message}</AlertDescription>
             </Alert>

@@ -113,7 +113,7 @@ function CodeRow({ request }: { request: SignInCodeRequest }) {
   const [code, setCode] = useState<string | null>(null)
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      <KeyGlassIcon aria-hidden="true" className="size-5.5 shrink-0" />
+      <KeyGlassIcon aria-hidden="true" className="size-6 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="font-medium">{t('requests.codeTitle')}</p>
         <RequestContext

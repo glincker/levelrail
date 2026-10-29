@@ -52,7 +52,7 @@ export function ExtendPreviewButton({
       title={t('extend.hours', { hours: EXTEND_HOURS })}
       onClick={run}
     >
-      <ClockGlassIcon size="1.2em" />
+      <ClockGlassIcon size="1.4em" />
       {t('extend.button')}
     </Button>
   )

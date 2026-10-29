@@ -39,7 +39,7 @@ export function TopRulesCard({
         {ranked.length === 0 ? (
           <EmptyState
             compact
-            icon={<ListChecksGlassIcon className="size-5.5" />}
+            icon={<ListChecksGlassIcon className="size-6" />}
             title={t('rules.emptyTitle')}
             description={t('rules.emptyHelp')}
             action={

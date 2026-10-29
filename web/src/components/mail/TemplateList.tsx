@@ -151,7 +151,7 @@ export function TemplateList({
                 variant="outline"
                 onClick={() => onEdit(tpl.key)}
               >
-                <PencilGlassIcon size="1.2em" data-icon="inline-start" />
+                <PencilGlassIcon size="1.4em" data-icon="inline-start" />
                 {t('templates.edit')}
               </Button>
             </li>

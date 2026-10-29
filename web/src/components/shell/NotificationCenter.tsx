@@ -87,7 +87,7 @@ export function NotificationCenter() {
           />
         }
       >
-        <BellGlassIcon size="1.2em" />
+        <BellGlassIcon size="1.4em" />
         {unread > 0 ? (
           <span
             aria-hidden="true"
@@ -132,7 +132,7 @@ export function NotificationCenter() {
           <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center">
             <CircleCheckGlassIcon
               aria-hidden="true"
-              className="size-7 text-muted-foreground"
+              className="size-8 text-muted-foreground"
             />
             <p className="text-sm text-muted-foreground">
               You are all caught up.
@@ -205,7 +205,7 @@ export function NotificationCenter() {
                             }
                           }}
                         >
-                          <XGlassIcon size="1.2em" />
+                          <XGlassIcon size="1.4em" />
                         </Button>
                       ) : null}
                     </li>
@@ -259,7 +259,7 @@ function SetupActions({ id, snoozed }: { id: string; snoozed: boolean }) {
           snoozeNow(id, '1d')
         }}
       >
-        <BellOffGlassIcon size="1.2em" />
+        <BellOffGlassIcon size="1.4em" />
       </Button>
       <Button
         type="button"
@@ -271,7 +271,7 @@ function SetupActions({ id, snoozed }: { id: string; snoozed: boolean }) {
           snoozeNow(id, 'forever')
         }}
       >
-        <XGlassIcon size="1.2em" />
+        <XGlassIcon size="1.4em" />
       </Button>
     </>
   )

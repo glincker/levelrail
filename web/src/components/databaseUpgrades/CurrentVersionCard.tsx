@@ -59,7 +59,7 @@ export function CurrentVersionCard({ data }: { data: DatabaseUpgrades }) {
           <div className="space-y-1.5">
             <p className="flex items-center gap-1.5 text-sm font-medium">
               <ShieldAlertGlassIcon
-                className="size-4.5 text-tone-warning"
+                className="size-5 text-tone-warning"
                 aria-hidden="true"
               />
               {t('current.advisories')}
@@ -78,7 +78,7 @@ export function CurrentVersionCard({ data }: { data: DatabaseUpgrades }) {
           <Alert>
             <InfoGlassIcon
               className="text-tone-info"
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
             />
             <AlertTitle>{t('current.manualReason')}</AlertTitle>

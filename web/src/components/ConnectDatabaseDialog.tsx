@@ -127,7 +127,7 @@ export function ConnectDatabaseDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger ?? <Button size="sm" variant="outline" />}>
-        <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+        <PlugGlassIcon className="size-5" aria-hidden="true" />
         {t('external.connect.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -251,7 +251,7 @@ export function ConnectDatabaseDialog({
                 )
               }}
             >
-              <ArrowLeftGlassIcon className="size-4" aria-hidden="true" />
+              <ArrowLeftGlassIcon className="size-5" aria-hidden="true" />
               {t('external.connect.back')}
             </Button>
           ) : null}

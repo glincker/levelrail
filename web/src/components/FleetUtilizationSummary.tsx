@@ -25,7 +25,7 @@ export function FleetUtilizationSummary() {
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
           <GaugeGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           Fleet utilization

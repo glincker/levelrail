@@ -62,9 +62,9 @@ export function ConnectionCard({ database }: { database: DatabaseResource }) {
               onClick={() => setReveal((v) => !v)}
             >
               {reveal ? (
-                <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
+                <EyeOffGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <EyeGlassIcon size="1.2em" aria-hidden="true" />
+                <EyeGlassIcon size="1.4em" aria-hidden="true" />
               )}
               {reveal
                 ? t('connection.maskPassword')

@@ -57,7 +57,7 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Share2GlassIcon className="size-4.5" />
+          <Share2GlassIcon className="size-5" />
           Network
         </CardTitle>
         <CardDescription>
@@ -197,9 +197,9 @@ function FallbackURLRow({ url }: { url: string }) {
           }}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
           ) : (
-            <CopyGlassIcon size="1.2em" />
+            <CopyGlassIcon size="1.4em" />
           )}
           {copied ? 'Copied' : 'Copy'}
         </Button>
@@ -264,9 +264,9 @@ function TrafficPath({
         }
         muted={domains.length === 0 && !fallbackHost}
       />
-      <ArrowRightGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
+      <ArrowRightGlassIcon className="size-5 shrink-0 text-muted-foreground" />
       <PathNode icon={CloudGlassIcon} label="Caddy" sublabel="ingress" />
-      <ArrowRightGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
+      <ArrowRightGlassIcon className="size-5 shrink-0 text-muted-foreground" />
       <PathNode
         icon={WifiHighGlassIcon}
         label={
@@ -279,7 +279,7 @@ function TrafficPath({
         sublabel="this machine"
         muted={!running || !hostPort}
       />
-      <ArrowRightGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
+      <ArrowRightGlassIcon className="size-5 shrink-0 text-muted-foreground" />
       <PathNode
         icon={PackageGlassIcon}
         label={`:${containerPort}`}

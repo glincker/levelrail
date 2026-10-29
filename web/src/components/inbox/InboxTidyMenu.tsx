@@ -90,7 +90,7 @@ export default function InboxTidyMenu() {
         <DropdownMenuTrigger
           render={
             <Button type="button" size="sm" variant="outline">
-              <BroomGlassIcon size="1.2em" />
+              <BroomGlassIcon size="1.4em" />
               {t('tidy.menu')}
             </Button>
           }

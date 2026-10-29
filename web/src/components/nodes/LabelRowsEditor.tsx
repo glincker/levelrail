@@ -57,7 +57,7 @@ export function LabelRowsEditor({
             aria-label={removeLabel(row.key)}
             onClick={() => onChange(rows.filter((r) => r.id !== row.id))}
           >
-            <XGlassIcon size="1.2em" />
+            <XGlassIcon size="1.4em" />
           </Button>
         </div>
       ))}
@@ -68,7 +68,7 @@ export function LabelRowsEditor({
         disabled={disabled}
         onClick={() => onChange([...rows, newLabelRow()])}
       >
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         {addLabel}
       </Button>
     </div>

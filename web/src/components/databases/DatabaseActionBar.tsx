@@ -102,7 +102,7 @@ export function DatabaseActionBar({
           title={t('list.pendingActionHint')}
           data-testid="pending-actions-disabled"
         >
-          <UploadGlassIcon size="1.2em" aria-hidden="true" />
+          <UploadGlassIcon size="1.4em" aria-hidden="true" />
           {t('detail.backupNow')}
         </Button>
         <p className="text-xs text-muted-foreground">
@@ -117,12 +117,12 @@ export function DatabaseActionBar({
       <ConnectDrawer database={database} />
       {suspended ? (
         <Button size="sm" disabled={start.isPending} onClick={runStart}>
-          <PlayGlassIcon size="1.2em" aria-hidden="true" />
+          <PlayGlassIcon size="1.4em" aria-hidden="true" />
           {t('detail.start')}
         </Button>
       ) : !engineHasBackups(database.engine) ? null : targetId ? (
         <Button size="sm" disabled={backup.isPending} onClick={runBackup}>
-          <UploadGlassIcon size="1.2em" aria-hidden="true" />
+          <UploadGlassIcon size="1.4em" aria-hidden="true" />
           {backup.isPending
             ? t('detail.backupStarting')
             : t('detail.backupNow')}
@@ -134,7 +134,7 @@ export function DatabaseActionBar({
             setSetupOpen(true)
           }}
         >
-          <UploadGlassIcon size="1.2em" aria-hidden="true" />
+          <UploadGlassIcon size="1.4em" aria-hidden="true" />
           {t('detail.backupSetup')}
         </Button>
       )}
@@ -150,14 +150,14 @@ export function DatabaseActionBar({
       <ActionMenu
         trigger={
           <Button variant="ghost" size="icon-sm" aria-label={t('detail.more')}>
-            <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
+            <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         }
         items={[
           {
             id: 'restart',
             label: restarting ? t('detail.restarting') : t('detail.restart'),
-            icon: <RotateCwGlassIcon size="1.2em" />,
+            icon: <RotateCwGlassIcon size="1.4em" />,
             disabled: restarting || suspended,
             onSelect: () => {
               void runRestart()
@@ -167,9 +167,9 @@ export function DatabaseActionBar({
             id: 'toggle',
             label: suspended ? t('detail.start') : t('detail.stop'),
             icon: suspended ? (
-              <PlayGlassIcon size="1.2em" />
+              <PlayGlassIcon size="1.4em" />
             ) : (
-              <PauseGlassIcon size="1.2em" />
+              <PauseGlassIcon size="1.4em" />
             ),
             disabled: start.isPending || stop.isPending || restarting,
             onSelect: suspended ? runStart : runStop,
@@ -177,7 +177,7 @@ export function DatabaseActionBar({
           {
             id: 'restore',
             label: t('detail.restore'),
-            icon: <RestoreGlassIcon size="1.2em" />,
+            icon: <RestoreGlassIcon size="1.4em" />,
             onSelect: () => {
               void navigate({
                 to: '/databases/$name/overview',
@@ -189,7 +189,7 @@ export function DatabaseActionBar({
           {
             id: 'delete',
             label: t('detail.delete'),
-            icon: <TrashGlassIcon size="1.2em" />,
+            icon: <TrashGlassIcon size="1.4em" />,
             tone: 'danger',
             onSelect: () => {
               setDeleteOpen(true)

@@ -63,7 +63,7 @@ export function PipelineStepList({
               onClick={() => void copyStepLink(job.key, s.index)}
               className="mr-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
-              <LinkGlassIcon className="size-4.5" aria-hidden="true" />
+              <LinkGlassIcon className="size-5" aria-hidden="true" />
             </button>
           </li>
         )

@@ -196,7 +196,7 @@ export function ModelCacheCard() {
   if (!hasAny && data.nodes.every((n) => !n.message)) {
     return (
       <EmptyState
-        icon={<ServerGlassIcon className="size-5.5" />}
+        icon={<ServerGlassIcon className="size-6" />}
         title={t('empty.cache.title')}
         description={t('empty.cache.description')}
       />
@@ -205,7 +205,7 @@ export function ModelCacheCard() {
   return (
     <div className="space-y-4">
       <p className="flex items-center gap-1 text-xs text-muted-foreground">
-        <BroomGlassIcon className="size-4" aria-hidden="true" />
+        <BroomGlassIcon className="size-5" aria-hidden="true" />
         Unused means no use for {data.unused_days} days.
         <InfoTip label="How the cache is measured">{data.note}</InfoTip>
       </p>

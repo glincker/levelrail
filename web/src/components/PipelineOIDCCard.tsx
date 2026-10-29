@@ -23,7 +23,7 @@ export function PipelineOIDCCard() {
 
   return (
     <Alert>
-      <KeyGlassIcon className="size-4.5" aria-hidden="true" />
+      <KeyGlassIcon className="size-5" aria-hidden="true" />
       <AlertDescription className="space-y-2">
         <p>
           Jobs can mint OIDC tokens for cloud provider federation (AWS IAM, GCP
@@ -52,9 +52,9 @@ export function PipelineOIDCCard() {
             }}
           >
             {copied ? (
-              <CheckGlassIcon size="1.2em" />
+              <CheckGlassIcon size="1.4em" />
             ) : (
-              <CopyGlassIcon size="1.2em" />
+              <CopyGlassIcon size="1.4em" />
             )}
             {copied ? 'Copied' : 'Copy'}
           </Button>

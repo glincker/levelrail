@@ -48,7 +48,7 @@ export function DockerHealthCard({
             void health.refetch()
           }}
         >
-          <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
           {t('dockerHealth.recheck')}
         </Button>
       </CardHeader>
@@ -76,12 +76,12 @@ export function DockerHealthCard({
                     {check.status === 'ok' ? (
                       <CircleCheckGlassIcon
                         aria-hidden="true"
-                        className="size-4.5 text-tone-success"
+                        className="size-5 text-tone-success"
                       />
                     ) : (
                       <TriangleAlertGlassIcon
                         aria-hidden="true"
-                        className="size-4.5 text-tone-warning"
+                        className="size-5 text-tone-warning"
                       />
                     )}
                     {check.message}
@@ -92,7 +92,7 @@ export function DockerHealthCard({
                     </Badge>
                     {check.fix_action === 'free_space' && canFix ? (
                       <Button size="sm" onClick={onFreeSpace}>
-                        <BroomGlassIcon size="1.2em" aria-hidden="true" />
+                        <BroomGlassIcon size="1.4em" aria-hidden="true" />
                         {t('dockerHealth.freeSpace')}
                       </Button>
                     ) : null}

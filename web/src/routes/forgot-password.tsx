@@ -50,7 +50,7 @@ function ForgotPasswordPage() {
             to="/login"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeftGlassIcon className="size-4" />
+            <ArrowLeftGlassIcon className="size-5" />
             Back to sign in
           </Link>
         </CardContent>

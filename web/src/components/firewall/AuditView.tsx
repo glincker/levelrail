@@ -46,7 +46,7 @@ export function AuditView() {
         ) : data.length === 0 ? (
           <EmptyState
             compact
-            icon={<RestoreGlassIcon className="size-5.5" />}
+            icon={<RestoreGlassIcon className="size-6" />}
             title={t('audit.emptyTitle')}
             description={t('audit.emptyHelp')}
           />

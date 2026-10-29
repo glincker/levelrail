@@ -30,7 +30,7 @@ function PipelinesPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <BinaryTreeGlassIcon className="size-4.5" aria-hidden="true" />
+          <BinaryTreeGlassIcon className="size-5" aria-hidden="true" />
         </div>
         <PageHeader
           title="Pipelines"

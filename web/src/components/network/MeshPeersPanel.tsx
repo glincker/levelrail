@@ -72,17 +72,17 @@ function PeerRow({
       <div>
         {!peer.live ? (
           <Badge variant="muted">
-            <RestoreGlassIcon className="size-3.5" aria-hidden="true" />
+            <RestoreGlassIcon className="size-4.5" aria-hidden="true" />
             Not peered yet
           </Badge>
         ) : peer.healthy ? (
           <Badge variant="success">
-            <WifiHighGlassIcon className="size-3.5" aria-hidden="true" />
+            <WifiHighGlassIcon className="size-4.5" aria-hidden="true" />
             Healthy
           </Badge>
         ) : (
           <Badge variant="destructive">
-            <WifiOffGlassIcon className="size-3.5" aria-hidden="true" />
+            <WifiOffGlassIcon className="size-4.5" aria-hidden="true" />
             Stale
           </Badge>
         )}

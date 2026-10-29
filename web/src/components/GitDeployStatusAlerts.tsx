@@ -37,14 +37,14 @@ export function GitDeployStatusAlerts({
 
       {createAppError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{createAppError}</AlertDescription>
         </Alert>
       ) : null}
 
       {connectSourceError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>
             App created, but connecting the git source failed:{' '}
             {connectSourceError}. The build below still runs; connect a git
@@ -56,7 +56,7 @@ export function GitDeployStatusAlerts({
 
       {buildError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>
             App created, but triggering the build failed: {buildError}. Fix the
             fields above and submit again to retry.

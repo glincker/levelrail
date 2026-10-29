@@ -147,7 +147,7 @@ export function DeploymentRow({
               />
             ) : kind === 'redeploy' ? (
               <RefreshCwGlassIcon
-                className="size-4 shrink-0 text-muted-foreground"
+                className="size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
             ) : null}
@@ -181,7 +181,7 @@ export function DeploymentRow({
         <span className="flex items-center gap-1 font-mono md:w-20">
           {!rollback && d.commit_sha && (
             <>
-              <CommitGraphGlassIcon className="size-4" aria-hidden="true" />
+              <CommitGraphGlassIcon className="size-5" aria-hidden="true" />
               {shortSha(d.commit_sha)}
             </>
           )}
@@ -190,7 +190,7 @@ export function DeploymentRow({
           {!rollback && d.branch && (
             <>
               <GitBranchGlassIcon
-                className="size-4 shrink-0"
+                className="size-5 shrink-0"
                 aria-hidden="true"
               />
               <span className="truncate">{d.branch}</span>

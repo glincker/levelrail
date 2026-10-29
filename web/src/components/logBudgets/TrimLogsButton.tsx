@@ -31,7 +31,7 @@ export function TrimLogsButton({ app }: { app: string }) {
         })
       }
     >
-      <ScissorsGlassIcon size="1.2em" aria-hidden="true" />
+      <ScissorsGlassIcon size="1.4em" aria-hidden="true" />
       {t('trimNow')}
     </Button>
   )

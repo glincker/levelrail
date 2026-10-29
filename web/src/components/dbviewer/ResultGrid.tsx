@@ -94,12 +94,12 @@ export function ResultGrid({
                       {active ? (
                         sortDesc ? (
                           <ChevronDownGlassIcon
-                            className="size-3.5"
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                         ) : (
                           <ChevronUpGlassIcon
-                            className="size-3.5"
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                         )

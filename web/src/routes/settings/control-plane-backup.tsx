@@ -19,7 +19,7 @@ function ControlPlaneBackupPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <DatabaseGlassIcon className="size-4.5" />
+          <DatabaseGlassIcon className="size-5" />
         </div>
         <PageHeader
           title="Control plane backup"

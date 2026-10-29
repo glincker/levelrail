@@ -64,13 +64,13 @@ export function GitHubAppConnectionCard() {
             <div className="space-y-1">
               {status.connected ? (
                 <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
-                  <CircleCheckGlassIcon className="size-4.5 text-green-600 dark:text-green-400" />
+                  <CircleCheckGlassIcon className="size-5 text-green-600 dark:text-green-400" />
                   Connected
                   <InstallationBadge status={status} />
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <CircleXGlassIcon className="size-4.5 text-tone-danger" />
+                  <CircleXGlassIcon className="size-5 text-tone-danger" />
                   {t('gitConnection.notConnected')}
                 </div>
               )}
@@ -159,7 +159,7 @@ export function GitHubAppConnectionCard() {
                   setPreviewOpen(true)
                 }}
               >
-                <SocialGithubGlassIcon className="size-4.5" />
+                <SocialGithubGlassIcon className="size-5" />
                 Add GitHub App
               </Button>
             </>
@@ -201,7 +201,7 @@ function GitHubAppInstallationsSection() {
               <a href={data.add_org_url} target="_blank" rel="noreferrer" />
             }
           >
-            <PlusGlassIcon className="size-4.5" />
+            <PlusGlassIcon className="size-5" />
             {t('githubAppOrg.addOrg')}
           </Button>
         ) : null}
@@ -304,7 +304,7 @@ export function GitHubAppInstallationRow({
             className="inline-flex items-center gap-1 text-xs underline"
           >
             {t('githubApp.manageAccess')}
-            <ExternalLinkGlassIcon className="size-3.5" aria-hidden="true" />
+            <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
           </a>
         ) : null}
       </div>

@@ -76,7 +76,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               variant="outline"
               onClick={() => setModal({ kind: 'wizard' })}
             >
-              <SignpostGlassIcon size="1.2em" />
+              <SignpostGlassIcon size="1.4em" />
               {t('zone.nameservers')}
             </Button>
             <Button
@@ -84,7 +84,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               variant="outline"
               onClick={() => setModal({ kind: 'template' })}
             >
-              <ListPlusGlassIcon size="1.2em" />
+              <ListPlusGlassIcon size="1.4em" />
               {t('zone.templates')}
             </Button>
             <Button
@@ -92,7 +92,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               variant="outline"
               onClick={() => setModal({ kind: 'import' })}
             >
-              <ArrowUpDownGlassIcon size="1.2em" />
+              <ArrowUpDownGlassIcon size="1.4em" />
               {t('zone.importExport')}
             </Button>
             <Button
@@ -101,7 +101,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               aria-label={t('zone.delete')}
               onClick={() => setModal({ kind: 'deleteZone' })}
             >
-              <TrashGlassIcon size="1.2em" />
+              <TrashGlassIcon size="1.4em" />
             </Button>
           </>
         }

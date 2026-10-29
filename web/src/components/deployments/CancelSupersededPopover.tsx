@@ -73,7 +73,7 @@ export function CancelSupersededPopover({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <SkipForwardGlassIcon size="1.2em" aria-hidden="true" />
+        <SkipForwardGlassIcon size="1.4em" aria-hidden="true" />
         Queue
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">

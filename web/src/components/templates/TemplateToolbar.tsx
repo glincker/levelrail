@@ -87,7 +87,7 @@ export function TemplateToolbar({
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-56 flex-1">
           <SearchGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -136,7 +136,7 @@ export function TemplateToolbar({
           )}
         >
           <BadgeCheckGlassIcon
-            className="size-4.5 text-tone-success"
+            className="size-5 text-tone-success"
             aria-hidden="true"
           />
           {t('verified.filter')}

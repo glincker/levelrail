@@ -45,7 +45,7 @@ export function DeployShortcuts({
               onDeployImage(last.image)
             }}
           >
-            <RocketGlassIcon size="1.2em" aria-hidden="true" />
+            <RocketGlassIcon size="1.4em" aria-hidden="true" />
             {t('git.shortcuts.redeployLast')}
           </Button>
         ) : null}
@@ -61,7 +61,7 @@ export function DeployShortcuts({
               setConfirming(true)
             }}
           >
-            <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />
+            <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
             {t('git.shortcuts.rollbackTo')}
           </Button>
         ) : null}

@@ -6,7 +6,7 @@ export function UnsupportedEngine({ engine }: { engine: string }) {
   const { t } = useTranslation('databases')
   return (
     <EmptyState
-      icon={<DatabaseGlassIcon className="size-5.5" />}
+      icon={<DatabaseGlassIcon className="size-6" />}
       title={t('viewer.explorer.emptyTitle')}
       description={t('viewer.unsupported', { engine })}
     />

@@ -24,13 +24,13 @@ export function NodeGpuCard({ gpu }: { gpu?: NodeGpuResource }) {
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2">
-          <CpuGlassIcon className="size-4.5" aria-hidden="true" />
+          <CpuGlassIcon className="size-5" aria-hidden="true" />
           GPU
         </CardTitle>
         {runtimeMissing ? (
           <Badge variant="warning">
             <TriangleAlertGlassIcon
-              className="size-3.5 text-tone-warning"
+              className="size-4.5 text-tone-warning"
               aria-hidden="true"
             />
             nvidia runtime missing
@@ -38,7 +38,7 @@ export function NodeGpuCard({ gpu }: { gpu?: NodeGpuResource }) {
         ) : (
           <Badge variant="success">
             <CircleCheckGlassIcon
-              className="size-3.5 text-tone-success"
+              className="size-4.5 text-tone-success"
               aria-hidden="true"
             />
             ready

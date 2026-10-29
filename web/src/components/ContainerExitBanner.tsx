@@ -41,7 +41,7 @@ export function ContainerExitBanner({
       className="flex items-start gap-2.5 rounded-lg border border-tone-danger-border bg-tone-danger-soft p-3 text-tone-danger"
     >
       <CircleStopGlassIcon
-        className="mt-0.5 size-4.5 shrink-0"
+        className="mt-0.5 size-5 shrink-0"
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1 text-sm">

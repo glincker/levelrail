@@ -83,7 +83,7 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
     <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
       <div className="flex items-start gap-2">
         <CountdownGlassIcon
-          className="mt-0.5 size-4.5 shrink-0"
+          className="mt-0.5 size-5 shrink-0"
           aria-hidden="true"
         />
         <div className="text-sm">

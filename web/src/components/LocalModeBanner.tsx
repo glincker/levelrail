@@ -21,7 +21,7 @@ export function LocalModeBanner() {
     >
       <div className="flex items-start gap-2">
         <ComputerGlassIcon
-          className="mt-0.5 size-4.5 shrink-0"
+          className="mt-0.5 size-5 shrink-0"
           aria-hidden="true"
         />
         <div className="text-sm">
@@ -50,7 +50,7 @@ export function LocalModeBanner() {
             setOpen(true)
           }}
         >
-          <RotateCcwGlassIcon className="size-4" aria-hidden="true" />
+          <RotateCcwGlassIcon className="size-5" aria-hidden="true" />
           {t('localMode.reset')}
         </Button>
       ) : null}

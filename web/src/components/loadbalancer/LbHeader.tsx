@@ -74,14 +74,14 @@ export function LbHeader({
           onClick={onCheck}
         >
           <RefreshCwGlassIcon
-            size="1.2em"
+            size="1.4em"
             data-icon="inline-start"
             className={checking ? 'animate-spin' : undefined}
           />
           Check now{cooldown > 0 ? ` (${cooldown}s)` : ''}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={onExport}>
-          <ShareGlassIcon size="1.2em" data-icon="inline-start" />
+          <ShareGlassIcon size="1.4em" data-icon="inline-start" />
           Export
         </Button>
         <ActionMenu
@@ -92,7 +92,7 @@ export function LbHeader({
               variant="ghost"
               aria-label="More actions"
             >
-              <EllipsisGlassIcon size="1.2em" />
+              <EllipsisGlassIcon size="1.4em" />
             </Button>
           }
           items={[
@@ -100,7 +100,7 @@ export function LbHeader({
               id: 'remove',
               label: 'Remove load balancer',
               description: 'Domains go back to a single upstream',
-              icon: <TrashGlassIcon size="1.2em" />,
+              icon: <TrashGlassIcon size="1.4em" />,
               tone: 'danger',
               onSelect: onRemove,
             },

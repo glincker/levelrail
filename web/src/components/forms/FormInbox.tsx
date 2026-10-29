@@ -73,7 +73,7 @@ function SubmissionRow({
             size="xs"
             onClick={() => onSpam(s)}
           >
-            <BanGlassIcon size="1.2em" />
+            <BanGlassIcon size="1.4em" />
             {s.spam ? t('inbox.markNotSpam') : t('inbox.markSpam')}
           </Button>
           <Button
@@ -83,7 +83,7 @@ function SubmissionRow({
             aria-label={t('inbox.remove')}
             onClick={() => onRemove(s)}
           >
-            <TrashGlassIcon size="1.2em" />
+            <TrashGlassIcon size="1.4em" />
           </Button>
         </div>
       </div>
@@ -123,7 +123,7 @@ export function FormInbox({ app, form }: { app: string; form: string }) {
     <section aria-label={t('inbox.title')} className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
-          <SearchGlassIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground" />
+          <SearchGlassIcon className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -156,7 +156,7 @@ export function FormInbox({ app, form }: { app: string; form: string }) {
           download
           className={buttonVariants({ variant: 'outline', size: 'sm' })}
         >
-          <DownloadGlassIcon size="1.2em" />
+          <DownloadGlassIcon size="1.4em" />
           {t('inbox.export')}
         </a>
       </div>
@@ -174,7 +174,7 @@ export function FormInbox({ app, form }: { app: string; form: string }) {
       {inbox.isSuccess && rows.length === 0 && (
         <EmptyState
           compact
-          icon={<InboxGlassIcon className="size-5.5" />}
+          icon={<InboxGlassIcon className="size-6" />}
           title={t(
             q || filter !== 'inbox' ? 'inbox.noMatchTitle' : 'inbox.emptyTitle',
           )}

@@ -161,12 +161,12 @@ export function AppBucketsCard({ app }: Readonly<{ app: AppDetail }>) {
         {bound.length === 0 && !buckets.isPending ? (
           <EmptyState
             compact
-            icon={<FolderGlassIcon className="size-5.5" aria-hidden="true" />}
+            icon={<FolderGlassIcon className="size-6" aria-hidden="true" />}
             title={t('card.empty')}
             description={t('card.description')}
             action={
               <Button type="button" size="sm" onClick={() => setCreating(true)}>
-                <PlusGlassIcon size="1.2em" aria-hidden="true" />
+                <PlusGlassIcon size="1.4em" aria-hidden="true" />
                 {t('card.emptyAction')}
               </Button>
             }
@@ -191,7 +191,7 @@ export function AppBucketsCard({ app }: Readonly<{ app: AppDetail }>) {
               variant="outline"
               onClick={() => setCreating(true)}
             >
-              <PlusGlassIcon size="1.2em" aria-hidden="true" />
+              <PlusGlassIcon size="1.4em" aria-hidden="true" />
               {t('card.create')}
             </Button>
             {bindable.length > 0 ? (
@@ -282,11 +282,11 @@ function BucketRow({
         </div>
         <div className="flex gap-2">
           <Button type="button" size="sm" onClick={onBrowse}>
-            <FolderGlassIcon size="1.2em" aria-hidden="true" />
+            <FolderGlassIcon size="1.4em" aria-hidden="true" />
             {t('card.browse')}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={onUnbind}>
-            <UnlinkGlassIcon size="1.2em" aria-hidden="true" />
+            <UnlinkGlassIcon size="1.4em" aria-hidden="true" />
             {t('card.unbind')}
           </Button>
         </div>

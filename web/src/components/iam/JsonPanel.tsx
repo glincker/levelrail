@@ -77,11 +77,11 @@ export function JsonPanel({
           )}
         >
           {checking ? (
-            <LoaderCircleGlassIcon className="size-4 animate-spin motion-reduce:animate-none" />
+            <LoaderCircleGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
           ) : valid ? (
-            <CircleCheckGlassIcon className="size-4 text-tone-success" />
+            <CircleCheckGlassIcon className="size-5 text-tone-success" />
           ) : (
-            <CircleXGlassIcon className="size-4 text-destructive" />
+            <CircleXGlassIcon className="size-5 text-destructive" />
           )}
           {checking
             ? t('builder.issues.checking')
@@ -108,7 +108,7 @@ export function JsonPanel({
               className="flex items-start gap-1.5 text-xs text-muted-foreground"
             >
               <CircleAlertGlassIcon
-                className={cn('mt-0.5 size-4 shrink-0', TONE.warning.text)}
+                className={cn('mt-0.5 size-5 shrink-0', TONE.warning.text)}
               />
               <span>
                 {f.message} <span className="text-foreground">{f.fix}</span>
@@ -120,7 +120,7 @@ export function JsonPanel({
 
       <div className="space-y-1.5 rounded-lg border border-dashed border-border p-3">
         <h4 className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-          <LockGlassIcon className="size-4" aria-hidden="true" />
+          <LockGlassIcon className="size-5" aria-hidden="true" />
           {t('builder.conditions.title')}
         </h4>
         <p className="text-xs text-muted-foreground">

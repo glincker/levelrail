@@ -42,7 +42,7 @@ export function RetrySplitButton({
         disabled={pending}
         onClick={onRetry}
       >
-        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
         {t('deployRetry.retry')}
       </Button>
       {canRebuild ? (
@@ -59,16 +59,16 @@ export function RetrySplitButton({
               />
             }
           >
-            <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
+            <ChevronDownGlassIcon size="1.4em" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem onClick={onRebuild}>
-              <HammerGlassIcon size="1.2em" aria-hidden="true" />
+              <HammerGlassIcon size="1.4em" aria-hidden="true" />
               {t('deployRetry.rebuild')}
             </DropdownMenuItem>
             {noCacheSupported ? (
               <DropdownMenuItem onClick={onRebuildNoCache}>
-                <TrashGlassIcon size="1.2em" aria-hidden="true" />
+                <TrashGlassIcon size="1.4em" aria-hidden="true" />
                 {t('deployRetry.rebuildNoCache')}
               </DropdownMenuItem>
             ) : null}

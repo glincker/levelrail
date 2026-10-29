@@ -31,7 +31,7 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
   if (preview.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         <AlertDescription>
           {t('preview.loadFailed', { message: preview.error.message })}
         </AlertDescription>
@@ -48,12 +48,12 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         {data.valid ? (
           <CircleCheckGlassIcon
-            className="size-4.5 text-green-600 dark:text-green-400"
+            className="size-5 text-green-600 dark:text-green-400"
             aria-hidden="true"
           />
         ) : (
           <TriangleAlertGlassIcon
-            className="size-4.5 text-destructive"
+            className="size-5 text-destructive"
             aria-hidden="true"
           />
         )}
@@ -70,7 +70,7 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
       ) : null}
       {data.needs_root ? (
         <Alert>
-          <ShieldAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <ShieldAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{t('preview.needsRoot')}</AlertDescription>
         </Alert>
       ) : null}
@@ -80,7 +80,7 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
       ].map((msg) => (
         <p key={msg} className="flex gap-1.5 text-xs text-muted-foreground">
           <InfoGlassIcon
-            className="mt-0.5 size-4 shrink-0 text-tone-info"
+            className="mt-0.5 size-5 shrink-0 text-tone-info"
             aria-hidden="true"
           />
           {msg}

@@ -65,7 +65,7 @@ export function PipelineTemplatesDialog({ appName }: { appName: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <LayoutGridGlassIcon size="1.2em" aria-hidden="true" />
+        <LayoutGridGlassIcon size="1.4em" aria-hidden="true" />
         {t('templates.open')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">

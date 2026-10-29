@@ -96,7 +96,7 @@ export function ConnectBucketDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger render={<Button />}>
-        <PlusGlassIcon size="1.2em" aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {t('connect.button')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

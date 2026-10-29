@@ -63,7 +63,7 @@ export function EmailStatusHeader() {
           {onBackup ? (
             <Badge variant="warning" role="status">
               <ArrowLeftRightGlassIcon
-                className="size-3.5"
+                className="size-4.5"
                 aria-hidden="true"
               />
               {t('emailProviders.runningOnBackup')}
@@ -106,7 +106,7 @@ export function EmailStatusHeader() {
             className: `ml-auto ${PRESS}`,
           })}
         >
-          <FileSearchGlassIcon className="size-4" aria-hidden="true" />
+          <FileSearchGlassIcon className="size-5" aria-hidden="true" />
           {t('emailDelivery.status.openLog')}
         </Link>
       </CardContent>

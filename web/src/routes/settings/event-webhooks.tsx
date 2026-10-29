@@ -21,7 +21,7 @@ function EventWebhooksPage() {
 
   return (
     <PageTemplate
-      icon={<WebhookGlassIcon size="1.2em" />}
+      icon={<WebhookGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       actions={notConfigured ? null : <CreateEventWebhookDialog />}
@@ -46,7 +46,7 @@ function EventWebhooksPage() {
 
       {data && data.length === 0 ? (
         <EmptyState
-          icon={<WebhookGlassIcon className="size-5.5" />}
+          icon={<WebhookGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           className="border-0 bg-transparent py-6"

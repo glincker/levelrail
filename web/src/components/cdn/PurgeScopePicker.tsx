@@ -10,18 +10,18 @@ import { cn } from '@/lib/utils'
 import type { PurgeScope } from '../../queries/cdnCache'
 
 const OPTIONS: { scope: PurgeScope; icon: ReactNode }[] = [
-  { scope: 'url', icon: <LinkGlassIcon size="1.2em" aria-hidden="true" /> },
+  { scope: 'url', icon: <LinkGlassIcon size="1.4em" aria-hidden="true" /> },
   {
     scope: 'prefix',
-    icon: <FolderGlassIcon size="1.2em" aria-hidden="true" />,
+    icon: <FolderGlassIcon size="1.4em" aria-hidden="true" />,
   },
-  { scope: 'tag', icon: <TagGlassIcon size="1.2em" aria-hidden="true" /> },
+  { scope: 'tag', icon: <TagGlassIcon size="1.4em" aria-hidden="true" /> },
   {
     scope: 'all',
     icon: (
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
     ),
@@ -68,7 +68,7 @@ export function PurgeScopePicker({
               />
               <span
                 className={cn(
-                  'mt-0.5 shrink-0 text-muted-foreground [&_svg]:size-4',
+                  'mt-0.5 shrink-0 text-muted-foreground [&_svg]:size-5',
                   destructive && 'text-tone-danger',
                 )}
               >

@@ -85,7 +85,7 @@ function DeploysSection() {
             nativeButton={false}
             render={<Link to="/apps/$name/deploy-settings" params={{ name }} />}
           >
-            <SettingsGlassIcon className="size-4" data-icon="inline-start" />
+            <SettingsGlassIcon className="size-5" data-icon="inline-start" />
             {t('deployHistory.settingsLinkCta')}
           </Button>
         </CardContent>

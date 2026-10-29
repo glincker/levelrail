@@ -21,7 +21,7 @@ function CanvasLinkButton({ projectId }: { projectId: string }) {
       params={{ id: projectId }}
       className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
     >
-      <LayoutGridGlassIcon size="1.2em" aria-hidden="true" />
+      <LayoutGridGlassIcon size="1.4em" aria-hidden="true" />
       {t('link')}
     </Link>
   )

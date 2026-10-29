@@ -62,7 +62,7 @@ export function AiAssistantSettings() {
       <Alert variant="destructive">
         <TriangleAlertGlassIcon
           className="text-tone-warning"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         <AlertDescription className="flex flex-wrap items-center gap-3">
@@ -100,7 +100,7 @@ export function AiAssistantSettings() {
     <div className="space-y-8">
       {!isRoot ? (
         <Alert>
-          <LockGlassIcon size="1.2em" aria-hidden="true" />
+          <LockGlassIcon size="1.4em" aria-hidden="true" />
           <AlertDescription>{t('aiAssistantPage.rootOnly')}</AlertDescription>
         </Alert>
       ) : null}

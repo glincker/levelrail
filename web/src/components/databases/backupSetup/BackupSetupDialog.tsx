@@ -81,7 +81,7 @@ function RunStep({
     return (
       <p className="flex items-center gap-2 text-sm text-foreground">
         <LoaderCircleGlassIcon
-          className="size-4.5 animate-spin"
+          className="size-5 animate-spin"
           aria-hidden="true"
         />
         {t('backupSetup.run.progress')}
@@ -95,7 +95,7 @@ function RunStep({
         role="alert"
       >
         <CircleAlertGlassIcon
-          className="mt-0.5 size-4.5 text-tone-danger"
+          className="mt-0.5 size-5 text-tone-danger"
           aria-hidden="true"
         />
         {t('backupSetup.run.failed', { error: latest.error ?? '' })}
@@ -105,7 +105,7 @@ function RunStep({
   return (
     <p className="flex items-center gap-2 text-sm text-foreground">
       <CircleCheckGlassIcon
-        className="size-4.5 text-success"
+        className="size-5 text-success"
         aria-hidden="true"
       />
       {t('backupSetup.run.done', {
@@ -198,7 +198,7 @@ export function BackupSetupDialog({
             targets.length === 0 ? (
               <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 text-center">
                 <UploadGlassIcon
-                  className="mx-auto size-5.5 text-muted-foreground"
+                  className="mx-auto size-6 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <p className="text-sm text-muted-foreground">

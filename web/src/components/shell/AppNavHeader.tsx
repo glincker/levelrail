@@ -30,7 +30,7 @@ export function AppNavHeader({ name }: { name: string }) {
         tooltip="Back to Apps"
         size="sm"
       >
-        <ArrowLeftGlassIcon size="1.2em" />
+        <ArrowLeftGlassIcon size="1.4em" />
         <span>All apps</span>
       </SidebarMenuButton>
       {rail ? null : (

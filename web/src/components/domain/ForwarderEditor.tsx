@@ -119,7 +119,7 @@ export function ForwarderEditor({
                   disabled={i === 0}
                   onClick={() => onChange(moveItem(rules, i, i - 1))}
                 >
-                  <ArrowUpGlassIcon size="1.2em" />
+                  <ArrowUpGlassIcon size="1.4em" />
                 </Button>
                 <Button
                   type="button"
@@ -129,7 +129,7 @@ export function ForwarderEditor({
                   disabled={i === rules.length - 1}
                   onClick={() => onChange(moveItem(rules, i, i + 1))}
                 >
-                  <ArrowDownGlassIcon size="1.2em" />
+                  <ArrowDownGlassIcon size="1.4em" />
                 </Button>
                 <Button
                   type="button"
@@ -138,7 +138,7 @@ export function ForwarderEditor({
                   aria-label={t('common.remove')}
                   onClick={() => onChange(rules.filter((_, j) => j !== i))}
                 >
-                  <TrashGlassIcon size="1.2em" />
+                  <TrashGlassIcon size="1.4em" />
                 </Button>
               </div>
             </div>
@@ -283,7 +283,7 @@ export function ForwarderEditor({
           ])
         }
       >
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         {t('forwarders.add')}
       </Button>
     </div>

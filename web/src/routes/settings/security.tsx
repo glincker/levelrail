@@ -100,7 +100,7 @@ function SecuritySettingsPage() {
               to="/settings/account"
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
-              <UserGlassIcon size="1.2em" aria-hidden="true" />
+              <UserGlassIcon size="1.4em" aria-hidden="true" />
               {t('securityPage.account.open')}
             </Link>
           </CardContent>
@@ -115,7 +115,7 @@ function SecuritySettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ShieldCheckGlassIcon className="size-4.5 text-muted-foreground" />
+              <ShieldCheckGlassIcon className="size-5 text-muted-foreground" />
               {t('securityPage.loginProtection.title')}
             </CardTitle>
           </CardHeader>

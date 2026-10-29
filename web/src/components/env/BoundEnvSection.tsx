@@ -59,7 +59,7 @@ export function BoundEnvSection({ app }: BoundEnvSectionProps) {
             </span>
             {row.masked ? (
               <Badge variant="outline" className="w-fit gap-1">
-                <LockGlassIcon size="1.2em" aria-hidden />
+                <LockGlassIcon size="1.4em" aria-hidden />
                 {t('bound.masked')}
               </Badge>
             ) : (

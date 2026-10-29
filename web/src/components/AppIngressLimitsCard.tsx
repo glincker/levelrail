@@ -111,7 +111,7 @@ export function AppIngressLimitsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeGlassIcon className="size-4.5" aria-hidden="true" />
+          <GaugeGlassIcon className="size-5" aria-hidden="true" />
           {t('appLimits.title')}
         </CardTitle>
         <CardDescription>{t('appLimits.description')}</CardDescription>

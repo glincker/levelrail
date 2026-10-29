@@ -68,7 +68,7 @@ export function DeployAttemptFilterBar({
     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="relative w-full sm:w-64">
         <SearchGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -103,7 +103,7 @@ export function DeployAttemptFilterBar({
           size="sm"
           onClick={() => onChange(EMPTY_DEPLOY_FILTERS)}
         >
-          <XGlassIcon className="size-4" data-icon="inline-start" />
+          <XGlassIcon className="size-5" data-icon="inline-start" />
           {t('deployHistory.filters.clear')}
         </Button>
       ) : null}

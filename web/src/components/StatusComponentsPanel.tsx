@@ -110,7 +110,7 @@ function AddComponentForm() {
         </p>
       ) : null}
       <Button type="submit" size="sm" disabled={create.isPending}>
-        <CirclePlusGlassIcon className="size-4.5" aria-hidden="true" />
+        <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
         Add component
       </Button>
     </form>
@@ -175,7 +175,7 @@ export function StatusComponentsPanel() {
                 if (c.id) del.mutate(c.id)
               }}
             >
-              <TrashGlassIcon className="size-4" aria-hidden="true" />
+              <TrashGlassIcon className="size-5" aria-hidden="true" />
               Remove
             </Button>
           )}

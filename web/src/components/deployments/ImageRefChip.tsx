@@ -21,7 +21,7 @@ export function ImageRefChip({ d }: { d: Deployment }) {
           title={ref || d.image}
         >
           <FingerprintPatternGlassIcon
-            className="size-4 shrink-0"
+            className="size-5 shrink-0"
             aria-hidden="true"
           />
           <span className="truncate">
@@ -43,9 +43,9 @@ export function ImageRefChip({ d }: { d: Deployment }) {
           }}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" aria-hidden="true" />
+            <CheckGlassIcon size="1.4em" aria-hidden="true" />
           ) : (
-            <CopyGlassIcon size="1.2em" aria-hidden="true" />
+            <CopyGlassIcon size="1.4em" aria-hidden="true" />
           )}
           {copied ? 'Copied' : 'Copy'}
         </Button>

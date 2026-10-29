@@ -59,7 +59,7 @@ export function RunPipelineDialog({
         render={<Button size="sm" disabled={!canRun} />}
         title={canRun ? undefined : t('run.disabledHint')}
       >
-        <PlayGlassIcon size="1.2em" aria-hidden="true" />
+        <PlayGlassIcon size="1.4em" aria-hidden="true" />
         {params.length > 0 ? t('run.withParams') : t('run.button')}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
@@ -100,7 +100,7 @@ export function RunPipelineDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{start.error.message}</AlertDescription>
           </Alert>

@@ -48,7 +48,7 @@ export function ShieldRecommendedCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShieldCheckGlassIcon
-            className="size-4.5 text-tone-success"
+            className="size-5 text-tone-success"
             aria-hidden="true"
           />
           {t('shieldRecommended.title')}

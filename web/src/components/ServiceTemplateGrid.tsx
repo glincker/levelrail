@@ -146,7 +146,7 @@ function TemplateCard({
           onDeployNow(template)
         }}
       >
-        <RocketGlassIcon size="1.2em" />
+        <RocketGlassIcon size="1.4em" />
         {deploying
           ? t('card.deploying')
           : template.requires_configuration
@@ -192,7 +192,7 @@ export function ServiceTemplateGrid({
     <div className="space-y-4">
       <div className="relative">
         <SearchGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -213,7 +213,7 @@ export function ServiceTemplateGrid({
         </div>
       ) : templatesQuery.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{templatesQuery.error.message}</AlertDescription>
         </Alert>
       ) : (

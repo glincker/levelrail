@@ -51,7 +51,7 @@ export function DeployFromComputer() {
         <div className="space-y-2">
           <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
             <TriangleAlertGlassIcon
-              className="size-4 shrink-0 text-tone-warning"
+              className="size-5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {t('upload.tokenOnce', { days: TOKEN_DAYS })}
@@ -79,7 +79,7 @@ export function DeployFromComputer() {
               disabled={create.isPending}
               onClick={mint}
             >
-              <KeyGlassIcon size="1.2em" aria-hidden="true" />
+              <KeyGlassIcon size="1.4em" aria-hidden="true" />
               {create.isPending
                 ? t('upload.creating')
                 : t('upload.createToken')}

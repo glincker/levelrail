@@ -107,7 +107,7 @@ export function GitDeployPanel({
               className="w-full font-mono"
               aria-label={t('git.branch')}
             >
-              <GitBranchGlassIcon size="1.2em" aria-hidden="true" />
+              <GitBranchGlassIcon size="1.4em" aria-hidden="true" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -128,7 +128,7 @@ export function GitDeployPanel({
             void query.refetch()
           }}
         >
-          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       </div>
       {activeBranch !== source.branch ? (
@@ -199,7 +199,7 @@ export function GitDeployPanel({
                     if (data.head) actions.deployCommit(data.head.sha)
                   }}
                 >
-                  <RocketGlassIcon size="1.2em" aria-hidden="true" />
+                  <RocketGlassIcon size="1.4em" aria-hidden="true" />
                   {actions.buildPending
                     ? t('git.starting')
                     : t('git.deployHead')}

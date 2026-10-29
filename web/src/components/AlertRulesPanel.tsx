@@ -218,7 +218,7 @@ export function AlertRulesPanel({
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <BellRingGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             {ta('rules.title')}
@@ -244,7 +244,7 @@ export function AlertRulesPanel({
           <p className="text-sm text-destructive">{error.message}</p>
         ) : rules.length === 0 ? (
           <EmptyState
-            icon={<BellRingGlassIcon className="size-5.5" />}
+            icon={<BellRingGlassIcon className="size-6" />}
             title={ta('rules.emptyTitle')}
             description={ta('rules.emptyDescription')}
             action={

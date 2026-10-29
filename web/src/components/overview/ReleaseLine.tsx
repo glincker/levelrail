@@ -22,7 +22,7 @@ export function ReleaseLine({
     (/^[0-9a-f]{40}$/.test(tag) ? tag.slice(0, 7) : tag)
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-      <PackageGlassIcon className="size-4.5" aria-hidden="true" />
+      <PackageGlassIcon className="size-5" aria-hidden="true" />
       <span
         className="max-w-full truncate font-medium text-foreground"
         title={latest?.commit_message || app.image}

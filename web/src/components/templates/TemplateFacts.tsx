@@ -79,7 +79,7 @@ export function TemplateFacts({
                       >
                         {link.registry}
                         <ExternalLinkGlassIcon
-                          className="size-3.5"
+                          className="size-4.5"
                           aria-hidden="true"
                         />
                       </a>
@@ -99,7 +99,7 @@ export function TemplateFacts({
               className={EXTERNAL_LINK}
             >
               {t('detail.facts.docsLink')}
-              <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+              <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
             </a>
           </Row>
         ) : null}

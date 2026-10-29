@@ -91,13 +91,13 @@ function MockRow({
   )
 }
 
-const OK = <CircleCheckGlassIcon className="size-4.5 text-[#00cbaa]" />
+const OK = <CircleCheckGlassIcon className="size-5 text-[#00cbaa]" />
 
 function DeployVisual({ active }: { active: boolean }) {
   return (
     <MockCard>
       <p className="flex items-center gap-2 text-[#8d8d96]">
-        <GitBranchGlassIcon className="size-4" />
+        <GitBranchGlassIcon className="size-5" />
         <span>$ git push</span>
       </p>
       <div className="mt-4 space-y-2.5">
@@ -136,7 +136,7 @@ function DeployVisual({ active }: { active: boolean }) {
 }
 
 function DatabaseVisual({ active }: { active: boolean }) {
-  const icon = <DatabaseGlassIcon className="size-4.5 text-[#b6abff]" />
+  const icon = <DatabaseGlassIcon className="size-5 text-[#b6abff]" />
   return (
     <MockCard>
       <p className="text-[#8d8d96]">Managed databases</p>
@@ -187,7 +187,7 @@ function NodesVisual({ active }: { active: boolean }) {
             step={i}
             className="flex items-center gap-3"
           >
-            <ServerGlassIcon className="size-4.5 text-[#eef35f]" />
+            <ServerGlassIcon className="size-5 text-[#eef35f]" />
             <span className="w-14 text-white">{node}</span>
             <span className="flex h-5 flex-1 items-end gap-1">
               {bars.map((h, j) => (
@@ -214,7 +214,7 @@ function TlsVisual({ active }: { active: boolean }) {
   return (
     <MockCard>
       <Reveal active={active} step={0} className="flex items-center gap-2">
-        <LockGlassIcon className="size-4.5 text-[#00cbaa]" />
+        <LockGlassIcon className="size-5 text-[#00cbaa]" />
         <span className="text-white">app.example.com</span>
       </Reveal>
       <div className="mt-4 space-y-2.5">
@@ -393,7 +393,7 @@ export function LoginBrandPanel({ name }: { name: string }) {
                     className="grid grid-cols-[1rem_1fr] gap-3 text-base"
                   >
                     <CheckGlassIcon
-                      className="mt-0.5 size-4.5 text-[#00cbaa]"
+                      className="mt-0.5 size-5 text-[#00cbaa]"
                       aria-hidden="true"
                     />
                     <span>{point}</span>

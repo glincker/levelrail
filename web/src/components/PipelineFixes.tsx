@@ -98,7 +98,7 @@ export function PipelineFixes({ app, run }: { app: string; run: PipelineRun }) {
     <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
       <p className="flex items-center gap-1.5 font-medium text-foreground">
         <WrenchGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('fixes.title')}

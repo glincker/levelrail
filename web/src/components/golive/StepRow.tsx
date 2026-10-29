@@ -28,16 +28,16 @@ export function StatusIcon({ status }: { status: StepStatus }) {
   switch (status) {
     case 'ok':
       return (
-        <CircleCheckGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+        <CircleCheckGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
     case 'fail':
       return (
-        <CircleAlertGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+        <CircleAlertGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
     case 'warn':
       return (
         <TriangleAlertGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cls}
           aria-hidden="true"
         />
@@ -45,14 +45,14 @@ export function StatusIcon({ status }: { status: StepStatus }) {
     case 'pending':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cls}
           aria-hidden="true"
         />
       )
     default:
       return (
-        <CircleMinusGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+        <CircleMinusGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
   }
 }
@@ -71,9 +71,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       }}
     >
       {copied ? (
-        <CheckGlassIcon size="1.2em" aria-hidden="true" />
+        <CheckGlassIcon size="1.4em" aria-hidden="true" />
       ) : (
-        <CopyGlassIcon size="1.2em" aria-hidden="true" />
+        <CopyGlassIcon size="1.4em" aria-hidden="true" />
       )}
     </Button>
   )

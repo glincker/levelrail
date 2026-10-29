@@ -89,13 +89,13 @@ export function PurgePanel({
           writeAction
           disabled={!ready || purge.isPending}
         >
-          <BroomGlassIcon size="1.2em" aria-hidden="true" />
+          <BroomGlassIcon size="1.4em" aria-hidden="true" />
           {purge.isPending ? t('purge.purging') : t('purge.action')}
         </Button>
       </form>
       {purge.isSuccess ? (
         <Alert>
-          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           <AlertDescription aria-live="polite">
             {t('purge.done', { count: purge.data.removed })}
           </AlertDescription>

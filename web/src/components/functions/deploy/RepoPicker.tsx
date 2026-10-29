@@ -75,12 +75,12 @@ export function RepoPicker({
                 <span className="flex shrink-0 items-center gap-1.5">
                   {repo.private ? (
                     <Badge variant="outline">
-                      <LockGlassIcon size="1.2em" aria-hidden="true" />
+                      <LockGlassIcon size="1.4em" aria-hidden="true" />
                       {t('deploy.source.private')}
                     </Badge>
                   ) : null}
                   {selected ? (
-                    <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                    <CheckGlassIcon size="1.4em" aria-hidden="true" />
                   ) : null}
                 </span>
               </button>

@@ -139,7 +139,7 @@ export function SaveBar({
             disabled={!dirty || saving}
             onClick={onSave}
           >
-            <SaveGlassIcon size="1.2em" />
+            <SaveGlassIcon size="1.4em" />
             {saving ? t('save.saving') : t('save.save')}
           </Button>
         </div>
@@ -155,7 +155,7 @@ export function SaveBar({
               <span className="text-destructive line-through">
                 {d.before || t('save.none')}
               </span>
-              <ArrowRightGlassIcon className="size-3.5" aria-hidden="true" />
+              <ArrowRightGlassIcon className="size-4.5" aria-hidden="true" />
               <span className="text-green-700 dark:text-green-400">
                 {d.after || t('save.none')}
               </span>
@@ -165,7 +165,7 @@ export function SaveBar({
       ) : null}
       {error ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

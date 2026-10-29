@@ -235,7 +235,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
                 window.location.assign(account.authorizePath ?? '')
               }
             >
-              <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+              <PlugGlassIcon className="size-5" aria-hidden="true" />
               {t('gitConnections.reconnect')}
             </Button>
           ) : (
@@ -244,7 +244,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
               render={<Link to={account.settingsPath} />}
               nativeButton={false}
             >
-              <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+              <PlugGlassIcon className="size-5" aria-hidden="true" />
               {t('gitConnections.reconnect')}
             </Button>
           )
@@ -256,7 +256,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
             variant="outline"
             onClick={() => setRenaming(true)}
           >
-            <PencilGlassIcon className="size-4.5" aria-hidden="true" />
+            <PencilGlassIcon className="size-5" aria-hidden="true" />
             {t('gitConnections.rename.action')}
           </Button>
         ) : null}
@@ -266,7 +266,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
           render={<Link to={account.settingsPath} />}
           nativeButton={false}
         >
-          <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
           {t('gitConnectionsHub.openSettings')}
         </Button>
         <Button

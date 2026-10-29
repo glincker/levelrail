@@ -33,7 +33,7 @@ export function NodeDrainsCard({ nodeId }: { nodeId: string }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="space-y-2">
               <p>

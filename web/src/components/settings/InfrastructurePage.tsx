@@ -114,7 +114,7 @@ export function InfrastructurePage() {
         onChange={(e) => void handleUpload(e)}
       />
       <PageBanner
-        icon={<FileCodeGlassIcon size="1.2em" />}
+        icon={<FileCodeGlassIcon size="1.4em" />}
         titleKey="settings:iacPage.title"
         descriptionKey={
           hero
@@ -129,7 +129,7 @@ export function InfrastructurePage() {
               variant={hero ? 'default' : 'outline'}
               onClick={() => uploadRef.current?.click()}
             >
-              <UploadGlassIcon size="1.2em" aria-hidden="true" />
+              <UploadGlassIcon size="1.4em" aria-hidden="true" />
               {t('iacPage.upload')}
             </Button>
           </>
@@ -311,7 +311,7 @@ function PlanCard({
         {error ? (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" size="sm" onClick={onRetry}>
-              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
               {t('iacPage.planAgain')}
             </Button>
             <span className="text-xs text-muted-foreground">
@@ -348,7 +348,7 @@ function ResultCard({
         {error ? (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" size="sm" onClick={onReplan}>
-              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
               {t('iacPage.planAgain')}
             </Button>
             <span className="text-xs text-muted-foreground">

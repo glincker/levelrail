@@ -53,7 +53,7 @@ export function FrameworkPresetPicker({
   if (presets.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         <AlertDescription>{t('loadFailed')}</AlertDescription>
       </Alert>
     )
@@ -83,7 +83,7 @@ export function FrameworkPresetPicker({
             <span className="min-w-0 flex-1 truncate">{p.name}</span>
             {p.id === detectedId ? (
               <SparklesGlassIcon
-                className="size-4 shrink-0 text-muted-foreground"
+                className="size-5 shrink-0 text-muted-foreground"
                 aria-label={t('detected')}
               />
             ) : null}
@@ -153,7 +153,7 @@ export function FrameworkPresetPicker({
                 void copyDockerfile(active)
               }}
             >
-              <CopyGlassIcon className="size-4.5" />
+              <CopyGlassIcon className="size-5" />
               {t('dockerfile')}
             </Button>
           ) : null}
@@ -162,7 +162,7 @@ export function FrameworkPresetPicker({
 
       {active && presetDiffers(active, port, healthPath) ? (
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertTitle>{t('mismatchTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>

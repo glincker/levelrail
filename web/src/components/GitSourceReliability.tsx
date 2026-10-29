@@ -48,7 +48,7 @@ export function GitSourceReliability({
       !['ok', 'rate_limited'].includes(source.connection.state) ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
-            className="size-4.5 text-tone-warning"
+            className="size-5 text-tone-warning"
             aria-hidden="true"
           />
           <AlertDescription className="space-y-2">
@@ -80,7 +80,7 @@ export function GitSourceReliability({
       {source.webhook_url_warning ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
-            className="size-4.5 text-tone-warning"
+            className="size-5 text-tone-warning"
             aria-hidden="true"
           />
           <AlertDescription className="space-y-2">
@@ -96,7 +96,7 @@ export function GitSourceReliability({
       {reg?.state === 'failed' ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
-            className="size-4.5 text-tone-warning"
+            className="size-5 text-tone-warning"
             aria-hidden="true"
           />
           <AlertDescription className="space-y-2">
@@ -127,7 +127,7 @@ export function GitSourceReliability({
                 })
               }}
             >
-              <RefreshCwGlassIcon className="size-4.5" aria-hidden="true" />
+              <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
               {register.isPending
                 ? t('reliability.registration.registering')
                 : t('reliability.registration.registerAgain')}

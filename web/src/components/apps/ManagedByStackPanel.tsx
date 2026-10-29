@@ -18,7 +18,7 @@ function Panel({ stack }: Readonly<{ stack: string }>) {
     <Card>
       <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 text-sm">
         <LayersGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="font-medium text-foreground">
@@ -39,7 +39,7 @@ function Panel({ stack }: Readonly<{ stack: string }>) {
         ) : null}
         {data?.drift_policy === 'lock' ? (
           <Badge variant="warning">
-            <LockGlassIcon size="1.2em" aria-hidden="true" />
+            <LockGlassIcon size="1.4em" aria-hidden="true" />
             {t('appPanel.lock')}
           </Badge>
         ) : null}
@@ -50,7 +50,7 @@ function Panel({ stack }: Readonly<{ stack: string }>) {
             params={{ _splat: 'stacks' }}
             className="inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline"
           >
-            <BookOpenGlassIcon className="size-4" aria-hidden="true" />
+            <BookOpenGlassIcon className="size-5" aria-hidden="true" />
             {t('appPanel.docs')}
           </Link>
         </span>

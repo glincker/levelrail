@@ -155,7 +155,7 @@ export function GitBuildSourceFields({
                 }}
               >
                 {branchesQuery.isFetching ? (
-                  <LoaderGlassIcon className="size-4.5 animate-spin" />
+                  <LoaderGlassIcon className="size-5 animate-spin" />
                 ) : null}
                 {t('sourceFields.loadBranches')}
               </Button>
@@ -167,7 +167,7 @@ export function GitBuildSourceFields({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>
                 {t('sourceFields.branchesFailed', {

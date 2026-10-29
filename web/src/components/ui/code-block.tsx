@@ -94,9 +94,9 @@ function CopyButton({
         onClick={onCopy}
       >
         {state === 'copied' ? (
-          <CheckGlassIcon size="1.2em" aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <CopyGlassIcon size="1.2em" aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
         {state === 'copied' ? t('codeBlock.copied') : t('codeBlock.copy')}
       </Button>
@@ -127,9 +127,9 @@ function RevealButton({
       onClick={onToggle}
     >
       {revealed ? (
-        <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
+        <EyeOffGlassIcon size="1.4em" aria-hidden="true" />
       ) : (
-        <EyeGlassIcon size="1.2em" aria-hidden="true" />
+        <EyeGlassIcon size="1.4em" aria-hidden="true" />
       )}
       {revealed ? t('codeBlock.hide') : t('codeBlock.reveal')}
     </Button>

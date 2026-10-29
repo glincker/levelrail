@@ -42,7 +42,7 @@ export function CancelSupersededCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SkipForwardGlassIcon className="size-4.5 text-muted-foreground" />
+          <SkipForwardGlassIcon className="size-5 text-muted-foreground" />
           {t('cancelSuperseded.title')}
           <InfoTip label={t('cancelSuperseded.infoLabel')}>
             {t('cancelSuperseded.infoBody')}

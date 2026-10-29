@@ -398,7 +398,7 @@ export function CreateNotificationChannelDialog() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WebhookGlassIcon className="size-4.5 text-muted-foreground" />
+            <WebhookGlassIcon className="size-5 text-muted-foreground" />
             Connect a channel
           </DialogTitle>
           <DialogDescription>
@@ -446,22 +446,22 @@ export function CreateNotificationChannelDialog() {
                           />
                         ) : option === 'email' ? (
                           <MailGlassIcon
-                            className="size-5.5"
+                            className="size-6"
                             aria-hidden="true"
                           />
                         ) : option === 'pushover' ? (
                           <BellRingGlassIcon
-                            className="size-5.5"
+                            className="size-6"
                             aria-hidden="true"
                           />
                         ) : option === 'webpush' ? (
                           <SmartphoneGlassIcon
-                            className="size-5.5"
+                            className="size-6"
                             aria-hidden="true"
                           />
                         ) : (
                           <WebhookGlassIcon
-                            className="size-5.5"
+                            className="size-6"
                             aria-hidden="true"
                           />
                         )}
@@ -653,13 +653,13 @@ export function CreateNotificationChannelDialog() {
               disabled={testChannel.isPending || !hasDestination}
               onClick={handleTest}
             >
-              <SendGlassIcon className="size-4" aria-hidden="true" />
+              <SendGlassIcon className="size-5" aria-hidden="true" />
               {testChannel.isPending ? 'Sending...' : 'Send test message'}
             </Button>
             {verified ? (
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 <CircleCheckGlassIcon
-                  className="size-4 text-tone-success"
+                  className="size-5 text-tone-success"
                   aria-hidden="true"
                 />
                 Test sent
@@ -671,7 +671,7 @@ export function CreateNotificationChannelDialog() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{createChannel.error.message}</AlertDescription>
             </Alert>
@@ -679,7 +679,7 @@ export function CreateNotificationChannelDialog() {
 
           <DialogFooter>
             <Button type="submit" disabled={createChannel.isPending}>
-              <CirclePlusGlassIcon className="size-4" aria-hidden="true" />
+              <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
               {createChannel.isPending ? 'Connecting...' : 'Connect channel'}
             </Button>
           </DialogFooter>

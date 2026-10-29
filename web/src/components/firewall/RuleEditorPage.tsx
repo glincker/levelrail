@@ -20,7 +20,7 @@ export function RuleEditorPage({
   const { t } = useTranslation('firewall')
   return (
     <PageTemplate
-      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />}
       title={ruleId ? t('editor.editTitle') : t('editor.newTitle')}
       description={t('editor.description')}
       breadcrumb={
@@ -29,7 +29,7 @@ export function RuleEditorPage({
           search={{ scope: scope || undefined }}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeftGlassIcon aria-hidden="true" className="size-4" />
+          <ArrowLeftGlassIcon aria-hidden="true" className="size-5" />
           {t('editor.back')}
         </Link>
       }

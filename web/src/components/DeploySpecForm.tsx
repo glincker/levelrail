@@ -160,7 +160,7 @@ export function DeploySpecForm({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RocketGlassIcon className="size-4.5" />
+          <RocketGlassIcon className="size-5" />
           Deploy multiple services
         </CardTitle>
         <CardDescription>
@@ -259,7 +259,7 @@ export function DeploySpecForm({ appName }: { appName: string }) {
               onClick={() => append(emptyService)}
               disabled={deploySpec.isPending}
             >
-              <PlusGlassIcon className="size-4" data-icon="inline-start" />
+              <PlusGlassIcon className="size-5" data-icon="inline-start" />
               Add service
             </Button>
             <Button type="submit" disabled={deploySpec.isPending}>
@@ -369,7 +369,7 @@ function ServiceRow({
             disabled={disabled}
             aria-label="Remove service"
           >
-            <TrashGlassIcon className="size-4.5" />
+            <TrashGlassIcon className="size-5" />
           </Button>
         ) : null}
       </div>

@@ -38,7 +38,7 @@ export function AlertRuleButton({ appName }: { appName: string }) {
         )
       }
     >
-      <BellRingGlassIcon size="1.2em" aria-hidden="true" />
+      <BellRingGlassIcon size="1.4em" aria-hidden="true" />
       {create.isPending ? t('alertRule.creating') : t('alertRule.create')}
     </Button>
   )

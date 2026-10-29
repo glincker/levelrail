@@ -24,14 +24,14 @@ function EnvironmentsSettingsPage() {
   )
   const createTrigger = (
     <Button type="button">
-      <PlusGlassIcon size="1.2em" />
+      <PlusGlassIcon size="1.4em" />
       {t('settings.create')}
     </Button>
   )
 
   return (
     <PageTemplate
-      icon={<LayersGlassIcon size="1.2em" />}
+      icon={<LayersGlassIcon size="1.4em" />}
       title={t('settings.title')}
       description={t('settings.description')}
       actions={<EnvironmentFormDialog trigger={createTrigger} />}
@@ -43,7 +43,7 @@ function EnvironmentsSettingsPage() {
       ) : (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<LayersGlassIcon className="size-5.5" />}
+          icon={<LayersGlassIcon className="size-6" />}
           title={t('settings.empty.title')}
           description={t('settings.empty.description')}
           action={<EnvironmentFormDialog trigger={createTrigger} />}

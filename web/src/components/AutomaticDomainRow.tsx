@@ -19,7 +19,7 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
     <div className="space-y-1 rounded-md border border-border px-3 py-2">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <GlobeGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="font-mono text-foreground">{host}</span>
@@ -34,7 +34,7 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
           className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           {t('automaticDomain.open')}
-          <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
         </a>
       </div>
       <p className="text-xs text-muted-foreground">

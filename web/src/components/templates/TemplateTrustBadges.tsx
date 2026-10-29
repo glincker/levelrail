@@ -16,20 +16,20 @@ export function TemplateTrustBadges({ images }: { images: string[] }) {
     <>
       {s.digest > 0 ? (
         <Badge variant="muted" title={t('trust.digestHint')}>
-          <PinGlassIcon className="size-3.5" aria-hidden="true" />
+          <PinGlassIcon className="size-4.5" aria-hidden="true" />
           {t('trust.digest', { count: s.digest })}
         </Badge>
       ) : null}
       {s.tag > 0 ? (
         <Badge variant="muted" title={t('trust.tagHint')}>
-          <TagGlassIcon className="size-3.5" aria-hidden="true" />
+          <TagGlassIcon className="size-4.5" aria-hidden="true" />
           {t('trust.tag', { count: s.tag })}
         </Badge>
       ) : null}
       {s.floating > 0 ? (
         <Badge variant="outline" title={t('trust.floatingHint')}>
           <CircleAlertGlassIcon
-            className="size-3.5 text-tone-danger"
+            className="size-4.5 text-tone-danger"
             aria-hidden="true"
           />
           {t('trust.floating', { count: s.floating })}

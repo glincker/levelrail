@@ -61,7 +61,7 @@ export function NodeListView({
   return (
     <div className={PAGE_WRAPPER}>
       <PageBanner
-        icon={<ServerGlassIcon size="1.2em" />}
+        icon={<ServerGlassIcon size="1.4em" />}
         titleKey="nodes:list.title"
         descriptionKey={
           solo ? 'nodes:banner.description' : 'nodes:list.description'
@@ -140,7 +140,7 @@ export function NodeListPending() {
   return (
     <div className={PAGE_WRAPPER}>
       <PageBanner
-        icon={<ServerGlassIcon size="1.2em" />}
+        icon={<ServerGlassIcon size="1.4em" />}
         titleKey="nodes:list.title"
         descriptionKey="nodes:list.description"
         size="compact"

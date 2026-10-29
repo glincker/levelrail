@@ -41,7 +41,7 @@ function ForecastRow({
   return (
     <div className="flex items-start gap-2">
       <Badge variant={variantFor(metric.days_until_full)} className="mt-0.5">
-        <TriangleAlertGlassIcon className="size-3.5 text-tone-warning" />
+        <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
         {daysLabel(metric.days_until_full)}
       </Badge>
       <p className="text-sm text-foreground">

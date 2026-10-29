@@ -146,7 +146,7 @@ function BulkDialog({
             {action === 'delete' && targets.length > 0 ? (
               <p className="flex items-start gap-1.5 text-sm text-destructive">
                 <TriangleAlertGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                  className="mt-0.5 size-5 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
                 This permanently deletes {targets.length} app(s). It is recorded
@@ -256,7 +256,7 @@ export function AppsBulkBar({
           aria-label="Clear selection"
           onClick={onClear}
         >
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
         </Button>
       </div>
       {open ? (

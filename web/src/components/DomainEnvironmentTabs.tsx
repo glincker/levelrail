@@ -70,7 +70,7 @@ function EnvironmentSet({
                   run({ remove: [d] })
                 }}
               >
-                <XGlassIcon size="1.2em" aria-hidden="true" />
+                <XGlassIcon size="1.4em" aria-hidden="true" />
                 <span className="sr-only">
                   {t('environmentTabs.remove', { domain: d })}
                 </span>
@@ -101,7 +101,7 @@ function EnvironmentSet({
           size="sm"
           disabled={!isValidDomain(next) || edit.isPending}
         >
-          <PlusGlassIcon size="1.2em" aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('environmentTabs.add')}
         </Button>
       </form>

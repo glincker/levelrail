@@ -32,7 +32,7 @@ export function PipelineFailureSummary({
     >
       <p className="flex flex-wrap items-center gap-1.5 font-medium text-foreground">
         <CircleAlertGlassIcon
-          className="size-4.5 text-destructive"
+          className="size-5 text-destructive"
           aria-hidden="true"
         />
         {t('failure.title')}

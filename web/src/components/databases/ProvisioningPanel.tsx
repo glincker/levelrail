@@ -47,7 +47,7 @@ function StepIcon({ status }: { status: ProvisionStep['status'] }) {
     case 'done':
       return (
         <CircleCheckGlassIcon
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} text-success`}
         />
@@ -55,7 +55,7 @@ function StepIcon({ status }: { status: ProvisionStep['status'] }) {
     case 'started':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} animate-spin text-primary`}
         />
@@ -63,7 +63,7 @@ function StepIcon({ status }: { status: ProvisionStep['status'] }) {
     case 'failed':
       return (
         <CircleAlertGlassIcon
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} text-destructive`}
         />
@@ -71,7 +71,7 @@ function StepIcon({ status }: { status: ProvisionStep['status'] }) {
     case 'skipped':
       return (
         <CircleMinusGlassIcon
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} text-muted-foreground`}
         />
@@ -79,7 +79,7 @@ function StepIcon({ status }: { status: ProvisionStep['status'] }) {
     default:
       return (
         <CircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} text-muted-foreground`}
         />

@@ -53,7 +53,7 @@ export function SilenceRuleMenu({
           />
         }
       >
-        <BellOffGlassIcon className="size-4" aria-hidden="true" />
+        <BellOffGlassIcon className="size-5" aria-hidden="true" />
         Silence
       </DropdownMenuTrigger>
       <DropdownMenuContent>

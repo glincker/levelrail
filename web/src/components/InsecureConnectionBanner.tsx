@@ -12,7 +12,7 @@ export function InsecureConnectionBanner() {
   }
   return (
     <Alert className="rounded-none border-x-0 border-t-0 border-tone-warning-border bg-tone-warning-soft text-tone-warning">
-      <LockOpenGlassIcon size="1.2em" />
+      <LockOpenGlassIcon size="1.4em" />
       <AlertTitle>This connection is not encrypted</AlertTitle>
       <AlertDescription>
         Your password and session travel in plain text. Point a domain at this

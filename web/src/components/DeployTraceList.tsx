@@ -56,7 +56,7 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
     case 'done':
       return (
         <CircleCheckGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(base, 'text-success-foreground')}
           aria-hidden="true"
         />
@@ -64,7 +64,7 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
     case 'running':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(base, 'animate-spin text-muted-foreground')}
           aria-hidden="true"
         />
@@ -72,7 +72,7 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
     case 'failed':
       return (
         <CircleAlertGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(base, 'text-destructive')}
           aria-hidden="true"
         />
@@ -80,7 +80,7 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
     case 'warning':
       return (
         <TriangleAlertGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(base, 'text-warning-foreground')}
           aria-hidden="true"
         />
@@ -88,7 +88,7 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
     case 'skipped':
       return (
         <CircleMinusGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(base, 'text-muted-foreground')}
           aria-hidden="true"
         />
@@ -96,7 +96,7 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
     default:
       return (
         <CircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(base, 'text-muted-foreground/50')}
           aria-hidden="true"
         />

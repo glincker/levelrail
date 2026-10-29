@@ -80,7 +80,7 @@ export function RuleRow({
             size="icon-sm"
             aria-label={t('rules.actionsFor', { name: rule.name })}
           >
-            <EllipsisGlassIcon size="1.2em" />
+            <EllipsisGlassIcon size="1.4em" />
           </Button>
         }
         items={menuItems}

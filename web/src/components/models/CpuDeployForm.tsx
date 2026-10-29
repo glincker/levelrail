@@ -221,7 +221,7 @@ export function CpuDeployForm({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
             />
             <AlertTitle>{t('cpu.license.title')}</AlertTitle>
@@ -310,7 +310,7 @@ export function CpuDeployForm({
       <Alert>
         <TriangleAlertGlassIcon
           className="text-tone-warning"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         <AlertTitle>{t('cpu.deploy.warnTitle')}</AlertTitle>

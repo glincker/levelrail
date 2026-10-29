@@ -182,7 +182,7 @@ export function BrowseTemplatesFields({
       <div className="space-y-4">
         <Alert>
           <CircleCheckGlassIcon
-            size="1.2em"
+            size="1.4em"
             className="text-green-600 dark:text-green-400"
           />
           <AlertDescription>
@@ -233,7 +233,7 @@ export function BrowseTemplatesFields({
     return (
       <div className="space-y-4">
         <Button type="button" variant="ghost" size="sm" onClick={backToGrid}>
-          <ArrowLeftGlassIcon size="1.2em" />
+          <ArrowLeftGlassIcon size="1.4em" />
           {t('wizard.back')}
         </Button>
         {templateDetail.isLoading ? (
@@ -245,7 +245,7 @@ export function BrowseTemplatesFields({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{templateDetail.error.message}</AlertDescription>
           </Alert>
@@ -295,7 +295,7 @@ export function BrowseTemplatesFields({
                 >
                   {t('wizard.documentation')}
                   <ExternalLinkGlassIcon
-                    className="size-3.5"
+                    className="size-4.5"
                     aria-hidden="true"
                   />
                 </a>
@@ -337,7 +337,7 @@ export function BrowseTemplatesFields({
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertDescription>
                   {deployCompose.error.message}

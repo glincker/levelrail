@@ -31,9 +31,9 @@ function AlertRow({ entry }: { entry: AlertHistoryEntry }) {
               className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {open ? (
-                <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+                <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
               ) : (
-                <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
+                <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
               )}
             </button>
           ) : null}
@@ -98,7 +98,7 @@ export function RecentAlertsCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5 text-sm">
           <BellRingGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           Recent alerts

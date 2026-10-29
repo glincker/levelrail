@@ -89,7 +89,7 @@ export function AccessTab({
       <div className="space-y-4">
         <Section title={t('geo.title')} description={t('geo.help')}>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
+            <GlobeGlassIcon className="size-5" aria-hidden="true" />
             {geo.active ? (
               <Badge variant="success">
                 {t('geo.sourceActive', { sources: geo.sources.join(', ') })}

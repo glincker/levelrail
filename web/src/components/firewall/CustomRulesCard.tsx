@@ -75,27 +75,27 @@ export function CustomRulesCard({
       {
         id: 'edit',
         label: t('rules.edit'),
-        icon: <PencilGlassIcon size="1.2em" />,
+        icon: <PencilGlassIcon size="1.4em" />,
         onSelect: () => onEdit(rule.id),
       },
       {
         id: 'up',
         label: t('rules.moveUp'),
-        icon: <ArrowUpGlassIcon size="1.2em" />,
+        icon: <ArrowUpGlassIcon size="1.4em" />,
         disabled: index === 0,
         onSelect: () => move(rule, -1),
       },
       {
         id: 'down',
         label: t('rules.moveDown'),
-        icon: <ArrowDownGlassIcon size="1.2em" />,
+        icon: <ArrowDownGlassIcon size="1.4em" />,
         disabled: index === custom.length - 1,
         onSelect: () => move(rule, 1),
       },
       {
         id: 'delete',
         label: t('rules.delete'),
-        icon: <TrashGlassIcon size="1.2em" />,
+        icon: <TrashGlassIcon size="1.4em" />,
         tone: 'danger',
         onSelect: () => setRemoving(rule),
       },
@@ -109,7 +109,7 @@ export function CustomRulesCard({
         <CardDescription>{t('rules.customHelp')}</CardDescription>
         <div data-slot="card-action">
           <Button type="button" size="sm" onClick={onNew}>
-            <PlusGlassIcon size="1.2em" />
+            <PlusGlassIcon size="1.4em" />
             {t('rules.new')}
           </Button>
         </div>
@@ -118,7 +118,7 @@ export function CustomRulesCard({
         {custom.length === 0 ? (
           <EmptyState
             compact
-            icon={<ListChecksGlassIcon className="size-5.5" />}
+            icon={<ListChecksGlassIcon className="size-6" />}
             title={t('rules.emptyTitle')}
             description={t('rules.emptyHelp')}
             action={

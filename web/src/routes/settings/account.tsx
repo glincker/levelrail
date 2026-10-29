@@ -60,7 +60,7 @@ function AccountSettingsPage() {
   const { t } = useTranslation('settings')
   return (
     <PageTemplate
-      icon={<UserGlassIcon size="1.2em" />}
+      icon={<UserGlassIcon size="1.4em" />}
       title={t('accountPage.title')}
       description={t('accountPage.description')}
     >

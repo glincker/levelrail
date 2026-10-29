@@ -150,7 +150,7 @@ export function RecordRow({
               disabled={saving}
               onClick={() => onSave(draft)}
             >
-              <CheckGlassIcon size="1.2em" aria-hidden="true" />
+              <CheckGlassIcon size="1.4em" aria-hidden="true" />
               <span className="sr-only">{t('recordsControl.save')}</span>
             </Button>
             <Button
@@ -160,7 +160,7 @@ export function RecordRow({
               disabled={saving}
               onClick={onCancelEdit}
             >
-              <XGlassIcon size="1.2em" aria-hidden="true" />
+              <XGlassIcon size="1.4em" aria-hidden="true" />
               <span className="sr-only">{t('recordsControl.cancel')}</span>
             </Button>
           </div>
@@ -196,7 +196,7 @@ export function RecordRow({
             variant="ghost"
             onClick={onStartEdit}
           >
-            <PencilGlassIcon size="1.2em" aria-hidden="true" />
+            <PencilGlassIcon size="1.4em" aria-hidden="true" />
             <span className="sr-only">{t('recordsControl.editRecord')}</span>
           </Button>
           <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
@@ -210,7 +210,7 @@ export function RecordRow({
                 />
               }
             >
-              <TrashGlassIcon size="1.2em" aria-hidden="true" />
+              <TrashGlassIcon size="1.4em" aria-hidden="true" />
               <span className="sr-only">
                 {t('recordsControl.deleteRecord')}
               </span>
@@ -219,7 +219,7 @@ export function RecordRow({
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-1.5 text-destructive">
                   <TriangleAlertGlassIcon
-                    className="size-4.5 text-tone-warning"
+                    className="size-5 text-tone-warning"
                     aria-hidden="true"
                   />
                   {t('recordsControl.deleteTitle')}

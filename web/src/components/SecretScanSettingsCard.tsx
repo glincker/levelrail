@@ -172,7 +172,7 @@ export function SecretScanSettingsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldAlertGlassIcon className="size-4.5 text-muted-foreground" />
+          <ShieldAlertGlassIcon className="size-5 text-muted-foreground" />
           {t('settings.title')}
           <InfoTip label={t('settings.title')}>{t('settings.about')}</InfoTip>
         </CardTitle>

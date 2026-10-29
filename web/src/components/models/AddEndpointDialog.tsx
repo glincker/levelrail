@@ -96,7 +96,7 @@ export function AddEndpointDialog({
       }}
     >
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <PlugGlassIcon size="1.2em" aria-hidden="true" />
+        <PlugGlassIcon size="1.4em" aria-hidden="true" />
         {t('endpoint.add.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">

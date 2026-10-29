@@ -53,7 +53,7 @@ export function CleanupOverviewTab() {
   if (targets.length === 0) {
     return (
       <EmptyState
-        icon={<BroomGlassIcon className="size-7" />}
+        icon={<BroomGlassIcon className="size-8" />}
         title={t('empty.title')}
         description={t('empty.body')}
         action={

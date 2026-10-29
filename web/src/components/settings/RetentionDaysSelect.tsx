@@ -65,7 +65,7 @@ export function RetentionDaysSelect({
             >
               {label(days)}
               {locked ? (
-                <LockGlassIcon className="size-4" aria-hidden="true" />
+                <LockGlassIcon className="size-5" aria-hidden="true" />
               ) : null}
             </SelectItem>
           )

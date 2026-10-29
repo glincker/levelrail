@@ -39,7 +39,7 @@ export function ContainerRowActions({ name }: { name: string }) {
             />
           }
         >
-          <EllipsisGlassIcon size="1.2em" />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
@@ -55,7 +55,7 @@ export function ContainerRowActions({ name }: { name: string }) {
               })
             }}
           >
-            <PauseGlassIcon size="1.2em" />
+            <PauseGlassIcon size="1.4em" />
             Stop
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -63,7 +63,7 @@ export function ContainerRowActions({ name }: { name: string }) {
               setClaiming(true)
             }}
           >
-            <TagGlassIcon size="1.2em" />
+            <TagGlassIcon size="1.4em" />
             Claim as app
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -71,7 +71,7 @@ export function ContainerRowActions({ name }: { name: string }) {
               setConfirmRemove(true)
             }}
           >
-            <TrashGlassIcon size="1.2em" />
+            <TrashGlassIcon size="1.4em" />
             Remove
           </DropdownMenuItem>
         </DropdownMenuContent>

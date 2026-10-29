@@ -47,7 +47,7 @@ export function UpdateBrandBanner({
           <span
             data-testid="update-state-icon"
             className={cn(
-              'absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full ring-2 ring-black [&_svg]:size-3.5',
+              'absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full ring-2 ring-black [&_svg]:size-4.5',
               stateClassName,
             )}
           >
@@ -76,7 +76,7 @@ export function UpdateBrandBanner({
             'relative ml-auto border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white',
           )}
         >
-          <SocialGithubGlassIcon size="1.2em" />
+          <SocialGithubGlassIcon size="1.4em" />
         </a>
       ) : null}
     </div>

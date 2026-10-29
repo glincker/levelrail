@@ -131,7 +131,7 @@ export function DeployFailureSummaryCard({
             className="flex items-center gap-2 text-sm font-semibold text-foreground"
           >
             <CircleAlertGlassIcon
-              className="size-4.5 text-destructive"
+              className="size-5 text-destructive"
               aria-hidden="true"
             />
             What went wrong
@@ -172,7 +172,7 @@ export function DeployFailureSummaryCard({
             {summary.cause ? (
               <div>
                 <dt className="flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  <LightbulbGlassIcon className="size-4" aria-hidden="true" />
+                  <LightbulbGlassIcon className="size-5" aria-hidden="true" />
                   Likely cause and fix
                 </dt>
                 <dd className="mt-1 text-foreground">
@@ -212,7 +212,7 @@ export function DeployFailureSummaryCard({
               size="sm"
               onClick={viewLogs}
             >
-              <TerminalGlassIcon size="1.2em" aria-hidden="true" />
+              <TerminalGlassIcon size="1.4em" aria-hidden="true" />
               View full logs
             </Button>
             <RetrySplitButton
@@ -235,7 +235,7 @@ export function DeployFailureSummaryCard({
                 disabled={rollback.isPending}
                 onClick={rollBack}
               >
-                <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />
+                <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
                 Roll back to last good
               </Button>
             ) : null}

@@ -81,7 +81,7 @@ export function OAuthButtons() {
           render={<a href={startSAMLURL(p.id)} />}
         >
           <span className="flex size-6 items-center justify-center rounded bg-muted text-muted-foreground">
-            <UniversityGlassIcon size="1.2em" aria-hidden="true" />
+            <UniversityGlassIcon size="1.4em" aria-hidden="true" />
           </span>
           {t('foundation.signIn.continueWith', { provider: p.name })}
         </Button>

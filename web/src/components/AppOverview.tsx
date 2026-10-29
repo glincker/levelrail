@@ -61,7 +61,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LayoutGridGlassIcon className="size-4.5" />
+          <LayoutGridGlassIcon className="size-5" />
           Overview
         </CardTitle>
         <OptimiseHint kind="app" name={app.name} />

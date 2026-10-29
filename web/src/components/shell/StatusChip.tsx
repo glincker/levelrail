@@ -111,7 +111,7 @@ export function StatusChip() {
           <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center">
             <CircleCheckGlassIcon
               aria-hidden="true"
-              className="size-7 text-emerald-600 dark:text-emerald-400"
+              className="size-8 text-emerald-600 dark:text-emerald-400"
             />
             <p className="text-sm text-muted-foreground">
               {t('shell.status.healthy')}

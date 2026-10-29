@@ -46,7 +46,7 @@ function BudgetRow({ b }: { b: UsageBudget }) {
             disabled={remove.isPending}
             onClick={() => remove.mutate(b.id)}
           >
-            <TrashGlassIcon size="1.2em" />
+            <TrashGlassIcon size="1.4em" />
           </Button>
         </div>
       </div>

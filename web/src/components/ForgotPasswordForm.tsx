@@ -41,7 +41,7 @@ export function ForgotPasswordForm() {
 
       {forgotPassword.isSuccess ? (
         <Alert>
-          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           <AlertTitle>Check your email</AlertTitle>
           <AlertDescription>
             If that email matches an account, a reset link is on its way.
@@ -49,7 +49,7 @@ export function ForgotPasswordForm() {
         </Alert>
       ) : forgotPassword.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{forgotPassword.error.message}</AlertDescription>
         </Alert>
       ) : null}

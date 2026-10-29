@@ -161,7 +161,7 @@ function FieldRow({
             aria-label={t('designer.moveUp')}
             onClick={() => onMove(-1)}
           >
-            <ArrowUpGlassIcon size="1.2em" />
+            <ArrowUpGlassIcon size="1.4em" />
           </Button>
           <Button
             variant="ghost"
@@ -170,7 +170,7 @@ function FieldRow({
             aria-label={t('designer.moveDown')}
             onClick={() => onMove(1)}
           >
-            <ArrowDownGlassIcon size="1.2em" />
+            <ArrowDownGlassIcon size="1.4em" />
           </Button>
           <Button
             variant="ghost"
@@ -178,7 +178,7 @@ function FieldRow({
             aria-label={t('designer.remove')}
             onClick={onRemove}
           >
-            <TrashGlassIcon size="1.2em" />
+            <TrashGlassIcon size="1.4em" />
           </Button>
         </div>
       </div>
@@ -326,7 +326,7 @@ export function FormDesigner({
           ))}
         </ul>
         <Button writeAction variant="outline" size="sm" onClick={add}>
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {usingDefault ? t('designer.customize') : t('designer.addField')}
         </Button>
         <div className="space-y-1.5">

@@ -125,7 +125,7 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
         </Badge>
         <ChevronDownGlassIcon
           className={cn(
-            'size-4.5 shrink-0 text-muted-foreground transition-transform',
+            'size-5 shrink-0 text-muted-foreground transition-transform',
             open && 'rotate-180',
           )}
         />

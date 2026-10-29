@@ -50,7 +50,7 @@ export function CoverageSummary({
         {showAction && summary.unprotected > 0 ? (
           <Button type="button" onClick={onProtect}>
             <ShieldCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden="true"
             />
             {t('summary.protectEverything')}

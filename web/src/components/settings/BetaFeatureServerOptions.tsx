@@ -42,9 +42,9 @@ function CopyLine({ line, label }: { line: string; label: string }) {
       </code>
       <Button type="button" variant="outline" size="sm" onClick={copy}>
         {copied ? (
-          <CheckGlassIcon size="1.2em" aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <CopyGlassIcon size="1.2em" aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
         {copied ? t('env.copied') : t('env.copy')}
       </Button>

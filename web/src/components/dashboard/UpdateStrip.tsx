@@ -71,10 +71,10 @@ export function UpdateStripView({
           TONE[tone].text,
         )}
       >
-        <ArrowUpGlassIcon aria-hidden="true" className="size-4.5" />
+        <ArrowUpGlassIcon aria-hidden="true" className="size-5" />
         <span className="flex items-center gap-1.5 tabular-nums">
           {displayVersion(info.current_version)}
-          <ArrowRightGlassIcon aria-hidden="true" className="size-4" />
+          <ArrowRightGlassIcon aria-hidden="true" className="size-5" />
           <span className="sr-only">{t('updateStrip.to')}</span>
           {displayVersion(latest)}
         </span>
@@ -126,7 +126,7 @@ export function UpdateStripView({
               dismissUpdate(latest)
             }}
           >
-            <XGlassIcon size="1.2em" aria-hidden="true" />
+            <XGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         )}
       </span>

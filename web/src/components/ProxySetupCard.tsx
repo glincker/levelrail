@@ -112,7 +112,7 @@ function SetupCardBody({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+          <PlugGlassIcon className="size-5" aria-hidden="true" />
           {t('proxySetup.title')}
         </CardTitle>
         <CardDescription>{t('proxySetup.description')}</CardDescription>
@@ -142,7 +142,7 @@ function SetupCardBody({
           >
             {pending ? (
               <LoaderGlassIcon
-                size="1.2em"
+                size="1.4em"
                 className="animate-spin"
                 aria-hidden="true"
               />

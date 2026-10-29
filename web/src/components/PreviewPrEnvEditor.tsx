@@ -64,7 +64,7 @@ export function PreviewPrEnvEditor({
           setOpen((v) => !v)
         }}
       >
-        <SlidersHorizontalGlassIcon size="1.2em" />
+        <SlidersHorizontalGlassIcon size="1.4em" />
         {t('prEnv.button')}
       </Button>
       {open ? (
@@ -87,7 +87,7 @@ export function PreviewPrEnvEditor({
                     <span>{o.key}</span>
                     {o.secret ? (
                       <span className="flex items-center gap-1 text-muted-foreground">
-                        <LockGlassIcon className="size-4" aria-hidden="true" />
+                        <LockGlassIcon className="size-5" aria-hidden="true" />
                         {t('prEnv.hidden')}
                       </span>
                     ) : (
@@ -106,7 +106,7 @@ export function PreviewPrEnvEditor({
                     }}
                     aria-label={t('prEnv.remove', { key: o.key })}
                   >
-                    <TrashGlassIcon className="size-4.5 text-muted-foreground" />
+                    <TrashGlassIcon className="size-5 text-muted-foreground" />
                   </Button>
                 </li>
               ))}

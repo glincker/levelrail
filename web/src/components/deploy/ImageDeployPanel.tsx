@@ -169,7 +169,7 @@ export function ImageDeployPanel({
         onOpenChange={setAdvancedOpen}
       >
         <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground">
-          <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+          <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
           {t('image.advanced')}
         </CollapsibleTrigger>
         <CollapsiblePanel>
@@ -223,7 +223,7 @@ export function ImageDeployPanel({
         className="w-full"
         onClick={onConnectRepo}
       >
-        <GitBranchGlassIcon size="1.2em" aria-hidden="true" />
+        <GitBranchGlassIcon size="1.4em" aria-hidden="true" />
         {t('image.connectInstead')}
       </Button>
     </form>

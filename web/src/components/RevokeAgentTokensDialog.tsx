@@ -35,7 +35,7 @@ export function RevokeAgentTokensDialog({ disabled }: { disabled: boolean }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <TriangleAlertGlassIcon className="size-4.5 text-destructive" />
+            <TriangleAlertGlassIcon className="size-5 text-destructive" />
             {t('aiControl.revoke.title')}
           </DialogTitle>
           <DialogDescription>
@@ -46,7 +46,7 @@ export function RevokeAgentTokensDialog({ disabled }: { disabled: boolean }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{revoke.error.message}</AlertDescription>
           </Alert>

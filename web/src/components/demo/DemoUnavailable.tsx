@@ -15,7 +15,7 @@ export function DemoUnavailable({ reason = 'generic' }: { reason?: Reason }) {
   const brandName = brand?.ShortName || brand?.Name || ''
   return (
     <EmptyState
-      icon={<LockGlassIcon className="size-4.5" />}
+      icon={<LockGlassIcon className="size-5" />}
       title={t('unavailable.title')}
       description={t(`unavailable.${reason}`)}
       hint={t('unavailable.installHint', { brand: brandName })}

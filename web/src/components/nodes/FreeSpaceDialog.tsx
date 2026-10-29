@@ -68,7 +68,7 @@ export function FreeSpaceDialog({ nodeId }: Readonly<{ nodeId: string }>) {
   return (
     <>
       <Button variant="outline" onClick={() => handleOpenChange(true)}>
-        <BroomGlassIcon className="size-4.5" />
+        <BroomGlassIcon className="size-5" />
         {t('capacity.freeSpace')}
       </Button>
       <Dialog open={open} onOpenChange={handleOpenChange}>

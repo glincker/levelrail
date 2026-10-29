@@ -166,7 +166,7 @@ export function CacheTab({
                       })
                     }
                   >
-                    <TrashGlassIcon size="1.2em" />
+                    <TrashGlassIcon size="1.4em" />
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-end gap-2">
@@ -287,7 +287,7 @@ export function CacheTab({
               })
             }
           >
-            <PlusGlassIcon size="1.2em" />
+            <PlusGlassIcon size="1.4em" />
             {t('cache.add')}
           </Button>
           <p className="text-xs text-muted-foreground">{t('cache.safety')}</p>

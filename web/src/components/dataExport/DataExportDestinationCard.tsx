@@ -122,7 +122,7 @@ export function DataExportDestinationCard({
   let health = (
     <Badge variant="success">
       <CircleCheckGlassIcon
-        className="size-3.5 text-tone-success"
+        className="size-4.5 text-tone-success"
         aria-hidden="true"
       />
       {t('card.circuitClosed')}
@@ -131,7 +131,7 @@ export function DataExportDestinationCard({
   if (!destination.enabled) {
     health = (
       <Badge variant="muted">
-        <CirclePauseGlassIcon className="size-3.5" aria-hidden="true" />
+        <CirclePauseGlassIcon className="size-4.5" aria-hidden="true" />
         {t('card.paused')}
       </Badge>
     )
@@ -139,7 +139,7 @@ export function DataExportDestinationCard({
     health = (
       <Badge variant="warning">
         <CircleAlertGlassIcon
-          className="size-3.5 text-tone-danger"
+          className="size-4.5 text-tone-danger"
           aria-hidden="true"
         />
         {s.circuit_open ? t('card.circuitOpen') : t('card.lastError')}
@@ -205,7 +205,7 @@ export function DataExportDestinationCard({
               disabled={test.isPending}
               onClick={runTest}
             >
-              <SendGlassIcon className="size-4" aria-hidden="true" />
+              <SendGlassIcon className="size-5" aria-hidden="true" />
               {test.isPending ? t('card.testing') : t('card.test')}
             </Button>
             <Button
@@ -215,7 +215,7 @@ export function DataExportDestinationCard({
                 setConfirmOpen(true)
               }}
             >
-              <TrashGlassIcon className="size-4" aria-hidden="true" />
+              <TrashGlassIcon className="size-5" aria-hidden="true" />
               {t('card.delete')}
             </Button>
           </div>

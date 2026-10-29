@@ -36,7 +36,7 @@ export function SourceProblem({
           disabled={refresh.isPending}
           onClick={() => refresh.mutate(source.id)}
         >
-          <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
           {refresh.isPending
             ? t('marketplace.rechecking')
             : t('marketplace.recheck')}

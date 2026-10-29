@@ -47,7 +47,7 @@ export function RestartProjectButton({
         })
       }}
     >
-      <RotateCwGlassIcon className="size-4" aria-hidden="true" />
+      <RotateCwGlassIcon className="size-5" aria-hidden="true" />
       {restartProject.isPending ? 'Restarting...' : 'Restart all'}
     </Button>
   )

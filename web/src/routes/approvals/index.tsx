@@ -187,7 +187,7 @@ function DeployApprovalsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <GavelGlassIcon className="size-4.5" aria-hidden="true" />
+            <GavelGlassIcon className="size-5" aria-hidden="true" />
           </div>
           <PageHeader
             title="Deploy approvals"
@@ -211,13 +211,13 @@ function DeployApprovalsPage() {
       {approvals.length === 0 ? (
         status === 'pending' ? (
           <EmptyState
-            icon={<GavelGlassIcon className="size-5.5" />}
+            icon={<GavelGlassIcon className="size-6" />}
             title="Nothing pending"
             description="No deploy or promote is waiting on approval right now."
           />
         ) : (
           <EmptyState
-            icon={<GavelGlassIcon className="size-5.5" />}
+            icon={<GavelGlassIcon className="size-6" />}
             title="No approvals match this filter"
             description={`No ${status} approvals to show.`}
             action={

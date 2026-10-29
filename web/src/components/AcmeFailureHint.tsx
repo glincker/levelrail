@@ -19,7 +19,7 @@ export function AcmeFailureHint({
     >
       <p className="flex items-center gap-1.5 font-medium text-foreground">
         <CircleAlertGlassIcon
-          className="size-4 shrink-0 text-tone-danger"
+          className="size-5 shrink-0 text-tone-danger"
           aria-hidden="true"
         />
         {failure.renewal ? t('acme.renewalTitle') : t('acme.title')}

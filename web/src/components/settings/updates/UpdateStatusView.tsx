@@ -32,22 +32,22 @@ function StateIcon({ state }: { state: UpdateState }) {
   const cls = 'size-5'
   switch (state) {
     case 'upToDate':
-      return <CircleCheckGlassIcon size="1.2em" className={cls} />
+      return <CircleCheckGlassIcon size="1.4em" className={cls} />
     case 'available':
-      return <ArrowUpGlassIcon size="1.2em" className={cls} />
+      return <ArrowUpGlassIcon size="1.4em" className={cls} />
     case 'scheduled':
-      return <ClockGlassIcon size="1.2em" className={cls} />
+      return <ClockGlassIcon size="1.4em" className={cls} />
     case 'inProgress':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(cls, 'animate-spin')}
         />
       )
     case 'checkFailed':
-      return <CircleAlertGlassIcon size="1.2em" className={cls} />
+      return <CircleAlertGlassIcon size="1.4em" className={cls} />
     default:
-      return <InfoGlassIcon size="1.2em" className={cls} />
+      return <InfoGlassIcon size="1.4em" className={cls} />
   }
 }
 
@@ -152,7 +152,7 @@ export function UpdateStatusView({
               onClick={onCheck}
             >
               <RotateCwGlassIcon
-                size="1.2em"
+                size="1.4em"
                 className={checking ? 'animate-spin' : ''}
               />
               {checking ? t('status.checking') : t('status.checkNow')}
@@ -168,7 +168,7 @@ export function UpdateStatusView({
                 )}
               >
                 {t('status.viewNotes')}
-                <ExternalLinkGlassIcon size="1.2em" />
+                <ExternalLinkGlassIcon size="1.4em" />
               </a>
             ) : null}
           </div>

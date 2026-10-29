@@ -38,7 +38,7 @@ export function PasskeysCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FingerprintPatternGlassIcon className="size-4.5 text-muted-foreground" />
+          <FingerprintPatternGlassIcon className="size-5 text-muted-foreground" />
           {t('card.title')}
         </CardTitle>
         <CardDescription>{t('card.description')}</CardDescription>
@@ -47,7 +47,7 @@ export function PasskeysCard() {
         {passkeys.length === 0 ? (
           <EmptyState
             compact
-            icon={<FingerprintPatternGlassIcon className="size-5.5" />}
+            icon={<FingerprintPatternGlassIcon className="size-6" />}
             title={t('empty.title')}
             description={t('empty.body')}
             action={
@@ -58,7 +58,7 @@ export function PasskeysCard() {
                   setAddOpen(true)
                 }}
               >
-                <PlusGlassIcon size="1.2em" />
+                <PlusGlassIcon size="1.4em" />
                 {t('empty.action')}
               </Button>
             }
@@ -66,7 +66,7 @@ export function PasskeysCard() {
         ) : (
           <>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+              <CircleCheckGlassIcon className="size-5 text-tone-success" />
               {t('card.statusEnabled', { count: passkeys.length })}
             </p>
             <ul className="divide-y divide-border">
@@ -85,7 +85,7 @@ export function PasskeysCard() {
               <Alert>
                 <ShieldCheckGlassIcon
                   className="text-tone-success"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertTitle>{t('nudge.backupTitle')}</AlertTitle>
                 <AlertDescription className="space-y-2">
@@ -98,7 +98,7 @@ export function PasskeysCard() {
                       setAddOpen(true)
                     }}
                   >
-                    <PlusGlassIcon size="1.2em" />
+                    <PlusGlassIcon size="1.4em" />
                     {t('nudge.backupAction')}
                   </Button>
                 </AlertDescription>
@@ -113,7 +113,7 @@ export function PasskeysCard() {
                   setAddOpen(true)
                 }}
               >
-                <PlusGlassIcon size="1.2em" />
+                <PlusGlassIcon size="1.4em" />
                 {t('card.add')}
               </Button>
               <Button
@@ -125,7 +125,7 @@ export function PasskeysCard() {
                   test.mutate()
                 }}
               >
-                <PlayGlassIcon size="1.2em" />
+                <PlayGlassIcon size="1.4em" />
                 {test.isPending ? t('card.testing') : t('card.test')}
               </Button>
             </div>
@@ -133,7 +133,7 @@ export function PasskeysCard() {
               <Alert role="status">
                 <CircleCheckGlassIcon
                   className="text-tone-success"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertDescription>{t('card.testOk')}</AlertDescription>
               </Alert>
@@ -142,7 +142,7 @@ export function PasskeysCard() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertTitle>{t('card.testFailedTitle')}</AlertTitle>
                 <AlertDescription className="space-y-2">
@@ -167,7 +167,7 @@ export function PasskeysCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{t('errors.unsupported')}</AlertDescription>
           </Alert>

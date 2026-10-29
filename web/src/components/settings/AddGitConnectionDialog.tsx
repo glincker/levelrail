@@ -178,9 +178,9 @@ export function AddGitConnectionDialog({
                 }}
               >
                 {copied ? (
-                  <CheckGlassIcon className="size-4.5" aria-hidden="true" />
+                  <CheckGlassIcon className="size-5" aria-hidden="true" />
                 ) : (
-                  <CopyGlassIcon className="size-4.5" aria-hidden="true" />
+                  <CopyGlassIcon className="size-5" aria-hidden="true" />
                 )}
                 {copied
                   ? t('gitConnections.add.callbackCopied')
@@ -313,7 +313,7 @@ export function AddGitConnectionDialog({
                   })
                 }
               >
-                <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+                <PlugGlassIcon className="size-5" aria-hidden="true" />
                 {probe.isPending
                   ? t('gitConnections.add.testing')
                   : t('gitConnections.add.test')}
@@ -366,7 +366,7 @@ export function AddGitConnectionDialog({
             disabled={!canSubmit || create.isPending}
             onClick={submit}
           >
-            <PlusGlassIcon className="size-4.5" aria-hidden="true" />
+            <PlusGlassIcon className="size-5" aria-hidden="true" />
             {create.isPending
               ? t(
                   tokenAuth

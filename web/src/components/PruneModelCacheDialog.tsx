@@ -79,14 +79,14 @@ export function PruneModelCacheDialog({
           />
         }
       >
-        <BroomGlassIcon size="1.2em" aria-hidden="true" />
+        <BroomGlassIcon size="1.4em" aria-hidden="true" />
         Prune unused
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Prune unused model weights?

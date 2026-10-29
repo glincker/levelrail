@@ -210,7 +210,7 @@ export function FormHero({ compact }: { compact: boolean }) {
       >
         {t('howItWorks')}
         <ChevronDownGlassIcon
-          className={cn('size-4.5 transition-transform', open && 'rotate-180')}
+          className={cn('size-5 transition-transform', open && 'rotate-180')}
         />
       </button>
       {open && (

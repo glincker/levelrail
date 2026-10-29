@@ -42,7 +42,7 @@ function SavedTemplateSummary({ result }: { result: CustomTemplateDetail }) {
       <Alert>
         <CircleCheckGlassIcon
           className="text-tone-success"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         <AlertDescription>
@@ -133,7 +133,7 @@ export function SaveAsTemplateDialog({
         <DialogTrigger
           render={<Button type="button" variant="outline" size="sm" />}
         >
-          <PackageGlassIcon className="size-4" aria-hidden="true" />
+          <PackageGlassIcon className="size-5" aria-hidden="true" />
           Save as template
         </DialogTrigger>
       )}
@@ -201,7 +201,7 @@ export function SaveAsTemplateDialog({
               {saveAsTemplate.isError ? (
                 <p className="flex items-start gap-1.5 text-sm text-destructive">
                   <TriangleAlertGlassIcon
-                    className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                    className="mt-0.5 size-5 shrink-0 text-tone-warning"
                     aria-hidden="true"
                   />
                   {saveAsTemplate.error.message}

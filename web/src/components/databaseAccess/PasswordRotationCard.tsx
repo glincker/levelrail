@@ -152,7 +152,7 @@ export function PasswordRotationCard({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <KeyGlassIcon className="size-4.5" aria-hidden="true" />
+              <KeyGlassIcon className="size-5" aria-hidden="true" />
             </div>
             <div>
               <CardTitle>{t('rotation.title')}</CardTitle>
@@ -161,7 +161,7 @@ export function PasswordRotationCard({
           </div>
           {status.supported ? (
             <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-              <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+              <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
               {t('rotation.rotate')}
             </Button>
           ) : null}

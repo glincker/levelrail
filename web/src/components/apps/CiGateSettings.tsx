@@ -84,7 +84,7 @@ function CiGateForm({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckGlassIcon className="size-4.5 text-muted-foreground" />
+          <ShieldCheckGlassIcon className="size-5 text-muted-foreground" />
           {t('title')}
         </CardTitle>
         <CardDescription>{t('description')}</CardDescription>
@@ -112,7 +112,7 @@ function CiGateForm({
                     aria-label={t('remove', { name })}
                     className="rounded-sm hover:text-foreground"
                   >
-                    <XGlassIcon size="1.2em" />
+                    <XGlassIcon size="1.4em" />
                   </button>
                 </Badge>
               ))}
@@ -138,7 +138,7 @@ function CiGateForm({
                 onClick={add}
                 disabled={draft.trim() === ''}
               >
-                <PlusGlassIcon size="1.2em" />
+                <PlusGlassIcon size="1.4em" />
                 {t('add')}
               </Button>
             </div>

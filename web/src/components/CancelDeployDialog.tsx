@@ -45,7 +45,7 @@ export function CancelDeployDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Cancel this deploy?
@@ -60,7 +60,7 @@ export function CancelDeployDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{cancelDeploy.error.message}</AlertDescription>
           </Alert>
@@ -88,7 +88,7 @@ export function CancelDeployDialog({
               })
             }}
           >
-            <BanGlassIcon className="size-4" aria-hidden="true" />
+            <BanGlassIcon className="size-5" aria-hidden="true" />
             {cancelDeploy.isPending ? 'Canceling...' : 'Cancel deploy'}
           </Button>
         </DialogFooter>

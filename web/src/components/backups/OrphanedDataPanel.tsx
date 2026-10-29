@@ -144,7 +144,7 @@ export function OrphanedDataPanel() {
             <Alert>
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
                 aria-hidden="true"
               />
               <AlertDescription>

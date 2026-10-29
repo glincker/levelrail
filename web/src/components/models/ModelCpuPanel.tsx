@@ -28,7 +28,7 @@ export function ModelCpuPanel({ model }: { model: ModelResource }) {
       <Alert>
         <InfoGlassIcon
           className="text-tone-info"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         <AlertTitle>{t('cpu.detail.capsTitle')}</AlertTitle>

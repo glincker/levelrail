@@ -19,7 +19,7 @@ export function ReconcileGuardCard({ guard }: { guard: CPHealthGuard }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />
+          <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
           {t('controlPlaneHealth.guard.title')}
         </CardTitle>
       </CardHeader>
@@ -85,7 +85,7 @@ export function ReconcileGuardCard({ guard }: { guard: CPHealthGuard }) {
               )
             }
           >
-            <WrenchGlassIcon size="1.2em" />
+            <WrenchGlassIcon size="1.4em" />
             {t('controlPlaneHealth.fixes.reset_reconcile_guard')}
           </Button>
         ) : null}

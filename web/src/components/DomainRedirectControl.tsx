@@ -81,13 +81,13 @@ export function DomainRedirectControl({
           {active ? (
             <EnforcedBadge domain={domain} control="redirect">
               <Badge variant="success" className="shrink-0">
-                <SignpostGlassIcon className="size-3.5" />
+                <SignpostGlassIcon className="size-4.5" />
                 Redirecting to {redirect?.target_url}
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <SignpostGlassIcon className="size-3.5" />
+              <SignpostGlassIcon className="size-4.5" />
               No redirect
             </Badge>
           )}
@@ -98,7 +98,7 @@ export function DomainRedirectControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <SignpostGlassIcon className="size-4" />
+          <SignpostGlassIcon className="size-5" />
           {open ? 'Hide' : active ? 'Manage' : 'Add redirect'}
         </Button>
       </div>
@@ -157,7 +157,7 @@ export function DomainRedirectControl({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{setRedirect.error.message}</AlertDescription>
             </Alert>
@@ -166,7 +166,7 @@ export function DomainRedirectControl({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{clearRedirect.error.message}</AlertDescription>
             </Alert>

@@ -52,7 +52,7 @@ export function OrphanReaperCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
-          <BroomGlassIcon className="size-4.5" aria-hidden="true" />
+          <BroomGlassIcon className="size-5" aria-hidden="true" />
           {t('orphans.title')}
         </CardTitle>
         <CardDescription>{t('orphans.description')}</CardDescription>

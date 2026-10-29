@@ -33,7 +33,7 @@ export function AppMaintenanceToggle({ appName }: { appName: string }) {
       </div>
       <div className="flex items-center gap-2">
         <Badge variant={data.enabled ? 'warning' : 'muted'}>
-          <WrenchGlassIcon className="size-3.5" />
+          <WrenchGlassIcon className="size-4.5" />
           {data.enabled
             ? t('appToggle.on', {
                 active: data.active_domains,

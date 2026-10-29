@@ -26,7 +26,7 @@ function Why({ title, lines }: { title: string; lines: string[] }) {
         className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2"
         aria-label={t('detection.whyFor', { field: title })}
       >
-        <InfoGlassIcon className="size-4 text-tone-info" aria-hidden="true" />
+        <InfoGlassIcon className="size-5 text-tone-info" aria-hidden="true" />
         {t('detection.why')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80">
@@ -155,7 +155,7 @@ export function DetectionSummary({
           <Alert key={w.code}>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
             />
             <AlertDescription>

@@ -9,12 +9,12 @@ export function VisibilityBadge({
   const { t } = useTranslation('assets')
   return visibility === 'public' ? (
     <Badge variant="warning">
-      <GlobeGlassIcon size="1.2em" aria-hidden="true" />
+      <GlobeGlassIcon size="1.4em" aria-hidden="true" />
       {t('visibility.public')}
     </Badge>
   ) : (
     <Badge variant="muted">
-      <LockGlassIcon size="1.2em" aria-hidden="true" />
+      <LockGlassIcon size="1.4em" aria-hidden="true" />
       {t('visibility.private')}
     </Badge>
   )

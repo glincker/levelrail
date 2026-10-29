@@ -81,9 +81,9 @@ export function UsageMovers({ report }: { report: UsageReport }) {
             return (
               <li key={g.key} className="flex items-center gap-2 text-sm">
                 {up ? (
-                  <TrendingUpGlassIcon className="size-4.5 text-destructive" />
+                  <TrendingUpGlassIcon className="size-5 text-destructive" />
                 ) : (
-                  <TrendingDownGlassIcon className="size-4.5 text-muted-foreground" />
+                  <TrendingDownGlassIcon className="size-5 text-muted-foreground" />
                 )}
                 <span>
                   {t(up ? 'movers.up' : 'movers.down', {

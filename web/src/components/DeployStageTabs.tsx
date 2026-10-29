@@ -21,21 +21,21 @@ function StageIcon({ stage }: { stage?: DeployStage }) {
     case 'done':
       return (
         <CircleCheckGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(cls, 'text-success')}
         />
       )
     case 'failed':
       return (
         <CircleAlertGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(cls, 'text-tone-danger')}
         />
       )
     case 'running':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(
             cls,
             'animate-spin text-info motion-reduce:animate-none',
@@ -45,7 +45,7 @@ function StageIcon({ stage }: { stage?: DeployStage }) {
     default:
       return (
         <CircleDashedGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={cn(cls, 'text-muted-foreground')}
         />
       )

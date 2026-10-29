@@ -56,7 +56,7 @@ function PrivateNetworksPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<Share2GlassIcon size="1.2em" />}
+        icon={<Share2GlassIcon size="1.4em" />}
         titleKey="privateNetworks:page.title"
         descriptionKey={
           empty

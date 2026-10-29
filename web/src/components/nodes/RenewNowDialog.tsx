@@ -25,7 +25,7 @@ export function RenewNowDialog({ node }: { node: NodeResource }) {
           setOpen(true)
         }}
       >
-        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         {t('trust.renewNow')}
       </Button>
       <ConfirmDialog

@@ -33,7 +33,7 @@ export function ScheduledDeploysList({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CalendarCheckGlassIcon className="size-4.5" aria-hidden="true" />
+          <CalendarCheckGlassIcon className="size-5" aria-hidden="true" />
           {t('schedule.list.title')}
         </CardTitle>
         <p className="text-sm text-muted-foreground">

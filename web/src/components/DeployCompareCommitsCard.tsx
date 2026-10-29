@@ -84,7 +84,7 @@ export function DeployCompareCommitsCard({
             onClick={() => setRequested(true)}
             disabled={notes.isFetching}
           >
-            <SquarePenGlassIcon className="size-4" data-icon="inline-start" />
+            <SquarePenGlassIcon className="size-5" data-icon="inline-start" />
             {notes.isFetching
               ? t('releaseNotes.generating')
               : t('releaseNotes.generate')}
@@ -116,7 +116,7 @@ export function DeployCompareCommitsCard({
               size="sm"
               onClick={() => void copy(notes.data.markdown)}
             >
-              <CopyGlassIcon className="size-4" data-icon="inline-start" />
+              <CopyGlassIcon className="size-5" data-icon="inline-start" />
               {t('releaseNotes.copy')}
             </Button>
           </div>

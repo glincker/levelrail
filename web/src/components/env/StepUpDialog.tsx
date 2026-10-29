@@ -136,7 +136,7 @@ export function StepUpDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <LockGlassIcon aria-hidden className="size-4.5" />
+            <LockGlassIcon aria-hidden className="size-5" />
             {t('stepUp.title')}
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -202,7 +202,7 @@ export function StepUpDialog({
                 void confirmWithPasskey()
               }}
             >
-              <FingerprintPatternGlassIcon size="1.2em" />
+              <FingerprintPatternGlassIcon size="1.4em" />
               {t('stepUp.passkey')}
             </Button>
           </div>

@@ -134,7 +134,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
                 setShowLog((v) => !v)
               }}
             >
-              <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+              <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
               {t('card.log')}
             </Button>
             <Button
@@ -143,7 +143,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
               disabled={test.isPending}
               onClick={runTest}
             >
-              <SendGlassIcon className="size-4" aria-hidden="true" />
+              <SendGlassIcon className="size-5" aria-hidden="true" />
               {test.isPending ? t('card.testing') : t('card.test')}
             </Button>
             <Button
@@ -158,7 +158,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
                 })
               }}
             >
-              <KeyGlassIcon className="size-4" aria-hidden="true" />
+              <KeyGlassIcon className="size-5" aria-hidden="true" />
               {t('card.rotate')}
             </Button>
             <Button
@@ -168,7 +168,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
                 setConfirmOpen(true)
               }}
             >
-              <TrashGlassIcon className="size-4" aria-hidden="true" />
+              <TrashGlassIcon className="size-5" aria-hidden="true" />
               {t('card.delete')}
             </Button>
           </div>

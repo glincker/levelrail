@@ -29,11 +29,11 @@ function LogsSection() {
     <Tabs defaultValue="live" className="flex h-full flex-col gap-3">
       <TabsList className="w-fit">
         <TabsTrigger value="live" className="gap-1.5">
-          <TerminalGlassIcon className="size-4.5" aria-hidden="true" />
+          <TerminalGlassIcon className="size-5" aria-hidden="true" />
           Live
         </TabsTrigger>
         <TabsTrigger value="search" className="gap-1.5">
-          <SearchGlassIcon className="size-4.5" aria-hidden="true" />
+          <SearchGlassIcon className="size-5" aria-hidden="true" />
           Search
         </TabsTrigger>
       </TabsList>

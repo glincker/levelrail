@@ -87,7 +87,7 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RefreshCwGlassIcon className="size-4.5" />
+          <RefreshCwGlassIcon className="size-5" />
           Deploy strategy
         </CardTitle>
         <CardDescription>

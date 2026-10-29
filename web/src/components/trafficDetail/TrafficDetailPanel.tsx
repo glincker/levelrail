@@ -194,7 +194,7 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
 
       {data && !data.has_traffic ? (
         <EmptyState
-          icon={<ChartLineGlassIcon className="size-5.5" />}
+          icon={<ChartLineGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           action={

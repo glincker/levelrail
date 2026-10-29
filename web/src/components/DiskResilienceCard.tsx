@@ -87,7 +87,7 @@ export function DiskResilienceCard() {
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
-              <ServerGlassIcon size="1.2em" aria-hidden="true" />
+              <ServerGlassIcon size="1.4em" aria-hidden="true" />
               {t('disk.title')}
             </CardTitle>
             <CardDescription>{t('disk.description')}</CardDescription>
@@ -99,7 +99,7 @@ export function DiskResilienceCard() {
               onClick={freeSpace}
               disabled={free.isPending}
             >
-              <BroomGlassIcon size="1.2em" aria-hidden="true" />
+              <BroomGlassIcon size="1.4em" aria-hidden="true" />
               {free.isPending ? t('disk.freeing') : t('disk.freeAction')}
             </Button>
           )}

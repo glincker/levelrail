@@ -63,7 +63,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 render={<Link to="/databases" />}
                 tooltip="Back to Databases"
               >
-                <ArrowLeftGlassIcon size="1.2em" />
+                <ArrowLeftGlassIcon size="1.4em" />
                 <span>Back to Databases</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -90,7 +90,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/overview')}
                 tooltip="Overview"
               >
-                <LayoutGridGlassIcon size="1.2em" />
+                <LayoutGridGlassIcon size="1.4em" />
                 <span>Overview</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -103,7 +103,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/resources')}
                   tooltip="Resources"
                 >
-                  <CpuGlassIcon size="1.2em" />
+                  <CpuGlassIcon size="1.4em" />
                   <span>Resources</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -117,7 +117,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/metrics')}
                   tooltip="Metrics"
                 >
-                  <ActivityGlassIcon size="1.2em" />
+                  <ActivityGlassIcon size="1.4em" />
                   <span>Metrics</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -129,7 +129,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/logs')}
                   tooltip="Logs"
                 >
-                  <ScrollGlassIcon size="1.2em" />
+                  <ScrollGlassIcon size="1.4em" />
                   <span>Logs</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -146,7 +146,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/slow-queries')}
                   tooltip="Slow Queries"
                 >
-                  <GaugeGlassIcon size="1.2em" />
+                  <GaugeGlassIcon size="1.4em" />
                   <span>Slow Queries</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -159,7 +159,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/explorer')}
                 tooltip={t('viewer.nav.explorer')}
               >
-                <SpreadsheetGlassIcon size="1.2em" />
+                <SpreadsheetGlassIcon size="1.4em" />
                 <span>{t('viewer.nav.explorer')}</span>
                 <BetaBadge className="ml-auto" />
               </SidebarMenuButton>
@@ -172,7 +172,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/console')}
                 tooltip={t('viewer.nav.console')}
               >
-                <TerminalGlassIcon size="1.2em" />
+                <TerminalGlassIcon size="1.4em" />
                 <span>{t('viewer.nav.console')}</span>
                 <BetaBadge className="ml-auto" />
               </SidebarMenuButton>
@@ -186,7 +186,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/upgrades')}
                   tooltip={t('upgrades.nav')}
                 >
-                  <ArrowUpGlassIcon size="1.2em" />
+                  <ArrowUpGlassIcon size="1.4em" />
                   <span>{t('upgrades.nav')}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -197,7 +197,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/access')}
                 tooltip={tAccess('nav.access')}
               >
-                <KeyGlassIcon size="1.2em" />
+                <KeyGlassIcon size="1.4em" />
                 <span>{tAccess('nav.access')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -209,7 +209,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/network')}
                 tooltip={tAccess('nav.network')}
               >
-                <Share2GlassIcon size="1.2em" />
+                <Share2GlassIcon size="1.4em" />
                 <span>{tAccess('nav.network')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>

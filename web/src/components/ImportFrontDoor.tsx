@@ -92,7 +92,7 @@ export function ImportFrontDoor({
             fileRef.current?.click()
           }}
         >
-          <UploadGlassIcon size="1.2em" aria-hidden="true" />
+          <UploadGlassIcon size="1.4em" aria-hidden="true" />
           Upload file
         </Button>
         <input

@@ -55,7 +55,7 @@ export function Suggestion({
       {icon && (
         <span
           className={cn(
-            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4',
+            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-5',
             t.soft,
             t.text,
           )}
@@ -83,7 +83,7 @@ export function Suggestion({
                 >
                   {pending && (
                     <LoaderCircleGlassIcon
-                      size="1.2em"
+                      size="1.4em"
                       className="animate-spin"
                       aria-hidden="true"
                     />
@@ -102,7 +102,7 @@ export function Suggestion({
           onClick={onDismiss}
           className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          <XGlassIcon className="size-4" aria-hidden="true" />
+          <XGlassIcon className="size-5" aria-hidden="true" />
         </button>
       )}
     </div>

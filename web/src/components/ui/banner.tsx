@@ -23,27 +23,27 @@ const VARIANT: Record<
 > = {
   info: {
     tone: 'info',
-    icon: <InfoGlassIcon className="text-tone-info" size="1.2em" />,
+    icon: <InfoGlassIcon className="text-tone-info" size="1.4em" />,
     role: 'status',
   },
   success: {
     tone: 'success',
-    icon: <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />,
+    icon: <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />,
     role: 'status',
   },
   warning: {
     tone: 'warning',
-    icon: <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />,
+    icon: <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />,
     role: 'status',
   },
   critical: {
     tone: 'danger',
-    icon: <OctagonAlertGlassIcon className="text-tone-danger" size="1.2em" />,
+    icon: <OctagonAlertGlassIcon className="text-tone-danger" size="1.4em" />,
     role: 'alert',
   },
   promo: {
     tone: 'accent',
-    icon: <MegaphoneGlassIcon size="1.2em" />,
+    icon: <MegaphoneGlassIcon size="1.4em" />,
     role: 'status',
   },
 }
@@ -98,7 +98,7 @@ export function Banner({
       <span
         aria-hidden="true"
         className={cn(
-          'flex h-5 shrink-0 items-center [&_svg]:size-5',
+          'flex h-5 shrink-0 items-center [&_svg]:size-6',
           tone.text,
         )}
       >
@@ -135,7 +135,7 @@ export function Banner({
             onDismiss?.()
           }}
         >
-          <XGlassIcon size="1.2em" aria-hidden="true" />
+          <XGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       ) : null}
     </section>

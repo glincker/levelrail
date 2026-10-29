@@ -62,7 +62,7 @@ function TestButton({ channel }: { channel: NotificationChannel }) {
         })
       }}
     >
-      <SendGlassIcon className="size-4" aria-hidden="true" />
+      <SendGlassIcon className="size-5" aria-hidden="true" />
       {testChannel.isPending
         ? t('channelsPage.table.sending')
         : t('channelsPage.table.test')}
@@ -82,7 +82,7 @@ export function NotificationChannelTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<WebhookGlassIcon className="size-5.5" />}
+        icon={<WebhookGlassIcon className="size-6" />}
         title={t('channelsPage.empty.title')}
         description={t('channelsPage.empty.body')}
         action={action}

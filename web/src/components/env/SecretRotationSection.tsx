@@ -105,7 +105,7 @@ export function SecretRotationSection({ appName }: { appName: string }) {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertTitle>
               {t('redeploy.title', { key: needsRedeploy })}
@@ -155,7 +155,7 @@ export function SecretRotationSection({ appName }: { appName: string }) {
         ) : null}
         {secretKeys.length === 0 ? (
           <EmptyState
-            icon={<RefreshCwGlassIcon size="1.2em" />}
+            icon={<RefreshCwGlassIcon size="1.4em" />}
             title={t('empty.title')}
             description={t('empty.description')}
           />

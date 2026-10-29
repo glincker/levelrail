@@ -41,7 +41,7 @@ export function MyTokensCard() {
         {data && active.length === 0 ? (
           <EmptyState
             compact
-            icon={<KeyGlassIcon className="size-5.5" />}
+            icon={<KeyGlassIcon className="size-6" />}
             title={t('accountPage.tokens.emptyTitle')}
             description={t('accountPage.tokens.emptyBody')}
             action={<CreateTokenDialog />}

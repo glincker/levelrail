@@ -126,7 +126,7 @@ export function RuleBuilder({
                 })
               }
             >
-              <PlusGlassIcon size="1.2em" />
+              <PlusGlassIcon size="1.4em" />
               {t('builder.addCondition')}
             </Button>
             {value.conditions.length >= maxConditions ? (

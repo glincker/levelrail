@@ -17,11 +17,11 @@ const ALERT_RE = /^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n?/i
 const SAFE_HREF = /^(https?:\/\/|mailto:)/i
 
 const ALERT_ICON: Record<AlertKind, ReactNode> = {
-  note: <InfoGlassIcon className="size-4.5 text-tone-info" />,
-  tip: <LightbulbGlassIcon className="size-4.5" />,
-  important: <MessageSquareGlassIcon className="size-4.5" />,
-  warning: <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />,
-  caution: <CircleAlertGlassIcon className="size-4.5 text-tone-danger" />,
+  note: <InfoGlassIcon className="size-5 text-tone-info" />,
+  tip: <LightbulbGlassIcon className="size-5" />,
+  important: <MessageSquareGlassIcon className="size-5" />,
+  warning: <TriangleAlertGlassIcon className="size-5 text-tone-warning" />,
+  caution: <CircleAlertGlassIcon className="size-5 text-tone-danger" />,
 }
 
 const ALERT_TONE: Record<AlertKind, string> = {

@@ -215,7 +215,7 @@ export function SupplyChainSection({
           disabled={!canScan || scan.isPending}
         >
           <ShieldCheckGlassIcon
-            className="size-4.5 text-tone-success"
+            className="size-5 text-tone-success"
             aria-hidden="true"
           />
           {scan.isPending ? 'Scanning' : 'Scan now'}
@@ -232,7 +232,7 @@ export function SupplyChainSection({
             nativeButton={false}
             render={<a href={data.download_url} download />}
           >
-            <DownloadGlassIcon className="size-4.5" aria-hidden="true" />
+            <DownloadGlassIcon className="size-5" aria-hidden="true" />
             SBOM
           </Button>
         )}

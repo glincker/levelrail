@@ -86,14 +86,14 @@ export function SqlConsole({
           {writes ? (
             <Badge variant="destructive">
               <TriangleAlertGlassIcon
-                className="size-3.5 text-tone-warning"
+                className="size-4.5 text-tone-warning"
                 aria-hidden="true"
               />
               {t('viewer.console.writesOn')}
             </Badge>
           ) : (
             <Badge variant="muted">
-              <LockGlassIcon className="size-3.5" aria-hidden="true" />
+              <LockGlassIcon className="size-4.5" aria-hidden="true" />
               {t('viewer.console.readOnly')}
             </Badge>
           )}
@@ -135,7 +135,7 @@ export function SqlConsole({
               execute('read')
             }}
           >
-            <PlayGlassIcon className="size-4" aria-hidden="true" />
+            <PlayGlassIcon className="size-5" aria-hidden="true" />
             {run.isPending
               ? t('viewer.console.running')
               : t('viewer.console.run')}
@@ -173,7 +173,7 @@ export function SqlConsole({
               setSaveOpen(true)
             }}
           >
-            <SaveGlassIcon className="size-4" aria-hidden="true" />
+            <SaveGlassIcon className="size-5" aria-hidden="true" />
             {t('viewer.console.saved.save')}
           </Button>
           <span className="text-xs text-muted-foreground">
@@ -214,7 +214,7 @@ export function SqlConsole({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-1.5 text-destructive">
               <TriangleAlertGlassIcon
-                className="size-4.5 text-tone-warning"
+                className="size-5 text-tone-warning"
                 aria-hidden="true"
               />
               {t('viewer.console.writeConfirmTitle')}

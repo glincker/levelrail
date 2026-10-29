@@ -66,7 +66,7 @@ export function PreviewPolicyCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SlidersHorizontalGlassIcon className="size-4.5 text-muted-foreground" />
+          <SlidersHorizontalGlassIcon className="size-5 text-muted-foreground" />
           Preview limits and safety
           <InfoTip label="About preview limits">
             Caps come from the control plane settings

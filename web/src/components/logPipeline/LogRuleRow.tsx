@@ -86,7 +86,7 @@ export function LogRuleRow({
             onMove(-1)
           }}
         >
-          <ArrowUpGlassIcon size="1.2em" />
+          <ArrowUpGlassIcon size="1.4em" />
         </Button>
         <Button
           type="button"
@@ -98,7 +98,7 @@ export function LogRuleRow({
             onMove(1)
           }}
         >
-          <ArrowDownGlassIcon size="1.2em" />
+          <ArrowDownGlassIcon size="1.4em" />
         </Button>
         <Button
           type="button"
@@ -107,7 +107,7 @@ export function LogRuleRow({
           aria-label={t('rules.remove', { index: n })}
           onClick={onRemove}
         >
-          <TrashGlassIcon size="1.2em" />
+          <TrashGlassIcon size="1.4em" />
         </Button>
       </div>
     </li>

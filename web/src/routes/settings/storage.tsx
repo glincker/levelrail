@@ -37,7 +37,7 @@ function StoragePage() {
     <div className="space-y-8">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <UploadGlassIcon className="size-4.5" aria-hidden="true" />
+          <UploadGlassIcon className="size-5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader
@@ -64,7 +64,7 @@ function StoragePage() {
         </Alert>
       ) : destinations.isError ? (
         <EmptyState
-          icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
+          icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
           title={t('storagePage.loadErrorTitle')}
           description={destinations.error.message}
           action={

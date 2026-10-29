@@ -75,7 +75,7 @@ function HealthDiscoveryResultView({
     return (
       <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-sm">
         <CircleCheckGlassIcon
-          className="size-4.5 shrink-0 text-emerald-600"
+          className="size-5 shrink-0 text-emerald-600"
           aria-hidden="true"
         />
         <span>
@@ -96,12 +96,12 @@ function HealthDiscoveryResultView({
           <span className="flex items-center gap-1.5">
             {a.success ? (
               <CircleCheckGlassIcon
-                className="size-4 shrink-0 text-emerald-600"
+                className="size-5 shrink-0 text-emerald-600"
                 aria-hidden="true"
               />
             ) : (
               <CircleAlertGlassIcon
-                className="size-4 shrink-0 text-muted-foreground"
+                className="size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
             )}

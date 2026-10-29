@@ -59,7 +59,7 @@ function Thumb({
       ) : (
         <FileGlassIcon
           aria-hidden="true"
-          className="size-5.5 text-muted-foreground"
+          className="size-6 text-muted-foreground"
         />
       )}
     </div>
@@ -130,9 +130,9 @@ function AssetRow({
         }}
       >
         {isPublic ? (
-          <CopyGlassIcon size="1.2em" aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <LinkGlassIcon size="1.2em" aria-hidden="true" />
+          <LinkGlassIcon size="1.4em" aria-hidden="true" />
         )}
       </Button>
       <Button
@@ -146,7 +146,7 @@ function AssetRow({
           void copy('cdn')
         }}
       >
-        <GlobeGlassIcon size="1.2em" aria-hidden="true" />
+        <GlobeGlassIcon size="1.4em" aria-hidden="true" />
       </Button>
       <Button
         type="button"
@@ -157,7 +157,7 @@ function AssetRow({
           onDelete(item)
         }}
       >
-        <TrashGlassIcon size="1.2em" aria-hidden="true" />
+        <TrashGlassIcon size="1.4em" aria-hidden="true" />
       </Button>
     </li>
   )
@@ -219,7 +219,7 @@ export function AssetList({ bucket }: Readonly<{ bucket: AssetBucket }>) {
         <EmptyState
           compact
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<FileGlassIcon className="size-5.5" />}
+          icon={<FileGlassIcon className="size-6" />}
           title={t('items.title')}
           description={t('items.empty')}
         />

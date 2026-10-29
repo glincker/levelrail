@@ -70,7 +70,7 @@ export function OfflineDocsNotice({ routePath }: OfflineDocsNoticeProps) {
         title={t('offlineNotice.dismiss')}
         className="shrink-0"
       >
-        <XGlassIcon className="size-4.5" />
+        <XGlassIcon className="size-5" />
       </Button>
     </div>
   )

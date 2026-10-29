@@ -108,7 +108,7 @@ function ExportAuditLogLink({
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
-      <DownloadGlassIcon className="size-4" aria-hidden="true" />
+      <DownloadGlassIcon className="size-5" aria-hidden="true" />
       Export CSV
     </a>
   )
@@ -247,7 +247,7 @@ function AuditLogSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<RestoreGlassIcon size="1.2em" />}
+      icon={<RestoreGlassIcon size="1.4em" />}
       title={t('page.title')}
       description={t('page.description')}
       width="wide"
@@ -351,7 +351,7 @@ function AuditLogSettingsPage() {
       ) : entries.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<RestoreGlassIcon className="size-5.5" />}
+          icon={<RestoreGlassIcon className="size-6" />}
           title={t('page.emptyTitle')}
           description={
             filtersActive ? t('page.emptyFiltered') : t('page.emptyNone')
@@ -363,7 +363,7 @@ function AuditLogSettingsPage() {
 
       {loadMoreError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{loadMoreError}</AlertDescription>
         </Alert>
       ) : null}

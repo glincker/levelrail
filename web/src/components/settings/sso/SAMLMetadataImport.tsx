@@ -80,7 +80,7 @@ export function SAMLMetadataImport({
             disabled={!ready || importMetadata.isPending}
             onClick={run}
           >
-            <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+            <DownloadGlassIcon size="1.4em" aria-hidden="true" />
             {t('form.import.button')}
           </Button>
         </div>

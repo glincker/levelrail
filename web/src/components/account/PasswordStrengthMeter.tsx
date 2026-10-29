@@ -59,11 +59,11 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
           >
             {req[rule] ? (
               <CheckGlassIcon
-                className="size-4 text-emerald-600"
+                className="size-5 text-emerald-600"
                 aria-hidden="true"
               />
             ) : (
-              <CircleGlassIcon className="size-4" aria-hidden="true" />
+              <CircleGlassIcon className="size-5" aria-hidden="true" />
             )}
             {t(`accountPage.password.rules.${rule}`, {
               min: MIN_PASSWORD_LENGTH,

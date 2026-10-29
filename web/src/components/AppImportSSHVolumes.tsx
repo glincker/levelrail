@@ -58,7 +58,7 @@ export function AppImportSSHVolumes({
           disabled={!session.connected || running || start.isPending}
           onClick={() => start.mutate({ id: session.id })}
         >
-          <ServerGlassIcon size="1.2em" aria-hidden />
+          <ServerGlassIcon size="1.4em" aria-hidden />
           {results.length > 0
             ? t('appImport.ssh.volumes.again')
             : t('appImport.ssh.volumes.copy')}

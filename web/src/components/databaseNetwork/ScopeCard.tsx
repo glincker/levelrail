@@ -71,7 +71,7 @@ export function ScopeCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <SlidersHorizontalGlassIcon className="size-4.5" aria-hidden="true" />
+          <SlidersHorizontalGlassIcon className="size-5" aria-hidden="true" />
           {t('scope.title')}
         </CardTitle>
         <p className="text-xs text-muted-foreground">

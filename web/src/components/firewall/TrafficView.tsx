@@ -52,7 +52,7 @@ export function TrafficView({
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <InfoGlassIcon
           aria-hidden="true"
-          className="mt-0.5 size-4.5 shrink-0 text-tone-info"
+          className="mt-0.5 size-5 shrink-0 text-tone-info"
         />
         {t('traffic.note', { minutes: data?.window_minutes ?? 60 })}
       </p>

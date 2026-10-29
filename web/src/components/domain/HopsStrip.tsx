@@ -31,7 +31,7 @@ export function HopsStrip({ samples }: { samples: PreviewHops[] }) {
                 <li key={`${h.url}-${i}`} className="flex items-center gap-1">
                   {i > 0 ? (
                     <ArrowRightGlassIcon
-                      className="size-3.5 text-muted-foreground"
+                      className="size-4.5 text-muted-foreground"
                       aria-hidden="true"
                     />
                   ) : null}
@@ -51,7 +51,7 @@ export function HopsStrip({ samples }: { samples: PreviewHops[] }) {
                 className="mt-1 flex items-center gap-1 text-destructive"
               >
                 <TriangleAlertGlassIcon
-                  className="size-3.5 text-tone-warning"
+                  className="size-4.5 text-tone-warning"
                   aria-hidden="true"
                 />
                 {s.error}

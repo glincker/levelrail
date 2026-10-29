@@ -87,9 +87,9 @@ export function DocsPageToolbar({
         className="gap-1.5 text-muted-foreground"
       >
         {pinned ? (
-          <PinGlassIcon className="size-4" />
+          <PinGlassIcon className="size-5" />
         ) : (
-          <PinGlassIcon className="size-4" />
+          <PinGlassIcon className="size-5" />
         )}
         {pinned ? t('unpin.label') : t('pin.label')}
       </Button>
@@ -100,7 +100,7 @@ export function DocsPageToolbar({
           rel="noopener noreferrer"
           className={cn(buttonVariants({ size: 'sm' }), 'gap-1.5')}
         >
-          <BookmarkGlassIcon className="size-4" />
+          <BookmarkGlassIcon className="size-5" />
           {t('toolbar.openDocsSite')}
         </a>
       )}
@@ -114,7 +114,7 @@ export function DocsPageToolbar({
                 'gap-1.5 text-muted-foreground',
               )}
             >
-              <DownloadGlassIcon className="size-4" />
+              <DownloadGlassIcon className="size-5" />
               {t('toolbar.export')}
             </button>
           }
@@ -122,9 +122,9 @@ export function DocsPageToolbar({
         <DropdownMenuContent>
           <DropdownMenuItem onClick={handleCopy}>
             {copied ? (
-              <CheckGlassIcon size="1.2em" />
+              <CheckGlassIcon size="1.4em" />
             ) : (
-              <CopyGlassIcon size="1.2em" />
+              <CopyGlassIcon size="1.4em" />
             )}
             {t('toolbar.copyMarkdown')}
           </DropdownMenuItem>
@@ -134,7 +134,7 @@ export function DocsPageToolbar({
               target="_blank"
               rel="noreferrer"
             >
-              <SocialGithubGlassIcon size="1.2em" />
+              <SocialGithubGlassIcon size="1.4em" />
               {t('toolbar.viewSourceGitHub')}
             </DropdownMenuLinkItem>
           ) : null}

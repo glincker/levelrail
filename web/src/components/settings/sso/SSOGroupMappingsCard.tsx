@@ -120,7 +120,7 @@ export function SSOGroupMappingsCard({
                   setRows((rs) => rs.filter((x) => x.key !== r.key))
                 }
               >
-                <TrashGlassIcon size="1.2em" aria-hidden="true" />
+                <TrashGlassIcon size="1.4em" aria-hidden="true" />
               </Button>
             </div>
           ))}
@@ -128,7 +128,7 @@ export function SSOGroupMappingsCard({
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" onClick={add}>
-          <PlusGlassIcon size="1.2em" aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('mappings.add')}
         </Button>
         <Button type="button" disabled={save.isPending} onClick={submit}>

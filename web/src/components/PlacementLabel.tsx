@@ -103,7 +103,7 @@ export function MoveToThisServerButton({
         )
       }}
     >
-      <ServerGlassIcon size="1.2em" aria-hidden="true" />
+      <ServerGlassIcon size="1.4em" aria-hidden="true" />
       {t('placement.moveHere')}
     </Button>
   )

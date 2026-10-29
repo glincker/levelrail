@@ -53,7 +53,7 @@ export function ApiErrorAlert({
     <Alert variant="destructive" data-testid="api-error-alert">
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
       <AlertDescription className="space-y-2">
@@ -87,7 +87,7 @@ export function ApiErrorAlert({
                 copyId(api.requestId ?? '')
               }}
             >
-              <CopyGlassIcon size="1.2em" aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
               {copied
                 ? t('apiError.copied')
                 : t('apiError.requestId', { id: api.requestId })}

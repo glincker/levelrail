@@ -98,7 +98,7 @@ export function UnlinkProviderButton({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertTitle>{t('unlink.lastMethodTitle')}</AlertTitle>
             <AlertDescription className="space-y-3">

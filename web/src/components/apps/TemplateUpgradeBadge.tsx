@@ -48,7 +48,7 @@ export function TemplateUpgradeBadge({
   if (active) {
     return (
       <Alert role="status" className="py-1.5">
-        <ArrowUpGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
+        <ArrowUpGlassIcon className="size-5 shrink-0" aria-hidden="true" />
         <AlertDescription className="flex flex-wrap items-center gap-x-2">
           <span className="font-medium">
             {t(`templateUpgrade.run.${active.state}`)}
@@ -66,7 +66,7 @@ export function TemplateUpgradeBadge({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Badge variant="info" className="gap-1">
-        <ArrowUpGlassIcon className="size-4" aria-hidden="true" />
+        <ArrowUpGlassIcon className="size-5" aria-hidden="true" />
         {t('templateUpgrade.badge')}
       </Badge>
       <span className="text-xs text-muted-foreground">

@@ -50,7 +50,7 @@ function AbilityRow({ a }: { a: EffectiveAbility }) {
         {names.length > 0 ? (
           <ChevronDownGlassIcon
             className={cn(
-              'size-4 text-muted-foreground transition-transform motion-reduce:transition-none',
+              'size-5 text-muted-foreground transition-transform motion-reduce:transition-none',
               open && 'rotate-180',
             )}
             aria-hidden="true"

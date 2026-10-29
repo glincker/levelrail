@@ -180,7 +180,7 @@ export function BuildTab({
               download
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
-              <DownloadGlassIcon className="size-4" aria-hidden="true" />
+              <DownloadGlassIcon className="size-5" aria-hidden="true" />
               {t('build.download')}
             </a>
           </div>
@@ -205,12 +205,12 @@ export function BuildTab({
         <div className="flex items-start gap-3 rounded-lg border border-dashed border-border p-4">
           {emptyKind === 'waiting' ? (
             <CountdownGlassIcon
-              className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
+              className="mt-0.5 size-6 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
           ) : (
             <PackageGlassIcon
-              className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
+              className="mt-0.5 size-6 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
           )}

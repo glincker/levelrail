@@ -147,7 +147,7 @@ export function ApproveDialog({
                 setRows((cur) => cur.filter((x) => x.id !== r.id))
               }}
             >
-              <TrashGlassIcon size="1.2em" aria-hidden="true" />
+              <TrashGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           </div>
         ))}
@@ -160,7 +160,7 @@ export function ApproveDialog({
             setNextId((n) => n + 1)
           }}
         >
-          <PlusGlassIcon size="1.2em" aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('approval.addSecret')}
         </Button>
       </div>

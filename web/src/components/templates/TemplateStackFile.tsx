@@ -47,7 +47,7 @@ export function TemplateStackFile({
             className="inline-flex items-center gap-1.5 rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <Caret className="size-4" aria-hidden="true" />
-            <FileCodeGlassIcon className="size-4.5" aria-hidden="true" />
+            <FileCodeGlassIcon className="size-5" aria-hidden="true" />
             {t('stackFile.title')}
           </button>
         </h2>
@@ -64,7 +64,7 @@ export function TemplateStackFile({
               downloadYaml(compose, `${slug}.compose.yaml`)
             }}
           >
-            <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+            <DownloadGlassIcon size="1.4em" aria-hidden="true" />
             {t('stackFile.download')}
           </Button>
         ) : null}

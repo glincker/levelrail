@@ -61,7 +61,7 @@ export function TwoFactorCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <LockGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('accountPage.twoFactor.title')}
@@ -129,9 +129,9 @@ function CopyableValue({ value, label }: { value: string; label: string }) {
           }}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
           ) : (
-            <CopyGlassIcon size="1.2em" />
+            <CopyGlassIcon size="1.4em" />
           )}
           {copied
             ? t('accountPage.twoFactor.copied')
@@ -161,9 +161,9 @@ function RecoveryCodeGrid({ codes }: { codes: string[] }) {
         }}
       >
         {copied ? (
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
         ) : (
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
         )}
         {copied
           ? t('accountPage.twoFactor.copied')
@@ -212,7 +212,7 @@ function EnableTwoFactorDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
-        <LockGlassIcon size="1.2em" />
+        <LockGlassIcon size="1.4em" />
         {t('accountPage.twoFactor.enable')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -230,7 +230,7 @@ function EnableTwoFactorDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
                   <span>{setup.error.message}</span>
@@ -274,7 +274,7 @@ function EnableTwoFactorDialog() {
                   <Alert variant="destructive">
                     <TriangleAlertGlassIcon
                       className="text-tone-warning"
-                      size="1.2em"
+                      size="1.4em"
                     />
                     <AlertDescription>{confirm.error.message}</AlertDescription>
                   </Alert>
@@ -306,7 +306,7 @@ function EnableTwoFactorDialog() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CircleCheckGlassIcon
-                  size="1.2em"
+                  size="1.4em"
                   className="text-green-700 dark:text-green-400"
                 />
                 {t('accountPage.twoFactor.enabledTitle')}
@@ -368,7 +368,7 @@ function RegenerateRecoveryCodesDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" />}>
-        <KeyGlassIcon size="1.2em" />
+        <KeyGlassIcon size="1.4em" />
         {t('accountPage.twoFactor.regenerate')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -398,7 +398,7 @@ function RegenerateRecoveryCodesDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertDescription>{regenerate.error.message}</AlertDescription>
               </Alert>
@@ -428,7 +428,7 @@ function RegenerateRecoveryCodesDialog() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CircleCheckGlassIcon
-                  size="1.2em"
+                  size="1.4em"
                   className="text-green-700 dark:text-green-400"
                 />
                 {t('accountPage.twoFactor.regeneratedTitle')}
@@ -492,7 +492,7 @@ function DisableTwoFactorDialog() {
         <form onSubmit={handleSubmit} className="space-y-3">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TriangleAlertGlassIcon className="size-4.5 text-destructive" />
+              <TriangleAlertGlassIcon className="size-5 text-destructive" />
               {t('accountPage.twoFactor.disableTitle')}
             </DialogTitle>
             <DialogDescription>
@@ -535,7 +535,7 @@ function DisableTwoFactorDialog() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{disable.error.message}</AlertDescription>
             </Alert>

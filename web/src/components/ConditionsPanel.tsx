@@ -82,7 +82,7 @@ export function ConditionsPanel({
                       )}
                     >
                       <TriangleAlertGlassIcon
-                        className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                        className="mt-0.5 size-5 shrink-0 text-tone-warning"
                         aria-hidden="true"
                       />
                       <p>

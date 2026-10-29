@@ -142,9 +142,9 @@ function GroupRow({
         className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
       >
         {open ? (
-          <ChevronDownGlassIcon size="1.2em" />
+          <ChevronDownGlassIcon size="1.4em" />
         ) : (
-          <ChevronRightGlassIcon size="1.2em" />
+          <ChevronRightGlassIcon size="1.4em" />
         )}
         <span className="truncate font-medium">
           {t('page.group.label', { title: head.title, count: ids.length })}
@@ -162,7 +162,7 @@ function GroupRow({
           p.onArchiveMany(row.entries)
         }}
       >
-        <ArchiveGlassIcon size="1.2em" />
+        <ArchiveGlassIcon size="1.4em" />
       </Button>
       {canDelete ? (
         <Button
@@ -174,7 +174,7 @@ function GroupRow({
             p.onDeleteMany(row.entries)
           }}
         >
-          <TrashGlassIcon size="1.2em" />
+          <TrashGlassIcon size="1.4em" />
         </Button>
       ) : null}
     </div>

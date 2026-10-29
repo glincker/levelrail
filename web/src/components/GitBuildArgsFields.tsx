@@ -78,7 +78,7 @@ export function BuildArgsFields({
                 remove(index)
               }}
             >
-              <XGlassIcon size="1.2em" />
+              <XGlassIcon size="1.4em" />
               <span className="sr-only">
                 {t('sourceFields.removeBuildArg')}
               </span>
@@ -96,7 +96,7 @@ export function BuildArgsFields({
           append({ key: '', value: '' })
         }}
       >
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         {t('sourceFields.addBuildArg')}
       </Button>
     </Field>

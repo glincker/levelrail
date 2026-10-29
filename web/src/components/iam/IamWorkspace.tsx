@@ -52,12 +52,12 @@ export function IamWorkspace() {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />}
       title={t('page.title')}
       description={t('page.description')}
       actions={
         <Button onClick={() => setBuilder({ open: true })}>
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {t('page.createPolicy')}
         </Button>
       }

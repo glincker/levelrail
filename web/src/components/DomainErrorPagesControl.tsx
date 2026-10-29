@@ -86,13 +86,13 @@ export function DomainErrorPagesControl({
           {active ? (
             <EnforcedBadge domain={domain} control="error_pages">
               <Badge variant="success" className="shrink-0">
-                <FileCodeGlassIcon className="size-3.5" />
+                <FileCodeGlassIcon className="size-4.5" />
                 {pages.length} custom error page{pages.length === 1 ? '' : 's'}
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <FileCodeGlassIcon className="size-3.5" />
+              <FileCodeGlassIcon className="size-4.5" />
               No custom error pages
             </Badge>
           )}
@@ -103,7 +103,7 @@ export function DomainErrorPagesControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <FileCodeGlassIcon className="size-4" />
+          <FileCodeGlassIcon className="size-5" />
           {open ? 'Hide' : active ? 'Manage' : 'Add error page'}
         </Button>
       </div>
@@ -178,7 +178,7 @@ export function DomainErrorPagesControl({
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.2em"
+                    size="1.4em"
                   />
                   <AlertDescription>{setPage.error.message}</AlertDescription>
                 </Alert>
@@ -187,7 +187,7 @@ export function DomainErrorPagesControl({
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.2em"
+                    size="1.4em"
                   />
                   <AlertDescription>{clearPage.error.message}</AlertDescription>
                 </Alert>

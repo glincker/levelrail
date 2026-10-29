@@ -537,14 +537,14 @@ export function EditAlertRuleDialog({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger render={<Button variant="outline" size="sm" />}>
-        <PencilGlassIcon className="size-4" aria-hidden="true" />
+        <PencilGlassIcon className="size-5" aria-hidden="true" />
         Edit
       </SheetTrigger>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-1.5">
             <PencilGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Edit alert rule

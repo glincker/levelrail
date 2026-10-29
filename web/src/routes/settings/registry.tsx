@@ -47,7 +47,7 @@ function RegistrySettingsPage() {
       title={t('builtInRegistryPage.title')}
       banner={
         <PageBanner
-          icon={<ServerGlassIcon size="1.2em" />}
+          icon={<ServerGlassIcon size="1.4em" />}
           titleKey="settings:builtInRegistryPage.title"
           descriptionKey={
             settings.enabled

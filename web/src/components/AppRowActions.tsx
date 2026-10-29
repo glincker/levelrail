@@ -76,37 +76,37 @@ export function AppRowActions({ app }: { app: AppListEntry }) {
             />
           }
         >
-          <EllipsisGlassIcon size="1.2em" />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
             onClick={() => run(restartApp.mutate, `Restarting "${app.name}".`)}
           >
-            <RotateCwGlassIcon size="1.2em" />
+            <RotateCwGlassIcon size="1.4em" />
             Restart
           </DropdownMenuItem>
           {app.suspended ? (
             <DropdownMenuItem
               onClick={() => run(startApp.mutate, `Starting "${app.name}".`)}
             >
-              <PlayGlassIcon size="1.2em" />
+              <PlayGlassIcon size="1.4em" />
               Start
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem onClick={() => setConfirmStop(true)}>
-              <PauseGlassIcon size="1.2em" />
+              <PauseGlassIcon size="1.4em" />
               Stop
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={redeploy}>
-            <RocketGlassIcon size="1.2em" />
+            <RocketGlassIcon size="1.4em" />
             Redeploy
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             render={<Link to="/apps/$name/logs" params={{ name: app.name }} />}
           >
-            <TerminalGlassIcon size="1.2em" />
+            <TerminalGlassIcon size="1.4em" />
             View logs
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -114,7 +114,7 @@ export function AppRowActions({ app }: { app: AppListEntry }) {
               <Link to="/apps/$name/deploys" params={{ name: app.name }} />
             }
           >
-            <RestoreGlassIcon size="1.2em" />
+            <RestoreGlassIcon size="1.4em" />
             View deploys
           </DropdownMenuItem>
           {domain ? (
@@ -123,7 +123,7 @@ export function AppRowActions({ app }: { app: AppListEntry }) {
               target="_blank"
               rel="noreferrer"
             >
-              <ExternalLinkGlassIcon size="1.2em" />
+              <ExternalLinkGlassIcon size="1.4em" />
               Open domain
             </DropdownMenuLinkItem>
           ) : null}

@@ -98,7 +98,7 @@ export function SAMLConnectionList({
 
   const addButton = (
     <Button type="button" onClick={() => setEditing({ kind: 'new' })}>
-      <PlusGlassIcon size="1.2em" aria-hidden="true" />
+      <PlusGlassIcon size="1.4em" aria-hidden="true" />
       {t('page.addConnection')}
     </Button>
   )
@@ -107,7 +107,7 @@ export function SAMLConnectionList({
     <FormSection title={t('list.title')} description={t('list.description')}>
       {connections.length === 0 ? (
         <EmptyState
-          icon={<UniversityGlassIcon className="size-5.5" />}
+          icon={<UniversityGlassIcon className="size-6" />}
           title={t('list.emptyTitle')}
           description={t('list.emptyBody')}
           action={addButton}
@@ -148,7 +148,7 @@ export function SAMLConnectionList({
                     size="sm"
                     onClick={() => setEditing({ kind: 'edit', connection: c })}
                   >
-                    <SettingsGlassIcon size="1.2em" aria-hidden="true" />
+                    <SettingsGlassIcon size="1.4em" aria-hidden="true" />
                     {t('list.configure')}
                   </Button>
                 </li>

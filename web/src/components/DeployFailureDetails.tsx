@@ -44,7 +44,7 @@ export function DeployFailureDetails({ failure }: { failure?: DeployFailure }) {
           >
             <ChevronRightGlassIcon
               aria-hidden="true"
-              className={`size-3.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
+              className={`size-4.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
             />
             {t('failureDetails.excerpt')}
           </button>

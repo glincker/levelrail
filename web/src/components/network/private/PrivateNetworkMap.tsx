@@ -47,7 +47,7 @@ export function PrivateNetworkMap({ data }: { data: MapData }) {
   if (data.apps.length === 0) {
     return (
       <EmptyState
-        icon={<Share2GlassIcon className="size-5.5" />}
+        icon={<Share2GlassIcon className="size-6" />}
         title={t('map.empty')}
         description={t('map.emptyHint')}
       />

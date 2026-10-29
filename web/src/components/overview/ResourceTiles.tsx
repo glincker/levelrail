@@ -82,7 +82,7 @@ export function ResourceTiles({ reading }: { reading: ResourceReading }) {
     <>
       <ResourceTile
         label="CPU"
-        icon={<CpuGlassIcon className="size-4" />}
+        icon={<CpuGlassIcon className="size-5" />}
         value={cpuNow === null ? 'n/a' : `${cpuNow.toFixed(1)}%`}
         context={cores > 0 ? `of ${cores} CPU limit` : 'no CPU limit set'}
         ratio={cpuRatio}
@@ -91,7 +91,7 @@ export function ResourceTiles({ reading }: { reading: ResourceReading }) {
       />
       <ResourceTile
         label="Memory"
-        icon={<MemoryStickGlassIcon className="size-4" />}
+        icon={<MemoryStickGlassIcon className="size-5" />}
         value={memNow === null ? 'n/a' : formatBytes(memNow)}
         context={
           memLimit > 0 ? `of ${formatBytes(memLimit)}` : 'no memory limit set'

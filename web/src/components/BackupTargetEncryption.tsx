@@ -11,12 +11,12 @@ export function DumpEncryptionBadge({ target }: { target: BackupTarget }) {
   const { t } = useTranslation('settings')
   return target.encrypt_dumps ? (
     <Badge variant="success" className="gap-1.5">
-      <LockGlassIcon className="size-4" aria-hidden="true" />
+      <LockGlassIcon className="size-5" aria-hidden="true" />
       {t('backupTargetsPage.encryption.on')}
     </Badge>
   ) : (
     <Badge variant="muted" className="gap-1.5">
-      <LockOpenGlassIcon className="size-4" aria-hidden="true" />
+      <LockOpenGlassIcon className="size-5" aria-hidden="true" />
       {t('backupTargetsPage.encryption.off')}
     </Badge>
   )
@@ -36,7 +36,7 @@ export function EnableDumpEncryptionButton({
     <ConfirmAction
       trigger={(openDialog) => (
         <Button type="button" variant="outline" size="sm" onClick={openDialog}>
-          <LockGlassIcon className="size-4" aria-hidden="true" />
+          <LockGlassIcon className="size-5" aria-hidden="true" />
           {t('backupTargetsPage.encryption.enable')}
         </Button>
       )}

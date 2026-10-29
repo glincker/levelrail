@@ -22,7 +22,7 @@ export const CRUMB_CURRENT_CLASS = 'font-medium text-foreground'
 function Separator() {
   return (
     <ChevronRightGlassIcon
-      className="size-3.5 shrink-0 text-muted-foreground/50"
+      className="size-4.5 shrink-0 text-muted-foreground/50"
       aria-hidden="true"
     />
   )
@@ -73,7 +73,7 @@ export function Breadcrumbs({
         className={CRUMB_LINK_CLASS}
         aria-label={t('shell.breadcrumb.home')}
       >
-        <HouseGlassIcon className="size-4" aria-hidden="true" />
+        <HouseGlassIcon className="size-5" aria-hidden="true" />
       </Link>
 
       {resolvedOrgId ? (

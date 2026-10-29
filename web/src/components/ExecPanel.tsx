@@ -106,7 +106,7 @@ export function ExecPanel({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TerminalGlassIcon className="size-4.5" />
+            <TerminalGlassIcon className="size-5" />
             Run a one-off command
           </CardTitle>
           <CardDescription>
@@ -117,7 +117,7 @@ export function ExecPanel({
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            <LockGlassIcon className="size-5.5 shrink-0" />
+            <LockGlassIcon className="size-6 shrink-0" />
             <p>
               Shell/exec access is disabled for this app. Use the
               &quot;Shell/exec access&quot; card above to turn it back on before
@@ -133,7 +133,7 @@ export function ExecPanel({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TerminalGlassIcon className="size-4.5" />
+          <TerminalGlassIcon className="size-5" />
           Run a one-off command
         </CardTitle>
         <CardDescription>
@@ -197,7 +197,7 @@ export function ExecPanel({
             disabled={execApp.isPending}
             className="sm:self-end"
           >
-            <PlayGlassIcon className="size-4" data-icon="inline-start" />
+            <PlayGlassIcon className="size-5" data-icon="inline-start" />
             {execApp.isPending ? 'Running...' : 'Run'}
           </Button>
         </form>

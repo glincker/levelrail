@@ -64,7 +64,7 @@ export function AiChatPanel({
           disabled={connectionState === 'connecting'}
           onClick={startNewSession}
         >
-          <RotateCwGlassIcon size="1.2em" />
+          <RotateCwGlassIcon size="1.4em" />
           New chat
         </Button>
       </div>
@@ -79,7 +79,7 @@ export function AiChatPanel({
         <div className="flex-1" />
       ) : messages.length === 0 ? (
         <EmptyState
-          icon={<MessageCircleGlassIcon className="size-5.5" />}
+          icon={<MessageCircleGlassIcon className="size-6" />}
           title="Ask about your platform"
           description="Logs, metrics, deploy history, and crashloop diagnosis are read automatically. Anything that changes state (deploy, rollback, restart) always waits for your approval first."
           className="flex-1"

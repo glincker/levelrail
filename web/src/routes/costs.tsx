@@ -137,13 +137,13 @@ function CostsPage() {
         <>
           {!data.telemetry_available ? (
             <EmptyState
-              icon={<CoinsGlassIcon size="1.2em" />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.noTelemetryTitle')}
               description={t('empty.noTelemetryDescription')}
             />
           ) : !data.configured ? (
             <EmptyState
-              icon={<CoinsGlassIcon size="1.2em" />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.notConfiguredTitle')}
               description={t('empty.notConfiguredDescription')}
               action={

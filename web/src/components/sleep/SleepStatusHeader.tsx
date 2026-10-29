@@ -32,19 +32,19 @@ function MoonSunIcon({ asleep, waking }: { asleep: boolean; waking: boolean }) {
       className={`relative size-5 shrink-0 ${waking ? 'motion-safe:animate-pulse' : ''}`}
     >
       <MoonGlassIcon
-        className={`${swap} size-5.5 ${asleep ? 'opacity-100' : 'rotate-[-30deg] opacity-0'}`}
+        className={`${swap} size-6 ${asleep ? 'opacity-100' : 'rotate-[-30deg] opacity-0'}`}
       />
       <SunGlassIcon
-        className={`${swap} size-5.5 ${asleep ? 'rotate-[30deg] opacity-0' : 'opacity-100'}`}
+        className={`${swap} size-6 ${asleep ? 'rotate-[30deg] opacity-0' : 'opacity-100'}`}
       />
     </span>
   )
 }
 
 function StatusIcon({ state }: { state: SleepUiState }) {
-  if (state === 'blocked') return <BanGlassIcon className="size-3.5" />
+  if (state === 'blocked') return <BanGlassIcon className="size-4.5" />
   if (state === 'ready')
-    return <CircleCheckGlassIcon className="size-3.5 text-tone-success" />
+    return <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
   return null
 }
 

@@ -120,7 +120,7 @@ export function HistoryCard({
         {past.length === 0 && !active ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<RestoreGlassIcon className="size-5.5" />}
+            icon={<RestoreGlassIcon className="size-6" />}
             title={t('history.emptyTitle')}
             description={t('history.empty')}
           />

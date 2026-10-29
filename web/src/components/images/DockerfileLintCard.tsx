@@ -68,7 +68,7 @@ export function DockerfileLintCard() {
           </Button>
           {fixable ? (
             <Button size="sm" variant="outline" onClick={applyFix}>
-              <WandGlassIcon size="1.2em" aria-hidden="true" />
+              <WandGlassIcon size="1.4em" aria-hidden="true" />
               {t('lint.applyFix')}
             </Button>
           ) : null}

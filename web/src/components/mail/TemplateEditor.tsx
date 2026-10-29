@@ -123,7 +123,7 @@ export function TemplateEditor({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeftGlassIcon size="1.2em" data-icon="inline-start" />
+          <ArrowLeftGlassIcon size="1.4em" data-icon="inline-start" />
           {t('templates.editor.back')}
         </Button>
         <div className="flex flex-wrap gap-2">
@@ -135,7 +135,7 @@ export function TemplateEditor({
             disabled={test.isPending || dirty}
             writeAction
           >
-            <SendGlassIcon size="1.2em" data-icon="inline-start" />
+            <SendGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.editor.sendTest')}
           </Button>
           <Button
@@ -146,7 +146,7 @@ export function TemplateEditor({
             onClick={() => setConfirmReset(true)}
             writeAction
           >
-            <RotateCcwGlassIcon size="1.2em" data-icon="inline-start" />
+            <RotateCcwGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.editor.reset')}
           </Button>
           <Button

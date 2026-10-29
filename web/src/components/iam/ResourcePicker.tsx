@@ -205,7 +205,7 @@ export function ResourcePicker({
                   )
                 }
               >
-                <XGlassIcon size="1.2em" />
+                <XGlassIcon size="1.4em" />
               </Button>
             </li>
           )
@@ -260,7 +260,7 @@ export function ResourcePicker({
           onClick={add}
           disabled={kind !== 'all' && !picked.trim()}
         >
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {t('builder.resources.add')}
         </Button>
       </div>

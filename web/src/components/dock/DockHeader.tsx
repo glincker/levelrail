@@ -170,7 +170,7 @@ export function DockHeader({
             />
           }
         >
-          <EllipsisGlassIcon size="1.2em" />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {box.layout === 'sheet'
@@ -178,7 +178,7 @@ export function DockHeader({
             : MODES.map((m) => (
                 <DropdownMenuItem key={m} onClick={() => onMode(m)}>
                   <CheckGlassIcon
-                    size="1.2em"
+                    size="1.4em"
                     className={m === mode ? '' : 'invisible'}
                   />
                   {t(`dock.mode.${m}`)}
@@ -191,7 +191,7 @@ export function DockHeader({
               disabled={mode === 'float'}
             >
               <CheckGlassIcon
-                size="1.2em"
+                size="1.4em"
                 className={push ? '' : 'invisible'}
               />
               {t('dock.push')}
@@ -222,7 +222,7 @@ export function DockHeader({
         aria-label={t('dock.minimize')}
         onClick={onMinimize}
       >
-        <MinusGlassIcon size="1.2em" />
+        <MinusGlassIcon size="1.4em" />
       </Button>
       <Button
         type="button"
@@ -231,7 +231,7 @@ export function DockHeader({
         aria-label={t('dock.close')}
         onClick={onClose}
       >
-        <XGlassIcon size="1.2em" />
+        <XGlassIcon size="1.4em" />
       </Button>
     </div>
   )

@@ -109,9 +109,9 @@ function FindingRow({
             onClick={onToggle}
           >
             {open ? (
-              <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
+              <ChevronDownGlassIcon size="1.4em" aria-hidden="true" />
             ) : (
-              <ChevronRightGlassIcon size="1.2em" aria-hidden="true" />
+              <ChevronRightGlassIcon size="1.4em" aria-hidden="true" />
             )}
             {open ? t('hideDetails') : t('details')}
           </Button>
@@ -193,7 +193,7 @@ export function ExposureCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
           <GlobeGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('title')}
@@ -231,9 +231,7 @@ export function ExposureCard() {
         {rows.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={
-              <ShieldCheckGlassIcon className="size-5.5 text-tone-success" />
-            }
+            icon={<ShieldCheckGlassIcon className="size-6 text-tone-success" />}
             title={t('emptyTitle')}
             description={t('emptyBody')}
           />

@@ -261,7 +261,7 @@ export function AppImportSSHConnect({ reconnect, onCreated }: Props) {
 
       <section className="space-y-3 rounded-md border p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <FingerprintPatternGlassIcon size="1.2em" aria-hidden />
+          <FingerprintPatternGlassIcon size="1.4em" aria-hidden />
           <h4 className="text-sm font-medium">
             {t('appImport.ssh.hostKey.title')}
           </h4>
@@ -377,7 +377,7 @@ export function AppImportSSHConnect({ reconnect, onCreated }: Props) {
           disabled={!canTest || test.isPending}
           onClick={() => runTest()}
         >
-          <PlugGlassIcon size="1.2em" aria-hidden />
+          <PlugGlassIcon size="1.4em" aria-hidden />
           {test.isPending
             ? t('appImport.ssh.testing')
             : t('appImport.ssh.test')}
@@ -409,7 +409,7 @@ export function AppImportSSHConnect({ reconnect, onCreated }: Props) {
         <Alert role="status">
           <ShieldCheckGlassIcon
             className="text-tone-success"
-            size="1.2em"
+            size="1.4em"
             aria-hidden
           />
           <AlertTitle>{t('appImport.ssh.ok.title')}</AlertTitle>

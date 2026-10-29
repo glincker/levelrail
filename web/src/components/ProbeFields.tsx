@@ -310,7 +310,7 @@ function AdvancedFields({
     <Collapsible className="rounded-md border border-border/60">
       <CollapsibleTrigger className="group flex w-full items-center gap-1.5 px-2.5 py-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground">
         <ChevronRightGlassIcon
-          className="size-4 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
+          className="size-5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
           aria-hidden="true"
         />
         Advanced

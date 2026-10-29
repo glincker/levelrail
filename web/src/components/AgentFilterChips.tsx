@@ -34,7 +34,7 @@ export function AgentFilterChips({
               onChange(selected ? undefined : name)
             }}
           >
-            <BotGlassIcon className="size-4" aria-hidden="true" />
+            <BotGlassIcon className="size-5" aria-hidden="true" />
             {name}
           </Button>
         )

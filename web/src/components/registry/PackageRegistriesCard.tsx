@@ -254,7 +254,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
       </p>
       {create.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{create.error.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -303,7 +303,7 @@ function Row({ registry }: { registry: PackageRegistry }) {
             test.mutate(registry.id, { onSuccess: setResult })
           }}
         >
-          <PlugGlassIcon size="1.2em" aria-hidden="true" />
+          <PlugGlassIcon size="1.4em" aria-hidden="true" />
           {t('packageRegistries.test')}
         </Button>
         <Button
@@ -315,17 +315,17 @@ function Row({ registry }: { registry: PackageRegistry }) {
           aria-label={t('packageRegistries.remove', { name: registry.name })}
           onClick={() => remove.mutate(registry.id)}
         >
-          <TrashGlassIcon size="1.2em" aria-hidden="true" />
+          <TrashGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       </div>
       {result ? (
         <Alert variant={result.ok ? 'default' : 'destructive'}>
           {result.ok ? (
-            <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           ) : (
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
           )}
           <AlertDescription>{result.message}</AlertDescription>
@@ -359,7 +359,7 @@ export function PackageRegistriesCard() {
           size="sm"
           onClick={() => dialog.open()}
         >
-          <PlusGlassIcon size="1.2em" aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('packageRegistries.add')}
         </Button>
       </div>
@@ -369,7 +369,7 @@ export function PackageRegistriesCard() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{list.error.message}</AlertDescription>
             </Alert>

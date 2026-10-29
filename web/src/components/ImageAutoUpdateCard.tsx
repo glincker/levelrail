@@ -64,7 +64,7 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RefreshCwGlassIcon className="size-4.5 text-muted-foreground" />
+          <RefreshCwGlassIcon className="size-5 text-muted-foreground" />
           {t('imageAutoUpdate.title')}
           <InfoTip label={t('imageAutoUpdate.infoTipLabel')}>
             {t('imageAutoUpdate.description')}

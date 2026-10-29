@@ -15,7 +15,7 @@ export function BuiltInRegistryCard() {
     <Card>
       <CardContent className="flex flex-wrap items-center gap-4">
         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <ServerGlassIcon aria-hidden="true" className="size-5.5" />
+          <ServerGlassIcon aria-hidden="true" className="size-6" />
         </span>
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">

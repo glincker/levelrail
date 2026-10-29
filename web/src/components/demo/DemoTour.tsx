@@ -33,7 +33,7 @@ export function DemoTour({ onClose }: { onClose: () => void }) {
           aria-label={t('tour.skip')}
           onClick={close}
         >
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
         </Button>
       </div>
       <h2 className="mt-1 text-sm font-semibold">

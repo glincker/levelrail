@@ -23,7 +23,7 @@ export function PipelineReportLink({ report }: { report?: PipelineRunReport }) {
         title={report.warning}
       >
         <CircleAlertGlassIcon
-          className="size-4 text-tone-danger"
+          className="size-5 text-tone-danger"
           aria-hidden="true"
         />
         Not reported to {provider}

@@ -94,7 +94,7 @@ export function EmailDeliveryCard() {
                 send.mutate({ to: to.trim(), providerId: targetId })
               }}
             >
-              <SendGlassIcon size="1.2em" aria-hidden="true" />
+              <SendGlassIcon size="1.4em" aria-hidden="true" />
               {send.isPending
                 ? t('emailDelivery.test.sending')
                 : t('emailDelivery.test.send')}

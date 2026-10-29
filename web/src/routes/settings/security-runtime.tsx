@@ -42,7 +42,7 @@ function SecurityRuntimePage() {
 
   return (
     <PageTemplate
-      icon={<SlidersHorizontalGlassIcon size="1.2em" />}
+      icon={<SlidersHorizontalGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       banners={
@@ -70,7 +70,7 @@ function SecurityRuntimePage() {
       ) : null}
       {data && settings.length === 0 ? (
         <EmptyState
-          icon={<SlidersHorizontalGlassIcon className="size-7" />}
+          icon={<SlidersHorizontalGlassIcon className="size-8" />}
           title={t('empty.title')}
           description={t('empty.body')}
           action={

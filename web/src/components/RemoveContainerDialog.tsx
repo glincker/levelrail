@@ -34,7 +34,7 @@ export function RemoveContainerDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Remove &ldquo;{containerName}&rdquo;?
@@ -48,7 +48,7 @@ export function RemoveContainerDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{removeContainer.error.message}</AlertDescription>
           </Alert>
@@ -79,7 +79,7 @@ export function RemoveContainerDialog({
               })
             }}
           >
-            <TrashGlassIcon className="size-4" aria-hidden="true" />
+            <TrashGlassIcon className="size-5" aria-hidden="true" />
             {removeContainer.isPending ? 'Removing...' : 'Remove container'}
           </Button>
         </DialogFooter>

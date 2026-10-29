@@ -563,7 +563,7 @@ export function CreateAlertRuleDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             <CirclePlusGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Create alert rule

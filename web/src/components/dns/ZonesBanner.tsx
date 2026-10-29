@@ -13,7 +13,7 @@ export function ZonesBanner({
   const size = empty ? 'hero' : 'compact'
   return (
     <PageBanner
-      icon={<GlobeGlassIcon size="1.2em" />}
+      icon={<GlobeGlassIcon size="1.4em" />}
       titleKey="dns:page.title"
       descriptionKey={empty ? 'dns:banner.description' : 'dns:page.description'}
       action={

@@ -172,7 +172,7 @@ export function AiControlCard({ settings }: { settings: AiControlSettings }) {
             onClick={pause}
             disabled={update.isPending || settings.mode === 'off'}
           >
-            <CirclePauseGlassIcon className="size-4.5" aria-hidden="true" />
+            <CirclePauseGlassIcon className="size-5" aria-hidden="true" />
             {t('aiControl.pause')}
           </Button>
         </div>

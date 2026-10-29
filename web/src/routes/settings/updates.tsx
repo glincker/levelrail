@@ -64,7 +64,7 @@ function UpdatesSettingsError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation('updates')
   return (
     <PageTemplate
-      icon={<ArrowUpGlassIcon size="1.2em" />}
+      icon={<ArrowUpGlassIcon size="1.4em" />}
       title={t('page.title')}
       description={t('page.description')}
     >
@@ -121,7 +121,7 @@ function UpdatesSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<ArrowUpGlassIcon size="1.2em" />}
+      icon={<ArrowUpGlassIcon size="1.4em" />}
       title={t('page.title')}
       description={t('page.description')}
     >

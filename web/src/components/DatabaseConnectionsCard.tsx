@@ -57,7 +57,7 @@ function ConnectionReachabilityBadge({
   if (connection.mesh_dns) {
     return (
       <Badge variant="success">
-        <Share2GlassIcon className="size-3.5" aria-hidden="true" />
+        <Share2GlassIcon className="size-4.5" aria-hidden="true" />
         Cross-node (mesh DNS)
       </Badge>
     )
@@ -65,7 +65,7 @@ function ConnectionReachabilityBadge({
   return (
     <Badge variant="destructive">
       <TriangleAlertGlassIcon
-        className="size-3.5 text-tone-warning"
+        className="size-4.5 text-tone-warning"
         aria-hidden="true"
       />
       Cross-node, mesh disabled
@@ -88,7 +88,7 @@ function ConnectionRow({
     <div className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-border p-3">
       <div className="flex items-start gap-2">
         <PlugGlassIcon
-          className="mt-0.5 size-4.5 shrink-0 text-muted-foreground"
+          className="mt-0.5 size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <div className="space-y-1">
@@ -262,7 +262,7 @@ export function DatabaseConnectionsCard({ app }: { app: AppDetail }) {
                           {d.name} ({d.engine})
                           {d.cross_node ? (
                             <ServerGlassIcon
-                              className="size-4 text-muted-foreground"
+                              className="size-5 text-muted-foreground"
                               aria-hidden="true"
                             />
                           ) : null}
@@ -277,7 +277,7 @@ export function DatabaseConnectionsCard({ app }: { app: AppDetail }) {
                   disabled={createConnection.isPending || !selectedDatabase}
                   onClick={handleConnect}
                 >
-                  <DatabaseGlassIcon className="size-4" aria-hidden="true" />
+                  <DatabaseGlassIcon className="size-5" aria-hidden="true" />
                   {createConnection.isPending ? 'Connecting...' : 'Connect'}
                 </Button>
               </div>

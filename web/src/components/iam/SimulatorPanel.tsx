@@ -276,7 +276,7 @@ export function SimulatorPanel({
           onClick={run}
           disabled={!ready || simulate.isPending}
         >
-          <FileSearchGlassIcon size="1.2em" />
+          <FileSearchGlassIcon size="1.4em" />
           {simulate.isPending ? t('simulator.running') : t('simulator.run')}
         </Button>
         <Button

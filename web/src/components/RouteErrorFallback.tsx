@@ -56,9 +56,9 @@ function CopyDetailsButton({ error }: { error: unknown }) {
       }}
     >
       {copied ? (
-        <CheckGlassIcon size="1.2em" aria-hidden="true" />
+        <CheckGlassIcon size="1.4em" aria-hidden="true" />
       ) : (
-        <CopyGlassIcon size="1.2em" aria-hidden="true" />
+        <CopyGlassIcon size="1.4em" aria-hidden="true" />
       )}
       {copied ? t('routeError.copied') : t('routeError.copy')}
     </Button>
@@ -76,7 +76,7 @@ function ReportLink() {
       rel="noreferrer"
       className={buttonVariants({ variant: 'ghost', size: 'sm' })}
     >
-      <SocialGithubGlassIcon size="1.2em" aria-hidden="true" />
+      <SocialGithubGlassIcon size="1.4em" aria-hidden="true" />
       {t('routeError.report')}
     </a>
   )
@@ -95,7 +95,7 @@ function RetryButton({ label, reset }: { label: string; reset: () => void }) {
         reset()
       }}
     >
-      <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+      <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
       {label}
     </Button>
   )
@@ -207,7 +207,7 @@ export function RouteErrorFallback({
       <ErrorCard
         icon={
           <PlugGlassIcon
-            className="size-5.5 text-destructive"
+            className="size-6 text-destructive"
             aria-hidden="true"
           />
         }
@@ -231,7 +231,7 @@ export function RouteErrorFallback({
     <ErrorCard
       icon={
         <CircleAlertGlassIcon
-          className="size-5.5 text-destructive"
+          className="size-6 text-destructive"
           aria-hidden="true"
         />
       }
@@ -253,7 +253,7 @@ export function RouteErrorFallback({
         <RetryButton label={t('routeError.generic.retry')} reset={reset} />
         <Link to="/">
           <Button type="button" variant="ghost" size="sm">
-            <HouseGlassIcon size="1.2em" aria-hidden="true" />
+            <HouseGlassIcon size="1.4em" aria-hidden="true" />
             {t('routeError.generic.home')}
           </Button>
         </Link>

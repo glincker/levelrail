@@ -27,18 +27,18 @@ import type { DeployEvent, DeployEventKind } from '../../types/deployEvents'
 import { ImpactCard } from './ImpactCard'
 
 const KIND_ICON: Record<DeployEventKind, ReactNode> = {
-  trigger: <GitBranchGlassIcon size="1.2em" />,
-  build: <HammerGlassIcon size="1.2em" />,
-  log: <TerminalGlassIcon size="1.2em" />,
-  image_push: <UploadGlassIcon size="1.2em" />,
-  hook: <WebhookGlassIcon size="1.2em" />,
-  step: <ListChecksGlassIcon size="1.2em" />,
-  readiness: <ActivityGlassIcon size="1.2em" />,
-  cutover: <ArrowLeftRightGlassIcon size="1.2em" />,
-  watch: <EyeGlassIcon size="1.2em" />,
-  rollback: <UndoGlassIcon size="1.2em" />,
-  outcome: <FlagGlassIcon size="1.2em" />,
-  traffic_impact: <ChartLineGlassIcon size="1.2em" />,
+  trigger: <GitBranchGlassIcon size="1.4em" />,
+  build: <HammerGlassIcon size="1.4em" />,
+  log: <TerminalGlassIcon size="1.4em" />,
+  image_push: <UploadGlassIcon size="1.4em" />,
+  hook: <WebhookGlassIcon size="1.4em" />,
+  step: <ListChecksGlassIcon size="1.4em" />,
+  readiness: <ActivityGlassIcon size="1.4em" />,
+  cutover: <ArrowLeftRightGlassIcon size="1.4em" />,
+  watch: <EyeGlassIcon size="1.4em" />,
+  rollback: <UndoGlassIcon size="1.4em" />,
+  outcome: <FlagGlassIcon size="1.4em" />,
+  traffic_impact: <ChartLineGlassIcon size="1.4em" />,
 }
 
 function clock(at: string): string {
@@ -93,7 +93,7 @@ function EventRow({ event }: { event: DeployEvent }) {
       <span
         aria-hidden="true"
         className={cn(
-          'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border [&_svg]:size-4',
+          'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border [&_svg]:size-5',
           tone.soft,
           tone.border,
           tone.text,
@@ -173,7 +173,7 @@ export function EventList({ events, label, showLogs = true }: EventListProps) {
             <>
               <span
                 aria-hidden="true"
-                className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border bg-muted text-muted-foreground [&_svg]:size-4"
+                className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border bg-muted text-muted-foreground [&_svg]:size-5"
               >
                 {KIND_ICON.log}
               </span>

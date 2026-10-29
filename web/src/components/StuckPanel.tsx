@@ -61,9 +61,9 @@ export function StuckPanel({
         }}
       >
         {open ? (
-          <ChevronDownGlassIcon size="1.2em" />
+          <ChevronDownGlassIcon size="1.4em" />
         ) : (
-          <ChevronRightGlassIcon size="1.2em" />
+          <ChevronRightGlassIcon size="1.4em" />
         )}
         <span className="font-medium">{t('stuck.title')}</span>
         <Badge variant={data.stuck ? 'destructive' : 'warning'}>

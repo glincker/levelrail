@@ -36,9 +36,9 @@ function CliLine({ step }: { step: CliStep }) {
           }}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
           ) : (
-            <CopyGlassIcon size="1.2em" />
+            <CopyGlassIcon size="1.4em" />
           )}
           {copied ? t('copied') : t('copy')}
         </Button>
@@ -55,7 +55,7 @@ export function FixCli({ steps }: { steps: CliStep[] }) {
     <details className="group rounded-md border border-border/60">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground select-none">
         <ChevronRightGlassIcon
-          className="size-3.5 transition-transform group-open:rotate-90"
+          className="size-4.5 transition-transform group-open:rotate-90"
           aria-hidden="true"
         />
         {t('cli.summary')}

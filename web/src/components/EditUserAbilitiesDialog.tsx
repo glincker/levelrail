@@ -63,7 +63,7 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <PencilGlassIcon size="1.2em" />
+        <PencilGlassIcon size="1.4em" />
         Edit abilities
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -87,7 +87,7 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{updateAbilities.error.message}</AlertDescription>
           </Alert>

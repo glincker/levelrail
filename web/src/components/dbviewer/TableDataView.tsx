@@ -172,7 +172,7 @@ export function TableDataView({
                 copyAs(f)
               }}
             >
-              <CopyGlassIcon className="size-4" aria-hidden="true" />
+              <CopyGlassIcon className="size-5" aria-hidden="true" />
               {t(`viewer.data.format.${f}`)}
             </Button>
           ))}

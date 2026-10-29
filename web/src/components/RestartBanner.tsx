@@ -66,7 +66,7 @@ export function RestartBanner() {
       <Alert role="status" className="mx-4 mt-2 md:mx-6">
         <AlertDescription className="flex items-center gap-2">
           <CircleCheckGlassIcon
-            className="size-4.5 text-emerald-600"
+            className="size-5 text-emerald-600"
             aria-hidden="true"
           />
           {t('controlPlaneRestart.back')}
@@ -99,7 +99,7 @@ export function RestartBanner() {
     <Alert role="status" aria-live="polite" className="mx-4 mt-2 md:mx-6">
       <AlertDescription className="flex items-center gap-2">
         <RefreshCwGlassIcon
-          className="size-4.5 motion-safe:animate-spin"
+          className="size-5 motion-safe:animate-spin"
           aria-hidden="true"
         />
         {state.sawDown

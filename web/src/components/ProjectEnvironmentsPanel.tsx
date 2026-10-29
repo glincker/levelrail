@@ -24,7 +24,7 @@ export function ProjectEnvironmentsPanel({ projectId }: { projectId: string }) {
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-2">
-          <LayersGlassIcon className="size-4.5" />
+          <LayersGlassIcon className="size-5" />
           Environments
         </CardTitle>
         <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function ProjectEnvironmentsPanel({ projectId }: { projectId: string }) {
               }
             >
               <ArrowLeftRightGlassIcon
-                className="size-4"
+                className="size-5"
                 data-icon="inline-start"
               />
               Compare
@@ -71,7 +71,7 @@ export function ProjectEnvironmentsPanel({ projectId }: { projectId: string }) {
                 >
                   {env.protected ? (
                     <ShieldAlertGlassIcon
-                      className="size-4 text-destructive"
+                      className="size-5 text-destructive"
                       aria-label="Protected"
                     />
                   ) : null}

@@ -229,7 +229,7 @@ export function StatusPage() {
       title={t('statusPage.title')}
       banner={
         <PageBanner
-          icon={<ActivityGlassIcon size="1.2em" />}
+          icon={<ActivityGlassIcon size="1.4em" />}
           titleKey="attention:statusPage.title"
           descriptionKey={
             healthy

@@ -58,7 +58,7 @@ export function CanvasDraftPanel({
     <div className="space-y-5 text-sm">
       <div className="flex flex-wrap gap-2">
         <Button type="button" size="sm" variant="outline" onClick={onAddApp}>
-          <PlusGlassIcon size="1.2em" aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('add.app')}
         </Button>
         <Button
@@ -67,7 +67,7 @@ export function CanvasDraftPanel({
           variant="outline"
           onClick={onAddDatabase}
         >
-          <PlusGlassIcon size="1.2em" aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('add.database')}
         </Button>
       </div>
@@ -107,7 +107,7 @@ export function CanvasDraftPanel({
                     aria-label={t('connections.remove', { app, database })}
                     onClick={() => onDisconnect(app, database)}
                   >
-                    <XGlassIcon size="1.2em" aria-hidden="true" />
+                    <XGlassIcon size="1.4em" aria-hidden="true" />
                   </Button>
                 </li>
               )
@@ -151,7 +151,7 @@ export function CanvasDraftPanel({
                       aria-label={t('draft.remove', { label })}
                       onClick={() => onRemoveOp(op.id)}
                     >
-                      <XGlassIcon size="1.2em" aria-hidden="true" />
+                      <XGlassIcon size="1.4em" aria-hidden="true" />
                     </Button>
                   </li>
                 )

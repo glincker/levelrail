@@ -57,7 +57,7 @@ export function CreateModelKeyDialog({
       }}
     >
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <PlusGlassIcon size="1.2em" aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         New key
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

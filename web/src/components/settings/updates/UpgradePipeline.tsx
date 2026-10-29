@@ -138,7 +138,7 @@ export function UpgradePipeline({
       {outcome === 'succeeded' && attempt ? (
         <div className="relative flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-success/10 p-3 text-sm">
           {motion ? <UpgradeSuccessBurst /> : null}
-          <CircleCheckGlassIcon className="size-5.5 text-success" aria-hidden />
+          <CircleCheckGlassIcon className="size-6 text-success" aria-hidden />
           <span className="font-mono">
             {attempt.from_version} {t('pipeline.to')} {attempt.to_version}
           </span>
@@ -172,7 +172,7 @@ export function UpgradePipeline({
           )}
         >
           <TriangleAlertGlassIcon
-            className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+            className="mt-0.5 size-5 shrink-0 text-tone-warning"
             aria-hidden
           />
           <div className="space-y-1">

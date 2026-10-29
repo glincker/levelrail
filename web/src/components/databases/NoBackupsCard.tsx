@@ -10,7 +10,7 @@ export function NoBackupsCard({ engine }: { engine: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudGlassIcon className="size-4.5" aria-hidden="true" />
+          <CloudGlassIcon className="size-5" aria-hidden="true" />
           {t('noBackups.title')}
         </CardTitle>
       </CardHeader>

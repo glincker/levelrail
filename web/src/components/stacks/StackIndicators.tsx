@@ -91,13 +91,13 @@ export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
             revision: stack.lock.revision,
           })}
         >
-          <LockGlassIcon size="1.2em" aria-hidden="true" />
+          <LockGlassIcon size="1.4em" aria-hidden="true" />
           {t('flags.locked')}
         </Badge>
       ) : null}
       {stack.pinned_revision ? (
         <Badge variant="info">
-          <PinGlassIcon size="1.2em" aria-hidden="true" />
+          <PinGlassIcon size="1.4em" aria-hidden="true" />
           {t('flags.pinned', { revision: stack.pinned_revision })}
         </Badge>
       ) : null}
@@ -106,7 +106,7 @@ export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
         <Badge variant="outline">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           {t('flags.driftLock')}
@@ -116,7 +116,7 @@ export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
         <Badge variant="outline">
           <ShieldCheckGlassIcon
             className="text-tone-success"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           {t('flags.approval')}
@@ -124,7 +124,7 @@ export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
       ) : null}
       {stack.allow_prune ? (
         <Badge variant="outline">
-          <ScissorsGlassIcon size="1.2em" aria-hidden="true" />
+          <ScissorsGlassIcon size="1.4em" aria-hidden="true" />
           {t('flags.prune')}
         </Badge>
       ) : null}

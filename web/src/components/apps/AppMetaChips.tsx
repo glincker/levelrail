@@ -17,7 +17,7 @@ export function AppLogo({ image }: { image: string }) {
       <TemplateLogo
         id={logoIdForImage(image) ?? ''}
         className="size-4"
-        fallback={<PackageGlassIcon className="size-4.5" aria-hidden="true" />}
+        fallback={<PackageGlassIcon className="size-5" aria-hidden="true" />}
       />
     </span>
   )
@@ -32,7 +32,7 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
       {app.is_trial ? (
         <Badge variant="accent" className="gap-1 px-1.5 py-0">
           <FlaskConicalGlassIcon
-            className="size-3.5 shrink-0"
+            className="size-4.5 shrink-0"
             aria-hidden="true"
           />
           Trial
@@ -40,7 +40,7 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
       ) : null}
       {app.sleep?.sleeping ? (
         <Badge variant="muted" className="gap-1 px-1.5 py-0">
-          <MoonGlassIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          <MoonGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
           {app.sleep.since ? (
             <AsleepFor since={app.sleep.since} />
           ) : (
@@ -58,7 +58,7 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
           variant="outline"
           className="max-w-44 gap-1 px-1.5 py-0 text-muted-foreground"
         >
-          <GlobeGlassIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          <GlobeGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{domain}</span>
           {extra > 0 ? <span>+{extra}</span> : null}
         </Badge>

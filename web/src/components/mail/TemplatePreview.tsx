@@ -59,7 +59,7 @@ export function TemplatePreview({
             aria-pressed={!mobile}
             onClick={() => setMobile(false)}
           >
-            <MonitorGlassIcon size="1.2em" data-icon="inline-start" />
+            <MonitorGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.desktop')}
           </Button>
           <Button
@@ -69,7 +69,7 @@ export function TemplatePreview({
             aria-pressed={mobile}
             onClick={() => setMobile(true)}
           >
-            <SmartphoneGlassIcon size="1.2em" data-icon="inline-start" />
+            <SmartphoneGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.mobile')}
           </Button>
           <Button
@@ -79,7 +79,7 @@ export function TemplatePreview({
             aria-pressed={!dark}
             onClick={() => setDark(false)}
           >
-            <SunGlassIcon size="1.2em" data-icon="inline-start" />
+            <SunGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.light')}
           </Button>
           <Button
@@ -89,7 +89,7 @@ export function TemplatePreview({
             aria-pressed={dark}
             onClick={() => setDark(true)}
           >
-            <MoonGlassIcon size="1.2em" data-icon="inline-start" />
+            <MoonGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.dark')}
           </Button>
         </div>

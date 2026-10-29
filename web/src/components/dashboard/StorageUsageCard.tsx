@@ -75,7 +75,7 @@ export function StorageUsageCard() {
       <CardHeader className="space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
           <ServerGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('fleet.storage.title')}

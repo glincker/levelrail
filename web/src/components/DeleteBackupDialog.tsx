@@ -46,14 +46,14 @@ export function ConfirmDeleteBackupDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <TrashGlassIcon className="size-4" aria-hidden="true" />
+        <TrashGlassIcon className="size-5" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Delete this backup?

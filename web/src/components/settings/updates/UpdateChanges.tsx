@@ -60,9 +60,9 @@ export function UpdateChanges({ status }: { status: UpdateStatus }) {
           }}
         >
           {open ? (
-            <ChevronDownGlassIcon className="size-4.5" />
+            <ChevronDownGlassIcon className="size-5" />
           ) : (
-            <ChevronRightGlassIcon className="size-4.5" />
+            <ChevronRightGlassIcon className="size-5" />
           )}
           {t('changes.notesToggle')}
         </button>

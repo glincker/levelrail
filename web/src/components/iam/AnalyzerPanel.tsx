@@ -102,7 +102,7 @@ function FindingCard({
             onClick={() => onOpenPolicy(f.policy_id ?? '')}
           >
             {t('analyzer.openPolicy')}
-            <ArrowRightGlassIcon size="1.2em" />
+            <ArrowRightGlassIcon size="1.4em" />
           </Button>
         ) : null}
         {f.principal_id ? (
@@ -115,7 +115,7 @@ function FindingCard({
             }
           >
             {t('analyzer.openPrincipal')}
-            <ArrowRightGlassIcon size="1.2em" />
+            <ArrowRightGlassIcon size="1.4em" />
           </Button>
         ) : null}
       </div>
@@ -195,7 +195,7 @@ export function AnalyzerPanel({
       {findings.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<CircleCheckGlassIcon className="size-5.5 text-tone-success" />}
+          icon={<CircleCheckGlassIcon className="size-6 text-tone-success" />}
           title={t('analyzer.clean.title')}
           description={t('analyzer.clean.description')}
         />

@@ -119,7 +119,7 @@ export function DomainsTable({
   if (domains.length === 0) {
     return appCount === 0 ? (
       <EmptyState
-        icon={<GlobeGlassIcon className="size-5.5" />}
+        icon={<GlobeGlassIcon className="size-6" />}
         title={t('page.empty.noAppsTitle')}
         description={t('page.empty.noAppsBody')}
         action={
@@ -128,7 +128,7 @@ export function DomainsTable({
               {t('page.empty.noAppsAction')}
             </Button>
             <Button size="sm" variant="outline" onClick={onAdd}>
-              <PlusGlassIcon size="1.2em" />
+              <PlusGlassIcon size="1.4em" />
               {t('standalone.modeProxy')}
             </Button>
           </div>
@@ -136,12 +136,12 @@ export function DomainsTable({
       />
     ) : (
       <EmptyState
-        icon={<GlobeGlassIcon className="size-5.5" />}
+        icon={<GlobeGlassIcon className="size-6" />}
         title={t('page.empty.title')}
         description={t('page.empty.body')}
         action={
           <Button size="sm" onClick={onAdd}>
-            <PlusGlassIcon size="1.2em" />
+            <PlusGlassIcon size="1.4em" />
             {t('page.empty.action')}
           </Button>
         }
@@ -154,7 +154,7 @@ export function DomainsTable({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative w-full max-w-xs">
           <SearchGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -175,7 +175,7 @@ export function DomainsTable({
 
       {visible.length === 0 ? (
         <EmptyState
-          icon={<SearchGlassIcon className="size-5.5" />}
+          icon={<SearchGlassIcon className="size-6" />}
           title={t('page.noMatch', { query: query.trim() })}
           description={t('page.noMatchBody')}
           action={

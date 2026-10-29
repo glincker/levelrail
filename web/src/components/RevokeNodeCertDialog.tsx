@@ -22,7 +22,7 @@ export function RevokeNodeCertDialog({ node }: { node: NodeResource }) {
           setOpen(true)
         }}
       >
-        <BanGlassIcon className="size-4" aria-hidden="true" />
+        <BanGlassIcon className="size-5" aria-hidden="true" />
         {t('revoke.trigger')}
       </Button>
       <ConfirmDialog

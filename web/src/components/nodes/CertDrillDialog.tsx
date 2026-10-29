@@ -23,7 +23,7 @@ function StepIcon({ status }: { status: CertDrillStep['status'] }) {
   if (status === 'pass') {
     return (
       <CircleCheckGlassIcon
-        className="size-4.5 shrink-0 text-green-600"
+        className="size-5 shrink-0 text-green-600"
         aria-hidden="true"
       />
     )
@@ -31,14 +31,14 @@ function StepIcon({ status }: { status: CertDrillStep['status'] }) {
   if (status === 'fail') {
     return (
       <CircleXGlassIcon
-        className="size-4.5 shrink-0 text-destructive"
+        className="size-5 shrink-0 text-destructive"
         aria-hidden="true"
       />
     )
   }
   return (
     <CircleMinusGlassIcon
-      className="size-4.5 shrink-0 text-muted-foreground"
+      className="size-5 shrink-0 text-muted-foreground"
       aria-hidden="true"
     />
   )
@@ -62,7 +62,7 @@ export function CertDrillDialog({ node }: { node: NodeResource }) {
         }}
       >
         <ShieldCheckGlassIcon
-          className="size-4 text-tone-success"
+          className="size-5 text-tone-success"
           aria-hidden="true"
         />
         {t('trust.drill.button')}

@@ -37,7 +37,7 @@ function CutoverTab() {
   if (q.data.length === 0) {
     return (
       <EmptyState
-        icon={<ArrowLeftRightGlassIcon className="size-5.5" />}
+        icon={<ArrowLeftRightGlassIcon className="size-6" />}
         title={t('cutover.empty')}
         description={t('cutover.emptyHint')}
       />
@@ -57,7 +57,7 @@ function MigratePage() {
   const [tab, setTab] = useState<string>('plan')
   return (
     <PageTemplate
-      icon={<ArrowLeftRightGlassIcon size="1.2em" />}
+      icon={<ArrowLeftRightGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
     >

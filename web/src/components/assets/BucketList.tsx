@@ -50,7 +50,7 @@ export function BucketList({
             </span>
             <ChevronRightGlassIcon
               aria-hidden="true"
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
             />
           </button>
         </li>

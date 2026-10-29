@@ -63,7 +63,7 @@ export function ProbeNote({ probe }: { probe: ProbeTarget }) {
     return (
       <p className="flex items-center gap-1 text-xs text-tone-success">
         <CircleCheckGlassIcon
-          className="size-4 text-tone-success"
+          className="size-5 text-tone-success"
           aria-hidden="true"
         />
         {t('test.ok', { ms: probe.latency_ms ?? 0 })}
@@ -75,7 +75,7 @@ export function ProbeNote({ probe }: { probe: ProbeTarget }) {
       <p className="flex flex-wrap items-center gap-x-2">
         <span className="flex items-center gap-1">
           <TriangleAlertGlassIcon
-            className="size-4 text-tone-warning"
+            className="size-5 text-tone-warning"
             aria-hidden="true"
           />
           {t(`test.reason.${reasonKey(probe)}`)}

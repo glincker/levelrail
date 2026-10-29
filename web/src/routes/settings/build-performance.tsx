@@ -244,7 +244,7 @@ function BuildPerformancePage() {
   const { data, isPending, error } = useBuildLimits()
   return (
     <PageTemplate
-      icon={<ClockGlassIcon size="1.2em" />}
+      icon={<ClockGlassIcon size="1.4em" />}
       title={t('settings.title')}
       description={t('settings.description')}
     >

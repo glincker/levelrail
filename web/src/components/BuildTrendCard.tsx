@@ -60,7 +60,7 @@ export function BuildTrendCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ClockGlassIcon aria-hidden="true" className="size-4.5" />
+          <ClockGlassIcon aria-hidden="true" className="size-5" />
           {t('trend.title')}
         </CardTitle>
       </CardHeader>

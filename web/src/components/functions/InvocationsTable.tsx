@@ -115,7 +115,7 @@ export function InvocationsTable({
             search={{ tab: 'search', from: inv.logs_from, to: inv.logs_to }}
             className="inline-flex items-center gap-1 text-sm hover:underline"
           >
-            <ScrollGlassIcon className="size-4" aria-hidden="true" />
+            <ScrollGlassIcon className="size-5" aria-hidden="true" />
             {t('observe.openLogs')}
           </Link>
         ),
@@ -149,7 +149,7 @@ export function InvocationsTable({
     body = (
       <EmptyState
         icon={
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         }
         title={t('observe.loadError', { message: query.error.message })}
         description=""
@@ -167,7 +167,7 @@ export function InvocationsTable({
   } else if (query.data.invocations.length === 0) {
     body = (
       <EmptyState
-        icon={<ScrollGlassIcon size="1.2em" />}
+        icon={<ScrollGlassIcon size="1.4em" />}
         title={t('observe.emptyTitle')}
         description={t('observe.emptyBody')}
       />
@@ -189,7 +189,7 @@ export function InvocationsTable({
                 onReplay(inv)
               }}
             >
-              <RotateCcwGlassIcon className="size-4.5" aria-hidden="true" />
+              <RotateCcwGlassIcon className="size-5" aria-hidden="true" />
               {t('observe.replay')}
             </Button>
           ) : null

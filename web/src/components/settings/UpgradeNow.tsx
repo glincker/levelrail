@@ -265,7 +265,7 @@ export function UpgradeNow() {
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <ShieldCheckGlassIcon
             aria-hidden
-            className="mt-0.5 size-4.5 shrink-0 text-tone-success"
+            className="mt-0.5 size-5 shrink-0 text-tone-success"
           />
           {t('selfUpgrade.notPinned')}
         </p>

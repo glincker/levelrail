@@ -69,7 +69,7 @@ function SSOSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<IdCardGlassIcon size="1.2em" />}
+      icon={<IdCardGlassIcon size="1.4em" />}
       eyebrow={t('page.eyebrow')}
       title={t('page.title')}
       description={t('page.description')}

@@ -62,7 +62,7 @@ export function AppActionBar({
         onDeploy('existing-image')
       }}
     >
-      <RocketGlassIcon size="1.2em" aria-hidden="true" />
+      <RocketGlassIcon size="1.4em" aria-hidden="true" />
       {t('appActions.deploy', { defaultValue: 'Deploy' })}
     </Button>
   )
@@ -85,12 +85,12 @@ export function AppActionBar({
       >
         {actions.restarting || actions.slowRestart ? (
           <LoaderGlassIcon
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
             className="animate-spin motion-reduce:animate-none"
           />
         ) : (
-          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
         )}
         <span className="max-md:sr-only">{actions.restartLabel}</span>
       </Button>
@@ -104,7 +104,7 @@ export function AppActionBar({
               defaultValue: 'More actions',
             })}
           >
-            <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
+            <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         }
         items={[
@@ -113,7 +113,7 @@ export function AppActionBar({
             label: actions.redeploying
               ? t('appActions.redeploying', { defaultValue: 'Redeploying...' })
               : t('appActions.redeploy', { defaultValue: 'Redeploy current' }),
-            icon: <RocketGlassIcon size="1.2em" />,
+            icon: <RocketGlassIcon size="1.4em" />,
             disabled: actions.redeploying,
             onSelect: actions.redeploy,
           },
@@ -127,9 +127,9 @@ export function AppActionBar({
                   ? t('appPower.stopping')
                   : t('appActions.stop', { defaultValue: 'Stop' }),
             icon: app.suspended ? (
-              <PlayGlassIcon size="1.2em" />
+              <PlayGlassIcon size="1.4em" />
             ) : (
-              <PauseGlassIcon size="1.2em" />
+              <PauseGlassIcon size="1.4em" />
             ),
             disabled: asleep ? wake.isPending : actions.togglingRunning,
             onSelect: asleep ? () => wake.mutate() : actions.toggleRunning,
@@ -137,7 +137,7 @@ export function AppActionBar({
           {
             id: 'promote',
             label: t('appActions.promote', { defaultValue: 'Promote...' }),
-            icon: <RocketGlassIcon size="1.2em" />,
+            icon: <RocketGlassIcon size="1.4em" />,
             onSelect: () => {
               setPromoteOpen(true)
             },
@@ -145,7 +145,7 @@ export function AppActionBar({
           {
             id: 'clone',
             label: t('appActions.clone', { defaultValue: 'Clone...' }),
-            icon: <CopyGlassIcon size="1.2em" />,
+            icon: <CopyGlassIcon size="1.4em" />,
             onSelect: () => {
               setCloneOpen(true)
             },
@@ -155,7 +155,7 @@ export function AppActionBar({
                 {
                   id: 'access-details',
                   label: tt('access.open'),
-                  icon: <KeyGlassIcon size="1.2em" />,
+                  icon: <KeyGlassIcon size="1.4em" />,
                   onSelect: () => {
                     setAccessOpen(true)
                   },
@@ -167,7 +167,7 @@ export function AppActionBar({
                 {
                   id: 'deploy-link',
                   label: tn('deployLinkDialog.action'),
-                  icon: <LinkGlassIcon size="1.2em" />,
+                  icon: <LinkGlassIcon size="1.4em" />,
                   onSelect: () => {
                     setLinkOpen(true)
                   },
@@ -177,7 +177,7 @@ export function AppActionBar({
           {
             id: 'delete',
             label: t('appActions.delete', { defaultValue: 'Delete...' }),
-            icon: <TrashGlassIcon size="1.2em" />,
+            icon: <TrashGlassIcon size="1.4em" />,
             tone: 'danger',
             onSelect: () => {
               setDeleteOpen(true)

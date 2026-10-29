@@ -28,7 +28,7 @@ export function MetricsView({
   if (!hasApps) {
     return (
       <EmptyState
-        icon={<ChartLineGlassIcon className="size-5.5" />}
+        icon={<ChartLineGlassIcon className="size-6" />}
         title={t('tabs.metricsEmptyTitle')}
         description={t('tabs.metricsEmptyBody')}
         action={
@@ -47,7 +47,7 @@ export function MetricsView({
           disabled={busy}
           onClick={onCustomize}
         >
-          <CopyGlassIcon size="1.2em" />
+          <CopyGlassIcon size="1.4em" />
           {t('tabs.customize')}
         </Button>
       </div>

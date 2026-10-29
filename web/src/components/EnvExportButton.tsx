@@ -29,7 +29,7 @@ export function EnvExportButton({
 
   return (
     <Button type="button" variant="outline" size="sm" onClick={handleClick}>
-      <DownloadGlassIcon size="1.2em" />
+      <DownloadGlassIcon size="1.4em" />
       Export .env
     </Button>
   )

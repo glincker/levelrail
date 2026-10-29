@@ -223,7 +223,7 @@ export function PrivateNetworksPanel({
         {networks.length === 0 ? (
           <EmptyState
             compact
-            icon={<Share2GlassIcon className="size-5.5" />}
+            icon={<Share2GlassIcon className="size-6" />}
             title={t('networks.empty')}
             description={t('networks.emptyHint')}
           />

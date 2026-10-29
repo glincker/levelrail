@@ -41,7 +41,7 @@ function IssueList({
             className="flex w-full items-start gap-2 rounded-md px-2 py-1 text-left text-destructive hover:bg-destructive/10"
           >
             <CircleAlertGlassIcon
-              className="mt-0.5 size-4.5 shrink-0 text-tone-danger"
+              className="mt-0.5 size-5 shrink-0 text-tone-danger"
               aria-hidden="true"
             />
             <span>
@@ -145,7 +145,7 @@ export function PipelineEditor({
   if (isEdit && existing.error) {
     return (
       <EmptyState
-        icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
+        icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
         title="Pipeline could not be loaded"
         description={existing.error.message}
         action={
@@ -246,7 +246,7 @@ export function PipelineEditor({
         {valid ? (
           <p className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
             <CircleCheckGlassIcon
-              className="size-4.5 text-tone-success"
+              className="size-5 text-tone-success"
               aria-hidden="true"
             />
             Valid
@@ -259,7 +259,7 @@ export function PipelineEditor({
         )}
       </div>
       <Button onClick={submit} disabled={!valid || save.isPending}>
-        <SaveGlassIcon size="1.2em" aria-hidden="true" />
+        <SaveGlassIcon size="1.4em" aria-hidden="true" />
         {save.isPending ? 'Saving...' : 'Save pipeline'}
       </Button>
     </section>

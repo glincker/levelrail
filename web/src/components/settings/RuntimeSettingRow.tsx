@@ -232,7 +232,7 @@ export function RuntimeSettingRow({
                 })
               }}
             >
-              <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />
+              <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
               {reset.isPending ? t('row.resetting') : t('row.reset')}
             </Button>
           ) : null}

@@ -45,7 +45,7 @@ export function ChangeDatabaseVersionDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="xs" />}>
-        <PencilGlassIcon className="size-3.5" aria-hidden="true" />
+        <PencilGlassIcon className="size-4.5" aria-hidden="true" />
         {t('version.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

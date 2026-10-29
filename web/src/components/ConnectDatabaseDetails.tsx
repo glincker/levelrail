@@ -54,7 +54,7 @@ export function ConnectDatabaseDetails({
       {adopting ? (
         <p className="flex items-start gap-2 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
           <ShieldCheckGlassIcon
-            className="mt-0.5 size-4.5 shrink-0 text-tone-success"
+            className="mt-0.5 size-5 shrink-0 text-tone-success"
             aria-hidden="true"
           />
           {t('external.connect.adoptSafe')}
@@ -228,12 +228,12 @@ export function ConnectDatabaseDetails({
             <p className="flex items-start gap-1.5 text-muted-foreground">
               {probe.status === 'reachable' ? (
                 <CircleCheckGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-success"
+                  className="mt-0.5 size-5 shrink-0 text-success"
                   aria-hidden="true"
                 />
               ) : (
                 <TriangleAlertGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                  className="mt-0.5 size-5 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
               )}

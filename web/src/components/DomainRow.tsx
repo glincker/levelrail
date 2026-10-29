@@ -270,19 +270,19 @@ function RowActions({
           />
         }
       >
-        <EllipsisGlassIcon size="1.2em" />
+        <EllipsisGlassIcon size="1.4em" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={onShowRecord}>
-          <FileSearchGlassIcon size="1.2em" />
+          <FileSearchGlassIcon size="1.4em" />
           {t('page.row.dnsRecord')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onDiagnose}>
-          <StethoscopeGlassIcon size="1.2em" />
+          <StethoscopeGlassIcon size="1.4em" />
           {t('page.row.diagnose')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onRecheck}>
-          <RefreshCwGlassIcon size="1.2em" />
+          <RefreshCwGlassIcon size="1.4em" />
           {t('page.row.recheck')}
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -291,9 +291,9 @@ function RowActions({
           }}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
           ) : (
-            <CopyGlassIcon size="1.2em" />
+            <CopyGlassIcon size="1.4em" />
           )}
           {copied ? t('page.row.copied') : t('page.row.copy')}
         </DropdownMenuItem>
@@ -305,7 +305,7 @@ function RowActions({
             />
           }
         >
-          <SettingsGlassIcon size="1.2em" />
+          <SettingsGlassIcon size="1.4em" />
           {t('page.row.manage')}
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -352,7 +352,7 @@ export function DomainNameCell({
           aria-label={t('page.row.open', { domain: domain.domain })}
           className="shrink-0 text-muted-foreground hover:text-foreground"
         >
-          <ExternalLinkGlassIcon className="size-3.5" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
         </a>
         {domain.automatic ? (
           <Badge variant="outline">{t('page.row.automatic')}</Badge>
@@ -389,7 +389,7 @@ export function DomainNameCell({
           title={warning.title}
         >
           <CircleAlertGlassIcon
-            className="mt-0.5 size-4 shrink-0 text-tone-danger"
+            className="mt-0.5 size-5 shrink-0 text-tone-danger"
             aria-hidden="true"
           />
           <span>{warning.text}</span>

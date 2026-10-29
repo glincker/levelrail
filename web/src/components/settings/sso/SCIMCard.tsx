@@ -130,7 +130,7 @@ export function SCIMCard({
               onChange={(e) => setName(e.target.value)}
             />
             <Button type="submit" disabled={!name.trim() || create.isPending}>
-              <KeyGlassIcon size="1.2em" aria-hidden="true" />
+              <KeyGlassIcon size="1.4em" aria-hidden="true" />
               {t('scim.create')}
             </Button>
           </form>
@@ -171,7 +171,7 @@ export function SCIMCard({
                       rotate.mutate(tok.id, { onSuccess: setShown })
                     }
                   >
-                    <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+                    <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
                     {t('scim.rotate')}
                   </Button>
                   <Button
@@ -180,7 +180,7 @@ export function SCIMCard({
                     size="sm"
                     onClick={() => setRevoking(tok)}
                   >
-                    <BanGlassIcon size="1.2em" aria-hidden="true" />
+                    <BanGlassIcon size="1.4em" aria-hidden="true" />
                     {t('scim.revoke')}
                   </Button>
                 </>

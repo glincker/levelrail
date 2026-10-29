@@ -57,7 +57,7 @@ export function TokenTable({ tokens, rotatableIds }: TokenTableProps) {
                 {t('tokens.devFixtureGroupCount', { count: fixtures.length })}
               </Badge>
             </span>
-            <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsiblePanel className="space-y-3 pt-3">
             <p className="text-sm text-muted-foreground">
@@ -78,7 +78,7 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
         <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <KeyGlassIcon className="size-5.5" />
+          <KeyGlassIcon className="size-6" />
         </div>
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">
@@ -108,7 +108,7 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
               {token.abilities.includes('root') ? (
                 <span className="inline-flex items-center gap-1 text-xs text-tone-danger">
                   <TriangleAlertGlassIcon
-                    className="size-4 text-tone-warning"
+                    className="size-5 text-tone-warning"
                     aria-hidden="true"
                   />
                   {t('tokens.devFixtureRootWarning')}
@@ -130,7 +130,7 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
             title={token.agent.description}
           >
             <BotGlassIcon
-              className="size-4 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             {token.agent.name}

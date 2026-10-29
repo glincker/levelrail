@@ -51,7 +51,7 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         Rotate secret
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -60,7 +60,7 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
                 <CheckGlassIcon
-                  className="size-4.5 text-emerald-600"
+                  className="size-5 text-emerald-600"
                   aria-hidden="true"
                 />
                 New webhook secret
@@ -82,9 +82,9 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
                 onClick={copySecret}
               >
                 {copied ? (
-                  <CheckGlassIcon size="1.2em" />
+                  <CheckGlassIcon size="1.4em" />
                 ) : (
-                  <CopyGlassIcon size="1.2em" />
+                  <CopyGlassIcon size="1.4em" />
                 )}
                 {copied ? 'Copied' : 'Copy'}
               </Button>
@@ -105,7 +105,7 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
                 <TriangleAlertGlassIcon
-                  className="size-4.5 text-amber-600"
+                  className="size-5 text-amber-600"
                   aria-hidden="true"
                 />
                 Rotate webhook secret?

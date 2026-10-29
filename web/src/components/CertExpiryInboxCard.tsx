@@ -39,7 +39,7 @@ function RenewButton({ app, domain }: { app: string; domain: string }) {
         })
       }}
     >
-      <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+      <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
       {renew.isPending ? t('certCard.renewing') : t('certCard.renewNow')}
     </Button>
   )
@@ -86,7 +86,7 @@ export function CertExpiryInboxCard({ notice }: { notice: CertNotice }) {
       <div className="flex flex-wrap items-center gap-3">
         {dns || !app ? (
           <a className={buttonVariants({ size: 'sm' })} href={dnsHref}>
-            <SearchGlassIcon size="1.2em" aria-hidden="true" />
+            <SearchGlassIcon size="1.4em" aria-hidden="true" />
             {t('certCard.checkDns')}
           </a>
         ) : (

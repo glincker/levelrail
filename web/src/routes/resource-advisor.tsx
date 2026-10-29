@@ -134,7 +134,7 @@ function ResourceAdvisorPage() {
         </p>
       ) : advice.length === 0 ? (
         <EmptyState
-          icon={<LightbulbGlassIcon size="1.2em" />}
+          icon={<LightbulbGlassIcon size="1.4em" />}
           title={
             pending.length > 0 ? t('empty.pendingTitle') : t('empty.title')
           }

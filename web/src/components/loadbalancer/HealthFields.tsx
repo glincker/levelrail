@@ -11,7 +11,7 @@ export function HealthDetectionPreview({ form }: Pick<LbSectionProps, 'form'>) {
       className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm"
     >
       <ActivityGlassIcon
-        className="size-4.5 shrink-0 text-tone-info"
+        className="size-5 shrink-0 text-tone-info"
         aria-hidden
       />
       <span>{d.text}</span>

@@ -77,7 +77,7 @@ export function AppServicesPanel({ appName }: { appName: string }) {
             {svc.domains && svc.domains.length > 0 ? (
               <span className="flex items-center gap-1">
                 <GlobeGlassIcon
-                  className="size-4 shrink-0"
+                  className="size-5 shrink-0"
                   aria-hidden="true"
                 />
                 {svc.domains[0]}
@@ -117,7 +117,7 @@ export function AppServicesPanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LayersGlassIcon className="size-4.5" />
+          <LayersGlassIcon className="size-5" />
           Services
         </CardTitle>
         <CardDescription>

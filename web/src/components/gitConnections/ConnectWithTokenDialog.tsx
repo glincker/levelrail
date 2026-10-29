@@ -209,7 +209,7 @@ export default function ConnectWithTokenDialog({
               disabled={!canSubmit || probe.isPending}
               onClick={() => probe.mutate(body)}
             >
-              <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+              <PlugGlassIcon className="size-5" aria-hidden="true" />
               {probe.isPending
                 ? t('gitConnections.add.testing')
                 : t('gitConnections.token.check')}
@@ -277,7 +277,7 @@ export default function ConnectWithTokenDialog({
             disabled={!canSubmit || create.isPending}
             onClick={submit}
           >
-            <PlusGlassIcon className="size-4.5" aria-hidden="true" />
+            <PlusGlassIcon className="size-5" aria-hidden="true" />
             {create.isPending
               ? t('gitConnections.add.verifying')
               : t('gitConnections.add.connect')}

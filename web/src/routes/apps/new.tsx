@@ -64,7 +64,7 @@ function NewAppPage() {
                 setLinkOpen(true)
               }}
             >
-              <LinkGlassIcon size="1.2em" aria-hidden />
+              <LinkGlassIcon size="1.4em" aria-hidden />
               {tl('deployLinkDialog.action')}
             </Button>
           </div>

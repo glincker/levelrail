@@ -181,7 +181,7 @@ export function HeartbeatCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ActivityGlassIcon size="1.2em" aria-hidden="true" />
+          <ActivityGlassIcon size="1.4em" aria-hidden="true" />
           {t('heartbeat.title')}
         </CardTitle>
         <CardDescription>{t('heartbeat.description')}</CardDescription>

@@ -14,7 +14,7 @@ export function AppsEmptyActions() {
         render={<Link to="/settings/import-platform" />}
         nativeButton={false}
       >
-        <DownloadGlassIcon size="1.2em" />
+        <DownloadGlassIcon size="1.4em" />
         {t('appsList.import', { defaultValue: 'Import' })}
       </Button>
       <Button
@@ -23,7 +23,7 @@ export function AppsEmptyActions() {
         render={<Link to="/settings/github-app" />}
         nativeButton={false}
       >
-        <GitBranchGlassIcon size="1.2em" />
+        <GitBranchGlassIcon size="1.4em" />
         {t('appsList.connectGit', { defaultValue: 'Connect Git' })}
       </Button>
     </>

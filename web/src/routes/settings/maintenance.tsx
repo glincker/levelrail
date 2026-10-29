@@ -31,7 +31,7 @@ function MaintenancePage() {
 
   return (
     <PageTemplate
-      icon={<WrenchGlassIcon size="1.2em" />}
+      icon={<WrenchGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       actions={notConfigured ? null : <ScheduleMaintenanceDialog />}
@@ -45,7 +45,7 @@ function MaintenancePage() {
       ) : null}
       {data && data.length === 0 ? (
         <EmptyState
-          icon={<WrenchGlassIcon size="1.2em" />}
+          icon={<WrenchGlassIcon size="1.4em" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />
@@ -82,7 +82,7 @@ function MaintenancePage() {
                     remove.mutate(w.id)
                   }}
                 >
-                  <TrashGlassIcon className="size-4" aria-hidden="true" />
+                  <TrashGlassIcon className="size-5" aria-hidden="true" />
                   {t('cancel')}
                 </Button>
               )}

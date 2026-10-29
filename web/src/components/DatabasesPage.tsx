@@ -33,7 +33,7 @@ export function DatabasesShell({
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<DatabaseGlassIcon size="1.2em" />}
+        icon={<DatabaseGlassIcon size="1.4em" />}
         titleKey="databases:banner.title"
         descriptionKey={DESCRIPTION_KEY[empty ? 'banner' : 'list']}
         action={
@@ -95,7 +95,7 @@ export function DatabasesError({ message }: Readonly<{ message: string }>) {
     <DatabasesShell size="compact" empty={false}>
       <EmptyState
         icon={
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         }
         title={t('list.errorTitle')}
         description={`${t('list.errorBody')} ${message}`}

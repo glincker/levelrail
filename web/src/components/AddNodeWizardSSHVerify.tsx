@@ -67,7 +67,7 @@ export function SSHHostKeyVerify({
               }}
               className="accent-primary"
             />
-            <ShieldCheckGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
+            <ShieldCheckGlassIcon className="size-5 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1">
               <span className="block text-xs text-muted-foreground">
                 {k.type}
@@ -93,9 +93,9 @@ export function SSHHostKeyVerify({
               }}
             >
               {copied === k.fingerprint ? (
-                <CheckGlassIcon size="1.2em" />
+                <CheckGlassIcon size="1.4em" />
               ) : (
-                <CopyGlassIcon size="1.2em" />
+                <CopyGlassIcon size="1.4em" />
               )}
             </Button>
           </label>

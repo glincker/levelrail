@@ -151,12 +151,12 @@ export function StorageTestResultDialog({
             <li key={s.name} className="flex items-center gap-2">
               {s.ok ? (
                 <CircleCheckGlassIcon
-                  className="size-4.5 text-emerald-600"
+                  className="size-5 text-emerald-600"
                   aria-hidden="true"
                 />
               ) : (
                 <CircleXGlassIcon
-                  className="size-4.5 text-destructive"
+                  className="size-5 text-destructive"
                   aria-hidden="true"
                 />
               )}
@@ -171,7 +171,7 @@ export function StorageTestResultDialog({
         </ul>
         {fix ? (
           <Alert>
-            <WrenchGlassIcon className="size-4.5" aria-hidden="true" />
+            <WrenchGlassIcon className="size-5" aria-hidden="true" />
             <AlertTitle>{t(`storageDestinations.fix.${fix}.title`)}</AlertTitle>
             <AlertDescription>
               {t(`storageDestinations.fix.${fix}.description`)}

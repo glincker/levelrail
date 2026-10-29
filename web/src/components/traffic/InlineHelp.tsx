@@ -29,7 +29,7 @@ export function InlineHelp({
       <p className="flex flex-wrap items-center gap-1.5">
         <InfoGlassIcon
           aria-hidden="true"
-          className="size-4 shrink-0 text-tone-info"
+          className="size-5 shrink-0 text-tone-info"
         />
         <span>{summary}</span>
         {hasDetail ? (

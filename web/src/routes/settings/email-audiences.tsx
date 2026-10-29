@@ -40,7 +40,7 @@ function EmailAudiencesPage() {
       writeAction
       onClick={() => setDialog({ group: null })}
     >
-      <PlusGlassIcon size="1.2em" data-icon="inline-start" />
+      <PlusGlassIcon size="1.4em" data-icon="inline-start" />
       {t('audiences.create')}
     </Button>
   )
@@ -66,7 +66,7 @@ function EmailAudiencesPage() {
         ) : null}
         {!isLoading && !error && groups.length === 0 ? (
           <EmptyState
-            icon={<UsersGlassIcon className="size-5.5" />}
+            icon={<UsersGlassIcon className="size-6" />}
             title={t('audiences.empty.title')}
             description={t('audiences.empty.description')}
             action={createButton}
@@ -100,7 +100,7 @@ function EmailAudiencesPage() {
                     variant="outline"
                     onClick={() => setDialog({ group: g })}
                   >
-                    <PencilGlassIcon size="1.2em" data-icon="inline-start" />
+                    <PencilGlassIcon size="1.4em" data-icon="inline-start" />
                     {t('audiences.edit')}
                   </Button>
                   <Button
@@ -111,7 +111,7 @@ function EmailAudiencesPage() {
                     writeAction
                     onClick={() => setDeleting(g)}
                   >
-                    <TrashGlassIcon size="1.2em" />
+                    <TrashGlassIcon size="1.4em" />
                   </Button>
                 </div>
               </li>

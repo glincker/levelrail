@@ -204,7 +204,7 @@ export function NodesTable({
               aria-hidden="true"
               className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
             >
-              <ServerGlassIcon className="size-4.5" />
+              <ServerGlassIcon className="size-5" />
             </span>
           ),
         }}
@@ -216,9 +216,9 @@ export function NodesTable({
               ? t('cordon.trigger')
               : t('uncordon.trigger'),
             icon: node.schedulable ? (
-              <LockGlassIcon size="1.2em" />
+              <LockGlassIcon size="1.4em" />
             ) : (
-              <LockOpenGlassIcon size="1.2em" />
+              <LockOpenGlassIcon size="1.4em" />
             ),
             onSelect: () => {
               setDialog({ kind: 'cordon', node })
@@ -227,7 +227,7 @@ export function NodesTable({
           {
             id: 'drain',
             label: t('drain.trigger'),
-            icon: <MaximizeGlassIcon size="1.2em" />,
+            icon: <MaximizeGlassIcon size="1.4em" />,
             onSelect: () => {
               setDialog({ kind: 'drain', node })
             },
@@ -235,7 +235,7 @@ export function NodesTable({
           {
             id: 'delete',
             label: t('delete.trigger'),
-            icon: <TrashGlassIcon size="1.2em" />,
+            icon: <TrashGlassIcon size="1.4em" />,
             tone: 'danger',
             onSelect: () => {
               setDialog({ kind: 'delete', node })

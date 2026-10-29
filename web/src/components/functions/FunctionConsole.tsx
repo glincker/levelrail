@@ -118,7 +118,7 @@ export function FunctionConsole({ name }: Readonly<{ name: string }>) {
         </div>
       </div>
       <Button onClick={send} disabled={invoke.isPending}>
-        <SendGlassIcon className="size-4.5" aria-hidden="true" />
+        <SendGlassIcon className="size-5" aria-hidden="true" />
         {invoke.isPending ? t('console.sending') : t('console.send')}
       </Button>
       {invoke.isPending ? (

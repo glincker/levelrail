@@ -97,7 +97,7 @@ export function CdnControlsPage({ kind }: Readonly<{ kind: Kind }>) {
       ) : null}
       {data && rows.length === 0 ? (
         <EmptyState
-          icon={<GlobeGlassIcon className="size-5.5" />}
+          icon={<GlobeGlassIcon className="size-6" />}
           title={t('controls.emptyTitle')}
           description={t('controls.emptyBody')}
           action={

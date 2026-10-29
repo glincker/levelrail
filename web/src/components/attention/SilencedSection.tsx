@@ -36,7 +36,7 @@ export function SilencedSection({
   return (
     <details className="rounded-lg border border-border bg-card/50 p-3">
       <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-muted-foreground">
-        <BellOffGlassIcon className="size-4.5" aria-hidden="true" />
+        <BellOffGlassIcon className="size-5" aria-hidden="true" />
         {t('silence.sectionTitle', { count })}
       </summary>
       <ul className="mt-2 space-y-2">

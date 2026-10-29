@@ -70,7 +70,7 @@ export function CreateDeployNotifyTargetDialog({
             <CreateFlowHeader
               icon={
                 <CirclePlusGlassIcon
-                  className="size-4.5 text-muted-foreground"
+                  className="size-5 text-muted-foreground"
                   aria-hidden="true"
                 />
               }
@@ -97,7 +97,7 @@ export function CreateDeployNotifyTargetDialog({
           <CreateFlowShell
             icon={
               <CirclePlusGlassIcon
-                className="size-4.5 text-muted-foreground"
+                className="size-5 text-muted-foreground"
                 aria-hidden="true"
               />
             }

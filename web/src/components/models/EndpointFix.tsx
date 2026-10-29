@@ -35,7 +35,7 @@ export function EndpointFix({
   const showOllama = apiType === 'ollama' && OLLAMA_BIND_FIXES.has(fix)
   return (
     <Alert variant="destructive" className="space-y-1">
-      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+      <WrenchGlassIcon size="1.4em" aria-hidden="true" />
       <AlertTitle>{t(`endpoint.fix.${fix}.title`)}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>{diagnosis.message}</p>
@@ -86,7 +86,7 @@ export function EndpointFix({
           disabled={rechecking}
           onClick={onRecheck}
         >
-          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
           {t('endpoint.recheck')}
         </Button>
       </AlertDescription>

@@ -71,7 +71,7 @@ export function ControlPlaneDrEscrow({ status }: { status: ControlPlaneDr }) {
             setOpen(true)
           }}
         >
-          <KeyGlassIcon className="size-4" aria-hidden="true" />
+          <KeyGlassIcon className="size-5" aria-hidden="true" />
           Escrow bundle
         </Button>
       </div>
@@ -95,7 +95,7 @@ export function ControlPlaneDrEscrow({ status }: { status: ControlPlaneDr }) {
             className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground"
           >
             <TriangleAlertGlassIcon
-              className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+              className="mt-0.5 size-5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             <span>

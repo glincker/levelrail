@@ -12,7 +12,7 @@ export function PresetPicker({
     <ActionMenu
       trigger={
         <Button type="button" variant="outline" size="sm">
-          <WandGlassIcon size="1.2em" data-icon="inline-start" />
+          <WandGlassIcon size="1.4em" data-icon="inline-start" />
           Presets
         </Button>
       }

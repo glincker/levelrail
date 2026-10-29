@@ -44,7 +44,7 @@ function Panel({
       )}
     >
       <div className="flex items-center gap-2">
-        <span className="[&_svg]:size-5" aria-hidden="true">
+        <span className="[&_svg]:size-6" aria-hidden="true">
           {icon}
         </span>
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
@@ -81,7 +81,7 @@ export function ExplorerReadError({
   return (
     <div role="alert">
       <Panel
-        icon={<PlugGlassIcon size="1.2em" />}
+        icon={<PlugGlassIcon size="1.4em" />}
         title={t('viewer.states.errorTitle')}
         tone="danger"
       >
@@ -91,7 +91,7 @@ export function ExplorerReadError({
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" size="sm" disabled={retrying} onClick={onRetry}>
-            <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+            <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
             {t('viewer.states.retry')}
           </Button>
         </div>
@@ -169,9 +169,9 @@ export function ExplorerEmpty({
     <Panel
       icon={
         hasWarning ? (
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         ) : (
-          <SpreadsheetGlassIcon size="1.2em" />
+          <SpreadsheetGlassIcon size="1.4em" />
         )
       }
       title={
@@ -239,7 +239,7 @@ export function ExplorerEmpty({
           params={{ name: databaseName }}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
-          <TerminalGlassIcon className="size-4.5" aria-hidden="true" />
+          <TerminalGlassIcon className="size-5" aria-hidden="true" />
           {t('viewer.states.openConsole')}
         </Link>
       )}
@@ -258,7 +258,7 @@ export function ExplorerNoMatches({
   return (
     <div className="space-y-2 p-4 text-center">
       <SearchGlassIcon
-        className="mx-auto size-5.5 text-muted-foreground"
+        className="mx-auto size-6 text-muted-foreground"
         aria-hidden="true"
       />
       <p className="text-sm">{t('viewer.states.noMatches', { query })}</p>

@@ -38,7 +38,7 @@ export function StepHero({
         className="-ml-2 w-fit text-muted-foreground"
         onClick={onBack}
       >
-        <ArrowLeftGlassIcon size="1.2em" aria-hidden="true" />
+        <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
         {t('wizard.back')}
       </Button>
       <div

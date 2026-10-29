@@ -49,7 +49,7 @@ export function GitConnectionBanner({
             window.location.assign(reconnectUrl(provider.provider))
           }}
         >
-          <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+          <PlugGlassIcon className="size-5" aria-hidden="true" />
           {t('connection.reconnect', { provider: name })}
         </Button>
       }
@@ -73,7 +73,7 @@ export function GitConnectionHealth({
     return (
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <CircleCheckGlassIcon
-          className="size-4 text-tone-success"
+          className="size-5 text-tone-success"
           aria-hidden="true"
         />
         {t('connection.label')}: {t('connection.healthy')}

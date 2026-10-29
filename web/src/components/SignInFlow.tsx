@@ -220,7 +220,7 @@ export function SignInFlow({
             }
             onClick={handlePasskeyButton}
           >
-            <FingerprintPatternGlassIcon size="1.2em" />
+            <FingerprintPatternGlassIcon size="1.4em" />
             {t('passkey.discoverable')}
           </Button>
         ) : null}
@@ -228,7 +228,7 @@ export function SignInFlow({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>
               {tp(`errors.${classifyPasskeyError(discoverable.error)}`)}
@@ -248,7 +248,7 @@ export function SignInFlow({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>
               {tp(`errors.${classifyPasskeyError(finish.error)}`)}
@@ -274,7 +274,7 @@ export function SignInFlow({
             })
           }}
         >
-          <FingerprintPatternGlassIcon size="1.2em" />
+          <FingerprintPatternGlassIcon size="1.4em" />
           {finish.isPending
             ? 'Waiting for passkey...'
             : `Sign in as ${username.trim()}`}

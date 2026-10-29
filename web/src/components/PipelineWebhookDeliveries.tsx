@@ -88,7 +88,7 @@ export function PipelineWebhookDeliveries({
                     })
                   }
                 >
-                  <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />
+                  <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
                   {t('webhook.replay')}
                 </Button>
               ) : null}

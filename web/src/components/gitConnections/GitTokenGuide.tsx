@@ -39,7 +39,7 @@ export function GitTokenGuide({
             >
               {page}
               <ExternalLinkGlassIcon
-                className="size-4 shrink-0"
+                className="size-5 shrink-0"
                 aria-hidden="true"
               />
             </a>

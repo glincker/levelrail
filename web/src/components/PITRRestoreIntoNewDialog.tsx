@@ -78,7 +78,7 @@ export function PITRRestoreIntoNewDialog({
       <DialogTrigger
         render={<Button variant="outline" size="sm" disabled={!canRestore} />}
       >
-        <RestoreGlassIcon className="size-4" aria-hidden="true" />
+        <RestoreGlassIcon className="size-5" aria-hidden="true" />
         {t('pitrNew.restoreButton')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

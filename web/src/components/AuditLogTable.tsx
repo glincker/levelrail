@@ -67,7 +67,7 @@ function AgentCell({ entry }: { entry: AuditLogEntry }) {
       title={entry.agent_client}
     >
       <BotGlassIcon
-        className="size-4 text-muted-foreground"
+        className="size-5 text-muted-foreground"
         aria-hidden="true"
       />
       {entry.agent_name}

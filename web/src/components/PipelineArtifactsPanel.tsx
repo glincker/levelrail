@@ -25,7 +25,7 @@ export function PipelineArtifactsPanel({
         className="flex items-center gap-1.5 text-sm font-semibold text-foreground"
       >
         <PackageGlassIcon
-          className="size-4.5 text-muted-foreground"
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('artifacts.title')}
@@ -68,7 +68,7 @@ export function PipelineArtifactsPanel({
                 aria-label={t('artifacts.downloadLabel', { job: a.job })}
                 className={buttonVariants({ variant: 'outline', size: 'sm' })}
               >
-                <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+                <DownloadGlassIcon size="1.4em" aria-hidden="true" />
                 {t('artifacts.download')}
               </a>
             </li>

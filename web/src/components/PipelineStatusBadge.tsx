@@ -24,7 +24,7 @@ export function PipelineStatusIcon({
     case 'succeeded':
       return (
         <CircleCheckGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={className}
           aria-hidden="true"
         />
@@ -32,7 +32,7 @@ export function PipelineStatusIcon({
     case 'failed':
       return (
         <CircleXGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={className}
           aria-hidden="true"
         />
@@ -40,7 +40,7 @@ export function PipelineStatusIcon({
     case 'running':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={
             spin
               ? `${className ?? ''} animate-spin motion-reduce:animate-none`
@@ -52,19 +52,19 @@ export function PipelineStatusIcon({
     case 'waiting_approval':
       return (
         <CountdownGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={className}
           aria-hidden="true"
         />
       )
     case 'cancelled':
       return (
-        <BanGlassIcon size="1.2em" className={className} aria-hidden="true" />
+        <BanGlassIcon size="1.4em" className={className} aria-hidden="true" />
       )
     case 'skipped':
       return (
         <CircleMinusGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={className}
           aria-hidden="true"
         />
@@ -72,7 +72,7 @@ export function PipelineStatusIcon({
     default:
       return (
         <CircleDashedGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={className}
           aria-hidden="true"
         />

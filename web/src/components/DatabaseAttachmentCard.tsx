@@ -131,7 +131,7 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-2">
               <PlugGlassIcon
-                className="mt-0.5 size-4.5 shrink-0 text-muted-foreground"
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <div>
@@ -222,7 +222,7 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
                     disabled={pending || !selectedDatabase}
                     onClick={handleAttach}
                   >
-                    <DatabaseGlassIcon className="size-4" aria-hidden="true" />
+                    <DatabaseGlassIcon className="size-5" aria-hidden="true" />
                     {setAppDatabase.isPending ? 'Attaching...' : 'Attach'}
                   </Button>
                 </div>

@@ -132,11 +132,11 @@ export function AddPasskeyDialog({
                   }
                 >
                   {state === 'done' ? (
-                    <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+                    <CircleCheckGlassIcon className="size-5 text-tone-success" />
                   ) : state === 'active' && working ? (
-                    <LoaderCircleGlassIcon className="size-4.5 animate-spin" />
+                    <LoaderCircleGlassIcon className="size-5 animate-spin" />
                   ) : (
-                    <CircleGlassIcon className="size-4.5" />
+                    <CircleGlassIcon className="size-5" />
                   )}
                   {t(labelKey)}
                 </li>
@@ -148,7 +148,7 @@ export function AddPasskeyDialog({
             <Alert>
               <CircleCheckGlassIcon
                 className="text-tone-success"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertTitle>{t('addDialog.savedTitle')}</AlertTitle>
               <AlertDescription>
@@ -193,7 +193,7 @@ export function AddPasskeyDialog({
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{t(`errors.${errorKind}`)}</AlertDescription>
             </Alert>
@@ -221,7 +221,7 @@ export function AddPasskeyDialog({
                   {t('addDialog.cancel')}
                 </Button>
                 <Button type="submit" disabled={working}>
-                  <FingerprintPatternGlassIcon size="1.2em" />
+                  <FingerprintPatternGlassIcon size="1.4em" />
                   {errorKind && isRetryablePasskeyError(errorKind)
                     ? t('addDialog.retry')
                     : t('addDialog.continue')}

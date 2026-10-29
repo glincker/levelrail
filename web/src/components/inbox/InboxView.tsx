@@ -226,7 +226,7 @@ export function InboxView() {
             mark.mutate({ all: true, ids: unread.map((e) => e.id) })
           }}
         >
-          <CheckGlassIcon size="1.2em" />
+          <CheckGlassIcon size="1.4em" />
           {t('markAllRead')}
         </Button>
         <Suspense fallback={null}>
@@ -284,7 +284,7 @@ export function InboxView() {
         <ListSkeleton rows={5} />
       ) : list.length === 0 ? (
         <EmptyState
-          icon={<InboxGlassIcon className="size-5.5" />}
+          icon={<InboxGlassIcon className="size-6" />}
           title={t(archived ? 'page.emptyArchivedTitle' : 'page.emptyTitle')}
           description={t(
             archived ? 'page.emptyArchivedBody' : 'page.emptyBody',
@@ -384,7 +384,7 @@ export function InboxView() {
                     toggleArchive(selected)
                   }}
                 >
-                  <ArchiveGlassIcon size="1.2em" />
+                  <ArchiveGlassIcon size="1.4em" />
                   {t(selected.archived ? 'page.restore' : 'page.archive')}
                 </Button>
                 {selected.deletable ? (
@@ -396,7 +396,7 @@ export function InboxView() {
                       deleteMany([selected])
                     }}
                   >
-                    <TrashGlassIcon size="1.2em" />
+                    <TrashGlassIcon size="1.4em" />
                     {t('bulk.delete')}
                   </Button>
                 ) : null}

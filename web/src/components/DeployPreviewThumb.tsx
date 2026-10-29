@@ -129,7 +129,7 @@ export function DeployPreviewThumb({
         {!canShow && !isCard && !loading && !capturing ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <ImageGlassIcon
-              className="size-5.5 text-muted-foreground"
+              className="size-6 text-muted-foreground"
               aria-hidden="true"
             />
           </div>
@@ -151,7 +151,7 @@ export function DeployPreviewThumb({
           disabled={capturing}
         >
           <RefreshCwGlassIcon
-            className={cn('size-4', capturing && 'animate-spin')}
+            className={cn('size-5', capturing && 'animate-spin')}
             data-icon="inline-start"
           />
           {capturing ? 'Capturing...' : 'Recapture'}

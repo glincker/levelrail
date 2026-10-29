@@ -30,20 +30,20 @@ export function TimelineLegend() {
         </li>
       ))}
       <li className="flex items-center gap-1.5">
-        <UndoGlassIcon aria-hidden="true" className="size-3.5" />
+        <UndoGlassIcon aria-hidden="true" className="size-4.5" />
         {t('legend.rolledBack')}
       </li>
       <li className="flex items-center gap-1.5">
         <CircleXGlassIcon
           aria-hidden="true"
-          className="size-3.5 text-tone-danger"
+          className="size-4.5 text-tone-danger"
         />
         {t('legend.failed')}
       </li>
       <li className="flex items-center gap-1.5">
         <BellRingGlassIcon
           aria-hidden="true"
-          className="size-3.5 text-tone-warning"
+          className="size-4.5 text-tone-warning"
         />
         {t('legend.alert')}
       </li>

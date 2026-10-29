@@ -67,7 +67,7 @@ function SheetContent({
               />
             }
           >
-            <XGlassIcon size="1.2em" />
+            <XGlassIcon size="1.4em" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
         )}

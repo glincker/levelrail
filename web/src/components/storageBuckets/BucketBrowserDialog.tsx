@@ -128,7 +128,7 @@ function BrowserBody({ bucket }: Readonly<{ bucket: StorageBucket }>) {
           disabled={upload.isPending}
           onClick={() => fileInput.current?.click()}
         >
-          <UploadGlassIcon size="1.2em" aria-hidden="true" />
+          <UploadGlassIcon size="1.4em" aria-hidden="true" />
           {upload.isPending ? t('browser.uploading') : t('browser.upload')}
         </Button>
       </div>
@@ -141,7 +141,7 @@ function BrowserBody({ bucket }: Readonly<{ bucket: StorageBucket }>) {
       ) : rows.length === 0 && !objects.isPending ? (
         <EmptyState
           compact
-          icon={<UploadGlassIcon className="size-5.5" aria-hidden="true" />}
+          icon={<UploadGlassIcon className="size-6" aria-hidden="true" />}
           title={t('browser.empty')}
           description={t('browser.emptyHint')}
         />

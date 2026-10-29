@@ -30,7 +30,7 @@ export function AppImportSSHFix({
   const sockets = SOCKET_CANDIDATES.filter((p) => p !== currentSocket)
   return (
     <Alert variant="destructive" role="alert">
-      <WrenchGlassIcon size="1.2em" aria-hidden />
+      <WrenchGlassIcon size="1.4em" aria-hidden />
       <AlertTitle>{t(`appImport.ssh.fix.${kind}.title`)}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>{t(`appImport.ssh.fix.${kind}.body`)}</p>

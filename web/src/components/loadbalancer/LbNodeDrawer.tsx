@@ -94,7 +94,7 @@ export function LbNodeDrawer({
 
             {u.last_check ? (
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <ClockGlassIcon className="size-4" aria-hidden="true" />
+                <ClockGlassIcon className="size-5" aria-hidden="true" />
                 Checked <RelativeTime at={u.last_check} live />
               </p>
             ) : null}
@@ -168,7 +168,7 @@ export function LbNodeDrawer({
                       .map((t, i) => ({
                         id: `${t.at}-${i}`,
                         at: t.at,
-                        icon: <ArrowRightGlassIcon className="size-4.5" />,
+                        icon: <ArrowRightGlassIcon className="size-5" />,
                         tone:
                           t.to === 'healthy'
                             ? 'success'

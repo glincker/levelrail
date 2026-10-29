@@ -68,7 +68,7 @@ export function CdnFrame({
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<ZapGlassIcon size="1.2em" />}
+        icon={<ZapGlassIcon size="1.4em" />}
         titleKey="cdn:nav.label"
         titleText={title}
         descriptionKey="cdn:nav.label"

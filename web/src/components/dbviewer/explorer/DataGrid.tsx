@@ -297,7 +297,7 @@ export function DataGrid({
                   <ColumnTypeIcon kind={col.kind} type={col.type} />
                   {col.primaryKey ? (
                     <KeyGlassIcon
-                      className="size-3.5 shrink-0 text-primary"
+                      className="size-4.5 shrink-0 text-primary"
                       aria-label={t('viewer.explorer.primaryKey')}
                     />
                   ) : null}
@@ -323,12 +323,12 @@ export function DataGrid({
                     {active ? (
                       sort.desc ? (
                         <ChevronDownGlassIcon
-                          className="size-3.5"
+                          className="size-4.5"
                           aria-hidden="true"
                         />
                       ) : (
                         <ChevronUpGlassIcon
-                          className="size-3.5"
+                          className="size-4.5"
                           aria-hidden="true"
                         />
                       )

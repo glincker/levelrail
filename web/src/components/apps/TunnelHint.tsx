@@ -38,9 +38,9 @@ function CopyCommand({ command, port }: { command: string; port: number }) {
       }}
     >
       {copied ? (
-        <CheckGlassIcon size="1.2em" aria-hidden="true" />
+        <CheckGlassIcon size="1.4em" aria-hidden="true" />
       ) : (
-        <CopyGlassIcon size="1.2em" aria-hidden="true" />
+        <CopyGlassIcon size="1.4em" aria-hidden="true" />
       )}
     </Button>
   )
@@ -54,7 +54,7 @@ export function TunnelHint({ appName, port, publishedPorts }: TunnelHintProps) {
   return (
     <div className="mt-5 rounded-md bg-muted p-3">
       <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        <PlugGlassIcon className="size-4.5" aria-hidden="true" />
+        <PlugGlassIcon className="size-5" aria-hidden="true" />
         {t('tunnel.title')}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">

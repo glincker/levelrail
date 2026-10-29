@@ -47,7 +47,7 @@ export function CpuFitSummary({
       {fit.warnings.map((w) => (
         <p key={w} className="flex gap-1.5 text-xs text-tone-warning">
           <TriangleAlertGlassIcon
-            className="mt-0.5 size-4 shrink-0 text-tone-warning"
+            className="mt-0.5 size-5 shrink-0 text-tone-warning"
             aria-hidden="true"
           />
           {w}

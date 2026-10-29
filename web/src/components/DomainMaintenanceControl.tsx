@@ -95,13 +95,13 @@ export function DomainMaintenanceControl({
         {enabled ? (
           <EnforcedBadge domain={domain} control="maintenance">
             <Badge variant="warning" className="shrink-0">
-              <WrenchGlassIcon className="size-3.5" />
+              <WrenchGlassIcon className="size-4.5" />
               {t('maintenance.on')}
             </Badge>
           </EnforcedBadge>
         ) : (
           <Badge variant="muted" className="shrink-0">
-            <WrenchGlassIcon className="size-3.5" />
+            <WrenchGlassIcon className="size-4.5" />
             {t('maintenance.off')}
           </Badge>
         )}
@@ -196,7 +196,7 @@ export function DomainMaintenanceControl({
       />
       {error && confirming === null ? (
         <Alert variant="destructive" className="mt-2">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

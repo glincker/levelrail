@@ -117,7 +117,7 @@ export function StandaloneRowActions({
             />
           }
         >
-          <EllipsisGlassIcon size="1.2em" />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
@@ -125,19 +125,19 @@ export function StandaloneRowActions({
               setEditing(true)
             }}
           >
-            <PencilGlassIcon size="1.2em" />
+            <PencilGlassIcon size="1.4em" />
             {t('standalone.edit')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onShowRecord}>
-            <FileSearchGlassIcon size="1.2em" />
+            <FileSearchGlassIcon size="1.4em" />
             {t('page.row.dnsRecord')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onDiagnose}>
-            <StethoscopeGlassIcon size="1.2em" />
+            <StethoscopeGlassIcon size="1.4em" />
             {t('page.row.diagnose')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onRecheck}>
-            <RefreshCwGlassIcon size="1.2em" />
+            <RefreshCwGlassIcon size="1.4em" />
             {t('page.row.recheck')}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -146,9 +146,9 @@ export function StandaloneRowActions({
             }}
           >
             {copied ? (
-              <CheckGlassIcon size="1.2em" />
+              <CheckGlassIcon size="1.4em" />
             ) : (
-              <CopyGlassIcon size="1.2em" />
+              <CopyGlassIcon size="1.4em" />
             )}
             {copied ? t('page.row.copied') : t('page.row.copy')}
           </DropdownMenuItem>
@@ -157,7 +157,7 @@ export function StandaloneRowActions({
               setRemoving(true)
             }}
           >
-            <TrashGlassIcon size="1.2em" />
+            <TrashGlassIcon size="1.4em" />
             {t('standalone.remove')}
           </DropdownMenuItem>
         </DropdownMenuContent>

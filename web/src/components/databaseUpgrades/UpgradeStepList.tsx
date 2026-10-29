@@ -32,7 +32,7 @@ export function UpgradeStepList({
           role="alert"
         >
           <TriangleAlertGlassIcon
-            className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+            className="mt-0.5 size-5 shrink-0 text-tone-warning"
             aria-hidden="true"
           />
           {t('steps.majorWarning')}
@@ -59,7 +59,7 @@ export function UpgradeStepList({
       </ol>
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <RotateCcwGlassIcon
-          className="mt-0.5 size-4.5 shrink-0"
+          className="mt-0.5 size-5 shrink-0"
           aria-hidden="true"
         />
         {autoRevert ? t('steps.rollbackAuto') : t('steps.rollbackManual')}

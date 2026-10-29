@@ -42,7 +42,7 @@ export function PauseResumeProjectButton({
           })
         }}
       >
-        <PauseGlassIcon className="size-4" aria-hidden="true" />
+        <PauseGlassIcon className="size-5" aria-hidden="true" />
         {stopProject.isPending ? 'Stopping...' : 'Stop project'}
       </Button>
       <Button
@@ -63,7 +63,7 @@ export function PauseResumeProjectButton({
           })
         }}
       >
-        <PlayGlassIcon className="size-4" aria-hidden="true" />
+        <PlayGlassIcon className="size-5" aria-hidden="true" />
         {startProject.isPending ? 'Starting...' : 'Start project'}
       </Button>
     </div>

@@ -33,7 +33,7 @@ function VendorTile({ vendor }: { vendor: RegistryVendor }) {
         aria-label={t('registryVendors.connectFor', { vendor: vendor.name })}
         onClick={() => dialog.open()}
       >
-        <PlugGlassIcon size="1.2em" aria-hidden="true" />
+        <PlugGlassIcon size="1.4em" aria-hidden="true" />
         {t('registryVendors.connect')}
       </Button>
       <UrlDialog

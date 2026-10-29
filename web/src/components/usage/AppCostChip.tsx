@@ -25,7 +25,7 @@ export function AppCostChip({ appName }: { appName: string }) {
         className="gap-1.5 py-1"
         data-testid="app-cost-chip"
       >
-        <CoinsGlassIcon size="1.2em" />
+        <CoinsGlassIcon size="1.4em" />
         <span>
           {t('chip.label')}:{' '}
           {t('chip.value', { amount: formatMoney(row.total, data.currency) })}

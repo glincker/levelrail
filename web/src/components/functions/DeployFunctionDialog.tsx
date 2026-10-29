@@ -15,7 +15,7 @@ export function DeployFunctionDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button type="button" />}>
-        <RocketGlassIcon size="1.2em" aria-hidden="true" />
+        <RocketGlassIcon size="1.4em" aria-hidden="true" />
         {t('deploy.open')}
       </DialogTrigger>
       <DialogContent className="flex max-h-[90dvh] min-w-0 flex-col overflow-hidden sm:max-h-[90dvh] sm:max-w-xl">

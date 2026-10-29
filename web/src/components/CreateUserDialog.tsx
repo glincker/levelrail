@@ -100,13 +100,13 @@ export function CreateUserDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
-        <UserPlusGlassIcon size="1.2em" />
+        <UserPlusGlassIcon size="1.4em" />
         Create user
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlusGlassIcon className="size-4.5 text-muted-foreground" />
+            <UserPlusGlassIcon className="size-5 text-muted-foreground" />
             Create user
           </DialogTitle>
           <DialogDescription>
@@ -174,7 +174,7 @@ export function CreateUserDialog() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{createUser.error.message}</AlertDescription>
             </Alert>

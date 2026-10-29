@@ -24,7 +24,7 @@ export function CostByTag({ onPickTag }: { onPickTag: (tag: string) => void }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
-          <CoinsGlassIcon size="1.2em" />
+          <CoinsGlassIcon size="1.4em" />
           {t('cost.title')}
         </CardTitle>
         <CardDescription>{t('cost.description')}</CardDescription>

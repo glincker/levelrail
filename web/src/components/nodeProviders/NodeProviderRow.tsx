@@ -104,7 +104,7 @@ export function NodeProviderRow({
           dialog.open()
         }}
       >
-        <SettingsGlassIcon size="1.2em" aria-hidden="true" />
+        <SettingsGlassIcon size="1.4em" aria-hidden="true" />
         {connected ? t('nodeProviders.update') : t('nodeProviders.connect')}
       </Button>
       <UrlDialog

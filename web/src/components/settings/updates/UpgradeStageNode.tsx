@@ -100,13 +100,13 @@ export function UpgradeStageNode({
           )}
         >
           {phase.state === 'ok' ? (
-            <CheckGlassIcon className="size-4.5" aria-hidden />
+            <CheckGlassIcon className="size-5" aria-hidden />
           ) : null}
           {phase.state === 'failed' ? (
-            <XGlassIcon className="size-4.5" aria-hidden />
+            <XGlassIcon className="size-5" aria-hidden />
           ) : null}
           {phase.state === 'skipped' ? (
-            <MinusGlassIcon className="size-4.5" aria-hidden />
+            <MinusGlassIcon className="size-5" aria-hidden />
           ) : null}
         </span>
       </span>

@@ -120,7 +120,7 @@ export function MoveToNodeDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowLeftRightGlassIcon className="size-4" aria-hidden="true" />
+        <ArrowLeftRightGlassIcon className="size-5" aria-hidden="true" />
         {t('move.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -179,7 +179,7 @@ export function MoveToNodeDialog({
             {volumeNames.length > 0 ? (
               <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
                 <TriangleAlertGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-amber-500"
+                  className="mt-0.5 size-5 shrink-0 text-amber-500"
                   aria-hidden="true"
                 />
                 <span>
@@ -214,7 +214,7 @@ export function MoveToNodeDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{start.error.message}</AlertDescription>
           </Alert>
@@ -224,7 +224,7 @@ export function MoveToNodeDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{move.error.message}</AlertDescription>
           </Alert>
@@ -234,7 +234,7 @@ export function MoveToNodeDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>
               <p>{move.data?.error || t('move.failedFallback')}</p>

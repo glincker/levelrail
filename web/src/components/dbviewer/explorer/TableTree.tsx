@@ -132,7 +132,7 @@ export function TableTree({
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <SearchGlassIcon
-            className="pointer-events-none absolute left-2 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-2 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -155,7 +155,7 @@ export function TableTree({
           aria-label={t('viewer.explorer.refresh')}
           onClick={onRefresh}
         >
-          <RefreshCwGlassIcon className="size-4.5" aria-hidden="true" />
+          <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         </Button>
       </div>
       <p className="text-xs text-muted-foreground" aria-live="polite">
@@ -227,12 +227,12 @@ export function TableTree({
                     <>
                       {collapsed.has(item.schema) && !query ? (
                         <ChevronRightGlassIcon
-                          className="size-3.5"
+                          className="size-4.5"
                           aria-hidden="true"
                         />
                       ) : (
                         <ChevronDownGlassIcon
-                          className="size-3.5"
+                          className="size-4.5"
                           aria-hidden="true"
                         />
                       )}
@@ -243,12 +243,12 @@ export function TableTree({
                     <>
                       {item.table.kind === 'table' ? (
                         <SpreadsheetGlassIcon
-                          className="size-4.5 shrink-0 text-muted-foreground"
+                          className="size-5 shrink-0 text-muted-foreground"
                           aria-hidden="true"
                         />
                       ) : (
                         <EyeGlassIcon
-                          className="size-4.5 shrink-0 text-muted-foreground"
+                          className="size-5 shrink-0 text-muted-foreground"
                           aria-hidden="true"
                         />
                       )}

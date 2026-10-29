@@ -34,28 +34,28 @@ function StatusIcon({ status }: { status: RowStatus }) {
     case 'done':
       return (
         <CircleCheckGlassIcon
-          className="size-4.5 text-success-foreground"
+          className="size-5 text-success-foreground"
           aria-hidden="true"
         />
       )
     case 'running':
       return (
         <LoaderCircleGlassIcon
-          className="size-4.5 animate-spin text-muted-foreground"
+          className="size-5 animate-spin text-muted-foreground"
           aria-hidden="true"
         />
       )
     case 'failed':
       return (
         <CircleAlertGlassIcon
-          className="size-4.5 text-destructive"
+          className="size-5 text-destructive"
           aria-hidden="true"
         />
       )
     default:
       return (
         <CircleGlassIcon
-          className="size-4.5 text-muted-foreground/50"
+          className="size-5 text-muted-foreground/50"
           aria-hidden="true"
         />
       )

@@ -63,7 +63,7 @@ export function ModelBenchmarkCard({
             })
           }}
         >
-          <GaugeGlassIcon size="1.2em" aria-hidden="true" />
+          <GaugeGlassIcon size="1.4em" aria-hidden="true" />
           {run.isPending ? t('cpu.benchmark.running') : t('cpu.benchmark.run')}
         </Button>
       </div>

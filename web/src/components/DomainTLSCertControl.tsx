@@ -103,8 +103,8 @@ export function DomainTLSCertControl({
         <ChevronRightGlassIcon
           className={
             open
-              ? 'size-4 shrink-0 rotate-90 transition-transform'
-              : 'size-4 shrink-0 transition-transform'
+              ? 'size-5 shrink-0 rotate-90 transition-transform'
+              : 'size-5 shrink-0 transition-transform'
           }
           aria-hidden="true"
         />
@@ -114,7 +114,7 @@ export function DomainTLSCertControl({
         {uploaded ? (
           <Badge variant="success" className="shrink-0">
             <ShieldCheckGlassIcon
-              className="size-3.5 text-tone-success"
+              className="size-4.5 text-tone-success"
               aria-hidden="true"
             />
             {t('proxySetup.byo.uploaded')}
@@ -248,7 +248,7 @@ export function DomainTLSCertControl({
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-1.5 text-destructive">
                       <TriangleAlertGlassIcon
-                        className="size-4.5 text-tone-warning"
+                        className="size-5 text-tone-warning"
                         aria-hidden="true"
                       />
                       {t('proxySetup.byo.revertTitle', { domain })}

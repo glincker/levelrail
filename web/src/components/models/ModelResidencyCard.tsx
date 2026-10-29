@@ -155,7 +155,7 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
                 })
               }}
             >
-              <SunGlassIcon size="1.2em" aria-hidden="true" />
+              <SunGlassIcon size="1.4em" aria-hidden="true" />
               {t('residencyCard.wakeNow')}
             </Button>
             <Button
@@ -169,7 +169,7 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
                 })
               }}
             >
-              <MoonGlassIcon size="1.2em" aria-hidden="true" />
+              <MoonGlassIcon size="1.4em" aria-hidden="true" />
               {t('residencyCard.sleepNow')}
             </Button>
           </>

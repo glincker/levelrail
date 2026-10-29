@@ -29,7 +29,7 @@ export function DraftRestoredNotice({
           onClick={onDismiss}
           aria-label="Dismiss"
         >
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
         </Button>
       </AlertAction>
     </Alert>

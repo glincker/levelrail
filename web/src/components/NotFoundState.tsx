@@ -62,7 +62,7 @@ export function NotFoundState({
         <CardHeader>
           <div className="flex items-center gap-2">
             <SearchGlassIcon
-              className="size-5.5 text-muted-foreground"
+              className="size-6 text-muted-foreground"
               aria-hidden="true"
             />
             <CardTitle>{t(`notFound.resources.${resource}.title`)}</CardTitle>
@@ -94,7 +94,7 @@ export function NotFoundState({
             {resource === 'app' ? (
               <Link to="/apps/new">
                 <Button type="button" variant="outline" size="sm">
-                  <PlusGlassIcon size="1.2em" aria-hidden="true" />
+                  <PlusGlassIcon size="1.4em" aria-hidden="true" />
                   {t('notFound.resources.app.create')}
                 </Button>
               </Link>
@@ -115,7 +115,7 @@ function ListLink({
 }) {
   const body = (
     <Button type="button" variant="outline" size="sm">
-      <ArrowLeftGlassIcon size="1.2em" aria-hidden="true" />
+      <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
       {label}
     </Button>
   )

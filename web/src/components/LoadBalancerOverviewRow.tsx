@@ -99,7 +99,7 @@ export function LoadBalancerOverviewRow({
         {lastCheckLabel(item.last_check)}
       </span>
       <ChevronRightGlassIcon
-        className="size-4.5 text-muted-foreground"
+        className="size-5 text-muted-foreground"
         aria-hidden="true"
       />
     </div>

@@ -23,7 +23,7 @@ export function SettingsHealthCard() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <ActivityGlassIcon className="size-4.5" aria-hidden="true" />
+            <ActivityGlassIcon className="size-5" aria-hidden="true" />
           </div>
           <div>
             <CardTitle>{t('settingsHealth.title')}</CardTitle>
@@ -55,7 +55,7 @@ export function SettingsHealthCard() {
                 className="flex items-start gap-2 text-sm text-muted-foreground"
               >
                 <CircleCheckGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-green-700 dark:text-green-400"
+                  className="mt-0.5 size-5 shrink-0 text-green-700 dark:text-green-400"
                   aria-hidden="true"
                 />
                 <span>{f.detail || f.title}</span>

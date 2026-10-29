@@ -79,7 +79,7 @@ function ConfirmBanner({ token }: { token: string }) {
   if (confirm.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         <AlertDescription>
           {confirm.error.code === 'email_taken'
             ? t('email.emailTaken')
@@ -90,7 +90,7 @@ function ConfirmBanner({ token }: { token: string }) {
   }
   return (
     <Alert>
-      <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+      <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
       <AlertDescription>
         {t('email.confirmed', { email: confirm.data.email })}
       </AlertDescription>
@@ -152,7 +152,7 @@ export function EmailChangeCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('email.statusFailed')}</span>
@@ -170,7 +170,7 @@ export function EmailChangeCard() {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
               <span>{t('email.notConfigured')}</span>
@@ -186,13 +186,13 @@ export function EmailChangeCard() {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{t('email.passwordRequired')}</AlertDescription>
           </Alert>
         ) : request.isSuccess ? (
           <Alert>
-            <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
             <AlertDescription>{t('email.sent')}</AlertDescription>
           </Alert>
         ) : (
@@ -235,7 +235,7 @@ export function EmailChangeCard() {
               <Alert variant="destructive" role="alert">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.2em"
+                  size="1.4em"
                 />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>

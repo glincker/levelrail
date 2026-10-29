@@ -57,7 +57,7 @@ export function DeviceAuthRequestTable({
     return (
       <EmptyState
         compact
-        icon={<TerminalGlassIcon className="size-4.5" />}
+        icon={<TerminalGlassIcon className="size-5" />}
         title={t('deviceLogin.emptyTitle')}
         description={t('deviceLogin.emptyBody')}
       />
@@ -101,7 +101,7 @@ export function DeviceAuthRequestTable({
             >
               <TriangleAlertGlassIcon
                 aria-hidden="true"
-                className="size-4 text-tone-warning"
+                className="size-5 text-tone-warning"
               />
               {t('deviceLogin.review')}
             </span>

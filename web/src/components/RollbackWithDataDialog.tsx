@@ -73,7 +73,7 @@ export function RollbackWithDataDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <DatabaseGlassIcon className="size-4.5" aria-hidden="true" />
+            <DatabaseGlassIcon className="size-5" aria-hidden="true" />
             {t('rollbackWithData.title')}
           </DialogTitle>
           <DialogDescription>
@@ -102,7 +102,7 @@ export function RollbackWithDataDialog({
           </ul>
         ) : null}
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{t('rollbackWithData.warning')}</AlertDescription>
         </Alert>
         {blockedReason ? (
@@ -114,7 +114,7 @@ export function RollbackWithDataDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{rollback.error.message}</AlertDescription>
           </Alert>
@@ -143,7 +143,7 @@ export function RollbackWithDataDialog({
               })
             }}
           >
-            <RotateCcwGlassIcon className="size-4" aria-hidden="true" />
+            <RotateCcwGlassIcon className="size-5" aria-hidden="true" />
             {rollback.isPending
               ? t('rollbackWithData.working')
               : t('rollbackWithData.confirm')}

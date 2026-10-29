@@ -70,7 +70,7 @@ export function EnvironmentEnvCompareView({
       </Card>
 
       <Alert>
-        <InfoGlassIcon className="size-4.5 text-tone-info" />
+        <InfoGlassIcon className="size-5 text-tone-info" />
         <AlertDescription>{compare.note}</AlertDescription>
       </Alert>
     </div>
@@ -83,7 +83,7 @@ function EnvironmentEnvDiffRow({ entry }: { entry: EnvironmentEnvDiffEntry }) {
       <span className="flex w-40 shrink-0 items-center gap-1 font-mono text-xs font-medium text-foreground">
         {entry.secret ? (
           <LockGlassIcon
-            className="size-4 shrink-0 text-muted-foreground"
+            className="size-5 shrink-0 text-muted-foreground"
             aria-label="Secret value"
           />
         ) : null}
@@ -102,7 +102,7 @@ function EnvironmentEnvDiffRow({ entry }: { entry: EnvironmentEnvDiffEntry }) {
             {entry.a || '(none)'}
           </span>
           <ArrowRightGlassIcon
-            className="size-4 shrink-0 text-muted-foreground"
+            className="size-5 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />
           <span className="truncate font-mono text-xs text-foreground">

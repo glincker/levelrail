@@ -57,9 +57,9 @@ export function LogsTail({ appName }: { appName: string }) {
           className="flex items-center gap-1.5 text-sm font-medium"
         >
           {open ? (
-            <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
           ) : (
-            <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
+            <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
           )}
           Live logs
         </button>

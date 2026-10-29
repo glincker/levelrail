@@ -72,7 +72,7 @@ export function PreviewEnvOverridesEditor({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitBranchGlassIcon className="size-4.5" />
+          <GitBranchGlassIcon className="size-5" />
           Preview env overrides
         </CardTitle>
         <CardDescription>
@@ -103,7 +103,7 @@ export function PreviewEnvOverridesEditor({
                   }}
                   aria-label={`Remove ${key}`}
                 >
-                  <TrashGlassIcon className="size-4.5 text-muted-foreground" />
+                  <TrashGlassIcon className="size-5 text-muted-foreground" />
                 </Button>
               </li>
             ))}

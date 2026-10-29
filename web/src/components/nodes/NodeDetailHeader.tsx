@@ -40,12 +40,12 @@ export function NodeDetailHeader({
           to="/nodes"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeftGlassIcon className="size-3.5" aria-hidden="true" />
+          <ArrowLeftGlassIcon className="size-4.5" aria-hidden="true" />
           {t('detail.back')}
         </Link>
       </div>
       <PageBanner
-        icon={<ServerGlassIcon size="1.2em" />}
+        icon={<ServerGlassIcon size="1.4em" />}
         titleKey={node.name}
         descriptionKey={`nodes:detail.banner.${state}`}
         illustration={<LazyNodesDiagram size={size} />}
@@ -64,14 +64,14 @@ export function NodeDetailHeader({
                   size="icon-sm"
                   aria-label={t('row.actions', { name: node.name })}
                 >
-                  <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
+                  <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
                 </Button>
               }
               items={[
                 {
                   id: 'delete',
                   label: t('delete.trigger'),
-                  icon: <TrashGlassIcon size="1.2em" />,
+                  icon: <TrashGlassIcon size="1.4em" />,
                   tone: 'danger',
                   onSelect: () => {
                     setDeleteOpen(true)

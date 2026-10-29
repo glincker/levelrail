@@ -126,7 +126,7 @@ function VerificationStatusBadge({
   if (status === 'running') {
     return (
       <Badge variant="muted" className="rounded-full">
-        <LoaderGlassIcon className="size-3.5 animate-spin" aria-hidden="true" />
+        <LoaderGlassIcon className="size-4.5 animate-spin" aria-hidden="true" />
         {auto ? 'Auto-verifying...' : 'Verifying...'}
       </Badge>
     )
@@ -135,7 +135,7 @@ function VerificationStatusBadge({
     return (
       <Badge variant="destructive" className="rounded-full" title={error}>
         <ShieldAlertGlassIcon
-          className="size-3.5 text-tone-warning"
+          className="size-4.5 text-tone-warning"
           aria-hidden="true"
         />
         {auto ? 'Failed auto-verification' : 'Failed verification'}
@@ -151,7 +151,7 @@ function VerificationStatusBadge({
       }
     >
       <ShieldCheckGlassIcon
-        className="size-3.5 text-tone-success"
+        className="size-4.5 text-tone-success"
         aria-hidden="true"
       />
       {auto ? 'Auto-verified' : 'Verified'}

@@ -72,13 +72,13 @@ function AiAssistantSettingsPage() {
   const { t } = useTranslation('settings')
   return (
     <PageTemplate
-      icon={<BotGlassIcon size="1.2em" />}
+      icon={<BotGlassIcon size="1.4em" />}
       title={t('aiAssistantPage.title')}
       description={
         <>
           {t('aiAssistantPage.description')}
           <span className="mt-1 flex items-center gap-1.5 text-xs">
-            <LockGlassIcon className="size-4" aria-hidden="true" />
+            <LockGlassIcon className="size-5" aria-hidden="true" />
             {t('aiAssistantPage.reassurance')}
           </span>
         </>

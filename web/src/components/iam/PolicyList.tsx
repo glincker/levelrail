@@ -23,7 +23,7 @@ export function PolicyList({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<ShieldCheckGlassIcon className="size-5.5 text-tone-success" />}
+        icon={<ShieldCheckGlassIcon className="size-6 text-tone-success" />}
         title={t('list.empty.title')}
         description={t('list.empty.description')}
         action={

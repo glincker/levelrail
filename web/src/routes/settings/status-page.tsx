@@ -17,7 +17,7 @@ function StatusPageSettingsRoute() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <RadioTowerGlassIcon className="size-4.5" aria-hidden="true" />
+          <RadioTowerGlassIcon className="size-5" aria-hidden="true" />
         </div>
         <PageHeader
           title="Status page"

@@ -44,7 +44,7 @@ export function TagFilter({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <TagGlassIcon size="1.2em" />
+        <TagGlassIcon size="1.4em" />
         Tags
         {selected.length > 0 ? (
           <Badge variant="muted" className="ml-1 px-1.5 text-[11px]">

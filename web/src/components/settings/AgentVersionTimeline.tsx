@@ -30,7 +30,7 @@ export function AgentVersionTimeline({
             {c.from_version !== '' ? (
               <>
                 <span className="font-mono">{c.from_version}</span>
-                <ArrowRightGlassIcon className="size-4 text-muted-foreground" />
+                <ArrowRightGlassIcon className="size-5 text-muted-foreground" />
               </>
             ) : (
               <span className="text-muted-foreground">

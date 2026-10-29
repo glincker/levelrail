@@ -54,12 +54,12 @@ export function CreateEnvironmentDialog({ projectId }: { projectId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         New environment
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <CreateFlowShell
-          icon={<LayersGlassIcon className="size-4.5 text-muted-foreground" />}
+          icon={<LayersGlassIcon className="size-5 text-muted-foreground" />}
           title="New environment"
           description={
             <>

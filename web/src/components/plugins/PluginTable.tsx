@@ -178,13 +178,13 @@ export function PluginTable({
                         })
                       }
                     >
-                      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+                      <WrenchGlassIcon size="1.4em" aria-hidden="true" />
                       {t('fix.restart')}
                     </Button>
                   ) : null}
                   {p.fix === 'trust_key' ? (
                     <Button type="button" size="sm" onClick={onTrustKeys}>
-                      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+                      <WrenchGlassIcon size="1.4em" aria-hidden="true" />
                       {t('fix.trustKey')}
                     </Button>
                   ) : null}
@@ -194,7 +194,7 @@ export function PluginTable({
                       size="sm"
                       onClick={() => onUpgrade(p)}
                     >
-                      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+                      <WrenchGlassIcon size="1.4em" aria-hidden="true" />
                       {t('fix.reinstall')}
                     </Button>
                   ) : null}

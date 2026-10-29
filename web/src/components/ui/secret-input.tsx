@@ -60,9 +60,9 @@ function SecretInput({
         className="absolute inset-y-0 right-0 flex w-8 items-center justify-center rounded-r-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
       >
         {revealed ? (
-          <EyeOffGlassIcon aria-hidden className="size-4.5" />
+          <EyeOffGlassIcon aria-hidden className="size-5" />
         ) : (
-          <EyeGlassIcon aria-hidden className="size-4.5" />
+          <EyeGlassIcon aria-hidden className="size-5" />
         )}
       </button>
     </div>

@@ -27,7 +27,7 @@ function FirewallRulesRoute() {
       onRange={nav.setRange}
       actions={
         <Button type="button" onClick={nav.newRule}>
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {t('rules.new')}
         </Button>
       }

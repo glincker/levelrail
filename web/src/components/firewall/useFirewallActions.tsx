@@ -113,21 +113,21 @@ export function useFirewallActions({
         {
           id: 'block',
           label: t('actions.blockIp'),
-          icon: <BanGlassIcon size="1.2em" />,
+          icon: <BanGlassIcon size="1.4em" />,
           onSelect: () => blockIp(key),
         },
         {
           id: 'allow',
           label: t('actions.allowIp'),
           icon: (
-            <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           ),
           onSelect: () => allowIp(key),
         },
         {
           id: 'rule',
           label: t('actions.createRule'),
-          icon: <PlusGlassIcon size="1.2em" />,
+          icon: <PlusGlassIcon size="1.4em" />,
           onSelect: () => onCreateRule({ field: 'ip', value: key }),
         },
       ]
@@ -138,7 +138,7 @@ export function useFirewallActions({
       {
         id: 'rule',
         label: t('actions.createRule'),
-        icon: <ExternalLinkGlassIcon size="1.2em" />,
+        icon: <ExternalLinkGlassIcon size="1.4em" />,
         onSelect: () => onCreateRule({ field, value: key }),
       },
     ]

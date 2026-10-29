@@ -58,7 +58,7 @@ export function MailPageShell({
 
   return (
     <PageTemplate
-      icon={<MailGlassIcon size="1.2em" />}
+      icon={<MailGlassIcon size="1.4em" />}
       eyebrow={t(`${section}.eyebrow`)}
       title={t(`${section}.title`)}
       description={t(`${section}.description`)}

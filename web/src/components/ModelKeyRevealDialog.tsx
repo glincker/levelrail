@@ -41,7 +41,7 @@ export function ModelKeyRevealDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <KeyGlassIcon className="size-4.5" aria-hidden="true" />
+            <KeyGlassIcon className="size-5" aria-hidden="true" />
             API key for &ldquo;{modelName}&rdquo;
           </DialogTitle>
           <DialogDescription>
@@ -65,7 +65,7 @@ export function ModelKeyRevealDialog({
                 copy(apiKey, 'API key')
               }}
             >
-              <CopyGlassIcon size="1.2em" aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
               Copy
             </Button>
           </div>

@@ -80,7 +80,7 @@ export function NoProviderEmptyState() {
   const { t } = useTranslation('domains')
   return (
     <Alert>
-      <CloudGlassIcon className="size-4.5" aria-hidden="true" />
+      <CloudGlassIcon className="size-5" aria-hidden="true" />
       <AlertDescription>
         {t('baseDomain.noProvider')}{' '}
         <Link to="/domains" className="underline">
@@ -123,7 +123,7 @@ export function AppsBaseDomainCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeGlassIcon className="size-4.5" />
+          <GlobeGlassIcon className="size-5" />
           {t('baseDomain.title')}
         </CardTitle>
         <CardDescription>{t('baseDomain.description')}</CardDescription>

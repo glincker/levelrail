@@ -164,7 +164,7 @@ export function AppBudgetCard({ appName }: { appName: string }) {
     body = (
       <EmptyState
         compact
-        icon={<ChartLineGlassIcon className="size-5.5" />}
+        icon={<ChartLineGlassIcon className="size-6" />}
         title={t('empty.title')}
         description={t('empty.body')}
         action={
@@ -200,7 +200,7 @@ export function AppBudgetCard({ appName }: { appName: string }) {
                 preview.mutate()
               }}
             >
-              <CirclePauseGlassIcon size="1.2em" aria-hidden="true" />
+              <CirclePauseGlassIcon size="1.4em" aria-hidden="true" />
               {t('actions.preview')}
             </Button>
             <Button
@@ -244,7 +244,7 @@ export function AppBudgetCard({ appName }: { appName: string }) {
           <Alert variant={cap.guard.allowed ? 'default' : 'destructive'}>
             <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-2">
-                <LockGlassIcon size="1.2em" aria-hidden="true" />
+                <LockGlassIcon size="1.4em" aria-hidden="true" />
                 {cap.guard.override
                   ? t('guard.overridden', {
                       time: new Date(

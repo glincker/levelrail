@@ -25,7 +25,7 @@ function CleanupPage() {
 
   return (
     <PageTemplate
-      icon={<BroomGlassIcon size="1.2em" />}
+      icon={<BroomGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       tabs={

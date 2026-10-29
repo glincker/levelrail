@@ -140,7 +140,7 @@ export function BucketFileList({
                       variant="ghost"
                       size="icon-xs"
                     >
-                      <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+                      <DownloadGlassIcon size="1.4em" aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -150,7 +150,7 @@ export function BucketFileList({
                       disabled={presign.isPending}
                       onClick={() => copyLink(o.key)}
                     >
-                      <LinkGlassIcon size="1.2em" aria-hidden="true" />
+                      <LinkGlassIcon size="1.4em" aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -159,7 +159,7 @@ export function BucketFileList({
                       aria-label={t('browser.delete')}
                       onClick={() => setToDelete(o.key)}
                     >
-                      <TrashGlassIcon size="1.2em" aria-hidden="true" />
+                      <TrashGlassIcon size="1.4em" aria-hidden="true" />
                     </Button>
                   </span>
                 </div>

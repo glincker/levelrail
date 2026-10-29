@@ -21,9 +21,9 @@ export function CopyButton({ text }: Readonly<{ text: string }>) {
       }}
     >
       {copied ? (
-        <CheckGlassIcon size="1.2em" />
+        <CheckGlassIcon size="1.4em" />
       ) : (
-        <CopyGlassIcon size="1.2em" />
+        <CopyGlassIcon size="1.4em" />
       )}
       {copied ? t('templates.copied') : t('templates.copy')}
     </Button>

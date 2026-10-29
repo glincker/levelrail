@@ -146,7 +146,7 @@ export function MeshSettingsBody({ settings }: { settings: MeshSettings }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <Share2GlassIcon className="size-4.5" aria-hidden="true" />
+          <Share2GlassIcon className="size-5" aria-hidden="true" />
           {t('mesh.title')}
           <Badge variant={state === 'on' ? 'success' : 'outline'}>
             {t(`mesh.state.${state}`)}

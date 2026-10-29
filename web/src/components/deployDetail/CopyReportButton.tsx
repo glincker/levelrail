@@ -40,9 +40,9 @@ export function CopyReportButton({
     <>
       <Button type="button" variant="outline" size="sm" onClick={copy}>
         {copied ? (
-          <CheckGlassIcon size="1.2em" aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <ClipboardListGlassIcon size="1.2em" aria-hidden="true" />
+          <ClipboardListGlassIcon size="1.4em" aria-hidden="true" />
         )}
         {copied ? t('report.copied') : t('report.copy')}
       </Button>

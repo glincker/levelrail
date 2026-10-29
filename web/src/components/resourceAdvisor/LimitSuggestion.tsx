@@ -34,11 +34,11 @@ function Dimension({
   const value = format(rec.suggested_limit)
   const icon =
     rec.action === 'raise' ? (
-      <TrendingUpGlassIcon className="size-4.5" />
+      <TrendingUpGlassIcon className="size-5" />
     ) : rec.action === 'lower' ? (
-      <TrendingDownGlassIcon className="size-4.5" />
+      <TrendingDownGlassIcon className="size-5" />
     ) : (
-      <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+      <CircleCheckGlassIcon className="size-5 text-tone-success" />
     )
   return (
     <div className="rounded-md border border-border p-3">
@@ -97,7 +97,7 @@ export function LimitSuggestion(props: Props) {
     <div className="space-y-3">
       {data.oom_detected_at ? (
         <Alert variant="destructive">
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
           <AlertDescription>
             {t('suggestion.oom', {
               date: new Date(data.oom_detected_at).toLocaleString(),

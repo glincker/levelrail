@@ -103,7 +103,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
                 onClick={() => void refetch()}
                 className={buttonVariants({ size: 'sm', variant: 'outline' })}
               >
-                <RotateCcwGlassIcon className="size-4" />
+                <RotateCcwGlassIcon className="size-5" />
                 {t('actions.retry')}
               </button>
             )}

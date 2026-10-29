@@ -31,12 +31,12 @@ export function ProbeAttemptsPanel({ attempts }: { attempts: ProbeAttempt[] }) {
             >
               {a.success ? (
                 <CircleCheckGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-success-foreground"
+                  className="mt-0.5 size-5 shrink-0 text-success-foreground"
                   aria-hidden="true"
                 />
               ) : (
                 <CircleAlertGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-destructive"
+                  className="mt-0.5 size-5 shrink-0 text-destructive"
                   aria-hidden="true"
                 />
               )}

@@ -78,7 +78,7 @@ export function HooksEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TerminalGlassIcon className="size-4.5" />
+          <TerminalGlassIcon className="size-5" />
           Deploy hooks
         </CardTitle>
         <CardDescription>

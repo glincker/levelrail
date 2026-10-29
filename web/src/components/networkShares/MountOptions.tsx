@@ -43,7 +43,7 @@ export function MountOptions({
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium">
-        <ChevronDownGlassIcon aria-hidden="true" className="size-4.5" />
+        <ChevronDownGlassIcon aria-hidden="true" className="size-5" />
         {t('networkSharesPage.dialog.advanced')}
       </CollapsibleTrigger>
       <CollapsiblePanel>

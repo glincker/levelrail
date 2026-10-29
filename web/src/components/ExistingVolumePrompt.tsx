@@ -28,7 +28,7 @@ export function ExistingVolumePrompt({
   const data = volumes.find((v) => v.name.endsWith('-data'))
   return (
     <Alert variant="destructive">
-      <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
       <AlertTitle>{t('existingVolume.title')}</AlertTitle>
       <AlertDescription>
         <p>

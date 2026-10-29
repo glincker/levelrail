@@ -30,7 +30,7 @@ export function DeploySafetyCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckGlassIcon className="size-4.5 text-muted-foreground" />
+          <ShieldCheckGlassIcon className="size-5 text-muted-foreground" />
           {t('settings.title')}
           <InfoTip label={t('settings.infoTipLabel')}>
             {t('settings.description')}

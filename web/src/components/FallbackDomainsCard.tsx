@@ -31,7 +31,7 @@ export function FallbackDomainsCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeGlassIcon className="size-4.5" />
+          <GlobeGlassIcon className="size-5" />
           {t('fallback.title')}
         </CardTitle>
         <CardDescription>{t('fallback.description')}</CardDescription>

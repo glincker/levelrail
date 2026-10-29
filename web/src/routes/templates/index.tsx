@@ -42,7 +42,7 @@ function TemplatesPage() {
       initialSelected="browse-templates"
       trigger={
         <Button size="sm" variant="outline">
-          <PlusGlassIcon size="1.2em" />
+          <PlusGlassIcon size="1.4em" />
           {t('page.new')}
         </Button>
       }
@@ -57,7 +57,7 @@ function TemplatesPage() {
       description={t('page.description')}
       banner={
         <PageBanner
-          icon={<PackageGlassIcon size="1.2em" />}
+          icon={<PackageGlassIcon size="1.4em" />}
           titleKey="templates:page.title"
           descriptionKey="templates:banner.description"
           action={newFromTemplate}

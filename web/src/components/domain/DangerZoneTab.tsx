@@ -67,7 +67,7 @@ export function DangerZoneTab({
                   disabled={!configured}
                   onClick={() => setConfirming(k)}
                 >
-                  <RotateCcwGlassIcon size="1.2em" />
+                  <RotateCcwGlassIcon size="1.4em" />
                   {t('danger.reset')}
                 </Button>
               )}

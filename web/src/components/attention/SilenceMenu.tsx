@@ -90,7 +90,7 @@ export function SilenceMenu({
             />
           }
         >
-          <BellOffGlassIcon size="1.2em" />
+          <BellOffGlassIcon size="1.4em" />
           {t('silence.button')}
         </PopoverTrigger>
         <PopoverContent align="end" className="w-60">

@@ -37,7 +37,7 @@ export function RotationsPanel() {
       <CardContent>
         {rows.length === 0 ? (
           <EmptyState
-            icon={<RefreshCwGlassIcon size="1.2em" />}
+            icon={<RefreshCwGlassIcon size="1.4em" />}
             title={t('overview.title')}
             description={t('overview.empty')}
           />

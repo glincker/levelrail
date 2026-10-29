@@ -37,7 +37,7 @@ export function DockToggle() {
       title={t('dock.toggleHint')}
       onClick={toggleDock}
     >
-      <MessageCircleGlassIcon size="1.2em" />
+      <MessageCircleGlassIcon size="1.4em" />
     </Button>
   )
 }

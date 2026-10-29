@@ -85,7 +85,7 @@ export function PortStepBody({
       >
         {ok ? (
           <CircleCheckGlassIcon
-            className="size-4.5 shrink-0 text-tone-success"
+            className="size-5 shrink-0 text-tone-success"
             aria-hidden="true"
           />
         ) : null}
@@ -148,7 +148,7 @@ export function CertificateStepBody({
         <Alert variant="destructive">
           <CircleAlertGlassIcon
             className="text-tone-danger"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           <AlertDescription>

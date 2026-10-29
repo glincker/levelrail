@@ -87,7 +87,7 @@ export function RevisionView({
           aria-label={t('revision.close')}
           onClick={onClose}
         >
-          <XGlassIcon size="1.2em" aria-hidden="true" />
+          <XGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       </header>
       {isPending ? (

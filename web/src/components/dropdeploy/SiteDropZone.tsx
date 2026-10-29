@@ -52,7 +52,7 @@ export function SiteDropZone({
       )}
     >
       <UploadGlassIcon
-        className="size-7 text-muted-foreground"
+        className="size-8 text-muted-foreground"
         aria-hidden="true"
       />
       <div className="min-w-0 sm:flex-1">
@@ -71,7 +71,7 @@ export function SiteDropZone({
           disabled={disabled}
           onClick={() => folderRef.current?.click()}
         >
-          <FolderGlassIcon size="1.2em" aria-hidden="true" />
+          <FolderGlassIcon size="1.4em" aria-hidden="true" />
           {t('drop.chooseFolder')}
         </Button>
         <Button
@@ -81,7 +81,7 @@ export function SiteDropZone({
           disabled={disabled}
           onClick={() => zipRef.current?.click()}
         >
-          <FileArchiveGlassIcon size="1.2em" aria-hidden="true" />
+          <FileArchiveGlassIcon size="1.4em" aria-hidden="true" />
           {t('drop.chooseZip')}
         </Button>
       </div>

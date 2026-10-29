@@ -184,7 +184,7 @@ export function LbUpstreamTable({
                     size="icon"
                     aria-label={`Actions for ${u.dial || `replica ${u.replica}`}`}
                   >
-                    <EllipsisGlassIcon size="1.2em" />
+                    <EllipsisGlassIcon size="1.4em" />
                   </Button>
                 }
                 items={[

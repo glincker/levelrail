@@ -77,11 +77,11 @@ function DomainStep({
         <Button type="button" disabled={!valid || pending} onClick={onSubmit}>
           {pending ? (
             <LoaderCircleGlassIcon
-              size="1.2em"
+              size="1.4em"
               className="animate-spin motion-reduce:animate-none"
             />
           ) : (
-            <ArrowRightGlassIcon size="1.2em" />
+            <ArrowRightGlassIcon size="1.4em" />
           )}
           {t('stepper.domain.add')}
         </Button>
@@ -164,7 +164,7 @@ function RecordsStep({
           : ''}
       </p>
       <Button type="button" size="sm" onClick={onNext}>
-        <ArrowRightGlassIcon size="1.2em" />
+        <ArrowRightGlassIcon size="1.4em" />
         {t('stepper.records.next')}
       </Button>
     </StepBody>
@@ -201,7 +201,7 @@ function CheckStep({
           onClick={check.recheck}
         >
           <RefreshCwGlassIcon
-            size="1.2em"
+            size="1.4em"
             className={
               check.isFetching ? 'animate-spin motion-reduce:animate-none' : ''
             }
@@ -210,7 +210,7 @@ function CheckStep({
         </Button>
         {connected ? (
           <Button type="button" size="sm" onClick={onNext}>
-            <ArrowRightGlassIcon size="1.2em" />
+            <ArrowRightGlassIcon size="1.4em" />
             {t('stepper.check.next')}
           </Button>
         ) : null}
@@ -259,17 +259,17 @@ function CertificateStep({
       >
         {state === 'issued' ? (
           <CircleCheckGlassIcon
-            className="size-4.5 text-emerald-600 dark:text-emerald-400"
+            className="size-5 text-emerald-600 dark:text-emerald-400"
             aria-hidden="true"
           />
         ) : state === 'failed' ? (
           <CircleAlertGlassIcon
-            className="size-4.5 text-destructive"
+            className="size-5 text-destructive"
             aria-hidden="true"
           />
         ) : (
           <LoaderCircleGlassIcon
-            className="size-4.5 animate-spin motion-reduce:animate-none"
+            className="size-5 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
         )}

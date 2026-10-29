@@ -52,7 +52,7 @@ export function ThemeToggle() {
             <ItemIcon />
             <span className="flex-1">{t(`shell.theme.${value}`)}</span>
             {value === theme ? (
-              <CheckGlassIcon size="1.2em" aria-hidden="true" />
+              <CheckGlassIcon size="1.4em" aria-hidden="true" />
             ) : null}
           </DropdownMenuItem>
         ))}
@@ -61,7 +61,7 @@ export function ThemeToggle() {
           <DropdownMenuItem key={w} onClick={() => setPageWidth(w)}>
             <span className="flex-1">{t(`shell.pageWidth.${w}`)}</span>
             {w === pageWidth ? (
-              <CheckGlassIcon size="1.2em" aria-hidden="true" />
+              <CheckGlassIcon size="1.4em" aria-hidden="true" />
             ) : null}
           </DropdownMenuItem>
         ))}

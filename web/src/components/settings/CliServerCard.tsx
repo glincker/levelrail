@@ -48,7 +48,7 @@ export function CliServerCard() {
       </dl>
       {data.moved ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertTitle>{t('cliAccessPage.server.movedTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>{t('cliAccessPage.server.movedBody')}</p>

@@ -36,12 +36,12 @@ export function PasskeyProviderIcon({
   }
   const cls = 'size-5 text-muted-foreground'
   if (providerKey === 'yubikey')
-    return <UsbGlassIcon size="1.2em" className={cls} />
+    return <UsbGlassIcon size="1.4em" className={cls} />
   if (providerKey === 'samsung')
-    return <SmartphoneGlassIcon size="1.2em" className={cls} />
+    return <SmartphoneGlassIcon size="1.4em" className={cls} />
   if (MANAGERS.has(providerKey))
-    return <LockGlassIcon size="1.2em" className={cls} />
+    return <LockGlassIcon size="1.4em" className={cls} />
   if (providerKey === 'unknown')
-    return <FingerprintPatternGlassIcon size="1.2em" className={cls} />
-  return <KeyGlassIcon size="1.2em" className={cls} />
+    return <FingerprintPatternGlassIcon size="1.4em" className={cls} />
+  return <KeyGlassIcon size="1.4em" className={cls} />
 }

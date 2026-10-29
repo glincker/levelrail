@@ -80,7 +80,7 @@ export function AddNodeWizard() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         Add node
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -128,7 +128,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
       <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ServerGlassIcon className="size-4.5 text-muted-foreground" />
+            <ServerGlassIcon className="size-5 text-muted-foreground" />
             Add node
           </DialogTitle>
           <DialogDescription>
@@ -175,7 +175,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{regions.error.message}</AlertDescription>
           </Alert>
@@ -217,7 +217,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{sizes.error.message}</AlertDescription>
           </Alert>
@@ -385,7 +385,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{createProvision.error.message}</AlertDescription>
           </Alert>

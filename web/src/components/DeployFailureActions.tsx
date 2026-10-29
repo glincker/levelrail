@@ -20,7 +20,7 @@ function RetryButton({ appName, image }: { appName: string; image: string }) {
       disabled={retry.isPending}
       onClick={retry.redeploy}
     >
-      <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+      <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
       {t('failureActions.retry')}
     </Button>
   )

@@ -27,7 +27,7 @@ export function ConnectDrawer({ database }: { database: DatabaseResource }) {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
       >
-        <PlugGlassIcon size="1.2em" aria-hidden="true" />
+        <PlugGlassIcon size="1.4em" aria-hidden="true" />
         {t('connectDrawer.trigger')}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>

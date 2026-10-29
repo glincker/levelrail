@@ -43,7 +43,7 @@ function VaultSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<VaultGlassIcon size="1.2em" />}
+      icon={<VaultGlassIcon size="1.4em" />}
       title={t('vaultPage.title')}
       description={t('vaultPage.description')}
     >

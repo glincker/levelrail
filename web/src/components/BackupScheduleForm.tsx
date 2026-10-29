@@ -173,7 +173,7 @@ export function BackupScheduleFormView({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <ClockGlassIcon className="size-4.5" aria-hidden="true" />
+            <ClockGlassIcon className="size-5" aria-hidden="true" />
             Scheduled backups
           </h3>
           <p className="text-sm text-muted-foreground">{summary}</p>
@@ -186,7 +186,7 @@ export function BackupScheduleFormView({
             onClick={onClear}
             disabled={clearPending}
           >
-            <TrashGlassIcon className="size-4" aria-hidden="true" />
+            <TrashGlassIcon className="size-5" aria-hidden="true" />
             {clearPending ? 'Removing...' : 'Remove schedule'}
           </Button>
         ) : null}

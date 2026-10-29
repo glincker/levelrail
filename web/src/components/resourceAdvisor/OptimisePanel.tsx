@@ -64,7 +64,7 @@ export function OptimisePanel(props: Props) {
     <Card data-testid="optimise-panel">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeGlassIcon className="size-4.5" />
+          <GaugeGlassIcon className="size-5" />
           {t('panel.title')}
           {advisorOn ? (
             <Badge variant="outline" title={t('beta.hint')}>

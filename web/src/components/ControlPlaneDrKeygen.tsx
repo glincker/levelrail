@@ -67,7 +67,7 @@ export function ControlPlaneDrKeygen({
           })
         }}
       >
-        <KeyGlassIcon className="size-4" aria-hidden="true" />
+        <KeyGlassIcon className="size-5" aria-hidden="true" />
         {t('controlPlaneDrKeygen.trigger')}
       </Button>
       <Dialog
@@ -87,7 +87,7 @@ export function ControlPlaneDrKeygen({
             <div className="space-y-3">
               <Alert>
                 <TriangleAlertGlassIcon
-                  className="size-4.5 text-tone-warning"
+                  className="size-5 text-tone-warning"
                   aria-hidden="true"
                 />
                 <AlertDescription>
@@ -107,9 +107,9 @@ export function ControlPlaneDrKeygen({
                   }}
                 >
                   {copied ? (
-                    <CheckGlassIcon className="size-4" aria-hidden="true" />
+                    <CheckGlassIcon className="size-5" aria-hidden="true" />
                   ) : (
-                    <CopyGlassIcon className="size-4" aria-hidden="true" />
+                    <CopyGlassIcon className="size-5" aria-hidden="true" />
                   )}
                   {t('controlPlaneDrKeygen.copy')}
                 </Button>
@@ -125,7 +125,7 @@ export function ControlPlaneDrKeygen({
                     setSaved(true)
                   }}
                 >
-                  <DownloadGlassIcon className="size-4" aria-hidden="true" />
+                  <DownloadGlassIcon className="size-5" aria-hidden="true" />
                   {t('controlPlaneDrKeygen.download')}
                 </Button>
               </div>

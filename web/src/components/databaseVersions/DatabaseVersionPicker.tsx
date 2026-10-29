@@ -170,7 +170,7 @@ export function DatabaseVersionPicker({
             setOpen((o) => !o)
           }}
         >
-          <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+          <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
         </button>
       ) : null}
       {expanded && data ? (

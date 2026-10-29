@@ -121,7 +121,7 @@ export default function ProxyMissingState({
     <div className="min-w-0 space-y-4">
       <div className="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
         <InfoGlassIcon
-          className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
+          className="mt-0.5 size-6 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <div className="min-w-0 space-y-1">
@@ -140,7 +140,7 @@ export default function ProxyMissingState({
       </div>
       {refusal ? (
         <Alert>
-          <InfoGlassIcon className="text-tone-info" size="1.2em" />
+          <InfoGlassIcon className="text-tone-info" size="1.4em" />
           <AlertTitle>{t('proxyMissing.refusedTitle')}</AlertTitle>
           <AlertDescription>
             <p className="break-words">{refusal}</p>
@@ -157,7 +157,7 @@ export default function ProxyMissingState({
       ) : null}
       <div className="grid min-w-0 gap-3 lg:grid-cols-3">
         <Choice
-          icon={<DownloadGlassIcon className="size-5.5" />}
+          icon={<DownloadGlassIcon className="size-6" />}
           title={t('proxyMissing.install.title', { proxy: proxyName })}
           body={
             canInstall
@@ -173,7 +173,7 @@ export default function ProxyMissingState({
             >
               {loadingPlan ? (
                 <LoaderGlassIcon
-                  size="1.2em"
+                  size="1.4em"
                   className="animate-spin"
                   aria-hidden="true"
                 />
@@ -183,7 +183,7 @@ export default function ProxyMissingState({
           ) : null}
         </Choice>
         <Choice
-          icon={<UndoGlassIcon className="size-5.5" />}
+          icon={<UndoGlassIcon className="size-6" />}
           title={t('proxyMissing.builtin.title')}
           body={t('proxyMissing.builtin.body')}
         >
@@ -197,7 +197,7 @@ export default function ProxyMissingState({
           </Button>
         </Choice>
         <Choice
-          icon={<SettingsGlassIcon className="size-5.5" />}
+          icon={<SettingsGlassIcon className="size-6" />}
           title={t('proxyMissing.elsewhere.title')}
           body={t('proxyMissing.elsewhere.body')}
         >

@@ -267,7 +267,7 @@ export function LogSearchPanel({
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <SearchGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Log search
@@ -298,7 +298,7 @@ export function LogSearchPanel({
               setAlertOpen(true)
             }}
           >
-            <BellRingGlassIcon className="size-4" aria-hidden="true" />
+            <BellRingGlassIcon className="size-5" aria-hidden="true" />
             {t('explorer.alertFromSearch')}
           </Button>
           <Button
@@ -318,7 +318,7 @@ export function LogSearchPanel({
             download
             className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
-            <DownloadGlassIcon className="size-4" aria-hidden="true" />
+            <DownloadGlassIcon className="size-5" aria-hidden="true" />
             Download logs
           </a>
           <Button
@@ -328,9 +328,9 @@ export function LogSearchPanel({
             onClick={copyPermalink}
           >
             {copied ? (
-              <CheckGlassIcon className="size-4" aria-hidden="true" />
+              <CheckGlassIcon className="size-5" aria-hidden="true" />
             ) : (
-              <LinkGlassIcon className="size-4" aria-hidden="true" />
+              <LinkGlassIcon className="size-5" aria-hidden="true" />
             )}
             {copied ? t('logs.copied') : t('logs.copyPermalink')}
           </Button>
@@ -339,7 +339,7 @@ export function LogSearchPanel({
 
       <div className="relative mt-3">
         <SearchGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -362,7 +362,7 @@ export function LogSearchPanel({
             aria-label={t('explorer.clearSearch')}
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <XGlassIcon className="size-4" aria-hidden="true" />
+            <XGlassIcon className="size-5" aria-hidden="true" />
           </button>
         ) : null}
       </div>
@@ -390,9 +390,9 @@ export function LogSearchPanel({
                   }}
                 >
                   {mode === 'relevance' ? (
-                    <SortAzGlassIcon className="size-4" aria-hidden="true" />
+                    <SortAzGlassIcon className="size-5" aria-hidden="true" />
                   ) : (
-                    <RestoreGlassIcon className="size-4" aria-hidden="true" />
+                    <RestoreGlassIcon className="size-5" aria-hidden="true" />
                   )}
                   {mode === 'relevance'
                     ? t('explorer.orderRelevance')

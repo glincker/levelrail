@@ -64,9 +64,9 @@ function CopyRow({ value, label }: { value: string; label: string }) {
           }}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" aria-hidden="true" />
+            <CheckGlassIcon size="1.4em" aria-hidden="true" />
           ) : (
-            <CopyGlassIcon size="1.2em" aria-hidden="true" />
+            <CopyGlassIcon size="1.4em" aria-hidden="true" />
           )}
           {copied ? t('mobileDevices.copied') : t('mobileDevices.copy')}
         </Button>
@@ -108,12 +108,12 @@ function MobileDevicesPage() {
 
   return (
     <PageTemplate
-      icon={<SmartphoneGlassIcon size="1.2em" />}
+      icon={<SmartphoneGlassIcon size="1.4em" />}
       title={t('mobileDevices.title')}
       description={t('mobileDevices.description')}
       actions={
         <Button type="button" onClick={startPairing}>
-          <QrCodeGlassIcon size="1.2em" aria-hidden="true" />
+          <QrCodeGlassIcon size="1.4em" aria-hidden="true" />
           {t('mobileDevices.pair')}
         </Button>
       }
@@ -157,7 +157,7 @@ function MobileDevicesPage() {
       ) : devices.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<SmartphoneGlassIcon className="size-5.5" />}
+          icon={<SmartphoneGlassIcon className="size-6" />}
           title={t('mobileDevices.emptyTitle')}
           description={t('mobileDevices.emptyDescription')}
         />

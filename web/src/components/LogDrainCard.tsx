@@ -98,7 +98,7 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
           <div className="flex items-center justify-between gap-4 rounded-lg border border-input bg-muted/50 p-3">
             <div className="flex min-w-0 items-start gap-2">
               <PlugGlassIcon
-                className="mt-0.5 size-4.5 shrink-0 text-muted-foreground"
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <div className="min-w-0">
@@ -187,7 +187,7 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
               disabled={pending}
               onClick={() => handleSave(true)}
             >
-              <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
+              <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
               {setLogDrain.isPending
                 ? 'Saving...'
                 : existing

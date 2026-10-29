@@ -282,9 +282,9 @@ export function TemplateDeployForm({
           }}
         >
           {optionalOpen ? (
-            <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
           ) : (
-            <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
+            <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
           )}
           {t('form.optional.title')}
           <span className="font-normal text-muted-foreground">
@@ -330,7 +330,7 @@ export function TemplateDeployForm({
 
       {install.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{install.error.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -348,7 +348,7 @@ export function TemplateDeployForm({
           {summary}
         </p>
         <Button type="submit" disabled={install.isPending}>
-          <RocketGlassIcon size="1.2em" aria-hidden="true" />
+          <RocketGlassIcon size="1.4em" aria-hidden="true" />
           {install.isPending ? t('form.deploying') : t('form.deploy')}
         </Button>
       </div>

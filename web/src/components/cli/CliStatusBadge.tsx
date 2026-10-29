@@ -29,7 +29,7 @@ export function CliStatusBadge() {
       }
       onClick={openCliModal}
     >
-      <TerminalGlassIcon size="1.2em" aria-hidden="true" />
+      <TerminalGlassIcon size="1.4em" aria-hidden="true" />
       <span className="hidden @3xl:inline">
         {connected > 0
           ? t('cliModal.badgeConnected', { count: connected })

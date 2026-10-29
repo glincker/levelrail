@@ -17,7 +17,7 @@ function ImportPlatformPage() {
   const { t: ts } = useTranslation('settings')
   return (
     <PageTemplate
-      icon={<ArrowLeftRightGlassIcon size="1.2em" />}
+      icon={<ArrowLeftRightGlassIcon size="1.4em" />}
       title={ts('importPlatformPage.title')}
       description={ts('importPlatformPage.description')}
     >

@@ -172,7 +172,7 @@ export function ChangePasswordCard() {
             <Alert>
               <CircleCheckGlassIcon
                 className="text-tone-success"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertTitle>{t('accountPage.password.changed')}</AlertTitle>
               <AlertDescription>
@@ -183,7 +183,7 @@ export function ChangePasswordCard() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>
                 {changePassword.error.message}

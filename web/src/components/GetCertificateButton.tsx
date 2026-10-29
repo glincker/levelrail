@@ -40,7 +40,7 @@ function ItemIcon({ state }: { state: PreflightItem['state'] }) {
   if (state === 'pass')
     return (
       <CircleCheckGlassIcon
-        size="1.2em"
+        size="1.4em"
         className={`${cls} text-tone-success`}
         aria-hidden="true"
       />
@@ -48,7 +48,7 @@ function ItemIcon({ state }: { state: PreflightItem['state'] }) {
   if (state === 'fail')
     return (
       <CircleAlertGlassIcon
-        size="1.2em"
+        size="1.4em"
         className={`${cls} text-tone-danger`}
         aria-hidden="true"
       />
@@ -56,14 +56,14 @@ function ItemIcon({ state }: { state: PreflightItem['state'] }) {
   if (state === 'warn')
     return (
       <TriangleAlertGlassIcon
-        size="1.2em"
+        size="1.4em"
         className={`${cls} text-tone-warning`}
         aria-hidden="true"
       />
     )
   return (
     <CircleMinusGlassIcon
-      size="1.2em"
+      size="1.4em"
       className={`${cls} text-muted-foreground`}
       aria-hidden="true"
     />
@@ -113,7 +113,7 @@ function Progress({
     return (
       <div className="space-y-3" role="status">
         <p className="flex items-center gap-2 text-sm font-medium">
-          <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+          <CircleCheckGlassIcon className="size-5 text-tone-success" />
           {t('domainCert.progress.issuedTitle')}
         </p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
@@ -143,7 +143,7 @@ function Progress({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>
               {t('domainCert.progress.stagingIssued')}
@@ -162,7 +162,7 @@ function Progress({
     return (
       <div className="space-y-3">
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertTitle>{t('domainCert.progress.failedTitle')}</AlertTitle>
           <AlertDescription>
             <p>{status.explanation}</p>
@@ -196,7 +196,7 @@ function Progress({
     <div className="space-y-2" role="status">
       <p className="flex items-center gap-2 text-sm font-medium">
         <LoaderCircleGlassIcon
-          className="size-4.5 animate-spin"
+          className="size-5 animate-spin"
           aria-hidden="true"
         />
         {t('domainCert.progress.pendingTitle')}
@@ -248,7 +248,7 @@ function Review({
       </p>
       {pre.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>
             {t('domainCert.checkFailed')} {pre.error.message}
           </AlertDescription>
@@ -258,7 +258,7 @@ function Review({
       ) : (
         <p className="flex items-center gap-2 text-sm" role="status">
           <LoaderCircleGlassIcon
-            className="size-4.5 animate-spin"
+            className="size-5 animate-spin"
             aria-hidden="true"
           />
           {t('domainCert.checking')}
@@ -302,7 +302,7 @@ function Review({
       </div>
       {staging ? (
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{t('domainCert.stagingWarning')}</AlertDescription>
         </Alert>
       ) : null}
@@ -377,7 +377,7 @@ export function GetCertificateButton({
         variant={variant}
         onClick={() => setOpen(true)}
       >
-        <LockGlassIcon className="size-4" aria-hidden="true" />
+        <LockGlassIcon className="size-5" aria-hidden="true" />
         {t('domainCert.action')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

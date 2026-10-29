@@ -22,21 +22,21 @@ import type {
 export const TIMELINE_MAX_ITEMS = 8
 
 const KIND_ICON: Record<TimelineKind, React.ReactNode> = {
-  deploy: <RocketGlassIcon size="1.2em" />,
-  rollback: <UndoGlassIcon size="1.2em" />,
-  restart: <RotateCwGlassIcon size="1.2em" />,
-  env_change: <KeyGlassIcon size="1.2em" />,
-  secret_change: <KeyGlassIcon size="1.2em" />,
-  config_change: <SettingsGlassIcon size="1.2em" />,
-  scale: <MaximizeGlassIcon size="1.2em" />,
-  freeze_override: <SnowflakeGlassIcon size="1.2em" />,
+  deploy: <RocketGlassIcon size="1.4em" />,
+  rollback: <UndoGlassIcon size="1.4em" />,
+  restart: <RotateCwGlassIcon size="1.4em" />,
+  env_change: <KeyGlassIcon size="1.4em" />,
+  secret_change: <KeyGlassIcon size="1.4em" />,
+  config_change: <SettingsGlassIcon size="1.4em" />,
+  scale: <MaximizeGlassIcon size="1.4em" />,
+  freeze_override: <SnowflakeGlassIcon size="1.4em" />,
   scan_gate_override: (
-    <ShieldAlertGlassIcon className="text-tone-warning" size="1.2em" />
+    <ShieldAlertGlassIcon className="text-tone-warning" size="1.4em" />
   ),
-  suspend: <PauseGlassIcon size="1.2em" />,
-  resume: <PlayGlassIcon size="1.2em" />,
-  slept: <MoonGlassIcon size="1.2em" />,
-  woke: <SunGlassIcon size="1.2em" />,
+  suspend: <PauseGlassIcon size="1.4em" />,
+  resume: <PlayGlassIcon size="1.4em" />,
+  slept: <MoonGlassIcon size="1.4em" />,
+  woke: <SunGlassIcon size="1.4em" />,
 }
 
 const STATUS_TONE: Record<TimelineStatus, Tone> = {

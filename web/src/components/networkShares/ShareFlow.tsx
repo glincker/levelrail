@@ -268,9 +268,9 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
                   className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   {reveal ? (
-                    <EyeOffGlassIcon className="size-4.5" aria-hidden="true" />
+                    <EyeOffGlassIcon className="size-5" aria-hidden="true" />
                   ) : (
-                    <EyeGlassIcon className="size-4.5" aria-hidden="true" />
+                    <EyeGlassIcon className="size-5" aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -312,7 +312,7 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <CircleCheckGlassIcon
                 aria-hidden="true"
-                className="size-4 text-tone-success"
+                className="size-5 text-tone-success"
               />
               {t('networkSharesPage.dialog.nameFree')}
             </p>
@@ -335,7 +335,7 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
               aria-hidden="true"
             />
             <AlertDescription>{create.error.message}</AlertDescription>

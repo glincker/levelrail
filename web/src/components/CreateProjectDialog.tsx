@@ -53,12 +53,12 @@ export function CreateProjectDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         New project
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm" glass>
         <CreateFlowShell
-          icon={<FolderGlassIcon className="size-4.5 text-muted-foreground" />}
+          icon={<FolderGlassIcon className="size-5 text-muted-foreground" />}
           title="New project"
           description="A name to group related apps and databases under. Purely organizational, nothing about how they run changes."
           onSubmit={handleSubmit}

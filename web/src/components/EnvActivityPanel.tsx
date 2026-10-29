@@ -34,7 +34,7 @@ export function EnvActivityPanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RestoreGlassIcon className="size-4.5" />
+          <RestoreGlassIcon className="size-5" />
           Recent activity
         </CardTitle>
         <CardDescription>

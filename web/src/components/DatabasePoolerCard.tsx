@@ -39,9 +39,9 @@ function CopyRow({ label, value }: { label: string; value: string }) {
         aria-label={t('pooler.copy', { label })}
       >
         {copied ? (
-          <CheckGlassIcon size="1.2em" aria-hidden />
+          <CheckGlassIcon size="1.4em" aria-hidden />
         ) : (
-          <CopyGlassIcon size="1.2em" aria-hidden />
+          <CopyGlassIcon size="1.4em" aria-hidden />
         )}
       </Button>
     </div>

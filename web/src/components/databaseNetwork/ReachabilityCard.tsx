@@ -138,16 +138,16 @@ export function ReachabilityCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <Share2GlassIcon className="size-4.5" aria-hidden="true" />
+          <Share2GlassIcon className="size-5" aria-hidden="true" />
           {t('reach.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert variant={exposed ? 'destructive' : 'default'}>
           {exposed ? (
-            <GlobeGlassIcon size="1.2em" aria-hidden="true" />
+            <GlobeGlassIcon size="1.4em" aria-hidden="true" />
           ) : (
-            <LockGlassIcon size="1.2em" aria-hidden="true" />
+            <LockGlassIcon size="1.4em" aria-hidden="true" />
           )}
           <AlertTitle>{verdictText(t, network)}</AlertTitle>
           {network.published ? (

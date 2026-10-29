@@ -74,7 +74,7 @@ function CliAccessPage() {
 
   return (
     <PageTemplate
-      icon={<TerminalGlassIcon size="1.2em" />}
+      icon={<TerminalGlassIcon size="1.4em" />}
       eyebrow={t('cliAccessPage.eyebrow')}
       title={t('cliAccessPage.title')}
       description={t('cliAccessPage.description')}
@@ -109,7 +109,7 @@ function CliAccessPage() {
       <Collapsible className="rounded-lg border border-border px-4 py-3">
         <CollapsibleTrigger className="flex items-center justify-between gap-2 text-sm font-medium">
           {t('cliAccessPage.setup.toggle')}
-          <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
+          <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
         </CollapsibleTrigger>
         <CollapsiblePanel className="space-y-2 pt-3">
           <p className="text-sm text-muted-foreground">

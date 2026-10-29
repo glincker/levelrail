@@ -154,7 +154,7 @@ export function AppAutoscaleCard({ appName }: { appName: string }) {
     body = (
       <EmptyState
         compact
-        icon={<LayersGlassIcon className="size-5.5" />}
+        icon={<LayersGlassIcon className="size-6" />}
         title={t('empty.title')}
         description={t('empty.body')}
         action={

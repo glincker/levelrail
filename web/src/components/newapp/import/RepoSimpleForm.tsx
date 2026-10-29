@@ -234,7 +234,7 @@ export function RepoSimpleForm({
           ])
         }}
       >
-        <PlusGlassIcon aria-hidden="true" className="size-4.5" />
+        <PlusGlassIcon aria-hidden="true" className="size-5" />
         {t('import.form.addVar')}
       </Button>
 

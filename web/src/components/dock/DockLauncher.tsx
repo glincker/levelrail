@@ -80,7 +80,7 @@ export function DockLauncher() {
       {...drag}
       className="fixed top-0 left-0 z-40 flex max-md:in-[body:has([role=menu])]:invisible size-14 touch-none animate-in items-center justify-center rounded-full bg-primary text-primary-foreground shadow-floating transition-[transform,opacity] duration-200 outline-none fade-in-0 hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[dragging=true]:transition-none motion-reduce:animate-none motion-reduce:transition-none"
     >
-      <MessageCircleGlassIcon className="size-7" />
+      <MessageCircleGlassIcon className="size-8" />
       {unread ? (
         <span
           aria-hidden="true"

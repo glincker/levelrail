@@ -84,14 +84,14 @@ function DeletePipelineDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashGlassIcon size="1.2em" aria-hidden="true" />
+        <TrashGlassIcon size="1.4em" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Delete &ldquo;{pipeline.name}&rdquo;?
@@ -105,7 +105,7 @@ function DeletePipelineDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{del.error.message}</AlertDescription>
           </Alert>
@@ -197,7 +197,7 @@ function PipelineRow({
         params={{ name: appName, pipeline: pipeline.name }}
         className={buttonVariants({ variant: 'outline', size: 'sm' })}
       >
-        <PencilGlassIcon size="1.2em" aria-hidden="true" />
+        <PencilGlassIcon size="1.4em" aria-hidden="true" />
         Edit
       </Link>
       <DeletePipelineDialog appName={appName} pipeline={pipeline} />
@@ -214,7 +214,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
       params={{ name: appName }}
       className={buttonVariants({ size: 'sm' })}
     >
-      <PlusGlassIcon size="1.2em" aria-hidden="true" />
+      <PlusGlassIcon size="1.4em" aria-hidden="true" />
       New pipeline
     </Link>
   )
@@ -225,7 +225,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
           <div>
             <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
               <BinaryTreeGlassIcon
-                className="size-4.5 text-muted-foreground"
+                className="size-5 text-muted-foreground"
                 aria-hidden="true"
               />
               Pipelines
@@ -247,7 +247,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
           ) : error ? (
             <EmptyState
               icon={
-                <TriangleAlertGlassIcon className="size-5.5 text-tone-warning" />
+                <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
               }
               title="Pipelines could not be loaded"
               description={error.message}
@@ -265,7 +265,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
             />
           ) : pipelines.length === 0 ? (
             <EmptyState
-              icon={<BinaryTreeGlassIcon className="size-5.5" />}
+              icon={<BinaryTreeGlassIcon className="size-6" />}
               title="No pipelines yet"
               description="Define triggers, jobs, and steps in YAML to run tests, build images, and deploy this app."
               action={newLink}

@@ -120,7 +120,7 @@ function FixRow({ appName, fix }: { appName: string; fix: DiagnosisFix }) {
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+          <WrenchGlassIcon size="1.4em" aria-hidden="true" />
           {open ? 'Hide preview' : 'Preview fix'}
         </Button>
       </div>

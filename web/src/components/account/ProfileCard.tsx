@@ -72,7 +72,7 @@ export function ProfileCard() {
                 {session.email_verified ? (
                   <BadgeCheckGlassIcon
                     className="text-tone-success"
-                    size="1.2em"
+                    size="1.4em"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -133,7 +133,7 @@ export function ProfileCard() {
                   <Alert variant="destructive" className="max-w-md">
                     <TriangleAlertGlassIcon
                       className="text-tone-warning"
-                      size="1.2em"
+                      size="1.4em"
                       aria-hidden="true"
                     />
                     <AlertDescription>
@@ -156,7 +156,7 @@ export function ProfileCard() {
                     setEditing(true)
                   }}
                 >
-                  <PencilGlassIcon size="1.2em" aria-hidden="true" />
+                  <PencilGlassIcon size="1.4em" aria-hidden="true" />
                 </Button>
               </dd>
             )}

@@ -52,7 +52,7 @@ export function TimeRangeControls({
         ))}
       </div>
       <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
-        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         Refresh
       </Button>
       {children}

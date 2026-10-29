@@ -113,7 +113,7 @@ export function TemplateMarketplace({
       <Alert variant="destructive">
         <TriangleAlertGlassIcon
           className="text-tone-warning"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         <AlertDescription>{templatesQuery.error.message}</AlertDescription>
@@ -158,7 +158,7 @@ export function TemplateMarketplace({
           />
           {visible.length === 0 ? (
             <EmptyState
-              icon={<PackageGlassIcon className="size-5.5" />}
+              icon={<PackageGlassIcon className="size-6" />}
               title={
                 hasFilters
                   ? t('marketplace.empty.title')
@@ -185,7 +185,7 @@ export function TemplateMarketplace({
                     variant="outline"
                     onClick={clearFilters}
                   >
-                    <XGlassIcon size="1.2em" aria-hidden="true" />
+                    <XGlassIcon size="1.4em" aria-hidden="true" />
                     {t('marketplace.empty.clear')}
                   </Button>
                 ) : undefined

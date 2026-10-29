@@ -73,7 +73,7 @@ export function usePaletteBaseItems(
         label: t('keyboardShortcuts'),
         keywords: t('keyboardShortcutsKeywords'),
         group: 'Actions',
-        icon: <KeyboardGlassIcon size="1.2em" />,
+        icon: <KeyboardGlassIcon size="1.4em" />,
         run: onShowShortcuts,
       })
     }
@@ -82,7 +82,7 @@ export function usePaletteBaseItems(
       label: tCli('cliModal.openAction'),
       keywords: tCli('cliModal.openKeywords'),
       group: 'Actions',
-      icon: <TerminalGlassIcon size="1.2em" />,
+      icon: <TerminalGlassIcon size="1.4em" />,
       run: openCliModal,
     })
     items.push(...traffic.base, ...resourceItems, ...appTabItems)

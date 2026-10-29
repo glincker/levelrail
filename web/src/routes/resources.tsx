@@ -40,7 +40,7 @@ function ResourcesPage() {
     <PageTemplate
       title={t('title')}
       description={t('description')}
-      icon={<FileSearchGlassIcon size="1.2em" />}
+      icon={<FileSearchGlassIcon size="1.4em" />}
       width="wide"
     >
       <ResourceExplorer

@@ -22,7 +22,7 @@ export function RolesTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<IdCardLanyardGlassIcon className="size-5.5" />}
+        icon={<IdCardLanyardGlassIcon className="size-6" />}
         title={t('roles.empty.title')}
         description={t('roles.empty.description')}
       />
@@ -97,7 +97,7 @@ export function RolesTable({
                     role={role}
                     trigger={
                       <Button variant="outline" size="sm">
-                        <PencilGlassIcon size="1.2em" />
+                        <PencilGlassIcon size="1.4em" />
                         {t('roles.table.edit')}
                       </Button>
                     }

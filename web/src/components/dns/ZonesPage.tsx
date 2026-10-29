@@ -55,7 +55,7 @@ export function ZonesPage() {
   const empty = !connected || data.zones.length === 0
   const addZone = (
     <Button size="sm" onClick={() => setWizard(true)}>
-      <PlusGlassIcon size="1.2em" />
+      <PlusGlassIcon size="1.4em" />
       {t('page.addZone')}
     </Button>
   )

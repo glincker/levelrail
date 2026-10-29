@@ -42,7 +42,7 @@ export function ImportPlanPreview({ source }: { source: GitRepoSourceValue }) {
             setRequested(true)
           }}
         >
-          <FileSearchGlassIcon className="size-4.5" aria-hidden />
+          <FileSearchGlassIcon className="size-5" aria-hidden />
           {t('plan.review')}
         </Button>
       </section>
@@ -74,7 +74,7 @@ export function ImportPlanPreview({ source }: { source: GitRepoSourceValue }) {
                 void query.refetch()
               }}
             >
-              <RotateCwGlassIcon className="size-4.5" aria-hidden />
+              <RotateCwGlassIcon className="size-5" aria-hidden />
               {t('plan.retry')}
             </Button>
           </AlertDescription>

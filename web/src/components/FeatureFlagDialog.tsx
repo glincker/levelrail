@@ -121,12 +121,12 @@ export function FeatureFlagDialog({
         render={
           isEdit ? (
             <Button variant="outline" size="sm">
-              <PencilGlassIcon className="size-4" aria-hidden="true" />
+              <PencilGlassIcon className="size-5" aria-hidden="true" />
               Edit
             </Button>
           ) : (
             <Button size="sm">
-              <CirclePlusGlassIcon className="size-4" aria-hidden="true" />
+              <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
               Create flag
             </Button>
           )
@@ -137,12 +137,12 @@ export function FeatureFlagDialog({
           <DialogTitle className="flex items-center gap-1.5">
             {isEdit ? (
               <PencilGlassIcon
-                className="size-4.5 text-muted-foreground"
+                className="size-5 text-muted-foreground"
                 aria-hidden="true"
               />
             ) : (
               <CirclePlusGlassIcon
-                className="size-4.5 text-muted-foreground"
+                className="size-5 text-muted-foreground"
                 aria-hidden="true"
               />
             )}

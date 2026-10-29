@@ -73,7 +73,7 @@ function ApprovalGate({
         disabled={decide.isPending}
         onClick={() => act('approved')}
       >
-        <ThumbsUpGlassIcon size="1.2em" aria-hidden="true" />
+        <ThumbsUpGlassIcon size="1.4em" aria-hidden="true" />
         {t('detail.approve')}
       </Button>
       <Button
@@ -82,7 +82,7 @@ function ApprovalGate({
         disabled={decide.isPending}
         onClick={() => act('rejected')}
       >
-        <ThumbsDownGlassIcon size="1.2em" aria-hidden="true" />
+        <ThumbsDownGlassIcon size="1.4em" aria-hidden="true" />
         {t('detail.reject')}
       </Button>
     </div>
@@ -142,7 +142,7 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
               })
             }
           >
-            <SquareGlassIcon size="1.2em" aria-hidden="true" />
+            <SquareGlassIcon size="1.4em" aria-hidden="true" />
             {t('detail.cancel')}
           </Button>
         ) : null}
@@ -161,7 +161,7 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
             })
           }
         >
-          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
+          <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
           {t('detail.rerun')}
         </Button>
       </div>
@@ -191,7 +191,7 @@ export function PipelineRunDetail({
   if (error || !run) {
     return (
       <EmptyState
-        icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
+        icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
         title={error ? t('detail.loadFailed') : t('detail.notFound')}
         description={error?.message ?? t('detail.gone')}
         action={

@@ -35,7 +35,7 @@ function Bar({
       role="alert"
       className="flex min-h-9 shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-1 text-sm text-destructive"
     >
-      <span aria-hidden="true" className="[&_svg]:size-4">
+      <span aria-hidden="true" className="[&_svg]:size-5">
         {icon}
       </span>
       <span className="min-w-0 flex-1 break-words">{children}</span>
@@ -48,7 +48,7 @@ function Bar({
         title="Dismiss"
         onClick={onDismiss}
       >
-        <XGlassIcon size="1.2em" />
+        <XGlassIcon size="1.4em" />
       </Button>
     </div>
   )
@@ -78,7 +78,7 @@ export function ShellBanner() {
   if (kind === 'connection') {
     return (
       <Bar
-        icon={<WifiOffGlassIcon size="1.2em" />}
+        icon={<WifiOffGlassIcon size="1.4em" />}
         onDismiss={dismissConnectionBanner}
         action={
           <Button
@@ -103,7 +103,7 @@ export function ShellBanner() {
     return (
       <Bar
         icon={
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         }
         onDismiss={() => snoozeNow('banner:docker-down', '1h')}
         action={
@@ -122,7 +122,7 @@ export function ShellBanner() {
     return (
       <Bar
         icon={
-          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
         }
         onDismiss={() => snoozeNow('banner:disk', '1d')}
         action={<CleanUpDockerDialog />}

@@ -124,7 +124,7 @@ function MetricsGrid({ h }: { h: CPHealth }) {
               })
             : t('readPoolDisabled')
         }
-        icon={<LayersGlassIcon aria-hidden className="size-4" />}
+        icon={<LayersGlassIcon aria-hidden className="size-5" />}
       />
       <Metric
         label={t('wal')}
@@ -223,7 +223,7 @@ export function ControlPlaneHealthPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<GaugeGlassIcon size="1.2em" />}
+        icon={<GaugeGlassIcon size="1.4em" />}
         titleKey="settings:controlPlaneHealth.title"
         descriptionKey={
           hero
@@ -237,13 +237,13 @@ export function ControlPlaneHealthPage() {
                 {data.status === 'ok' ? (
                   <CircleCheckGlassIcon
                     className="text-tone-success"
-                    size="1.2em"
+                    size="1.4em"
                     aria-hidden="true"
                   />
                 ) : (
                   <CircleAlertGlassIcon
                     className="text-tone-danger"
-                    size="1.2em"
+                    size="1.4em"
                     aria-hidden="true"
                   />
                 )}
@@ -258,7 +258,7 @@ export function ControlPlaneHealthPage() {
                 void refetch()
               }}
             >
-              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
               {isFetching
                 ? t('controlPlaneHealth.rechecking')
                 : t('controlPlaneHealth.recheck')}
@@ -342,7 +342,7 @@ export function ControlPlaneHealthPage() {
                               if (f.fix) apply(f.fix)
                             }}
                           >
-                            <WrenchGlassIcon size="1.2em" />
+                            <WrenchGlassIcon size="1.4em" />
                             {t(`controlPlaneHealth.fixes.${f.fix}`)}
                           </Button>
                           <Collapsible>

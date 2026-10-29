@@ -80,7 +80,7 @@ export function StatementEditor({
             onClick={onRemove}
             aria-label={t('builder.removeStatement', { n })}
           >
-            <TrashGlassIcon size="1.2em" className="text-destructive" />
+            <TrashGlassIcon size="1.4em" className="text-destructive" />
           </Button>
         ) : null}
       </header>

@@ -261,7 +261,7 @@ export function AppHealthTimeline({ appName }: { appName: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           <ActivityGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           Health timeline

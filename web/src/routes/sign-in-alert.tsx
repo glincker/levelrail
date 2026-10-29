@@ -48,7 +48,7 @@ function SignInAlertPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldAlertGlassIcon
-              className="size-5.5 text-tone-warning"
+              className="size-6 text-tone-warning"
               aria-hidden="true"
             />
             {t('alertPage.title')}
@@ -60,7 +60,7 @@ function SignInAlertPage() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{t('alertPage.missing')}</AlertDescription>
             </Alert>
@@ -69,7 +69,7 @@ function SignInAlertPage() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>{t('alertPage.error')}</AlertDescription>
             </Alert>
@@ -78,7 +78,7 @@ function SignInAlertPage() {
             <Alert>
               <CircleCheckGlassIcon
                 className="text-tone-success"
-                size="1.2em"
+                size="1.4em"
               />
               <AlertDescription>
                 {disown.data.session_revoked

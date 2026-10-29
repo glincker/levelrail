@@ -46,7 +46,7 @@ function Row({
       )}
     >
       <span className="truncate">{children}</span>
-      {active ? <CheckGlassIcon aria-hidden="true" className="size-4" /> : null}
+      {active ? <CheckGlassIcon aria-hidden="true" className="size-5" /> : null}
     </button>
   )
 }
@@ -102,9 +102,9 @@ export function ScopePicker() {
           />
         }
       >
-        <FolderGlassIcon size="1.2em" aria-hidden="true" />
+        <FolderGlassIcon size="1.4em" aria-hidden="true" />
         <span className="max-w-48 truncate">{label}</span>
-        <ChevronDownGlassIcon aria-hidden="true" className="ml-auto size-3.5" />
+        <ChevronDownGlassIcon aria-hidden="true" className="ml-auto size-4.5" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(32rem,90vw)] p-2">
         <div className={cn('grid gap-2', showEnvs && 'sm:grid-cols-2')}>

@@ -77,7 +77,7 @@ export function AlertTemplatePicker({
         onClick={() => void onApply()}
         title={t(`template.${profile}Hint`)}
       >
-        <WandGlassIcon size="1.2em" />
+        <WandGlassIcon size="1.4em" />
         {apply.isPending ? t('template.applying') : t('template.apply')}
       </Button>
     </div>

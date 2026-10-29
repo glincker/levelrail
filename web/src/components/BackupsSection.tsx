@@ -86,7 +86,7 @@ export function NoTargetsConfigured() {
   return (
     <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
       <UploadGlassIcon
-        className="size-5.5 text-muted-foreground"
+        className="size-6 text-muted-foreground"
         aria-hidden="true"
       />
       <p className="text-sm text-muted-foreground">
@@ -181,7 +181,7 @@ export function TriggerBackupRowView({
           onClick={handleTrigger}
           disabled={!targetId || trigger.isPending}
         >
-          <UploadGlassIcon size="1.2em" aria-hidden="true" />
+          <UploadGlassIcon size="1.4em" aria-hidden="true" />
           {trigger.isPending ? 'Starting...' : 'Back up now'}
         </Button>
       </div>
@@ -220,7 +220,7 @@ export function DownloadBackupLinkView({ href }: { href: string }) {
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
-      <DownloadGlassIcon className="size-4" aria-hidden="true" />
+      <DownloadGlassIcon className="size-5" aria-hidden="true" />
       Download
     </a>
   )

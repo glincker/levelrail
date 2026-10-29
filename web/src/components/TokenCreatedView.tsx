@@ -36,7 +36,7 @@ export function TokenCreatedView({
       />
       <CreateFlowSteps steps={TOKEN_STEPS} currentIndex={1} />
       <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-        <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
+        <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
         <p className="text-sm">
           Copy this token now. It will not be shown again.
         </p>
@@ -47,9 +47,9 @@ export function TokenCreatedView({
         </code>
         <Button type="button" size="sm" variant="outline" onClick={copyToken}>
           {copied ? (
-            <CheckGlassIcon size="1.2em" />
+            <CheckGlassIcon size="1.4em" />
           ) : (
-            <CopyGlassIcon size="1.2em" />
+            <CopyGlassIcon size="1.4em" />
           )}
           {copied ? 'Copied' : 'Copy'}
         </Button>

@@ -28,28 +28,28 @@ function OutcomeIcon({ outcome }: { outcome: NodeMoveOutcome }) {
     case 'ok':
       return (
         <CircleCheckGlassIcon
-          className="size-4 shrink-0 text-primary"
+          className="size-5 shrink-0 text-primary"
           aria-hidden="true"
         />
       )
     case 'failed':
       return (
         <CircleXGlassIcon
-          className="size-4 shrink-0 text-destructive"
+          className="size-5 shrink-0 text-destructive"
           aria-hidden="true"
         />
       )
     case 'retry':
       return (
         <TriangleAlertGlassIcon
-          className="size-4 shrink-0 text-amber-500"
+          className="size-5 shrink-0 text-amber-500"
           aria-hidden="true"
         />
       )
     default:
       return (
         <ClockGlassIcon
-          className="size-4 shrink-0 text-muted-foreground"
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
       )
@@ -97,7 +97,7 @@ export function NodeMoveSteps({ move }: { move: NodeMove }) {
       {move.status === 'running' ? (
         <li className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <LoaderCircleGlassIcon
-            className="size-4 shrink-0 animate-spin"
+            className="size-5 shrink-0 animate-spin"
             aria-hidden="true"
           />
           {t(`phase.${move.phase}`)}

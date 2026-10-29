@@ -32,7 +32,7 @@ export function PipelineInsightsCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
           <ChartLineGlassIcon
-            className="size-4.5 text-muted-foreground"
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('insights.title')}

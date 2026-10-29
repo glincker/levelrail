@@ -36,10 +36,7 @@ export function LbConfigure({
           className="flex items-center gap-2 rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <ChevronDownGlassIcon
-            className={cn(
-              'size-4.5 transition-transform',
-              !open && '-rotate-90',
-            )}
+            className={cn('size-5 transition-transform', !open && '-rotate-90')}
             aria-hidden
           />
           Configure

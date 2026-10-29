@@ -86,7 +86,7 @@ export function RowDetailDrawer({
                 onRowChange(rowIndex - 1)
               }}
             >
-              <ChevronLeftGlassIcon className="size-4" aria-hidden="true" />
+              <ChevronLeftGlassIcon className="size-5" aria-hidden="true" />
               {t('viewer.grid.previousRow')}
             </Button>
             <Button
@@ -99,7 +99,7 @@ export function RowDetailDrawer({
               }}
             >
               {t('viewer.grid.nextRow')}
-              <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
+              <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
             </Button>
           </div>
         </SheetHeader>
@@ -129,7 +129,7 @@ export function RowDetailDrawer({
                         copy(value)
                       }}
                     >
-                      <CopyGlassIcon className="size-4" aria-hidden="true" />
+                      <CopyGlassIcon className="size-5" aria-hidden="true" />
                     </Button>
                   ) : null}
                 </dt>

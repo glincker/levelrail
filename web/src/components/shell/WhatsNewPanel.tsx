@@ -45,7 +45,7 @@ export function WhatsNewPanel() {
           />
         }
       >
-        <SparklesGlassIcon size="1.2em" />
+        <SparklesGlassIcon size="1.4em" />
         {unread > 0 ? (
           <span
             aria-hidden="true"

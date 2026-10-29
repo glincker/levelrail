@@ -47,7 +47,7 @@ export function StructureView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" onClick={onOpenConsole}>
-          <TerminalGlassIcon className="size-4" aria-hidden="true" />
+          <TerminalGlassIcon className="size-5" aria-hidden="true" />
           {t('viewer.structure.openConsole')}
         </Button>
       </div>
@@ -93,7 +93,7 @@ export function StructureView({
                         <ColumnTypeIcon kind={columnKind(c.type)} />
                         {c.primary_key ? (
                           <KeyGlassIcon
-                            className="size-4 text-primary"
+                            className="size-5 text-primary"
                             aria-label={t('viewer.explorer.primaryKey')}
                           />
                         ) : null}
@@ -119,7 +119,7 @@ export function StructureView({
                           }}
                         >
                           <LinkGlassIcon
-                            className="size-4"
+                            className="size-5"
                             aria-hidden="true"
                           />
                           {fk.ref_table}.{refCol}
@@ -192,7 +192,7 @@ export function StructureView({
                 copy(structure.ddl, 'viewer.structure.ddlCopied')
               }}
             >
-              <CopyGlassIcon className="size-4" aria-hidden="true" />
+              <CopyGlassIcon className="size-5" aria-hidden="true" />
               {t('viewer.grid.copy')}
             </Button>
           </div>

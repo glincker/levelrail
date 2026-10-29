@@ -189,7 +189,7 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
             <Alert>
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.2em"
+                size="1.4em"
                 aria-hidden="true"
               />
               <AlertDescription>
@@ -233,7 +233,7 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <CircleCheckGlassIcon
                     aria-hidden="true"
-                    className="size-4 text-tone-success"
+                    className="size-5 text-tone-success"
                   />
                   {t('flow.nameFree')}
                 </p>

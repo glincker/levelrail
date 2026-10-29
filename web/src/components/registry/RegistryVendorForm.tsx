@@ -216,7 +216,7 @@ export function RegistryVendorForm({
         <h3 className="flex items-center gap-1.5 text-sm font-medium">
           <ShieldCheckGlassIcon
             aria-hidden="true"
-            className="size-4.5 text-tone-success"
+            className="size-5 text-tone-success"
           />
           {t('registryVendors.scopesTitle')}
         </h3>
@@ -226,11 +226,11 @@ export function RegistryVendorForm({
       {result ? (
         <Alert variant={result.ok ? 'default' : 'destructive'}>
           {result.ok ? (
-            <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           ) : (
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
           )}
           <AlertDescription>{result.message}</AlertDescription>
@@ -238,7 +238,7 @@ export function RegistryVendorForm({
       ) : null}
       {error ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
@@ -255,7 +255,7 @@ export function RegistryVendorForm({
           disabled={!ready || probe.isPending}
           onClick={runTest}
         >
-          <PlugGlassIcon size="1.2em" aria-hidden="true" />
+          <PlugGlassIcon size="1.4em" aria-hidden="true" />
           {probe.isPending
             ? t('registryVendors.testing')
             : t('registryVendors.test')}

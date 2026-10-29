@@ -26,7 +26,7 @@ export function BackupScheduleSuggestion({
     <Alert>
       <ShieldCheckGlassIcon
         className="text-tone-success"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
       <AlertTitle>{t('suggestion.title')}</AlertTitle>

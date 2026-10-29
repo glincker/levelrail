@@ -98,7 +98,7 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           <AlertDescription>
@@ -130,9 +130,9 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
               }}
             >
               {copied ? (
-                <CheckGlassIcon size="1.2em" aria-hidden="true" />
+                <CheckGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <CopyGlassIcon size="1.2em" aria-hidden="true" />
+                <CopyGlassIcon size="1.4em" aria-hidden="true" />
               )}
               {copied ? t('templates.copied') : t('templates.copyAll')}
             </Button>
@@ -144,7 +144,7 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
                 downloadStackTemplateFiles(files)
               }}
             >
-              <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+              <DownloadGlassIcon size="1.4em" aria-hidden="true" />
               {t('templates.downloadAll')}
             </Button>
           </div>
@@ -190,7 +190,7 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
               {template.secret_names.map((n) => (
                 <li key={n}>
                   <Badge variant="warning" className="font-mono">
-                    <KeyGlassIcon size="1.2em" aria-hidden="true" />
+                    <KeyGlassIcon size="1.4em" aria-hidden="true" />
                     {n}
                   </Badge>
                 </li>

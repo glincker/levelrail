@@ -25,7 +25,7 @@ function StepIcon({ state }: { state: GoLiveStep['state'] }) {
     case 'done':
       return (
         <CircleCheckGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={`${cls} text-emerald-600`}
           aria-hidden="true"
         />
@@ -33,7 +33,7 @@ function StepIcon({ state }: { state: GoLiveStep['state'] }) {
     case 'pending':
       return (
         <LoaderCircleGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={`${cls} text-muted-foreground motion-safe:animate-spin`}
           aria-hidden="true"
         />
@@ -42,7 +42,7 @@ function StepIcon({ state }: { state: GoLiveStep['state'] }) {
     case 'conflict':
       return (
         <CircleAlertGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={`${cls} text-destructive`}
           aria-hidden="true"
         />
@@ -50,7 +50,7 @@ function StepIcon({ state }: { state: GoLiveStep['state'] }) {
     case 'manual':
       return (
         <PointerGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={`${cls} text-amber-600`}
           aria-hidden="true"
         />
@@ -58,7 +58,7 @@ function StepIcon({ state }: { state: GoLiveStep['state'] }) {
     default:
       return (
         <CircleMinusGlassIcon
-          size="1.2em"
+          size="1.4em"
           className={`${cls} text-muted-foreground`}
           aria-hidden="true"
         />
@@ -99,7 +99,7 @@ function ConnectProviderPrompt() {
   const { t } = useTranslation('domains')
   return (
     <p className="text-xs text-muted-foreground">
-      <CloudGlassIcon className="mr-1 inline size-4" aria-hidden="true" />
+      <CloudGlassIcon className="mr-1 inline size-5" aria-hidden="true" />
       {t('goLive.connectCloudflare')}{' '}
       <Link to="/domains" className="underline">
         {t('goLive.connectCloudflareAction')}
@@ -161,7 +161,7 @@ export function GoLiveSteps({
           rel="noopener noreferrer"
           className={buttonVariants({ size: 'sm', variant: 'outline' })}
         >
-          <ExternalLinkGlassIcon size="1.2em" />
+          <ExternalLinkGlassIcon size="1.4em" />
           {t('goLive.openLive')}
         </a>
       ) : null}

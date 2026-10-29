@@ -113,7 +113,7 @@ export function TargetSetupForm({
               label={t(`target.preset.${p.id}.name`)}
             >
               {p.id === 'local' ? (
-                <ServerGlassIcon aria-hidden="true" className="size-5.5" />
+                <ServerGlassIcon aria-hidden="true" className="size-6" />
               ) : undefined}
             </BrandTile>
             <span className="min-w-0">
@@ -132,7 +132,7 @@ export function TargetSetupForm({
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           <AlertDescription>{t('target.localWarning')}</AlertDescription>

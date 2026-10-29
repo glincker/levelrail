@@ -68,7 +68,7 @@ function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
   if (toolCall.resolution === 'rejected') {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-        <CircleXGlassIcon className="size-4.5 shrink-0 text-destructive" />
+        <CircleXGlassIcon className="size-5 shrink-0 text-destructive" />
         <span>
           {t('toolCall.rejected')}{' '}
           <span className="font-medium text-foreground">
@@ -80,9 +80,9 @@ function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
   }
 
   const icon = toolCall.read_only ? (
-    <SearchGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
+    <SearchGlassIcon className="size-5 shrink-0 text-muted-foreground" />
   ) : (
-    <CircleCheckGlassIcon className="size-4.5 shrink-0 text-green-600 dark:text-green-400" />
+    <CircleCheckGlassIcon className="size-5 shrink-0 text-green-600 dark:text-green-400" />
   )
   const verb = toolCall.read_only
     ? t('toolCall.checked')
@@ -143,7 +143,7 @@ export function AiToolCallCard({
     <Card className="border-amber-300 dark:border-amber-800">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
-          <ShieldAlertGlassIcon className="size-4.5 text-amber-600 dark:text-amber-400" />
+          <ShieldAlertGlassIcon className="size-5 text-amber-600 dark:text-amber-400" />
           {toolCall.tool_name}
           <Badge variant="warning">{t('toolCall.confirmationRequired')}</Badge>
         </CardTitle>

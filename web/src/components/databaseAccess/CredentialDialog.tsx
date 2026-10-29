@@ -37,9 +37,9 @@ function CopyField({ label, value }: { label: string; value: string }) {
           aria-label={`${t('credential.copy')} ${label}`}
         >
           {copied ? (
-            <CheckGlassIcon size="1.2em" aria-hidden="true" />
+            <CheckGlassIcon size="1.4em" aria-hidden="true" />
           ) : (
-            <CopyGlassIcon size="1.2em" aria-hidden="true" />
+            <CopyGlassIcon size="1.4em" aria-hidden="true" />
           )}
           {copied ? t('credential.copied') : t('credential.copy')}
         </Button>

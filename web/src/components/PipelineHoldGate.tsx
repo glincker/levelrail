@@ -37,7 +37,7 @@ export function PipelineHoldGate({
         disabled={decide.isPending}
         onClick={() => act('approved')}
       >
-        <ThumbsUpGlassIcon size="1.2em" aria-hidden="true" />
+        <ThumbsUpGlassIcon size="1.4em" aria-hidden="true" />
         Approve and run
       </Button>
       <Button
@@ -46,7 +46,7 @@ export function PipelineHoldGate({
         disabled={decide.isPending}
         onClick={() => act('rejected')}
       >
-        <ThumbsDownGlassIcon size="1.2em" aria-hidden="true" />
+        <ThumbsDownGlassIcon size="1.4em" aria-hidden="true" />
         Reject
       </Button>
     </div>

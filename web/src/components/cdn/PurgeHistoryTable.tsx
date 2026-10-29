@@ -32,7 +32,7 @@ export function PurgeHistoryTable({ app }: Readonly<{ app: string }>) {
     return (
       <EmptyState
         compact
-        icon={<RestoreGlassIcon className="size-4.5" />}
+        icon={<RestoreGlassIcon className="size-5" />}
         title={t('history.emptyTitle')}
         description={t('history.emptyBody')}
       />

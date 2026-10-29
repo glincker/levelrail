@@ -122,7 +122,7 @@ export function DeployHeader({
         params={{ name: appName }}
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeftGlassIcon className="size-4" aria-hidden="true" />
+        <ArrowLeftGlassIcon className="size-5" aria-hidden="true" />
         All deploys
       </Link>
 
@@ -155,7 +155,7 @@ export function DeployHeader({
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
             {branchName ? (
-              <Meta icon={<GitBranchGlassIcon className="size-4.5" />}>
+              <Meta icon={<GitBranchGlassIcon className="size-5" />}>
                 <span className="break-all font-mono text-foreground">
                   {branchName}
                 </span>
@@ -163,7 +163,7 @@ export function DeployHeader({
             ) : null}
             {attempt.commit_sha ? (
               <Meta
-                icon={<CommitGraphGlassIcon className="size-4.5" />}
+                icon={<CommitGraphGlassIcon className="size-5" />}
                 title={attempt.commit_sha}
               >
                 <span className="break-all font-mono text-foreground">
@@ -172,16 +172,16 @@ export function DeployHeader({
               </Meta>
             ) : null}
             {attempt.author ? (
-              <Meta icon={<UserGlassIcon className="size-4.5" />}>
+              <Meta icon={<UserGlassIcon className="size-5" />}>
                 {attempt.author}
               </Meta>
             ) : null}
             {attempt.source ? (
-              <Meta icon={<ZapGlassIcon className="size-4.5" />}>
+              <Meta icon={<ZapGlassIcon className="size-5" />}>
                 {DEPLOY_ATTEMPT_SOURCE_LABEL[attempt.source]}
               </Meta>
             ) : null}
-            <Meta icon={<ClockGlassIcon className="size-4.5" />}>
+            <Meta icon={<ClockGlassIcon className="size-5" />}>
               <RelativeTime at={attempt.started_at} live />
               <span aria-hidden="true">·</span>
               {formatDeployDuration(attempt.started_at, attempt.finished_at)}
@@ -199,7 +199,7 @@ export function DeployHeader({
                 setCancelOpen(true)
               }}
             >
-              <BanGlassIcon className="size-4" data-icon="inline-start" />
+              <BanGlassIcon className="size-5" data-icon="inline-start" />
               Cancel deploy
             </Button>
           ) : null}
@@ -211,7 +211,7 @@ export function DeployHeader({
               disabled={rollback.isPending}
               onClick={doRollback}
             >
-              <RotateCcwGlassIcon className="size-4" data-icon="inline-start" />
+              <RotateCcwGlassIcon className="size-5" data-icon="inline-start" />
               Roll back to this
             </Button>
           ) : null}
@@ -227,14 +227,14 @@ export function DeployHeader({
               />
             }
           >
-            <GitCompareGlassIcon className="size-4" data-icon="inline-start" />
+            <GitCompareGlassIcon className="size-5" data-icon="inline-start" />
             Compare
           </Button>
           <Button variant="outline" size="sm" onClick={copyId}>
             {copied ? (
-              <CheckGlassIcon className="size-4" data-icon="inline-start" />
+              <CheckGlassIcon className="size-5" data-icon="inline-start" />
             ) : (
-              <CopyGlassIcon className="size-4" data-icon="inline-start" />
+              <CopyGlassIcon className="size-5" data-icon="inline-start" />
             )}
             {copied ? 'Copied' : 'Copy ID'}
           </Button>
@@ -251,7 +251,7 @@ export function DeployHeader({
               }
             >
               <ExternalLinkGlassIcon
-                className="size-4"
+                className="size-5"
                 data-icon="inline-start"
               />
               Visit

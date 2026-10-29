@@ -104,7 +104,7 @@ function SessionsTable({
       primary: true,
       cell: (s) => (
         <span className="flex items-center gap-2">
-          <MonitorGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
+          <MonitorGlassIcon className="size-5 shrink-0" aria-hidden="true" />
           {s.browser}
           {s.current ? (
             <Badge variant="success">{t('sessions.current')}</Badge>
@@ -191,7 +191,7 @@ function RevokeOthersButton({
         size="sm"
         onClick={() => setOpen(true)}
       >
-        <LogOutGlassIcon size="1.2em" aria-hidden="true" />
+        <LogOutGlassIcon size="1.4em" aria-hidden="true" />
         {label}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

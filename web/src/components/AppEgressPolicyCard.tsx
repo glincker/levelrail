@@ -104,7 +104,7 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LockOpenGlassIcon className="size-4.5" />
+            <LockOpenGlassIcon className="size-5" />
             Outbound network
           </CardTitle>
         </CardHeader>
@@ -211,9 +211,9 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {configured ? (
-            <LockGlassIcon className="size-4.5" />
+            <LockGlassIcon className="size-5" />
           ) : (
-            <LockOpenGlassIcon className="size-4.5" />
+            <LockOpenGlassIcon className="size-5" />
           )}
           Outbound network
           <HelpLink
@@ -261,7 +261,7 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-1.5 text-destructive">
                         <TriangleAlertGlassIcon
-                          className="size-4.5 text-tone-warning"
+                          className="size-5 text-tone-warning"
                           aria-hidden="true"
                         />
                         Remove the egress allowlist?
@@ -354,7 +354,7 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
                       onClick={() => removeRow(index)}
                       disabled={rows.length === 1}
                     >
-                      <XGlassIcon size="1.2em" />
+                      <XGlassIcon size="1.4em" />
                       <span className="sr-only">Remove rule</span>
                     </Button>
                   </div>
@@ -369,7 +369,7 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
               ))}
             </FieldGroup>
             <Button type="button" variant="outline" size="sm" onClick={addRow}>
-              <PlusGlassIcon size="1.2em" />
+              <PlusGlassIcon size="1.4em" />
               Add rule
             </Button>
             <p className="text-sm text-muted-foreground">

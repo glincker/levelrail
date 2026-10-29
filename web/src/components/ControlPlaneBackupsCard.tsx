@@ -92,7 +92,7 @@ function BackupRow({
           }}
         >
           <BadgeCheckGlassIcon
-            className="size-4 text-tone-success"
+            className="size-5 text-tone-success"
             aria-hidden="true"
           />
           {verify.isPending ? 'Verifying...' : 'Verify'}
@@ -105,7 +105,7 @@ function BackupRow({
             <a href={controlPlaneBackupDownloadUrl(backup.name)} download />
           }
         >
-          <DownloadGlassIcon className="size-4" aria-hidden="true" />
+          <DownloadGlassIcon className="size-5" aria-hidden="true" />
           Download
         </Button>
         <Button
@@ -115,7 +115,7 @@ function BackupRow({
             onDelete(backup.name)
           }}
         >
-          <TrashGlassIcon className="size-4" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           Delete
         </Button>
       </div>
@@ -192,7 +192,7 @@ export function ControlPlaneBackupsCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <DatabaseGlassIcon className="size-4.5" />
+              <DatabaseGlassIcon className="size-5" />
             </div>
             <div>
               <CardTitle>Control plane backups</CardTitle>
@@ -225,7 +225,7 @@ export function ControlPlaneBackupsCard() {
       <CardContent className="space-y-3">
         <Banner
           variant="info"
-          icon={<KeyGlassIcon size="1.2em" />}
+          icon={<KeyGlassIcon size="1.4em" />}
           title="The master key is not included in a backup"
         >
           Secrets in the snapshot are encrypted with it, so a restore without

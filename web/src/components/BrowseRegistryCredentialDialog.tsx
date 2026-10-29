@@ -41,7 +41,7 @@ export function BrowseRegistryCredentialDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <FolderGlassIcon className="size-4" aria-hidden="true" />
+        <FolderGlassIcon className="size-5" aria-hidden="true" />
         Browse
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -107,7 +107,7 @@ export function BrowseRegistryCredentialDialog({
                     className="flex items-center gap-1.5 truncate rounded px-2 py-1 font-mono text-sm text-muted-foreground"
                   >
                     <TagGlassIcon
-                      className="size-3.5 shrink-0"
+                      className="size-4.5 shrink-0"
                       aria-hidden="true"
                     />
                     {tag}

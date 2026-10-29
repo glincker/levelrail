@@ -102,9 +102,9 @@ function DnsRecordRow({ label, value }: { label: string; value: string }) {
         aria-label={copied ? `${label} copied` : `Copy ${label}`}
       >
         {copied ? (
-          <CheckGlassIcon className="size-4" />
+          <CheckGlassIcon className="size-5" />
         ) : (
-          <CopyGlassIcon className="size-4" />
+          <CopyGlassIcon className="size-5" />
         )}
       </Button>
     </div>
@@ -308,7 +308,7 @@ export function DomainCheckPanel({
           disabled={isFetching}
         >
           <RefreshCwGlassIcon
-            className={isFetching ? 'size-4 animate-spin' : 'size-4'}
+            className={isFetching ? 'size-5 animate-spin' : 'size-5'}
           />
           {isFetching ? t('dnsCheck.checking') : 'Check now'}
         </Button>

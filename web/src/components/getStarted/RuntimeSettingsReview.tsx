@@ -27,7 +27,7 @@ export function RuntimeSettingsReview() {
     >
       <div className="flex items-start gap-3">
         <ShieldCheckGlassIcon
-          className="mt-0.5 size-5.5 shrink-0 text-tone-success"
+          className="mt-0.5 size-6 shrink-0 text-tone-success"
           aria-hidden="true"
         />
         <div className="min-w-0 space-y-1">

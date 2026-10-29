@@ -88,7 +88,7 @@ export function PlacementCard({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="space-y-2">
               <p>
@@ -116,7 +116,7 @@ export function PlacementCard({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="space-y-1">
               <p className="font-medium">{t('placement.domainWarnings')}</p>
@@ -183,7 +183,7 @@ function PlacementBody({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{save.error.message}</AlertDescription>
           </Alert>

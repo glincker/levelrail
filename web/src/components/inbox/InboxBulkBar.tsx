@@ -36,7 +36,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         disabled={p.busy}
         onClick={p.onArchive}
       >
-        <ArchiveGlassIcon size="1.2em" />
+        <ArchiveGlassIcon size="1.4em" />
         {t(p.archivedView ? 'page.restore' : 'page.archive')}
       </Button>
       <Button
@@ -46,7 +46,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         disabled={p.busy}
         onClick={p.onMarkRead}
       >
-        <CheckGlassIcon size="1.2em" />
+        <CheckGlassIcon size="1.4em" />
         {t('markRead')}
       </Button>
       <Button
@@ -57,7 +57,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         title={p.canDelete ? undefined : t('bulk.deleteBlocked')}
         onClick={p.onDelete}
       >
-        <TrashGlassIcon size="1.2em" />
+        <TrashGlassIcon size="1.4em" />
         {t('bulk.delete')}
       </Button>
       <Button
@@ -67,7 +67,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         className="ml-auto"
         onClick={p.onClear}
       >
-        <XGlassIcon size="1.2em" />
+        <XGlassIcon size="1.4em" />
         {t('bulk.clear')}
       </Button>
     </div>

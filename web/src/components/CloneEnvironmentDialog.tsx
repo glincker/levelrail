@@ -145,7 +145,7 @@ export function CloneEnvironmentDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <CopyGlassIcon className="size-4" aria-hidden="true" />
+        <CopyGlassIcon className="size-5" aria-hidden="true" />
         Clone environment...
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
@@ -182,7 +182,7 @@ export function CloneEnvironmentDialog({
           {newName.trim() && previewErrorMessage ? (
             <p className="flex items-start gap-1.5 text-sm text-destructive">
               <TriangleAlertGlassIcon
-                className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                className="mt-0.5 size-5 shrink-0 text-tone-warning"
                 aria-hidden="true"
               />
               {previewErrorMessage}
@@ -294,7 +294,7 @@ export function CloneEnvironmentDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription>{clone.error.message}</AlertDescription>
           </Alert>

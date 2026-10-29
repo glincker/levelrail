@@ -64,7 +64,7 @@ export function ProxyInstallPlanView({
         <Button type="button" disabled={applying} onClick={onConfirm}>
           {applying ? (
             <LoaderGlassIcon
-              size="1.2em"
+              size="1.4em"
               className="animate-spin"
               aria-hidden="true"
             />

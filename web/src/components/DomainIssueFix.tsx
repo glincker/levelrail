@@ -36,7 +36,7 @@ function SwitchToAcme({ domain }: { domain: Domain }) {
         })
       }}
     >
-      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+      <WrenchGlassIcon size="1.4em" aria-hidden="true" />
       {t('page.fix.useAcme')}
     </Button>
   )
@@ -56,7 +56,7 @@ function DomainPageLink({ domain, label }: { domain: Domain; label: string }) {
         />
       }
     >
-      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+      <WrenchGlassIcon size="1.4em" aria-hidden="true" />
       {label}
     </Button>
   )
@@ -94,7 +94,7 @@ export function DomainIssueFix({
             nativeButton={false}
             render={<Link to="/dns" />}
           >
-            <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+            <WrenchGlassIcon size="1.4em" aria-hidden="true" />
             {t('page.fix.connectDns')}
           </Button>
         </span>
@@ -113,7 +113,7 @@ export function DomainIssueFix({
                 <Link to="/apps/$name" params={{ name: domain.service_name }} />
               }
             >
-              <WrenchGlassIcon size="1.2em" aria-hidden="true" />
+              <WrenchGlassIcon size="1.4em" aria-hidden="true" />
               {t('page.fix.checkApp')}
             </Button>
           )}

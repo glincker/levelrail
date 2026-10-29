@@ -79,7 +79,7 @@ function UnderAttackPanel({
         <Alert variant="destructive">
           <ShieldAlertGlassIcon
             className="text-tone-warning"
-            size="1.2em"
+            size="1.4em"
             aria-hidden="true"
           />
           <AlertDescription>
@@ -154,7 +154,7 @@ function BotList() {
   if (error || !data) {
     return (
       <EmptyState
-        icon={<ShieldAlertGlassIcon className="size-5.5 text-tone-warning" />}
+        icon={<ShieldAlertGlassIcon className="size-6 text-tone-warning" />}
         title={t('shield.bots.failed')}
         description={error?.message ?? ''}
         action={
@@ -173,7 +173,7 @@ function BotList() {
   if (agents.length === 0) {
     return (
       <EmptyState
-        icon={<ShieldAlertGlassIcon className="size-5.5 text-tone-warning" />}
+        icon={<ShieldAlertGlassIcon className="size-6 text-tone-warning" />}
         title={t('shield.bots.emptyTitle')}
         description={t('shield.bots.emptyHelp')}
       />

@@ -119,7 +119,7 @@ function StatusIcon({ item }: { item: PostureItem }) {
   if (item.status === 'pass') {
     return (
       <CircleCheckGlassIcon
-        className="size-5.5 shrink-0 text-green-600"
+        className="size-6 shrink-0 text-green-600"
         aria-hidden="true"
       />
     )
@@ -127,19 +127,19 @@ function StatusIcon({ item }: { item: PostureItem }) {
   if (item.status === 'unknown') {
     return (
       <CircleQuestionMarkGlassIcon
-        className="size-5.5 shrink-0 text-muted-foreground"
+        className="size-6 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
     )
   }
   return item.severity === 'critical' || item.severity === 'high' ? (
     <ShieldAlertGlassIcon
-      className="size-5.5 shrink-0 text-destructive"
+      className="size-6 shrink-0 text-destructive"
       aria-hidden="true"
     />
   ) : (
     <CircleAlertGlassIcon
-      className="size-5.5 shrink-0 text-amber-600"
+      className="size-6 shrink-0 text-amber-600"
       aria-hidden="true"
     />
   )

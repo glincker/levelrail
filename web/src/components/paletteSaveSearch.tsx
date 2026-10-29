@@ -14,7 +14,7 @@ export function SaveSearchButton({ onToggle }: { onToggle: () => void }) {
       onClick={onToggle}
       className="flex items-center gap-1 rounded px-1 text-xs text-muted-foreground hover:text-foreground"
     >
-      <BookmarkGlassIcon className="size-4" aria-hidden="true" />
+      <BookmarkGlassIcon className="size-5" aria-hidden="true" />
       {t('save.button')}
     </button>
   )

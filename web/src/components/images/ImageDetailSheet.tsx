@@ -81,7 +81,7 @@ export function ImageDetailSheet({ node, image, onClose }: Props) {
                   >
                     <ShieldCheckGlassIcon
                       className="text-tone-success"
-                      size="1.2em"
+                      size="1.4em"
                       aria-hidden="true"
                     />
                     {verify.isPending

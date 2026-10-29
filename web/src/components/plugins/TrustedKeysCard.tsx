@@ -42,7 +42,7 @@ export function TrustedKeysCard() {
         {keys.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<KeyGlassIcon className="size-5.5" />}
+            icon={<KeyGlassIcon className="size-6" />}
             title={t('keys.emptyTitle')}
             description={t('keys.emptyDescription')}
           />

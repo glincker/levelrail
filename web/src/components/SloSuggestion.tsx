@@ -48,7 +48,7 @@ export function SloSuggestion({
   return (
     <Suggestion
       tone="info"
-      icon={<TargetGlassIcon size="1.2em" />}
+      icon={<TargetGlassIcon size="1.4em" />}
       title={t('slo.title', { target: DEFAULT_SLO_TARGET })}
       detail={`${t('slo.detail', { target: DEFAULT_SLO_TARGET })}${
         channelId ? '' : ` ${t('slo.noChannel')}`

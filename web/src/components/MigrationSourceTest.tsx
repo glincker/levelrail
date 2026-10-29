@@ -43,7 +43,7 @@ export function MigrationSourceTest({
             <AlertDescription className="space-y-1">
               <span className="flex items-start gap-2">
                 <CircleCheckGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-tone-success"
+                  className="mt-0.5 size-5 shrink-0 text-tone-success"
                   aria-hidden
                 />
                 {t('appImport.connect.testOk', {
@@ -76,7 +76,7 @@ export function MigrationSourceTest({
             <AlertDescription className="space-y-1 break-words">
               <span className="flex items-start gap-2">
                 <CircleXGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-tone-danger"
+                  className="mt-0.5 size-5 shrink-0 text-tone-danger"
                   aria-hidden
                 />
                 {t(

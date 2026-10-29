@@ -158,7 +158,7 @@ export function PortEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugGlassIcon className="size-4.5" />
+          <PlugGlassIcon className="size-5" />
           Port
         </CardTitle>
         <CardDescription>

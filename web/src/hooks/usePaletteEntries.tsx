@@ -120,7 +120,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
           key: `suggest-scope-${key}`,
           label: `${key}:`,
           group: 'filters',
-          icon: <FunnelGlassIcon size="1.2em" />,
+          icon: <FunnelGlassIcon size="1.4em" />,
           keepOpen: true,
           run: () => ps.setInput(`${head}${key}:`),
         }),
@@ -140,7 +140,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
             key: `suggest-value-${key}-${value}`,
             label: `${key}:${value}`,
             group: 'filters',
-            icon: <FunnelGlassIcon size="1.2em" />,
+            icon: <FunnelGlassIcon size="1.4em" />,
             keepOpen: true,
             run: () => ps.acceptScope(chip),
           })
@@ -163,9 +163,9 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
         group: 'Suggested',
         icon:
           sp.kind === 'assistant' ? (
-            <BotGlassIcon size="1.2em" />
+            <BotGlassIcon size="1.4em" />
           ) : (
-            <LayersGlassIcon size="1.2em" />
+            <LayersGlassIcon size="1.4em" />
           ),
         run: () =>
           void navigate(
@@ -224,7 +224,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
           key: `recent-search-${s}`,
           label: s,
           group: 'recentSearches',
-          icon: <RestoreGlassIcon size="1.2em" />,
+          icon: <RestoreGlassIcon size="1.4em" />,
           keepOpen: true,
           run: () => ps.applyQuery(s),
         })),

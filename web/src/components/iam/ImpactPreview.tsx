@@ -112,7 +112,7 @@ function ChangeBlock({ change }: { change: PrincipalChange }) {
         <p
           className={cn('flex items-center gap-1.5 text-xs', TONE.warning.text)}
         >
-          <ClockGlassIcon className="size-4" aria-hidden="true" />
+          <ClockGlassIcon className="size-5" aria-hidden="true" />
           {t('impact.recentlyUsed')}
         </p>
       ) : null}
@@ -161,7 +161,7 @@ export function ImpactPreview({
       ) : null}
       {data?.guard.blocked ? (
         <Alert variant="destructive">
-          <BanGlassIcon size="1.2em" />
+          <BanGlassIcon size="1.4em" />
           <AlertDescription>{t('impact.guardBlocked')}</AlertDescription>
         </Alert>
       ) : null}

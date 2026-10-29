@@ -35,7 +35,7 @@ export function DeployLiveStatus({
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="warning">{t('live.polling')}</Badge>
         <Button variant="outline" size="sm" onClick={onRetry}>
-          <RotateCwGlassIcon className="size-4" data-icon="inline-start" />
+          <RotateCwGlassIcon className="size-5" data-icon="inline-start" />
           {t('live.retryNow')}
         </Button>
       </div>
@@ -60,7 +60,7 @@ export function DeployLiveStatus({
           {`, ${lastEvent}`}
         </Badge>
         <Button variant="outline" size="sm" onClick={onRetry}>
-          <RotateCwGlassIcon className="size-4" data-icon="inline-start" />
+          <RotateCwGlassIcon className="size-5" data-icon="inline-start" />
           {t('live.retryNow')}
         </Button>
       </div>

@@ -61,7 +61,7 @@ export function DeployTimelinePage() {
       width="wide"
       banner={
         <PageBanner
-          icon={<RestoreGlassIcon size="1.2em" />}
+          icon={<RestoreGlassIcon size="1.4em" />}
           titleKey="deployTimeline:title"
           descriptionKey={
             isEmpty
@@ -95,7 +95,7 @@ export function DeployTimelinePage() {
         ) : query.isError ? (
           <EmptyState
             icon={
-              <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+              <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
             }
             title={t('error.title')}
             description={query.error.message}

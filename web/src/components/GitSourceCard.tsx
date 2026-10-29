@@ -628,21 +628,21 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitBranchGlassIcon className="size-4.5 text-muted-foreground" />
+          <GitBranchGlassIcon className="size-5 text-muted-foreground" />
           Git source
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {query.isLoading ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <LoaderGlassIcon className="size-4.5 animate-spin" />
+            <LoaderGlassIcon className="size-5 animate-spin" />
             Loading...
           </p>
         ) : null}
 
         {otherError ? (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-destructive">
-            <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
+            <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
             <p className="text-sm">{otherError.message}</p>
           </div>
         ) : null}
@@ -651,7 +651,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
           <div className="space-y-3">
             {webhookAutoRegistered ? (
               <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
-                <CheckGlassIcon className="mt-0.5 size-4.5 shrink-0" />
+                <CheckGlassIcon className="mt-0.5 size-5 shrink-0" />
                 <p className="text-sm">
                   Git source connected. A push webhook was registered
                   automatically, no manual setup needed.
@@ -659,7 +659,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               </div>
             ) : (
               <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-                <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
+                <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
                 <p className="text-sm">
                   {webhookError ? (
                     webhookError
@@ -698,9 +698,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       }}
                     >
                       {urlCopied ? (
-                        <CheckGlassIcon size="1.2em" />
+                        <CheckGlassIcon size="1.4em" />
                       ) : (
-                        <CopyGlassIcon size="1.2em" />
+                        <CopyGlassIcon size="1.4em" />
                       )}
                       {urlCopied ? 'Copied' : 'Copy'}
                     </Button>
@@ -732,9 +732,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       }}
                     >
                       {secretCopied ? (
-                        <CheckGlassIcon size="1.2em" />
+                        <CheckGlassIcon size="1.4em" />
                       ) : (
-                        <CopyGlassIcon size="1.2em" />
+                        <CopyGlassIcon size="1.4em" />
                       )}
                       {secretCopied ? 'Copied' : 'Copy'}
                     </Button>
@@ -1020,7 +1020,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                         }}
                         aria-label="Remove additional service"
                       >
-                        <TrashGlassIcon size="1.2em" />
+                        <TrashGlassIcon size="1.4em" />
                       </Button>
                     </div>
                   ))}
@@ -1031,7 +1031,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                     disabled={connectMutation.isPending}
                     onClick={addAdditionalServiceRow}
                   >
-                    <PlusGlassIcon size="1.2em" />
+                    <PlusGlassIcon size="1.4em" />
                     Add service
                   </Button>
                 </div>
@@ -1148,7 +1148,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                             }}
                             aria-label="Remove service"
                           >
-                            <TrashGlassIcon size="1.2em" />
+                            <TrashGlassIcon size="1.4em" />
                           </Button>
                         </div>
                         {isDuplicate ? (
@@ -1182,7 +1182,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                     disabled={connectMutation.isPending}
                     onClick={addServiceRow}
                   >
-                    <PlusGlassIcon size="1.2em" />
+                    <PlusGlassIcon size="1.4em" />
                     Add service
                   </Button>
                   {specValidation.isFetching ? (
@@ -1222,7 +1222,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 onClick={submit}
               >
                 {connectMutation.isPending ? (
-                  <LoaderGlassIcon className="size-4.5 animate-spin" />
+                  <LoaderGlassIcon className="size-5 animate-spin" />
                 ) : null}
                 {notConnected ? 'Connect' : 'Save'}
               </Button>
@@ -1308,9 +1308,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   }}
                 >
                   {urlCopied ? (
-                    <CheckGlassIcon size="1.2em" />
+                    <CheckGlassIcon size="1.4em" />
                   ) : (
-                    <CopyGlassIcon size="1.2em" />
+                    <CopyGlassIcon size="1.4em" />
                   )}
                   {urlCopied ? 'Copied' : 'Copy'}
                 </Button>
@@ -1342,7 +1342,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 onClick={disconnect}
               >
                 {deleteGitSource.isPending ? (
-                  <LoaderGlassIcon className="size-4.5 animate-spin" />
+                  <LoaderGlassIcon className="size-5 animate-spin" />
                 ) : null}
                 Disconnect
               </Button>

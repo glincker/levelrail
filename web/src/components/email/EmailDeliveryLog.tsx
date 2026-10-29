@@ -265,7 +265,7 @@ export function EmailDeliveryLog() {
 
       {!query.isPending && rows.length === 0 && !query.isError ? (
         <EmptyState
-          icon={<FileSearchGlassIcon className="size-5.5" />}
+          icon={<FileSearchGlassIcon className="size-6" />}
           title={t('emailDelivery.log.emptyTitle')}
           description={t('emailDelivery.log.emptyBody')}
         />

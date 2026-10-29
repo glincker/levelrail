@@ -104,7 +104,7 @@ function DomainsPage() {
         setAddOpen(true)
       }}
     >
-      <PlusGlassIcon size="1.2em" />
+      <PlusGlassIcon size="1.4em" />
       {t('page.add')}
     </Button>
   )
@@ -115,7 +115,7 @@ function DomainsPage() {
       description={t('page.description')}
       banner={
         <PageBanner
-          icon={<GlobeGlassIcon size="1.2em" />}
+          icon={<GlobeGlassIcon size="1.4em" />}
           titleKey="domains:page.title"
           descriptionKey={
             noDomains
@@ -201,7 +201,7 @@ function DomainsError({ error, reset }: ErrorComponentProps) {
   return (
     <PageTemplate title={t('page.title')}>
       <EmptyState
-        icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
+        icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
         title={t('page.error.title')}
         description={routeErrorMessage(error)}
         action={

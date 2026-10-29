@@ -23,7 +23,7 @@ export function AppQuickActions({ app }: { app: AppListEntry }) {
           }
           nativeButton={false}
         >
-          <ExternalLinkGlassIcon size="1.2em" />
+          <ExternalLinkGlassIcon size="1.4em" />
         </Button>
       ) : null}
       <Button
@@ -33,7 +33,7 @@ export function AppQuickActions({ app }: { app: AppListEntry }) {
         disabled={isPending}
         onClick={redeploy}
       >
-        <RocketGlassIcon size="1.2em" />
+        <RocketGlassIcon size="1.4em" />
       </Button>
       <Button
         size="icon-sm"
@@ -42,7 +42,7 @@ export function AppQuickActions({ app }: { app: AppListEntry }) {
         render={<Link to="/apps/$name/logs" params={{ name: app.name }} />}
         nativeButton={false}
       >
-        <TerminalGlassIcon size="1.2em" />
+        <TerminalGlassIcon size="1.4em" />
       </Button>
     </span>
   )

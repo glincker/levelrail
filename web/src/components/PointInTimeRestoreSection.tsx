@@ -133,7 +133,7 @@ function PointInTimeRestoreCard({
             </p>
             <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
               <InfoGlassIcon
-                className="mt-0.5 size-4 shrink-0 text-tone-info"
+                className="mt-0.5 size-5 shrink-0 text-tone-info"
                 aria-hidden="true"
               />
               Only recoverable going forward from the moment you enable this.
@@ -330,14 +330,14 @@ function PITRRestoreDialog({
       <DialogTrigger
         render={<Button variant="outline" size="sm" disabled={!canRestore} />}
       >
-        <RestoreGlassIcon className="size-4" aria-hidden="true" />
+        <RestoreGlassIcon className="size-5" aria-hidden="true" />
         Restore to timestamp
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Restore &ldquo;{databaseName}&rdquo; to a point in time?

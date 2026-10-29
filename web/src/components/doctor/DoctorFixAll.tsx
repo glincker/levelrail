@@ -58,7 +58,7 @@ export function DoctorFixAll({ onDone }: { onDone: () => void }) {
             setOpen(true)
           }}
         >
-          <WrenchGlassIcon size="1.2em" />
+          <WrenchGlassIcon size="1.4em" />
           {t('doctorPage.fixAll', { count: safe.length })}
         </Button>
       ) : null}

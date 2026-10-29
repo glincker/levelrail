@@ -52,7 +52,7 @@ export function ResolvedLoginControls({
             })
           }}
         >
-          <XGlassIcon size="1.2em" />
+          <XGlassIcon size="1.4em" />
         </Button>
       </div>
       <div className="w-full">

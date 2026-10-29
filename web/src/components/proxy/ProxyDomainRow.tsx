@@ -93,7 +93,7 @@ export function ProxyVerifyButton({ row }: { row: ProxyDomain }) {
     >
       {verify.isPending ? (
         <LoaderGlassIcon
-          size="1.2em"
+          size="1.4em"
           className="animate-spin"
           aria-hidden="true"
         />

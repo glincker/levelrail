@@ -41,7 +41,7 @@ export function useTemplatePaletteItems(
       label: tpl.name,
       subtitle: tpl.slogan,
       group: 'Templates',
-      icon: <LayoutGridGlassIcon size="1.2em" />,
+      icon: <LayoutGridGlassIcon size="1.4em" />,
       keywords: `${tpl.category} ${tpl.id} ${tpl.slogan}`,
       run: () => void navigate({ to: '/deploy', search: { template: tpl.id } }),
       preview: {

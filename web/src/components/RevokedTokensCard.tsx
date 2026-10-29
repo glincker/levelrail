@@ -52,7 +52,7 @@ export function RevokedTokensCard({ tokens }: { tokens: TokenResource[] }) {
           {t('tokensPage.revoked.title')}
           <Badge variant="muted">{revoked.length}</Badge>
         </span>
-        <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
       </CollapsibleTrigger>
       <CollapsiblePanel className="space-y-3 pt-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -87,7 +87,7 @@ export function RevokedTokensCard({ tokens }: { tokens: TokenResource[] }) {
                 setConfirming(true)
               }}
             >
-              <TrashGlassIcon size="1.2em" aria-hidden="true" />
+              <TrashGlassIcon size="1.4em" aria-hidden="true" />
               {t('tokensPage.revoked.cleanNow')}
             </Button>
           ) : null}

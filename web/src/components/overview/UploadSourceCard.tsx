@@ -30,7 +30,7 @@ export function UploadSourceCard({
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <UploadGlassIcon className="size-4.5" aria-hidden="true" />
+          <UploadGlassIcon className="size-5" aria-hidden="true" />
           {t('uploadSource.title')}
         </CardTitle>
       </CardHeader>

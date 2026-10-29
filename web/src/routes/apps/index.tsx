@@ -197,11 +197,11 @@ function AppListPage() {
         render={<Link to="/databases" />}
         nativeButton={false}
       >
-        <DatabaseGlassIcon size="1.2em" />
+        <DatabaseGlassIcon size="1.4em" />
         {t('appsList.newDatabase', { defaultValue: 'New database' })}
       </Button>
       <Button size="sm" render={<Link to="/apps/new" />} nativeButton={false}>
-        <PlusGlassIcon size="1.2em" />
+        <PlusGlassIcon size="1.4em" />
         {t('appsList.newApp', { defaultValue: 'New app' })}
       </Button>
     </>
@@ -214,7 +214,7 @@ function AppListPage() {
       actions={headerActions}
       banner={
         <PageBanner
-          icon={<PackageGlassIcon size="1.2em" />}
+          icon={<PackageGlassIcon size="1.4em" />}
           titleKey="common:appsList.title"
           descriptionKey={
             noApps
@@ -252,7 +252,7 @@ function AppListPage() {
       ) : filteredApps.length === 0 ? (
         <EmptyState
           illustration="chart"
-          icon={<FunnelGlassIcon className="size-7" />}
+          icon={<FunnelGlassIcon className="size-8" />}
           title={t('appsList.noMatchTitle', { defaultValue: 'No apps match' })}
           description={t('appsList.noMatchBody', {
             defaultValue:

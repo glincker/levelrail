@@ -69,7 +69,7 @@ export function FeaturedTemplates() {
             {list.length > 0
               ? t('source.templates.seeAll', { count: list.length })
               : t('source.templates.browse')}
-            <ArrowRightGlassIcon className="size-4" aria-hidden="true" />
+            <ArrowRightGlassIcon className="size-5" aria-hidden="true" />
           </Link>
         }
       >
@@ -79,7 +79,7 @@ export function FeaturedTemplates() {
         <>
           <div className="relative">
             <SearchGlassIcon
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input

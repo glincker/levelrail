@@ -57,7 +57,7 @@ export function CloneRestoreDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <CopyGlassIcon className="size-4" aria-hidden="true" />
+        <CopyGlassIcon className="size-5" aria-hidden="true" />
         Restore as new
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

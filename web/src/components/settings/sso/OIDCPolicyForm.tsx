@@ -189,7 +189,7 @@ export function OIDCPolicyForm({
             variant="outline"
             render={<a href={ssoTestStartURL(policy.provider)} />}
           >
-            <FlaskConicalGlassIcon size="1.2em" aria-hidden="true" />
+            <FlaskConicalGlassIcon size="1.4em" aria-hidden="true" />
             {t('oidc.test.button')}
           </Button>
         ) : null}

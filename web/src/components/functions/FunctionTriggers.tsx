@@ -54,7 +54,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
     <div className="space-y-4 rounded-lg border p-4">
       <div className="space-y-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
-          <LinkGlassIcon size="1.2em" aria-hidden="true" />
+          <LinkGlassIcon size="1.4em" aria-hidden="true" />
           {t('triggers.webhook.title')}
         </h3>
         {hook ? (
@@ -77,7 +77,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
                   copy(fullUrl)
                 }}
               >
-                <CopyGlassIcon size="1.2em" />
+                <CopyGlassIcon size="1.4em" />
                 {t('templates.copy')}
               </Button>
             </div>
@@ -98,7 +98,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
                       copy(secret)
                     }}
                   >
-                    <CopyGlassIcon size="1.2em" />
+                    <CopyGlassIcon size="1.4em" />
                     {t('templates.copy')}
                   </Button>
                 </div>
@@ -117,7 +117,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
                   save(true)
                 }}
               >
-                <KeyGlassIcon size="1.2em" />
+                <KeyGlassIcon size="1.4em" />
                 {t('triggers.webhook.rotate')}
               </Button>
               <Button

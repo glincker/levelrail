@@ -43,7 +43,7 @@ export function ModelDetailPage({
         to="/models"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeftGlassIcon aria-hidden="true" className="size-4" />
+        <ArrowLeftGlassIcon aria-hidden="true" className="size-5" />
         AI models
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -43,7 +43,7 @@ export function DataExportCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.2em"
+              size="1.4em"
             />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>
@@ -67,7 +67,7 @@ export function DataExportCard() {
               href={accountExportDownloadUrl(jobId)}
               download
             >
-              <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+              <DownloadGlassIcon size="1.4em" aria-hidden="true" />
               {t('export.download')}
             </a>
             <Button type="button" size="sm" variant="outline" onClick={begin}>

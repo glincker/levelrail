@@ -64,7 +64,7 @@ export function SelectedAppRow({
           className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={onClear}
         >
-          <XGlassIcon className="size-3.5" />
+          <XGlassIcon className="size-4.5" />
         </button>
       </Badge>
     </div>
@@ -316,7 +316,7 @@ export function QuickActions({
             variant="destructive"
             onClick={onStop}
           >
-            <SquareGlassIcon size="1.2em" />
+            <SquareGlassIcon size="1.4em" />
             {t('cliConsole.quick.stop')}
           </Button>
         ) : null}

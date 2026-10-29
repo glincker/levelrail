@@ -16,19 +16,19 @@ function StepIcon({ state }: { state: ControlPlaneRestoreStep['state'] }) {
   if (state === 'done') {
     return (
       <CircleCheckGlassIcon
-        className="size-4.5 text-success"
+        className="size-5 text-success"
         aria-hidden="true"
       />
     )
   }
   if (state === 'blocked') {
     return (
-      <BanGlassIcon className="size-4.5 text-destructive" aria-hidden="true" />
+      <BanGlassIcon className="size-5 text-destructive" aria-hidden="true" />
     )
   }
   return (
     <CircleGlassIcon
-      className="size-4.5 text-muted-foreground"
+      className="size-5 text-muted-foreground"
       aria-hidden="true"
     />
   )

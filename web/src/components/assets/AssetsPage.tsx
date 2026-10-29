@@ -20,7 +20,7 @@ export function AssetsPage({
 
   return (
     <PageTemplate
-      icon={<ImagesGlassIcon size="1.2em" />}
+      icon={<ImagesGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       width="wide"
@@ -40,7 +40,7 @@ export function AssetsPage({
       ) : buckets.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<ImagesGlassIcon className="size-5.5" />}
+          icon={<ImagesGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />

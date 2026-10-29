@@ -248,7 +248,7 @@ export function CleanupTargetRow({
                       aria-label={t('target.destructive')}
                       className="inline-flex size-5 items-center justify-center rounded text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <TrashGlassIcon className="size-4" aria-hidden="true" />
+                      <TrashGlassIcon className="size-5" aria-hidden="true" />
                     </span>
                   }
                 />
@@ -318,7 +318,7 @@ export function CleanupTargetRow({
               render={<Link to="/settings/cleanup" search={{ tab: 'disk' }} />}
             >
               {t('target.readThroughAction')}
-              <ExternalLinkGlassIcon size="1.2em" aria-hidden="true" />
+              <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           </div>
         ) : (
@@ -347,7 +347,7 @@ export function CleanupTargetRow({
                           className="inline-flex h-6 items-center gap-1 rounded text-xs text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <LockGlassIcon
-                            className="size-3.5"
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                           {target.floor}
@@ -379,7 +379,7 @@ export function CleanupTargetRow({
                   fetchPreview()
                 }}
               >
-                <EyeGlassIcon size="1.2em" aria-hidden="true" />
+                <EyeGlassIcon size="1.4em" aria-hidden="true" />
                 {preview.isPending
                   ? t('target.previewing')
                   : t('target.preview')}
@@ -393,7 +393,7 @@ export function CleanupTargetRow({
                 }
                 onClick={startClean}
               >
-                <TrashGlassIcon size="1.2em" aria-hidden="true" />
+                <TrashGlassIcon size="1.4em" aria-hidden="true" />
                 {t('target.cleanNow')}
               </Button>
             </div>
@@ -440,14 +440,14 @@ export function CleanupTargetRow({
                 setImpact(null)
               }}
             >
-              <XGlassIcon size="1.2em" aria-hidden="true" />
+              <XGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           </div>
         ) : null}
         {previewError ? (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
             <CircleAlertGlassIcon
-              className="size-4.5 text-tone-danger"
+              className="size-5 text-tone-danger"
               aria-hidden="true"
             />
             {t('impact.error', { message: previewError })}
@@ -465,12 +465,12 @@ export function CleanupTargetRow({
             <p className="flex items-start gap-1.5 text-sm text-foreground">
               {result.error ? (
                 <CircleAlertGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-tone-danger"
+                  className="mt-0.5 size-5 shrink-0 text-tone-danger"
                   aria-hidden="true"
                 />
               ) : (
                 <CircleCheckGlassIcon
-                  className="mt-0.5 size-4.5 shrink-0 text-tone-success"
+                  className="mt-0.5 size-5 shrink-0 text-tone-success"
                   aria-hidden="true"
                 />
               )}

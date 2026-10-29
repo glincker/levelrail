@@ -69,7 +69,7 @@ export function IntegrityCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <DatabaseGlassIcon size="1.2em" />
+          <DatabaseGlassIcon size="1.4em" />
           {t('controlPlaneHealth.integrity.title')}
           <Badge variant={data.status.healthy ? 'success' : 'destructive'}>
             {t(

@@ -37,7 +37,7 @@ function ProxyPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<ArrowLeftRightGlassIcon size="1.2em" />}
+        icon={<ArrowLeftRightGlassIcon size="1.4em" />}
         titleKey="networkProxy:page.title"
         descriptionKey={
           empty

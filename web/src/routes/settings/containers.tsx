@@ -61,9 +61,9 @@ const COLUMNS: ResponsiveColumn<ContainerResource>[] = [
     cell: (c) => (
       <Badge variant={c.running ? 'success' : 'muted'}>
         {c.running ? (
-          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
         ) : (
-          <CircleMinusGlassIcon size="1.2em" />
+          <CircleMinusGlassIcon size="1.4em" />
         )}
         {c.running ? 'Running' : 'Stopped'}
       </Badge>
@@ -114,7 +114,7 @@ function ContainersPage() {
 
   return (
     <PageTemplate
-      icon={<LayersGlassIcon size="1.2em" />}
+      icon={<LayersGlassIcon size="1.4em" />}
       title={t('containersPage.title')}
       description={t('containersPage.description')}
     >
@@ -125,13 +125,13 @@ function ContainersPage() {
       {isError ? (
         error instanceof ApiError && error.status === 501 ? (
           <Alert>
-            <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+            <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
             <AlertTitle>{t('containersPage.notAvailable')}</AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
         ) : (
           <Alert variant="destructive">
-            <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+            <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
             <AlertTitle>{t('containersPage.listFailed')}</AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
@@ -142,7 +142,7 @@ function ContainersPage() {
         containers.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<BoxGlassIcon className="size-5.5" />}
+            icon={<BoxGlassIcon className="size-6" />}
             title={t('containersPage.emptyTitle')}
             description={t('containersPage.emptyDescription')}
           />

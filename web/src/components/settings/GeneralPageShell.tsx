@@ -14,7 +14,7 @@ export function GeneralPageShell({ children }: { children: ReactNode }) {
 
   return (
     <PageTemplate
-      icon={<SettingsGlassIcon size="1.2em" />}
+      icon={<SettingsGlassIcon size="1.4em" />}
       eyebrow={t('generalPage.eyebrow')}
       title={t('generalPage.title')}
       description={t('generalPage.description')}

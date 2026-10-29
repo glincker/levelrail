@@ -44,7 +44,7 @@ export function BuildLogHints({ lines }: { lines: LogLine[] }) {
     <div className="space-y-2">
       {matches.map((m) => (
         <Alert key={m.id}>
-          <LightbulbGlassIcon size="1.2em" />
+          <LightbulbGlassIcon size="1.4em" />
           <AlertTitle>{m.title}</AlertTitle>
           <AlertDescription>{m.hint}</AlertDescription>
         </Alert>

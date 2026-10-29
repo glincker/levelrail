@@ -51,12 +51,12 @@ export function ProbePanel({ bucketId }: Readonly<{ bucketId: string }>) {
             {result.ok ? (
               <CircleCheckGlassIcon
                 aria-hidden="true"
-                className="size-4.5 text-tone-success"
+                className="size-5 text-tone-success"
               />
             ) : (
               <CircleXGlassIcon
                 aria-hidden="true"
-                className="size-4.5 text-destructive"
+                className="size-5 text-destructive"
               />
             )}
             {result.ok ? t('probe.ok') : (result.message ?? t('probe.failed'))}
@@ -81,7 +81,7 @@ export function ProbePanel({ bucketId }: Readonly<{ bucketId: string }>) {
             >
               <TriangleAlertGlassIcon
                 aria-hidden="true"
-                className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                className="mt-0.5 size-5 shrink-0 text-tone-warning"
               />
               <p className="min-w-0 flex-1">{w.message}</p>
               {w.fix === 'fix_cors' ? (

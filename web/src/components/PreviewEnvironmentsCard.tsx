@@ -109,7 +109,7 @@ function EphemeralDatabaseRow({
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5">
       <div className="flex min-w-0 items-center gap-2">
         <DatabaseGlassIcon
-          className="size-4 shrink-0 text-muted-foreground"
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="truncate font-mono text-xs text-foreground">
@@ -149,7 +149,7 @@ function DatabaseIsolationRow({
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5">
       <div className="flex min-w-0 items-center gap-2">
         <ShieldCheckGlassIcon
-          className="size-4 shrink-0 text-muted-foreground"
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="truncate font-mono text-xs text-foreground">
@@ -272,7 +272,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <GitPullRequestGlassIcon className="size-4.5 text-muted-foreground" />
+            <GitPullRequestGlassIcon className="size-5 text-muted-foreground" />
             Preview environments
           </CardTitle>
           {hasStale ? (
@@ -284,7 +284,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
               onClick={sweepStale}
               title="Tears down every stale preview across all apps, not just this one."
             >
-              <BroomGlassIcon size="1.2em" />
+              <BroomGlassIcon size="1.4em" />
               Sweep stale previews
             </Button>
           ) : null}
@@ -338,7 +338,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
         {enabled ? (
           previews.isLoading ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <LoaderGlassIcon className="size-4.5 animate-spin" />
+              <LoaderGlassIcon className="size-5 animate-spin" />
               Loading previews...
             </p>
           ) : previews.data && previews.data.length > 0 ? (
@@ -357,7 +357,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       {preview.is_fork ? (
                         <Badge variant="muted" className="rounded-full">
                           <GitForkGlassIcon
-                            className="size-3.5"
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                           Fork
@@ -366,7 +366,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       {preview.stale ? (
                         <Badge variant="warning" className="rounded-full">
                           <ClockGlassIcon
-                            className="size-3.5"
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                           Stale
@@ -387,7 +387,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                             className="inline-flex items-center gap-1 font-mono text-foreground hover:underline"
                           >
                             {preview.domain}
-                            <ExternalLinkGlassIcon className="size-3.5" />
+                            <ExternalLinkGlassIcon className="size-4.5" />
                           </a>
                         </>
                       ) : null}
@@ -450,7 +450,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                         tearDown(preview.pr_number)
                       }}
                     >
-                      <TrashGlassIcon size="1.2em" />
+                      <TrashGlassIcon size="1.4em" />
                       Tear down
                     </Button>
                   </div>

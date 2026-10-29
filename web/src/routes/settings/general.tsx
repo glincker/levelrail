@@ -99,12 +99,12 @@ function ConfiguredRow({
     <SettingRow title={label}>
       {configured ? (
         <span className="inline-flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
-          <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+          <CircleCheckGlassIcon className="size-5 text-tone-success" />
           {trueLabel}
         </span>
       ) : (
         <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-          <CircleXGlassIcon className="size-4.5 text-tone-danger" />
+          <CircleXGlassIcon className="size-5 text-tone-danger" />
           {falseLabel}
         </span>
       )}
@@ -126,7 +126,7 @@ function GeneralSettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                <SettingsGlassIcon className="size-4.5" />
+                <SettingsGlassIcon className="size-5" />
               </div>
               <div>
                 <CardTitle>{displayName}</CardTitle>
@@ -167,7 +167,7 @@ function GeneralSettingsPage() {
                     render={<a href={`mailto:${brand.SupportEmail}`} />}
                     nativeButton={false}
                   >
-                    <MailGlassIcon size="1.2em" />
+                    <MailGlassIcon size="1.4em" />
                     <span>{brand.SupportEmail}</span>
                   </Button>
                 ) : null}
@@ -184,7 +184,7 @@ function GeneralSettingsPage() {
                     }
                     nativeButton={false}
                   >
-                    <BookOpenGlassIcon size="1.2em" />
+                    <BookOpenGlassIcon size="1.4em" />
                     <span>Documentation</span>
                   </Button>
                 ) : null}

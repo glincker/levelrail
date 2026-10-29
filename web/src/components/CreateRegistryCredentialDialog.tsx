@@ -186,7 +186,7 @@ export function CreateRegistryCredentialDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <PackageGlassIcon className="size-4.5 text-muted-foreground" />
+                <PackageGlassIcon className="size-5 text-muted-foreground" />
                 Add credential
               </DialogTitle>
             </DialogHeader>
@@ -215,7 +215,7 @@ export function CreateRegistryCredentialDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <PackageGlassIcon className="size-4.5 text-muted-foreground" />
+                <PackageGlassIcon className="size-5 text-muted-foreground" />
                 Add credential
               </DialogTitle>
               <DialogDescription>
@@ -363,9 +363,9 @@ export function CreateRegistryCredentialDialog() {
                     className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                   >
                     {revealPassword ? (
-                      <EyeOffGlassIcon className="size-4.5" />
+                      <EyeOffGlassIcon className="size-5" />
                     ) : (
-                      <EyeGlassIcon className="size-4.5" />
+                      <EyeGlassIcon className="size-5" />
                     )}
                   </button>
                 </div>
@@ -394,7 +394,7 @@ export function CreateRegistryCredentialDialog() {
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.2em"
+                    size="1.4em"
                   />
                   <AlertDescription>{generalError}</AlertDescription>
                 </Alert>

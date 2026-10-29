@@ -250,7 +250,7 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <ActivityGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Node metrics
@@ -285,7 +285,7 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
       </div>
 
       <Alert className="mt-4">
-        <InfoGlassIcon className="text-tone-info" size="1.2em" />
+        <InfoGlassIcon className="text-tone-info" size="1.4em" />
         <AlertTitle>What this is, and isn't</AlertTitle>
         <AlertDescription>
           <p>

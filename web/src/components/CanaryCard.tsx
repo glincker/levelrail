@@ -82,7 +82,7 @@ export function CanaryCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitForkGlassIcon className="size-4.5 text-muted-foreground" />
+          <GitForkGlassIcon className="size-5 text-muted-foreground" />
           {t('canary.title')}
           <InfoTip label={t('canary.infoTipLabel')}>
             {t('canary.description')}

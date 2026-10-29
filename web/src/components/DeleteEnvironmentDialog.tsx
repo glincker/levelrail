@@ -46,13 +46,13 @@ export function DeleteEnvironmentDialog({
           <Button variant="ghost" size="sm" aria-label={`Delete ${name}`} />
         }
       >
-        <TrashGlassIcon className="size-4" aria-hidden="true" />
+        <TrashGlassIcon className="size-5" aria-hidden="true" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-5 text-tone-warning"
               aria-hidden="true"
             />
             Delete &ldquo;{name}&rdquo;?

@@ -124,7 +124,7 @@ export function SupplyChainSettingsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckGlassIcon className="size-4.5 text-muted-foreground" />
+          <ShieldCheckGlassIcon className="size-5 text-muted-foreground" />
           Supply chain
           <InfoTip label="About vulnerability scanning">
             Each Dockerfile build can record a software bill of materials. When

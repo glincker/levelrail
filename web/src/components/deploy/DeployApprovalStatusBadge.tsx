@@ -16,7 +16,7 @@ export function DeployApprovalStatusBadge({ status }: { status: string }) {
   if (!isKnownDeployApprovalStatus(status)) {
     return (
       <Badge variant="muted" data-status={status}>
-        <CircleMinusGlassIcon className="size-3.5" aria-hidden="true" />
+        <CircleMinusGlassIcon className="size-4.5" aria-hidden="true" />
         {status}
       </Badge>
     )
@@ -26,7 +26,7 @@ export function DeployApprovalStatusBadge({ status }: { status: string }) {
     case 'pending':
       return (
         <Badge variant="warning" data-status={status}>
-          <CountdownGlassIcon className="size-3.5" aria-hidden="true" />
+          <CountdownGlassIcon className="size-4.5" aria-hidden="true" />
           {label}
         </Badge>
       )
@@ -34,7 +34,7 @@ export function DeployApprovalStatusBadge({ status }: { status: string }) {
       return (
         <Badge variant="muted" data-status={status}>
           <LoaderCircleGlassIcon
-            className="size-3.5 animate-spin motion-reduce:animate-none"
+            className="size-4.5 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
           {label}
@@ -44,7 +44,7 @@ export function DeployApprovalStatusBadge({ status }: { status: string }) {
       return (
         <Badge variant="success" data-status={status}>
           <CircleCheckGlassIcon
-            className="size-3.5 text-tone-success"
+            className="size-4.5 text-tone-success"
             aria-hidden="true"
           />
           {label}
@@ -54,7 +54,7 @@ export function DeployApprovalStatusBadge({ status }: { status: string }) {
       return (
         <Badge variant="destructive" data-status={status}>
           <CircleXGlassIcon
-            className="size-3.5 text-tone-danger"
+            className="size-4.5 text-tone-danger"
             aria-hidden="true"
           />
           {label}
@@ -63,7 +63,7 @@ export function DeployApprovalStatusBadge({ status }: { status: string }) {
     case 'expired':
       return (
         <Badge variant="muted" data-status={status}>
-          <CircleMinusGlassIcon className="size-3.5" aria-hidden="true" />
+          <CircleMinusGlassIcon className="size-4.5" aria-hidden="true" />
           {label}
         </Badge>
       )

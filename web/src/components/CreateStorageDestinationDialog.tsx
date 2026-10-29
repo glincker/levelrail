@@ -129,7 +129,7 @@ export function CreateStorageDestinationDialog() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UploadGlassIcon
-              className="size-4.5 text-muted-foreground"
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Add storage destination

@@ -41,7 +41,7 @@ export function DeploymentsSummary({
       <MetricTile
         label="In progress"
         loading={loading}
-        icon={<ActivityGlassIcon size="1.2em" />}
+        icon={<ActivityGlassIcon size="1.4em" />}
         value={unavailable ? 'n/a' : (s?.in_progress ?? 0)}
         tone={s && s.in_progress > 0 ? 'info' : 'neutral'}
         info={
@@ -54,7 +54,7 @@ export function DeploymentsSummary({
         label="Failure rate (24h)"
         loading={loading}
         icon={
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
         }
         value={
           unavailable ? 'n/a' : formatFailureRate(s?.failure_rate_24h ?? null)
@@ -68,7 +68,7 @@ export function DeploymentsSummary({
       <MetricTile
         label="Median duration"
         loading={loading}
-        icon={<ClockGlassIcon size="1.2em" />}
+        icon={<ClockGlassIcon size="1.4em" />}
         value={
           unavailable || median === null
             ? 'n/a'
@@ -84,7 +84,7 @@ export function DeploymentsSummary({
         label="Needs attention"
         loading={loading}
         icon={
-          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
         }
         value={unavailable ? 'n/a' : attention}
         tone={attention > 0 ? 'warning' : 'neutral'}
@@ -99,7 +99,7 @@ export function DeploymentsSummary({
         <MetricTile
           label="Deploys (14 days)"
           loading={loading}
-          icon={<ChartColumnGlassIcon size="1.2em" />}
+          icon={<ChartColumnGlassIcon size="1.4em" />}
           value={unavailable ? 'n/a' : total14}
           series={unavailable ? undefined : series}
           info={

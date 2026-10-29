@@ -37,7 +37,7 @@ function ServicesSectionSkeleton() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LayersGlassIcon className="size-4.5" />
+            <LayersGlassIcon className="size-5" />
             Services
           </CardTitle>
           <Skeleton className="h-4 w-64" />
@@ -51,7 +51,7 @@ function ServicesSectionSkeleton() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <RocketGlassIcon className="size-4.5" />
+            <RocketGlassIcon className="size-5" />
             Deploy multiple services
           </CardTitle>
           <Skeleton className="h-4 w-72" />

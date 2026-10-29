@@ -14,7 +14,7 @@ export function ManagedByStackBadge({ stack }: Readonly<{ stack: string }>) {
       className="inline-flex"
     >
       <Badge variant="info">
-        <LayersGlassIcon size="1.2em" aria-hidden="true" />
+        <LayersGlassIcon size="1.4em" aria-hidden="true" />
         {t('badge.short', { name: stack })}
       </Badge>
     </Link>

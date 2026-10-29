@@ -175,7 +175,7 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
 
       {guide.complete ? (
         <EmptyState
-          icon={<RocketGlassIcon className="size-7" />}
+          icon={<RocketGlassIcon className="size-8" />}
           title={t('summary.allDoneTitle')}
           description={t('summary.allDoneBody')}
         />

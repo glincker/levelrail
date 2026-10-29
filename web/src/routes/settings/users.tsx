@@ -73,7 +73,7 @@ function UsersSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<UsersGlassIcon size="1.2em" />}
+      icon={<UsersGlassIcon size="1.4em" />}
       eyebrow={t('usersPage.eyebrow')}
       title={t('usersPage.title')}
       description={t('usersPage.description')}
@@ -111,7 +111,7 @@ function UsersSettingsPage() {
       {canInvite ? (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <MailGlassIcon className="size-4.5 text-muted-foreground" />
+            <MailGlassIcon className="size-5 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">
               {t('usersPage.pendingInvites')}
             </h2>

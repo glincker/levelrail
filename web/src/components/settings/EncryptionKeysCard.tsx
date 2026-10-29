@@ -135,7 +135,7 @@ function HintRow({
     <Alert variant={hint.severity === 'warning' ? 'destructive' : 'default'}>
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.2em"
+        size="1.4em"
         aria-hidden="true"
       />
       <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
@@ -262,7 +262,7 @@ export function EncryptionKeysCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <KeyGlassIcon className="size-4.5" aria-hidden="true" />
+              <KeyGlassIcon className="size-5" aria-hidden="true" />
             </div>
             <div>
               <CardTitle className="flex items-center gap-1.5">
@@ -278,7 +278,7 @@ export function EncryptionKeysCard() {
               size="sm"
               onClick={() => setTarget({ all: true })}
             >
-              <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+              <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
               {t('apps.rotateAll')}
             </Button>
           ) : null}

@@ -79,7 +79,7 @@ function OptionButton({
       )}
     >
       <CheckGlassIcon
-        className={cn('size-4', !selected && 'invisible')}
+        className={cn('size-5', !selected && 'invisible')}
         aria-hidden="true"
       />
       <span className="truncate">{label}</span>
@@ -131,7 +131,7 @@ export function AddFilterMenu({
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm" aria-label="Add filter">
-            <FunnelGlassIcon size="1.2em" aria-hidden="true" />
+            <FunnelGlassIcon size="1.4em" aria-hidden="true" />
             Add Filter
             <span className="hidden sm:inline">
               <Kbd keys={['f']} />
@@ -166,7 +166,7 @@ export function AddFilterMenu({
               }}
               className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground outline-none hover:bg-muted focus-visible:bg-muted"
             >
-              <ChevronLeftGlassIcon className="size-3.5" aria-hidden="true" />
+              <ChevronLeftGlassIcon className="size-4.5" aria-hidden="true" />
               {FILTER_LABEL[key]}
             </button>
             {canType && (

@@ -25,7 +25,7 @@ export function UpgradeAttempts({
     return (
       <div className="flex flex-col items-center gap-1 rounded-md border border-dashed border-border px-4 py-6 text-center">
         <ArrowUpGlassIcon
-          className="size-7 text-muted-foreground"
+          className="size-8 text-muted-foreground"
           aria-hidden="true"
         />
         <p className="text-sm font-medium">{t('selfUpgrade.noAttempts')}</p>

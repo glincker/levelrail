@@ -77,7 +77,7 @@ export function DatabaseLinksCard({ database }: { database: string }) {
             {(links.data ?? []).map((l) => (
               <li key={l.app} className="flex items-center gap-2 text-sm">
                 <PlugGlassIcon
-                  className="size-4.5 shrink-0 text-muted-foreground"
+                  className="size-5 shrink-0 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <Link

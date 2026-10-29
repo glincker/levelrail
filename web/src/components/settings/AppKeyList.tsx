@@ -42,7 +42,7 @@ function AppKeyRow({
         onClick={() => onRotate(entry.app)}
         aria-label={`${t('apps.rotate')}: ${entry.app}`}
       >
-        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         {t('apps.rotate')}
       </Button>
     </div>

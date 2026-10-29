@@ -27,7 +27,7 @@ export function ProxyManagedCertNote({
       className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground"
     >
       <ShieldCheckGlassIcon
-        className="size-4 shrink-0 text-tone-success"
+        className="size-5 shrink-0 text-tone-success"
         aria-hidden="true"
       />
       <span>{text}</span>

@@ -20,7 +20,7 @@ export function StackTemplatesPage() {
 
   return (
     <PageTemplate
-      icon={<LayoutGridGlassIcon size="1.2em" />}
+      icon={<LayoutGridGlassIcon size="1.4em" />}
       title={t('templates.title')}
       description={t('templates.description')}
     >
@@ -31,7 +31,7 @@ export function StackTemplatesPage() {
       ) : templates.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<LayoutGridGlassIcon className="size-5.5" />}
+          icon={<LayoutGridGlassIcon className="size-6" />}
           title={t('templates.empty.title')}
           description={t('templates.empty.description')}
         />

@@ -48,7 +48,7 @@ export function AiChatComposer({
         aria-label="Message"
       />
       <Button type="submit" size="icon" disabled={disabled || !value.trim()}>
-        <SendGlassIcon size="1.2em" />
+        <SendGlassIcon size="1.4em" />
         <span className="sr-only">Send</span>
       </Button>
     </form>

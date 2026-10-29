@@ -117,14 +117,14 @@ export function ReachHero({
           rel="noreferrer noopener"
           className={buttonVariants({ variant: 'default' })}
         >
-          <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
           {t('actions.openApp')}
         </a>
         <Button variant="outline" onClick={() => copy(addr.value)}>
           {copied ? (
-            <CheckGlassIcon className="size-4.5" aria-hidden="true" />
+            <CheckGlassIcon className="size-5" aria-hidden="true" />
           ) : (
-            <CopyGlassIcon className="size-4.5" aria-hidden="true" />
+            <CopyGlassIcon className="size-5" aria-hidden="true" />
           )}
           {copied ? t('actions.copied') : t('actions.copyUrl')}
         </Button>

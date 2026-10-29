@@ -56,17 +56,17 @@ const STATUS_BADGE: Record<
 
 function StepIcon({ state }: { state: StepState }) {
   if (state === 'done') {
-    return <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
+    return <CircleCheckGlassIcon className="size-5 text-tone-success" />
   }
   if (state === 'active') {
     return (
-      <LoaderCircleGlassIcon className="size-4.5 animate-spin text-muted-foreground motion-reduce:animate-none" />
+      <LoaderCircleGlassIcon className="size-5 animate-spin text-muted-foreground motion-reduce:animate-none" />
     )
   }
   if (state === 'attention') {
-    return <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
+    return <TriangleAlertGlassIcon className="size-5 text-tone-warning" />
   }
-  return <CircleGlassIcon className="size-4.5 text-muted-foreground" />
+  return <CircleGlassIcon className="size-5 text-muted-foreground" />
 }
 
 // Live progress for a node that was just given a join command: contacted,

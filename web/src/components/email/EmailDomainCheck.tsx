@@ -37,12 +37,12 @@ function RecordRow({
         <Badge variant={pass ? 'success' : 'warning'}>
           {pass ? (
             <CircleCheckGlassIcon
-              className="size-3.5 text-tone-success"
+              className="size-4.5 text-tone-success"
               aria-hidden="true"
             />
           ) : (
             <CircleAlertGlassIcon
-              className="size-3.5 text-tone-danger"
+              className="size-4.5 text-tone-danger"
               aria-hidden="true"
             />
           )}
@@ -94,7 +94,7 @@ export function DomainCheckInline({
       >
         <ShieldCheckGlassIcon
           className="text-tone-success"
-          size="1.2em"
+          size="1.4em"
           aria-hidden="true"
         />
         {check.isPending

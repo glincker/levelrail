@@ -31,7 +31,7 @@ export function GitSelectedRepoBar({
           <span className="truncate">{option.displayPath}</span>
           {option.private ? (
             <LockGlassIcon
-              className="size-4 shrink-0 text-muted-foreground"
+              className="size-5 shrink-0 text-muted-foreground"
               aria-label="Private repository"
             />
           ) : null}

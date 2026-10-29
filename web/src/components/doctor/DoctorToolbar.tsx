@@ -84,7 +84,7 @@ export function DoctorToolbar({
             : null}
       </span>
       <Button variant="outline" size="sm" onClick={copy} disabled={running}>
-        <CopyGlassIcon size="1.2em" />
+        <CopyGlassIcon size="1.4em" />
         {t('doctorPage.copyDiagnostics')}
       </Button>
     </div>

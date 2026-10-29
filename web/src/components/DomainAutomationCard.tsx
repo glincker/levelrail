@@ -184,7 +184,7 @@ function History() {
                   })
                 }}
               >
-                <RotateCcwGlassIcon size="1.2em" />
+                <RotateCcwGlassIcon size="1.4em" />
                 {t('automation.undo')}
               </Button>
             ) : null}
@@ -282,7 +282,7 @@ export function DomainAutomationCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ZapGlassIcon className="size-4.5" />
+          <ZapGlassIcon className="size-5" />
           {t('automation.title')}
         </CardTitle>
         <CardDescription>{t('automation.description')}</CardDescription>

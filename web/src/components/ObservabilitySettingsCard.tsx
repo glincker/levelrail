@@ -51,7 +51,7 @@ export function RemoteReadConnectionCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ChartLineGlassIcon className="size-4.5" />
+          <ChartLineGlassIcon className="size-5" />
           Remote read (Prometheus)
         </CardTitle>
         <CardDescription>
@@ -72,9 +72,9 @@ export function RemoteReadConnectionCard({
             </code>
             <Button type="button" size="sm" variant="outline" onClick={copyURL}>
               {copied ? (
-                <CheckGlassIcon size="1.2em" />
+                <CheckGlassIcon size="1.4em" />
               ) : (
-                <CopyGlassIcon size="1.2em" />
+                <CopyGlassIcon size="1.4em" />
               )}
               {copied ? 'Copied' : 'Copy'}
             </Button>
@@ -150,7 +150,7 @@ export function ObservabilitySettingsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LinkGlassIcon className="size-4.5" />
+          <LinkGlassIcon className="size-5" />
           External dashboard
         </CardTitle>
         <CardDescription>

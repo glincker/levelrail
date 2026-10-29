@@ -45,7 +45,7 @@ function EnvironmentSection() {
           </span>
           <ChevronDownGlassIcon
             aria-hidden
-            className="mt-1 size-4.5 transition-transform group-data-[panel-open]/advanced:rotate-180"
+            className="mt-1 size-5 transition-transform group-data-[panel-open]/advanced:rotate-180"
           />
         </CollapsibleTrigger>
         <CollapsiblePanel className="space-y-6 pt-4">

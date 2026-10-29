@@ -174,7 +174,7 @@ export function ImagesPage() {
             setCleanupOpen(true)
           }}
         >
-          <BroomGlassIcon size="1.2em" aria-hidden="true" />
+          <BroomGlassIcon size="1.4em" aria-hidden="true" />
           {removable.length === 0
             ? t('cleanup.nothing')
             : t('cleanup.button', {
@@ -230,12 +230,12 @@ export function ImagesPage() {
               <MetricTile
                 label={t('tiles.count')}
                 value={data.totals.count}
-                icon={<LayersGlassIcon size="1.2em" />}
+                icon={<LayersGlassIcon size="1.4em" />}
               />
               <MetricTile
                 label={t('tiles.size')}
                 value={sizeLabel(data.totals.size_bytes)}
-                icon={<ServerGlassIcon size="1.2em" />}
+                icon={<ServerGlassIcon size="1.4em" />}
               />
               <MetricTile
                 label={t('tiles.reclaimable')}

@@ -230,7 +230,7 @@ export function ProxyProviderCard() {
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ArrowLeftRightGlassIcon className="size-4.5" aria-hidden="true" />
+          <ArrowLeftRightGlassIcon className="size-5" aria-hidden="true" />
           {t('proxyPicker.title')}
         </CardTitle>
         <CardDescription>{t('proxyPicker.description')}</CardDescription>
@@ -337,7 +337,7 @@ export function ProxyProviderCard() {
                 >
                   {setup.isPending && setup.variables?.confirm ? (
                     <LoaderGlassIcon
-                      size="1.2em"
+                      size="1.4em"
                       className="animate-spin"
                       aria-hidden="true"
                     />

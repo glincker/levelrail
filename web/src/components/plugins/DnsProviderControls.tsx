@@ -41,7 +41,7 @@ export function DnsProviderControls({ plugin }: Readonly<{ plugin: Plugin }>) {
           disabled={!ready || test.isPending}
           onClick={() => test.mutate(plugin.name, { onError: fail })}
         >
-          <PlugGlassIcon size="1.2em" aria-hidden="true" />
+          <PlugGlassIcon size="1.4em" aria-hidden="true" />
           {test.isPending ? t('dns.testing') : t('dns.test')}
         </Button>
         <Button

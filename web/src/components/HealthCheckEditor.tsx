@@ -99,7 +99,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ActivityGlassIcon className="size-4.5" />
+          <ActivityGlassIcon className="size-5" />
           Health checks
           <HelpLink
             path="/app-spec-reference#health-checks"
