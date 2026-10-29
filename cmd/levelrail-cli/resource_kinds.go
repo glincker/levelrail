@@ -41,6 +41,10 @@ func expandShortFlags(args []string) []string {
 			out = append(out, "--output")
 		case strings.HasPrefix(a, "-o="):
 			out = append(out, "--output="+strings.TrimPrefix(a, "-o="))
+		case a == "-n":
+			out = append(out, "--namespace")
+		case strings.HasPrefix(a, "-n="):
+			out = append(out, "--namespace="+strings.TrimPrefix(a, "-n="))
 		case a == "-l":
 			out = append(out, "--selector")
 		case strings.HasPrefix(a, "-l="):

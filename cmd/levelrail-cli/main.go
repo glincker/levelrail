@@ -264,6 +264,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRollout(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
 		return runGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "label":
+		return runLabel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "describe":
 		return runDescribe(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":

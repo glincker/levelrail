@@ -195,6 +195,20 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	dbs = visibleDBs
+	match, err := rt.labelFilter(r, store.LabelKindDatabase)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if match != nil {
+		labelled := dbs[:0:0]
+		for _, d := range dbs {
+			if match(d.Name) {
+				labelled = append(labelled, d)
+			}
+		}
+		dbs = labelled
+	}
 	if project := r.URL.Query().Get("project"); project != "" {
 		inProject := dbs[:0:0]
 		for _, d := range dbs {

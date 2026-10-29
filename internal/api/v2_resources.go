@@ -150,9 +150,10 @@ func (s *v2Server) handleList(kind string) http.HandlerFunc {
 			s.rt.internalError(w, "api: v2 list "+kind, err)
 			return
 		}
+		namespace := r.URL.Query().Get("namespace")
 		matched := items[:0:0]
 		for _, o := range items {
-			if sel.matches(o.Metadata.Labels) {
+			if sel.matches(o.Metadata.Labels) && (namespace == "" || o.Metadata.Namespace == namespace) {
 				matched = append(matched, o)
 			}
 		}
@@ -220,14 +221,39 @@ func (s *v2Server) listObjects(r *http.Request, kind, only string) ([]v2Object, 
 	if err != nil {
 		return nil, err
 	}
+	var objs []v2Object
 	switch kind {
 	case v2PathNodes:
 		return s.listNodes(ctx, only, versions)
 	case v2PathDatabases:
-		return s.listDatabases(r, only, versions)
+		objs, err = s.listDatabases(r, only, versions)
 	default:
-		return s.listApps(r, only, versions)
+		objs, err = s.listApps(r, only, versions)
 	}
+	if err != nil {
+		return nil, err
+	}
+	return s.overlayLabels(ctx, kind, objs)
+}
+
+// overlayLabels merges operator labels from the label table into metadata.labels.
+func (s *v2Server) overlayLabels(ctx context.Context, kind string, objs []v2Object) ([]v2Object, error) {
+	ls := s.rt.resourceLabels()
+	storeKind := store.LabelKindApp
+	if kind == v2PathDatabases {
+		storeKind = store.LabelKindDatabase
+	}
+	if ls == nil || len(objs) == 0 {
+		return objs, nil
+	}
+	all, err := ls.ListResourceLabels(ctx, storeKind)
+	if err != nil {
+		return nil, err
+	}
+	for i := range objs {
+		objs[i].Metadata.Labels = mergeLabels(objs[i].Metadata.Labels, all[objs[i].Metadata.Name])
+	}
+	return objs, nil
 }
 
 func (s *v2Server) listApps(r *http.Request, only string, versions map[string]int64) ([]v2Object, error) {

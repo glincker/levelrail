@@ -25,6 +25,7 @@ when the data must go too. Nodes are removed with "%[1]s nodes delete".
 
 Flags:
   --yes           do not ask for confirmation
+  -n, --namespace string   require the resource to be in this project
   --json          print {"deleted": true} as JSON and nothing else
 %[2]s`, prog, commonFlagsHelp)
 }
@@ -59,8 +60,10 @@ func confirmYes(stderr io.Writer, question string) error {
 
 func runDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var yes *bool
-	c, code, ok := parseCLICall(prog, "delete", deleteUsage(prog), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	var namespace *string
+	c, code, ok := parseCLICall(prog, "delete", deleteUsage(prog), expandShortFlags(args), stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		yes = fs.Bool("yes", false, "do not ask for confirmation")
+		namespace = fs.String("namespace", "", "require the resource to be in this project")
 	})
 	if !ok {
 		return code
@@ -77,6 +80,15 @@ func runDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return c.invalid("nodes are not deleted from here: use \"%s nodes delete %s\"", prog, rest[1])
 	}
 	name := rest[1]
+	if *namespace != "" {
+		obj, gerr := c.client.GetV2(context.Background(), kind.Path, name)
+		if gerr != nil {
+			return c.fail(fmt.Errorf("delete %s %q: %w", kind.Singular, name, gerr))
+		}
+		if err := namespaceMismatch(*namespace, obj); err != nil {
+			return c.fail(err)
+		}
+	}
 	if !*yes {
 		if err := confirmYes(stderr, fmt.Sprintf("Delete %s %q?", kind.Singular, name)); err != nil {
 			return c.fail(err)

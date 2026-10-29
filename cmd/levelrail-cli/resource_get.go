@@ -23,6 +23,7 @@ kubectl get does. Run "%[1]s api-resources" for the document kinds.
 Flags:
   -o, --output string   table, wide (extra columns), json, yaml, name, text
   -l, --selector string label selector, for example env=prod,tier!=db,canary
+  -n, --namespace string only resources in this project
   --limit N             page size for a list (default: the server default)
   --json                print the result as JSON and nothing else
   --query string        JMESPath expression applied to the result
@@ -37,17 +38,19 @@ Prints one resource with its status, conditions and recent events.
 
 Flags:
   --events N      how many recent events to show for an app (default 10)
+  -n, --namespace string   require the resource to be in this project
   --json          print the result as JSON and nothing else
 %[2]s`, prog, commonFlagsHelp)
 }
 
 func runGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var selector, selShort *string
+	var selector, selShort, namespace *string
 	var limit *int
 	c, code, ok := parseCLICall(prog, "get", getUsage(prog), expandShortFlags(args), stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		selector = fs.String("selector", "", "label selector")
 		selShort = fs.String("l", "", "label selector (short)")
 		limit = fs.Int("limit", 0, "page size for a list")
+		namespace = fs.String("namespace", "", "only resources in this project")
 	})
 	if !ok {
 		return code
@@ -71,11 +74,23 @@ func runGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		if err != nil {
 			return c.fail(fmt.Errorf("get %s %q: %w", kind.Singular, rest[1], err))
 		}
+		if err := namespaceMismatch(*namespace, obj); err != nil {
+			return c.fail(err)
+		}
 		return c.renderObjects(kind, []apiclient.V2Object{obj}, obj, wide)
 	}
 	list, err := c.client.ListV2(ctx, kind.Path, sel, *limit)
 	if err != nil {
 		return c.fail(fmt.Errorf("list %s: %w", kind.Path, err))
+	}
+	if *namespace != "" {
+		kept := list.Items[:0:0]
+		for _, o := range list.Items {
+			if o.Metadata.Namespace == *namespace {
+				kept = append(kept, o)
+			}
+		}
+		list.Items = kept
 	}
 	return c.renderObjects(kind, list.Items, list, wide)
 }
@@ -212,8 +227,10 @@ type describeResult struct {
 
 func runDescribe(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var events *int
+	var namespace *string
 	c, code, ok := parseCLICall(prog, "describe", describeUsage(prog), expandShortFlags(args), stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		events = fs.Int("events", 10, "recent events to show")
+		namespace = fs.String("namespace", "", "require the resource to be in this project")
 	})
 	if !ok {
 		return code
@@ -230,6 +247,9 @@ func runDescribe(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	obj, err := c.client.GetV2(ctx, kind.Path, rest[1])
 	if err != nil {
 		return c.fail(fmt.Errorf("describe %s %q: %w", kind.Singular, rest[1], err))
+	}
+	if err := namespaceMismatch(*namespace, obj); err != nil {
+		return c.fail(err)
 	}
 	res := describeResult{Object: obj}
 	if kind.Path == "apps" && *events > 0 {

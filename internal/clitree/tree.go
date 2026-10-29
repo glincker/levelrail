@@ -38,6 +38,7 @@ var Tree = map[string]*Node{
 		"analyze":                 nil,
 		"list":                    nil,
 		"get":                     nil,
+		"label":                   nil,
 		"deploy":                  nil,
 		"wait":                    nil,
 		"deploy-compose":          nil,
