@@ -86,3 +86,27 @@ func TestBuildRoutesConfig_InheritedSockets(t *testing.T) {
 		t.Errorf("owned ports = %v, want 80 and 443 reported to doctor", ports)
 	}
 }
+
+func TestBuildRoutesConfig_InheritedSocketsServePlainHTTPRoutes(t *testing.T) {
+	cfg, err := BuildRoutesConfig(RoutesOptions{
+		ServerName: "edge",
+		TLS:        true,
+		PlainHTTP:  true,
+		Routes:     []ProxyRoute{{Hosts: []string{"app.localhost"}, BackendDial: "127.0.0.1:9"}},
+		Inherited:  &InheritedSockets{HTTPS: 3, HTTP: 4, HTTPSPort: 443, HTTPPort: 80},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	plain := cfg.Apps.HTTP.Servers["edge-http"]
+	main := cfg.Apps.HTTP.Servers["edge"]
+	if plain == nil || len(plain.Listen) != 1 || plain.Listen[0] != "fd/4" {
+		t.Fatalf("plain server = %+v", plain)
+	}
+	if len(plain.Routes) != len(main.Routes) || len(plain.Routes) < 1 {
+		t.Errorf("plain routes = %d, main routes = %d", len(plain.Routes), len(main.Routes))
+	}
+	if main.Listen[0] != "fd/3" {
+		t.Errorf("main listen = %v", main.Listen)
+	}
+}
