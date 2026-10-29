@@ -2045,6 +2045,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/status-page/groups | AbilityWrite | handleCreateStatusGroup |
 | PUT | /api/v1/status-page/groups/{id} | AbilityWrite | handleUpdateStatusGroup |
 | DELETE | /api/v1/status-page/groups/{id} | AbilityWrite | handleDeleteStatusGroup |
+| GET | /api/v1/monitors | AbilityRead | handleListMonitors |
+| POST | /api/v1/monitors | AbilityWrite | handleCreateMonitor |
+| DELETE | /api/v1/monitors/{id} | AbilityWrite | handleDeleteMonitor |
+| GET | /api/v1/monitors/{id}/results | AbilityRead | handleMonitorResults |
 
 ## See also
 
