@@ -40,3 +40,11 @@ Control plane environment variables:
 | `APP_BACKUP_COPY_CONCURRENCY` | `2` | How many copies run at once. Positive integer. |
 
 Restore always reads from the primary destination; the second copy is for recovery when the primary is gone.
+
+## Verification and manifest
+
+Each copy is read back and its SHA-256 compared with the primary's recorded checksum. A `<object>.manifest.json` sidecar (checksum, codec, tree digest, size) is written next to the copied object, so a restore from the second destination alone has what it needs. A copy only counts as succeeded after both are in place.
+
+## Local directory targets
+
+For small boxes and tests, set `APP_BACKUP_LOCAL_ROOT` to an absolute directory, then add a target with `levelrail-cli backups targets add --type local --name NAME --path SUBDIR`. The path is relative to the root and cannot leave it (symlinks included). No keys are needed.
