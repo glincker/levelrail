@@ -170,6 +170,36 @@ func (rt *Router) setDatabasePoolerTuned(w http.ResponseWriter, r *http.Request,
 		rt.internalError(w, "api: set pooler: reload failed", err, slog.String("name", name))
 		return
 	}
+	rt.flagPoolerLinkedApps(r.Context(), name)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, rt.poolerStatus(r.Context(), d))
+}
+
+// flagPoolerLinkedApps latches env_dirty on apps linked to the database: their
+// url and port resolve at container create, so a pooler change needs a restart.
+func (rt *Router) flagPoolerLinkedApps(ctx context.Context, dbName string) {
+	services, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		rt.logger.Warn("api: pooler: list linked apps failed", slog.String("database", dbName), slog.String("error", err.Error()))
+		return
+	}
+	for i := range services {
+		if !linksDatabase(&services[i], dbName) || services[i].EnvDirty {
+			continue
+		}
+		updated := services[i]
+		updated.EnvDirty = true
+		if err := rt.apps.SaveDesiredService(ctx, updated); err != nil {
+			rt.logger.Warn("api: pooler: flag linked app failed", slog.String("app", updated.Name), slog.String("error", err.Error()))
+		}
+	}
+}
+
+func linksDatabase(svc *store.DesiredService, dbName string) bool {
+	for _, ref := range svc.DatabaseEnv {
+		if ref.Database == dbName {
+			return true
+		}
+	}
+	return svc.DatabaseAttachment != nil && svc.DatabaseAttachment.DatabaseName == dbName
 }
