@@ -8,7 +8,42 @@ Releases are listed on the [releases page](https://github.com/glincker/levelrail
 
 The 0.8 release line adds an Inbox for alerts and approvals, recoverable upgrades, secret rotation, and provider, region and zone labels on nodes.
 
-The build did not follow the original phase plan in order. Parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. This page describes what is true today, not a schedule.
+The build did not follow the original phase plan in order. Parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. The status sections below describe what is true today. The dated section above is a plan, not a schedule.
+
+## Now, next, later
+
+Last updated 2026-10-29. There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
+
+### Now (Q4 2026)
+
+Goal: make the beta claim publishable. Reliability and evidence first.
+
+- Real hosts: record real-host runs for the multi-node WireGuard mesh and cross-host transport, and a bare metal or VPS idle-footprint number. Status: open, see [Open work](#open-work).
+- Public ACME: renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA. Status: open, one live run is recorded in the [runbook](/acme-verification-runbook).
+- Upgrade and downgrade testing across more releases with real data. Status: started, see [Upgrade safely](/upgrade-safely).
+- Stacks hardening: stacks are experimental behind `APP_EXPERIMENTAL=iac`, with drift, approvals and rollback built. Status: shipping in the 0.8 line, see the [changelog](/changelog) and [ADR 042](https://github.com/glincker/levelrail/blob/main/adr/042-stacks-and-revisions.md).
+- Public live demo and Codespaces: a read-only demo you can try without installing, and a Codespaces config for a one-click dev setup. Status: planned. See [demo](/demo) for what exists today.
+- Community and governance files: a code of conduct, contributing guide and security policy exist in `.github`. Still planned: a governance document and a maintainer and review policy.
+
+### Next (Q1 2027)
+
+Goal: fewer steps between a first deploy and a repeatable setup.
+
+- Release snapshots and environment bindings: pin a set of app versions and settings as a snapshot, and bind it to an environment so promotion moves a known set. Status: planned, builds on environment promotion and cloning.
+- Schema-driven config scaffold: generate starter `app.yaml` and stack files from the embedded JSON Schema, so field names and types come from one source. Status: planned, builds on `stack init` and the [app spec reference](/app-spec-reference).
+- MCP audit coverage: every MCP tool call, including read-only ones, shows up in the audit log with the token and the tool name, and a test fails when a new tool skips it. Status: planned. See [MCP tool surface](/mcp-tool-surface).
+- Template coverage: deploy more of the roughly 360 templates in e2e tests. Status: open.
+- Load and failover numbers: publish the first results from `levelrail-cli bench run`. Status: harness exists, no published results, see [benchmarks](/benchmarks).
+
+### Later (Q2 2027)
+
+Goal: widen what is proven, only after the earlier goals are met.
+
+- Read-only incident and cost analysis agent: reads metrics, logs, deploys and spend data and writes a summary with suggested next steps. It is opt-in, off by default, and never changes anything; it stays a read-and-suggest layer, see [out of scope](#out-of-scope). Status: planned.
+- Database coverage: point-in-time restore and TLS for more engines than today. Status: open, depends on what each engine supports.
+- Real pause or scale-to-zero for spend caps: needs an accepted ADR first, see [ADR 041](https://github.com/glincker/levelrail/blob/main/adr/041-spend-pause-scale-to-zero.md). Status: design.
+- Control-plane high availability: see [ADR 037](https://github.com/glincker/levelrail/blob/main/adr/037-control-plane-ha-replication.md), [ADR 039](https://github.com/glincker/levelrail/blob/main/adr/039-control-plane-ha-wal-shipping-vs-postgres.md) and [ADR 047](https://github.com/glincker/levelrail/blob/main/adr/047-warm-standby-control-plane-promote-drill.md). Status: design and drill, not a release goal yet.
+- A first stable release: only when Phase 5 evidence (upgrade testing, real-host runs, a published footprint number) is in. No date is set.
 
 ## Phase status
 
