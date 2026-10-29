@@ -366,11 +366,13 @@ func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 
 	rt.assignInviteRole(r.Context(), user.ID, inv)
 
+	// Audited before the session step so a session failure cannot leave a created account without a row.
+	rt.recordAuthAudit(r, user.ID, accountEventInviteAccepted, http.StatusCreated, map[string]string{"invite_id": inv.ID})
+
 	if err := rt.establishSession(w, r, user); err != nil {
 		rt.internalError(w, "api: accept invite: establish session failed", err)
 		return
 	}
-	rt.recordAuthAudit(r, user.ID, accountEventInviteAccepted, http.StatusCreated, map[string]string{"invite_id": inv.ID})
 	writeJSON(w, http.StatusCreated, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }
 

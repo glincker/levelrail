@@ -282,6 +282,7 @@ func TestRESTMutatingRoutesAreAudited(t *testing.T) {
 			t.Errorf("%q is in both exemptions and known gaps", k)
 		}
 	}
+	assertAccountEventGroupCovered(t)
 	if len(routes) != pinnedNonGETRoutes {
 		t.Errorf("checked %d non-GET routes, pinned %d: a mutating route was added or removed; confirm it is audited, then update pinnedNonGETRoutes", len(routes), pinnedNonGETRoutes)
 	}
@@ -290,5 +291,39 @@ func TestRESTMutatingRoutesAreAudited(t *testing.T) {
 	}
 	if len(restKnownAuditGaps) != pinnedKnownAuditGaps {
 		t.Errorf("%d known audit gaps, pinned %d: fixing a gap lowers this, a new one must not be added silently", len(restKnownAuditGaps), pinnedKnownAuditGaps)
+	}
+}
+
+// Routes in the account-audit exemption group that write their row from the handler, not the middleware.
+var restHandlerAuditedAccountRoutes = map[string]string{
+	"POST /api/v1/auth/2fa/setup":               "begin step, no account change to record",
+	"POST /api/v1/auth/passkeys/register/begin": "begin step, the finish route is audited",
+	"POST /api/v1/invites/accept":               "recordAuthAudit in acceptInvite",
+	"POST /api/v1/team-invites/accept":          "recordAuthAudit in acceptTeamInvite",
+	"DELETE /api/v1/auth/account":               "recordAccountAction in account_delete.go",
+	"DELETE /api/v1/auth/link/{provider}":       "recordAccountAction in account_link.go",
+	"POST /api/v1/auth/email-change":            "recordAccountAction in account_email.go",
+	"POST /api/v1/auth/email-change/confirm":    "recordAccountAction in account_email.go",
+	"POST /api/v1/auth/export":                  "recordAccountAction in account_export.go",
+	"PUT /api/v1/auth/preferences":              "recordAccountAction in account_preferences.go",
+	"DELETE /api/v1/teams/{id}/members/me":      "recordAuthAudit in team_members.go",
+}
+
+// assertAccountEventGroupCovered makes a deleted accountEventRoutes entry fail instead of silently losing its audit row.
+func assertAccountEventGroupCovered(t *testing.T) {
+	t.Helper()
+	const group = "audited inside the handler or by accountEventMiddleware (account.* rows), which this route scan cannot see"
+	for k, reason := range restExemptions {
+		if reason != group {
+			continue
+		}
+		f := strings.Fields(k)
+		if _, ok := matchAccountEventRoute(f[0], f[1]); ok {
+			continue
+		}
+		if _, ok := restHandlerAuditedAccountRoutes[k]; ok {
+			continue
+		}
+		t.Errorf("%q is exempt as account-audited but matches no accountEventRoutes entry and is not in restHandlerAuditedAccountRoutes", k)
 	}
 }
