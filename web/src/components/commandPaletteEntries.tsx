@@ -85,7 +85,7 @@ export function ResultRow({
           : 'text-foreground/90 hover:bg-foreground/5',
       )}
     >
-      <span className="flex size-6 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-6">
+      <span className="flex size-6 shrink-0 items-center justify-center text-foreground/85 [&_svg]:size-6">
         {item.icon}
       </span>
       <span

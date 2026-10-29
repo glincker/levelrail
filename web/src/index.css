@@ -640,3 +640,51 @@ body {
   mask-composite: exclude;
   -webkit-mask-composite: xor;
 }
+
+/* Palette surfaces: the search field is the darkest tone and fades lighter, the results panel sits a step lighter and more see-through. */
+:root {
+  --pal-pill: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.92),
+    rgb(236 236 241 / 0.8)
+  );
+  --pal-panel: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.82),
+    rgb(243 243 247 / 0.86)
+  );
+  --pal-bloom: rgb(255 255 255 / 0.5);
+}
+.dark {
+  --pal-pill: linear-gradient(
+    180deg,
+    rgb(6 6 8 / 0.94) 0%,
+    rgb(26 26 29 / 0.88) 58%,
+    rgb(54 54 59 / 0.82) 100%
+  );
+  --pal-panel: linear-gradient(
+    180deg,
+    rgb(72 72 78 / 0.66) 0%,
+    rgb(40 40 45 / 0.8) 100%
+  );
+  --pal-bloom: rgb(255 255 255 / 0.05);
+}
+.palette-pill,
+.palette-panel {
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+}
+.palette-pill {
+  background: var(--pal-pill);
+  box-shadow:
+    inset 0 1px 0 var(--edge-top),
+    inset 0 -16px 28px var(--pal-bloom),
+    0 18px 40px -18px var(--edge-cast);
+}
+.palette-panel {
+  background: var(--pal-panel);
+  box-shadow:
+    inset 0 1px 0 var(--edge-top),
+    inset 0 -24px 40px var(--pal-bloom),
+    0 24px 56px -24px var(--edge-cast);
+}
