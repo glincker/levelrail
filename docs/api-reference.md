@@ -318,6 +318,8 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
+| PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
 
 </Accordion>
 

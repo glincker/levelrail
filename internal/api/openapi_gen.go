@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1775 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1777 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -580,6 +580,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/google-cloud-dns", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGoogleCloudDNSSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/google-cloud-dns", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateGoogleCloudDNSSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/google-cloud-dns/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestGoogleCloudDNS", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/heartbeat", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetHeartbeat", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/heartbeat", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutHeartbeat", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/oauth/{provider}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateOAuthProviderSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/observability", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetObservabilitySettings", Description: "Observability settings: the external Grafana/dashboard link, same precedent as email settings just above. GET is AbilityRead; PUT is AbilityRoot, matching every other instance-level config row."},
