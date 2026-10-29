@@ -16,6 +16,7 @@ import { engineHasBackups } from '@/lib/databaseCatalog'
 import { PointInTimeRestoreSection } from '../../../components/PointInTimeRestoreSection'
 import { MajorUpgradeCard } from '../../../components/MajorUpgradeCard'
 import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAccessCard'
+import { DatabasePoolerCard } from '../../../components/DatabasePoolerCard'
 import { useProjectListOptional } from '../../../queries/projects'
 import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -149,6 +150,8 @@ function OverviewSection() {
       <DatabaseLinksCard database={database.name} />
 
       <DatabasePublicAccessCard database={database} />
+
+      <DatabasePoolerCard database={database} />
 
       <div id="backups" className="scroll-mt-20 space-y-6">
         {engineHasBackups(database.engine) ? (
