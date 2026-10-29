@@ -66,6 +66,9 @@ func systemAuditEntry(action, path string, at time.Time) (store.AuditEntry, erro
 // recordDeviceLoginAudit writes one audit entry for a session-driven device
 // login event. The path carries the request id, never the user code.
 func (rt *Router) recordDeviceLoginAudit(ctx context.Context, r *http.Request, action, userID, requestID string) {
+	if rt.auditLog == nil {
+		return
+	}
 	id, err := store.NewAuditEntryID()
 	if err != nil {
 		rt.logger.Warn("api: generate device login audit id failed", slog.String("request_id", requestID), slog.String("error", err.Error()))

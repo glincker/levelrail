@@ -133,12 +133,17 @@ func (rt *Router) libraryDecideDevice(w http.ResponseWriter, r *http.Request, us
 		rt.internalError(w, "api: decide device auth request failed", err)
 		return
 	}
-	if lookupErr == nil {
+	{
+		// The decision succeeded, so the row is written even when the lookup failed (user code only, no secret).
+		requestID := userCode
+		if lookupErr == nil {
+			requestID = req.ID
+		}
 		action := store.AuditActionDeviceLoginDenied
 		if approve {
 			action = store.AuditActionDeviceLoginApproved
 		}
-		rt.recordDeviceLoginAudit(r.Context(), r, action, userID, req.ID)
+		rt.recordDeviceLoginAudit(r.Context(), r, action, userID, requestID)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
