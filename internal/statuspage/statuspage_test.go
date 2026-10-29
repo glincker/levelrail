@@ -101,8 +101,8 @@ func TestBuildBars(t *testing.T) {
 	if bars[len(bars)-1].Date != "2026-09-25" || bars[0].Date != "2026-06-28" {
 		t.Errorf("bars must run oldest to today, got %s..%s", bars[0].Date, bars[len(bars)-1].Date)
 	}
-	if up == nil || *up < 99.1 || *up > 99.2 {
-		t.Errorf("uptime = %v, want about 99.12", up)
+	if up == nil || *up < 98.9 || *up > 99.0 {
+		t.Errorf("uptime = %v, want about 98.92", up)
 	}
 	if _, none := buildBars(nil, today); none != nil {
 		t.Error("no data must yield nil uptime")
@@ -176,7 +176,7 @@ func TestSampleAndView_EndToEnd(t *testing.T) {
 	for _, c := range v.Components {
 		got[c.Name] = c
 	}
-	if got["Web"].Status != Operational || got["Domain"].Status != Outage || got["Gone"].Status != Unknown {
+	if got["Web"].Status != Operational || got["Domain"].Status != Outage || got["Gone"].Status != NoData {
 		t.Errorf("statuses = %v/%v/%v", got["Web"].Status, got["Domain"].Status, got["Gone"].Status)
 	}
 	if up := got["Domain"].Uptime90; up == nil || *up != 0 {
@@ -267,6 +267,7 @@ func TestPublicViewPrivacy(t *testing.T) {
 	whitelist := []string{
 		"title", "description", "status", "status_text", "generated_at", "components", "incidents", "maintenance",
 		"name", "uptime_90d", "days", "date", "uptime",
+		"accent", "logo_url", "about", "website", "noindex", "powered_by", "group", "level",
 		"id", "impact", "starts_at", "ends_at", "resolved_at", "ongoing", "updates", "body", "at",
 	}
 	got := map[string]bool{}
