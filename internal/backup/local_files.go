@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -188,5 +189,13 @@ func (r Routed) localTest(dest Destination) error {
 	if rerr != nil || string(b) != "ok" {
 		return errors.New("backup: test local path: object read back did not match what was written")
 	}
-	return r.localDelete(dest, probe)
+	if err := r.localDelete(dest, probe); err != nil {
+		return err
+	}
+	if dir, derr := r.localPath(dest, probe); derr == nil {
+		if free, ok := freeBytes(filepath.Dir(dir)); ok {
+			slog.Info("backup: local target test passed", slog.String("path", dest.Bucket), slog.Uint64("free_bytes", free))
+		}
+	}
+	return nil
 }

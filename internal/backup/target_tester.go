@@ -34,7 +34,8 @@ func (t *TargetTester) TestTarget(ctx context.Context, targetID string) error {
 		return fmt.Errorf("get backup target %q: %w", targetID, err)
 	}
 
-	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) {
+	// Agent and local targets carry no S3 keys, so skip credential resolution.
+	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) || strings.HasPrefix(target.Endpoint, LocalEndpointScheme) {
 		dest := Destination{Provider: target.Provider, Endpoint: target.Endpoint, Bucket: target.Bucket}
 		if err := t.Tester.Test(ctx, dest); err != nil {
 			return fmt.Errorf("test backup target %q: %w", targetID, err)

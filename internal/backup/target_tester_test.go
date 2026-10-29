@@ -90,3 +90,14 @@ func TestTargetTester_TestTarget_TesterFails(t *testing.T) {
 		t.Fatal("TestTarget() error = nil, want the tester's failure surfaced")
 	}
 }
+
+func TestTargetTester_TestTarget_LocalNeedsNoKeys(t *testing.T) {
+	root := t.TempDir()
+	targetStore := &fakeTargetTestStore{targets: map[string]store.BackupTarget{
+		"bkt_l": {ID: "bkt_l", Provider: "local", Endpoint: LocalEndpointScheme, Bucket: "t1"},
+	}}
+	tt := &TargetTester{Store: targetStore, Secrets: &fakeSecrets{err: errors.New("value not found")}, Tester: Routed{LocalRoot: root}}
+	if err := tt.TestTarget(context.Background(), "bkt_l"); err != nil {
+		t.Fatalf("TestTarget() error = %v, want nil for a writable local directory", err)
+	}
+}
