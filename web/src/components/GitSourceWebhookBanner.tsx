@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 
@@ -43,7 +43,11 @@ export function GitSourceWebhookBanner({
               })
             }}
           >
-            {urlCopied ? <CheckIcon /> : <CopyIcon />}
+            {urlCopied ? (
+              <CheckGlassIcon size="1.4em" />
+            ) : (
+              <CopyGlassIcon size="1.4em" />
+            )}
             {urlCopied ? 'Copied' : 'Copy'}
           </Button>
         </div>
@@ -61,7 +65,11 @@ export function GitSourceWebhookBanner({
               })
             }}
           >
-            {secretCopied ? <CheckIcon /> : <CopyIcon />}
+            {secretCopied ? (
+              <CheckGlassIcon size="1.4em" />
+            ) : (
+              <CopyGlassIcon size="1.4em" />
+            )}
             {secretCopied ? 'Copied' : 'Copy'}
           </Button>
         </div>

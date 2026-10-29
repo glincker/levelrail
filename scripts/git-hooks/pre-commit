@@ -240,18 +240,23 @@ if [ -n "$staged_web_files" ]; then
 	[ "$lint_rc" -eq 0 ] || fail=1
 fi
 
-# New code uses @thesvg/ui-react (ADR 053): fail only when the staged diff adds
-# a line importing Phosphor or lucide-react. Existing imports stay until migrated.
-echo "pre-commit: no new Phosphor or lucide-react imports (ADR 053)"
-icon_hits=""
-for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|mjs)$'); do
-	if git diff --cached -U0 -- "$f" | grep -E "^\+[^+].*(from|import)[[:space:]]*\(?[[:space:]]*['\"](@phosphor-icons/|lucide-react)" >/dev/null 2>&1; then
-		icon_hits="$icon_hits $f"
+# UI icons come from @thesvg/ui-react only: no other icon library may appear in
+# a staged file. This script is excluded from the sweep, the same reason the
+# em/en dash sweep above excludes it: its own source contains the names it
+# searches for.
+echo "pre-commit: icon library sweep (UI icons are @thesvg/ui-react only, ADR 053)"
+# Lockfiles list transitive dependencies (e.g. @glinui/ui pulls lucide-react); the rule is about our own imports.
+staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v -e '^scripts/git-hooks/pre-commit$' -e '^scripts/check-icon-rules\.sh$' -e '^adr/014-phosphor-icons\.md$' -e '^adr/053-thesvg-ui-icons\.md$' -e '^CHANGELOG\.md$' -e '^docs/changelog\.mdx$' -e 'package-lock\.json$')
+icon_lib_hits=""
+for f in $staged_all_files; do
+	[ -f "$f" ] || continue
+	if grep -l -E "lucide-react|@phosphor-icons" "$f" >/dev/null 2>&1; then
+		icon_lib_hits="$icon_lib_hits $f"
 	fi
 done
-if [ -n "$icon_hits" ]; then
-	echo "new Phosphor or lucide-react import added in:$icon_hits"
-	echo "Use @thesvg/ui-react for new icons (ADR 053); existing Phosphor imports stay until the file is migrated."
+if [ -n "$icon_lib_hits" ]; then
+	echo "Another icon library is imported in:$icon_lib_hits"
+	echo "UI icons come from @thesvg/ui-react only (glass look, ADR 053)."
 	fail=1
 fi
 

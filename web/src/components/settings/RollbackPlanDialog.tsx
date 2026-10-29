@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { StatusPill, type Tone } from '@/components/kit'
 import {
   Dialog,
@@ -62,7 +62,7 @@ function DataLossBlock({ plan }: { plan: RollbackPlan }) {
   const { t } = useTranslation('updates')
   return (
     <Alert variant="destructive">
-      <WarningIcon />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertTitle>{t('plan.dataLoss.title')}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>{t('plan.dataLoss.body')}</p>

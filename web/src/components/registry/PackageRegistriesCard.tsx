@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  PlugsConnectedIcon,
-  PlusIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  PlugGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -254,7 +254,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
       </p>
       {create.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{create.error.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -303,7 +303,7 @@ function Row({ registry }: { registry: PackageRegistry }) {
             test.mutate(registry.id, { onSuccess: setResult })
           }}
         >
-          <PlugsConnectedIcon aria-hidden="true" />
+          <PlugGlassIcon size="1.4em" aria-hidden="true" />
           {t('packageRegistries.test')}
         </Button>
         <Button
@@ -315,12 +315,19 @@ function Row({ registry }: { registry: PackageRegistry }) {
           aria-label={t('packageRegistries.remove', { name: registry.name })}
           onClick={() => remove.mutate(registry.id)}
         >
-          <TrashIcon aria-hidden="true" />
+          <TrashGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       </div>
       {result ? (
         <Alert variant={result.ok ? 'default' : 'destructive'}>
-          {result.ok ? <CheckCircleIcon /> : <WarningIcon />}
+          {result.ok ? (
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
+          ) : (
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
+          )}
           <AlertDescription>{result.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -352,7 +359,7 @@ export function PackageRegistriesCard() {
           size="sm"
           onClick={() => dialog.open()}
         >
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('packageRegistries.add')}
         </Button>
       </div>
@@ -360,7 +367,10 @@ export function PackageRegistriesCard() {
         <CardContent>
           {list.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{list.error.message}</AlertDescription>
             </Alert>
           ) : !list.data || list.data.length === 0 ? (

@@ -1,10 +1,10 @@
-import type { Icon } from '@phosphor-icons/react'
 import {
-  ShieldCheckIcon,
-  ShieldIcon,
-  ShieldWarningIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ShieldAlertGlassIcon,
+  ShieldCheckGlassIcon,
+  ShieldGlassIcon,
+  TerminalGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { AuditLogEntry } from '../queries/auditLog'
 import type auditLogEn from '../locales/en/auditLog.json'
 
@@ -15,7 +15,7 @@ import type auditLogEn from '../locales/en/auditLog.json'
 type AuditLabelKey = `labels.${keyof typeof auditLogEn.labels}`
 
 export interface AuditFriendlyLabel {
-  icon: Icon
+  icon: UiIcon
   // labelKey is an auditLog namespace key, translated by the caller
   // (AuditLogTable's useTranslation('auditLog')); this module has no
   // JSX and renders no text itself.
@@ -53,7 +53,7 @@ function domainFromPath(path: string): string | undefined {
 // functions" shape, general enough to add a non-certificate row later
 // (e.g. a deploy rollback) without restructuring anything.
 interface AuditLabelRule {
-  icon: Icon
+  icon: UiIcon
   labelKey: AuditLabelKey
   matches: (
     entry: Pick<AuditLogEntry, 'ability' | 'method' | 'path' | 'action'>,
@@ -62,47 +62,47 @@ interface AuditLabelRule {
 
 const AUDIT_LABEL_RULES: AuditLabelRule[] = [
   {
-    icon: TerminalWindowIcon,
+    icon: TerminalGlassIcon,
     labelKey: 'labels.deviceLoginApproved',
     matches: (e) => e.action === 'device_login.approved',
   },
   {
-    icon: TerminalWindowIcon,
+    icon: TerminalGlassIcon,
     labelKey: 'labels.deviceLoginDenied',
     matches: (e) => e.action === 'device_login.denied',
   },
   {
-    icon: TerminalWindowIcon,
+    icon: TerminalGlassIcon,
     labelKey: 'labels.deviceLoginExpired',
     matches: (e) => e.action === 'device_login.expired',
   },
   {
-    icon: TerminalWindowIcon,
+    icon: TerminalGlassIcon,
     labelKey: 'labels.deviceLoginDismissed',
     matches: (e) => e.action === 'device_login.dismissed',
   },
   {
-    icon: ShieldCheckIcon,
+    icon: ShieldCheckGlassIcon,
     labelKey: 'labels.certIssued',
     matches: (e) => e.ability === 'cert.issued',
   },
   {
-    icon: ShieldCheckIcon,
+    icon: ShieldCheckGlassIcon,
     labelKey: 'labels.certRenewed',
     matches: (e) => e.ability === 'cert.renewed',
   },
   {
-    icon: ShieldIcon,
+    icon: ShieldGlassIcon,
     labelKey: 'labels.certRenewalRequested',
     matches: (e) => e.method === 'POST' && e.path.endsWith('/cert/renew'),
   },
   {
-    icon: ShieldCheckIcon,
+    icon: ShieldCheckGlassIcon,
     labelKey: 'labels.certUploaded',
     matches: (e) => e.method === 'PUT' && e.path.endsWith('/tls-cert'),
   },
   {
-    icon: ShieldWarningIcon,
+    icon: ShieldAlertGlassIcon,
     labelKey: 'labels.certRemoved',
     matches: (e) => e.method === 'DELETE' && e.path.endsWith('/tls-cert'),
   },

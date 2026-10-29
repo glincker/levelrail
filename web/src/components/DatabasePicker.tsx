@@ -1,9 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  DatabaseIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { DatabaseGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -72,8 +69,8 @@ function EngineTile({ entry }: { entry: PickerEntry }) {
           {entry.label.slice(0, 2)}
         </span>
       ) : (
-        <DatabaseIcon
-          className="size-6 text-muted-foreground"
+        <DatabaseGlassIcon
+          className="size-8 text-muted-foreground"
           aria-hidden="true"
         />
       )}
@@ -246,8 +243,8 @@ export function DatabasePicker({
       {visible.length === 0 ? (
         showEmpty && query ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <MagnifyingGlassIcon
-              className="size-6 text-muted-foreground"
+            <SearchGlassIcon
+              className="size-8 text-muted-foreground"
               aria-hidden="true"
             />
             <p className="text-sm font-medium text-foreground">

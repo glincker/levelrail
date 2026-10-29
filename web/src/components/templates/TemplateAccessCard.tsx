@@ -2,10 +2,10 @@ import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowSquareOutIcon,
-  KeyIcon,
-  ScrollIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ExternalLinkGlassIcon,
+  KeyGlassIcon,
+  ScrollGlassIcon,
+} from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
 import { buttonVariants } from '@/components/ui/button'
 import { StepUpDialog } from '../env/StepUpDialog'
@@ -116,7 +116,7 @@ export function TemplateAccessCard({
         className="flex min-w-0 flex-col gap-1.5"
       >
         <h3 id="tpl-creds" className="flex items-center gap-1 font-medium">
-          <KeyIcon className="size-3.5" aria-hidden="true" />
+          <KeyGlassIcon className="size-5" aria-hidden="true" />
           {t('result.credentials')}
         </h3>
         {keys.length === 0 ? (
@@ -167,7 +167,7 @@ export function TemplateAccessCard({
             onClick={onNavigate}
             className={buttonVariants({ size: 'sm' })}
           >
-            <ArrowSquareOutIcon aria-hidden="true" />
+            <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
             {t('result.openApp')}
           </Link>
           <Link
@@ -176,7 +176,7 @@ export function TemplateAccessCard({
             onClick={onNavigate}
             className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
-            <ScrollIcon aria-hidden="true" />
+            <ScrollGlassIcon size="1.4em" aria-hidden="true" />
             {t('result.viewLogs')}
           </Link>
           <Link

@@ -2,11 +2,11 @@ import { useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CheckCircleIcon,
-  HardDrivesIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  ServerGlassIcon,
+} from '@thesvg/ui-react'
 import { SkeletonLine, type Tone } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
@@ -46,7 +46,7 @@ function OfflineNodes({
         TONE.danger.text,
       )}
     >
-      <HardDrivesIcon weight="fill" aria-hidden="true" className="size-5" />
+      <ServerGlassIcon aria-hidden="true" className="size-6" />
       {t('strip.nodeOffline', { count: nodes.length, names })}
       {since ? (
         <span className="font-normal">
@@ -86,7 +86,7 @@ export function StatusStrip({
   const tone =
     !nodesDown && level === 'ok' && notices.length > 0 ? 'warning' : worst
   const causes = causeCount(visible)
-  const Icon = tone === 'success' ? CheckCircleIcon : WarningCircleIcon
+  const Icon = tone === 'success' ? CircleCheckGlassIcon : CircleAlertGlassIcon
   const label =
     level === 'ok'
       ? t('strip.ok', { count: apps })
@@ -117,7 +117,7 @@ export function StatusStrip({
                 TONE[tone].text,
               )}
             >
-              <Icon weight="fill" aria-hidden="true" className="size-5" />
+              <Icon aria-hidden="true" className="size-6" />
               {label}
             </span>
           )}
@@ -132,10 +132,10 @@ export function StatusStrip({
                 className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted"
               >
                 {t('strip.notices', { count: notices.length })}
-                <CaretDownIcon
+                <ChevronDownGlassIcon
                   aria-hidden="true"
                   className={cn(
-                    'size-3 transition-transform',
+                    'size-4.5 transition-transform',
                     open && 'rotate-180',
                   )}
                 />

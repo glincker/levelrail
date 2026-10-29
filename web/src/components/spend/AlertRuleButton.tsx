@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellRingGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useAlertRules, useCreateAlertRule } from '../../queries/alerts'
@@ -38,7 +38,7 @@ export function AlertRuleButton({ appName }: { appName: string }) {
         )
       }
     >
-      <BellRingingIcon aria-hidden="true" />
+      <BellRingGlassIcon size="1.4em" aria-hidden="true" />
       {create.isPending ? t('alertRule.creating') : t('alertRule.create')}
     </Button>
   )

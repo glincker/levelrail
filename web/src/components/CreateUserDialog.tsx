@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { UserPlusIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon, UserPlusGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -100,13 +100,13 @@ export function CreateUserDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
-        <UserPlusIcon />
+        <UserPlusGlassIcon size="1.4em" />
         Create user
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlusIcon className="size-4 text-muted-foreground" />
+            <UserPlusGlassIcon className="size-5 text-muted-foreground" />
             Create user
           </DialogTitle>
           <DialogDescription>
@@ -172,7 +172,10 @@ export function CreateUserDialog() {
 
           {createUser.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{createUser.error.message}</AlertDescription>
             </Alert>
           ) : null}

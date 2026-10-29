@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileHtmlIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { FileCodeGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -86,13 +86,13 @@ export function DomainErrorPagesControl({
           {active ? (
             <EnforcedBadge domain={domain} control="error_pages">
               <Badge variant="success" className="shrink-0">
-                <FileHtmlIcon className="size-3" />
+                <FileCodeGlassIcon className="size-4.5" />
                 {pages.length} custom error page{pages.length === 1 ? '' : 's'}
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <FileHtmlIcon className="size-3" />
+              <FileCodeGlassIcon className="size-4.5" />
               No custom error pages
             </Badge>
           )}
@@ -103,7 +103,7 @@ export function DomainErrorPagesControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <FileHtmlIcon className="size-3.5" />
+          <FileCodeGlassIcon className="size-5" />
           {open ? 'Hide' : active ? 'Manage' : 'Add error page'}
         </Button>
       </div>
@@ -176,13 +176,19 @@ export function DomainErrorPagesControl({
 
               {setPage.isError ? (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.7em"
+                  />
                   <AlertDescription>{setPage.error.message}</AlertDescription>
                 </Alert>
               ) : null}
               {clearPage.isError ? (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.7em"
+                  />
                   <AlertDescription>{clearPage.error.message}</AlertDescription>
                 </Alert>
               ) : null}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { RobotIcon, UserIcon, WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { BotGlassIcon, UserGlassIcon, WrenchGlassIcon } from '@thesvg/ui-react'
 import type { AiChatMessage } from '../types/aiAssistant'
 import { AiToolCallCard } from './AiToolCallCard'
 import { renderChatMarkdown } from '../lib/renderChatMarkdown'
@@ -71,7 +71,7 @@ function AiChatMessageRow({
   if (message.role === 'tool') {
     return (
       <div className="flex items-start gap-2 pl-1 text-sm text-muted-foreground">
-        <WrenchIcon className="mt-0.5 size-3.5 shrink-0" />
+        <WrenchGlassIcon className="mt-0.5 size-5 shrink-0" />
         <p className="whitespace-pre-wrap">{message.content}</p>
       </div>
     )
@@ -89,9 +89,9 @@ function AiChatMessageRow({
         aria-hidden="true"
       >
         {isUser ? (
-          <UserIcon className="size-3.5" />
+          <UserGlassIcon className="size-5" />
         ) : (
-          <RobotIcon className="size-3.5" />
+          <BotGlassIcon className="size-5" />
         )}
       </span>
       <div

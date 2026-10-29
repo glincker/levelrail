@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode } from 'react'
 import { Link as RouterLink, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronLeftGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import {
   parentCrumb,
   readListSearch,
@@ -56,7 +56,7 @@ export function TrafficBreadcrumb() {
           search={parent.search}
           className={`${CRUMB_LINK_CLASS} flex items-center gap-1 text-xs sm:hidden`}
         >
-          <CaretLeftIcon className="size-3.5" aria-hidden="true" />
+          <ChevronLeftGlassIcon className="size-5" aria-hidden="true" />
           {text(parent)}
         </Link>
       ) : null}
@@ -67,8 +67,8 @@ export function TrafficBreadcrumb() {
         {crumbs.map((crumb, index) => (
           <span key={crumb.id} className="flex items-center gap-1.5">
             {index > 0 ? (
-              <CaretRightIcon
-                className="size-3 shrink-0 text-muted-foreground/50"
+              <ChevronRightGlassIcon
+                className="size-4.5 shrink-0 text-muted-foreground/50"
                 aria-hidden="true"
               />
             ) : null}

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   DialogDescription,
   DialogFooter,
@@ -187,7 +187,11 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
           {CREDENTIALED_ENGINES.has(values.engine) &&
           systemStatus.data?.secrets_configured === false ? (
             <Alert>
-              <WarningIcon aria-hidden="true" />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+                aria-hidden="true"
+              />
               <AlertDescription>
                 {t('flow.secretsWarning')}{' '}
                 <Link
@@ -227,7 +231,10 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
                 </p>
               ) : nameFree ? (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <CheckCircleIcon aria-hidden="true" className="size-3.5" />
+                  <CircleCheckGlassIcon
+                    aria-hidden="true"
+                    className="size-5 text-tone-success"
+                  />
                   {t('flow.nameFree')}
                 </p>
               ) : (

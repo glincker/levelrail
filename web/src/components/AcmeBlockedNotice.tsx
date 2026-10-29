@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ export function AcmeBlockedNotice({ settings }: { settings: IngressSettings }) {
   if (!settings.acme_blocked) return null
   return (
     <Alert variant="destructive" className="mb-4">
-      <WarningIcon />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertTitle>{t('acmeBlocked.title')}</AlertTitle>
       <AlertDescription className="space-y-3">
         <p>

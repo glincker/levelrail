@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  MagnifyingGlassIcon,
-  PencilSimpleIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PencilGlassIcon,
+  PlusGlassIcon,
+  SearchGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -84,7 +84,7 @@ function RecordRow({
               })}
               onClick={() => onEdit(record)}
             >
-              <PencilSimpleIcon />
+              <PencilGlassIcon size="1.4em" />
             </Button>
             <Button
               size="icon-sm"
@@ -95,7 +95,7 @@ function RecordRow({
               })}
               onClick={() => onDelete(record)}
             >
-              <TrashIcon />
+              <TrashGlassIcon size="1.4em" />
             </Button>
           </>
         )}
@@ -128,8 +128,8 @@ export function RecordsTable({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full max-w-xs">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          <SearchGlassIcon
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -158,13 +158,13 @@ export function RecordsTable({
           {t('records.count', { count: visible.length })}
         </span>
         <Button size="sm" className="ml-auto" onClick={onAdd}>
-          <PlusIcon />
+          <PlusGlassIcon size="1.4em" />
           {t('records.add')}
         </Button>
       </div>
       {visible.length === 0 ? (
         <EmptyState
-          icon={<MagnifyingGlassIcon className="size-5" />}
+          icon={<SearchGlassIcon className="size-6" />}
           title={
             records.length === 0
               ? t('records.emptyTitle')
@@ -178,7 +178,7 @@ export function RecordsTable({
           action={
             records.length === 0 ? (
               <Button size="sm" onClick={onAdd}>
-                <PlusIcon />
+                <PlusGlassIcon size="1.4em" />
                 {t('records.add')}
               </Button>
             ) : (

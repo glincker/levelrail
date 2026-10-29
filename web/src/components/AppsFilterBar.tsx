@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookmarkSimpleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { BookmarkGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { TagFilter } from './TagFilter'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,7 +54,7 @@ function SavedViews({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <BookmarkSimpleIcon />
+        <BookmarkGlassIcon size="1.4em" />
         Views
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
@@ -86,7 +86,7 @@ function SavedViews({
                   persist(views.filter((v) => v.name !== view.name))
                 }}
               >
-                <XIcon />
+                <XGlassIcon size="1.4em" />
               </Button>
             </div>
           ))}

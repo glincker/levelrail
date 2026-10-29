@@ -9,19 +9,19 @@ import {
 } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  GaugeIcon,
-  PencilSimpleIcon,
-  ArrowCounterClockwiseIcon,
-  ShieldWarningIcon,
-  ClockCountdownIcon,
-  WrenchIcon,
-  HardDriveIcon,
-  CpuIcon,
-  GlobeIcon,
-  ArchiveIcon,
-  RocketLaunchIcon,
-  EnvelopeSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArchiveGlassIcon,
+  CountdownGlassIcon,
+  CpuGlassIcon,
+  GaugeGlassIcon,
+  GlobeGlassIcon,
+  MailGlassIcon,
+  PencilGlassIcon,
+  RocketGlassIcon,
+  RotateCcwGlassIcon,
+  ServerGlassIcon,
+  ShieldAlertGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Sheet,
   SheetContent,
@@ -85,77 +85,85 @@ const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 const KIND_OPTIONS: {
   value: AlertRuleKind
   label?: string
-  Icon: typeof GaugeIcon
+  Icon: typeof GaugeGlassIcon
 }[] = [
-  { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
-  { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
+  { value: 'threshold', label: 'Threshold', Icon: GaugeGlassIcon },
+  { value: 'crashloop', label: 'Crashloop', Icon: RotateCcwGlassIcon },
   {
     value: 'cert_expiry',
     label: 'Certificate expiry',
-    Icon: ShieldWarningIcon,
+    Icon: ShieldAlertGlassIcon,
   },
-  { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
+  { value: 'patch_status', label: 'Node patch status', Icon: WrenchGlassIcon },
   {
     value: 'scheduled_task_failure',
     label: 'Job failure',
-    Icon: ClockCountdownIcon,
+    Icon: CountdownGlassIcon,
   },
   {
     value: 'scheduled_task_missed',
     label: 'Job missed a run',
-    Icon: ClockCountdownIcon,
+    Icon: CountdownGlassIcon,
   },
   {
     value: 'scheduled_task_running_long',
     label: 'Job running too long',
-    Icon: ClockCountdownIcon,
+    Icon: CountdownGlassIcon,
   },
-  { value: 'node_disk_space', Icon: HardDriveIcon },
+  { value: 'node_disk_space', Icon: ServerGlassIcon },
   {
     value: 'node_resource_usage',
     label: 'Node CPU/memory usage',
-    Icon: CpuIcon,
+    Icon: CpuGlassIcon,
   },
-  { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
-  { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  { value: 'domain_health', label: 'Domain health', Icon: GlobeGlassIcon },
+  { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveGlassIcon },
   {
     value: 'database_disk_high',
-    Icon: ArchiveIcon,
+    Icon: ArchiveGlassIcon,
   },
   {
     value: 'database_connections_high',
-    Icon: ArchiveIcon,
+    Icon: ArchiveGlassIcon,
   },
   {
     value: 'database_down',
-    Icon: ArchiveIcon,
+    Icon: ArchiveGlassIcon,
   },
   {
     value: 'database_backup_stale',
-    Icon: ArchiveIcon,
+    Icon: ArchiveGlassIcon,
   },
-  { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
+  { value: 'node_offline', label: 'Node offline', Icon: ServerGlassIcon },
   {
     value: 'node_cert_expiring',
     label: 'Node agent certificate expiring',
-    Icon: HardDriveIcon,
+    Icon: ServerGlassIcon,
   },
   {
     value: 'control_plane_backup_stale',
     label: 'Control plane backup stale',
-    Icon: ArchiveIcon,
+    Icon: ArchiveGlassIcon,
   },
-  { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
-  { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeIcon },
+  {
+    value: 'log_archive_stale',
+    label: 'Log archive stale',
+    Icon: ArchiveGlassIcon,
+  },
+  { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeGlassIcon },
   {
     value: 'version_skew',
     label: 'Version update available',
-    Icon: RocketLaunchIcon,
+    Icon: RocketGlassIcon,
   },
-  { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
+  {
+    value: 'budget_threshold',
+    label: 'Budget threshold',
+    Icon: GaugeGlassIcon,
+  },
   {
     value: 'email_delivery_failing',
-    Icon: EnvelopeSimpleIcon,
+    Icon: MailGlassIcon,
   },
 ]
 
@@ -529,14 +537,14 @@ export function EditAlertRuleDialog({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger render={<Button variant="outline" size="sm" />}>
-        <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
+        <PencilGlassIcon className="size-5" aria-hidden="true" />
         Edit
       </SheetTrigger>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-1.5">
-            <PencilSimpleIcon
-              className="size-4 text-muted-foreground"
+            <PencilGlassIcon
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Edit alert rule
@@ -576,7 +584,7 @@ export function EditAlertRuleDialog({
                     {KIND_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         <option.Icon
-                          className="size-3.5 text-muted-foreground"
+                          className="size-4.5 text-muted-foreground"
                           aria-hidden="true"
                         />
                         {isAlertKindCopyKind(option.value)

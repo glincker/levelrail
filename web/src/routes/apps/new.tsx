@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { LinkIcon } from '@phosphor-icons/react/dist/ssr'
+import { LinkGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { NewAppWizard } from '../../components/newapp/NewAppWizard'
@@ -64,7 +64,7 @@ function NewAppPage() {
                 setLinkOpen(true)
               }}
             >
-              <LinkIcon aria-hidden />
+              <LinkGlassIcon size="1.4em" aria-hidden />
               {tl('deployLinkDialog.action')}
             </Button>
           </div>

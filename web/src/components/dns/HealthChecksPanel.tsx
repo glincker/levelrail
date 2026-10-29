@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -124,7 +124,7 @@ export function HealthChecksPanel() {
               aria-label={t('health.delete', { id: h.id })}
               onClick={() => h.id && del.mutate(h.id)}
             >
-              <TrashIcon />
+              <TrashGlassIcon size="1.4em" />
             </Button>
           </li>
         ))}

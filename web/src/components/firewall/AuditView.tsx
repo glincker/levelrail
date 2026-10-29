@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -46,7 +46,7 @@ export function AuditView() {
         ) : data.length === 0 ? (
           <EmptyState
             compact
-            icon={<ClockCounterClockwiseIcon className="size-5" />}
+            icon={<RestoreGlassIcon className="size-6" />}
             title={t('audit.emptyTitle')}
             description={t('audit.emptyHelp')}
           />

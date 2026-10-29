@@ -1,9 +1,9 @@
 import {
-  CheckCircleIcon,
-  GitBranchIcon,
-  LockSimpleIcon,
-  UserCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleUserGlassIcon,
+  GitBranchGlassIcon,
+  LockGlassIcon,
+} from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -50,8 +50,8 @@ export function GitRepoCard({
           {name}
         </span>
         {option.private ? (
-          <LockSimpleIcon
-            className="size-3.5 shrink-0 text-muted-foreground"
+          <LockGlassIcon
+            className="size-5 shrink-0 text-muted-foreground"
             aria-label={t('picker.badges.private')}
           />
         ) : null}
@@ -64,7 +64,10 @@ export function GitRepoCard({
               className="size-3 shrink-0"
             />
           ) : (
-            <UserCircleIcon className="size-3 shrink-0" aria-hidden="true" />
+            <CircleUserGlassIcon
+              className="size-4.5 shrink-0"
+              aria-hidden="true"
+            />
           )}
           <span className="truncate">
             {t('picker.account', {
@@ -74,7 +77,7 @@ export function GitRepoCard({
         </span>
       ) : null}
       <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-        <GitBranchIcon className="size-3 shrink-0" aria-hidden="true" />
+        <GitBranchGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
         <span className="truncate font-mono">{option.defaultBranch}</span>
         {option.archived ? (
           <Badge variant="muted">{t('picker.badges.archived')}</Badge>
@@ -85,7 +88,10 @@ export function GitRepoCard({
       </span>
       {runningAs ? (
         <span className="flex items-center gap-1 text-xs font-medium text-primary">
-          <CheckCircleIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          <CircleCheckGlassIcon
+            className="size-5 shrink-0 text-tone-success"
+            aria-hidden="true"
+          />
           <span className="truncate">
             {t('picker.badges.running', { name: runningAs })}
           </span>

@@ -6,8 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
-
+import { XGlassIcon } from '@thesvg/ui-react'
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
@@ -137,7 +136,7 @@ function DialogContent({
               />
             }
           >
-            <XIcon />
+            <XGlassIcon size="1.4em" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}

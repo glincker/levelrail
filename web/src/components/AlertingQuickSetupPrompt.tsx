@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { BellRingingIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellRingGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import {
   Alert,
   AlertAction,
@@ -120,7 +120,7 @@ export function AlertingQuickSetupPrompt({
 
   return (
     <Alert>
-      <BellRingingIcon />
+      <BellRingGlassIcon size="1.4em" />
       <AlertTitle>Turn on platform-wide alerting</AlertTitle>
       <AlertDescription>
         Certificate expiry, node patch status, node disk space, and node
@@ -185,7 +185,7 @@ export function AlertingQuickSetupPrompt({
           title="Dismiss for now"
           onClick={dismiss}
         >
-          <XIcon />
+          <XGlassIcon size="1.4em" />
         </Button>
       </AlertAction>
     </Alert>

@@ -1,10 +1,10 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -31,12 +31,12 @@ function IssueRow({ issue }: { issue: AttentionItem }) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const critical = issue.severity === 'critical'
-  const Icon = critical ? WarningCircleIcon : WarningIcon
+  const Icon = critical ? CircleAlertGlassIcon : TriangleAlertGlassIcon
   return (
     <li className="flex items-start gap-2.5 rounded-lg px-2 py-2">
       <Icon
         aria-hidden="true"
-        className={`mt-0.5 size-4 shrink-0 ${
+        className={`mt-0.5 size-5 shrink-0 ${
           critical ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'
         }`}
       />
@@ -109,9 +109,9 @@ export function StatusChip() {
         </PopoverHeader>
         {visible.length === 0 ? (
           <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center">
-            <CheckCircleIcon
+            <CircleCheckGlassIcon
               aria-hidden="true"
-              className="size-6 text-emerald-600 dark:text-emerald-400"
+              className="size-8 text-emerald-600 dark:text-emerald-400"
             />
             <p className="text-sm text-muted-foreground">
               {t('shell.status.healthy')}

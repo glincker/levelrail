@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusCircleIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { CirclePlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -110,7 +110,7 @@ function AddComponentForm() {
         </p>
       ) : null}
       <Button type="submit" size="sm" disabled={create.isPending}>
-        <PlusCircleIcon className="size-4" aria-hidden="true" />
+        <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
         Add component
       </Button>
     </form>
@@ -175,7 +175,7 @@ export function StatusComponentsPanel() {
                 if (c.id) del.mutate(c.id)
               }}
             >
-              <TrashIcon className="size-3.5" aria-hidden="true" />
+              <TrashGlassIcon className="size-5" aria-hidden="true" />
               Remove
             </Button>
           )}

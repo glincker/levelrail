@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  FlaskIcon,
-  GlobeIcon,
-  MoonIcon,
-  PackageIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FlaskConicalGlassIcon,
+  GlobeGlassIcon,
+  MoonGlassIcon,
+  PackageGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { TemplateLogo } from '../TemplateLogo'
 import { logoIdForImage } from '../../lib/imageLogo'
@@ -17,7 +17,7 @@ export function AppLogo({ image }: { image: string }) {
       <TemplateLogo
         id={logoIdForImage(image) ?? ''}
         className="size-4"
-        fallback={<PackageIcon className="size-4" aria-hidden="true" />}
+        fallback={<PackageGlassIcon className="size-5" aria-hidden="true" />}
       />
     </span>
   )
@@ -31,13 +31,16 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
     <span className="flex min-w-0 flex-wrap items-center gap-1">
       {app.is_trial ? (
         <Badge variant="accent" className="gap-1 px-1.5 py-0">
-          <FlaskIcon className="size-3 shrink-0" aria-hidden="true" />
+          <FlaskConicalGlassIcon
+            className="size-4.5 shrink-0"
+            aria-hidden="true"
+          />
           Trial
         </Badge>
       ) : null}
       {app.sleep?.sleeping ? (
         <Badge variant="muted" className="gap-1 px-1.5 py-0">
-          <MoonIcon className="size-3 shrink-0" aria-hidden="true" />
+          <MoonGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
           {app.sleep.since ? (
             <AsleepFor since={app.sleep.since} />
           ) : (
@@ -55,7 +58,7 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
           variant="outline"
           className="max-w-44 gap-1 px-1.5 py-0 text-muted-foreground"
         >
-          <GlobeIcon className="size-3 shrink-0" aria-hidden="true" />
+          <GlobeGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{domain}</span>
           {extra > 0 ? <span>+{extra}</span> : null}
         </Badge>

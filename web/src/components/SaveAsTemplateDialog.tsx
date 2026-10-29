@@ -4,10 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  CheckCircleIcon,
-  PackageIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  PackageGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,11 @@ function SavedTemplateSummary({ result }: { result: CustomTemplateDetail }) {
   return (
     <div className="space-y-3">
       <Alert>
-        <CheckCircleIcon aria-hidden="true" />
+        <CircleCheckGlassIcon
+          className="text-tone-success"
+          size="1.4em"
+          aria-hidden="true"
+        />
         <AlertDescription>
           &ldquo;{result.name}&rdquo; is saved. It now appears under &ldquo;Your
           templates&rdquo; in the template marketplace, ready to deploy again.
@@ -129,7 +133,7 @@ export function SaveAsTemplateDialog({
         <DialogTrigger
           render={<Button type="button" variant="outline" size="sm" />}
         >
-          <PackageIcon className="size-3.5" aria-hidden="true" />
+          <PackageGlassIcon className="size-5" aria-hidden="true" />
           Save as template
         </DialogTrigger>
       )}
@@ -196,8 +200,8 @@ export function SaveAsTemplateDialog({
 
               {saveAsTemplate.isError ? (
                 <p className="flex items-start gap-1.5 text-sm text-destructive">
-                  <WarningIcon
-                    className="mt-0.5 size-4 shrink-0"
+                  <TriangleAlertGlassIcon
+                    className="mt-0.5 size-6 shrink-0 text-tone-warning"
                     aria-hidden="true"
                   />
                   {saveAsTemplate.error.message}

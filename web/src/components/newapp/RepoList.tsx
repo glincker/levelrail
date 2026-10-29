@@ -2,11 +2,11 @@ import { useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  ArrowsClockwiseIcon,
-  GitBranchIcon,
-  LinkSimpleIcon,
-  LockSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GitBranchGlassIcon,
+  LinkGlassIcon,
+  LockGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -108,7 +108,7 @@ export function RepoList({
             disabled={refreshing}
             onClick={onRefresh}
           >
-            <ArrowsClockwiseIcon aria-hidden="true" />
+            <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
             {refreshing
               ? t('source.repos.refreshing')
               : t('source.repos.refresh')}
@@ -143,7 +143,7 @@ export function RepoList({
           />
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-              <LinkSimpleIcon className="size-3.5" aria-hidden="true" />
+              <LinkGlassIcon className="size-5" aria-hidden="true" />
               {t('source.find.useUrl')}
             </span>
             <span className="block truncate font-mono text-xs text-muted-foreground">
@@ -193,14 +193,17 @@ export function RepoList({
                       <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                         <span className="truncate">{repo.displayPath}</span>
                         {repo.private ? (
-                          <LockSimpleIcon
-                            className="size-3.5 shrink-0 text-muted-foreground"
+                          <LockGlassIcon
+                            className="size-5 shrink-0 text-muted-foreground"
                             aria-label={t('source.repos.private')}
                           />
                         ) : null}
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <GitBranchIcon className="size-3" aria-hidden="true" />
+                        <GitBranchGlassIcon
+                          className="size-4.5"
+                          aria-hidden="true"
+                        />
                         <span className="truncate font-mono">
                           {repo.defaultBranch}
                         </span>

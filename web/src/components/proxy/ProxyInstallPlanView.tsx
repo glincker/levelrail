@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { ProxyInstallPlan } from '../../queries/proxyInstall'
 
@@ -63,7 +63,11 @@ export function ProxyInstallPlanView({
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" disabled={applying} onClick={onConfirm}>
           {applying ? (
-            <SpinnerIcon className="animate-spin" aria-hidden="true" />
+            <LoaderGlassIcon
+              size="1.4em"
+              className="animate-spin"
+              aria-hidden="true"
+            />
           ) : null}
           {applying
             ? t('proxyMissing.plan.installing')

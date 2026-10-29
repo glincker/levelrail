@@ -9,7 +9,7 @@ import {
   type UseFormSetValue,
   type UseFormWatch,
 } from 'react-hook-form'
-import { WarningIcon, SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -155,7 +155,7 @@ export function GitBuildSourceFields({
                 }}
               >
                 {branchesQuery.isFetching ? (
-                  <SpinnerIcon className="size-4 animate-spin" />
+                  <LoaderGlassIcon className="size-5 animate-spin" />
                 ) : null}
                 {t('sourceFields.loadBranches')}
               </Button>
@@ -165,7 +165,10 @@ export function GitBuildSourceFields({
 
           {branchesQuery.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>
                 {t('sourceFields.branchesFailed', {
                   message: branchesQuery.error.message,

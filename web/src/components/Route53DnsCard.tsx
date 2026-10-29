@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
+import { CloudGlassIcon } from '@thesvg/ui-react'
 import type { Route53DnsSettings } from '../queries/route53Dns'
 import {
   useDisconnectRoute53Dns,
@@ -99,7 +99,7 @@ export function Route53DnsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudIcon className="size-4" />
+          <CloudGlassIcon className="size-5" />
           Wildcard domains (Route53 DNS-01)
         </CardTitle>
         <CardDescription>

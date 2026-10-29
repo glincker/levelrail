@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  DatabaseIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { DatabaseGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -133,8 +130,8 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
         {attachment ? (
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-2">
-              <PlugsConnectedIcon
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              <PlugGlassIcon
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <div>
@@ -225,7 +222,7 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
                     disabled={pending || !selectedDatabase}
                     onClick={handleAttach}
                   >
-                    <DatabaseIcon className="size-3.5" aria-hidden="true" />
+                    <DatabaseGlassIcon className="size-5" aria-hidden="true" />
                     {setAppDatabase.isPending ? 'Attaching...' : 'Attach'}
                   </Button>
                 </div>

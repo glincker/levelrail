@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -202,8 +202,8 @@ export function RecentActivity() {
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="flex items-center gap-2 rounded-lg border border-border px-4 py-3">
-        <CaretDownIcon
-          className={`size-4 transition-transform ${open ? '' : '-rotate-90'}`}
+        <ChevronDownGlassIcon
+          className={`size-5 transition-transform ${open ? '' : '-rotate-90'}`}
           aria-hidden="true"
         />
         <span className="text-base font-medium">{t('activity.title')}</span>

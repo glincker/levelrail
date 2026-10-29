@@ -2,6 +2,9 @@
 
 Status: Accepted
 
+Update 2026-10-29: the migration is finished. No Phosphor import remains and the
+`@phosphor-icons/react` dependency is removed.
+
 Date: 2026-10-29
 
 Supersedes: ADR 014

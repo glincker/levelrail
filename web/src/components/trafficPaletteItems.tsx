@@ -4,13 +4,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
-  CheckCircleIcon,
-  GlobeIcon,
-  ListBulletsIcon,
-  PlusIcon,
-  StethoscopeIcon,
-  TrafficSignalIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  GlobeGlassIcon,
+  ListGlassIcon,
+  PlusGlassIcon,
+  StethoscopeGlassIcon,
+  TrafficConeGlassIcon,
+} from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
 import { fuzzyFilter } from '@/lib/fuzzy'
 import { useRouteAvailable } from '@/lib/routeAvailability'
@@ -81,7 +81,7 @@ function domainItems(input: TrafficPaletteInput): PaletteItem[] {
     key: `domain-${d.domain}`,
     label: d.domain,
     group: 'Domains',
-    icon: <GlobeIcon />,
+    icon: <GlobeGlassIcon size="1.4em" />,
     keywords: d.service_name,
     badge: statusBadge(d),
     run: () =>
@@ -99,14 +99,14 @@ function navItems(input: TrafficPaletteInput): PaletteItem[] {
       key: 'action-add-domain',
       label: t('palette.addDomain'),
       group: 'Actions',
-      icon: <PlusIcon />,
+      icon: <PlusGlassIcon size="1.4em" />,
       run: () => navigate({ to: '/domains', search: { add: '1' } }),
     },
     {
       key: 'nav-proxy',
       label: t('nav.proxy'),
       group: 'Navigate',
-      icon: <TrafficSignalIcon />,
+      icon: <TrafficConeGlassIcon size="1.4em" />,
       hint: chordFor('/network/proxy'),
       run: () => navigate({ to: '/network/proxy' }),
     },
@@ -116,7 +116,7 @@ function navItems(input: TrafficPaletteInput): PaletteItem[] {
       key: 'nav-dns',
       label: t('nav.dns'),
       group: 'Navigate',
-      icon: <ListBulletsIcon />,
+      icon: <ListGlassIcon size="1.4em" />,
       hint: chordFor('/dns'),
       run: () => navigate({ to: '/dns' }),
     })
@@ -126,7 +126,7 @@ function navItems(input: TrafficPaletteInput): PaletteItem[] {
       key: 'settings-domains',
       label: t('palette.domainSettings'),
       group: 'Settings',
-      icon: <GlobeIcon />,
+      icon: <GlobeGlassIcon size="1.4em" />,
       run: () => navigate({ to: '/settings/domains' }),
     })
   }
@@ -143,7 +143,7 @@ function contextItems(input: TrafficPaletteInput): PaletteItem[] {
       key: `domain-action-verify-${currentDomain}`,
       label: t('palette.verify', { domain: currentDomain }),
       group: 'Domain actions',
-      icon: <CheckCircleIcon />,
+      icon: <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />,
       run: () => verify(owner.service_name, owner.domain),
     })
   }
@@ -152,7 +152,7 @@ function contextItems(input: TrafficPaletteInput): PaletteItem[] {
       key: `domain-action-doctor-${currentDomain}`,
       label: t('palette.doctor', { domain: currentDomain }),
       group: 'Domain actions',
-      icon: <StethoscopeIcon />,
+      icon: <StethoscopeGlassIcon size="1.4em" />,
       run: () =>
         navigate({
           to: DOMAIN_ROUTE,
@@ -179,7 +179,7 @@ function searchItems(input: TrafficPaletteInput): PaletteItem[] {
       key: `domain-action-verify-${d.domain}`,
       label: input.t('palette.verify', { domain: d.domain }),
       group: 'Domain actions',
-      icon: <CheckCircleIcon />,
+      icon: <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />,
       run: () => input.verify(d.service_name, d.domain),
     }))
   const records: PaletteItem[] = matches
@@ -188,7 +188,7 @@ function searchItems(input: TrafficPaletteInput): PaletteItem[] {
       key: `dns-records-${d.domain}`,
       label: input.t('palette.dnsRecordsFor', { domain: d.domain }),
       group: 'DNS records',
-      icon: <ListBulletsIcon />,
+      icon: <ListGlassIcon size="1.4em" />,
       run: () =>
         input.navigate({
           to: '/apps/$name/domains',

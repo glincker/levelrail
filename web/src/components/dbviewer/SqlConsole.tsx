@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  FloppyDiskIcon,
-  LockSimpleIcon,
-  PlayIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LockGlassIcon,
+  PlayGlassIcon,
+  SaveGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -85,12 +85,15 @@ export function SqlConsole({
         <div className="flex items-center gap-2">
           {writes ? (
             <Badge variant="destructive">
-              <WarningIcon className="size-3" aria-hidden="true" />
+              <TriangleAlertGlassIcon
+                className="size-6 text-tone-warning"
+                aria-hidden="true"
+              />
               {t('viewer.console.writesOn')}
             </Badge>
           ) : (
             <Badge variant="muted">
-              <LockSimpleIcon className="size-3" aria-hidden="true" />
+              <LockGlassIcon className="size-4.5" aria-hidden="true" />
               {t('viewer.console.readOnly')}
             </Badge>
           )}
@@ -132,7 +135,7 @@ export function SqlConsole({
               execute('read')
             }}
           >
-            <PlayIcon className="size-3.5" aria-hidden="true" />
+            <PlayGlassIcon className="size-5" aria-hidden="true" />
             {run.isPending
               ? t('viewer.console.running')
               : t('viewer.console.run')}
@@ -170,7 +173,7 @@ export function SqlConsole({
               setSaveOpen(true)
             }}
           >
-            <FloppyDiskIcon className="size-3.5" aria-hidden="true" />
+            <SaveGlassIcon className="size-5" aria-hidden="true" />
             {t('viewer.console.saved.save')}
           </Button>
           <span className="text-xs text-muted-foreground">
@@ -210,7 +213,10 @@ export function SqlConsole({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-1.5 text-destructive">
-              <WarningIcon className="size-4" aria-hidden="true" />
+              <TriangleAlertGlassIcon
+                className="size-6 text-tone-warning"
+                aria-hidden="true"
+              />
               {t('viewer.console.writeConfirmTitle')}
             </DialogTitle>
             <DialogDescription>

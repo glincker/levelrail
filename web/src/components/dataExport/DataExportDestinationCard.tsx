@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  PauseCircleIcon,
-  PaperPlaneTiltIcon,
-  TrashIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CirclePauseGlassIcon,
+  SendGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -121,21 +121,27 @@ export function DataExportDestinationCard({
 
   let health = (
     <Badge variant="success">
-      <CheckCircleIcon className="size-3" aria-hidden="true" />
+      <CircleCheckGlassIcon
+        className="size-4.5 text-tone-success"
+        aria-hidden="true"
+      />
       {t('card.circuitClosed')}
     </Badge>
   )
   if (!destination.enabled) {
     health = (
       <Badge variant="muted">
-        <PauseCircleIcon className="size-3" aria-hidden="true" />
+        <CirclePauseGlassIcon className="size-4.5" aria-hidden="true" />
         {t('card.paused')}
       </Badge>
     )
   } else if (s.circuit_open || s.last_error) {
     health = (
       <Badge variant="warning">
-        <WarningCircleIcon className="size-3" aria-hidden="true" />
+        <CircleAlertGlassIcon
+          className="size-4.5 text-tone-danger"
+          aria-hidden="true"
+        />
         {s.circuit_open ? t('card.circuitOpen') : t('card.lastError')}
       </Badge>
     )
@@ -199,7 +205,7 @@ export function DataExportDestinationCard({
               disabled={test.isPending}
               onClick={runTest}
             >
-              <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
+              <SendGlassIcon className="size-5" aria-hidden="true" />
               {test.isPending ? t('card.testing') : t('card.test')}
             </Button>
             <Button
@@ -209,7 +215,7 @@ export function DataExportDestinationCard({
                 setConfirmOpen(true)
               }}
             >
-              <TrashIcon className="size-3.5" aria-hidden="true" />
+              <TrashGlassIcon className="size-5" aria-hidden="true" />
               {t('card.delete')}
             </Button>
           </div>

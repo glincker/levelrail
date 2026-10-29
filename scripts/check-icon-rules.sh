@@ -2,11 +2,9 @@
 # Icon and logo rules for the web app.
 #   1. Brand, vendor and product marks come from @thesvg/react only, through
 #      BrandIcon / BrandTile (named brands) or lib/templateLogos.ts (catalog).
-#   2. UI icons (actions, navigation, status) come from @thesvg/ui-react for all
-#      new code, in the glass look (the *GlassIcon exports). The goal is to remove
-#      Phosphor entirely. Existing Phosphor imports (@phosphor-icons/react/dist/ssr) stay
-#      until their file is touched; add no new ones. Type-only imports of Icon are fine.
-#      New Phosphor and lucide-react imports are blocked by the pre-commit diff check (ADR 053).
+#   2. UI icons (actions, navigation, status) come from @thesvg/ui-react, in the
+#      glass look (the *GlassIcon exports). Any other icon library fails.
+#      Type-only imports of UiIcon are fine (ADR 053).
 #   3. No other icon library, no hand-drawn vendor SVGs, no raster logos.
 # Usage: scripts/check-icon-rules.sh [file...]   (default: every web/src ts and tsx)
 
@@ -27,8 +25,12 @@ for f in "${files[@]}"; do
 	case "$f" in web/src/*.ts | web/src/*.tsx) ;; *) continue ;; esac
 	[ -f "$f" ] || continue
 
-	if grep -n -E "from '(react-icons|@heroicons|@tabler/|@radix-ui/react-icons|@iconify|@fortawesome|remixicon|phosphor-react)" "$f" >/dev/null; then
+	if grep -n -E "from '(lucide-react|react-icons|@heroicons|@tabler/|@radix-ui/react-icons|@iconify|@fortawesome|remixicon|phosphor-react)" "$f" >/dev/null; then
 		note "$f imports a second icon library; UI icons come from @thesvg/ui-react (ADR 053)"
+	fi
+
+	if grep -n -E "@phosphor-icons" "$f" >/dev/null; then
+		note "$f imports another icon library; use @thesvg/ui-react glass icons (ADR 053)"
 	fi
 
 	case "$f" in
@@ -39,10 +41,6 @@ for f in "${files[@]}"; do
 		fi
 		;;
 	esac
-
-	if grep -n -E "^import \{[^}]*\} from '@phosphor-icons/react'$" "$f" >/dev/null; then
-		note "$f imports Phosphor from the package root; use @phosphor-icons/react/dist/ssr"
-	fi
 
 	if grep -n -E "<img[^>]*src=\"[^\"]*(logo|brand|vendor)[^\"]*\.(png|jpe?g|svg|webp)\"" "$f" >/dev/null; then
 		note "$f renders a raster or file logo; use a @thesvg/react mark through BrandTile"

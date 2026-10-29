@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { DialogControl } from './dialogControl'
-import { RocketLaunchIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { RocketGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -136,7 +136,7 @@ export function PromoteAppDialog({
         <DialogTrigger
           render={<Button type="button" variant="outline" size="sm" />}
         >
-          <RocketLaunchIcon className="size-3.5" aria-hidden="true" />
+          <RocketGlassIcon className="size-5" aria-hidden="true" />
           Promote to...
         </DialogTrigger>
       )}
@@ -230,8 +230,8 @@ export function PromoteAppDialog({
 
             {environmentId && previewErrorMessage ? (
               <p className="flex items-start gap-1.5 text-sm text-destructive">
-                <WarningIcon
-                  className="mt-0.5 size-4 shrink-0"
+                <TriangleAlertGlassIcon
+                  className="mt-0.5 size-6 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
                 {previewErrorMessage}
@@ -282,7 +282,7 @@ export function PromoteAppDialog({
 
         {promote.isError ? (
           <Alert variant="destructive">
-            <WarningIcon className="size-4" />
+            <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
             <AlertDescription>{promote.error.message}</AlertDescription>
           </Alert>
         ) : null}

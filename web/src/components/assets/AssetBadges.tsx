@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { GlobeIcon, LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon, LockGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { AssetBucket } from '../../types/assets'
 
@@ -9,12 +9,12 @@ export function VisibilityBadge({
   const { t } = useTranslation('assets')
   return visibility === 'public' ? (
     <Badge variant="warning">
-      <GlobeIcon aria-hidden="true" />
+      <GlobeGlassIcon size="1.4em" aria-hidden="true" />
       {t('visibility.public')}
     </Badge>
   ) : (
     <Badge variant="muted">
-      <LockSimpleIcon aria-hidden="true" />
+      <LockGlassIcon size="1.4em" aria-hidden="true" />
       {t('visibility.private')}
     </Badge>
   )

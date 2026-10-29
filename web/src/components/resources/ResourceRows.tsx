@@ -3,13 +3,13 @@ import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  ArchiveIcon,
-  DatabaseIcon,
-  GlobeIcon,
-  HardDrivesIcon,
-  ShareNetworkIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArchiveGlassIcon,
+  DatabaseGlassIcon,
+  GlobeGlassIcon,
+  LayersGlassIcon,
+  ServerGlassIcon,
+  Share2GlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { resourceKey, resourceTarget } from '@/lib/resourceLinks'
@@ -20,12 +20,12 @@ const GRID =
   'grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[1.5rem_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)]'
 
 const KIND_ICON: Record<ResourceKind, React.ReactNode> = {
-  app: <StackIcon />,
-  database: <DatabaseIcon />,
-  node: <HardDrivesIcon />,
-  domain: <GlobeIcon />,
-  bucket: <ArchiveIcon />,
-  network: <ShareNetworkIcon />,
+  app: <LayersGlassIcon size="1.4em" />,
+  database: <DatabaseGlassIcon size="1.4em" />,
+  node: <ServerGlassIcon size="1.4em" />,
+  domain: <GlobeGlassIcon size="1.4em" />,
+  bucket: <ArchiveGlassIcon size="1.4em" />,
+  network: <Share2GlassIcon size="1.4em" />,
 }
 
 function Row({

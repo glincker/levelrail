@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
-  ArrowClockwiseIcon,
-  ArrowSquareOutIcon,
-  ClockCounterClockwiseIcon,
-  DotsThreeIcon,
-  PauseIcon,
-  PlayIcon,
-  RocketLaunchIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EllipsisGlassIcon,
+  ExternalLinkGlassIcon,
+  PauseGlassIcon,
+  PlayGlassIcon,
+  RestoreGlassIcon,
+  RocketGlassIcon,
+  RotateCwGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -76,37 +76,37 @@ export function AppRowActions({ app }: { app: AppListEntry }) {
             />
           }
         >
-          <DotsThreeIcon weight="bold" />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
             onClick={() => run(restartApp.mutate, `Restarting "${app.name}".`)}
           >
-            <ArrowClockwiseIcon />
+            <RotateCwGlassIcon size="1.4em" />
             Restart
           </DropdownMenuItem>
           {app.suspended ? (
             <DropdownMenuItem
               onClick={() => run(startApp.mutate, `Starting "${app.name}".`)}
             >
-              <PlayIcon />
+              <PlayGlassIcon size="1.4em" />
               Start
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem onClick={() => setConfirmStop(true)}>
-              <PauseIcon />
+              <PauseGlassIcon size="1.4em" />
               Stop
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={redeploy}>
-            <RocketLaunchIcon />
+            <RocketGlassIcon size="1.4em" />
             Redeploy
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             render={<Link to="/apps/$name/logs" params={{ name: app.name }} />}
           >
-            <TerminalWindowIcon />
+            <TerminalGlassIcon size="1.4em" />
             View logs
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -114,7 +114,7 @@ export function AppRowActions({ app }: { app: AppListEntry }) {
               <Link to="/apps/$name/deploys" params={{ name: app.name }} />
             }
           >
-            <ClockCounterClockwiseIcon />
+            <RestoreGlassIcon size="1.4em" />
             View deploys
           </DropdownMenuItem>
           {domain ? (
@@ -123,7 +123,7 @@ export function AppRowActions({ app }: { app: AppListEntry }) {
               target="_blank"
               rel="noreferrer"
             >
-              <ArrowSquareOutIcon />
+              <ExternalLinkGlassIcon size="1.4em" />
               Open domain
             </DropdownMenuLinkItem>
           ) : null}

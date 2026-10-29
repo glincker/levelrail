@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  KeyIcon,
-  LinkBreakIcon,
-  PlusIcon,
-  UserIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  KeyGlassIcon,
+  PlusGlassIcon,
+  UnlinkGlassIcon,
+  UserGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,7 +40,7 @@ function PrincipalRow({
   onCheck: (on: boolean) => void
 }) {
   const { t } = useTranslation('iam')
-  const Icon = p.principal_type === 'user' ? UserIcon : KeyIcon
+  const Icon = p.principal_type === 'user' ? UserGlassIcon : KeyGlassIcon
   return (
     <div
       className={cn(
@@ -63,7 +63,7 @@ function PrincipalRow({
         onClick={onSelect}
         className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        <Icon className="size-5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm text-foreground">
             {p.name}
@@ -175,7 +175,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
         {shown.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<UserIcon className="size-5" />}
+            icon={<UserGlassIcon className="size-6" />}
             title={t('access.empty.title')}
             description={t('access.empty.description')}
           />
@@ -209,7 +209,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
         {!current ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<UserIcon className="size-5" />}
+            icon={<UserGlassIcon className="size-6" />}
             title={t('access.pickOne.title')}
             description={t('access.pickOne.description')}
           />
@@ -243,7 +243,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
                     setDialog({ mode: 'attach', keys: [principalKey(current)] })
                   }
                 >
-                  <PlusIcon />
+                  <PlusGlassIcon size="1.4em" />
                   {t('access.attach')}
                 </Button>
               </div>
@@ -273,7 +273,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
                           })
                         }
                       >
-                        <LinkBreakIcon />
+                        <UnlinkGlassIcon size="1.4em" />
                         {t('detail.detach')}
                       </Button>
                     </li>

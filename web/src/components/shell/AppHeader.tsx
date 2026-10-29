@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -58,12 +58,12 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-full text-muted-foreground max-@xl:w-7 max-@xl:justify-center max-@xl:px-0 @xl:w-44 @xl:justify-start @3xl:w-64"
+            className="banner-edge relative h-9 rounded-full border-transparent bg-card/60 text-muted-foreground backdrop-blur-xl max-@xl:w-9 max-@xl:justify-center max-@xl:px-0 @xl:w-52 @xl:justify-start @xl:px-4 @3xl:w-80"
             aria-label={t('shell.search.label')}
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onSearch}
           >
-            <MagnifyingGlassIcon />
+            <SearchGlassIcon size="1.4em" />
             <span className="hidden flex-1 truncate text-left @xl:inline">
               {t('shell.search.placeholder')}
             </span>

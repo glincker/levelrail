@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlaskIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { FlaskConicalGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import type { SAMLConnection, SAMLConnectionInput } from '@/queries/sso'
 import {
   connectionInput,
@@ -323,7 +323,7 @@ export function SAMLConnectionForm({
             variant="destructive"
             onClick={() => setConfirmDelete(true)}
           >
-            <TrashIcon aria-hidden="true" />
+            <TrashGlassIcon size="1.4em" aria-hidden="true" />
             {t('form.delete')}
           </Button>
         ) : (
@@ -336,7 +336,7 @@ export function SAMLConnectionForm({
               variant="outline"
               render={<a href={samlTestStartURL(connection.id)} />}
             >
-              <FlaskIcon aria-hidden="true" />
+              <FlaskConicalGlassIcon size="1.4em" aria-hidden="true" />
               {t('saml.test.button')}
             </Button>
           ) : null}

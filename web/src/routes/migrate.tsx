@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -37,7 +37,7 @@ function CutoverTab() {
   if (q.data.length === 0) {
     return (
       <EmptyState
-        icon={<ArrowsLeftRightIcon className="size-5" />}
+        icon={<ArrowLeftRightGlassIcon className="size-6" />}
         title={t('cutover.empty')}
         description={t('cutover.emptyHint')}
       />
@@ -57,7 +57,7 @@ function MigratePage() {
   const [tab, setTab] = useState<string>('plan')
   return (
     <PageTemplate
-      icon={<ArrowsLeftRightIcon />}
+      icon={<ArrowLeftRightGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
     >

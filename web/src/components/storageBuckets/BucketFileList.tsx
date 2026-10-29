@@ -2,10 +2,10 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  DownloadSimpleIcon,
-  LinkSimpleIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DownloadGlassIcon,
+  LinkGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
@@ -140,7 +140,7 @@ export function BucketFileList({
                       variant="ghost"
                       size="icon-xs"
                     >
-                      <DownloadSimpleIcon aria-hidden="true" />
+                      <DownloadGlassIcon size="1.4em" aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -150,7 +150,7 @@ export function BucketFileList({
                       disabled={presign.isPending}
                       onClick={() => copyLink(o.key)}
                     >
-                      <LinkSimpleIcon aria-hidden="true" />
+                      <LinkGlassIcon size="1.4em" aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -159,7 +159,7 @@ export function BucketFileList({
                       aria-label={t('browser.delete')}
                       onClick={() => setToDelete(o.key)}
                     >
-                      <TrashIcon aria-hidden="true" />
+                      <TrashGlassIcon size="1.4em" aria-hidden="true" />
                     </Button>
                   </span>
                 </div>

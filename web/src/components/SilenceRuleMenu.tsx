@@ -1,4 +1,4 @@
-import { BellSlashIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellOffGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -53,7 +53,7 @@ export function SilenceRuleMenu({
           />
         }
       >
-        <BellSlashIcon className="size-3.5" aria-hidden="true" />
+        <BellOffGlassIcon className="size-5" aria-hidden="true" />
         Silence
       </DropdownMenuTrigger>
       <DropdownMenuContent>

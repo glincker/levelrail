@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { GitBranchIcon, GitCommitIcon } from '@phosphor-icons/react/dist/ssr'
+import { CommitGraphGlassIcon, GitBranchGlassIcon } from '@thesvg/ui-react'
 import {
   Sheet,
   SheetContent,
@@ -175,7 +175,7 @@ function DrawerBody({
           {d.branch && (
             <Row label={t('drawer.branch')}>
               <span className="inline-flex items-center gap-1 font-mono">
-                <GitBranchIcon className="size-3.5" aria-hidden="true" />
+                <GitBranchGlassIcon className="size-5" aria-hidden="true" />
                 {d.branch}
               </span>
             </Row>
@@ -183,7 +183,7 @@ function DrawerBody({
           {d.commit_sha && (
             <Row label={t('drawer.commit')}>
               <span className="inline-flex items-center gap-1 font-mono">
-                <GitCommitIcon className="size-3.5" aria-hidden="true" />
+                <CommitGraphGlassIcon className="size-5" aria-hidden="true" />
                 {shortSha(d.commit_sha)}
               </span>
             </Row>

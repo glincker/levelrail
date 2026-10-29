@@ -3,11 +3,11 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  CircleNotchIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  ExternalLinkGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { DomainStepper } from '../domains/DomainStepper'
 import type { AppListEntry } from '../../types/appDetail'
@@ -117,9 +117,9 @@ export function FirstAppStatus({
     return (
       <div className="space-y-3 rounded-lg border border-tone-success-border bg-tone-success-soft p-4">
         <p className="flex items-center gap-2 text-sm text-foreground">
-          <CheckCircleIcon
+          <CircleCheckGlassIcon
             aria-hidden="true"
-            className="size-5 shrink-0 text-tone-success"
+            className="size-6 shrink-0 text-tone-success"
           />
           {t('first.status.liveDetail', { name: app.name })}
         </p>
@@ -131,7 +131,7 @@ export function FirstAppStatus({
             nativeButton={false}
           >
             {url}
-            <ArrowSquareOutIcon />
+            <ExternalLinkGlassIcon size="1.4em" />
           </Button>
         ) : (
           <p className="text-xs text-muted-foreground">
@@ -165,7 +165,7 @@ export function FirstAppStatus({
     return (
       <div className="space-y-3 rounded-lg border border-destructive/40 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <WarningCircleIcon className="size-5 text-destructive" />
+          <CircleAlertGlassIcon className="size-6 text-destructive" />
           {t('first.status.failed', { name: app.name })}
         </p>
         {failure ? (
@@ -238,7 +238,7 @@ export function FirstAppStatus({
   return (
     <div className="space-y-3 rounded-lg border border-border p-4">
       <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <CircleNotchIcon className="size-5 animate-spin text-primary motion-reduce:animate-none" />
+        <LoaderCircleGlassIcon className="size-6 animate-spin text-primary motion-reduce:animate-none" />
         {t('first.status.deploying', { name: app.name })}
       </p>
       <p className="text-sm text-muted-foreground">

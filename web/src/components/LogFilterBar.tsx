@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import {
@@ -153,7 +153,7 @@ export function LogFilterBar({
           disabled={!draft}
           onClick={add}
         >
-          <PlusIcon className="size-3.5" aria-hidden="true" />
+          <PlusGlassIcon className="size-5" aria-hidden="true" />
           {t('logs.addFilter')}
         </Button>
       </div>
@@ -175,7 +175,7 @@ export function LogFilterBar({
                 }}
                 className="text-muted-foreground hover:text-foreground"
               >
-                <XIcon className="size-3" aria-hidden="true" />
+                <XGlassIcon className="size-4.5" aria-hidden="true" />
               </button>
             </li>
           ))}

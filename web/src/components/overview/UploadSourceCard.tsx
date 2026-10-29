@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useBrand } from '../../hooks/useBrand'
 import { cliCommand } from '../../lib/cliCommand'
@@ -30,7 +30,7 @@ export function UploadSourceCard({
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <UploadSimpleIcon className="size-4" aria-hidden="true" />
+          <UploadGlassIcon className="size-5" aria-hidden="true" />
           {t('uploadSource.title')}
         </CardTitle>
       </CardHeader>

@@ -3,11 +3,11 @@ import { CodeBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  CopyIcon,
-  RocketLaunchIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  RocketGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -65,7 +65,7 @@ function TrustList({ appName }: { appName: string }) {
             {ciProviderOf(trust.provider) === 'gitlab' &&
               trust.protected_ref_only === false && (
                 <span className="flex items-start gap-1 text-xs text-destructive">
-                  <WarningIcon className="mt-0.5 size-3.5 shrink-0" />
+                  <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
                   {t('ciDeploy.unprotectedWarning')}
                 </span>
               )}
@@ -90,7 +90,7 @@ function TrustList({ appName }: { appName: string }) {
               })
             }}
           >
-            <TrashIcon className="size-4" />
+            <TrashGlassIcon className="size-5" />
           </Button>
         </li>
       ))}
@@ -125,7 +125,7 @@ function DashboardUrlFix({ appName }: { appName: string }) {
 
   return (
     <Alert>
-      <WarningIcon />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertDescription>{t('ciDeploy.needsAddress')}</AlertDescription>
       <AlertAction>
         <Button
@@ -211,7 +211,7 @@ function WorkflowPanel({
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium">{t('ciDeploy.workflowTitle')}</p>
             <Button type="button" variant="outline" size="sm" onClick={copy}>
-              <CopyIcon className="size-4" />
+              <CopyGlassIcon className="size-5" />
               {t('ciDeploy.copy')}
             </Button>
           </div>
@@ -256,7 +256,7 @@ export function CIDeployCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RocketLaunchIcon className="size-4 text-muted-foreground" />
+          <RocketGlassIcon className="size-5 text-muted-foreground" />
           {t('ciDeploy.title')}
           <InfoTip label={t('ciDeploy.infoTipLabel')}>
             {t('ciDeploy.description')}

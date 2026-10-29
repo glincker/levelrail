@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { InfoIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 
 export interface InlineHelpProps {
@@ -27,7 +27,10 @@ export function InlineHelp({
   return (
     <div className={cn('text-xs text-muted-foreground', className)}>
       <p className="flex flex-wrap items-center gap-1.5">
-        <InfoIcon aria-hidden="true" className="size-3.5 shrink-0" />
+        <InfoGlassIcon
+          aria-hidden="true"
+          className="size-5 shrink-0 text-tone-info"
+        />
         <span>{summary}</span>
         {hasDetail ? (
           <button

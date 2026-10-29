@@ -3,12 +3,12 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  MinusCircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -46,32 +46,40 @@ function StepIcon({ status }: { status: ProvisionStep['status'] }) {
   switch (status) {
     case 'done':
       return (
-        <CheckCircleIcon aria-hidden="true" className={`${cls} text-success`} />
+        <CircleCheckGlassIcon
+          size="1.4em"
+          aria-hidden="true"
+          className={`${cls} text-success`}
+        />
       )
     case 'started':
       return (
-        <SpinnerGapIcon
+        <LoaderCircleGlassIcon
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} animate-spin text-primary`}
         />
       )
     case 'failed':
       return (
-        <WarningCircleIcon
+        <CircleAlertGlassIcon
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} text-destructive`}
         />
       )
     case 'skipped':
       return (
-        <MinusCircleIcon
+        <CircleMinusGlassIcon
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} text-muted-foreground`}
         />
       )
     default:
       return (
-        <CircleIcon
+        <CircleGlassIcon
+          size="1.4em"
           aria-hidden="true"
           className={`${cls} text-muted-foreground`}
         />

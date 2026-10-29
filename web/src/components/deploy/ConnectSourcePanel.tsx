@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CubeIcon, GitBranchIcon } from '@phosphor-icons/react/dist/ssr'
+import { BoxGlassIcon, GitBranchGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -36,7 +36,7 @@ export function ConnectSourcePanel({
       <section className="space-y-3">
         <div>
           <h3 className="flex items-center gap-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
-            <GitBranchIcon className="size-4" aria-hidden="true" />
+            <GitBranchGlassIcon className="size-5" aria-hidden="true" />
             {t('connect.repoTitle')}
           </h3>
           <p className="text-sm text-muted-foreground">
@@ -66,7 +66,7 @@ export function ConnectSourcePanel({
       </section>
       <section className="space-y-2 border-t border-border pt-4">
         <h3 className="flex items-center gap-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
-          <CubeIcon className="size-4" aria-hidden="true" />
+          <BoxGlassIcon className="size-5" aria-hidden="true" />
           {t('connect.orImage')}
         </h3>
         <p className="text-sm text-muted-foreground">

@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  ShieldCheckIcon,
-  ShieldWarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ShieldAlertGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { auditChainQueryOptions } from '../queries/auditLog'
@@ -28,7 +25,11 @@ export function AuditIntegrityBadge() {
           checkpoints: data.checkpoints,
         })}
       >
-        <ShieldCheckIcon aria-hidden="true" />
+        <ShieldCheckGlassIcon
+          className="text-tone-success"
+          size="1.4em"
+          aria-hidden="true"
+        />
         {t('integrity.intact')}
       </Badge>
     )
@@ -38,7 +39,11 @@ export function AuditIntegrityBadge() {
         variant="destructive"
         title={data.problems.map((p) => p.reason).join('\n')}
       >
-        <ShieldWarningIcon aria-hidden="true" />
+        <ShieldAlertGlassIcon
+          className="text-tone-warning"
+          size="1.4em"
+          aria-hidden="true"
+        />
         {t('integrity.failed')}
       </Badge>
     )

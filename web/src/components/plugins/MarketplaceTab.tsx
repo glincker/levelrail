@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  MagnifyingGlassIcon,
-  StorefrontIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  RefreshCwGlassIcon,
+  SearchGlassIcon,
+  StoreGlassIcon,
+} from '@thesvg/ui-react'
 import { BrandTile } from '@/components/BrandLogoBadge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -60,7 +60,11 @@ function EntryCard({
           </div>
           {entry.verified ? (
             <Badge variant="success">
-              <CheckCircleIcon aria-hidden="true" />
+              <CircleCheckGlassIcon
+                className="text-tone-success"
+                size="1.4em"
+                aria-hidden="true"
+              />
               {t('marketplace.verified')}
             </Badge>
           ) : null}
@@ -152,9 +156,9 @@ export function MarketplaceTab() {
       ))}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
-          <MagnifyingGlassIcon
+          <SearchGlassIcon
             aria-hidden="true"
-            className="absolute top-2 left-2.5 size-4 text-muted-foreground"
+            className="absolute top-2 left-2.5 size-5 text-muted-foreground"
           />
           <Input
             type="search"
@@ -174,7 +178,7 @@ export function MarketplaceTab() {
           disabled={refresh.isPending}
           onClick={() => refresh.mutate('')}
         >
-          <ArrowsClockwiseIcon aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
           {refresh.isPending
             ? t('marketplace.rechecking')
             : t('marketplace.recheck')}
@@ -231,7 +235,7 @@ export function MarketplaceTab() {
       ) : hits.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<StorefrontIcon className="size-5" />}
+          icon={<StoreGlassIcon className="size-6" />}
           title={t(
             sources.length === 0
               ? 'marketplace.noSources.title'

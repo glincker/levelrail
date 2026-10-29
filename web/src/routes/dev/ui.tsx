@@ -1,17 +1,17 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
-  CloudArrowUpIcon,
-  GearIcon,
-  GlobeIcon,
-  MoonIcon,
-  PencilSimpleIcon,
-  RocketLaunchIcon,
-  ShieldCheckIcon,
-  SunIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GlobeGlassIcon,
+  MoonGlassIcon,
+  PencilGlassIcon,
+  RocketGlassIcon,
+  SettingsGlassIcon,
+  ShieldCheckGlassIcon,
+  SunGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
@@ -68,7 +68,7 @@ function initialSuggestions(): SuggestionItem[] {
     {
       id: 'hc',
       tone: 'info',
-      icon: <ShieldCheckIcon />,
+      icon: <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
       title: 'No health check',
       detail: '/healthz responds. Add it as the readiness probe.',
       actions: [
@@ -79,7 +79,9 @@ function initialSuggestions(): SuggestionItem[] {
     {
       id: 'mem',
       tone: 'warning',
-      icon: <WarningIcon />,
+      icon: (
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
+      ),
       title: 'Memory near the limit',
       detail: 'Peaked at 92% in the last hour.',
       actions: [{ label: 'Raise to 1Gi', onClick: ok }],
@@ -114,7 +116,7 @@ function UiGallery() {
     {
       id: '1',
       at: ago(120),
-      icon: <RocketLaunchIcon />,
+      icon: <RocketGlassIcon size="1.4em" />,
       tone: 'success' as const,
       title: 'Deployed a1b2c3d',
       detail: 'Rolled out in 42s',
@@ -123,7 +125,7 @@ function UiGallery() {
     {
       id: '2',
       at: ago(3600 * 3),
-      icon: <PencilSimpleIcon />,
+      icon: <PencilGlassIcon size="1.4em" />,
       tone: 'info' as const,
       title: 'Env changed',
       actor: 'gagan',
@@ -132,7 +134,9 @@ function UiGallery() {
     {
       id: '3',
       at: ago(86400 * 2),
-      icon: <WarningIcon />,
+      icon: (
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
+      ),
       tone: 'danger' as const,
       title: 'Deploy failed',
       detail: 'Readiness probe timed out',
@@ -144,7 +148,11 @@ function UiGallery() {
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">UI kit gallery</h1>
         <Button variant="outline" onClick={() => setDark((d) => !d)}>
-          {dark ? <SunIcon /> : <MoonIcon />}
+          {dark ? (
+            <SunGlassIcon size="1.4em" />
+          ) : (
+            <MoonGlassIcon size="1.4em" />
+          )}
           {dark ? 'Light' : 'Dark'}
         </Button>
       </header>
@@ -158,7 +166,7 @@ function UiGallery() {
           <StatusPill
             tone="accent"
             label="icon"
-            icon={<GlobeIcon className="size-3" />}
+            icon={<GlobeGlassIcon className="size-4.5" />}
           />
         </div>
       </Section>
@@ -203,7 +211,7 @@ function UiGallery() {
             unit="/min"
             series={SERIES}
             tone="info"
-            icon={<GlobeIcon />}
+            icon={<GlobeGlassIcon size="1.4em" />}
             delta={{ value: 12, direction: 'up', goodWhen: 'up' }}
             info="Requests per minute over the last hour."
           />
@@ -262,7 +270,7 @@ function UiGallery() {
       <Section title="Suggestion and SuggestionList">
         <Suggestion
           tone="success"
-          icon={<CloudArrowUpIcon />}
+          icon={<UploadGlassIcon size="1.4em" />}
           title="Backups are on"
           detail="Last one finished 2h ago."
           actions={[{ label: 'View', onClick: () => undefined }]}
@@ -270,7 +278,12 @@ function UiGallery() {
         />
         <Suggestion
           tone="danger"
-          icon={<WarningIcon />}
+          icon={
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
+          }
           title="Pending state"
           actions={[
             { label: 'Working', pending: true, onClick: () => undefined },
@@ -300,7 +313,7 @@ function UiGallery() {
             (k) => (
               <EmptyState
                 key={k}
-                icon={<GearIcon />}
+                icon={<SettingsGlassIcon size="1.4em" />}
                 illustration={k}
                 title={`No ${k} yet`}
                 description="One short sentence about the next step."
@@ -309,7 +322,7 @@ function UiGallery() {
             ),
           )}
           <EmptyState
-            icon={<GearIcon />}
+            icon={<SettingsGlassIcon size="1.4em" />}
             title="Icon only"
             description="No illustration."
           />
@@ -334,7 +347,7 @@ function UiGallery() {
             {
               id: 'edit',
               label: 'Edit',
-              icon: <PencilSimpleIcon />,
+              icon: <PencilGlassIcon size="1.4em" />,
               onSelect: () => undefined,
               description: 'Change settings',
             },
@@ -347,7 +360,7 @@ function UiGallery() {
             {
               id: 'del',
               label: 'Delete',
-              icon: <TrashIcon />,
+              icon: <TrashGlassIcon size="1.4em" />,
               tone: 'danger',
               onSelect: () => undefined,
             },

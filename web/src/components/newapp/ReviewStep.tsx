@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import {
-  DatabaseIcon,
-  GlobeIcon,
-  GitBranchIcon,
-  KeyIcon,
-  PlusIcon,
-  RocketLaunchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  GitBranchGlassIcon,
+  GlobeGlassIcon,
+  KeyGlassIcon,
+  PlusGlassIcon,
+  RocketGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import type { ImportAnalysis } from '../../queries/importAnalyze'
@@ -18,12 +18,12 @@ import {
   type NewAppEdits,
 } from '../../lib/newApp'
 
-const KIND_ICON: Record<ChangeKind, typeof PlusIcon> = {
-  app: RocketLaunchIcon,
-  source: GitBranchIcon,
-  database: DatabaseIcon,
-  domain: GlobeIcon,
-  env: KeyIcon,
+const KIND_ICON: Record<ChangeKind, typeof PlusGlassIcon> = {
+  app: RocketGlassIcon,
+  source: GitBranchGlassIcon,
+  database: DatabaseGlassIcon,
+  domain: GlobeGlassIcon,
+  env: KeyGlassIcon,
 }
 
 /**
@@ -69,12 +69,12 @@ export function ReviewStep({
           const Icon = KIND_ICON[c.kind]
           return (
             <li key={c.id} className="flex items-start gap-3 px-3 py-2">
-              <PlusIcon
-                className="mt-0.5 size-4 shrink-0 text-tone-success"
+              <PlusGlassIcon
+                className="mt-0.5 size-5 shrink-0 text-tone-success"
                 aria-label={t('review.willCreate')}
               />
               <Icon
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <span className="min-w-0 text-sm">
@@ -131,7 +131,7 @@ export function ReviewStep({
           disabled={deploying || missing.length > 0}
           onClick={onDeploy}
         >
-          <RocketLaunchIcon />
+          <RocketGlassIcon size="1.4em" />
           {deploying ? t('review.deploying') : t('review.deploy')}
         </Button>
       </div>

@@ -1,24 +1,24 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CubeIcon,
-  HeartbeatIcon,
-  RocketLaunchIcon,
-  UploadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  BoxGlassIcon,
+  RocketGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { cardAnchor } from './groups'
 
 const STEPS = [
-  { key: 'build', href: `#${cardAnchor('buildCache')}`, Icon: CubeIcon },
-  { key: 'push', href: '#build', Icon: UploadSimpleIcon },
+  { key: 'build', href: `#${cardAnchor('buildCache')}`, Icon: BoxGlassIcon },
+  { key: 'push', href: '#build', Icon: UploadGlassIcon },
   {
     key: 'rollout',
     href: `#${cardAnchor('strategy')}`,
-    Icon: RocketLaunchIcon,
+    Icon: RocketGlassIcon,
   },
   {
     key: 'healthCheck',
     href: `#${cardAnchor('safety')}`,
-    Icon: HeartbeatIcon,
+    Icon: ActivityGlassIcon,
   },
 ] as const
 
@@ -40,7 +40,7 @@ export function DeployFlowStrip() {
               className="flex h-full flex-col gap-1 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none"
             >
               <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Icon aria-hidden="true" className="size-4" />
+                <Icon aria-hidden="true" className="size-5" />
                 {i + 1}. {t(`deploySettings.flow.${key}`)}
               </span>
               <span className="text-xs text-muted-foreground">

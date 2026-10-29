@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DotsThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import { EllipsisGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -78,7 +78,7 @@ export function TopList({
                         size="icon-sm"
                         aria-label={t('topList.actionsFor', { key: row.key })}
                       >
-                        <DotsThreeIcon weight="bold" />
+                        <EllipsisGlassIcon size="1.4em" />
                       </Button>
                     }
                     items={menuFor(row)}

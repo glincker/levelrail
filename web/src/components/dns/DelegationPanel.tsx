@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -59,7 +59,7 @@ export function DelegationPanel({
           disabled={isFetching}
           onClick={() => void refetch()}
         >
-          <ArrowClockwiseIcon />
+          <RotateCwGlassIcon size="1.4em" />
           {isFetching ? t('delegation.checking') : t('delegation.recheck')}
         </Button>
       </div>

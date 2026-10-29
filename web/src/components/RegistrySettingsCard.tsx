@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import {
-  CheckIcon,
-  CopyIcon,
-  CheckCircleIcon,
-  WarningCircleIcon,
-  MinusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CopyGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
 import type { RegistrySettings } from '../queries/registry'
 import {
@@ -42,10 +42,10 @@ const STATUS_LABEL: Record<RegistrySettings['status'], string> = {
   stopped: 'Stopped',
 }
 
-const STATUS_ICON: Record<RegistrySettings['status'], Icon> = {
-  running: CheckCircleIcon,
-  error: WarningCircleIcon,
-  stopped: MinusCircleIcon,
+const STATUS_ICON: Record<RegistrySettings['status'], UiIcon> = {
+  running: CircleCheckGlassIcon,
+  error: CircleAlertGlassIcon,
+  stopped: CircleMinusGlassIcon,
 }
 
 export function RegistryStatusBadge({
@@ -183,7 +183,11 @@ export function RegistrySettingsCard({
                   variant="outline"
                   onClick={copyPassword}
                 >
-                  {copied ? <CheckIcon /> : <CopyIcon />}
+                  {copied ? (
+                    <CheckGlassIcon size="1.4em" />
+                  ) : (
+                    <CopyGlassIcon size="1.4em" />
+                  )}
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
               </div>

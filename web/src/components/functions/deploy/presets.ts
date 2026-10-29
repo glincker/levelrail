@@ -1,16 +1,16 @@
 import {
-  BracketsCurlyIcon,
-  CalendarCheckIcon,
-  ChatCircleDotsIcon,
-  EnvelopeSimpleIcon,
-  FolderOpenIcon,
-  GlobeHemisphereWestIcon,
-  LinkSimpleIcon,
-  PackageIcon,
-  CodeIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  BracesGlassIcon,
+  CalendarCheckGlassIcon,
+  CodeGlassIcon,
+  FolderGlassIcon,
+  GlobeGlassIcon,
+  LinkGlassIcon,
+  MailGlassIcon,
+  MessageCircleGlassIcon,
+  PackageGlassIcon,
+  WebhookGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { IdleChoice } from './logic'
 
 export type PresetId =
@@ -35,7 +35,7 @@ export interface Preset {
   port: number
   idleMinutes: number
   suggestedName: string
-  Icon: Icon
+  Icon: UiIcon
 }
 
 const QUICK = 5
@@ -48,36 +48,43 @@ function preset(
   runtime: string,
   idleMinutes: number,
   suggestedName: string,
-  Icon: Icon,
+  Icon: UiIcon,
 ): Preset {
   return { id, kind, runtime, port: 8080, idleMinutes, suggestedName, Icon }
 }
 
 export const PRESETS: Preset[] = [
-  preset('go', 'starter', 'go', NORMAL, 'go-handler', BracketsCurlyIcon),
+  preset('go', 'starter', 'go', NORMAL, 'go-handler', BracesGlassIcon),
+  preset('node', 'starter', 'node', NORMAL, 'node-handler', GlobeGlassIcon),
   preset(
-    'node',
+    'python',
     'starter',
-    'node',
+    'python',
     NORMAL,
-    'node-handler',
-    GlobeHemisphereWestIcon,
+    'python-handler',
+    CodeGlassIcon,
   ),
-  preset('python', 'starter', 'python', NORMAL, 'python-handler', CodeIcon),
   preset(
     'webhook',
     'idea',
     'node',
     QUICK,
     'webhook-receiver',
-    WebhooksLogoIcon,
+    WebhookGlassIcon,
   ),
-  preset('scheduled', 'idea', 'node', LONG, 'scheduled-job', CalendarCheckIcon),
-  preset('form', 'idea', 'node', NORMAL, 'form-to-email', EnvelopeSimpleIcon),
-  preset('shortener', 'idea', 'node', LONG, 'url-shortener', LinkSimpleIcon),
-  preset('chatbot', 'idea', 'node', NORMAL, 'chat-bot', ChatCircleDotsIcon),
-  preset('repo', 'repo', '', NORMAL, '', FolderOpenIcon),
-  preset('image', 'image', '', NORMAL, '', PackageIcon),
+  preset(
+    'scheduled',
+    'idea',
+    'node',
+    LONG,
+    'scheduled-job',
+    CalendarCheckGlassIcon,
+  ),
+  preset('form', 'idea', 'node', NORMAL, 'form-to-email', MailGlassIcon),
+  preset('shortener', 'idea', 'node', LONG, 'url-shortener', LinkGlassIcon),
+  preset('chatbot', 'idea', 'node', NORMAL, 'chat-bot', MessageCircleGlassIcon),
+  preset('repo', 'repo', '', NORMAL, '', FolderGlassIcon),
+  preset('image', 'image', '', NORMAL, '', PackageGlassIcon),
 ]
 
 export function findPreset(id: string): Preset {

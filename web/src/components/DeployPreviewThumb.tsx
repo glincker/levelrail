@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import {
-  ArrowsClockwiseIcon,
-  ImageSquareIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ImageGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -131,8 +128,8 @@ export function DeployPreviewThumb({
         ) : null}
         {!canShow && !isCard && !loading && !capturing ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <ImageSquareIcon
-              className="size-5 text-muted-foreground"
+            <ImageGlassIcon
+              className="size-6 text-muted-foreground"
               aria-hidden="true"
             />
           </div>
@@ -153,8 +150,8 @@ export function DeployPreviewThumb({
           onClick={recapture}
           disabled={capturing}
         >
-          <ArrowsClockwiseIcon
-            className={cn('size-3.5', capturing && 'animate-spin')}
+          <RefreshCwGlassIcon
+            className={cn('size-5', capturing && 'animate-spin')}
             data-icon="inline-start"
           />
           {capturing ? 'Capturing...' : 'Recapture'}

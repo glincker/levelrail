@@ -3,12 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  ArrowRightIcon,
-  CheckCircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  LoaderCircleGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -76,9 +76,12 @@ function DomainStep({
         </Field>
         <Button type="button" disabled={!valid || pending} onClick={onSubmit}>
           {pending ? (
-            <SpinnerGapIcon className="animate-spin motion-reduce:animate-none" />
+            <LoaderCircleGlassIcon
+              size="1.4em"
+              className="animate-spin motion-reduce:animate-none"
+            />
           ) : (
-            <ArrowRightIcon />
+            <ArrowRightGlassIcon size="1.4em" />
           )}
           {t('stepper.domain.add')}
         </Button>
@@ -161,7 +164,7 @@ function RecordsStep({
           : ''}
       </p>
       <Button type="button" size="sm" onClick={onNext}>
-        <ArrowRightIcon />
+        <ArrowRightGlassIcon size="1.4em" />
         {t('stepper.records.next')}
       </Button>
     </StepBody>
@@ -197,7 +200,8 @@ function CheckStep({
           disabled={check.isFetching}
           onClick={check.recheck}
         >
-          <ArrowsClockwiseIcon
+          <RefreshCwGlassIcon
+            size="1.4em"
             className={
               check.isFetching ? 'animate-spin motion-reduce:animate-none' : ''
             }
@@ -206,7 +210,7 @@ function CheckStep({
         </Button>
         {connected ? (
           <Button type="button" size="sm" onClick={onNext}>
-            <ArrowRightIcon />
+            <ArrowRightGlassIcon size="1.4em" />
             {t('stepper.check.next')}
           </Button>
         ) : null}
@@ -254,19 +258,18 @@ function CertificateStep({
         className="flex items-center gap-1.5 text-sm font-medium"
       >
         {state === 'issued' ? (
-          <CheckCircleIcon
-            className="size-4 text-emerald-600 dark:text-emerald-400"
-            weight="fill"
+          <CircleCheckGlassIcon
+            className="size-5 text-emerald-600 dark:text-emerald-400"
             aria-hidden="true"
           />
         ) : state === 'failed' ? (
-          <WarningCircleIcon
-            className="size-4 text-destructive"
+          <CircleAlertGlassIcon
+            className="size-5 text-destructive"
             aria-hidden="true"
           />
         ) : (
-          <SpinnerGapIcon
-            className="size-4 animate-spin motion-reduce:animate-none"
+          <LoaderCircleGlassIcon
+            className="size-5 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
         )}

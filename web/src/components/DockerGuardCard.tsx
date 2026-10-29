@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -50,7 +50,10 @@ function DockerGuardForm({ status }: { status: DockerGuardStatus }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldWarningIcon className="size-4" aria-hidden="true" />
+          <ShieldAlertGlassIcon
+            className="size-5 text-tone-warning"
+            aria-hidden="true"
+          />
           {t('dockerGuard.title')}
           <Badge
             variant={status.effective === 'enforce' ? 'default' : 'outline'}

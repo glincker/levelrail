@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { addWidget } from '@/lib/dashboardGrid'
@@ -116,7 +116,7 @@ export function DashboardView({
       {widgets.length === 0 ? (
         <EmptyState
           compact
-          icon={<SquaresFourIcon className="size-5" />}
+          icon={<LayoutGridGlassIcon className="size-6" />}
           title={t('empty.widgetsTitle')}
           description={t('empty.widgetsBody')}
         />

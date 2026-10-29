@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import {
-  ArrowsClockwiseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -46,13 +43,16 @@ export function RotateMeshKeyDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         Rotate key
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <WarningIcon className="size-4 text-amber-600" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-amber-600"
+              aria-hidden="true"
+            />
             Rotate WireGuard key for &ldquo;{nodeName}&rdquo;?
           </DialogTitle>
           <DialogDescription>

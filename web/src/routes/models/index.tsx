@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CpuIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
+import { BotGlassIcon, CpuGlassIcon } from '@thesvg/ui-react'
 import { DeployModelDialog } from '../../components/DeployModelDialog'
 import { AddEndpointDialog } from '../../components/models/AddEndpointDialog'
 import { GpuNodeCard } from '../../components/GpuNodeCard'
@@ -71,7 +71,7 @@ function GpuSection() {
   if (nodes.length === 0) {
     return (
       <EmptyState
-        icon={<CpuIcon className="size-5" />}
+        icon={<CpuGlassIcon className="size-6" />}
         title={t('empty.gpus.title')}
         description={t('empty.gpus.description')}
         helpPath="/ai-models#gpu-nodes"
@@ -126,7 +126,7 @@ function ModelList({
     return (
       <GhostPreview sample={<SampleRows />} className="min-h-72">
         <EmptyState
-          icon={<RobotIcon className="size-5" />}
+          icon={<BotGlassIcon className="size-6" />}
           title={t('empty.models.title')}
           description={t('empty.models.description')}
           action={<DeployModelDialog onDeployed={onDeployed} />}

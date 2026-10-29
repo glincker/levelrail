@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import {
-  BellIcon,
-  ClockCounterClockwiseIcon,
-  PulseIcon,
-  ScrollIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  ActivityGlassIcon,
+  BellGlassIcon,
+  RestoreGlassIcon,
+  ScrollGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Card } from '@/components/ui/card'
 import { GoLiveCta } from './golive/GoLiveCta'
 
@@ -23,7 +23,7 @@ export function DeployQuickLinks({ appName }: { appName: string }) {
           className="block"
         >
           <QuickLinkCard
-            icon={ScrollIcon}
+            icon={ScrollGlassIcon}
             label="Logs"
             description="Live and historical container output"
           />
@@ -34,7 +34,7 @@ export function DeployQuickLinks({ appName }: { appName: string }) {
           className="block"
         >
           <QuickLinkCard
-            icon={PulseIcon}
+            icon={ActivityGlassIcon}
             label="Metrics"
             description="CPU, memory, and network usage"
           />
@@ -45,7 +45,7 @@ export function DeployQuickLinks({ appName }: { appName: string }) {
           className="block"
         >
           <QuickLinkCard
-            icon={BellIcon}
+            icon={BellGlassIcon}
             label="Alerts"
             description="Notification rules for this app"
           />
@@ -56,7 +56,7 @@ export function DeployQuickLinks({ appName }: { appName: string }) {
           className="block"
         >
           <QuickLinkCard
-            icon={ClockCounterClockwiseIcon}
+            icon={RestoreGlassIcon}
             label="Deploy history"
             description="Every attempt for this app"
           />
@@ -71,7 +71,7 @@ function QuickLinkCard({
   label,
   description,
 }: {
-  icon: Icon
+  icon: UiIcon
   label: string
   description: string
 }) {
@@ -80,7 +80,7 @@ function QuickLinkCard({
       size="sm"
       className="h-full gap-1 p-3 transition-colors hover:bg-muted/50"
     >
-      <LinkIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+      <LinkIcon className="size-5 text-muted-foreground" aria-hidden="true" />
       <p className="text-sm font-medium text-foreground">{label}</p>
       <p className="text-xs text-muted-foreground">{description}</p>
     </Card>

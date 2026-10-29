@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PlayIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlayGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -59,7 +59,7 @@ export function RunPipelineDialog({
         render={<Button size="sm" disabled={!canRun} />}
         title={canRun ? undefined : t('run.disabledHint')}
       >
-        <PlayIcon aria-hidden="true" />
+        <PlayGlassIcon size="1.4em" aria-hidden="true" />
         {params.length > 0 ? t('run.withParams') : t('run.button')}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
@@ -98,7 +98,10 @@ export function RunPipelineDialog({
         </div>
         {start.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{start.error.message}</AlertDescription>
           </Alert>
         ) : null}

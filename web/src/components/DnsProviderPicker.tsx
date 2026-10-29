@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CommandBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -191,13 +191,20 @@ export function DnsProviderPicker({ app }: { app?: string }) {
 
       {test.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{readApiError(test.error)}</AlertDescription>
         </Alert>
       ) : null}
       {result ? (
         <Alert variant={result.status === 'ok' ? 'default' : 'destructive'}>
-          {result.status === 'ok' ? <CheckCircleIcon /> : <WarningIcon />}
+          {result.status === 'ok' ? (
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
+          ) : (
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
+          )}
           <AlertDescription>
             <p>{t(`dnsProvider.status.${result.status}`)}</p>
             <p className="text-xs">{result.message}</p>

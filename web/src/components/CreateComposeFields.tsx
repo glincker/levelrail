@@ -4,12 +4,12 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
 import {
-  CheckCircleIcon,
-  InfoIcon,
-  ShieldWarningIcon,
-  UploadSimpleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  InfoGlassIcon,
+  ShieldAlertGlassIcon,
+  TriangleAlertGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -98,14 +98,14 @@ function BindMountHelper({ onInsert }: { onInsert: (line: string) => void }) {
   return (
     <div className="space-y-3 rounded-lg border border-border p-3">
       <div className="flex items-center gap-2">
-        <ShieldWarningIcon
-          className="size-4 text-amber-600 dark:text-amber-400"
+        <ShieldAlertGlassIcon
+          className="size-5 text-amber-600 dark:text-amber-400"
           aria-hidden="true"
         />
         <p className="text-sm font-medium text-foreground">Add a bind mount</p>
       </div>
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>
           This gives the container direct access to a real directory on the host
           machine it runs on, not a Docker-managed volume. Never point this at a
@@ -300,7 +300,10 @@ export function CreateComposeFields({
     return (
       <div className="space-y-4">
         <Alert>
-          <CheckCircleIcon className="text-green-600 dark:text-green-400" />
+          <CircleCheckGlassIcon
+            size="1.4em"
+            className="text-green-600 dark:text-green-400"
+          />
           <AlertDescription>
             {services.length} {services.length === 1 ? 'service' : 'services'}{' '}
             deployed under &ldquo;{appId}&rdquo;.
@@ -308,7 +311,14 @@ export function CreateComposeFields({
         </Alert>
         {notices?.map((notice, i) => (
           <Alert key={i}>
-            {notice.level === 'warning' ? <WarningIcon /> : <InfoIcon />}
+            {notice.level === 'warning' ? (
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
+            ) : (
+              <InfoGlassIcon className="text-tone-info" size="1.4em" />
+            )}
             <AlertDescription>{notice.message}</AlertDescription>
           </Alert>
         ))}
@@ -411,7 +421,7 @@ export function CreateComposeFields({
               fileInputRef.current?.click()
             }}
           >
-            <UploadSimpleIcon />
+            <UploadGlassIcon size="1.4em" />
             Upload file
           </Button>
           <input

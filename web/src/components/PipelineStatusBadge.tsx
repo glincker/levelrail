@@ -1,12 +1,12 @@
 import {
-  CheckCircleIcon,
-  CircleDashedIcon,
-  CircleNotchIcon,
-  HourglassIcon,
-  MinusCircleIcon,
-  ProhibitIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  CountdownGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import type { PipelineStatus } from '../types/pipelines'
 import { STATUS_LABEL, STATUS_VARIANT } from '../lib/pipelineStatus'
 import { Badge } from '@/components/ui/badge'
@@ -22,12 +22,25 @@ export function PipelineStatusIcon({
 }) {
   switch (status) {
     case 'succeeded':
-      return <CheckCircleIcon className={className} aria-hidden="true" />
+      return (
+        <CircleCheckGlassIcon
+          size="1.4em"
+          className={className}
+          aria-hidden="true"
+        />
+      )
     case 'failed':
-      return <XCircleIcon className={className} aria-hidden="true" />
+      return (
+        <CircleXGlassIcon
+          size="1.4em"
+          className={className}
+          aria-hidden="true"
+        />
+      )
     case 'running':
       return (
-        <CircleNotchIcon
+        <LoaderCircleGlassIcon
+          size="1.4em"
           className={
             spin
               ? `${className ?? ''} animate-spin motion-reduce:animate-none`
@@ -37,13 +50,33 @@ export function PipelineStatusIcon({
         />
       )
     case 'waiting_approval':
-      return <HourglassIcon className={className} aria-hidden="true" />
+      return (
+        <CountdownGlassIcon
+          size="1.4em"
+          className={className}
+          aria-hidden="true"
+        />
+      )
     case 'cancelled':
-      return <ProhibitIcon className={className} aria-hidden="true" />
+      return (
+        <BanGlassIcon size="1.4em" className={className} aria-hidden="true" />
+      )
     case 'skipped':
-      return <MinusCircleIcon className={className} aria-hidden="true" />
+      return (
+        <CircleMinusGlassIcon
+          size="1.4em"
+          className={className}
+          aria-hidden="true"
+        />
+      )
     default:
-      return <CircleDashedIcon className={className} aria-hidden="true" />
+      return (
+        <CircleDashedGlassIcon
+          size="1.4em"
+          className={className}
+          aria-hidden="true"
+        />
+      )
   }
 }
 

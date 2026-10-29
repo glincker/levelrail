@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { Share2GlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { TrafficExportCard } from '../../components/trafficExport/TrafficExportCard'
 
@@ -12,7 +12,7 @@ function TrafficExportPage() {
   const { t } = useTranslation('trafficExport')
   return (
     <PageTemplate
-      icon={<ShareNetworkIcon />}
+      icon={<Share2GlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
     >

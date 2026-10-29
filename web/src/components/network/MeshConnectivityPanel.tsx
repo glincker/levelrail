@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  WifiSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, WifiOffGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,7 +54,7 @@ export function MeshConnectivityPanel() {
               disabled={query.isFetching}
               onClick={() => void query.refetch()}
             >
-              <ArrowsClockwiseIcon />
+              <RefreshCwGlassIcon size="1.4em" />
               {t('connectivity.refresh')}
             </Button>
           </CardAction>
@@ -68,7 +65,7 @@ export function MeshConnectivityPanel() {
           <Skeleton className="h-16 w-full" />
         ) : meshOff ? (
           <EmptyState
-            icon={<WifiSlashIcon className="size-5" />}
+            icon={<WifiOffGlassIcon className="size-6" />}
             title={t('connectivity.off')}
             description={t('connectivity.offDescription')}
           />
@@ -90,7 +87,7 @@ export function MeshConnectivityPanel() {
           </Alert>
         ) : query.data.pairs.length === 0 ? (
           <EmptyState
-            icon={<WifiSlashIcon className="size-5" />}
+            icon={<WifiOffGlassIcon className="size-6" />}
             title={t('connectivity.empty')}
             description={t('connectivity.emptyDescription')}
           />

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { TOKEN_GUIDES, type TokenHost } from '../../lib/gitTokenGuides'
 
 // The numbered steps for creating a token on one host, with the real scope names to tick.
@@ -38,8 +38,8 @@ export function GitTokenGuide({
               className="inline-flex min-w-0 items-center gap-1 break-all font-mono text-xs text-primary underline-offset-2 hover:underline"
             >
               {page}
-              <ArrowSquareOutIcon
-                className="size-3.5 shrink-0"
+              <ExternalLinkGlassIcon
+                className="size-5 shrink-0"
                 aria-hidden="true"
               />
             </a>

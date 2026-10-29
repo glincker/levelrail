@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { FirewallPage } from '../../../components/firewall/FirewallPage'
 import { RulesView } from '../../../components/firewall/RulesView'
@@ -27,7 +27,7 @@ function FirewallRulesRoute() {
       onRange={nav.setRange}
       actions={
         <Button type="button" onClick={nav.newRule}>
-          <PlusIcon />
+          <PlusGlassIcon size="1.4em" />
           {t('rules.new')}
         </Button>
       }

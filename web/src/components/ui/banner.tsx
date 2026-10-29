@@ -1,13 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  InfoIcon,
-  MegaphoneSimpleIcon,
-  WarningIcon,
-  WarningOctagonIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  InfoGlassIcon,
+  MegaphoneGlassIcon,
+  OctagonAlertGlassIcon,
+  TriangleAlertGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Display, Eyebrow } from '@/components/ui/typography'
 import { TONE, type Tone } from '@/components/kit/tone'
@@ -21,11 +21,31 @@ const VARIANT: Record<
   BannerVariant,
   { tone: Tone; icon: ReactNode; role: 'status' | 'alert' }
 > = {
-  info: { tone: 'info', icon: <InfoIcon />, role: 'status' },
-  success: { tone: 'success', icon: <CheckCircleIcon />, role: 'status' },
-  warning: { tone: 'warning', icon: <WarningIcon />, role: 'status' },
-  critical: { tone: 'danger', icon: <WarningOctagonIcon />, role: 'alert' },
-  promo: { tone: 'accent', icon: <MegaphoneSimpleIcon />, role: 'status' },
+  info: {
+    tone: 'info',
+    icon: <InfoGlassIcon className="text-tone-info" size="1.4em" />,
+    role: 'status',
+  },
+  success: {
+    tone: 'success',
+    icon: <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />,
+    role: 'status',
+  },
+  warning: {
+    tone: 'warning',
+    icon: <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />,
+    role: 'status',
+  },
+  critical: {
+    tone: 'danger',
+    icon: <OctagonAlertGlassIcon className="text-tone-danger" size="1.4em" />,
+    role: 'alert',
+  },
+  promo: {
+    tone: 'accent',
+    icon: <MegaphoneGlassIcon size="1.4em" />,
+    role: 'status',
+  },
 }
 
 export interface BannerProps {
@@ -78,7 +98,7 @@ export function Banner({
       <span
         aria-hidden="true"
         className={cn(
-          'flex h-5 shrink-0 items-center [&_svg]:size-5',
+          'flex h-5 shrink-0 items-center [&_svg]:size-6',
           tone.text,
         )}
       >
@@ -115,7 +135,7 @@ export function Banner({
             onDismiss?.()
           }}
         >
-          <XIcon aria-hidden="true" />
+          <XGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       ) : null}
     </section>

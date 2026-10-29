@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -59,7 +59,7 @@ export function CanvasPage({ projectId }: { projectId: string }) {
       breadcrumb={<Breadcrumbs projectId={projectId} />}
       title={t('title', { name: project.name })}
       description={t('description')}
-      icon={<SquaresFourIcon />}
+      icon={<LayoutGridGlassIcon size="1.4em" />}
       status={<Badge variant="info">{t('beta')}</Badge>}
       width="full"
       aside={
@@ -102,7 +102,7 @@ export function CanvasPage({ projectId }: { projectId: string }) {
 
       {graph.nodes.length === 0 ? (
         <EmptyState
-          icon={<SquaresFourIcon className="size-5" />}
+          icon={<LayoutGridGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />

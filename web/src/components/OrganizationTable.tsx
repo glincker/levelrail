@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { BuildingsIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon, UniversityGlassIcon } from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -32,7 +32,7 @@ export function OrganizationTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<BuildingsIcon className="size-5" />}
+        icon={<UniversityGlassIcon className="size-6" />}
         title="No organizations yet"
         description="Group related projects under an organization. A project with no organization is just as valid."
         action={action}
@@ -72,7 +72,7 @@ export function OrganizationTable({
           <Link to="/organizations/$id" params={{ id: org.id }}>
             <Button type="button" variant="outline" size="sm">
               View
-              <CaretRightIcon className="size-3.5" aria-hidden="true" />
+              <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
             </Button>
           </Link>
           <DeleteOrganizationDialog id={org.id} name={org.name} />

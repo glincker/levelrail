@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { MoonIcon, SunIcon } from '@phosphor-icons/react/dist/ssr'
+import { MoonGlassIcon, SunGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { InfoTip, RelativeTime, StatusPill } from '@/components/kit'
 import { Button } from '@/components/ui/button'
@@ -155,7 +155,7 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
                 })
               }}
             >
-              <SunIcon aria-hidden="true" />
+              <SunGlassIcon size="1.4em" aria-hidden="true" />
               {t('residencyCard.wakeNow')}
             </Button>
             <Button
@@ -169,7 +169,7 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
                 })
               }}
             >
-              <MoonIcon aria-hidden="true" />
+              <MoonGlassIcon size="1.4em" aria-hidden="true" />
               {t('residencyCard.sleepNow')}
             </Button>
           </>

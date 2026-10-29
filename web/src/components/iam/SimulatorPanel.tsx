@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ListMagnifyingGlassIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  FileSearchGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
@@ -74,7 +74,7 @@ function StatementLine({
 function Result({ sim }: { sim: Simulation }) {
   const { t } = useTranslation('iam')
   const tone = sim.allowed ? TONE.success : TONE.danger
-  const Icon = sim.allowed ? CheckCircleIcon : XCircleIcon
+  const Icon = sim.allowed ? CircleCheckGlassIcon : CircleXGlassIcon
   return (
     <section
       aria-live="polite"
@@ -88,7 +88,7 @@ function Result({ sim }: { sim: Simulation }) {
             tone.text,
           )}
         >
-          <Icon className="size-5" aria-hidden="true" />
+          <Icon className="size-6" aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-foreground">
@@ -276,7 +276,7 @@ export function SimulatorPanel({
           onClick={run}
           disabled={!ready || simulate.isPending}
         >
-          <ListMagnifyingGlassIcon />
+          <FileSearchGlassIcon size="1.4em" />
           {simulate.isPending ? t('simulator.running') : t('simulator.run')}
         </Button>
         <Button

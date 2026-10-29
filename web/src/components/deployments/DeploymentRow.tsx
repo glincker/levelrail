@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import {
-  ArrowUUpLeftIcon,
-  ArrowsClockwiseIcon,
-  GitBranchIcon,
-  GitCommitIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CommitGraphGlassIcon,
+  GitBranchGlassIcon,
+  RefreshCwGlassIcon,
+  UndoGlassIcon,
+} from '@thesvg/ui-react'
 import { RelativeTime, StatusPill } from '@/components/kit'
 import { cn } from '@/lib/utils'
 import type { Deployment } from '../../types/deployment'
@@ -35,10 +35,9 @@ export function StatusCell({ d, now }: { d: Deployment; now: number }) {
         icon={
           <Icon
             className={cn(
-              'size-3.5',
+              'size-4.5',
               v.spin && 'animate-spin motion-reduce:animate-none',
             )}
-            weight="bold"
             aria-hidden="true"
           />
         }
@@ -121,7 +120,7 @@ export function DeploymentRow({
   const sub = subtitle(d)
   const rollback = isRollback(d)
   const muted = kind === 'superseded' || d.status === 'canceled'
-  const Lead = rollback ? ArrowUUpLeftIcon : null
+  const Lead = rollback ? UndoGlassIcon : null
   return (
     <button
       type="button"
@@ -147,8 +146,8 @@ export function DeploymentRow({
                 aria-hidden="true"
               />
             ) : kind === 'redeploy' ? (
-              <ArrowsClockwiseIcon
-                className="size-3.5 shrink-0 text-muted-foreground"
+              <RefreshCwGlassIcon
+                className="size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
             ) : null}
@@ -182,7 +181,7 @@ export function DeploymentRow({
         <span className="flex items-center gap-1 font-mono md:w-20">
           {!rollback && d.commit_sha && (
             <>
-              <GitCommitIcon className="size-3.5" aria-hidden="true" />
+              <CommitGraphGlassIcon className="size-5" aria-hidden="true" />
               {shortSha(d.commit_sha)}
             </>
           )}
@@ -190,7 +189,10 @@ export function DeploymentRow({
         <span className="flex max-w-32 items-center gap-1 truncate font-mono md:w-28">
           {!rollback && d.branch && (
             <>
-              <GitBranchIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              <GitBranchGlassIcon
+                className="size-5 shrink-0"
+                aria-hidden="true"
+              />
               <span className="truncate">{d.branch}</span>
             </>
           )}

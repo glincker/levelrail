@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeftIcon, PlugsIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,7 +26,7 @@ export function BucketDetail({
     return (
       <div className="space-y-2">
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeftIcon aria-hidden="true" />
+          <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
           {t('back')}
         </Button>
         <p className="text-sm text-destructive">{t('detail.loadFailed')}</p>
@@ -38,7 +38,7 @@ export function BucketDetail({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeftIcon aria-hidden="true" />
+          <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
           {t('back')}
         </Button>
         <h2 className="text-base font-semibold">{bucket.name}</h2>
@@ -58,7 +58,7 @@ export function BucketDetail({
             setConfirmOpen(true)
           }}
         >
-          <PlugsIcon aria-hidden="true" />
+          <PlugGlassIcon size="1.4em" aria-hidden="true" />
           {t('detail.disconnect')}
         </Button>
       </div>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
+import { DatabaseGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDeployFromCache } from '../queries/deployFromCache'
@@ -29,7 +29,7 @@ export function DeployFromCacheButton({ appName }: { appName: string }) {
         })
       }
     >
-      <DatabaseIcon className="size-3.5" data-icon="inline-start" />
+      <DatabaseGlassIcon className="size-5" data-icon="inline-start" />
       {deploy.isPending ? t('fromCache.pending') : t('fromCache.action')}
     </Button>
   )

@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from 'react'
-import { WarningCircleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import {
   Alert,
   AlertAction,
@@ -37,7 +37,7 @@ export function DiskPressureBanner() {
       variant={pressure.level === 'critical' ? 'destructive' : 'default'}
       className="rounded-none border-x-0 border-t-0"
     >
-      <WarningCircleIcon />
+      <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
       <AlertTitle>
         {pressure.level === 'critical'
           ? 'Disk almost full'
@@ -72,7 +72,7 @@ export function DiskPressureBanner() {
             setDismissedLevel(pressure.level)
           }}
         >
-          <XIcon />
+          <XGlassIcon size="1.4em" />
         </Button>
       </AlertAction>
     </Alert>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { BellSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -98,7 +98,7 @@ export function AlertDefaultsPanel() {
       </div>
       {list.length === 0 ? (
         <EmptyState
-          icon={<BellSimpleIcon className="size-5" aria-hidden="true" />}
+          icon={<BellGlassIcon className="size-6" aria-hidden="true" />}
           title={t('defaults.emptyTitle')}
           description={t('defaults.emptyBody')}
         />

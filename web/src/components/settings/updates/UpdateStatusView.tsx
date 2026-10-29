@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCircleUpIcon,
-  ArrowClockwiseIcon,
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  InfoIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowUpGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  ClockGlassIcon,
+  ExternalLinkGlassIcon,
+  InfoGlassIcon,
+  LoaderCircleGlassIcon,
+  RotateCwGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { TONE, type Tone } from '@/components/kit/tone'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,17 +32,22 @@ function StateIcon({ state }: { state: UpdateState }) {
   const cls = 'size-5'
   switch (state) {
     case 'upToDate':
-      return <CheckCircleIcon className={cls} weight="fill" />
+      return <CircleCheckGlassIcon size="1.4em" className={cls} />
     case 'available':
-      return <ArrowCircleUpIcon className={cls} weight="fill" />
+      return <ArrowUpGlassIcon size="1.4em" className={cls} />
     case 'scheduled':
-      return <ClockIcon className={cls} weight="fill" />
+      return <ClockGlassIcon size="1.4em" className={cls} />
     case 'inProgress':
-      return <SpinnerGapIcon className={cn(cls, 'animate-spin')} />
+      return (
+        <LoaderCircleGlassIcon
+          size="1.4em"
+          className={cn(cls, 'animate-spin')}
+        />
+      )
     case 'checkFailed':
-      return <WarningCircleIcon className={cls} weight="fill" />
+      return <CircleAlertGlassIcon size="1.4em" className={cls} />
     default:
-      return <InfoIcon className={cls} />
+      return <InfoGlassIcon size="1.4em" className={cls} />
   }
 }
 
@@ -146,7 +151,10 @@ export function UpdateStatusView({
               className="w-full sm:w-auto"
               onClick={onCheck}
             >
-              <ArrowClockwiseIcon className={checking ? 'animate-spin' : ''} />
+              <RotateCwGlassIcon
+                size="1.4em"
+                className={checking ? 'animate-spin' : ''}
+              />
               {checking ? t('status.checking') : t('status.checkNow')}
             </Button>
             {!edge && state === 'available' && releaseUrl ? (
@@ -160,7 +168,7 @@ export function UpdateStatusView({
                 )}
               >
                 {t('status.viewNotes')}
-                <ArrowSquareOutIcon />
+                <ExternalLinkGlassIcon size="1.4em" />
               </a>
             ) : null}
           </div>

@@ -44,3 +44,50 @@ export function searchDocs(
   }
   return results
 }
+
+export interface DocPageHit {
+  path: string
+  title: string
+  /** Up to a few headings of this page that match, in page order. */
+  headings: DocHeading[]
+  score: number
+}
+
+const TITLE_EXACT = 100
+const TITLE_PART = 60
+const HEADING = 40
+const BODY = 10
+
+// One row per page, best page first: title beats heading beats body, and a page
+// is never listed twice however many of its headings match.
+export function searchDocsGrouped(
+  manifest: DocsManifest,
+  query: string,
+  limits: { pages: number; headings: number } = { pages: 8, headings: 2 },
+): DocPageHit[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return []
+  const hits: DocPageHit[] = []
+  for (const [path, page] of Object.entries(manifest.pages)) {
+    if (path === '/') continue
+    const title = page.title.toLowerCase()
+    const headings = page.headings.filter((h) =>
+      h.text.toLowerCase().includes(q),
+    )
+    let score = 0
+    if (title === q) score = TITLE_EXACT
+    else if (title.includes(q)) score = TITLE_PART
+    else if (headings.length > 0) score = HEADING + Math.min(headings.length, 5)
+    else if (page.body.toLowerCase().includes(q)) score = BODY
+    if (score === 0) continue
+    hits.push({
+      path,
+      title: page.title,
+      headings: headings.slice(0, limits.headings),
+      score,
+    })
+  }
+  return hits
+    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
+    .slice(0, limits.pages)
+}

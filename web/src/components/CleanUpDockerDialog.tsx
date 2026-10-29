@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BroomIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -38,13 +38,16 @@ export function CleanUpDockerDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <BroomIcon className="size-3.5" aria-hidden="true" />
+        <BroomGlassIcon className="size-5" aria-hidden="true" />
         Clean up now
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             Clean up Docker storage?
           </DialogTitle>
           <DialogDescription render={<div className="space-y-2 text-left" />}>

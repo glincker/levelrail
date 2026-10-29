@@ -1,10 +1,10 @@
 import {
-  ArrowCounterClockwiseIcon,
-  CheckCircleIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  RotateCcwGlassIcon,
+  TriangleAlertGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,10 +40,10 @@ const STATUS_BADGE_VARIANT: Record<
   fail: 'destructive',
 }
 
-const STATUS_ICON: Record<HealthScoreStatus, Icon> = {
-  pass: CheckCircleIcon,
-  warn: WarningIcon,
-  fail: WarningCircleIcon,
+const STATUS_ICON: Record<HealthScoreStatus, UiIcon> = {
+  pass: CircleCheckGlassIcon,
+  warn: TriangleAlertGlassIcon,
+  fail: CircleAlertGlassIcon,
 }
 
 const STATUS_ICON_CLASS: Record<HealthScoreStatus, string> = {
@@ -70,7 +70,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
           <Badge variant={STATUS_BADGE_VARIANT[score.status]} className="gap-1">
             {(() => {
               const Icon = STATUS_ICON[score.status]
-              return <Icon aria-hidden="true" />
+              return <Icon size="1.4em" aria-hidden="true" />
             })()}
             {t(STATUS_LABEL_KEY[score.status])}
           </Badge>
@@ -103,7 +103,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
                 onClick={() => void refetch()}
                 className={buttonVariants({ size: 'sm', variant: 'outline' })}
               >
-                <ArrowCounterClockwiseIcon className="size-3.5" />
+                <RotateCcwGlassIcon className="size-5" />
                 {t('actions.retry')}
               </button>
             )}
@@ -127,7 +127,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
                     className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0"
                   >
                     <Icon
-                      className={`mt-0.5 size-4 shrink-0 ${STATUS_ICON_CLASS[category.status]}`}
+                      className={`mt-0.5 size-5 shrink-0 ${STATUS_ICON_CLASS[category.status]}`}
                       aria-hidden="true"
                     />
                     <div className="flex-1 space-y-0.5">

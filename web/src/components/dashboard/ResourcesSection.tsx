@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CubeIcon,
-  DatabaseIcon,
-  PackageIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BoxGlassIcon,
+  DatabaseGlassIcon,
+  PackageGlassIcon,
+} from '@thesvg/ui-react'
 import { Progress as ProgressPrimitive } from '@base-ui/react/progress'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -253,15 +253,15 @@ function ConsumerRow({
   const value = sort === 'memory' ? c.memoryBytes : c.cpuPercent
   const Icon =
     c.kind === 'app'
-      ? PackageIcon
+      ? PackageGlassIcon
       : c.kind === 'database'
-        ? DatabaseIcon
-        : CubeIcon
+        ? DatabaseGlassIcon
+        : BoxGlassIcon
   const content = (
     <>
       <Icon
         aria-label={t(`resources.kind.${c.kind}`)}
-        className="size-4 shrink-0 text-muted-foreground"
+        className="size-5 shrink-0 text-muted-foreground"
       />
       <span className="min-w-0 flex-1 truncate text-sm font-medium">
         {c.name}

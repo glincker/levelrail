@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  ArrowsClockwiseIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -210,8 +207,8 @@ export function GitRepoListPicker({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+          <SearchGlassIcon
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -232,8 +229,8 @@ export function GitRepoListPicker({
           title={t('picker.refreshHint')}
           onClick={() => refresh.mutate()}
         >
-          <ArrowsClockwiseIcon
-            className={cn('size-3.5', refresh.isPending && 'animate-spin')}
+          <RefreshCwGlassIcon
+            className={cn('size-5', refresh.isPending && 'animate-spin')}
             aria-hidden="true"
           />
           {refresh.isPending ? t('picker.refreshing') : t('picker.refresh')}

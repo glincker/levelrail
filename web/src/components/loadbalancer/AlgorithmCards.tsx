@@ -1,13 +1,13 @@
 import type { ComponentType } from 'react'
 import {
-  ArrowsClockwiseIcon,
-  ChartPieSliceIcon,
-  CookieIcon,
-  FingerprintIcon,
-  HashIcon,
-  LinkSimpleIcon,
-  ScalesIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChartColumnGlassIcon,
+  CookieGlassIcon,
+  FingerprintPatternGlassIcon,
+  HashGlassIcon,
+  LinkGlassIcon,
+  RefreshCwGlassIcon,
+  ScaleGlassIcon,
+} from '@thesvg/ui-react'
 import { InfoTip } from '@/components/kit'
 import { cn } from '@/lib/utils'
 import { ALGORITHM_OPTIONS } from '../../lib/loadBalancer'
@@ -22,43 +22,43 @@ interface Meta {
 
 const META: Record<LoadBalancerAlgorithm, Meta> = {
   round_robin: {
-    icon: ArrowsClockwiseIcon,
+    icon: RefreshCwGlassIcon,
     useWhen: 'Requests cost about the same.',
     tradeoff: 'Simple and fair, but ignores how busy a replica is.',
     lines: [2, 2, 2],
   },
   least_conn: {
-    icon: ScalesIcon,
+    icon: ScaleGlassIcon,
     useWhen: 'Requests vary in duration.',
     tradeoff: 'Evens out load, slightly more bookkeeping per request.',
     lines: [1, 3, 1],
   },
   ip_hash: {
-    icon: HashIcon,
+    icon: HashGlassIcon,
     useWhen: 'You need clients to stay put without cookies.',
     tradeoff: 'Clients behind one proxy or CDN all land on one replica.',
     lines: [0, 3, 0],
   },
   client_ip_hash: {
-    icon: FingerprintIcon,
+    icon: FingerprintPatternGlassIcon,
     useWhen: 'You want IP stickiness behind a CDN or proxy.',
     tradeoff: 'Needs APP_INGRESS_TRUSTED_PROXIES, else it matches IP hash.',
     lines: [0, 3, 0],
   },
   uri_hash: {
-    icon: LinkSimpleIcon,
+    icon: LinkGlassIcon,
     useWhen: 'Replicas keep per-path caches.',
     tradeoff: 'Hot paths can overload one replica.',
     lines: [3, 0, 1],
   },
   cookie: {
-    icon: CookieIcon,
+    icon: CookieGlassIcon,
     useWhen: 'Sessions live in replica memory.',
     tradeoff: 'Pins a browser to one replica, so uneven load is possible.',
     lines: [0, 3, 0],
   },
   weighted: {
-    icon: ChartPieSliceIcon,
+    icon: ChartColumnGlassIcon,
     useWhen: 'Canaries or replicas of different sizes.',
     tradeoff: 'You maintain the weights by hand.',
     lines: [4, 1, 1],
@@ -124,7 +124,7 @@ export function AlgorithmCards({
               <MiniDiagram lines={meta.lines} />
               <span className="min-w-0 pr-5">
                 <span className="flex items-center gap-1.5 text-sm font-medium">
-                  <Icon className="size-4" aria-hidden />
+                  <Icon className="size-5" aria-hidden />
                   {o.label}
                 </span>
                 <span className="block text-xs text-muted-foreground">

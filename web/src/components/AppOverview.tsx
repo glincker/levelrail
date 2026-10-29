@@ -1,4 +1,4 @@
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { OptimiseHint } from './resourceAdvisor/ResourceAdvisorTile'
 import type {
   AppDetail,
@@ -61,7 +61,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SquaresFourIcon className="size-4" />
+          <LayoutGridGlassIcon className="size-5" />
           Overview
         </CardTitle>
         <OptimiseHint kind="app" name={app.name} />

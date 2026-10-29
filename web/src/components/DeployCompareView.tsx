@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import {
-  ArrowRightIcon,
-  ArrowCounterClockwiseIcon,
-  InfoIcon,
-  LockIcon,
-  DatabaseIcon,
-  VaultIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  DatabaseGlassIcon,
+  InfoGlassIcon,
+  LockGlassIcon,
+  RotateCcwGlassIcon,
+  VaultGlassIcon,
+} from '@thesvg/ui-react'
 import type {
   DeployCompare,
   DeployCompareEnvChange,
@@ -178,8 +178,8 @@ export function DeployCompareView({
                   <span className="truncate font-mono text-xs text-muted-foreground">
                     {formatChangeValue(c.field, c.from)}
                   </span>
-                  <ArrowRightIcon
-                    className="size-3.5 shrink-0 text-muted-foreground"
+                  <ArrowRightGlassIcon
+                    className="size-5 shrink-0 text-muted-foreground"
                     aria-hidden="true"
                   />
                   <span className="truncate font-mono text-xs text-foreground">
@@ -197,7 +197,7 @@ export function DeployCompareView({
       <DeployCompareCommitsCard appName={appName} compare={compare} />
 
       <Alert>
-        <InfoIcon className="size-4" />
+        <InfoGlassIcon className="size-5 text-tone-info" />
         <AlertDescription>
           <p>{compare.note}</p>
           {compare.unsnapshotted_fields.length > 0 ? (
@@ -244,20 +244,20 @@ function DeployCompareEnvChangesCard({
               >
                 <span className="flex w-40 shrink-0 items-center gap-1 font-mono text-xs font-medium text-foreground">
                   {c.kind === 'secret' ? (
-                    <LockIcon
-                      className="size-3.5 shrink-0 text-muted-foreground"
+                    <LockGlassIcon
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-label="Secret value"
                     />
                   ) : null}
                   {c.kind === 'database' ? (
-                    <DatabaseIcon
-                      className="size-3.5 shrink-0 text-muted-foreground"
+                    <DatabaseGlassIcon
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-label="Database-resolved value"
                     />
                   ) : null}
                   {c.kind === 'vault' ? (
-                    <VaultIcon
-                      className="size-3.5 shrink-0 text-muted-foreground"
+                    <VaultGlassIcon
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-label="Vault-resolved value"
                     />
                   ) : null}
@@ -271,8 +271,8 @@ function DeployCompareEnvChangesCard({
                     <span className="truncate font-mono text-xs text-muted-foreground">
                       {c.from || '(none)'}
                     </span>
-                    <ArrowRightIcon
-                      className="size-3.5 shrink-0 text-muted-foreground"
+                    <ArrowRightGlassIcon
+                      className="size-5 shrink-0 text-muted-foreground"
                       aria-hidden="true"
                     />
                     <span className="truncate font-mono text-xs text-foreground">
@@ -371,10 +371,7 @@ function DeployCompareSideCard({
               (protectedEnv?.protected && !ackProtected)
             }
           >
-            <ArrowCounterClockwiseIcon
-              className="size-3.5"
-              data-icon="inline-start"
-            />
+            <RotateCcwGlassIcon className="size-5" data-icon="inline-start" />
             {triggerDeploy.isPending
               ? 'Rolling back...'
               : 'Roll back to this build'}

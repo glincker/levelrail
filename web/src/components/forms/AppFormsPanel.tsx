@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ClipboardTextIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { ClipboardListGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { BetaBadge } from '@/components/BetaBadge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,7 +22,7 @@ export function AppFormsPanel({ app }: { app: string }) {
   if (sites.isSuccess && !sites.data.some((s) => s.name === app)) {
     return (
       <EmptyState
-        icon={<ClipboardTextIcon className="size-5" />}
+        icon={<ClipboardListGlassIcon className="size-6" />}
         title={t('notStatic.title')}
         description={t('notStatic.description')}
         action={
@@ -51,7 +51,7 @@ export function AppFormsPanel({ app }: { app: string }) {
         </div>
         {hasForms && (
           <Button writeAction onClick={() => setCreating(true)}>
-            <PlusIcon />
+            <PlusGlassIcon size="1.4em" />
             {t('new')}
           </Button>
         )}
@@ -77,12 +77,12 @@ export function AppFormsPanel({ app }: { app: string }) {
       )}
       {forms.isSuccess && forms.data.forms.length === 0 && (
         <EmptyState
-          icon={<ClipboardTextIcon className="size-5" />}
+          icon={<ClipboardListGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           action={
             <Button writeAction onClick={() => setCreating(true)}>
-              <PlusIcon />
+              <PlusGlassIcon size="1.4em" />
               {t('empty.cta')}
             </Button>
           }

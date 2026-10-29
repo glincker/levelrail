@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretRightIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronRightGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -100,11 +100,11 @@ export function DomainTLSCertControl({
         aria-expanded={open}
         className="flex w-full items-center gap-1.5 text-left"
       >
-        <CaretRightIcon
+        <ChevronRightGlassIcon
           className={
             open
-              ? 'size-3.5 shrink-0 rotate-90 transition-transform'
-              : 'size-3.5 shrink-0 transition-transform'
+              ? 'size-5 shrink-0 rotate-90 transition-transform'
+              : 'size-5 shrink-0 transition-transform'
           }
           aria-hidden="true"
         />
@@ -113,7 +113,10 @@ export function DomainTLSCertControl({
         </span>
         {uploaded ? (
           <Badge variant="success" className="shrink-0">
-            <ShieldCheckIcon className="size-3" aria-hidden="true" />
+            <ShieldCheckGlassIcon
+              className="size-4.5 text-tone-success"
+              aria-hidden="true"
+            />
             {t('proxySetup.byo.uploaded')}
           </Badge>
         ) : null}
@@ -244,7 +247,10 @@ export function DomainTLSCertControl({
                 <DialogContent className="sm:max-w-sm">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-1.5 text-destructive">
-                      <WarningIcon className="size-4" aria-hidden="true" />
+                      <TriangleAlertGlassIcon
+                        className="size-6 text-tone-warning"
+                        aria-hidden="true"
+                      />
                       {t('proxySetup.byo.revertTitle', { domain })}
                     </DialogTitle>
                     <DialogDescription>

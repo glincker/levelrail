@@ -1,11 +1,11 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PlugsIcon,
-  PlusIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlugGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   useAppStreams,
   useCreateAppStream,
@@ -47,8 +47,8 @@ export function AppStreamsPanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugsIcon
-            className="size-4 text-muted-foreground"
+          <PlugGlassIcon
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('page.title')}
@@ -61,7 +61,7 @@ export function AppStreamsPanel({ appName }: { appName: string }) {
         {streams.length === 0 ? (
           <EmptyState
             className="py-8"
-            icon={<PlugsIcon className="size-5" />}
+            icon={<PlugGlassIcon className="size-6" />}
             title={t('empty.title')}
             description={t('empty.description')}
           />
@@ -154,7 +154,7 @@ function StreamsTable({
             remove(stream)
           }}
         >
-          <TrashIcon aria-hidden="true" />
+          <TrashGlassIcon size="1.4em" aria-hidden="true" />
           {deleteStream.isPending ? t('remove.removing') : t('remove.trigger')}
         </Button>
       )}
@@ -246,13 +246,17 @@ function AddStreamForm({ appName }: { appName: string }) {
           containerPort.trim() === ''
         }
       >
-        <PlusIcon aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {createStream.isPending ? t('add.submitting') : t('add.submit')}
       </Button>
 
       {createStream.isError ? (
         <Alert variant="destructive" className="w-full">
-          <WarningIcon aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="text-tone-warning"
+            size="1.7em"
+            aria-hidden="true"
+          />
           <AlertDescription>{createStream.error.message}</AlertDescription>
         </Alert>
       ) : null}

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
-  DatabaseIcon,
-  HardDrivesIcon,
-  PlugsConnectedIcon,
-  ShareNetworkIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  PlugGlassIcon,
+  ServerGlassIcon,
+  Share2GlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,14 +57,17 @@ function ConnectionReachabilityBadge({
   if (connection.mesh_dns) {
     return (
       <Badge variant="success">
-        <ShareNetworkIcon className="size-3" aria-hidden="true" />
+        <Share2GlassIcon className="size-4.5" aria-hidden="true" />
         Cross-node (mesh DNS)
       </Badge>
     )
   }
   return (
     <Badge variant="destructive">
-      <WarningIcon className="size-3" aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="size-6 text-tone-warning"
+        aria-hidden="true"
+      />
       Cross-node, mesh disabled
     </Badge>
   )
@@ -84,8 +87,8 @@ function ConnectionRow({
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-border p-3">
       <div className="flex items-start gap-2">
-        <PlugsConnectedIcon
-          className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+        <PlugGlassIcon
+          className="mt-0.5 size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <div className="space-y-1">
@@ -258,8 +261,8 @@ export function DatabaseConnectionsCard({ app }: { app: AppDetail }) {
                         <span className="flex items-center gap-1.5">
                           {d.name} ({d.engine})
                           {d.cross_node ? (
-                            <HardDrivesIcon
-                              className="size-3.5 text-muted-foreground"
+                            <ServerGlassIcon
+                              className="size-5 text-muted-foreground"
                               aria-hidden="true"
                             />
                           ) : null}
@@ -274,7 +277,7 @@ export function DatabaseConnectionsCard({ app }: { app: AppDetail }) {
                   disabled={createConnection.isPending || !selectedDatabase}
                   onClick={handleConnect}
                 >
-                  <DatabaseIcon className="size-3.5" aria-hidden="true" />
+                  <DatabaseGlassIcon className="size-5" aria-hidden="true" />
                   {createConnection.isPending ? 'Connecting...' : 'Connect'}
                 </Button>
               </div>

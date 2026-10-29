@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { DialogControl } from './dialogControl'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -57,13 +57,16 @@ export function DeleteCustomTemplateDialog({
             />
           }
         >
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             Delete &ldquo;{name}&rdquo;?
           </DialogTitle>
           <DialogDescription>
@@ -74,7 +77,10 @@ export function DeleteCustomTemplateDialog({
         </DialogHeader>
         {deleteTemplate.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{deleteTemplate.error.message}</AlertDescription>
           </Alert>
         ) : null}

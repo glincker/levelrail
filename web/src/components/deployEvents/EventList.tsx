@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsLeftRightIcon,
-  ArrowUUpLeftIcon,
-  ChartLineUpIcon,
-  EyeIcon,
-  FlagCheckeredIcon,
-  GitBranchIcon,
-  HammerIcon,
-  HeartbeatIcon,
-  ListChecksIcon,
-  TerminalWindowIcon,
-  UploadSimpleIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  ArrowLeftRightGlassIcon,
+  ChartLineGlassIcon,
+  EyeGlassIcon,
+  FlagGlassIcon,
+  GitBranchGlassIcon,
+  HammerGlassIcon,
+  ListChecksGlassIcon,
+  TerminalGlassIcon,
+  UndoGlassIcon,
+  UploadGlassIcon,
+  WebhookGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
@@ -27,18 +27,18 @@ import type { DeployEvent, DeployEventKind } from '../../types/deployEvents'
 import { ImpactCard } from './ImpactCard'
 
 const KIND_ICON: Record<DeployEventKind, ReactNode> = {
-  trigger: <GitBranchIcon />,
-  build: <HammerIcon />,
-  log: <TerminalWindowIcon />,
-  image_push: <UploadSimpleIcon />,
-  hook: <WebhooksLogoIcon />,
-  step: <ListChecksIcon />,
-  readiness: <HeartbeatIcon />,
-  cutover: <ArrowsLeftRightIcon />,
-  watch: <EyeIcon />,
-  rollback: <ArrowUUpLeftIcon />,
-  outcome: <FlagCheckeredIcon />,
-  traffic_impact: <ChartLineUpIcon />,
+  trigger: <GitBranchGlassIcon size="1.4em" />,
+  build: <HammerGlassIcon size="1.4em" />,
+  log: <TerminalGlassIcon size="1.4em" />,
+  image_push: <UploadGlassIcon size="1.4em" />,
+  hook: <WebhookGlassIcon size="1.4em" />,
+  step: <ListChecksGlassIcon size="1.4em" />,
+  readiness: <ActivityGlassIcon size="1.4em" />,
+  cutover: <ArrowLeftRightGlassIcon size="1.4em" />,
+  watch: <EyeGlassIcon size="1.4em" />,
+  rollback: <UndoGlassIcon size="1.4em" />,
+  outcome: <FlagGlassIcon size="1.4em" />,
+  traffic_impact: <ChartLineGlassIcon size="1.4em" />,
 }
 
 function clock(at: string): string {
@@ -93,7 +93,7 @@ function EventRow({ event }: { event: DeployEvent }) {
       <span
         aria-hidden="true"
         className={cn(
-          'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border [&_svg]:size-4',
+          'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border [&_svg]:size-5',
           tone.soft,
           tone.border,
           tone.text,
@@ -173,7 +173,7 @@ export function EventList({ events, label, showLogs = true }: EventListProps) {
             <>
               <span
                 aria-hidden="true"
-                className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border bg-muted text-muted-foreground [&_svg]:size-4"
+                className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border bg-muted text-muted-foreground [&_svg]:size-5"
               >
                 {KIND_ICON.log}
               </span>

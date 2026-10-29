@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CalendarCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { CalendarCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,7 +33,7 @@ export function ScheduledDeploysList({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CalendarCheckIcon className="size-4" aria-hidden="true" />
+          <CalendarCheckGlassIcon className="size-5" aria-hidden="true" />
           {t('schedule.list.title')}
         </CardTitle>
         <p className="text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -193,7 +193,7 @@ export function DeployOptions({
                       })
                     }}
                   >
-                    <TrashIcon aria-hidden="true" className="size-4" />
+                    <TrashGlassIcon aria-hidden="true" className="size-5" />
                   </Button>
                 </div>
                 {job.preset === 'custom' ? (
@@ -225,7 +225,7 @@ export function DeployOptions({
               setNextId(nextId + 1)
             }}
           >
-            <PlusIcon aria-hidden="true" className="size-4" />
+            <PlusGlassIcon aria-hidden="true" className="size-5" />
             {t('deployOptions.jobs.add')}
           </Button>
         </CollapsiblePanel>

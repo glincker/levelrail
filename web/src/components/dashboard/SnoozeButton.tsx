@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { BellSlashIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellOffGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast, toastAction } from '@/components/ui/toast'
 import { snoozeNow, unsnoozeNow } from '../shell/snoozeStore'
@@ -29,7 +29,7 @@ export function SnoozeButton({ ids }: { ids: string[] }) {
         })
       }}
     >
-      <BellSlashIcon />
+      <BellOffGlassIcon size="1.4em" />
     </Button>
   )
 }

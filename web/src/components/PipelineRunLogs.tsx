@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useLogStream, type LogLine } from '../hooks/useLogStream'
 import { LogTerminal } from './LogTerminal'
@@ -58,7 +58,7 @@ function StoredLogs({
   if (error) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     )

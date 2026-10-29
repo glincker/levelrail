@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon } from '@thesvg/ui-react'
 import { RelativeTime } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { Field, FieldHint, FieldLabel } from '@/components/ui/field'
@@ -198,7 +198,7 @@ export function ModelEndpointPanel({ model }: { model: ModelResource }) {
             disabled={recheck.isPending}
             onClick={doRecheck}
           >
-            <ArrowClockwiseIcon aria-hidden="true" />
+            <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
             {recheck.isPending ? t('endpoint.testing') : t('endpoint.recheck')}
           </Button>
         </div>

@@ -1,10 +1,10 @@
 import type { FieldErrors, UseFormRegister } from 'react-hook-form'
 import {
-  EyeIcon,
-  EyeSlashIcon,
-  LockIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  LockGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,7 +28,7 @@ export function SecretNotConfiguredCard({ title }: { title: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockIcon className="size-4" />
+          <LockGlassIcon className="size-5" />
           {title}
         </CardTitle>
       </CardHeader>
@@ -67,7 +67,7 @@ export function SecretAgeBadge({
       <span>Set {formatAge(updatedAt)}</span>
       {stale ? (
         <Badge variant="warning">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           Needs rotation
         </Badge>
       ) : null}
@@ -128,9 +128,9 @@ export function SecretKeyValueFields({
             className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
           >
             {revealValue ? (
-              <EyeSlashIcon className="size-4" />
+              <EyeOffGlassIcon className="size-5" />
             ) : (
-              <EyeIcon className="size-4" />
+              <EyeGlassIcon className="size-5" />
             )}
           </button>
         </div>

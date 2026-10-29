@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { IdentificationCardIcon } from '@phosphor-icons/react/dist/ssr'
+import { IdCardGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
@@ -69,7 +69,7 @@ function SSOSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<IdentificationCardIcon />}
+      icon={<IdCardGlassIcon size="1.4em" />}
       eyebrow={t('page.eyebrow')}
       title={t('page.title')}
       description={t('page.description')}

@@ -1,9 +1,9 @@
 import {
-  ArrowSquareOutIcon,
-  CheckIcon,
-  CopyIcon,
-  GlobeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  ExternalLinkGlassIcon,
+  GlobeGlassIcon,
+} from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
@@ -19,7 +19,7 @@ export function UrlLine({
   if (!url) {
     return (
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <GlobeIcon className="size-4" aria-hidden="true" />
+        <GlobeGlassIcon className="size-5" aria-hidden="true" />
         No public URL yet.
         <Link
           to="/apps/$name/domains"
@@ -39,9 +39,9 @@ export function UrlLine({
         rel="noreferrer"
         className="inline-flex min-w-0 items-center gap-1.5 truncate text-base font-medium text-primary hover:underline"
       >
-        <GlobeIcon className="size-4 shrink-0" aria-hidden="true" />
+        <GlobeGlassIcon className="size-5 shrink-0" aria-hidden="true" />
         <span className="truncate">{url.replace(/^https?:\/\//, '')}</span>
-        <ArrowSquareOutIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        <ExternalLinkGlassIcon className="size-5 shrink-0" aria-hidden="true" />
       </a>
       <Button
         variant="ghost"
@@ -50,9 +50,9 @@ export function UrlLine({
         onClick={() => copy(url)}
       >
         {copied ? (
-          <CheckIcon className="size-3.5" aria-hidden="true" />
+          <CheckGlassIcon className="size-5" aria-hidden="true" />
         ) : (
-          <CopyIcon className="size-3.5" aria-hidden="true" />
+          <CopyGlassIcon className="size-5" aria-hidden="true" />
         )}
       </Button>
     </div>

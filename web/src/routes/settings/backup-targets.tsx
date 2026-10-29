@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import { backupTargetListQueryOptions } from '../../queries/backupTargets'
 import { BackupTargetTable } from '../../components/BackupTargetTable'
 import { BackupCopiesSection } from '../../components/BackupCopiesSection'
@@ -30,7 +30,7 @@ function BackupTargetsPage() {
 
   return (
     <PageTemplate
-      icon={<CloudArrowUpIcon />}
+      icon={<UploadGlassIcon size="1.4em" />}
       eyebrow={t('backupTargetsPage.eyebrow')}
       title={t('backupTargetsPage.title')}
       description={t('backupTargetsPage.description')}

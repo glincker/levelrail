@@ -2,10 +2,10 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  GitDiffIcon,
-  MagnifyingGlassIcon,
-  RocketLaunchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GitCompareGlassIcon,
+  RocketGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
 import { useApp } from '../queries/apps'
@@ -77,14 +77,14 @@ export function DeployAttemptsList({
         </CardHeader>
         <CardContent>
           <EmptyState
-            icon={<RocketLaunchIcon className="size-5" />}
+            icon={<RocketGlassIcon className="size-6" />}
             title="No deploys yet"
             description="Deploy an existing image tag, or build one from a git source."
             action={
               onDeploy ? (
                 <Button size="sm" onClick={onDeploy}>
-                  <RocketLaunchIcon
-                    className="size-3.5"
+                  <RocketGlassIcon
+                    className="size-5"
                     data-icon="inline-start"
                   />
                   {t('deployHistory.deployNow')}
@@ -160,7 +160,7 @@ export function DeployAttemptsList({
               />
             }
           >
-            <GitDiffIcon className="size-3.5" data-icon="inline-start" />
+            <GitCompareGlassIcon className="size-5" data-icon="inline-start" />
             Compare selected
           </Button>
         ) : selected.length === 1 ? (
@@ -170,7 +170,7 @@ export function DeployAttemptsList({
         ) : null}
         {onDeploy ? (
           <Button size="sm" onClick={onDeploy} className="ml-auto">
-            <RocketLaunchIcon className="size-3.5" data-icon="inline-start" />
+            <RocketGlassIcon className="size-5" data-icon="inline-start" />
             {t('deployHistory.deployNow')}
           </Button>
         ) : null}
@@ -209,7 +209,7 @@ export function DeployAttemptsList({
         {matching.length === 0 ? (
           <EmptyState
             compact
-            icon={<MagnifyingGlassIcon className="size-5" />}
+            icon={<SearchGlassIcon className="size-6" />}
             title={t('deployHistory.filters.noMatch')}
             description={t('deployHistory.filters.noMatchHint')}
             action={

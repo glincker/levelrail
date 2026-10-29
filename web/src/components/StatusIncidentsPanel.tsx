@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CirclePlusGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -192,7 +192,7 @@ function CreateIncidentForm() {
         </p>
       ) : null}
       <Button type="submit" size="sm" disabled={create.isPending}>
-        <PlusCircleIcon className="size-4" aria-hidden="true" />
+        <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
         Publish
       </Button>
     </form>

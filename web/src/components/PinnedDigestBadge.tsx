@@ -1,8 +1,8 @@
 import {
-  CheckIcon,
-  CopyIcon,
-  FingerprintIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  FingerprintPatternGlassIcon,
+} from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import {
   Tooltip,
@@ -35,7 +35,10 @@ export function PinnedDigestBadge({
         <TooltipTrigger
           render={
             <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5">
-              <FingerprintIcon className="size-3" aria-hidden="true" />
+              <FingerprintPatternGlassIcon
+                className="size-4.5"
+                aria-hidden="true"
+              />
               {shortDigest(digest)}
             </span>
           }
@@ -51,9 +54,9 @@ export function PinnedDigestBadge({
         }}
       >
         {copied ? (
-          <CheckIcon className="size-3" aria-hidden="true" />
+          <CheckGlassIcon className="size-4.5" aria-hidden="true" />
         ) : (
-          <CopyIcon className="size-3" aria-hidden="true" />
+          <CopyGlassIcon className="size-4.5" aria-hidden="true" />
         )}
       </button>
       <span className="sr-only" role="status">

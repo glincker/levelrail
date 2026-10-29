@@ -1,7 +1,4 @@
-import {
-  ArrowClockwiseIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon, WebhookGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -90,7 +87,7 @@ function DeliveryRow({
             disabled={replay.isPending}
             onClick={handleReplay}
           >
-            <ArrowClockwiseIcon aria-hidden="true" />
+            <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
             {replay.isPending ? 'Replaying...' : 'Replay'}
           </Button>
         </div>
@@ -122,8 +119,8 @@ export function WebhookDeliveriesPanel({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <WebhooksLogoIcon
-            className="size-4 text-muted-foreground"
+          <WebhookGlassIcon
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           Recent deliveries

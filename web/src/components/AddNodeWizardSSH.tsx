@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeftIcon,
-  KeyIcon,
-  PasswordIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  KeyGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   DialogDescription,
   DialogFooter,
@@ -128,7 +127,7 @@ export function SSHEnrollFields({
           onClick={phase === 'target' ? onBack : backToTarget}
           aria-label="Back"
         >
-          <ArrowLeftIcon />
+          <ArrowLeftGlassIcon size="1.4em" />
         </Button>
         {phase === 'verify' ? t('sshVerify.title') : 'Connect over SSH'}
       </DialogTitle>
@@ -167,7 +166,10 @@ export function SSHEnrollFields({
           </div>
           {preflight.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{preflight.error.message}</AlertDescription>
             </Alert>
           ) : null}
@@ -244,7 +246,7 @@ export function SSHEnrollFields({
       {header}
       <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
         <div className="flex items-center gap-2 rounded-lg border border-border p-2 text-xs">
-          <ShieldCheckIcon className="size-4 shrink-0 text-primary" />
+          <ShieldCheckGlassIcon className="size-5 shrink-0 text-primary" />
           <span className="min-w-0 flex-1 font-mono break-all">
             {host.trim()}:{portNumber}{' '}
             {t('sshVerify.pinned', {
@@ -281,7 +283,7 @@ export function SSHEnrollFields({
                 : 'border-border hover:bg-muted/50'
             }`}
           >
-            <KeyIcon className="size-4" />
+            <KeyGlassIcon className="size-5" />
             Private key
           </button>
           <button
@@ -293,7 +295,7 @@ export function SSHEnrollFields({
                 : 'border-border hover:bg-muted/50'
             }`}
           >
-            <PasswordIcon className="size-4" />
+            <KeyGlassIcon className="size-5" />
             Password
           </button>
         </div>
@@ -385,7 +387,10 @@ export function SSHEnrollFields({
         </Field>
         {createProvision.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{createProvision.error.message}</AlertDescription>
           </Alert>
         ) : null}

@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ShieldWarningIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  ShieldAlertGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { brandQueryOptions } from '../queries/brand'
 import { useDisownSignIn } from '../queries/securityCenter'
 import {
@@ -47,7 +47,10 @@ function SignInAlertPage() {
       <Card className="w-full max-w-md shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShieldWarningIcon className="size-5" aria-hidden="true" />
+            <ShieldAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             {t('alertPage.title')}
           </CardTitle>
           <CardDescription>{t('alertPage.description')}</CardDescription>
@@ -55,19 +58,28 @@ function SignInAlertPage() {
         <CardContent className="space-y-4">
           {!token ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{t('alertPage.missing')}</AlertDescription>
             </Alert>
           ) : null}
           {disown.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{t('alertPage.error')}</AlertDescription>
             </Alert>
           ) : null}
           {disown.isSuccess ? (
             <Alert>
-              <CheckCircleIcon />
+              <CircleCheckGlassIcon
+                className="text-tone-success"
+                size="1.4em"
+              />
               <AlertDescription>
                 {disown.data.session_revoked
                   ? t('alertPage.done')

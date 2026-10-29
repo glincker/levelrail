@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  WarningOctagonIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  OctagonAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useFailureContext } from '../queries/investigate'
 import { failureLinesToText } from '../lib/observabilityFormat'
 import type { FailureContext } from '../types/investigate'
@@ -32,8 +32,8 @@ function FailureBody({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <WarningOctagonIcon
-              className="size-4 text-tone-danger"
+            <OctagonAlertGlassIcon
+              className="size-5 text-tone-danger"
               aria-hidden="true"
             />
             {crash
@@ -70,9 +70,9 @@ function FailureBody({
             }}
           >
             {copied ? (
-              <CheckIcon className="size-3.5" aria-hidden="true" />
+              <CheckGlassIcon className="size-5" aria-hidden="true" />
             ) : (
-              <CopyIcon className="size-3.5" aria-hidden="true" />
+              <CopyGlassIcon className="size-5" aria-hidden="true" />
             )}
             {copied ? t('logs.copied') : t('failure.copy')}
           </Button>

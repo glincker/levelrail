@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  PlugsConnectedIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  PlugGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -214,7 +214,10 @@ export function RegistryVendorForm({
         className="space-y-1 rounded-lg border border-border bg-muted/30 p-3 text-xs"
       >
         <h3 className="flex items-center gap-1.5 text-sm font-medium">
-          <ShieldCheckIcon aria-hidden="true" className="size-4" />
+          <ShieldCheckGlassIcon
+            aria-hidden="true"
+            className="size-5 text-tone-success"
+          />
           {t('registryVendors.scopesTitle')}
         </h3>
         <p className="text-muted-foreground">{t(SCOPE_KEYS[key])}</p>
@@ -222,13 +225,20 @@ export function RegistryVendorForm({
 
       {result ? (
         <Alert variant={result.ok ? 'default' : 'destructive'}>
-          {result.ok ? <CheckCircleIcon /> : <WarningIcon />}
+          {result.ok ? (
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
+          ) : (
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
+          )}
           <AlertDescription>{result.message}</AlertDescription>
         </Alert>
       ) : null}
       {error ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
@@ -245,7 +255,7 @@ export function RegistryVendorForm({
           disabled={!ready || probe.isPending}
           onClick={runTest}
         >
-          <PlugsConnectedIcon aria-hidden="true" />
+          <PlugGlassIcon size="1.4em" aria-hidden="true" />
           {probe.isPending
             ? t('registryVendors.testing')
             : t('registryVendors.test')}

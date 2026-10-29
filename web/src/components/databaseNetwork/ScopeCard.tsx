@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FadersIcon } from '@phosphor-icons/react/dist/ssr'
+import { SlidersHorizontalGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,7 +71,7 @@ export function ScopeCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <FadersIcon className="size-4" aria-hidden="true" />
+          <SlidersHorizontalGlassIcon className="size-5" aria-hidden="true" />
           {t('scope.title')}
         </CardTitle>
         <p className="text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { GitBranchIcon } from '@phosphor-icons/react/dist/ssr'
+import { GitBranchGlassIcon } from '@thesvg/ui-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageBanner } from '../PageBanner'
 import { GitConnectionsDiagram } from '../banners/GitConnectionsDiagram'
@@ -68,7 +68,7 @@ export function GitConnectionsPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<GitBranchIcon />}
+        icon={<GitBranchGlassIcon size="1.4em" />}
         titleKey="settings:gitConnectionsHub.title"
         descriptionKey={
           hero

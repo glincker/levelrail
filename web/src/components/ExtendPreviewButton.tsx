@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ClockClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { ClockGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useExtendPreviewEnvironment } from '../queries/previewExtend'
@@ -52,7 +52,7 @@ export function ExtendPreviewButton({
       title={t('extend.hours', { hours: EXTEND_HOURS })}
       onClick={run}
     >
-      <ClockClockwiseIcon />
+      <ClockGlassIcon size="1.4em" />
       {t('extend.button')}
     </Button>
   )

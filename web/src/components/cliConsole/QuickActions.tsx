@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StopIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { SquareGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -64,7 +64,7 @@ export function SelectedAppRow({
           className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={onClear}
         >
-          <XIcon className="size-3" />
+          <XGlassIcon className="size-4.5" />
         </button>
       </Badge>
     </div>
@@ -316,7 +316,7 @@ export function QuickActions({
             variant="destructive"
             onClick={onStop}
           >
-            <StopIcon />
+            <SquareGlassIcon size="1.4em" />
             {t('cliConsole.quick.stop')}
           </Button>
         ) : null}

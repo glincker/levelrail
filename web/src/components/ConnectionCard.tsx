@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -40,14 +40,14 @@ export function ConfiguredStatusHeading({
   if (!connected) {
     return (
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <XCircleIcon className="size-4" />
+        <CircleXGlassIcon className="size-5 text-tone-danger" />
         {t('gitConnection.notConnected')}
       </div>
     )
   }
   return (
     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-      <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
+      <CircleCheckGlassIcon className="size-5 text-green-600 dark:text-green-400" />
       Configured
       {authorized ? (
         <Badge variant="success">authorized</Badge>
@@ -90,7 +90,10 @@ export function DisconnectConnectionDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             {title}
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>

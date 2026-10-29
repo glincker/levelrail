@@ -22,7 +22,7 @@ export function EmptyState({
   compact = false,
   className,
 }: {
-  /** A single Phosphor icon element, e.g. `<PackageIcon className="size-5" />`. */
+  /** A single UI icon element, e.g. `<PackageGlassIcon className="size-6" />`. */
   icon: ReactNode
   /** Decorative SVG shown in place of the icon on higher-emphasis, top-of-funnel zero states (e.g. the first-ever app). */
   illustration?: IllustrationName

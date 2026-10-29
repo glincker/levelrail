@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { Share2GlassIcon } from '@thesvg/ui-react'
 import { useApp } from '../../../queries/apps'
 import { appNetworkQueryOptions } from '../../../queries/appNetwork'
 import { AppNetworkPanel } from '../../../components/AppNetworkPanel'
@@ -45,7 +45,7 @@ function NetworkSectionSkeleton() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShareNetworkIcon className="size-4" />
+            <Share2GlassIcon className="size-5" />
             Network
           </CardTitle>
           <Skeleton className="h-4 w-72" />

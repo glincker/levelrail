@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
@@ -42,7 +42,7 @@ function OAuthSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<KeyIcon />}
+      icon={<KeyGlassIcon size="1.4em" />}
       eyebrow={t('oauthPage.eyebrow')}
       title={t('oauthPage.title')}
       description={t('oauthPage.description')}

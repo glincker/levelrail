@@ -2,12 +2,12 @@ import { requireExperimental } from '../../lib/experimental'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  LockKeyIcon,
-  MinusCircleIcon,
-  RobotIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BotGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  LockGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { AiAssistantSettings } from '../../components/ai/AiAssistantSettings'
 import { deriveHeader } from '../../components/ai/aiProviderState'
 import { BrandTile } from '../../components/BrandLogoBadge'
@@ -36,7 +36,7 @@ function HeaderStatus() {
       <span className="inline-flex items-center gap-2">
         <StatusBadge
           tone="success"
-          icon={CheckCircleIcon}
+          icon={CircleCheckGlassIcon}
           label={t('aiAssistantPage.header.ready')}
         />
         <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -54,7 +54,7 @@ function HeaderStatus() {
     return (
       <StatusBadge
         tone="warning"
-        icon={WarningIcon}
+        icon={TriangleAlertGlassIcon}
         label={t('aiAssistantPage.header.attention')}
       />
     )
@@ -62,7 +62,7 @@ function HeaderStatus() {
   return (
     <StatusBadge
       tone="neutral"
-      icon={MinusCircleIcon}
+      icon={CircleMinusGlassIcon}
       label={t('aiAssistantPage.notConfigured')}
     />
   )
@@ -72,13 +72,13 @@ function AiAssistantSettingsPage() {
   const { t } = useTranslation('settings')
   return (
     <PageTemplate
-      icon={<RobotIcon />}
+      icon={<BotGlassIcon size="1.4em" />}
       title={t('aiAssistantPage.title')}
       description={
         <>
           {t('aiAssistantPage.description')}
           <span className="mt-1 flex items-center gap-1.5 text-xs">
-            <LockKeyIcon className="size-3.5" aria-hidden="true" />
+            <LockGlassIcon className="size-5" aria-hidden="true" />
             {t('aiAssistantPage.reassurance')}
           </span>
         </>

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { HourglassMediumIcon } from '@phosphor-icons/react/dist/ssr'
+import { CountdownGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -82,8 +82,8 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
       <div className="flex items-start gap-2">
-        <HourglassMediumIcon
-          className="mt-0.5 size-4 shrink-0"
+        <CountdownGlassIcon
+          className="mt-0.5 size-5 shrink-0"
           aria-hidden="true"
         />
         <div className="text-sm">

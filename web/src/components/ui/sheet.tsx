@@ -3,8 +3,7 @@ import { Dialog as SheetPrimitive } from '@base-ui/react/dialog'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
-
+import { XGlassIcon } from '@thesvg/ui-react'
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
@@ -68,7 +67,7 @@ function SheetContent({
               />
             }
           >
-            <XIcon />
+            <XGlassIcon size="1.4em" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
         )}

@@ -3,14 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowClockwiseIcon,
-  CheckCircleIcon,
-  PlusIcon,
-  RocketLaunchIcon,
-  SlidersHorizontalIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  PlusGlassIcon,
+  RocketGlassIcon,
+  RotateCwGlassIcon,
+  SlidersHorizontalGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -346,7 +346,10 @@ export function ImportPlanEditor({
                           setEnvOf(r.row.directory)
                         }}
                       >
-                        <SlidersHorizontalIcon className="size-4" aria-hidden />
+                        <SlidersHorizontalGlassIcon
+                          className="size-5"
+                          aria-hidden
+                        />
                         {t('plan.editor.envButton', { count: r.env.length })}
                       </Button>
                     </TableCell>
@@ -357,8 +360,8 @@ export function ImportPlanEditor({
                         <ul className="space-y-0.5 text-xs">
                           {r.row.warnings.map((w) => (
                             <li key={w.code} className="flex items-start gap-1">
-                              <WarningIcon
-                                className="mt-0.5 size-3 shrink-0"
+                              <TriangleAlertGlassIcon
+                                className="mt-0.5 size-6 shrink-0 text-tone-warning"
                                 aria-hidden
                               />
                               {t(`plan.warnings.${w.code}`, {
@@ -381,7 +384,7 @@ export function ImportPlanEditor({
               disabled={included.length === 0 || mutation.isPending}
               onClick={runDry}
             >
-              <RocketLaunchIcon className="size-4" aria-hidden />
+              <RocketGlassIcon className="size-5" aria-hidden />
               {mutation.isPending
                 ? t('plan.editor.checking')
                 : t('plan.editor.review', { count: included.length })}
@@ -409,7 +412,7 @@ export function ImportPlanEditor({
               disabled={wouldCreate === 0 || mutation.isPending}
               onClick={startCreate}
             >
-              <RocketLaunchIcon className="size-4" aria-hidden />
+              <RocketGlassIcon className="size-5" aria-hidden />
               {mutation.isPending
                 ? t('plan.editor.creating')
                 : t('plan.editor.create', { count: wouldCreate })}
@@ -431,7 +434,10 @@ export function ImportPlanEditor({
       {stage === 'results' ? (
         <>
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            <CheckCircleIcon className="size-4" aria-hidden />
+            <CircleCheckGlassIcon
+              className="size-5 text-tone-success"
+              aria-hidden
+            />
             {t('plan.editor.resultsSummary', {
               created: results.filter((r) => r.status === 'created').length,
               failed: failedRows.length,
@@ -446,7 +452,7 @@ export function ImportPlanEditor({
                 disabled={mutation.isPending}
                 onClick={retryFailed}
               >
-                <ArrowClockwiseIcon className="size-4" aria-hidden />
+                <RotateCwGlassIcon className="size-5" aria-hidden />
                 {t('plan.editor.retryFailed', { count: failedRows.length })}
               </Button>
             ) : null}
@@ -625,7 +631,7 @@ function EnvEditor({
               onChange(entries.filter((x) => x.id !== e.id))
             }}
           >
-            <TrashIcon className="size-4" aria-hidden />
+            <TrashGlassIcon className="size-5" aria-hidden />
           </Button>
         </div>
       ))}
@@ -640,7 +646,7 @@ function EnvEditor({
           ])
         }}
       >
-        <PlusIcon className="size-4" aria-hidden />
+        <PlusGlassIcon className="size-5" aria-hidden />
         {t('plan.editor.envAdd')}
       </Button>
     </div>

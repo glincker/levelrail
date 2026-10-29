@@ -97,13 +97,19 @@
       "page": "Page",
       "app": "App",
       "template": "Template",
-      "action": "Action"
+      "action": "Action",
+      "doc": "Docs page",
+      "image": "Docker image",
+      "assistant": "Assistant"
     },
     "generic": {
       "page": "Opens this page.",
       "app": "Opens the app overview. Tab jumps to its logs.",
       "template": "Deploys this template as a new app.",
-      "action": "Runs this action."
+      "action": "Runs this action.",
+      "doc": "Opens this docs page.",
+      "image": "Deploys this image as a new app.",
+      "assistant": "Opens the assistant."
     },
     "starter": {
       "action-create-app": "Start here: create your first app from a repo or an image.",
@@ -158,6 +164,43 @@
       "action-templates": "Browse the template catalog.",
       "action-import": "Import apps from another platform.",
       "action-toggle-theme": "Switch between light, dark and system themes."
+    }
+  },
+  "modes": {
+    "docs": {
+      "header": "Docs",
+      "hint": "Type to search the docs, down to headings",
+      "none": "No docs match \"{{term}}\"",
+      "open": "Open docs",
+      "inPage": "in {{title}}",
+      "pill": "Docs"
+    },
+    "assistant": {
+      "header": "Assistant",
+      "empty": "Open the assistant",
+      "ask": "Ask the assistant: {{term}}",
+      "preview": "Ask a question about your servers, apps or the docs. The assistant opens in its own page.",
+      "open": "Open assistant",
+      "pill": "Assistant"
+    },
+    "docker": {
+      "header": "Docker Hub",
+      "hint": "Type an image name, for example nginx",
+      "searching": "Searching Docker Hub...",
+      "failed": "Docker Hub could not be reached from this server",
+      "none": "No Docker Hub images match \"{{term}}\"",
+      "official": "Official",
+      "deploy": "Deploy",
+      "pill": "Docker Hub"
+    },
+    "pillsLabel": "Search commands",
+    "tags": {
+      "pill": "Tags",
+      "header": "Tags and environments",
+      "hint": "Type a tag or environment name",
+      "none": "No tag or environment matches \"{{term}}\"",
+      "tag": "Tag",
+      "env": "Environment"
     }
   }
 }

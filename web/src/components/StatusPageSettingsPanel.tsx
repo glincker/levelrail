@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -169,7 +169,7 @@ export function StatusPageSettingsPanel() {
           className="inline-flex items-center gap-1.5 text-sm text-primary underline underline-offset-2"
         >
           Open the public page
-          <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
         </a>
       ) : (
         <p className="text-sm text-muted-foreground">

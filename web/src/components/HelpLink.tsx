@@ -1,7 +1,7 @@
 import {
-  ArrowSquareOutIcon,
-  QuestionIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleQuestionMarkGlassIcon,
+  ExternalLinkGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Tooltip,
   TooltipContent,
@@ -40,13 +40,14 @@ function resolveHelpLink(
   path: string,
   docsUrl: string,
 ): ResolvedHelpLink | null {
-  const [basePath, hash] = splitHash(path)
+  const rooted = path.startsWith('/') ? path : `/${path}`
+  const [basePath, hash] = splitHash(rooted)
 
   if (docsPathIndex.has(basePath)) {
     return { href: `/help${basePath}${hash}`, external: false }
   }
   if (docsUrl) {
-    return { href: `${docsUrl}${path}`, external: true }
+    return { href: `${docsUrl.replace(/\/+$/, '')}${rooted}`, external: true }
   }
   return null
 }
@@ -78,7 +79,7 @@ export function HelpLink({
         )}
       >
         {label}
-        {external ? <ArrowSquareOutIcon className="size-3.5" /> : null}
+        {external ? <ExternalLinkGlassIcon className="size-5" /> : null}
       </a>
     )
   }
@@ -91,13 +92,14 @@ export function HelpLink({
             href={href}
             {...externalProps}
             aria-label={label}
+            data-slot="help-link"
             className={cn(
-              buttonVariants({ variant: 'ghost', size: 'icon-xs' }),
-              'text-muted-foreground hover:text-foreground',
+              buttonVariants({ variant: 'ghost', size: 'icon' }),
+              'size-9 text-foreground/70 hover:text-foreground [&_svg]:size-6',
               className,
             )}
           >
-            <QuestionIcon />
+            <CircleQuestionMarkGlassIcon size="1.4em" />
           </a>
         }
       />

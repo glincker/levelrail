@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { buttonVariants } from '@/components/ui/button'
 import { deployFixLinks } from '../../lib/deployFixLinks'
 import type { DeployStage } from '../../lib/deployStages'
@@ -27,7 +27,7 @@ export function DeployFixRow({
   return (
     <div className="space-y-1.5" data-testid="deploy-fix-row">
       <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        <WrenchIcon className="size-3.5" aria-hidden="true" />
+        <WrenchGlassIcon className="size-5" aria-hidden="true" />
         {t('fix.title')}
       </p>
       <p className="text-sm text-muted-foreground">{t('fix.hint')}</p>

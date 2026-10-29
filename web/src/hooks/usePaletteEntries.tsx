@@ -3,12 +3,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  ClockCounterClockwiseIcon,
-  FunnelIcon,
-  RobotIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BotGlassIcon,
+  FunnelGlassIcon,
+  LayersGlassIcon,
+  RestoreGlassIcon,
+} from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
+import { parseMode } from '@/lib/paletteMode'
+import { usePaletteModeItems } from './usePaletteModes'
 import { rankItems, relatedFor } from '@/lib/paletteSearch'
 import { STARTER_KEYS } from '@/lib/paletteSearchIndex'
 import { groupHits } from '@/lib/paletteGroups'
@@ -72,6 +74,8 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
   const queryClient = useQueryClient()
   const deleteSavedSearch = useDeleteSavedSearch().mutate
 
+  const mode = React.useMemo(() => parseMode(ps.text), [ps.text])
+  const modeItems = usePaletteModeItems(mode, ps.setInput)
   const searching = ps.serverQuery !== ''
   const failed = searching && ps.search.isError
   const hits = React.useMemo<SearchHit[]>(
@@ -112,6 +116,11 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     }
     const q = ps.text.trim()
 
+    if (modeItems) {
+      push(`mode-${mode?.kind ?? ''}`, modeItems.header, modeItems.items)
+      return out
+    }
+
     const tok = ps.token
     if (tok) {
       const head = ps.text.slice(0, tok.start)
@@ -120,7 +129,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
           key: `suggest-scope-${key}`,
           label: `${key}:`,
           group: 'filters',
-          icon: <FunnelIcon />,
+          icon: <FunnelGlassIcon size="1.4em" />,
           keepOpen: true,
           run: () => ps.setInput(`${head}${key}:`),
         }),
@@ -140,7 +149,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
             key: `suggest-value-${key}-${value}`,
             label: `${key}:${value}`,
             group: 'filters',
-            icon: <FunnelIcon />,
+            icon: <FunnelGlassIcon size="1.4em" />,
             keepOpen: true,
             run: () => ps.acceptScope(chip),
           })
@@ -161,7 +170,12 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
         key: sp.key,
         label: sp.label,
         group: 'Suggested',
-        icon: sp.kind === 'assistant' ? <RobotIcon /> : <StackIcon />,
+        icon:
+          sp.kind === 'assistant' ? (
+            <BotGlassIcon size="1.4em" />
+          ) : (
+            <LayersGlassIcon size="1.4em" />
+          ),
         run: () =>
           void navigate(
             sp.kind === 'assistant'
@@ -219,7 +233,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
           key: `recent-search-${s}`,
           label: s,
           group: 'recentSearches',
-          icon: <ClockCounterClockwiseIcon />,
+          icon: <RestoreGlassIcon size="1.4em" />,
           keepOpen: true,
           run: () => ps.applyQuery(s),
         })),
@@ -337,6 +351,8 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     return out
   }, [
     queryClient,
+    mode,
+    modeItems,
     related,
     templateItems,
     t,

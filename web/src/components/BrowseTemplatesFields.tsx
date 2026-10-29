@@ -5,11 +5,11 @@ import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeftIcon,
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  CircleCheckGlassIcon,
+  ExternalLinkGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -181,7 +181,10 @@ export function BrowseTemplatesFields({
     return (
       <div className="space-y-4">
         <Alert>
-          <CheckCircleIcon className="text-green-600 dark:text-green-400" />
+          <CircleCheckGlassIcon
+            size="1.4em"
+            className="text-green-600 dark:text-green-400"
+          />
           <AlertDescription>
             {t('wizard.deployedUnder', { count: services.length, app: appId })}
           </AlertDescription>
@@ -230,7 +233,7 @@ export function BrowseTemplatesFields({
     return (
       <div className="space-y-4">
         <Button type="button" variant="ghost" size="sm" onClick={backToGrid}>
-          <ArrowLeftIcon />
+          <ArrowLeftGlassIcon size="1.4em" />
           {t('wizard.back')}
         </Button>
         {templateDetail.isLoading ? (
@@ -240,7 +243,10 @@ export function BrowseTemplatesFields({
           </div>
         ) : templateDetail.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{templateDetail.error.message}</AlertDescription>
           </Alert>
         ) : templateDetail.data ? (
@@ -288,7 +294,10 @@ export function BrowseTemplatesFields({
                   className="inline-flex items-center gap-1 text-xs text-primary underline underline-offset-4"
                 >
                   {t('wizard.documentation')}
-                  <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+                  <ExternalLinkGlassIcon
+                    className="size-4.5"
+                    aria-hidden="true"
+                  />
                 </a>
               ) : null}
             </div>
@@ -326,7 +335,10 @@ export function BrowseTemplatesFields({
 
             {deployCompose.isError ? (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.7em"
+                />
                 <AlertDescription>
                   {deployCompose.error.message}
                 </AlertDescription>

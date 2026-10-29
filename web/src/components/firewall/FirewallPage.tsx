@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { HelpLink } from '@/components/HelpLink'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { PageBanner } from '../PageBanner'
@@ -114,12 +114,14 @@ export function FirewallPage({
       width="wide"
       banner={
         <PageBanner
-          icon={<ShieldCheckIcon />}
+          icon={
+            <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
+          }
           titleKey="firewall:page.title"
           descriptionKey="firewall:page.description"
           action={
             <>
-              <HelpLink path="firewall" label={t('page.help')} />
+              <HelpLink path="/firewall" label={t('page.help')} />
               {actions}
             </>
           }

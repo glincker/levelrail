@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  MinusCircleIcon,
-  ShareNetworkIcon,
-  WarningCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  Share2GlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -32,10 +32,10 @@ import { FixAction } from '../fixit/FixAction'
 import { useFixForCheck } from '../../queries/fixit'
 import { groupBlockedChecks } from '../../lib/fixitGroups'
 
-const CHECK_ICON: Record<MeshCheckStatus, typeof CheckCircleIcon> = {
-  pass: CheckCircleIcon,
-  warn: WarningCircleIcon,
-  fail: XCircleIcon,
+const CHECK_ICON: Record<MeshCheckStatus, typeof CircleCheckGlassIcon> = {
+  pass: CircleCheckGlassIcon,
+  warn: CircleAlertGlassIcon,
+  fail: CircleXGlassIcon,
 }
 
 const CHECK_TONE: Record<MeshCheckStatus, string> = {
@@ -46,12 +46,12 @@ const CHECK_TONE: Record<MeshCheckStatus, string> = {
 
 function CheckRow({ check }: { check: MeshCheck }) {
   const { t } = useTranslation('network')
-  const Icon = CHECK_ICON[check.status] ?? MinusCircleIcon
+  const Icon = CHECK_ICON[check.status] ?? CircleMinusGlassIcon
   const fix = useFixForCheck(check.id)
   return (
     <li className="flex items-start gap-2 text-sm">
       <Icon
-        className={`mt-0.5 size-4 shrink-0 ${CHECK_TONE[check.status]}`}
+        className={`mt-0.5 size-5 shrink-0 ${CHECK_TONE[check.status]}`}
         aria-hidden="true"
       />
       <div className="min-w-0">
@@ -146,7 +146,7 @@ export function MeshSettingsBody({ settings }: { settings: MeshSettings }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <ShareNetworkIcon className="size-4" aria-hidden="true" />
+          <Share2GlassIcon className="size-5" aria-hidden="true" />
           {t('mesh.title')}
           <Badge variant={state === 'on' ? 'success' : 'outline'}>
             {t(`mesh.state.${state}`)}

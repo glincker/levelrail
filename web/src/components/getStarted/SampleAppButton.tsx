@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { RocketGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '../../lib/apiError'
@@ -61,7 +61,7 @@ export function SampleAppButton() {
       disabled={createApp.isPending}
       onClick={deploy}
     >
-      <RocketLaunchIcon className="size-4" />
+      <RocketGlassIcon className="size-5" />
       {createApp.isPending ? t('sample.creating') : t('sample.cta')}
     </Button>
   )

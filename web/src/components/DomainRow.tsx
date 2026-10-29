@@ -3,21 +3,21 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckIcon,
-  CopyIcon,
-  DotsThreeIcon,
-  GearSixIcon,
-  ListMagnifyingGlassIcon,
-  LockKeyIcon,
-  ShieldCheckIcon,
-  SignpostIcon,
-  StethoscopeIcon,
-  WarningCircleIcon,
-  WrenchIcon,
-  ArrowsClockwiseIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CopyGlassIcon,
+  EllipsisGlassIcon,
+  ExternalLinkGlassIcon,
+  FileSearchGlassIcon,
+  LockGlassIcon,
+  RefreshCwGlassIcon,
+  SettingsGlassIcon,
+  ShieldCheckGlassIcon,
+  SignpostGlassIcon,
+  StethoscopeGlassIcon,
+  WrenchGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { TFunction } from 'i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -69,7 +69,7 @@ const FLAGS: {
     'waf_enabled' | 'has_redirect' | 'maintenance_enabled' | 'has_basic_auth'
   >
   control: TrafficControl
-  icon: Icon
+  icon: UiIcon
   label:
     | 'page.flag.waf'
     | 'page.flag.redirect'
@@ -79,25 +79,25 @@ const FLAGS: {
   {
     key: 'waf_enabled',
     control: 'waf',
-    icon: ShieldCheckIcon,
+    icon: ShieldCheckGlassIcon,
     label: 'page.flag.waf',
   },
   {
     key: 'has_redirect',
     control: 'redirect',
-    icon: SignpostIcon,
+    icon: SignpostGlassIcon,
     label: 'page.flag.redirect',
   },
   {
     key: 'maintenance_enabled',
     control: 'maintenance',
-    icon: WrenchIcon,
+    icon: WrenchGlassIcon,
     label: 'page.flag.maintenance',
   },
   {
     key: 'has_basic_auth',
     control: 'basic_auth',
-    icon: LockKeyIcon,
+    icon: LockGlassIcon,
     label: 'page.flag.basicAuth',
   },
 ]
@@ -270,19 +270,19 @@ function RowActions({
           />
         }
       >
-        <DotsThreeIcon weight="bold" />
+        <EllipsisGlassIcon size="1.4em" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={onShowRecord}>
-          <ListMagnifyingGlassIcon />
+          <FileSearchGlassIcon size="1.4em" />
           {t('page.row.dnsRecord')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onDiagnose}>
-          <StethoscopeIcon />
+          <StethoscopeGlassIcon size="1.4em" />
           {t('page.row.diagnose')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onRecheck}>
-          <ArrowsClockwiseIcon />
+          <RefreshCwGlassIcon size="1.4em" />
           {t('page.row.recheck')}
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -290,7 +290,11 @@ function RowActions({
             copy(domain.domain)
           }}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? (
+            <CheckGlassIcon size="1.4em" />
+          ) : (
+            <CopyGlassIcon size="1.4em" />
+          )}
           {copied ? t('page.row.copied') : t('page.row.copy')}
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -301,7 +305,7 @@ function RowActions({
             />
           }
         >
-          <GearSixIcon />
+          <SettingsGlassIcon size="1.4em" />
           {t('page.row.manage')}
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -348,7 +352,7 @@ export function DomainNameCell({
           aria-label={t('page.row.open', { domain: domain.domain })}
           className="shrink-0 text-muted-foreground hover:text-foreground"
         >
-          <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
         </a>
         {domain.automatic ? (
           <Badge variant="outline">{t('page.row.automatic')}</Badge>
@@ -373,7 +377,7 @@ export function DomainNameCell({
               }
               title={label}
             >
-              <flag.icon className="size-3.5" aria-hidden="true" />
+              <flag.icon className="size-4.5" aria-hidden="true" />
               <span className="sr-only">{label}</span>
             </span>
           )
@@ -384,8 +388,8 @@ export function DomainNameCell({
           className="mt-0.5 flex min-w-0 items-start gap-1 text-xs text-amber-700 dark:text-amber-400"
           title={warning.title}
         >
-          <WarningCircleIcon
-            className="mt-0.5 size-3.5 shrink-0"
+          <CircleAlertGlassIcon
+            className="mt-0.5 size-5 shrink-0 text-tone-danger"
             aria-hidden="true"
           />
           <span>{warning.text}</span>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { LinkSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LinkGlassIcon } from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 
 /** Banner above anything filled from a /deploy link. Values are rendered as text only. */
@@ -9,7 +9,7 @@ export function RepoLinkNotice({ ignored }: { ignored: string[] }) {
     <div className="space-y-3">
       <Banner
         variant="info"
-        icon={<LinkSimpleIcon />}
+        icon={<LinkGlassIcon size="1.4em" />}
         title={t('deployPage.banner')}
       >
         {t('deployPage.bannerBody')}

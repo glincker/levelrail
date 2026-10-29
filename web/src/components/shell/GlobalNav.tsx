@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { PushPinIcon } from '@phosphor-icons/react/dist/ssr'
+import { PinGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import {
   SidebarGroup,
@@ -76,10 +76,7 @@ function PinButton({
         if (!blocked) pin.onToggle(item.id)
       }}
     >
-      <PushPinIcon
-        weight={pin.pinned ? 'fill' : 'regular'}
-        aria-hidden="true"
-      />
+      <PinGlassIcon size="1.4em" aria-hidden="true" />
     </SidebarMenuAction>
   )
 }

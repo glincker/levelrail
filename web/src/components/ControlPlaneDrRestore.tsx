@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  ProhibitIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+} from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
@@ -15,20 +15,22 @@ import {
 function StepIcon({ state }: { state: ControlPlaneRestoreStep['state'] }) {
   if (state === 'done') {
     return (
-      <CheckCircleIcon
-        className="size-4 text-success"
-        weight="fill"
+      <CircleCheckGlassIcon
+        className="size-5 text-success"
         aria-hidden="true"
       />
     )
   }
   if (state === 'blocked') {
     return (
-      <ProhibitIcon className="size-4 text-destructive" aria-hidden="true" />
+      <BanGlassIcon className="size-5 text-destructive" aria-hidden="true" />
     )
   }
   return (
-    <CircleIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+    <CircleGlassIcon
+      className="size-5 text-muted-foreground"
+      aria-hidden="true"
+    />
   )
 }
 

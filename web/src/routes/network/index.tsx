@@ -16,7 +16,7 @@ import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { GraphIcon } from '@phosphor-icons/react/dist/ssr'
+import { GraphHubGlassIcon } from '@thesvg/ui-react'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyTopologyDiagram } from '../../components/banners/LazyPass3Diagrams'
 
@@ -40,7 +40,7 @@ function NetworkPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<GraphIcon />}
+        icon={<GraphHubGlassIcon size="1.4em" />}
         titleKey="network:page.title"
         descriptionKey="network:page.description"
         descriptionText={t('page.description', { zone: topology.zone })}

@@ -1,4 +1,4 @@
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { RelativeTime } from '@/components/kit'
 import { Button } from '@/components/ui/button'
@@ -63,7 +63,7 @@ export function ModelBenchmarkCard({
             })
           }}
         >
-          <GaugeIcon aria-hidden="true" />
+          <GaugeGlassIcon size="1.4em" aria-hidden="true" />
           {run.isPending ? t('cpu.benchmark.running') : t('cpu.benchmark.run')}
         </Button>
       </div>

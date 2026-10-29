@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import {
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  ThumbsDownGlassIcon,
+  ThumbsUpGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -35,8 +35,8 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
         status={row.status}
         className={
           pending
-            ? 'size-4 text-amber-600 dark:text-amber-400'
-            : 'size-4 text-destructive'
+            ? 'size-5 text-amber-600 dark:text-amber-400'
+            : 'size-5 text-destructive'
         }
       />
       <Link
@@ -58,7 +58,7 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
             disabled={decide.isPending}
             onClick={() => act('approved')}
           >
-            <ThumbsUpIcon aria-hidden="true" />
+            <ThumbsUpGlassIcon size="1.4em" aria-hidden="true" />
             Approve
           </Button>
           <Button
@@ -67,7 +67,7 @@ function AttentionItem({ row }: { row: PipelineRunRow }) {
             disabled={decide.isPending}
             onClick={() => act('rejected')}
           >
-            <ThumbsDownIcon aria-hidden="true" />
+            <ThumbsDownGlassIcon size="1.4em" aria-hidden="true" />
             Reject
           </Button>
         </>
@@ -97,7 +97,10 @@ export function PipelineAttentionStrip() {
       className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30"
     >
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <WarningCircleIcon className="size-4" aria-hidden="true" />
+        <CircleAlertGlassIcon
+          className="size-5 text-tone-danger"
+          aria-hidden="true"
+        />
         Needs attention
       </h2>
       <ul className="mt-1 divide-y divide-amber-200 dark:divide-amber-900">

@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
-  ArrowClockwiseIcon,
-  CheckCircleIcon,
-  ClockCounterClockwiseIcon,
-  WarningIcon,
-  WrenchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  RestoreGlassIcon,
+  RotateCwGlassIcon,
+  TriangleAlertGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -88,7 +88,7 @@ export function EnvHealthCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
-            <WrenchIcon className="size-4" aria-hidden />
+            <WrenchGlassIcon className="size-5" aria-hidden />
             {t('health.title')}
           </span>
           <Button
@@ -97,7 +97,7 @@ export function EnvHealthCard({ appName }: { appName: string }) {
             onClick={() => void check.refetch()}
             disabled={check.isFetching}
           >
-            <ArrowClockwiseIcon aria-hidden />
+            <RotateCwGlassIcon size="1.4em" aria-hidden />
             {t('health.recheck')}
           </Button>
         </CardTitle>
@@ -108,7 +108,10 @@ export function EnvHealthCard({ appName }: { appName: string }) {
           <p className="text-sm text-destructive">{t('health.loadFailed')}</p>
         ) : findings.length === 0 ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircleIcon className="size-4" aria-hidden />
+            <CircleCheckGlassIcon
+              className="size-5 text-tone-success"
+              aria-hidden
+            />
             {check.isLoading ? t('health.loading') : t('health.clean')}
           </p>
         ) : (
@@ -120,11 +123,11 @@ export function EnvHealthCard({ appName }: { appName: string }) {
               >
                 <div className="min-w-0 space-y-0.5">
                   <p className="flex items-center gap-2 text-sm font-medium">
-                    <WarningIcon
+                    <TriangleAlertGlassIcon
                       className={
                         f.severity === 'error'
-                          ? 'size-4 text-destructive'
-                          : 'size-4 text-muted-foreground'
+                          ? 'size-6 text-destructive'
+                          : 'size-6 text-muted-foreground'
                       }
                       aria-hidden
                     />
@@ -153,7 +156,7 @@ export function EnvHealthCard({ appName }: { appName: string }) {
         )}
         <div className="space-y-2">
           <h3 className="flex items-center gap-2 text-sm font-medium">
-            <ClockCounterClockwiseIcon className="size-4" aria-hidden />
+            <RestoreGlassIcon className="size-5" aria-hidden />
             {t('health.historyTitle')}
           </h3>
           {history.data && history.data.length > 0 ? (

@@ -1,14 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import {
-  FolderNotchOpenIcon,
-  HardDrivesIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { FolderGlassIcon, ServerGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { NetworkShareProtocol } from '../../types/networkShare'
 
 const CARDS = [
-  { id: 'nfs', key: 'nfs', Icon: HardDrivesIcon },
-  { id: 'cifs', key: 'smb', Icon: FolderNotchOpenIcon },
+  { id: 'nfs', key: 'nfs', Icon: ServerGlassIcon },
+  { id: 'cifs', key: 'smb', Icon: FolderGlassIcon },
 ] as const
 
 export function ProtocolCards({
@@ -43,7 +40,7 @@ export function ProtocolCards({
           >
             <Icon
               aria-hidden="true"
-              className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+              className="mt-0.5 size-6 shrink-0 text-muted-foreground"
             />
             <span className="min-w-0 space-y-0.5">
               <span className="block text-sm font-medium">

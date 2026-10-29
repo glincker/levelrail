@@ -1,9 +1,5 @@
 import { useState } from 'react'
-import {
-  LockIcon,
-  LockKeyIcon,
-  LockOpenIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, LockOpenGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -91,13 +87,13 @@ export function DomainBasicAuthControl({
           {protectedNow ? (
             <EnforcedBadge domain={domain} control="basic_auth">
               <Badge variant="success" className="shrink-0">
-                <LockKeyIcon className="size-3" />
+                <LockGlassIcon className="size-4.5" />
                 Basic auth on
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <LockOpenIcon className="size-3" />
+              <LockOpenGlassIcon className="size-4.5" />
               Not protected
             </Badge>
           )}
@@ -108,7 +104,7 @@ export function DomainBasicAuthControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <LockIcon className="size-3.5" />
+          <LockGlassIcon className="size-5" />
           {open ? 'Hide' : protectedNow ? 'Manage' : 'Protect with basic auth'}
         </Button>
       </div>

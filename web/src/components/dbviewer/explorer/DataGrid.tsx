@@ -3,10 +3,10 @@ import type { KeyboardEvent, PointerEvent } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CaretUpIcon,
-  KeyIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronUpGlassIcon,
+  KeyGlassIcon,
+} from '@thesvg/ui-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { needsDetail, type ColumnKind } from '../../../lib/explorerData'
@@ -296,8 +296,8 @@ export function DataGrid({
                 >
                   <ColumnTypeIcon kind={col.kind} type={col.type} />
                   {col.primaryKey ? (
-                    <KeyIcon
-                      className="size-3 shrink-0 text-primary"
+                    <KeyGlassIcon
+                      className="size-4.5 shrink-0 text-primary"
                       aria-label={t('viewer.explorer.primaryKey')}
                     />
                   ) : null}
@@ -322,9 +322,15 @@ export function DataGrid({
                     <span className="truncate">{col.name}</span>
                     {active ? (
                       sort.desc ? (
-                        <CaretDownIcon className="size-3" aria-hidden="true" />
+                        <ChevronDownGlassIcon
+                          className="size-4.5"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <CaretUpIcon className="size-3" aria-hidden="true" />
+                        <ChevronUpGlassIcon
+                          className="size-4.5"
+                          aria-hidden="true"
+                        />
                       )
                     ) : null}
                   </button>

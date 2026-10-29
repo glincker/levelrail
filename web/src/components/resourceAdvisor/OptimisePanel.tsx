@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -64,7 +64,7 @@ export function OptimisePanel(props: Props) {
     <Card data-testid="optimise-panel">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeIcon className="size-4" />
+          <GaugeGlassIcon className="size-5" />
           {t('panel.title')}
           {advisorOn ? (
             <Badge variant="outline" title={t('beta.hint')}>

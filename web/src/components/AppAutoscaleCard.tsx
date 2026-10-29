@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -154,7 +154,7 @@ export function AppAutoscaleCard({ appName }: { appName: string }) {
     body = (
       <EmptyState
         compact
-        icon={<StackIcon className="size-5" />}
+        icon={<LayersGlassIcon className="size-6" />}
         title={t('empty.title')}
         description={t('empty.body')}
         action={

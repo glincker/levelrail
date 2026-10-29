@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowClockwiseIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -72,7 +72,7 @@ export function DeadLetters() {
                   retry.mutate(inv.id, { onError })
                 }}
               >
-                <ArrowClockwiseIcon />
+                <RotateCwGlassIcon size="1.4em" />
                 {t('triggers.dead.retry')}
               </Button>
               <Button
@@ -84,7 +84,7 @@ export function DeadLetters() {
                   discard.mutate(inv.id, { onError })
                 }}
               >
-                <TrashIcon />
+                <TrashGlassIcon size="1.4em" />
                 {t('triggers.dead.discard')}
               </Button>
             </li>

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { CaretRightIcon, FolderIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon, FolderGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { DeleteProjectDialog } from './DeleteProjectDialog'
 import type { ProjectResource } from '../types/projectDetail'
@@ -24,7 +24,7 @@ export function ProjectRow({ project }: { project: ProjectResource }) {
       className={`${PROJECT_LIST_GRID} h-full w-full border-b border-border px-4 py-3`}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <FolderIcon className="size-4" aria-hidden="true" />
+        <FolderGlassIcon className="size-5" aria-hidden="true" />
       </span>
 
       <span className="min-w-0 truncate text-sm font-medium text-foreground">
@@ -39,7 +39,7 @@ export function ProjectRow({ project }: { project: ProjectResource }) {
         <Link to="/projects/$id" params={{ id: project.id }}>
           <Button type="button" variant="outline" size="sm">
             View
-            <CaretRightIcon className="size-3.5" aria-hidden="true" />
+            <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
           </Button>
         </Link>
         <DeleteProjectDialog id={project.id} name={project.name} />

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SkeletonTile } from '@/components/kit'
 import { useUsageSummary } from '../../queries/usageSummary'
@@ -74,8 +74,8 @@ export function StorageUsageCard() {
     <Card size="sm">
       <CardHeader className="space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
-          <HardDrivesIcon
-            className="size-4 text-muted-foreground"
+          <ServerGlassIcon
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('fleet.storage.title')}

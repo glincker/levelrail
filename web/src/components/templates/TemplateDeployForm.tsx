@@ -4,11 +4,11 @@ import { useDraft } from '../../hooks/useDraft'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CaretRightIcon,
-  RocketLaunchIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  RocketGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useInstallTemplate } from '../../queries/composeStack'
 import {
   buildInstallPayload,
@@ -282,9 +282,9 @@ export function TemplateDeployForm({
           }}
         >
           {optionalOpen ? (
-            <CaretDownIcon className="size-3.5" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
           ) : (
-            <CaretRightIcon className="size-3.5" aria-hidden="true" />
+            <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
           )}
           {t('form.optional.title')}
           <span className="font-normal text-muted-foreground">
@@ -330,7 +330,7 @@ export function TemplateDeployForm({
 
       {install.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{install.error.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -348,7 +348,7 @@ export function TemplateDeployForm({
           {summary}
         </p>
         <Button type="submit" disabled={install.isPending}>
-          <RocketLaunchIcon aria-hidden="true" />
+          <RocketGlassIcon size="1.4em" aria-hidden="true" />
           {install.isPending ? t('form.deploying') : t('form.deploy')}
         </Button>
       </div>

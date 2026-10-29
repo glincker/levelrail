@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import {
-  CheckCircleIcon,
-  ShieldCheckIcon,
-  WarningCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -44,10 +44,10 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
   const meta = certStatusMeta[cert.status]
   const StatusIcon =
     cert.status === 'healthy'
-      ? CheckCircleIcon
+      ? CircleCheckGlassIcon
       : cert.status === 'expiring_soon'
-        ? WarningCircleIcon
-        : XCircleIcon
+        ? CircleAlertGlassIcon
+        : CircleXGlassIcon
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
@@ -59,7 +59,7 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
         </p>
       </div>
       <Badge variant={meta.variant}>
-        <StatusIcon aria-hidden="true" />
+        <StatusIcon size="1.4em" aria-hidden="true" />
         {meta.label}
       </Badge>
     </div>
@@ -80,7 +80,10 @@ export function CertificatesCard() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <ShieldCheckIcon className="size-4" aria-hidden="true" />
+            <ShieldCheckGlassIcon
+              className="size-5 text-tone-success"
+              aria-hidden="true"
+            />
           </div>
           <div>
             <CardTitle>TLS certificates</CardTitle>

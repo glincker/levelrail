@@ -3,13 +3,13 @@ import { Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CaretDownIcon,
-  CaretRightIcon,
-  CheckCircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  LoaderCircleGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -79,8 +79,8 @@ function ResultRow({
   if (!outcome.ok) {
     return (
       <li className="flex items-start gap-2 py-2 text-sm">
-        <WarningCircleIcon
-          className="mt-0.5 size-4 shrink-0 text-destructive"
+        <CircleAlertGlassIcon
+          className="mt-0.5 size-5 shrink-0 text-destructive"
           aria-hidden="true"
         />
         <div className="min-w-0">
@@ -93,8 +93,8 @@ function ResultRow({
   return (
     <li className="py-2 text-sm">
       <div className="flex items-center gap-2">
-        <CheckCircleIcon
-          className="size-4 shrink-0 text-emerald-600"
+        <CircleCheckGlassIcon
+          className="size-5 shrink-0 text-emerald-600"
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1 truncate font-mono">
@@ -110,7 +110,11 @@ function ResultRow({
             setOpen((v) => !v)
           }}
         >
-          {open ? <CaretDownIcon /> : <CaretRightIcon />}
+          {open ? (
+            <ChevronDownGlassIcon size="1.4em" />
+          ) : (
+            <ChevronRightGlassIcon size="1.4em" />
+          )}
           {open
             ? t('page.addDialog.hideRecord')
             : t('page.addDialog.showRecord')}
@@ -303,7 +307,8 @@ function AddDomainsBody({
                 void verifyAll()
               }}
             >
-              <ArrowsClockwiseIcon
+              <RefreshCwGlassIcon
+                size="1.4em"
                 className={verifying ? 'animate-spin' : undefined}
               />
               {verifying
@@ -431,7 +436,11 @@ function AddDomainsBody({
       <DialogFooter>
         <Button type="submit" disabled={!canSubmit}>
           {isSubmitting ? (
-            <SpinnerGapIcon className="animate-spin" aria-hidden="true" />
+            <LoaderCircleGlassIcon
+              size="1.4em"
+              className="animate-spin"
+              aria-hidden="true"
+            />
           ) : null}
           {isSubmitting
             ? t('page.addDialog.submitting')

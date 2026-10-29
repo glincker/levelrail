@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -121,7 +121,10 @@ export function CreateAgentTokenDialog() {
 
               {createToken.isError ? (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.7em"
+                  />
                   <AlertDescription>
                     {createToken.error.message}
                   </AlertDescription>

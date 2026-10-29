@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { Share2GlassIcon } from '@thesvg/ui-react'
 import {
   projectTopologyQueryOptions,
   useLiveProjectTopology,
@@ -45,7 +45,7 @@ function ProjectTopologyPage() {
     >
       {empty ? (
         <EmptyState
-          icon={<ShareNetworkIcon className="size-5" />}
+          icon={<Share2GlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           action={

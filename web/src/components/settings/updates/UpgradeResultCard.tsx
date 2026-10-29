@@ -1,9 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { SelfUpgradeAttempt } from '../../../queries/selfUpgrade'
 import { FailureActions } from './FailureActions'
@@ -59,13 +56,13 @@ export function UpgradeResultCard({
     >
       <div className="flex items-start gap-2">
         {ok ? (
-          <CheckCircleIcon
-            className="mt-0.5 size-4 shrink-0 text-success"
+          <CircleCheckGlassIcon
+            className="mt-0.5 size-5 shrink-0 text-success"
             aria-hidden
           />
         ) : (
-          <WarningCircleIcon
-            className="mt-0.5 size-4 shrink-0 text-destructive"
+          <CircleAlertGlassIcon
+            className="mt-0.5 size-5 shrink-0 text-destructive"
             aria-hidden
           />
         )}

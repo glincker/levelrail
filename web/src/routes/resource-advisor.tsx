@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { LightbulbIcon } from '@phosphor-icons/react/dist/ssr'
+import { LightbulbGlassIcon } from '@thesvg/ui-react'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -134,7 +134,7 @@ function ResourceAdvisorPage() {
         </p>
       ) : advice.length === 0 ? (
         <EmptyState
-          icon={<LightbulbIcon />}
+          icon={<LightbulbGlassIcon size="1.4em" />}
           title={
             pending.length > 0 ? t('empty.pendingTitle') : t('empty.title')
           }

@@ -1,7 +1,7 @@
 import '../../../styles/upgradeMotion.css'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { SelfUpgradeAttempt } from '../../../queries/selfUpgrade'
 import { buildPipeline, type PhaseId } from '../../../lib/upgradePhases'
@@ -138,7 +138,7 @@ export function UpgradePipeline({
       {outcome === 'succeeded' && attempt ? (
         <div className="relative flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-success/10 p-3 text-sm">
           {motion ? <UpgradeSuccessBurst /> : null}
-          <CheckCircleIcon className="size-5 text-success" aria-hidden />
+          <CircleCheckGlassIcon className="size-6 text-success" aria-hidden />
           <span className="font-mono">
             {attempt.from_version} {t('pipeline.to')} {attempt.to_version}
           </span>
@@ -171,7 +171,10 @@ export function UpgradePipeline({
               : 'border-destructive/40 bg-destructive/10 text-destructive',
           )}
         >
-          <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <TriangleAlertGlassIcon
+            className="mt-0.5 size-6 shrink-0 text-tone-warning"
+            aria-hidden
+          />
           <div className="space-y-1">
             {outcome === 'rolled_back' ? (
               <p className="font-medium">

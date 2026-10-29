@@ -40,7 +40,7 @@ Use `npx tsc -b`, not `--noEmit`: the root web tsconfig lists no files, so `--no
 - Never commit to `main`. Branch, open one PR per coherent change, and say what the PR does not do.
 - No `any` or `interface{}` in exported Go signatures, and no `any` in TypeScript. Wrap errors with context at package boundaries, and pass a context to every blocking call.
 - User-visible product and binary names come from `internal/brand`, never from string literals.
-- Dashboard strings go through `useTranslation()` and `web/src/locales/en/*.json` (see `docs/i18n.md`). New icons come from `@thesvg/ui-react`; do not add Phosphor or lucide-react imports (ADR 053). Existing Phosphor imports stay until the file is migrated. Styling is Tailwind tokens, not inline styles.
+- Dashboard strings go through `useTranslation()` and `web/src/locales/en/*.json` (see `docs/i18n.md`). UI icons are `@thesvg/ui-react` glass icons (ADR 053). Styling is Tailwind tokens, not inline styles.
 - SQL migrations need unique, increasing version numbers. Check the latest on a fresh `origin/main` before you push (`scripts/check-migration-versions.sh`).
 - Code under `internal/reconcile` is level-triggered and idempotent. Every reconciler needs a test for the half-succeeded case.
 - A feature is not done until it is reachable from the dashboard and the CLI as well as the API.

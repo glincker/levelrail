@@ -3,14 +3,14 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
 import {
-  ClockCounterClockwiseIcon,
-  KeyIcon,
-  ShieldCheckIcon,
-  SignInIcon,
-  UserCircleIcon,
-  WarningIcon,
-  DevicesIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleUserGlassIcon,
+  KeyGlassIcon,
+  LogInGlassIcon,
+  RestoreGlassIcon,
+  ShieldCheckGlassIcon,
+  TabletSmartphoneGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -62,16 +62,26 @@ function KindIcon({ kind }: { kind: ActivityKind }) {
   const cls = 'size-4 text-muted-foreground'
   switch (kind) {
     case 'sign_in':
-      return <SignInIcon className={cls} aria-hidden="true" />
+      return <LogInGlassIcon size="1.4em" className={cls} aria-hidden="true" />
     case 'security':
-      return <ShieldCheckIcon className={cls} aria-hidden="true" />
+      return (
+        <ShieldCheckGlassIcon size="1.4em" className={cls} aria-hidden="true" />
+      )
     case 'sessions':
-      return <DevicesIcon className={cls} aria-hidden="true" />
+      return (
+        <TabletSmartphoneGlassIcon
+          size="1.4em"
+          className={cls}
+          aria-hidden="true"
+        />
+      )
     case 'tokens':
     case 'token_use':
-      return <KeyIcon className={cls} aria-hidden="true" />
+      return <KeyGlassIcon size="1.4em" className={cls} aria-hidden="true" />
     default:
-      return <UserCircleIcon className={cls} aria-hidden="true" />
+      return (
+        <CircleUserGlassIcon size="1.4em" className={cls} aria-hidden="true" />
+      )
   }
 }
 
@@ -195,7 +205,10 @@ export function MyActivityCard() {
         </div>
         {query.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('common.loadFailed')}</span>
               <Button
@@ -211,7 +224,7 @@ export function MyActivityCard() {
         ) : rows.length === 0 ? (
           <EmptyState
             compact
-            icon={<ClockCounterClockwiseIcon className="size-5" />}
+            icon={<RestoreGlassIcon className="size-6" />}
             title={
               filter === 'all'
                 ? t('activity.emptyTitle')

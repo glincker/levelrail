@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -126,7 +126,7 @@ export function RuleBuilder({
                 })
               }
             >
-              <PlusIcon />
+              <PlusGlassIcon size="1.4em" />
               {t('builder.addCondition')}
             </Button>
             {value.conditions.length >= maxConditions ? (

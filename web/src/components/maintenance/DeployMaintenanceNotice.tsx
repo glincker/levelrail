@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { InfoIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAppInMaintenance } from '../../hooks/useAppInMaintenance'
 
@@ -10,7 +10,7 @@ export function DeployMaintenanceNotice({ appName }: { appName: string }) {
   if (!inMaintenance) return null
   return (
     <Alert>
-      <InfoIcon />
+      <InfoGlassIcon className="text-tone-info" size="1.4em" />
       <AlertDescription>{t('deployNotice.text')}</AlertDescription>
     </Alert>
   )

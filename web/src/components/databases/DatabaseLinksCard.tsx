@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -76,8 +76,8 @@ export function DatabaseLinksCard({ database }: { database: string }) {
           <ul className="space-y-1.5">
             {(links.data ?? []).map((l) => (
               <li key={l.app} className="flex items-center gap-2 text-sm">
-                <PlugsConnectedIcon
-                  className="size-4 shrink-0 text-muted-foreground"
+                <PlugGlassIcon
+                  className="size-5 shrink-0 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <Link

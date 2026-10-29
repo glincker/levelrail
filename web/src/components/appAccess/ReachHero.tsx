@@ -1,14 +1,14 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  CircleDashedIcon,
-  CopyIcon,
-  SpinnerGapIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CopyGlassIcon,
+  ExternalLinkGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import type { ProbeTarget } from '../../queries/appExposure'
@@ -21,16 +21,17 @@ type HeroStatus = 'live' | 'down' | 'unchecked' | 'checking' | 'stopped'
 function StatusPill({ status }: { status: HeroStatus }) {
   const { t } = useTranslation('appAccess')
   const map = {
-    live: { variant: 'success', Icon: CheckCircleIcon },
-    down: { variant: 'warning', Icon: WarningIcon },
-    unchecked: { variant: 'muted', Icon: CircleDashedIcon },
-    checking: { variant: 'muted', Icon: SpinnerGapIcon },
-    stopped: { variant: 'muted', Icon: CircleDashedIcon },
+    live: { variant: 'success', Icon: CircleCheckGlassIcon },
+    down: { variant: 'warning', Icon: TriangleAlertGlassIcon },
+    unchecked: { variant: 'muted', Icon: CircleDashedGlassIcon },
+    checking: { variant: 'muted', Icon: LoaderCircleGlassIcon },
+    stopped: { variant: 'muted', Icon: CircleDashedGlassIcon },
   } as const
   const { variant, Icon } = map[status]
   return (
     <Badge variant={variant} role="status">
       <Icon
+        size="1.4em"
         aria-hidden="true"
         className={
           status === 'checking' ? 'animate-spin motion-reduce:animate-none' : ''
@@ -117,14 +118,14 @@ export function ReachHero({
           rel="noreferrer noopener"
           className={buttonVariants({ variant: 'default' })}
         >
-          <ArrowSquareOutIcon className="size-4" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
           {t('actions.openApp')}
         </a>
         <Button variant="outline" onClick={() => copy(addr.value)}>
           {copied ? (
-            <CheckIcon className="size-4" aria-hidden="true" />
+            <CheckGlassIcon className="size-5" aria-hidden="true" />
           ) : (
-            <CopyIcon className="size-4" aria-hidden="true" />
+            <CopyGlassIcon className="size-5" aria-hidden="true" />
           )}
           {copied ? t('actions.copied') : t('actions.copyUrl')}
         </Button>

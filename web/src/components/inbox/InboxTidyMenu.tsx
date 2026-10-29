@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
@@ -90,7 +90,7 @@ export default function InboxTidyMenu() {
         <DropdownMenuTrigger
           render={
             <Button type="button" size="sm" variant="outline">
-              <BroomIcon />
+              <BroomGlassIcon size="1.4em" />
               {t('tidy.menu')}
             </Button>
           }

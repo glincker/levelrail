@@ -1,13 +1,13 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsInSimpleIcon,
-  ArrowsOutSimpleIcon,
-  CheckIcon,
-  DotsThreeIcon,
-  MinusIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  EllipsisGlassIcon,
+  Maximize2GlassIcon,
+  MinusGlassIcon,
+  ShrinkGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -105,7 +105,7 @@ export function DockHeader({
     if (box.layout !== 'sheet') onToggleMaximize()
   }
 
-  const MaxIcon = maximized ? ArrowsInSimpleIcon : ArrowsOutSimpleIcon
+  const MaxIcon = maximized ? ShrinkGlassIcon : Maximize2GlassIcon
 
   return (
     <div
@@ -170,14 +170,17 @@ export function DockHeader({
             />
           }
         >
-          <DotsThreeIcon />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {box.layout === 'sheet'
             ? null
             : MODES.map((m) => (
                 <DropdownMenuItem key={m} onClick={() => onMode(m)}>
-                  <CheckIcon className={m === mode ? '' : 'invisible'} />
+                  <CheckGlassIcon
+                    size="1.4em"
+                    className={m === mode ? '' : 'invisible'}
+                  />
                   {t(`dock.mode.${m}`)}
                 </DropdownMenuItem>
               ))}
@@ -187,7 +190,10 @@ export function DockHeader({
               onClick={onTogglePush}
               disabled={mode === 'float'}
             >
-              <CheckIcon className={push ? '' : 'invisible'} />
+              <CheckGlassIcon
+                size="1.4em"
+                className={push ? '' : 'invisible'}
+              />
               {t('dock.push')}
             </DropdownMenuItem>
           )}
@@ -206,7 +212,7 @@ export function DockHeader({
           aria-pressed={maximized}
           onClick={onToggleMaximize}
         >
-          <MaxIcon />
+          <MaxIcon size="1.4em" />
         </Button>
       )}
       <Button
@@ -216,7 +222,7 @@ export function DockHeader({
         aria-label={t('dock.minimize')}
         onClick={onMinimize}
       >
-        <MinusIcon />
+        <MinusGlassIcon size="1.4em" />
       </Button>
       <Button
         type="button"
@@ -225,7 +231,7 @@ export function DockHeader({
         aria-label={t('dock.close')}
         onClick={onClose}
       >
-        <XIcon />
+        <XGlassIcon size="1.4em" />
       </Button>
     </div>
   )

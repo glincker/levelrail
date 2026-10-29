@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
-  CheckIcon,
-  CopyIcon,
-  DownloadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  DownloadGlassIcon,
+} from '@thesvg/ui-react'
 import { SkeletonLine } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -95,9 +95,9 @@ function Preview({
             onClick={() => copy(data.body)}
           >
             {copied ? (
-              <CheckIcon data-icon="inline-start" />
+              <CheckGlassIcon size="1.4em" data-icon="inline-start" />
             ) : (
-              <CopyIcon data-icon="inline-start" />
+              <CopyGlassIcon size="1.4em" data-icon="inline-start" />
             )}
             {copied ? 'Copied' : 'Copy'}
           </Button>
@@ -107,7 +107,7 @@ function Preview({
             variant="outline"
             onClick={() => download(data.filename, data.body)}
           >
-            <DownloadSimpleIcon data-icon="inline-start" />
+            <DownloadGlassIcon size="1.4em" data-icon="inline-start" />
             Download
           </Button>
         </div>

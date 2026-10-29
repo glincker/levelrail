@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckIcon,
-  CopyIcon,
-  DotsThreeIcon,
-  ListMagnifyingGlassIcon,
-  StethoscopeIcon,
-  PencilSimpleIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  EllipsisGlassIcon,
+  FileSearchGlassIcon,
+  PencilGlassIcon,
+  RefreshCwGlassIcon,
+  StethoscopeGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -117,7 +117,7 @@ export function StandaloneRowActions({
             />
           }
         >
-          <DotsThreeIcon weight="bold" />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
@@ -125,19 +125,19 @@ export function StandaloneRowActions({
               setEditing(true)
             }}
           >
-            <PencilSimpleIcon />
+            <PencilGlassIcon size="1.4em" />
             {t('standalone.edit')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onShowRecord}>
-            <ListMagnifyingGlassIcon />
+            <FileSearchGlassIcon size="1.4em" />
             {t('page.row.dnsRecord')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onDiagnose}>
-            <StethoscopeIcon />
+            <StethoscopeGlassIcon size="1.4em" />
             {t('page.row.diagnose')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onRecheck}>
-            <ArrowsClockwiseIcon />
+            <RefreshCwGlassIcon size="1.4em" />
             {t('page.row.recheck')}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -145,7 +145,11 @@ export function StandaloneRowActions({
               copy(domain.domain)
             }}
           >
-            {copied ? <CheckIcon /> : <CopyIcon />}
+            {copied ? (
+              <CheckGlassIcon size="1.4em" />
+            ) : (
+              <CopyGlassIcon size="1.4em" />
+            )}
             {copied ? t('page.row.copied') : t('page.row.copy')}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -153,7 +157,7 @@ export function StandaloneRowActions({
               setRemoving(true)
             }}
           >
-            <TrashIcon />
+            <TrashGlassIcon size="1.4em" />
             {t('standalone.remove')}
           </DropdownMenuItem>
         </DropdownMenuContent>

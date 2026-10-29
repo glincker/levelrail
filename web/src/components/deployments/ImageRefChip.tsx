@@ -1,8 +1,8 @@
 import {
-  CheckIcon,
-  CopyIcon,
-  FingerprintIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  FingerprintPatternGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import type { Deployment } from '../../types/deployment'
@@ -20,7 +20,10 @@ export function ImageRefChip({ d }: { d: Deployment }) {
           className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 font-mono text-xs"
           title={ref || d.image}
         >
-          <FingerprintIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          <FingerprintPatternGlassIcon
+            className="size-5 shrink-0"
+            aria-hidden="true"
+          />
           <span className="truncate">
             {ref
               ? `${ref.split('@')[0]}@sha256:${shortDigest(d.image_digest)}`
@@ -40,9 +43,9 @@ export function ImageRefChip({ d }: { d: Deployment }) {
           }}
         >
           {copied ? (
-            <CheckIcon aria-hidden="true" />
+            <CheckGlassIcon size="1.4em" aria-hidden="true" />
           ) : (
-            <CopyIcon aria-hidden="true" />
+            <CopyGlassIcon size="1.4em" aria-hidden="true" />
           )}
           {copied ? 'Copied' : 'Copy'}
         </Button>

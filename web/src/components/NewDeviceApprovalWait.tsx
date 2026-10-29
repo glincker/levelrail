@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  HourglassIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CountdownGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useFinishSignIn } from '../queries/auth'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -102,7 +102,10 @@ export function NewDeviceApprovalWait({
           className="space-y-3 rounded-lg border border-border bg-card p-4 text-center"
         >
           <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-            <ShieldCheckIcon className="size-5" aria-hidden="true" />
+            <ShieldCheckGlassIcon
+              className="size-6 text-tone-success"
+              aria-hidden="true"
+            />
           </span>
           <h2 id="approval-title" className="text-sm font-medium">
             {t('approval.waitingTitle')}
@@ -127,7 +130,7 @@ export function NewDeviceApprovalWait({
             </div>
           ) : null}
           <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-            <HourglassIcon className="size-4" aria-hidden="true" />
+            <CountdownGlassIcon className="size-5" aria-hidden="true" />
             <span aria-hidden="true" data-testid="approval-countdown">
               {t('approval.countdown', { time: formatRemaining(remaining) })}
             </span>
@@ -147,7 +150,7 @@ export function NewDeviceApprovalWait({
         </section>
       ) : (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>
             {effective === 'denied'
               ? t('approval.denied')

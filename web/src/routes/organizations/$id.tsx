@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { FolderIcon } from '@phosphor-icons/react/dist/ssr'
+import { FolderGlassIcon } from '@thesvg/ui-react'
 import {
   organizationDetailQueryOptions,
   useOrganization,
@@ -76,7 +76,7 @@ function OrganizationDetailPage() {
 
       {orgProjects.length === 0 ? (
         <EmptyState
-          icon={<FolderIcon className="size-5" />}
+          icon={<FolderGlassIcon className="size-6" />}
           title="No projects filed under this organization yet"
           description="File a project into this organization from the project's own detail page."
           action={

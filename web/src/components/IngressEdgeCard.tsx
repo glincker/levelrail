@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -205,7 +205,7 @@ export function IngressEdgeCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeIcon className="size-4" aria-hidden="true" />
+          <GaugeGlassIcon className="size-5" aria-hidden="true" />
           {t('edge.title')}
         </CardTitle>
         <CardDescription>{t('edge.description')}</CardDescription>

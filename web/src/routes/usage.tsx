@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CoinsIcon, DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CoinsGlassIcon, DownloadGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { CostSectionTabs } from '@/components/shell/SectionTabGroups'
 import { Button } from '@/components/ui/button'
@@ -67,7 +67,7 @@ function UsagePage() {
               />
             }
           >
-            <DownloadSimpleIcon />
+            <DownloadGlassIcon size="1.4em" />
             {t('export.csv')}
           </Button>
         </>
@@ -100,13 +100,13 @@ function UsagePage() {
         <>
           {!data.telemetry_available ? (
             <EmptyState
-              icon={<CoinsIcon />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.noTelemetryTitle')}
               description={t('empty.noTelemetryDescription')}
             />
           ) : !data.configured ? (
             <EmptyState
-              icon={<CoinsIcon />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.notConfiguredTitle')}
               description={
                 settingsForbidden || !canPrice

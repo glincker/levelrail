@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleNotchIcon,
-  ClockIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  ClockGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type {
   NodeMove,
@@ -27,31 +27,29 @@ function OutcomeIcon({ outcome }: { outcome: NodeMoveOutcome }) {
   switch (outcome) {
     case 'ok':
       return (
-        <CheckCircleIcon
-          className="size-3.5 shrink-0 text-primary"
-          weight="fill"
+        <CircleCheckGlassIcon
+          className="size-5 shrink-0 text-primary"
           aria-hidden="true"
         />
       )
     case 'failed':
       return (
-        <XCircleIcon
-          className="size-3.5 shrink-0 text-destructive"
-          weight="fill"
+        <CircleXGlassIcon
+          className="size-5 shrink-0 text-destructive"
           aria-hidden="true"
         />
       )
     case 'retry':
       return (
-        <WarningIcon
-          className="size-3.5 shrink-0 text-amber-500"
+        <TriangleAlertGlassIcon
+          className="size-6 shrink-0 text-amber-500"
           aria-hidden="true"
         />
       )
     default:
       return (
-        <ClockIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <ClockGlassIcon
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
       )
@@ -98,8 +96,8 @@ export function NodeMoveSteps({ move }: { move: NodeMove }) {
       ))}
       {move.status === 'running' ? (
         <li className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <CircleNotchIcon
-            className="size-3.5 shrink-0 animate-spin"
+          <LoaderCircleGlassIcon
+            className="size-5 shrink-0 animate-spin"
             aria-hidden="true"
           />
           {t(`phase.${move.phase}`)}

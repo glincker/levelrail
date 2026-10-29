@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmAction } from '@/components/ui/confirm-action'
 import { toast } from '@/components/ui/toast'
@@ -14,7 +14,7 @@ export function DeleteBackupTargetDialog({ target }: { target: BackupTarget }) {
     <ConfirmAction
       trigger={(openDialog) => (
         <Button variant="destructive" size="sm" onClick={openDialog}>
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('confirmAction.backupTarget.trigger', { defaultValue: 'Delete' })}
         </Button>
       )}

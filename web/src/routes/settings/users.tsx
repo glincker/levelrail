@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { EnvelopeIcon, UsersIcon } from '@phosphor-icons/react/dist/ssr'
+import { MailGlassIcon, UsersGlassIcon } from '@thesvg/ui-react'
 import { userListQueryOptions } from '../../queries/users'
 import { roleListQueryOptions } from '../../queries/roles'
 import { inviteListQueryOptions } from '../../queries/invites'
@@ -73,7 +73,7 @@ function UsersSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<UsersIcon />}
+      icon={<UsersGlassIcon size="1.4em" />}
       eyebrow={t('usersPage.eyebrow')}
       title={t('usersPage.title')}
       description={t('usersPage.description')}
@@ -111,7 +111,7 @@ function UsersSettingsPage() {
       {canInvite ? (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <EnvelopeIcon className="size-4 text-muted-foreground" />
+            <MailGlassIcon className="size-5 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">
               {t('usersPage.pendingInvites')}
             </h2>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TreeStructureIcon } from '@phosphor-icons/react/dist/ssr'
+import { BinaryTreeGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -101,7 +101,7 @@ export function TracesPanel({ app }: { app: string }) {
           {list.data && list.data.length === 0 ? (
             <EmptyState
               compact
-              icon={<TreeStructureIcon className="size-4" />}
+              icon={<BinaryTreeGlassIcon className="size-5" />}
               title={t('list.emptyTitle')}
               description={tracingOff ? t('list.emptyOff') : t('list.empty')}
               action={

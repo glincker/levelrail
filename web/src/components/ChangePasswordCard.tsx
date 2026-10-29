@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { z } from 'zod'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useChangePassword } from '../queries/account'
 import { useSession } from '../queries/security'
 import { MIN_PASSWORD_LENGTH } from '../lib/passwordStrength'
@@ -170,7 +170,10 @@ export function ChangePasswordCard() {
 
           {changePassword.isSuccess ? (
             <Alert>
-              <CheckCircleIcon />
+              <CircleCheckGlassIcon
+                className="text-tone-success"
+                size="1.4em"
+              />
               <AlertTitle>{t('accountPage.password.changed')}</AlertTitle>
               <AlertDescription>
                 {t('accountPage.password.changedBody')}
@@ -178,7 +181,10 @@ export function ChangePasswordCard() {
             </Alert>
           ) : changePassword.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>
                 {changePassword.error.message}
               </AlertDescription>

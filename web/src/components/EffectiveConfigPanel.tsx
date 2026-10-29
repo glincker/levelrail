@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockKeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -42,8 +42,8 @@ function Row({
       <span className="min-w-0 truncate font-mono text-sm">{label}</span>
       <span className="flex min-w-0 items-center gap-2">
         {secret ? (
-          <LockKeyIcon
-            className="size-3.5 text-muted-foreground"
+          <LockGlassIcon
+            className="size-5 text-muted-foreground"
             aria-label={t('effective.secret')}
           />
         ) : null}

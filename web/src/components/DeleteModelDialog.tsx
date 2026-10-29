@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmAction } from '@/components/ui/confirm-action'
 import { toast } from '@/components/ui/toast'
@@ -26,7 +26,7 @@ export function DeleteModelDialog({
           disabled={disabled}
           onClick={openDialog}
         >
-          <TrashIcon aria-hidden="true" />
+          <TrashGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       )}
       title={t('confirmAction.model.title', {

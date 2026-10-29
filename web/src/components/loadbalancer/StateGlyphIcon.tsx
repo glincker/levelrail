@@ -1,10 +1,10 @@
 import {
-  CheckCircleIcon,
-  ProhibitIcon,
-  QuestionIcon,
-  WarningIcon,
-  XSquareIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  SquareXGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import type { UpstreamView } from './rollup'
 
 export function StateGlyphIcon({ glyph }: { glyph: UpstreamView['glyph'] }) {
@@ -12,15 +12,29 @@ export function StateGlyphIcon({ glyph }: { glyph: UpstreamView['glyph'] }) {
   switch (glyph) {
     case 'ok':
       return (
-        <CheckCircleIcon className={cls} weight="bold" aria-hidden="true" />
+        <CircleCheckGlassIcon size="1.4em" className={cls} aria-hidden="true" />
       )
     case 'warn':
-      return <WarningIcon className={cls} weight="bold" aria-hidden="true" />
+      return (
+        <TriangleAlertGlassIcon
+          size="1.7em"
+          className={cls}
+          aria-hidden="true"
+        />
+      )
     case 'down':
-      return <XSquareIcon className={cls} weight="bold" aria-hidden="true" />
+      return (
+        <SquareXGlassIcon size="1.4em" className={cls} aria-hidden="true" />
+      )
     case 'off':
-      return <ProhibitIcon className={cls} weight="bold" aria-hidden="true" />
+      return <BanGlassIcon size="1.4em" className={cls} aria-hidden="true" />
     default:
-      return <QuestionIcon className={cls} weight="bold" aria-hidden="true" />
+      return (
+        <CircleQuestionMarkGlassIcon
+          size="1.4em"
+          className={cls}
+          aria-hidden="true"
+        />
+      )
   }
 }

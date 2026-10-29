@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BroomIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -79,13 +79,16 @@ export function PruneModelCacheDialog({
           />
         }
       >
-        <BroomIcon aria-hidden="true" />
+        <BroomGlassIcon size="1.4em" aria-hidden="true" />
         Prune unused
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             Prune unused model weights?
           </DialogTitle>
           <DialogDescription>

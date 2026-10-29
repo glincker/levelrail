@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon, CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -89,13 +89,13 @@ export function PurgePanel({
           writeAction
           disabled={!ready || purge.isPending}
         >
-          <BroomIcon aria-hidden="true" />
+          <BroomGlassIcon size="1.4em" aria-hidden="true" />
           {purge.isPending ? t('purge.purging') : t('purge.action')}
         </Button>
       </form>
       {purge.isSuccess ? (
         <Alert>
-          <CheckCircleIcon />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           <AlertDescription aria-live="polite">
             {t('purge.done', { count: purge.data.removed })}
           </AlertDescription>

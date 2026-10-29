@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
+import { ActivityGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import {
@@ -99,7 +99,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HeartbeatIcon className="size-4" />
+          <ActivityGlassIcon className="size-5" />
           Health checks
           <HelpLink
             path="/app-spec-reference#health-checks"

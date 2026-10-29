@@ -1,9 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsLeftRightIcon,
-  ListMagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon, FileSearchGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -65,7 +62,10 @@ export function EmailStatusHeader() {
           </Stat>
           {onBackup ? (
             <Badge variant="warning" role="status">
-              <ArrowsLeftRightIcon className="size-3" aria-hidden="true" />
+              <ArrowLeftRightGlassIcon
+                className="size-4.5"
+                aria-hidden="true"
+              />
               {t('emailProviders.runningOnBackup')}
             </Badge>
           ) : null}
@@ -106,7 +106,7 @@ export function EmailStatusHeader() {
             className: `ml-auto ${PRESS}`,
           })}
         >
-          <ListMagnifyingGlassIcon className="size-3.5" aria-hidden="true" />
+          <FileSearchGlassIcon className="size-5" aria-hidden="true" />
           {t('emailDelivery.status.openLog')}
         </Link>
       </CardContent>

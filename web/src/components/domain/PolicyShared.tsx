@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  FloppyDiskIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  SaveGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -139,7 +139,7 @@ export function SaveBar({
             disabled={!dirty || saving}
             onClick={onSave}
           >
-            <FloppyDiskIcon />
+            <SaveGlassIcon size="1.4em" />
             {saving ? t('save.saving') : t('save.save')}
           </Button>
         </div>
@@ -155,7 +155,7 @@ export function SaveBar({
               <span className="text-destructive line-through">
                 {d.before || t('save.none')}
               </span>
-              <ArrowRightIcon className="size-3" aria-hidden="true" />
+              <ArrowRightGlassIcon className="size-4.5" aria-hidden="true" />
               <span className="text-green-700 dark:text-green-400">
                 {d.after || t('save.none')}
               </span>
@@ -165,7 +165,7 @@ export function SaveBar({
       ) : null}
       {error ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

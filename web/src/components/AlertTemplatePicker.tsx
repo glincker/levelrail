@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MagicWandIcon } from '@phosphor-icons/react/dist/ssr'
+import { WandGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -77,7 +77,7 @@ export function AlertTemplatePicker({
         onClick={() => void onApply()}
         title={t(`template.${profile}Hint`)}
       >
-        <MagicWandIcon />
+        <WandGlassIcon size="1.4em" />
         {apply.isPending ? t('template.applying') : t('template.apply')}
       </Button>
     </div>

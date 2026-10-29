@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  PencilSimpleIcon,
-  PlusIcon,
-  TrashIcon,
-  UsersThreeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PencilGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+  UsersGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -40,7 +40,7 @@ function EmailAudiencesPage() {
       writeAction
       onClick={() => setDialog({ group: null })}
     >
-      <PlusIcon data-icon="inline-start" />
+      <PlusGlassIcon size="1.4em" data-icon="inline-start" />
       {t('audiences.create')}
     </Button>
   )
@@ -66,7 +66,7 @@ function EmailAudiencesPage() {
         ) : null}
         {!isLoading && !error && groups.length === 0 ? (
           <EmptyState
-            icon={<UsersThreeIcon className="size-5" />}
+            icon={<UsersGlassIcon className="size-6" />}
             title={t('audiences.empty.title')}
             description={t('audiences.empty.description')}
             action={createButton}
@@ -100,7 +100,7 @@ function EmailAudiencesPage() {
                     variant="outline"
                     onClick={() => setDialog({ group: g })}
                   >
-                    <PencilSimpleIcon data-icon="inline-start" />
+                    <PencilGlassIcon size="1.4em" data-icon="inline-start" />
                     {t('audiences.edit')}
                   </Button>
                   <Button
@@ -111,7 +111,7 @@ function EmailAudiencesPage() {
                     writeAction
                     onClick={() => setDeleting(g)}
                   >
-                    <TrashIcon />
+                    <TrashGlassIcon size="1.4em" />
                   </Button>
                 </div>
               </li>

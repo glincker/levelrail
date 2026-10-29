@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { useLogStream } from '../hooks/useLogStream'
 import { buildLiveDatabaseLogStreamUrl } from '../queries/liveDatabaseLogs'
@@ -46,7 +46,10 @@ export function LiveDatabaseLogViewer({
 
       {problem ? (
         <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-          <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="mt-0.5 size-6 shrink-0 text-tone-warning"
+            aria-hidden="true"
+          />
           <div className="min-w-0 flex-1 text-sm">
             <p className="font-medium">
               No container is running to produce logs: {problem.Reason}

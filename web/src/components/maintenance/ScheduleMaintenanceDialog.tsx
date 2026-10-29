@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -108,7 +108,7 @@ export function ScheduleMaintenanceDialog() {
       }}
     >
       <DialogTrigger render={<Button />}>
-        <PlusIcon className="size-3.5" aria-hidden="true" />
+        <PlusGlassIcon className="size-5" aria-hidden="true" />
         {t('schedule')}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

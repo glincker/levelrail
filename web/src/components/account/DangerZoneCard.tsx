@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -98,7 +98,10 @@ export function DangerZoneCard() {
       <CardContent className="space-y-3">
         {check.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('danger.checkFailed')}</span>
               <Button
@@ -122,7 +125,10 @@ export function DangerZoneCard() {
           </Button>
         ) : (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertTitle>{t('danger.blockedTitle')}</AlertTitle>
             <AlertDescription className="space-y-3">
               <p>{t('danger.blockedIntro')}</p>

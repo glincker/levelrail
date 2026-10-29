@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { useSearch, useSearchSuggest } from '../queries/search'
+import { parseMode } from '../lib/paletteMode'
 import {
   buildServerQuery,
   mergeChips,
@@ -28,9 +29,10 @@ export function usePaletteSearch(open: boolean) {
 
   const serverQuery = buildServerQuery(chips, text)
   const debounced = useDebounced(serverQuery, DEBOUNCE_MS)
+  const inMode = parseMode(text) !== null
   const search = useSearch(
     { q: debounced, limit: SEARCH_LIMIT },
-    open && debounced !== '',
+    open && debounced !== '' && !inMode,
   )
 
   const token = trailingToken(text)

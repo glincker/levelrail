@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { VaultIcon } from '@phosphor-icons/react/dist/ssr'
+import { VaultGlassIcon } from '@thesvg/ui-react'
 import {
   vaultSettingsQueryOptions,
   useVaultSettings,
@@ -43,7 +43,7 @@ function VaultSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<VaultIcon />}
+      icon={<VaultGlassIcon size="1.4em" />}
       title={t('vaultPage.title')}
       description={t('vaultPage.description')}
     >

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -68,7 +68,7 @@ export function FreeSpaceDialog({ nodeId }: Readonly<{ nodeId: string }>) {
   return (
     <>
       <Button variant="outline" onClick={() => handleOpenChange(true)}>
-        <BroomIcon className="size-4" />
+        <BroomGlassIcon className="size-5" />
         {t('capacity.freeSpace')}
       </Button>
       <Dialog open={open} onOpenChange={handleOpenChange}>

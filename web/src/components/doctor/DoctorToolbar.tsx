@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -84,7 +84,7 @@ export function DoctorToolbar({
             : null}
       </span>
       <Button variant="outline" size="sm" onClick={copy} disabled={running}>
-        <CopyIcon />
+        <CopyGlassIcon size="1.4em" />
         {t('doctorPage.copyDiagnostics')}
       </Button>
     </div>

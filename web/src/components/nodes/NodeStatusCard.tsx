@@ -1,12 +1,12 @@
 import { useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  HourglassIcon,
-  PauseCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CirclePauseGlassIcon,
+  CountdownGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit/StatusPill'
 import type { Tone } from '@/components/kit/tone'
 import { Button } from '@/components/ui/button'
@@ -23,10 +23,10 @@ const TONE_BY_STATUS: Record<NodeStatus, Tone> = {
 }
 
 const ICON_BY_STATUS = {
-  pending: HourglassIcon,
-  online: CheckCircleIcon,
-  offline: WarningCircleIcon,
-  cordoned: PauseCircleIcon,
+  pending: CountdownGlassIcon,
+  online: CircleCheckGlassIcon,
+  offline: CircleAlertGlassIcon,
+  cordoned: CirclePauseGlassIcon,
 } as const
 
 // An unhealthy node gets the fix as the primary button (re-enroll its agent),
@@ -45,7 +45,7 @@ export function NodeStatusCard({ node }: { node: NodeResource }) {
         <StatusPill
           tone={TONE_BY_STATUS[node.status]}
           label={t(`status.${node.status}`)}
-          icon={<Icon aria-hidden="true" />}
+          icon={<Icon size="1.4em" aria-hidden="true" />}
         />
         <span className="min-w-0 flex-1 basis-48 text-sm text-muted-foreground">
           {t(`detail.statusCard.${node.status}`)}
@@ -65,7 +65,7 @@ export function NodeStatusCard({ node }: { node: NodeResource }) {
                 void router.invalidate()
               }}
             >
-              <ArrowsClockwiseIcon aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
               {t('detail.statusCard.recheck')}
             </Button>
           )}

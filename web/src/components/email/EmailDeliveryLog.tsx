@@ -1,10 +1,10 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ListMagnifyingGlassIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  FileSearchGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,10 +47,10 @@ function StatusPill({ status }: { status: EmailDelivery['status'] }) {
       : status === 'failed'
         ? 'destructive'
         : 'warning'
-  const Icon = status === 'sent' ? CheckCircleIcon : WarningCircleIcon
+  const Icon = status === 'sent' ? CircleCheckGlassIcon : CircleAlertGlassIcon
   return (
     <Badge variant={variant}>
-      <Icon className="size-3" aria-hidden="true" />
+      <Icon className="size-3.5" aria-hidden="true" />
       {t(`emailDelivery.log.statuses.${status}`)}
     </Badge>
   )
@@ -265,7 +265,7 @@ export function EmailDeliveryLog() {
 
       {!query.isPending && rows.length === 0 && !query.isError ? (
         <EmptyState
-          icon={<ListMagnifyingGlassIcon className="size-5" />}
+          icon={<FileSearchGlassIcon className="size-6" />}
           title={t('emailDelivery.log.emptyTitle')}
           description={t('emailDelivery.log.emptyBody')}
         />

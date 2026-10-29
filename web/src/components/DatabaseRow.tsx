@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretRightIcon,
-  CloudArrowUpIcon,
-  DatabaseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronRightGlassIcon,
+  DatabaseGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { DatabaseListEntry } from '../types/databaseDetail'
 import { logoIdForImage } from '../lib/imageLogo'
@@ -24,7 +24,7 @@ function EngineLogo({ engine }: { engine: string }) {
       <TemplateLogo
         id={logoIdForImage(engine) ?? ''}
         className="size-4"
-        fallback={<DatabaseIcon className="size-4" aria-hidden="true" />}
+        fallback={<DatabaseGlassIcon className="size-5" aria-hidden="true" />}
       />
     </span>
   )
@@ -102,8 +102,8 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
       </span>
 
       <span className="hidden min-w-0 items-center gap-1.5 text-xs lg:flex">
-        <CloudArrowUpIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <UploadGlassIcon
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span
@@ -128,8 +128,8 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
         )}
       </span>
 
-      <CaretRightIcon
-        className="size-4 shrink-0 justify-self-end text-muted-foreground/50"
+      <ChevronRightGlassIcon
+        className="size-5 shrink-0 justify-self-end text-muted-foreground/50"
         aria-hidden="true"
       />
     </div>

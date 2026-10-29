@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowRightIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { PreviewHops } from '../../queries/domainPolicyTypes'
 
@@ -30,8 +30,8 @@ export function HopsStrip({ samples }: { samples: PreviewHops[] }) {
               {s.hops.map((h, i) => (
                 <li key={`${h.url}-${i}`} className="flex items-center gap-1">
                   {i > 0 ? (
-                    <ArrowRightIcon
-                      className="size-3 text-muted-foreground"
+                    <ArrowRightGlassIcon
+                      className="size-4.5 text-muted-foreground"
                       aria-hidden="true"
                     />
                   ) : null}
@@ -50,7 +50,10 @@ export function HopsStrip({ samples }: { samples: PreviewHops[] }) {
                 role="alert"
                 className="mt-1 flex items-center gap-1 text-destructive"
               >
-                <WarningIcon className="size-3" aria-hidden="true" />
+                <TriangleAlertGlassIcon
+                  className="size-6 text-tone-warning"
+                  aria-hidden="true"
+                />
                 {s.error}
               </p>
             ) : null}
