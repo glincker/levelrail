@@ -120,6 +120,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runArchive(prog, args[1:], stdout, stderr, lookupEnv)
 	case "control-plane-backups":
 		return runControlPlaneBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "control-plane":
+		return runControlPlane(prog, args[1:], stdout, stderr, lookupEnv)
 	case "app-volume-backups":
 		return runAppVolumeBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cloudflare-tunnel":
@@ -487,6 +489,7 @@ Usage:
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s archive ls|create|restore|verify|download|delete|policy [flags]   archive cold audit, deploy and pipeline rows into bundles and bring them back
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
+  %[1]s control-plane rehydrate plan|run|status [flags]   whole-server recovery: restore data for every app, database and volume
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts

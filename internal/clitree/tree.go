@@ -225,6 +225,7 @@ var Tree = map[string]*Node{
 	}},
 	"archive":               {Subs: map[string]*Node{"ls": nil, "create": nil, "restore": nil, "verify": nil, "download": nil, "delete": nil, "policy": nil}},
 	"control-plane-backups": {Subs: map[string]*Node{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {Subs: map[string]*Node{"show": nil, "set": nil}}, "run-now": nil, "drill": {Subs: map[string]*Node{"run": nil, "status": nil}}, "escrow": nil, "restore-plan": nil, "keys": {Subs: map[string]*Node{"generate": nil}}, "help-dr": nil}},
+	"control-plane":         {Subs: map[string]*Node{"rehydrate": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil}}}},
 	"cloudflare-tunnel":     {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil}},
 	"vault":                 {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil, "rotate-credential": nil}},
 	"ai": {Subs: map[string]*Node{

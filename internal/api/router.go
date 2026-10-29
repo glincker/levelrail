@@ -129,6 +129,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/plugin"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
+	"github.com/GLINCKER/levelrail/internal/rehydrate"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/upgradesched"
 	"github.com/GLINCKER/levelrail/kit/dockerhub"
@@ -858,8 +859,12 @@ type Router struct {
 	archiveSettings     ArchiveSettingsStore
 	archiveWake         chan struct{}
 	archiveWakeOnce     sync.Once
-	cpBackupScheduleOff bool           // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
-	cpDR                ControlPlaneDR // nil is valid: /system/control-plane-dr routes return 501
+	cpBackupScheduleOff bool               // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
+	cpDR                ControlPlaneDR     // nil is valid: /system/control-plane-dr routes return 501
+	rehydrateStore      rehydrate.RunStore // nil keeps whole-server recovery reports in memory
+	rehydrateOnce       sync.Once
+	rehydrateSvc        *rehydrate.Service
+	rehydrateErr        error
 
 	authEngine   *authengine.Engine // set by WithAuthEngine, or built by NewRouter when absent
 	libSessions  *authengine.Sessions

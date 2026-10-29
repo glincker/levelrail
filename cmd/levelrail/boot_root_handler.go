@@ -327,6 +327,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// Needs ExecWithInput on the local runtime, the same way ContainerDumper needs Exec.
 			api.WithRestoreRunner(restoreRunner),
 			api.WithServiceVolumeRestoreRunner(restoreRunner),
+			api.WithRehydrateStore(db),
 			// Waits for the new database to come up, unlike the restore it sits beside.
 			api.WithCloneRestoreRunner(&backup.CloneRestoreRunner{
 				Store:      db,
