@@ -13,6 +13,8 @@ func (rt *Router) registerComposeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose/revisions", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeRevisions))
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose/revisions/{revision}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetComposeRevision))
 	mux.HandleFunc("GET /api/v1/apps/{name}/template-upgrade", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTemplateUpgrade))
+	mux.HandleFunc("POST /api/v1/apps/{name}/template-upgrade", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyTemplateUpgrade))
+	mux.HandleFunc("GET /api/v1/apps/{name}/template-upgrade/run", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTemplateUpgradeRun))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackCompose))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose/redeploy", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRedeployCompose))
 	mux.HandleFunc("POST /api/v1/service-templates/{id}/install", rt.requireAbility(AbilityDeploy, rt.handleInstallServiceTemplate))

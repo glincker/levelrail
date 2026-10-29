@@ -14,48 +14,82 @@ import (
 // templateBaselineScan bounds how far back we look for the first template revision.
 const templateBaselineScan = 200
 
+// templateUpgradeState is a freshly computed plan plus what applying it needs.
+type templateUpgradeState struct {
+	plan   templateupgrade.Plan
+	latest store.ComposeRevision
+	tpl    string
+}
+
+// templateUpgradeErr carries the HTTP status for a state that cannot be built.
+type templateUpgradeErr struct {
+	status int
+	msg    string
+	cause  error
+}
+
+func (e *templateUpgradeErr) Error() string { return e.msg }
+func (e *templateUpgradeErr) Unwrap() error { return e.cause }
+
+func (rt *Router) loadTemplateUpgrade(r *http.Request, appID string) (templateUpgradeState, *templateUpgradeErr) {
+	revs := rt.composeRevisionStore()
+	if revs == nil {
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusNotImplemented, msg: "compose history is not available on this store"}
+	}
+	latest, err := revs.GetComposeRevision(r.Context(), appID, 0)
+	if errors.Is(err, store.ErrComposeRevisionNotFound) {
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusNotFound, msg: "this app has no compose history"}
+	}
+	if err != nil {
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusInternalServerError, msg: "api: template upgrade: load latest failed", cause: err}
+	}
+	tplID := latest.TemplateID
+	if tplID == "" {
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusNotFound, msg: "this app was not deployed from a catalog template"}
+	}
+	tpl, ok := catalog.TemplateByID(tplID)
+	if !ok {
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusNotFound, msg: "the catalog no longer has this template"}
+	}
+	installed, err := compose.Parse([]byte(latest.Compose))
+	if err != nil {
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusInternalServerError, msg: "api: template upgrade: parse installed compose failed", cause: err}
+	}
+	target, err := compose.Parse([]byte(tpl.Compose))
+	if err != nil {
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusInternalServerError, msg: "api: template upgrade: parse catalog compose failed", cause: err}
+	}
+	plan := templateupgrade.Build(templateupgrade.Input{
+		AppID: appID, TemplateID: tplID, Installed: installed, Baseline: rt.templateBaseline(r, revs, appID, tplID), Template: target,
+	})
+	return templateUpgradeState{plan: plan, latest: latest, tpl: tpl.Compose}, nil
+}
+
+func (rt *Router) writeTemplateUpgradeErr(w http.ResponseWriter, appID string, e *templateUpgradeErr) {
+	if e.status == http.StatusInternalServerError {
+		rt.internalError(w, e.msg, e.cause, slog.String("app", appID))
+		return
+	}
+	writeError(w, e.status, e.msg)
+}
+
+// templateUpgradePlanResponse adds the dashboard's recheck cadence to the plan.
+type templateUpgradePlanResponse struct {
+	templateupgrade.Plan
+	RecheckSeconds int `json:"recheck_seconds"`
+}
+
 // handleGetTemplateUpgrade handles GET /api/v1/apps/{name}/template-upgrade:
 // a read-only plan comparing the deployed compose with the current catalog
 // template. It carries names and tags only, never env values.
 func (rt *Router) handleGetTemplateUpgrade(w http.ResponseWriter, r *http.Request) {
-	revs := rt.composeRevisionStore()
-	if revs == nil {
-		writeError(w, http.StatusNotImplemented, "compose history is not available on this store")
-		return
-	}
 	appID := r.PathValue("name")
-	latest, err := revs.GetComposeRevision(r.Context(), appID, 0)
-	if errors.Is(err, store.ErrComposeRevisionNotFound) {
-		writeError(w, http.StatusNotFound, "this app has no compose history")
+	st, e := rt.loadTemplateUpgrade(r, appID)
+	if e != nil {
+		rt.writeTemplateUpgradeErr(w, appID, e)
 		return
 	}
-	if err != nil {
-		rt.internalError(w, "api: template upgrade: load latest failed", err, slog.String("app", appID))
-		return
-	}
-	tplID := latest.TemplateID
-	if tplID == "" {
-		writeError(w, http.StatusNotFound, "this app was not deployed from a catalog template")
-		return
-	}
-	tpl, ok := catalog.TemplateByID(tplID)
-	if !ok {
-		writeError(w, http.StatusNotFound, "the catalog no longer has this template")
-		return
-	}
-	installed, err := compose.Parse([]byte(latest.Compose))
-	if err != nil {
-		rt.internalError(w, "api: template upgrade: parse installed compose failed", err, slog.String("app", appID))
-		return
-	}
-	target, err := compose.Parse([]byte(tpl.Compose))
-	if err != nil {
-		rt.internalError(w, "api: template upgrade: parse catalog compose failed", err, slog.String("template", tplID))
-		return
-	}
-	writeJSON(w, http.StatusOK, templateupgrade.Build(templateupgrade.Input{
-		AppID: appID, TemplateID: tplID, Installed: installed, Baseline: rt.templateBaseline(r, revs, appID, tplID), Template: target,
-	}))
+	writeJSON(w, http.StatusOK, templateUpgradePlanResponse{Plan: st.plan, RecheckSeconds: int(templateUpgradeSettingsFromEnv().recheck.Seconds())})
 }
 
 // templateBaseline is the app's first template revision, the closest thing

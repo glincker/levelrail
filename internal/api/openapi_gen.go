@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1782 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1787 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -401,6 +401,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/tags", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAttachAppTag", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/tags/{id}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDetachAppTag", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/template-upgrade", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetTemplateUpgrade", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/template-upgrade", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyTemplateUpgrade", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/template-upgrade/run", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetTemplateUpgradeRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/terminal", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppTerminal", Description: "Interactive terminal (terminal.go): the same AbilityRoot tier as one-off exec above, since a shell can read the same secrets. A WebSocket rather than SSE, which that file's own doc comment argues for at length."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/timeline", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppTimeline", Description: "Timeline and pending changes (app_timeline.go, pending_changes.go)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/traces", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListTraces", Description: ""},
@@ -627,6 +629,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/registry", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleGetRegistrySettings", Description: "Built-in container registry (instance-level, one registry per control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching PUT /api/v1/settings/cloudflare-tunnel's own tier for infrastructure config that runs a system container and generates credentials."},
 	{Method: "PUT", Path: "/api/v1/settings/registry", Ability: "AbilityRoot", Group: "Built-in Container Registry", Handler: "handleUpdateRegistrySettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListAllBackups", Description: "Instance-wide backup history across every database and app volume, the aggregated counterpart of the per-resource routes above and below: ordinary AbilityRead, same tier as those, since this is only ever a merged read of history metadata already visible per-resource."},
+	{Method: "GET", Path: "/api/v1/backups/copies", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListBackupCopies", Description: ""},
+	{Method: "GET", Path: "/api/v1/backups/copy-settings", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleGetBackupCopySettings", Description: "Second-destination copies: choosing where backups are mirrored is a sensitive write, listing is a read."},
+	{Method: "PUT", Path: "/api/v1/backups/copy-settings", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleSetBackupCopySettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/coverage", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleBackupCoverage", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/drills", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListBackupDrills", Description: ""},
 	{Method: "POST", Path: "/api/v1/backups/drills", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStartBackupDrill", Description: ""},

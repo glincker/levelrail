@@ -574,6 +574,7 @@ type Router struct {
 	deployAttempts               DeployAttemptStore                                                                  // always set, same "core Store interface" shape as certs/staticSites above
 	probeAttempts                ProbeAttemptStore                                                                   // always set, same "core Store interface" shape as deployAttempts above
 	buildStartMu                 sync.Mutex                                                                          // serializes the running-attempt check and row insert in handleTriggerBuild
+	templateUpgrades             templateUpgradeRuns                                                                 // zero value is ready: in-flight and last template upgrade per app
 	cancels                      *deploy.CancelRegistry                                                              // always set by NewRouter: in-flight deploys an operator can cancel
 	startingDeploys              map[string]int                                                                      // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
 	deployMaxConcurrent          int                                                                                 // 0 means unlimited, set via WithDeployMaxConcurrent

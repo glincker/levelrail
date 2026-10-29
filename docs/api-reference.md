@@ -664,6 +664,8 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleDeleteAppFile |
 | GET | /api/v1/apps/{name}/template-upgrade | AbilityRead | handleGetTemplateUpgrade |
 | GET | /api/v1/apps/{name}/tunnel | AbilityRoot | handleAppTunnel |
+| POST | /api/v1/apps/{name}/template-upgrade | AbilityDeploy | handleApplyTemplateUpgrade |
+| GET | /api/v1/apps/{name}/template-upgrade/run | AbilityRead | handleGetTemplateUpgradeRun |
 
 </Accordion>
 
@@ -1237,6 +1239,9 @@ Endpoints for:
 | GET | /api/v1/backups/coverage | AbilityRead | handleBackupCoverage |
 | POST | /api/v1/backups/protect-all | AbilityWriteSensitive | handleProtectAll |
 | POST | /api/v1/backups/encryption-key/ack | AbilityWriteSensitive | handleAckBackupEncryptionKey |
+| GET | /api/v1/backups/copy-settings | AbilityRead | handleGetBackupCopySettings |
+| PUT | /api/v1/backups/copy-settings | AbilityWriteSensitive | handleSetBackupCopySettings |
+| GET | /api/v1/backups/copies | AbilityRead | handleListBackupCopies |
 
 ## App Volume Backups / Restore
 

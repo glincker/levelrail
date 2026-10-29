@@ -197,6 +197,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "secrets":
 		return runAppsSecrets(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "upgrade":
+		return runAppsUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
 	case "upgrade-plan":
 		return runAppsUpgradePlan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "analyze":
@@ -302,6 +304,7 @@ func appsUsage(prog string) string {
   %[1]s apps build-hooks list|create|rotate|revoke <name> [flags]   secret URLs that build and deploy the app when POSTed to
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps upgrade-plan <name> [flags]   show what a template upgrade would change (read-only)
+  %[1]s apps upgrade <name> --yes [flags]   apply a template upgrade, watch it and roll back on failure
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
