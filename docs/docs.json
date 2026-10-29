@@ -245,6 +245,7 @@
               "connecting-apps-to-databases",
               "backups-and-storage",
               "backup-copies",
+              "volume-files",
               "prove-your-backups-work",
               "object-storage",
               "network-shares",

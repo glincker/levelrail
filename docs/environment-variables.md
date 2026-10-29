@@ -289,3 +289,12 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 ### Still stuck
 
 For help with specific variables, refer to the table for that variable's scope (Control plane, Agent, or CLI) and component. Variables are only read at startup, so restart the relevant service after making changes.
+
+## Volume files
+
+See [Volume files](/volume-files). Control plane and agent.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_VOLUME_FILE_MAX_UPLOAD_MB` | `64` | Largest file accepted by a volume file upload or single-file restore. Positive integer. |
+| `APP_VOLUME_FILE_LIST_LIMIT` | `1000` | Most entries returned for one volume directory. Positive integer. |
