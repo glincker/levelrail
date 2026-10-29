@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1805 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1806 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -355,6 +355,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeletePublishLock", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPublishLock", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutPublishLock", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/releases", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppReleases", Description: "Read-only list of the app's release snapshots (app_releases.go), newest first, plus its current binding. AbilityRead, same sensitivity as resource-recommendation above; empty while APP_RELEASE_BINDINGS is off."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/requests", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleQueryRequests", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppResourceRecommendation", Description: "Read-only resource right-sizing suggestion (resource_recommendation.go): synthesizes the app's historical CPU/memory usage and current limits into a deterministic raise/lower/keep suggestion per dimension. AbilityRead, same sensitivity as diagnose above; never writes anything, never applied automatically."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/restart", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestartApp", Description: ""},

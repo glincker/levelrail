@@ -394,6 +394,7 @@ var Tree = map[string]*Node{
 	}},
 	"secrets":        {Subs: map[string]*Node{"generate-master-key": nil, "rotate-master-key": nil, "binding-status": nil, "rebind": nil, "scan": nil, "key-status": nil, "rotate-dek": nil, "key-policy": nil}},
 	"migrate":        {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil, "server": nil, "db-copy": nil, "db-status": nil, "volumes": nil, "cutover": nil, "plan": nil, "status": nil, "step": nil, "agent": {Subs: map[string]*Node{"start": nil, "status": nil, "verify": nil, "reopen": nil, "remove": nil}}}},
+	"releases":       {Subs: map[string]*Node{"list": nil}},
 	"apply":          nil,
 	"diff":           nil,
 	"compliance":     {Subs: map[string]*Node{"evidence": {Subs: map[string]*Node{"create": nil, "list": nil, "download": nil, "verify": nil}}, "access-review": {Subs: map[string]*Node{"start": nil, "list": nil, "show": nil, "keep": nil, "revoke": nil, "complete": nil}}}},

@@ -361,6 +361,7 @@ levelrail-cli apps requests <name> [flags]
 levelrail-cli apps resource-usage [flags]
 levelrail-cli apps resource-recommendation <name> [flags]
 levelrail-cli apps cost <name> [flags]
+levelrail-cli releases list <app> [flags]
 levelrail-cli apps health-score <name> [flags]
 levelrail-cli apps log-drain get <name> [flags]
 levelrail-cli apps log-drain set <name> --type TYPE --target TARGET [flags]
@@ -377,6 +378,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
+- `releases list APP` shows the app's release snapshots, newest first, with image digest, creation time, source reason and the current release marked. The list stays empty unless `APP_RELEASE_BINDINGS` is `shadow` or `on`; `--json` prints the raw response.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
 - `costs explore|budgets list|create|set|delete` is the cost explorer with forecast and top movers, and named budgets with alert thresholds and an optional pause or throttle at 100 percent, see [cost explorer](/cost-explorer).
 - `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget set|delete project|team ID` is an alias for `usage budgets`. `budget show|set|clear APP` manages a per-app egress and cost cap, see [spend caps](/spend-caps).
