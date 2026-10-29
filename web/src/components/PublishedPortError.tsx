@@ -18,7 +18,7 @@ export function PublishedPortError({ error }: { error: Error }) {
   const hintCode = HINT_CODES.find((c) => c === code)
   return (
     <Alert variant="destructive">
-      <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertDescription>
         <span>{error.message}</span>
         {hintCode ? (

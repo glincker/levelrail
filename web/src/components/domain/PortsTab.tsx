@@ -137,7 +137,7 @@ export function PortsTab({ app, domain }: { app: string; domain: string }) {
                   className="flex items-center gap-1 text-xs text-destructive"
                 >
                   <TriangleAlertGlassIcon
-                    className="size-4.5 text-tone-warning"
+                    className="size-6 text-tone-warning"
                     aria-hidden="true"
                   />
                   {c}

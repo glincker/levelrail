@@ -105,7 +105,7 @@ export function SecretRotationSection({ appName }: { appName: string }) {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertTitle>
               {t('redeploy.title', { key: needsRedeploy })}

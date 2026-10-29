@@ -105,7 +105,7 @@ function BindMountHelper({ onInsert }: { onInsert: (line: string) => void }) {
         <p className="text-sm font-medium text-foreground">Add a bind mount</p>
       </div>
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>
           This gives the container direct access to a real directory on the host
           machine it runs on, not a Docker-managed volume. Never point this at a
@@ -314,7 +314,7 @@ export function CreateComposeFields({
             {notice.level === 'warning' ? (
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
               />
             ) : (
               <InfoGlassIcon className="text-tone-info" size="1.4em" />

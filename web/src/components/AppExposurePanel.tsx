@@ -325,7 +325,7 @@ function PlanView({ plan }: { plan: ExposurePlan }) {
       )}
       {plan.warnings?.includes('plain_http') && (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="size-5 text-tone-warning" />
+          <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
           <AlertDescription>{t('plainHttpWarning')}</AlertDescription>
         </Alert>
       )}

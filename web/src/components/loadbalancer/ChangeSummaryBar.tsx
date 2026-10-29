@@ -78,7 +78,7 @@ export function ChangeSummaryBar({
             >
               {c.risky ? (
                 <TriangleAlertGlassIcon
-                  className="size-5 text-tone-warning"
+                  className="size-6 text-tone-warning"
                   aria-label="Risky change"
                 />
               ) : null}
@@ -123,7 +123,7 @@ export function ChangeSummaryBar({
             {risks.map((c) => (
               <li key={c.key} className="flex gap-2">
                 <TriangleAlertGlassIcon
-                  className="mt-0.5 size-5 shrink-0 text-tone-warning"
+                  className="mt-0.5 size-6 shrink-0 text-tone-warning"
                   aria-hidden
                 />
                 <span>

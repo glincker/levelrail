@@ -63,7 +63,7 @@ export function LiveLogViewer({
       {problem ? (
         <div className="flex items-start gap-2.5 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-3 text-tone-warning">
           <TriangleAlertGlassIcon
-            className="mt-0.5 size-5 shrink-0 text-tone-warning"
+            className="mt-0.5 size-6 shrink-0 text-tone-warning"
             aria-hidden="true"
           />
           <div className="min-w-0 flex-1 text-sm">

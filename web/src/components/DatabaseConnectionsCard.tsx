@@ -65,7 +65,7 @@ function ConnectionReachabilityBadge({
   return (
     <Badge variant="destructive">
       <TriangleAlertGlassIcon
-        className="size-4.5 text-tone-warning"
+        className="size-6 text-tone-warning"
         aria-hidden="true"
       />
       Cross-node, mesh disabled

@@ -92,7 +92,7 @@ export function CreateFlowError({ message }: { message?: string | null }) {
   }
   return (
     <Alert variant="destructive">
-      <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertDescription>{message}</AlertDescription>
     </Alert>
   )

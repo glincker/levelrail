@@ -77,7 +77,7 @@ function BannerBody({
           <p className="flex items-center gap-1 text-xs font-medium text-destructive">
             <TriangleAlertGlassIcon
               aria-hidden="true"
-              className="size-5 text-tone-warning"
+              className="size-6 text-tone-warning"
             />
             {t('deviceLogin.ipMismatch', { ip: request.requester_ip })}
           </p>

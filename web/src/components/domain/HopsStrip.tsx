@@ -51,7 +51,7 @@ export function HopsStrip({ samples }: { samples: PreviewHops[] }) {
                 className="mt-1 flex items-center gap-1 text-destructive"
               >
                 <TriangleAlertGlassIcon
-                  className="size-4.5 text-tone-warning"
+                  className="size-6 text-tone-warning"
                   aria-hidden="true"
                 />
                 {s.error}

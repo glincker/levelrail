@@ -51,7 +51,7 @@ export function DeployFromComputer() {
         <div className="space-y-2">
           <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
             <TriangleAlertGlassIcon
-              className="size-5 shrink-0 text-tone-warning"
+              className="size-6 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {t('upload.tokenOnce', { days: TOKEN_DAYS })}

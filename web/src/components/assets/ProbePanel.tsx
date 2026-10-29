@@ -81,7 +81,7 @@ export function ProbePanel({ bucketId }: Readonly<{ bucketId: string }>) {
             >
               <TriangleAlertGlassIcon
                 aria-hidden="true"
-                className="mt-0.5 size-5 shrink-0 text-tone-warning"
+                className="mt-0.5 size-6 shrink-0 text-tone-warning"
               />
               <p className="min-w-0 flex-1">{w.message}</p>
               {w.fix === 'fix_cors' ? (

@@ -76,7 +76,7 @@ export function PromotePlan({
       ) : null}
       {(preview.blockers?.length ?? 0) > 0 ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="size-5 text-tone-warning" />
+          <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
           <AlertDescription className="space-y-2">
             {preview.blockers?.map((b) => (
               <p key={b}>{b}</p>
@@ -95,7 +95,7 @@ export function PromotePlan({
       ) : null}
       {preview.frozen ? (
         <Alert>
-          <TriangleAlertGlassIcon className="size-5 text-tone-warning" />
+          <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
           <AlertDescription className="space-y-2">
             <p className="flex items-center gap-2">
               <StatusPill tone="warning" label="Deploy freeze" size="sm" />

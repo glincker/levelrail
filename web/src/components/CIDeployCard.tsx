@@ -65,7 +65,7 @@ function TrustList({ appName }: { appName: string }) {
             {ciProviderOf(trust.provider) === 'gitlab' &&
               trust.protected_ref_only === false && (
                 <span className="flex items-start gap-1 text-xs text-destructive">
-                  <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
+                  <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
                   {t('ciDeploy.unprotectedWarning')}
                 </span>
               )}
@@ -125,7 +125,7 @@ function DashboardUrlFix({ appName }: { appName: string }) {
 
   return (
     <Alert>
-      <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertDescription>{t('ciDeploy.needsAddress')}</AlertDescription>
       <AlertAction>
         <Button

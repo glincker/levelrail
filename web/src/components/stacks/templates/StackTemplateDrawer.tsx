@@ -98,7 +98,7 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.4em"
+            size="1.7em"
             aria-hidden="true"
           />
           <AlertDescription>

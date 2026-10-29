@@ -231,7 +231,7 @@ export function PromoteAppDialog({
             {environmentId && previewErrorMessage ? (
               <p className="flex items-start gap-1.5 text-sm text-destructive">
                 <TriangleAlertGlassIcon
-                  className="mt-0.5 size-5 shrink-0 text-tone-warning"
+                  className="mt-0.5 size-6 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
                 {previewErrorMessage}
@@ -282,7 +282,7 @@ export function PromoteAppDialog({
 
         {promote.isError ? (
           <Alert variant="destructive">
-            <TriangleAlertGlassIcon className="size-5 text-tone-warning" />
+            <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
             <AlertDescription>{promote.error.message}</AlertDescription>
           </Alert>
         ) : null}

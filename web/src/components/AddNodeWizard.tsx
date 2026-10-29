@@ -175,7 +175,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{regions.error.message}</AlertDescription>
           </Alert>
@@ -217,7 +217,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{sizes.error.message}</AlertDescription>
           </Alert>
@@ -385,7 +385,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{createProvision.error.message}</AlertDescription>
           </Alert>

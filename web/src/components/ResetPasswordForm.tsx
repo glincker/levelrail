@@ -117,7 +117,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
       {resetPassword.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{resetPassword.error.message}</AlertDescription>
         </Alert>
       ) : null}

@@ -223,7 +223,7 @@ function CloseWarning({
     <Alert variant="destructive">
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.4em"
+        size="1.7em"
         aria-hidden="true"
       />
       <AlertTitle>
@@ -394,7 +394,7 @@ function AddFirewallRuleDialog() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
                 aria-hidden="true"
               />
               <AlertDescription>{createRule.error.message}</AlertDescription>
@@ -460,7 +460,7 @@ function DeleteFirewallRuleDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TriangleAlertGlassIcon
-              className="size-5 text-destructive"
+              className="size-6 text-destructive"
               aria-hidden="true"
             />
             {t('firewallRules.removeTitle')}
@@ -481,7 +481,7 @@ function DeleteFirewallRuleDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
               aria-hidden="true"
             />
             <AlertDescription>{deleteRule.error.message}</AlertDescription>

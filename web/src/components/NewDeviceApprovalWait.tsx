@@ -150,7 +150,7 @@ export function NewDeviceApprovalWait({
         </section>
       ) : (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>
             {effective === 'denied'
               ? t('approval.denied')

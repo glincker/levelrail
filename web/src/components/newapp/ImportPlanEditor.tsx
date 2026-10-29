@@ -361,7 +361,7 @@ export function ImportPlanEditor({
                           {r.row.warnings.map((w) => (
                             <li key={w.code} className="flex items-start gap-1">
                               <TriangleAlertGlassIcon
-                                className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+                                className="mt-0.5 size-6 shrink-0 text-tone-warning"
                                 aria-hidden
                               />
                               {t(`plan.warnings.${w.code}`, {

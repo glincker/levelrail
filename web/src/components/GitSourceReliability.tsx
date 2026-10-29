@@ -48,7 +48,7 @@ export function GitSourceReliability({
       !['ok', 'rate_limited'].includes(source.connection.state) ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
-            className="size-5 text-tone-warning"
+            className="size-6 text-tone-warning"
             aria-hidden="true"
           />
           <AlertDescription className="space-y-2">
@@ -80,7 +80,7 @@ export function GitSourceReliability({
       {source.webhook_url_warning ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
-            className="size-5 text-tone-warning"
+            className="size-6 text-tone-warning"
             aria-hidden="true"
           />
           <AlertDescription className="space-y-2">
@@ -96,7 +96,7 @@ export function GitSourceReliability({
       {reg?.state === 'failed' ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon
-            className="size-5 text-tone-warning"
+            className="size-6 text-tone-warning"
             aria-hidden="true"
           />
           <AlertDescription className="space-y-2">

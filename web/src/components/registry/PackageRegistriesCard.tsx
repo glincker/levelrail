@@ -254,7 +254,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
       </p>
       {create.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{create.error.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -325,7 +325,7 @@ function Row({ registry }: { registry: PackageRegistry }) {
           ) : (
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
           )}
           <AlertDescription>{result.message}</AlertDescription>
@@ -369,7 +369,7 @@ export function PackageRegistriesCard() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
               />
               <AlertDescription>{list.error.message}</AlertDescription>
             </Alert>

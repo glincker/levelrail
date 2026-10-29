@@ -104,7 +104,7 @@ export function DrainNodeDialog({
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertDescription>{drain.error.message}</AlertDescription>
               </Alert>
@@ -121,7 +121,7 @@ export function DrainNodeDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
                 <TriangleAlertGlassIcon
-                  className="size-5 text-amber-600"
+                  className="size-6 text-amber-600"
                   aria-hidden="true"
                 />
                 {t('drain.title', { name: node.name })}
@@ -169,7 +169,7 @@ export function DrainNodeDialog({
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertDescription>{start.error.message}</AlertDescription>
               </Alert>

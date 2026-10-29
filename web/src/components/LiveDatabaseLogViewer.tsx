@@ -47,7 +47,7 @@ export function LiveDatabaseLogViewer({
       {problem ? (
         <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
           <TriangleAlertGlassIcon
-            className="mt-0.5 size-5 shrink-0 text-tone-warning"
+            className="mt-0.5 size-6 shrink-0 text-tone-warning"
             aria-hidden="true"
           />
           <div className="min-w-0 flex-1 text-sm">

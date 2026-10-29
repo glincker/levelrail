@@ -80,7 +80,7 @@ function initialSuggestions(): SuggestionItem[] {
       id: 'mem',
       tone: 'warning',
       icon: (
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       ),
       title: 'Memory near the limit',
       detail: 'Peaked at 92% in the last hour.',
@@ -135,7 +135,7 @@ function UiGallery() {
       id: '3',
       at: ago(86400 * 2),
       icon: (
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       ),
       tone: 'danger' as const,
       title: 'Deploy failed',
@@ -281,7 +281,7 @@ function UiGallery() {
           icon={
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
           }
           title="Pending state"

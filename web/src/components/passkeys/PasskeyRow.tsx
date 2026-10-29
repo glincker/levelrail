@@ -217,7 +217,7 @@ export function PasskeyRow({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription className="space-y-2">
               <p className="font-medium">{t('remove.blockedTitle')}</p>
@@ -239,7 +239,7 @@ export function PasskeyRow({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{t('remove.lastWarning')}</AlertDescription>
           </Alert>

@@ -40,7 +40,7 @@ export function OAuthErrorBanner() {
   }
   return (
     <Alert variant="destructive" className="w-full max-w-sm">
-      <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertDescription>
         {isKnownCode(code)
           ? t(`foundation.signIn.errors.${code}`)

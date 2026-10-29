@@ -99,7 +99,7 @@ export function DeploySuggestions({
             s.severity === 'warning' ? (
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
                 aria-hidden="true"
               />
             ) : (

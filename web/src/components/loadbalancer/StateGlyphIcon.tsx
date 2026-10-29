@@ -17,7 +17,7 @@ export function StateGlyphIcon({ glyph }: { glyph: UpstreamView['glyph'] }) {
     case 'warn':
       return (
         <TriangleAlertGlassIcon
-          size="1.4em"
+          size="1.7em"
           className={cls}
           aria-hidden="true"
         />

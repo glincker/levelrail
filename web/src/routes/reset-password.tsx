@@ -71,7 +71,7 @@ function ResetPasswordPage() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
               />
               <AlertDescription>
                 This link is missing its reset token. Request a new one from the

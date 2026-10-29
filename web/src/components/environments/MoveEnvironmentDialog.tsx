@@ -140,7 +140,7 @@ export function MoveEnvironmentDialog({
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <p className="flex items-start gap-2 text-foreground">
               <TriangleAlertGlassIcon
-                className="mt-0.5 size-5 shrink-0 text-amber-600"
+                className="mt-0.5 size-6 shrink-0 text-amber-600"
                 aria-hidden="true"
               />
               {t('move.protectedNotice', { environment: gate.name })}

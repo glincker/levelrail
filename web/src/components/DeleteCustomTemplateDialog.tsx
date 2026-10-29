@@ -64,7 +64,7 @@ export function DeleteCustomTemplateDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-5 text-tone-warning"
+              className="size-6 text-tone-warning"
               aria-hidden="true"
             />
             Delete &ldquo;{name}&rdquo;?
@@ -79,7 +79,7 @@ export function DeleteCustomTemplateDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{deleteTemplate.error.message}</AlertDescription>
           </Alert>

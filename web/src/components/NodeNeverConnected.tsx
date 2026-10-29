@@ -34,7 +34,7 @@ export function NodeNeverConnectedAlert({ node }: { node: NodeResource }) {
   return (
     <Alert>
       <TriangleAlertGlassIcon
-        className="size-5 text-tone-warning"
+        className="size-6 text-tone-warning"
         aria-hidden="true"
       />
       <AlertTitle>{t('neverConnected.title')}</AlertTitle>

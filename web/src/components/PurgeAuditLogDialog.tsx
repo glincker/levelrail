@@ -42,7 +42,7 @@ export function PurgeAuditLogDialog() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-5 text-tone-warning"
+              className="size-6 text-tone-warning"
               aria-hidden="true"
             />
             Purge old audit log entries?

@@ -142,7 +142,7 @@ export function PasskeysCard() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertTitle>{t('card.testFailedTitle')}</AlertTitle>
                 <AlertDescription className="space-y-2">
@@ -167,7 +167,7 @@ export function PasskeysCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{t('errors.unsupported')}</AlertDescription>
           </Alert>

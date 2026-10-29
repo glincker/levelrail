@@ -79,7 +79,7 @@ function ConfirmBanner({ token }: { token: string }) {
   if (confirm.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>
           {confirm.error.code === 'email_taken'
             ? t('email.emailTaken')
@@ -152,7 +152,7 @@ export function EmailChangeCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('email.statusFailed')}</span>
@@ -170,7 +170,7 @@ export function EmailChangeCard() {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
               <span>{t('email.notConfigured')}</span>
@@ -186,7 +186,7 @@ export function EmailChangeCard() {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{t('email.passwordRequired')}</AlertDescription>
           </Alert>
@@ -235,7 +235,7 @@ export function EmailChangeCard() {
               <Alert variant="destructive" role="alert">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>

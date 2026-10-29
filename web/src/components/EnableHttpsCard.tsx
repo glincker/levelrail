@@ -145,7 +145,7 @@ function StatusBody({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertTitle>{t('card.preflightTitle')}</AlertTitle>
             <AlertDescription>
@@ -175,7 +175,7 @@ function StatusBody({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{t('card.stagingIssued')}</AlertDescription>
           </Alert>
@@ -194,7 +194,7 @@ function StatusBody({
   return (
     <div className="space-y-3">
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertTitle>{t('card.failedTitle')}</AlertTitle>
         <AlertDescription>
           <p>{t(`hint.${status.hint ?? 'unknown'}`)}</p>

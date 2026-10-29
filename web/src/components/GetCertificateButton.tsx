@@ -56,7 +56,7 @@ function ItemIcon({ state }: { state: PreflightItem['state'] }) {
   if (state === 'warn')
     return (
       <TriangleAlertGlassIcon
-        size="1.4em"
+        size="1.7em"
         className={`${cls} text-tone-warning`}
         aria-hidden="true"
       />
@@ -143,7 +143,7 @@ function Progress({
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>
               {t('domainCert.progress.stagingIssued')}
@@ -162,7 +162,7 @@ function Progress({
     return (
       <div className="space-y-3">
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertTitle>{t('domainCert.progress.failedTitle')}</AlertTitle>
           <AlertDescription>
             <p>{status.explanation}</p>
@@ -248,7 +248,7 @@ function Review({
       </p>
       {pre.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>
             {t('domainCert.checkFailed')} {pre.error.message}
           </AlertDescription>
@@ -302,7 +302,7 @@ function Review({
       </div>
       {staging ? (
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{t('domainCert.stagingWarning')}</AlertDescription>
         </Alert>
       ) : null}

@@ -74,7 +74,7 @@ export function ReenrollNodeDialog({
         {created ? (
           <>
             <div className="flex items-start gap-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-2.5 text-tone-warning">
-              <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
+              <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
               <p className="text-sm">
                 {t('reenroll.shownOnce', {
                   time: new Date(created.expires_at).toLocaleTimeString(),
@@ -144,7 +144,7 @@ export function ReenrollNodeDialog({
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertDescription>{createToken.error.message}</AlertDescription>
               </Alert>

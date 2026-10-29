@@ -138,7 +138,7 @@ export function MoveToProjectDialog({
         {mutation.isError ? (
           <p className="flex items-start gap-1.5 text-sm text-destructive">
             <TriangleAlertGlassIcon
-              className="mt-0.5 size-5 shrink-0 text-tone-warning"
+              className="mt-0.5 size-6 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {mutation.error.message}

@@ -49,7 +49,7 @@ export function ForgotPasswordForm() {
         </Alert>
       ) : forgotPassword.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{forgotPassword.error.message}</AlertDescription>
         </Alert>
       ) : null}

@@ -259,7 +259,7 @@ export function PreferencesCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('common.loadFailed')}</span>

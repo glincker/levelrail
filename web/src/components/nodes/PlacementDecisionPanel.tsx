@@ -83,7 +83,7 @@ function DecisionBlock({
       )}
       {(decision.warnings ?? []).map((w) => (
         <Alert key={w}>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{w}</AlertDescription>
         </Alert>
       ))}
@@ -118,7 +118,7 @@ export function PlacementDecisionPanel({
   if (decision.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription className="space-y-2">
           <p>
             {t('decision.loadFailed')} {decision.error.message}

@@ -12,7 +12,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
       <Alert>
         <TriangleAlertGlassIcon
           className="text-tone-warning"
-          size="1.4em"
+          size="1.7em"
           aria-hidden
         />
         <AlertTitle>{t('policy.invalidTitle')}</AlertTitle>
@@ -34,7 +34,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
       <Alert>
         <TriangleAlertGlassIcon
           className="text-tone-warning"
-          size="1.4em"
+          size="1.7em"
           aria-hidden
         />
         <AlertTitle>{t('policy.allowTitle')}</AlertTitle>

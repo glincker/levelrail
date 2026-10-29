@@ -260,7 +260,7 @@ export function StatusPage() {
               >
                 <div className="flex min-w-0 flex-1 items-start gap-2.5">
                   <Icon
-                    className={`mt-0.5 size-5 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : item.severity === 'info' ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'}`}
+                    className={`size-6 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : item.severity === 'info' ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'}`}
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">

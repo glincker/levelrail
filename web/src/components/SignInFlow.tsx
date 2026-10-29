@@ -228,7 +228,7 @@ export function SignInFlow({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>
               {tp(`errors.${classifyPasskeyError(discoverable.error)}`)}
@@ -248,7 +248,7 @@ export function SignInFlow({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>
               {tp(`errors.${classifyPasskeyError(finish.error)}`)}

@@ -78,7 +78,7 @@ export default function NodeDomainsCard() {
   if (domains.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription className="space-y-2">
           <p>
             {t('domains.loadFailed')} {domains.error.message}

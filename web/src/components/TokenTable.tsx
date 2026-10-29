@@ -108,7 +108,7 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
               {token.abilities.includes('root') ? (
                 <span className="inline-flex items-center gap-1 text-xs text-tone-danger">
                   <TriangleAlertGlassIcon
-                    className="size-5 text-tone-warning"
+                    className="size-6 text-tone-warning"
                     aria-hidden="true"
                   />
                   {t('tokens.devFixtureRootWarning')}

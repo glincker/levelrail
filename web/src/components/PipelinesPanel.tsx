@@ -91,7 +91,7 @@ function DeletePipelineDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-5 text-tone-warning"
+              className="size-6 text-tone-warning"
               aria-hidden="true"
             />
             Delete &ldquo;{pipeline.name}&rdquo;?
@@ -105,7 +105,7 @@ function DeletePipelineDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{del.error.message}</AlertDescription>
           </Alert>
@@ -247,7 +247,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
           ) : error ? (
             <EmptyState
               icon={
-                <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
+                <TriangleAlertGlassIcon className="size-7 text-tone-warning" />
               }
               title="Pipelines could not be loaded"
               description={error.message}

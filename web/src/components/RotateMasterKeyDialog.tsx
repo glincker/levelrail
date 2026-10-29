@@ -102,7 +102,7 @@ export function RotateMasterKeyDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertTitle>Not persisted to disk</AlertTitle>
                 <AlertDescription>
@@ -115,7 +115,7 @@ export function RotateMasterKeyDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertTitle>Follow-up needed</AlertTitle>
                 <AlertDescription>{result.warning}</AlertDescription>
@@ -143,7 +143,7 @@ export function RotateMasterKeyDialog() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5 text-destructive">
                 <TriangleAlertGlassIcon
-                  className="size-5 text-tone-warning"
+                  className="size-6 text-tone-warning"
                   aria-hidden="true"
                 />
                 Rotate the master key?

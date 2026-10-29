@@ -53,7 +53,7 @@ export function ApiErrorAlert({
     <Alert variant="destructive" data-testid="api-error-alert">
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.4em"
+        size="1.7em"
         aria-hidden="true"
       />
       <AlertDescription className="space-y-2">

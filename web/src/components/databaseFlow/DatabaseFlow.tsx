@@ -189,7 +189,7 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
             <Alert>
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
                 aria-hidden="true"
               />
               <AlertDescription>

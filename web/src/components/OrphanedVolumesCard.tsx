@@ -142,7 +142,7 @@ export function OrphanedVolumesCard() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
                 <TriangleAlertGlassIcon
-                  className="size-5 text-tone-warning"
+                  className="size-6 text-tone-warning"
                   aria-hidden="true"
                 />
                 Delete {selectedNames.length} volume

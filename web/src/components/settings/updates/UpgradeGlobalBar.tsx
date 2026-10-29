@@ -80,7 +80,7 @@ export function UpgradeGlobalBar() {
             <CircleCheckGlassIcon className="size-5 text-success" aria-hidden />
           ) : (
             <TriangleAlertGlassIcon
-              className="size-5 text-tone-warning"
+              className="size-6 text-tone-warning"
               aria-hidden
             />
           )

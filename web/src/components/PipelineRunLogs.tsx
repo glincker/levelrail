@@ -58,7 +58,7 @@ function StoredLogs({
   if (error) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     )

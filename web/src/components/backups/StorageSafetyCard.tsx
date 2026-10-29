@@ -69,7 +69,7 @@ function KeyWarning() {
     <Alert>
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.4em"
+        size="1.7em"
         aria-hidden="true"
       />
       <AlertDescription className="space-y-2">
@@ -180,7 +180,7 @@ export function StorageSafetyCard({
         <Alert key={w.target_id} variant="destructive">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.4em"
+            size="1.7em"
             aria-hidden="true"
           />
           <AlertDescription>

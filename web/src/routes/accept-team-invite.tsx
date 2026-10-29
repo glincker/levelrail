@@ -95,7 +95,7 @@ function AcceptTeamInvitePage() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
               />
               <AlertDescription>
                 {token === '' ? t('accept.missing') : t('accept.invalid')}
@@ -172,7 +172,7 @@ function AcceptTeamInvitePage() {
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.4em"
+                    size="1.7em"
                   />
                   <AlertDescription>{accept.error.message}</AlertDescription>
                 </Alert>

@@ -230,7 +230,7 @@ function EnableTwoFactorDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
                   <span>{setup.error.message}</span>
@@ -274,7 +274,7 @@ function EnableTwoFactorDialog() {
                   <Alert variant="destructive">
                     <TriangleAlertGlassIcon
                       className="text-tone-warning"
-                      size="1.4em"
+                      size="1.7em"
                     />
                     <AlertDescription>{confirm.error.message}</AlertDescription>
                   </Alert>
@@ -398,7 +398,7 @@ function RegenerateRecoveryCodesDialog() {
               <Alert variant="destructive">
                 <TriangleAlertGlassIcon
                   className="text-tone-warning"
-                  size="1.4em"
+                  size="1.7em"
                 />
                 <AlertDescription>{regenerate.error.message}</AlertDescription>
               </Alert>
@@ -492,7 +492,7 @@ function DisableTwoFactorDialog() {
         <form onSubmit={handleSubmit} className="space-y-3">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TriangleAlertGlassIcon className="size-5 text-destructive" />
+              <TriangleAlertGlassIcon className="size-6 text-destructive" />
               {t('accountPage.twoFactor.disableTitle')}
             </DialogTitle>
             <DialogDescription>
@@ -535,7 +535,7 @@ function DisableTwoFactorDialog() {
             <Alert variant="destructive">
               <TriangleAlertGlassIcon
                 className="text-tone-warning"
-                size="1.4em"
+                size="1.7em"
               />
               <AlertDescription>{disable.error.message}</AlertDescription>
             </Alert>

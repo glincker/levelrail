@@ -42,7 +42,7 @@ function OutcomeIcon({ outcome }: { outcome: NodeMoveOutcome }) {
     case 'retry':
       return (
         <TriangleAlertGlassIcon
-          className="size-5 shrink-0 text-amber-500"
+          className="size-6 shrink-0 text-amber-500"
           aria-hidden="true"
         />
       )

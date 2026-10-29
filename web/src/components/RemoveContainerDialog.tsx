@@ -34,7 +34,7 @@ export function RemoveContainerDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <TriangleAlertGlassIcon
-              className="size-5 text-tone-warning"
+              className="size-6 text-tone-warning"
               aria-hidden="true"
             />
             Remove &ldquo;{containerName}&rdquo;?
@@ -48,7 +48,7 @@ export function RemoveContainerDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{removeContainer.error.message}</AlertDescription>
           </Alert>

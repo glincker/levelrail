@@ -53,7 +53,7 @@ export function FrameworkPresetPicker({
   if (presets.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>{t('loadFailed')}</AlertDescription>
       </Alert>
     )
@@ -162,7 +162,7 @@ export function FrameworkPresetPicker({
 
       {active && presetDiffers(active, port, healthPath) ? (
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertTitle>{t('mismatchTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>

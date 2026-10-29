@@ -193,7 +193,7 @@ function DrawerBody({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
               aria-hidden="true"
             />
             <AlertDescription>{provider.status_detail}</AlertDescription>
@@ -314,7 +314,7 @@ function DrawerBody({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
               aria-hidden="true"
             />
             <AlertTitle>{saveError.message}</AlertTitle>
@@ -326,7 +326,7 @@ function DrawerBody({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
               aria-hidden="true"
             />
             <AlertTitle>{save.error.message}</AlertTitle>
@@ -362,7 +362,7 @@ function DrawerBody({
                   />
                 ) : (
                   <TriangleAlertGlassIcon
-                    className="size-5 shrink-0 text-tone-danger"
+                    className="size-6 shrink-0 text-tone-danger"
                     aria-hidden="true"
                   />
                 )}

@@ -80,7 +80,7 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
     case 'warning':
       return (
         <TriangleAlertGlassIcon
-          size="1.4em"
+          size="1.7em"
           className={cn(base, 'text-warning-foreground')}
           aria-hidden="true"
         />

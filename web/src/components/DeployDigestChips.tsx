@@ -39,7 +39,7 @@ export function DigestChip({
       title={hint}
     >
       {degraded ? (
-        <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
+        <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
       ) : (
         <FingerprintPatternGlassIcon className="size-4.5" />
       )}
@@ -74,7 +74,7 @@ export function RolloutChip({ attempt }: { attempt: DeployAttempt }) {
         className="shrink-0"
         title={`Running ${attempt.running_image_id ?? 'unknown'} instead of the deployed image`}
       >
-        <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
+        <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
         Image mismatch
       </Badge>
     )

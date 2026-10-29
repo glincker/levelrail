@@ -75,7 +75,7 @@ export function ProbeNote({ probe }: { probe: ProbeTarget }) {
       <p className="flex flex-wrap items-center gap-x-2">
         <span className="flex items-center gap-1">
           <TriangleAlertGlassIcon
-            className="size-5 text-tone-warning"
+            className="size-6 text-tone-warning"
             aria-hidden="true"
           />
           {t(`test.reason.${reasonKey(probe)}`)}

@@ -196,7 +196,7 @@ export function DomainMaintenanceControl({
       />
       {error && confirming === null ? (
         <Alert variant="destructive" className="mt-2">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

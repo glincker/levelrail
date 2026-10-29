@@ -67,7 +67,7 @@ export function SecretAgeBadge({
       <span>Set {formatAge(updatedAt)}</span>
       {stale ? (
         <Badge variant="warning">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           Needs rotation
         </Badge>
       ) : null}

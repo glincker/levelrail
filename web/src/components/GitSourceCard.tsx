@@ -642,7 +642,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
 
         {otherError ? (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-destructive">
-            <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
+            <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
             <p className="text-sm">{otherError.message}</p>
           </div>
         ) : null}
@@ -659,7 +659,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               </div>
             ) : (
               <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-                <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
+                <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
                 <p className="text-sm">
                   {webhookError ? (
                     webhookError

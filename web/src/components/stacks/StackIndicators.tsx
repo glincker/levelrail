@@ -106,7 +106,7 @@ export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
         <Badge variant="outline">
           <TriangleAlertGlassIcon
             className="text-tone-warning"
-            size="1.4em"
+            size="1.7em"
             aria-hidden="true"
           />
           {t('flags.driftLock')}

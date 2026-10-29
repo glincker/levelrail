@@ -64,7 +64,7 @@ function StepIcon({ state }: { state: StepState }) {
     )
   }
   if (state === 'attention') {
-    return <TriangleAlertGlassIcon className="size-5 text-tone-warning" />
+    return <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
   }
   return <CircleGlassIcon className="size-5 text-muted-foreground" />
 }

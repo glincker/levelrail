@@ -191,7 +191,7 @@ export function DnsProviderPicker({ app }: { app?: string }) {
 
       {test.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{readApiError(test.error)}</AlertDescription>
         </Alert>
       ) : null}
@@ -202,7 +202,7 @@ export function DnsProviderPicker({ app }: { app?: string }) {
           ) : (
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
           )}
           <AlertDescription>

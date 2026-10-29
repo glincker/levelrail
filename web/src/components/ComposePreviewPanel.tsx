@@ -31,7 +31,7 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
   if (preview.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>
           {t('preview.loadFailed', { message: preview.error.message })}
         </AlertDescription>
@@ -53,7 +53,7 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
           />
         ) : (
           <TriangleAlertGlassIcon
-            className="size-5 text-destructive"
+            className="size-6 text-destructive"
             aria-hidden="true"
           />
         )}

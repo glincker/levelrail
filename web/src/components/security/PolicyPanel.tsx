@@ -89,7 +89,7 @@ function PolicyForm({
     <form className="space-y-4" onSubmit={onSubmit}>
       {policy.new_device_approval ? null : (
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{t('policy.approvalOff')}</AlertDescription>
         </Alert>
       )}
@@ -175,7 +175,7 @@ function AccountApprovalCard() {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{t('account.flagged')}</AlertDescription>
           </Alert>

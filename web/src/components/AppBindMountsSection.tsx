@@ -72,7 +72,7 @@ export function AppBindMountsSection({
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>
             Each row below gives this app&rsquo;s container direct read
             {bindMounts.some((m) => !m.read_only) ? '/write ' : ' '}

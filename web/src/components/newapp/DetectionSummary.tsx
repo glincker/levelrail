@@ -155,7 +155,7 @@ export function DetectionSummary({
           <Alert key={w.code}>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
               aria-hidden="true"
             />
             <AlertDescription>

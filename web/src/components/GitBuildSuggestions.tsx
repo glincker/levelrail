@@ -87,7 +87,7 @@ export function GitBuildSuggestions({
 
       {error ? (
         <div className="flex items-start gap-2 text-destructive" role="alert">
-          <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-tone-warning" />
+          <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
           <div className="space-y-1">
             <p className="text-sm">
               {t('detected.error', { error: error.message })}

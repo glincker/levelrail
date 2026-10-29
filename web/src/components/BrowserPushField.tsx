@@ -150,7 +150,7 @@ export function BrowserPushField({
       {publicKeyError ? (
         <span className="flex items-center gap-1 text-xs text-destructive">
           <TriangleAlertGlassIcon
-            className="size-5 text-tone-warning"
+            className="size-6 text-tone-warning"
             aria-hidden="true"
           />
           Browser push is not configured on this control plane (no master key
@@ -160,7 +160,7 @@ export function BrowserPushField({
       {error ? (
         <span className="flex items-center gap-1 text-xs text-destructive">
           <TriangleAlertGlassIcon
-            className="size-5 text-tone-warning"
+            className="size-6 text-tone-warning"
             aria-hidden="true"
           />
           {error}

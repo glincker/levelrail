@@ -54,7 +54,7 @@ export function DeploymentsSummary({
         label="Failure rate (24h)"
         loading={loading}
         icon={
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         }
         value={
           unavailable ? 'n/a' : formatFailureRate(s?.failure_rate_24h ?? null)

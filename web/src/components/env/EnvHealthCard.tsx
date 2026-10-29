@@ -126,8 +126,8 @@ export function EnvHealthCard({ appName }: { appName: string }) {
                     <TriangleAlertGlassIcon
                       className={
                         f.severity === 'error'
-                          ? 'size-5 text-destructive'
-                          : 'size-5 text-muted-foreground'
+                          ? 'size-6 text-destructive'
+                          : 'size-6 text-muted-foreground'
                       }
                       aria-hidden
                     />

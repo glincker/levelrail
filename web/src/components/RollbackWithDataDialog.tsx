@@ -102,7 +102,7 @@ export function RollbackWithDataDialog({
           </ul>
         ) : null}
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{t('rollbackWithData.warning')}</AlertDescription>
         </Alert>
         {blockedReason ? (
@@ -114,7 +114,7 @@ export function RollbackWithDataDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{rollback.error.message}</AlertDescription>
           </Alert>

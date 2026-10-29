@@ -133,7 +133,7 @@ export function ProfileCard() {
                   <Alert variant="destructive" className="max-w-md">
                     <TriangleAlertGlassIcon
                       className="text-tone-warning"
-                      size="1.4em"
+                      size="1.7em"
                       aria-hidden="true"
                     />
                     <AlertDescription>

@@ -27,7 +27,7 @@ export function ZoneSpreadCard() {
   if (zones.isError) {
     return (
       <Alert variant="destructive">
-        <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription className="space-y-2">
           <p>
             {t('zones.loadFailed')} {zones.error.message}
@@ -65,7 +65,7 @@ export function ZoneSpreadCard() {
           <Alert>
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertTitle>{t('zones.unlabeledTitle')}</AlertTitle>
             <AlertDescription className="space-y-2">

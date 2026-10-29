@@ -178,7 +178,7 @@ export function DomainErrorPagesControl({
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.4em"
+                    size="1.7em"
                   />
                   <AlertDescription>{setPage.error.message}</AlertDescription>
                 </Alert>
@@ -187,7 +187,7 @@ export function DomainErrorPagesControl({
                 <Alert variant="destructive">
                   <TriangleAlertGlassIcon
                     className="text-tone-warning"
-                    size="1.4em"
+                    size="1.7em"
                   />
                   <AlertDescription>{clearPage.error.message}</AlertDescription>
                 </Alert>

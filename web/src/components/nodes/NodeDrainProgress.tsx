@@ -36,7 +36,7 @@ export function NodeDrainProgress({ drain }: { drain: NodeDrain }) {
     <div className="space-y-3">
       {drain.error ? (
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertTitle>{t('drain.errorTitle')}</AlertTitle>
           <AlertDescription>
             <p>{drain.error}</p>

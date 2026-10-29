@@ -101,7 +101,7 @@ export function DeviceAuthRequestTable({
             >
               <TriangleAlertGlassIcon
                 aria-hidden="true"
-                className="size-5 text-tone-warning"
+                className="size-6 text-tone-warning"
               />
               {t('deviceLogin.review')}
             </span>

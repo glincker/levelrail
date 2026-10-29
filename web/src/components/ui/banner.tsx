@@ -33,7 +33,7 @@ const VARIANT: Record<
   },
   warning: {
     tone: 'warning',
-    icon: <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />,
+    icon: <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />,
     role: 'status',
   },
   critical: {

@@ -31,7 +31,7 @@ function HelpDocPage() {
   if (!page || content === null) {
     return (
       <div className="flex items-start gap-3 rounded-md border border-border p-4 text-sm">
-        <TriangleAlertGlassIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+        <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-muted-foreground" />
         <div>
           <p className="font-medium text-foreground">Page not found</p>
           <p className="mt-1 text-muted-foreground">

@@ -37,7 +37,7 @@ export function DeletePolicyDialog({ policy }: { policy: PolicyResource }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <TriangleAlertGlassIcon className="size-5 text-destructive" />
+            <TriangleAlertGlassIcon className="size-6 text-destructive" />
             Delete &ldquo;{policy.name}&rdquo;?
           </DialogTitle>
           <DialogDescription>
@@ -49,7 +49,7 @@ export function DeletePolicyDialog({ policy }: { policy: PolicyResource }) {
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{deletePolicy.error.message}</AlertDescription>
           </Alert>

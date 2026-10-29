@@ -44,7 +44,7 @@ export function ResumedApprovalWait({
     return (
       <div className="space-y-3">
         <Alert variant="destructive">
-          <TriangleAlertGlassIcon className="text-tone-warning" size="1.4em" />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>
             {data?.status === 'denied'
               ? t('approval.denied')

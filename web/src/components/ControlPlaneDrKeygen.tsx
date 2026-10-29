@@ -87,7 +87,7 @@ export function ControlPlaneDrKeygen({
             <div className="space-y-3">
               <Alert>
                 <TriangleAlertGlassIcon
-                  className="size-5 text-tone-warning"
+                  className="size-6 text-tone-warning"
                   aria-hidden="true"
                 />
                 <AlertDescription>

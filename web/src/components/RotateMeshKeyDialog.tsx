@@ -50,7 +50,7 @@ export function RotateMeshKeyDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             <TriangleAlertGlassIcon
-              className="size-5 text-amber-600"
+              className="size-6 text-amber-600"
               aria-hidden="true"
             />
             Rotate WireGuard key for &ldquo;{nodeName}&rdquo;?

@@ -31,7 +31,7 @@ export function CardError({
     <Alert variant="destructive">
       <TriangleAlertGlassIcon
         className="text-tone-warning"
-        size="1.4em"
+        size="1.7em"
         aria-hidden="true"
       />
       <AlertDescription className="flex flex-wrap items-center justify-between gap-2">

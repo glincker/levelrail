@@ -20,7 +20,7 @@ export function PendingChangesNotice({
   return (
     <Alert role="status" className="flex items-center gap-2 py-1.5">
       <TriangleAlertGlassIcon
-        className="size-5 shrink-0 text-tone-warning"
+        className="size-6 shrink-0 text-tone-warning"
         aria-hidden="true"
       />
       <AlertDescription className="flex flex-1 flex-wrap items-center gap-x-2">

@@ -182,7 +182,7 @@ export function CloneEnvironmentDialog({
           {newName.trim() && previewErrorMessage ? (
             <p className="flex items-start gap-1.5 text-sm text-destructive">
               <TriangleAlertGlassIcon
-                className="mt-0.5 size-5 shrink-0 text-tone-warning"
+                className="mt-0.5 size-6 shrink-0 text-tone-warning"
                 aria-hidden="true"
               />
               {previewErrorMessage}
@@ -294,7 +294,7 @@ export function CloneEnvironmentDialog({
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
-              size="1.4em"
+              size="1.7em"
             />
             <AlertDescription>{clone.error.message}</AlertDescription>
           </Alert>

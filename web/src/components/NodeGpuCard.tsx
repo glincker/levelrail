@@ -30,7 +30,7 @@ export function NodeGpuCard({ gpu }: { gpu?: NodeGpuResource }) {
         {runtimeMissing ? (
           <Badge variant="warning">
             <TriangleAlertGlassIcon
-              className="size-4.5 text-tone-warning"
+              className="size-6 text-tone-warning"
               aria-hidden="true"
             />
             nvidia runtime missing
