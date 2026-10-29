@@ -195,6 +195,12 @@ type StatusPageSettings struct {
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	CustomDomain string `json:"custom_domain"`
+	Accent       string `json:"accent"`
+	LogoURL      string `json:"logo_url"`
+	About        string `json:"about"`
+	Website      string `json:"website"`
+	NoIndex      bool   `json:"noindex"`
+	PoweredBy    bool   `json:"powered_by"`
 	PublicPath   string `json:"public_path,omitempty"`
 }
 
@@ -205,6 +211,15 @@ type StatusComponent struct {
 	Target      string `json:"target"`
 	DisplayName string `json:"display_name"`
 	Position    int    `json:"position"`
+	GroupID     string `json:"group_id"`
+	Description string `json:"description"`
+}
+
+// StatusGroup mirrors internal/api's statusGroupResource.
+type StatusGroup struct {
+	ID       string `json:"id,omitempty"`
+	Name     string `json:"name"`
+	Position int    `json:"position"`
 }
 
 // StatusUpdate is one incident timeline entry.
@@ -277,6 +292,39 @@ func (c *Client) CreateStatusComponent(ctx context.Context, comp StatusComponent
 	var out StatusComponent
 	err := c.do(ctx, http.MethodPost, "/api/v1/status-page/components", comp, &out)
 	return out, err
+}
+
+// UpdateStatusComponent calls PUT /api/v1/status-page/components/{id}.
+func (c *Client) UpdateStatusComponent(ctx context.Context, id string, comp StatusComponent) (StatusComponent, error) {
+	var out StatusComponent
+	err := c.do(ctx, http.MethodPut, "/api/v1/status-page/components/"+PathEscape(id), comp, &out)
+	return out, err
+}
+
+// ListStatusGroups calls GET /api/v1/status-page/groups.
+func (c *Client) ListStatusGroups(ctx context.Context) ([]StatusGroup, error) {
+	var out []StatusGroup
+	err := c.do(ctx, http.MethodGet, "/api/v1/status-page/groups", nil, &out)
+	return out, err
+}
+
+// CreateStatusGroup calls POST /api/v1/status-page/groups.
+func (c *Client) CreateStatusGroup(ctx context.Context, g StatusGroup) (StatusGroup, error) {
+	var out StatusGroup
+	err := c.do(ctx, http.MethodPost, "/api/v1/status-page/groups", g, &out)
+	return out, err
+}
+
+// UpdateStatusGroup calls PUT /api/v1/status-page/groups/{id}.
+func (c *Client) UpdateStatusGroup(ctx context.Context, id string, g StatusGroup) (StatusGroup, error) {
+	var out StatusGroup
+	err := c.do(ctx, http.MethodPut, "/api/v1/status-page/groups/"+PathEscape(id), g, &out)
+	return out, err
+}
+
+// DeleteStatusGroup calls DELETE /api/v1/status-page/groups/{id}.
+func (c *Client) DeleteStatusGroup(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/status-page/groups/"+PathEscape(id), nil, nil)
 }
 
 // DeleteStatusComponent calls DELETE /api/v1/status-page/components/{id}.

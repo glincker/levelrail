@@ -21,7 +21,7 @@ func TestWithWindowsListsMaintenanceWithoutTarget(t *testing.T) {
 			StartsAt: now.Add(time.Hour), EndsAt: now.Add(2 * time.Hour), Message: "details"},
 		{ID: "mw_2", Title: "Now", Scope: store.MaintenanceScopeAll, StartsAt: now.Add(-time.Hour), EndsAt: now.Add(time.Hour)},
 	}}
-	v := s.withWindows(context.Background(), View{Components: []ComponentView{{Name: "web", Status: Operational}}}, now)
+	v := s.withWindows(context.Background(), View{Components: []ComponentView{{Name: "web", Status: Operational}}}, now, recentWindow)
 
 	if len(v.Maintenance) != 2 {
 		t.Fatalf("maintenance = %d entries, want 2", len(v.Maintenance))
@@ -50,7 +50,7 @@ func TestWithWindowsOngoingLifecycle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &Service{windows: fakeWindows{tt.w}}
-			v := s.withWindows(context.Background(), View{}, now)
+			v := s.withWindows(context.Background(), View{}, now, recentWindow)
 			if len(v.Maintenance) != 1 {
 				t.Fatalf("entries = %d", len(v.Maintenance))
 			}

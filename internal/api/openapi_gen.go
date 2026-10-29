@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1812 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1820 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1527,6 +1527,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/status-page/components", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusComponent", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/status-page/components/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusComponent", Description: ""},
 	{Method: "PUT", Path: "/api/v1/status-page/components/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateStatusComponent", Description: ""},
+	{Method: "GET", Path: "/api/v1/status-page/groups", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusGroups", Description: ""},
+	{Method: "POST", Path: "/api/v1/status-page/groups", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusGroup", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/status-page/groups/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusGroup", Description: ""},
+	{Method: "PUT", Path: "/api/v1/status-page/groups/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateStatusGroup", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/incidents", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusIncidents", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/incidents", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusIncident", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/status-page/incidents/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusIncident", Description: ""},
@@ -1602,8 +1606,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/gate/login", Ability: "Public", Group: "Other", Handler: "handleGateLogin", Description: ""},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
+	{Method: "GET", Path: "/public/status.atom", Ability: "Public", Group: "Other", Handler: "handlePublicStatusAtom", Description: ""},
 	{Method: "GET", Path: "/public/status.json", Ability: "Public", Group: "Other", Handler: "handlePublicStatusJSON", Description: ""},
 	{Method: "GET", Path: "/public/status.rss", Ability: "Public", Group: "Other", Handler: "handlePublicStatusRSS", Description: ""},
+	{Method: "GET", Path: "/public/status/badge.svg", Ability: "Public", Group: "Other", Handler: "handlePublicStatusBadge", Description: ""},
+	{Method: "GET", Path: "/public/status/history", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHistory", Description: ""},
+	{Method: "GET", Path: "/public/status/incidents/{id}", Ability: "Public", Group: "Other", Handler: "handlePublicStatusIncident", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/environment", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetAppEnvironment", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/project", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetAppProject", Description: "Move an app or database into a project (project_id \"\" removes it): AbilityWrite, since project membership is an organizational edit, not infrastructure placement."},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/project", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetDatabaseProject", Description: ""},

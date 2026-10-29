@@ -17,11 +17,11 @@ func (s *Service) SetWindows(w WindowSource) { s.windows = w }
 
 // withWindows lists each window as scheduled maintenance. Only the title and
 // message are public: the scope target (an app or project name) is not.
-func (s *Service) withWindows(ctx context.Context, v View, now time.Time) View {
+func (s *Service) withWindows(ctx context.Context, v View, now time.Time, window time.Duration) View {
 	if s.windows == nil {
 		return v
 	}
-	ws, err := s.windows.ListMaintenanceWindows(ctx, now.Add(-recentWindow))
+	ws, err := s.windows.ListMaintenanceWindows(ctx, now.Add(-window))
 	if err != nil {
 		s.logger.Warn("statuspage: list maintenance windows failed", "error", err.Error())
 		return v

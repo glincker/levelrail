@@ -15,14 +15,18 @@ import (
 // opt-in public status page.
 func runStatusPage(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	top := map[string]apiCmd{"get": statusGetCommand(), "set": statusSetCommand(), "preview": statusPreviewCommand()}
+	compSubs := map[string]apiCmd{"list": statusComponentsListCommand(), "add": statusComponentAddCommand(), "set": statusComponentSetCommand(),
+		"delete": statusDeleteCommand("component", func(ctx context.Context, c *Client, id string) error { return c.DeleteStatusComponent(ctx, id) })}
 	if len(args) > 0 {
 		switch args[0] {
 		case "get", "set", "preview":
 			return dispatchSub(prog, "status-page", statusPageUsage, top, args, stdout, stderr, lookupEnv)
-		case "components":
-			subs := map[string]apiCmd{"list": statusComponentsListCommand(), "add": statusComponentAddCommand(),
-				"delete": statusDeleteCommand("component", func(ctx context.Context, c *Client, id string) error { return c.DeleteStatusComponent(ctx, id) })}
-			return dispatchSub(prog, "status-page components", statusPageUsage, subs, args[1:], stdout, stderr, lookupEnv)
+		case "components", "component":
+			return dispatchSub(prog, "status-page components", statusPageUsage, compSubs, args[1:], stdout, stderr, lookupEnv)
+		case "group", "groups":
+			subs := map[string]apiCmd{"add": statusGroupAddCommand(), "list": statusGroupListCommand(), "rename": statusGroupRenameCommand(),
+				"move": statusGroupMoveCommand(), "delete": statusDeleteCommand("group", func(ctx context.Context, c *Client, id string) error { return c.DeleteStatusGroup(ctx, id) })}
+			return dispatchSub(prog, "status-page group", statusPageUsage, subs, args[1:], stdout, stderr, lookupEnv)
 		case "incidents":
 			subs := map[string]apiCmd{"list": statusIncidentsListCommand(), "create": statusIncidentCreateCommand(), "update": statusIncidentUpdateCommand(),
 				"delete": statusDeleteCommand("incident", func(ctx context.Context, c *Client, id string) error { return c.DeleteStatusIncident(ctx, id) })}
@@ -35,11 +39,18 @@ func runStatusPage(prog string, args []string, stdout, stderr io.Writer, lookupE
 func statusPageUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s status-page get
-  %[1]s status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST]
+  %[1]s status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL]
+                        [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
   %[1]s status-page preview
   %[1]s status-page components list
   %[1]s status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
+  %[1]s status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
   %[1]s status-page components delete <id>
+  %[1]s status-page group add --name NAME
+  %[1]s status-page group list
+  %[1]s status-page group rename <id> --name NAME
+  %[1]s status-page group move <id> --position N
+  %[1]s status-page group delete <id>
   %[1]s status-page incidents list
   %[1]s status-page incidents create --title T [--kind incident|maintenance] [--impact none|minor|major|critical] [--body TEXT] [--component ID]... [--starts TIME --ends TIME]
   %[1]s status-page incidents update <id> --status S --body TEXT
@@ -63,6 +74,9 @@ func statusSetCommand() apiCmd {
 	var (
 		enable, disable     bool
 		title, desc, domain string
+		accent, logo        string
+		about, website      string
+		noindex, powered    bool
 		fsRef               *flag.FlagSet
 	)
 	return apiCmd{label: "status-page set", usage: statusPageUsage,
@@ -72,6 +86,12 @@ func statusSetCommand() apiCmd {
 			fs.BoolVar(&disable, "disable", false, "unpublish the page")
 			fs.StringVar(&title, "title", "", "page title")
 			fs.StringVar(&desc, "description", "", "short description under the title")
+			fs.StringVar(&accent, "accent", "", "brand colour as #RRGGBB (empty clears)")
+			fs.StringVar(&logo, "logo-url", "", "https URL of the logo image (empty clears)")
+			fs.StringVar(&about, "about", "", "plain text about section (empty clears)")
+			fs.StringVar(&website, "website", "", "link to your website (empty clears)")
+			fs.BoolVar(&noindex, "noindex", false, "ask search engines not to index the page")
+			fs.BoolVar(&powered, "powered-by", true, "show the powered by credit in the footer")
 			fs.StringVar(&domain, "domain", "", "serve the page on this hostname (the ingress must route it to the control plane)")
 		},
 		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
@@ -90,6 +110,18 @@ func statusSetCommand() apiCmd {
 					cur.Description = desc
 				case "domain":
 					cur.CustomDomain = domain
+				case "accent":
+					cur.Accent = accent
+				case "logo-url":
+					cur.LogoURL = logo
+				case "about":
+					cur.About = about
+				case "website":
+					cur.Website = website
+				case "noindex":
+					cur.NoIndex = noindex
+				case "powered-by":
+					cur.PoweredBy = powered
 				}
 			})
 			if enable {
@@ -105,6 +137,7 @@ func statusSetCommand() apiCmd {
 
 func printStatusSettings(w io.Writer, s apiclient.StatusPageSettings) {
 	_, _ = fmt.Fprintf(w, "enabled: %t\ntitle: %s\ndescription: %s\ncustom domain: %s\npublic path: %s\n", s.Enabled, orDash(s.Title), orDash(s.Description), orDash(s.CustomDomain), orDash(s.PublicPath))
+	_, _ = fmt.Fprintf(w, "accent: %s\nlogo url: %s\nabout: %s\nwebsite: %s\nnoindex: %t\npowered by: %t\n", orDash(s.Accent), orDash(s.LogoURL), orDash(s.About), orDash(s.Website), s.NoIndex, s.PoweredBy)
 }
 
 func statusPreviewCommand() apiCmd {
@@ -132,9 +165,9 @@ func statusComponentsListCommand() apiCmd {
 			list, err := c.ListStatusComponents(ctx)
 			return list, func(w io.Writer) {
 				tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
-				_, _ = fmt.Fprintln(tw, "ID\tKIND\tTARGET\tPUBLIC NAME")
+				_, _ = fmt.Fprintln(tw, "ID\tKIND\tTARGET\tPUBLIC NAME\tGROUP")
 				for _, comp := range list {
-					_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", comp.ID, comp.Kind, comp.Target, comp.DisplayName)
+					_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", comp.ID, comp.Kind, comp.Target, comp.DisplayName, orDash(comp.GroupID))
 				}
 				_ = tw.Flush()
 			}, err
@@ -240,4 +273,142 @@ func statusIncidentUpdateCommand() apiCmd {
 			inc, err := c.PostStatusIncidentUpdate(ctx, pos[0], apiclient.StatusUpdate{Status: status, Body: body})
 			return inc, func(w io.Writer) { _, _ = fmt.Fprintf(w, "%s is now %s\n", inc.ID, inc.Status) }, err
 		}}
+}
+
+func statusComponentSetCommand() apiCmd {
+	var group, desc, name string
+	var fsRef *flag.FlagSet
+	return apiCmd{label: "status-page components set", usage: statusPageUsage, args: 1,
+		setup: func(fs *flag.FlagSet) {
+			fsRef = fs
+			fs.StringVar(&group, "group", "", "group ID or name (empty ungroups)")
+			fs.StringVar(&desc, "description", "", "public one-line description (empty clears)")
+			fs.StringVar(&name, "name", "", "public display name")
+		},
+		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
+			list, err := c.ListStatusComponents(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+			var cur *apiclient.StatusComponent
+			for i := range list {
+				if list[i].ID == pos[0] {
+					cur = &list[i]
+				}
+			}
+			if cur == nil {
+				return nil, nil, newValidationError("no component %q", pos[0])
+			}
+			var visitErr error
+			fsRef.Visit(func(f *flag.Flag) {
+				switch f.Name {
+				case "group":
+					cur.GroupID, visitErr = resolveGroupID(ctx, c, group)
+				case "description":
+					cur.Description = desc
+				case "name":
+					cur.DisplayName = name
+				}
+			})
+			if visitErr != nil {
+				return nil, nil, visitErr
+			}
+			comp, err := c.UpdateStatusComponent(ctx, cur.ID, *cur)
+			return comp, func(w io.Writer) { _, _ = fmt.Fprintf(w, "component %s updated\n", comp.ID) }, err
+		}}
+}
+
+// resolveGroupID accepts a group ID or its exact name; empty means ungrouped.
+func resolveGroupID(ctx context.Context, c *Client, ref string) (string, error) {
+	if ref == "" {
+		return "", nil
+	}
+	groups, err := c.ListStatusGroups(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, g := range groups {
+		if g.ID == ref || g.Name == ref {
+			return g.ID, nil
+		}
+	}
+	return "", newValidationError("no group %q", ref)
+}
+
+func statusGroupListCommand() apiCmd {
+	return apiCmd{label: "status-page group list", usage: statusPageUsage,
+		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
+			list, err := c.ListStatusGroups(ctx)
+			return list, func(w io.Writer) {
+				tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
+				_, _ = fmt.Fprintln(tw, "ID\tPOSITION\tNAME")
+				for _, g := range list {
+					_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\n", g.ID, g.Position, g.Name)
+				}
+				_ = tw.Flush()
+			}, err
+		}}
+}
+
+func statusGroupAddCommand() apiCmd {
+	var name string
+	var position int
+	return apiCmd{label: "status-page group add", usage: statusPageUsage,
+		setup: func(fs *flag.FlagSet) {
+			fs.StringVar(&name, "name", "", "group name (required)")
+			fs.IntVar(&position, "position", 0, "display order, lowest first")
+		},
+		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
+			if name == "" {
+				return nil, nil, newValidationError("--name is required")
+			}
+			g, err := c.CreateStatusGroup(ctx, apiclient.StatusGroup{Name: name, Position: position})
+			return g, func(w io.Writer) { _, _ = fmt.Fprintf(w, "group %s added as %q\n", g.ID, g.Name) }, err
+		}}
+}
+
+func statusGroupRenameCommand() apiCmd {
+	var name string
+	return apiCmd{label: "status-page group rename", usage: statusPageUsage, args: 1,
+		setup: func(fs *flag.FlagSet) { fs.StringVar(&name, "name", "", "new group name (required)") },
+		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
+			if name == "" {
+				return nil, nil, newValidationError("--name is required")
+			}
+			cur, err := findStatusGroup(ctx, c, pos[0])
+			if err != nil {
+				return nil, nil, err
+			}
+			cur.Name = name
+			g, err := c.UpdateStatusGroup(ctx, cur.ID, cur)
+			return g, func(w io.Writer) { _, _ = fmt.Fprintf(w, "group %s renamed to %q\n", g.ID, g.Name) }, err
+		}}
+}
+
+func statusGroupMoveCommand() apiCmd {
+	var position int
+	return apiCmd{label: "status-page group move", usage: statusPageUsage, args: 1,
+		setup: func(fs *flag.FlagSet) { fs.IntVar(&position, "position", 0, "new display order, lowest first") },
+		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
+			cur, err := findStatusGroup(ctx, c, pos[0])
+			if err != nil {
+				return nil, nil, err
+			}
+			cur.Position = position
+			g, err := c.UpdateStatusGroup(ctx, cur.ID, cur)
+			return g, func(w io.Writer) { _, _ = fmt.Fprintf(w, "group %s moved to position %d\n", g.ID, g.Position) }, err
+		}}
+}
+
+func findStatusGroup(ctx context.Context, c *Client, id string) (apiclient.StatusGroup, error) {
+	groups, err := c.ListStatusGroups(ctx)
+	if err != nil {
+		return apiclient.StatusGroup{}, err
+	}
+	for _, g := range groups {
+		if g.ID == id {
+			return g, nil
+		}
+	}
+	return apiclient.StatusGroup{}, newValidationError("no group %q", id)
 }

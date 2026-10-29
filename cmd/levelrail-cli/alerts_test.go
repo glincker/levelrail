@@ -121,3 +121,19 @@ func TestStatusPageCommands(t *testing.T) {
 		t.Errorf("update call = %+v", rec3)
 	}
 }
+
+func TestStatusPageBrandingAndGroupCommands(t *testing.T) {
+	srv, rec := recordingServer(t, http.StatusOK, apiclient.StatusPageSettings{Title: "Old", PoweredBy: true})
+	runCLIExpectOK(t, []string{"status-page", "set", "--accent", "#ff6600", "--noindex", "--powered-by=false", "--api-url", srv.URL})
+	for _, want := range []string{`"accent":"#ff6600"`, `"noindex":true`, `"powered_by":false`} {
+		if !strings.Contains(rec.body, want) {
+			t.Errorf("set body %s missing %s", rec.body, want)
+		}
+	}
+	srv2, rec2 := recordingServer(t, http.StatusCreated, apiclient.StatusGroup{ID: "sg_1", Name: "Core"})
+	runCLIExpectOK(t, []string{"status-page", "group", "add", "--name", "Core", "--api-url", srv2.URL})
+	if rec2.path != "/api/v1/status-page/groups" || !strings.Contains(rec2.body, `"name":"Core"`) {
+		t.Errorf("group add = %+v", rec2)
+	}
+	runCLIExpectValidationError(t, []string{"status-page", "group", "add", "--api-url", srv2.URL})
+}

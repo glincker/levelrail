@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 type Store interface {
 	GetStatusPageSettings(ctx context.Context) (store.StatusPageSettings, error)
 	ListStatusComponents(ctx context.Context) ([]store.StatusComponent, error)
+	ListStatusGroups(ctx context.Context) ([]store.StatusGroup, error)
 	AddStatusSamples(ctx context.Context, componentID, day string, ok, degraded, down int) error
 	ListStatusDaily(ctx context.Context, sinceDay string) ([]store.StatusDaily, error)
 	PruneStatusDaily(ctx context.Context, beforeDay string) error
@@ -65,6 +67,8 @@ type Service struct {
 	current  map[string]string
 	cached   *View
 	cachedAt time.Time
+	hist     *View
+	histAt   time.Time
 }
 
 // New builds a Service. apps and domains may be nil, in which case
@@ -92,7 +96,7 @@ func New(st Store, apps AppSource, domains DomainSource, cfg Config, logger *slo
 // Invalidate drops the cached view so the next read reflects a management change.
 func (s *Service) Invalidate() {
 	s.mu.Lock()
-	s.cached = nil
+	s.cached, s.hist = nil, nil
 	s.mu.Unlock()
 }
 
@@ -250,12 +254,32 @@ func (s *Service) View(ctx context.Context) (View, error) {
 	}
 	s.mu.Unlock()
 
-	v, err := s.build(ctx)
+	v, err := s.build(ctx, recentWindow)
 	if err != nil {
 		return View{}, err
 	}
 	s.mu.Lock()
 	s.cached, s.cachedAt = &v, s.now()
+	s.mu.Unlock()
+	return v, nil
+}
+
+// History returns the view with the full archive window of incidents and
+// maintenance, cached like View.
+func (s *Service) History(ctx context.Context) (View, error) {
+	s.mu.Lock()
+	if s.hist != nil && s.now().Sub(s.histAt) < s.cfg.CacheTTL {
+		v := *s.hist
+		s.mu.Unlock()
+		return v, nil
+	}
+	s.mu.Unlock()
+	v, err := s.build(ctx, time.Duration(TuningFromEnv().HistoryDays)*24*time.Hour)
+	if err != nil {
+		return View{}, err
+	}
+	s.mu.Lock()
+	s.hist, s.histAt = &v, s.now()
 	s.mu.Unlock()
 	return v, nil
 }
@@ -270,9 +294,9 @@ func (s *Service) Enabled(ctx context.Context) (bool, error) {
 }
 
 // PreviewView builds an uncached view regardless of the enabled flag, for the management UI.
-func (s *Service) PreviewView(ctx context.Context) (View, error) { return s.build(ctx) }
+func (s *Service) PreviewView(ctx context.Context) (View, error) { return s.build(ctx, recentWindow) }
 
-func (s *Service) build(ctx context.Context) (View, error) {
+func (s *Service) build(ctx context.Context, window time.Duration) (View, error) {
 	settings, err := s.store.GetStatusPageSettings(ctx)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: load settings: %w", err)
@@ -281,12 +305,16 @@ func (s *Service) build(ctx context.Context) (View, error) {
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list components: %w", err)
 	}
+	groups, err := s.store.ListStatusGroups(ctx)
+	if err != nil {
+		return View{}, fmt.Errorf("statuspage: list groups: %w", err)
+	}
 	now := s.now().UTC()
 	daily, err := s.store.ListStatusDaily(ctx, now.AddDate(0, 0, -UptimeDays).Format("2006-01-02"))
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list daily: %w", err)
 	}
-	incidents, err := s.store.ListStatusIncidents(ctx, 200)
+	incidents, err := s.store.ListStatusIncidents(ctx, 500)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list incidents: %w", err)
 	}
@@ -302,13 +330,19 @@ func (s *Service) build(ctx context.Context) (View, error) {
 	}
 	s.mu.Unlock()
 
-	return s.withWindows(ctx, assemble(settings, comps, daily, incidents, updates, current, now), now), nil
+	v := assembleWith(settings, groups, comps, daily, incidents, updates, current, now, window)
+	return s.withWindows(ctx, v, now, window), nil
 }
 
 // assemble is the pure core of build: it maps stored data to the
 // whitelisted View, dropping every internal identifier and target.
 func assemble(settings store.StatusPageSettings, comps []store.StatusComponent, daily []store.StatusDaily,
 	incidents []store.StatusIncident, updates []store.StatusIncidentUpdate, current map[string]string, now time.Time) View {
+	return assembleWith(settings, nil, comps, daily, incidents, updates, current, now, recentWindow)
+}
+
+func assembleWith(settings store.StatusPageSettings, groups []store.StatusGroup, comps []store.StatusComponent, daily []store.StatusDaily,
+	incidents []store.StatusIncident, updates []store.StatusIncidentUpdate, current map[string]string, now time.Time, window time.Duration) View {
 	names := make(map[string]string, len(comps))
 	dailyBy := map[string][]store.StatusDaily{}
 	for _, c := range comps {
@@ -323,6 +357,8 @@ func assemble(settings store.StatusPageSettings, comps []store.StatusComponent, 
 	}
 
 	v := View{Title: settings.Title, Description: settings.Description, GeneratedAt: now,
+		Accent: settings.Accent, LogoURL: settings.LogoURL, About: settings.About, Website: settings.Website,
+		NoIndex: settings.NoIndex, PoweredBy: settings.PoweredBy,
 		Components: []ComponentView{}, Incidents: []IncidentView{}, Maintenance: []IncidentView{}}
 	if v.Title == "" {
 		v.Title = "Service status"
@@ -334,7 +370,7 @@ func assemble(settings store.StatusPageSettings, comps []store.StatusComponent, 
 		view := incidentView(inc, names, updatesBy[inc.ID])
 		switch inc.Kind {
 		case MaintenanceKind:
-			if inc.Status == StatusCompleted && now.Sub(endOrStart(inc)) > recentWindow {
+			if inc.Status == StatusCompleted && now.Sub(endOrStart(inc)) > window {
 				continue
 			}
 			v.Maintenance = append(v.Maintenance, view)
@@ -344,7 +380,7 @@ func assemble(settings store.StatusPageSettings, comps []store.StatusComponent, 
 				}
 			}
 		default:
-			if inc.Status == StatusResolved && inc.ResolvedAt != nil && now.Sub(*inc.ResolvedAt) > recentWindow {
+			if inc.Status == StatusResolved && inc.ResolvedAt != nil && now.Sub(*inc.ResolvedAt) > window {
 				continue
 			}
 			v.Incidents = append(v.Incidents, view)
@@ -356,6 +392,11 @@ func assemble(settings store.StatusPageSettings, comps []store.StatusComponent, 
 		}
 	}
 
+	comps = orderByGroup(comps, groups)
+	groupNames := make(map[string]string, len(groups))
+	for _, g := range groups {
+		groupNames[g.ID] = g.Name
+	}
 	statuses := make([]string, 0, len(comps))
 	for _, c := range comps {
 		status := current[c.ID]
@@ -369,7 +410,11 @@ func assemble(settings store.StatusPageSettings, comps []store.StatusComponent, 
 			status = Maintenance
 		}
 		days, up := buildBars(dailyBy[c.ID], now)
-		v.Components = append(v.Components, ComponentView{Name: c.DisplayName, Status: status, Uptime90: up, Days: days})
+		if up == nil && (status == Operational || status == Unknown) {
+			status = NoData
+		}
+		v.Components = append(v.Components, ComponentView{ID: c.ID, Name: c.DisplayName, Description: c.Description,
+			Group: groupNames[c.GroupID], Status: status, Uptime90: up, Days: days})
 		statuses = append(statuses, status)
 	}
 	v.Status = OverallStatus(statuses)
@@ -418,4 +463,19 @@ func incidentView(i store.StatusIncident, names map[string]string, updates []Upd
 	}
 	return IncidentView{ID: i.ID, Title: i.Title, Status: i.Status, Impact: i.Impact, StartsAt: i.StartsAt.UTC(),
 		EndsAt: i.EndsAt, ResolvedAt: i.ResolvedAt, Components: comps, Updates: updates}
+}
+
+// orderByGroup lists ungrouped components first, then each group in its
+// sort order, keeping the stored order inside every bucket.
+func orderByGroup(comps []store.StatusComponent, groups []store.StatusGroup) []store.StatusComponent {
+	if len(groups) == 0 {
+		return comps
+	}
+	rank := make(map[string]int, len(groups))
+	for i, g := range groups {
+		rank[g.ID] = i + 1
+	}
+	out := append([]store.StatusComponent(nil), comps...)
+	sort.SliceStable(out, func(i, j int) bool { return rank[out[i].GroupID] < rank[out[j].GroupID] })
+	return out
 }

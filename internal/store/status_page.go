@@ -17,7 +17,20 @@ type StatusPageSettings struct {
 	Title        string
 	Description  string
 	CustomDomain string
+	Accent       string
+	LogoURL      string
+	About        string
+	Website      string
+	NoIndex      bool
+	PoweredBy    bool
 	UpdatedAt    time.Time
+}
+
+// StatusGroup is a named, collapsible set of components on the public page.
+type StatusGroup struct {
+	ID       string
+	Name     string
+	Position int
 }
 
 // StatusComponent is one operator-chosen thing shown on the status page.
@@ -28,6 +41,8 @@ type StatusComponent struct {
 	Target      string
 	DisplayName string
 	Position    int
+	GroupID     string
+	Description string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -69,6 +84,7 @@ type StatusIncidentUpdate struct {
 var (
 	ErrStatusComponentNotFound = errors.New("store: status component not found")
 	ErrStatusIncidentNotFound  = errors.New("store: status incident not found")
+	ErrStatusGroupNotFound     = errors.New("store: status group not found")
 )
 
 // NewStatusID mints an identifier with the given prefix.
@@ -104,19 +120,20 @@ func parseNullableStatusTime(s sql.NullString) (*time.Time, error) {
 // GetStatusPageSettings returns the settings, or disabled defaults when never saved.
 func (db *DB) GetStatusPageSettings(ctx context.Context) (StatusPageSettings, error) {
 	var (
-		s       StatusPageSettings
-		enabled int
-		updated string
+		s                         StatusPageSettings
+		enabled, noindex, powered int
+		updated                   string
 	)
-	err := db.QueryRowContext(ctx, `SELECT enabled, title, description, custom_domain, updated_at FROM status_page_settings WHERE id = 1`).
-		Scan(&enabled, &s.Title, &s.Description, &s.CustomDomain, &updated)
+	err := db.QueryRowContext(ctx, `SELECT enabled, title, description, custom_domain, accent, logo_url, about, website,
+		noindex, show_powered_by, updated_at FROM status_page_settings WHERE id = 1`).
+		Scan(&enabled, &s.Title, &s.Description, &s.CustomDomain, &s.Accent, &s.LogoURL, &s.About, &s.Website, &noindex, &powered, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
-		return StatusPageSettings{}, nil
+		return StatusPageSettings{PoweredBy: true}, nil
 	}
 	if err != nil {
 		return StatusPageSettings{}, fmt.Errorf("store: get status page settings: %w", err)
 	}
-	s.Enabled = enabled != 0
+	s.Enabled, s.NoIndex, s.PoweredBy = enabled != 0, noindex != 0, powered != 0
 	if s.UpdatedAt, err = parseStatusTime(updated); err != nil {
 		return StatusPageSettings{}, fmt.Errorf("store: status page settings: %w", err)
 	}
@@ -129,26 +146,36 @@ func (db *DB) SaveStatusPageSettings(ctx context.Context, s StatusPageSettings) 
 	if s.Enabled {
 		enabled = 1
 	}
+	noindex, powered := 0, 0
+	if s.NoIndex {
+		noindex = 1
+	}
+	if s.PoweredBy {
+		powered = 1
+	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO status_page_settings (id, enabled, title, description, custom_domain, updated_at)
-		VALUES (1, ?, ?, ?, ?, ?)
+		INSERT INTO status_page_settings (id, enabled, title, description, custom_domain, accent, logo_url, about, website,
+			noindex, show_powered_by, updated_at)
+		VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET enabled = excluded.enabled, title = excluded.title,
-			description = excluded.description, custom_domain = excluded.custom_domain, updated_at = excluded.updated_at`,
-		enabled, s.Title, s.Description, s.CustomDomain, statusTime(time.Now()))
+			description = excluded.description, custom_domain = excluded.custom_domain, accent = excluded.accent,
+			logo_url = excluded.logo_url, about = excluded.about, website = excluded.website, noindex = excluded.noindex,
+			show_powered_by = excluded.show_powered_by, updated_at = excluded.updated_at`,
+		enabled, s.Title, s.Description, s.CustomDomain, s.Accent, s.LogoURL, s.About, s.Website, noindex, powered, statusTime(time.Now()))
 	if err != nil {
 		return fmt.Errorf("store: save status page settings: %w", err)
 	}
 	return nil
 }
 
-const statusComponentColumns = `SELECT id, kind, target, display_name, position, created_at, updated_at FROM status_components`
+const statusComponentColumns = `SELECT id, kind, target, display_name, position, group_id, description, created_at, updated_at FROM status_components`
 
 func scanStatusComponent(scan func(dest ...any) error) (StatusComponent, error) {
 	var (
 		c       StatusComponent
 		cr, upd string
 	)
-	if err := scan(&c.ID, &c.Kind, &c.Target, &c.DisplayName, &c.Position, &cr, &upd); err != nil {
+	if err := scan(&c.ID, &c.Kind, &c.Target, &c.DisplayName, &c.Position, &c.GroupID, &c.Description, &cr, &upd); err != nil {
 		return StatusComponent{}, err
 	}
 	var err error
@@ -198,11 +225,12 @@ func (db *DB) GetStatusComponent(ctx context.Context, id string) (StatusComponen
 func (db *DB) SaveStatusComponent(ctx context.Context, c StatusComponent) error {
 	now := statusTime(time.Now())
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO status_components (id, kind, target, display_name, position, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO status_components (id, kind, target, display_name, position, group_id, description, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, target = excluded.target,
-			display_name = excluded.display_name, position = excluded.position, updated_at = excluded.updated_at`,
-		c.ID, c.Kind, c.Target, c.DisplayName, c.Position, now, now)
+			display_name = excluded.display_name, position = excluded.position, group_id = excluded.group_id,
+			description = excluded.description, updated_at = excluded.updated_at`,
+		c.ID, c.Kind, c.Target, c.DisplayName, c.Position, c.GroupID, c.Description, now, now)
 	if err != nil {
 		return fmt.Errorf("store: save status component %q: %w", c.ID, err)
 	}
@@ -408,4 +436,60 @@ func (db *DB) ListStatusIncidentUpdates(ctx context.Context) ([]StatusIncidentUp
 		return nil, fmt.Errorf("store: iterate status incident updates: %w", err)
 	}
 	return out, nil
+}
+
+// ListStatusGroups returns component groups in display order.
+func (db *DB) ListStatusGroups(ctx context.Context) ([]StatusGroup, error) {
+	rows, err := db.QueryContext(ctx, `SELECT id, name, sort_order FROM status_component_groups ORDER BY sort_order, name`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list status groups: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []StatusGroup
+	for rows.Next() {
+		var g StatusGroup
+		if err := rows.Scan(&g.ID, &g.Name, &g.Position); err != nil {
+			return nil, fmt.Errorf("store: scan status group: %w", err)
+		}
+		out = append(out, g)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate status groups: %w", err)
+	}
+	return out, nil
+}
+
+// GetStatusGroup returns one group or ErrStatusGroupNotFound.
+func (db *DB) GetStatusGroup(ctx context.Context, id string) (StatusGroup, error) {
+	var g StatusGroup
+	err := db.QueryRowContext(ctx, `SELECT id, name, sort_order FROM status_component_groups WHERE id = ?`, id).Scan(&g.ID, &g.Name, &g.Position)
+	if errors.Is(err, sql.ErrNoRows) {
+		return StatusGroup{}, ErrStatusGroupNotFound
+	}
+	if err != nil {
+		return StatusGroup{}, fmt.Errorf("store: get status group %q: %w", id, err)
+	}
+	return g, nil
+}
+
+// SaveStatusGroup creates or replaces a group.
+func (db *DB) SaveStatusGroup(ctx context.Context, g StatusGroup) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO status_component_groups (id, name, sort_order) VALUES (?, ?, ?)
+		ON CONFLICT (id) DO UPDATE SET name = excluded.name, sort_order = excluded.sort_order`, g.ID, g.Name, g.Position)
+	if err != nil {
+		return fmt.Errorf("store: save status group %q: %w", g.ID, err)
+	}
+	return nil
+}
+
+// DeleteStatusGroup removes a group and ungroups its components.
+func (db *DB) DeleteStatusGroup(ctx context.Context, id string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE status_components SET group_id = '' WHERE group_id = ?`, id); err != nil {
+		return fmt.Errorf("store: ungroup status components of %q: %w", id, err)
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM status_component_groups WHERE id = ?`, id); err != nil {
+		return fmt.Errorf("store: delete status group %q: %w", id, err)
+	}
+	return nil
 }
