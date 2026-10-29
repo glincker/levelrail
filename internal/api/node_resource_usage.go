@@ -3,7 +3,6 @@ package api
 import (
 	"log/slog"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 
@@ -312,8 +311,8 @@ func (rt *Router) ensureLocalUsageRow(byID map[string]*nodeResourceUsageResource
 	if _, ok := byID[rt.localNodeID]; ok {
 		return
 	}
-	name, err := os.Hostname()
-	if err != nil || name == "" {
+	name := rt.hostname()
+	if name == "" {
 		name = rt.localNodeID
 	}
 	byID[rt.localNodeID] = &nodeResourceUsageResource{NodeID: rt.localNodeID, Name: name, IsLocal: true}
