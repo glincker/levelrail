@@ -22,7 +22,7 @@ func registerPreviewTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "sweep_stale_preview_environments",
-		Description: "Tear down every stale preview environment, across all apps, whose pull-request-closed webhook never arrived (see list_webhook_deliveries). Manual trigger for the automatic fallback; returns the count.",
+		Description: "Tear down stale preview environments, across all apps, whose pull-request-closed webhook never arrived. Manual trigger for the automatic fallback; returns the count.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SweepPreviewEnvironmentsResult, error) {
 		result, err := client.SweepPreviewEnvironments(ctx)
 		if err != nil {

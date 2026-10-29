@@ -66,7 +66,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "check_domain_dns",
-		Description: "Real DNS lookup for an app's domain: connected, not_resolving, resolves_elsewhere or unconfigured, against this control plane's address. Diagnoses a domain not reaching its app.",
+		Description: "Real DNS lookup for an app's domain: connected, not_resolving, resolves_elsewhere or unconfigured. Diagnoses a domain not reaching its app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainCheckResource, error) {
 		result, err := client.CheckDomain(ctx, in.Name, in.Domain)
 		if err != nil {

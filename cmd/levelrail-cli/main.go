@@ -76,6 +76,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBackupAlias(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runRestoreAlias(prog, args[1:], stdout, stderr, lookupEnv)
+	case "analysis":
+		return runAnalysis(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "git":

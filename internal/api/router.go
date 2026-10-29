@@ -501,6 +501,7 @@ type Router struct {
 	// /api/v1/apps/{name}/resource-recommendation's usage-history window.
 	// 0 means "use the default", set via WithResourceRecommendationLookback.
 	resourceRecommendationLookback time.Duration
+	analysisReports                AnalysisReportStore // nil is valid: report routes return 501
 	// capacityForecastLookback overrides defaultCapacityForecastLookback
 	// for GET /api/v1/nodes/{id}/capacity-forecast's usage-history
 	// window. 0 means "use the default", set via

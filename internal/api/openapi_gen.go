@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1806 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1808 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -111,6 +111,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/abuse/dry-run", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAbuseDryRun", Description: "Replays the recent access log against a draft policy and counts what it would have blocked."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/alert-history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppAlertHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/analysis/reports", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAnalysisReports", Description: "Read-only analysis reports (ADR 051, no model). AbilityRead, same sensitivity as resource-recommendation; the by-id route is scoped to the report's app."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/apply-pending", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyPending", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/auto-rollback", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAutoRollback", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/auto-rollback", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAutoRollback", Description: ""},
@@ -943,6 +944,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/alert-silences", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateAlertSilence", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/alert-silences/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleExpireAlertSilence", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertTemplates", Description: ""},
+	{Method: "GET", Path: "/api/v1/analysis/reports/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAnalysisReport", Description: ""},
 	{Method: "POST", Path: "/api/v1/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleIaCApply", Description: ""},
 	{Method: "POST", Path: "/api/v1/apply/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/apply/schema", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCSchema", Description: ""},

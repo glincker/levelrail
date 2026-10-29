@@ -190,6 +190,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			nodeCPUThreshold(logger), nodeMemoryThreshold(logger),
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
+		api.WithAnalysisReports(db),
 		api.WithCapacityForecastLookback(capacityForecastLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
