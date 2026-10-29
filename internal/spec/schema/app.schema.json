@@ -115,7 +115,7 @@
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
         },
-        "restart": { "description": "Run-to-completion policy: no or on-failure[:N].", "type": "string" }
+        "restart": { "description": "Container restart policy: no, always, unless-stopped, on-failure or on-failure:N (N is accepted but ignored).", "type": "string" }
       }
     },
     "contextConfig": {

@@ -13,7 +13,7 @@
           "type": "string"
         },
         "comparator": {
-          "description": "Comparison applied to the threshold.",
+          "description": "Comparison of the metric against threshold: \u003e, \u003c, \u003e= or \u003c=. Required for threshold rules and ignored by other kinds.",
           "type": "string"
         },
         "enabled": {
@@ -30,7 +30,7 @@
           "type": "string"
         },
         "restartCountThreshold": {
-          "description": "Restart count that triggers a restart alert.",
+          "description": "Restarts within restartWindow that fire a crashloop alert. Also the consecutive failed runs for scheduled_task_failure and failed backups for database_backup_failing.",
           "minimum": 0,
           "type": "integer"
         },
@@ -44,7 +44,45 @@
           "type": "number"
         },
         "type": {
-          "description": "Kind of alert rule.",
+          "description": "Kind of alert rule. Decides which other fields apply, such as metric, comparator and threshold for a threshold rule.",
+          "enum": [
+            "backup_copy_behind",
+            "backup_failed",
+            "backup_missing",
+            "budget_threshold",
+            "cert_expiring",
+            "cert_expiry",
+            "cert_renewal_stalled",
+            "control_plane_backup_stale",
+            "crashloop",
+            "database_backup_failing",
+            "database_backup_stale",
+            "database_connections_high",
+            "database_disk_high",
+            "database_down",
+            "deploy_failed",
+            "domain_health",
+            "domain_not_resolving",
+            "email_delivery_failing",
+            "export_behind",
+            "log_archive_stale",
+            "log_level_rate",
+            "log_pattern",
+            "node_cert_expiring",
+            "node_disk_space",
+            "node_host_guardrail",
+            "node_offline",
+            "node_resource_usage",
+            "patch_status",
+            "registry_refresh_failing",
+            "restore_drill_failed",
+            "scheduled_task_failure",
+            "scheduled_task_missed",
+            "scheduled_task_running_long",
+            "slo_burn",
+            "threshold",
+            "version_skew"
+          ],
           "minLength": 1,
           "type": "string"
         }
@@ -1435,7 +1473,7 @@
           "description": "CPU, memory and GPU limits for each container."
         },
         "restart": {
-          "description": "Run-to-completion policy: no or on-failure[:N].",
+          "description": "Container restart policy: no, always, unless-stopped, on-failure or on-failure:N (N is accepted but ignored).",
           "type": "string"
         },
         "rollout": {

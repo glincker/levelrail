@@ -105,12 +105,12 @@
       "additionalProperties": false,
       "properties": {
         "app": { "description": "Name of the app the rule watches.", "type": "string", "minLength": 1 },
-        "type": { "description": "Kind of alert rule.", "type": "string", "minLength": 1 },
+        "type": { "description": "Kind of alert rule. Decides which other fields apply, such as metric, comparator and threshold for a threshold rule.", "type": "string", "minLength": 1, "enum": ["backup_copy_behind", "backup_failed", "backup_missing", "budget_threshold", "cert_expiring", "cert_expiry", "cert_renewal_stalled", "control_plane_backup_stale", "crashloop", "database_backup_failing", "database_backup_stale", "database_connections_high", "database_disk_high", "database_down", "deploy_failed", "domain_health", "domain_not_resolving", "email_delivery_failing", "export_behind", "log_archive_stale", "log_level_rate", "log_pattern", "node_cert_expiring", "node_disk_space", "node_host_guardrail", "node_offline", "node_resource_usage", "patch_status", "registry_refresh_failing", "restore_drill_failed", "scheduled_task_failure", "scheduled_task_missed", "scheduled_task_running_long", "slo_burn", "threshold", "version_skew"] },
         "metric": { "description": "Metric the rule evaluates.", "type": "string" },
-        "comparator": { "description": "Comparison applied to the threshold.", "type": "string" },
+        "comparator": { "description": "Comparison of the metric against threshold: >, <, >= or <=. Required for threshold rules and ignored by other kinds.", "type": "string" },
         "threshold": { "description": "Value the metric is compared against.", "type": "number" },
         "for": { "description": "How long the condition must hold before alerting.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
-        "restartCountThreshold": { "description": "Restart count that triggers a restart alert.", "type": "integer", "minimum": 0 },
+        "restartCountThreshold": { "description": "Restarts within restartWindow that fire a crashloop alert. Also the consecutive failed runs for scheduled_task_failure and failed backups for database_backup_failing.", "type": "integer", "minimum": 0 },
         "restartWindow": { "description": "Window the restart count is measured over.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
         "channel": { "description": "Notification channel to alert.", "type": "string" },
         "enabled": { "description": "Whether the rule is active.", "type": "boolean" }
