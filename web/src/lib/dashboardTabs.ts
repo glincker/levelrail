@@ -22,14 +22,20 @@ export const savedTabId = (dashboardId: string) => `d:${dashboardId}`
 export const savedDashboardId = (tabId: string): string | null =>
   tabId.startsWith('d:') ? tabId.slice(2) : null
 
-// Fleet-wide widgets only: neither reads a target, so one doc fits any install.
+// Fleet-wide widgets only: none reads a target, so one doc fits any install.
 export function metricsDoc(name: string): DashboardDoc {
   return {
     version: 1,
     name,
     time_range: '24h',
     widgets: [
-      { id: 'resource-counts-1', type: 'resource_counts', size: 'L' },
+      { id: 'fleet-health-1', type: 'fleet_health', size: 'M' },
+      { id: 'attention-1', type: 'attention', size: 'M' },
+      { id: 'fleet-traffic-1', type: 'fleet_traffic', size: 'L' },
+      { id: 'top-apps-1', type: 'top_apps', size: 'M' },
+      { id: 'deploy-activity-1', type: 'deploy_activity', size: 'M' },
+      { id: 'fleet-capacity-1', type: 'fleet_capacity', size: 'M' },
+      { id: 'resource-counts-1', type: 'resource_counts', size: 'M' },
       { id: 'cost-1', type: 'cost', size: 'L' },
     ],
   }
