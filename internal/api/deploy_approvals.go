@@ -444,6 +444,9 @@ func (rt *Router) applyClaimedApproval(ctx context.Context, a store.DeployApprov
 	var updated store.DesiredService
 	switch a.Action {
 	case store.DeployApprovalActionPromote:
+		if derr := rt.verifyPromotionDigest(ctx, a.Image); derr != nil {
+			return deployApprovalDecisionResponse{}, derr
+		}
 		target := *svc
 		if a.IncludeEnv {
 			if err := applyPromoteEnvSnapshot(&target, a.PromoteEnv); err != nil {
