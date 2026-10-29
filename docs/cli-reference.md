@@ -1021,11 +1021,17 @@ The opt-in public status page. It stays off until `set --enable`. Only public co
 
 ```
 levelrail-cli status-page get
-levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST]
+levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL] [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
 levelrail-cli status-page preview
 levelrail-cli status-page components list
 levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
+levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
 levelrail-cli status-page components delete <id>
+levelrail-cli status-page group add --name NAME [--position N]
+levelrail-cli status-page group list
+levelrail-cli status-page group rename <id> --name NAME
+levelrail-cli status-page group move <id> --position N
+levelrail-cli status-page group delete <id>
 levelrail-cli status-page incidents list
 levelrail-cli status-page incidents create --title T [--kind incident|maintenance] [--impact none|minor|major|critical] [--body TEXT] [--component ID]... [--starts TIME --ends TIME]
 levelrail-cli status-page incidents update <id> --status S --body TEXT
@@ -1033,6 +1039,8 @@ levelrail-cli status-page incidents delete <id>
 ```
 
 - `--enable` and `--disable` are mutually exclusive. `--domain` serves the page on a hostname that the ingress must route to the control plane.
+- Branding: `--accent` takes `#RRGGBB`, `--logo-url` an https URL (its origin is the only image source the page allows), `--about` plain text. `--noindex` adds a robots noindex tag (off by default); `--powered-by=false` hides the footer credit. Pass an empty value to clear a text field.
+- `components set --group` takes a group ID or its exact name; an empty value ungroups. `component` is an alias of `components`. Deleting a group ungroups its components.
 - `incidents create`: `--kind` defaults to `incident`, `--impact` to `none`. A `maintenance` kind requires `--starts` and `--ends` (RFC 3339). `--body` is markdown-lite.
 - `incidents update --status` takes `investigating`, `identified`, `monitoring` or `resolved` for an incident, and `scheduled`, `in_progress` or `completed` for maintenance.
 

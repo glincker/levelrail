@@ -245,7 +245,9 @@ var Tree = map[string]*Node{
 	}},
 	"status-page": {Subs: map[string]*Node{
 		"get": nil, "set": nil, "preview": nil,
-		"components": {Subs: map[string]*Node{"list": nil, "add": nil, "delete": nil}},
+		"components": {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "delete": nil}},
+		"component":  {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "delete": nil}},
+		"group":      {Subs: map[string]*Node{"add": nil, "list": nil, "rename": nil, "move": nil, "delete": nil}},
 		"incidents":  {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	}},
 	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},
