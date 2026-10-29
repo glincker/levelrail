@@ -7,6 +7,8 @@ description: "Back up and restore the control plane's database with automatic sn
 
 The control plane keeps everything it knows (apps, domains, tokens, users, encrypted secrets, deploy history) in one SQLite database. A control plane backup is a consistent snapshot of that file, taken while the server keeps running.
 
+You do not need the `sqlite3` binary: `levelrail-cli upgrade backup-now` (or **Back up now** in the dashboard) takes a verified snapshot on any host.
+
 This is separate from [database and volume backups](/backups-and-storage), which protect the data of the apps you deploy.
 
 ```mermaid

@@ -162,7 +162,7 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 		// can tell "never reached the server" apart from "the server
 		// answered with an error" via errors.As, and pick a different
 		// exit code / tool-error shape for each.
-		return nil, fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
+		return nil, fmt.Errorf("request %s %s: %w%s", method, c.baseURL+path, err, connectHint(err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)

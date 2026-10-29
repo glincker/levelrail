@@ -148,7 +148,18 @@ func printUpgradePlan(out io.Writer, p apiclient.SelfUpgradePlan) {
 	if len(p.Breaking) == 0 && p.NotesAvailable {
 		_, _ = fmt.Fprintln(out, "no breaking changes declared")
 	}
+	if p.DBSchemaVersion != nil && p.TargetSchemaVersion != nil {
+		_, _ = fmt.Fprintf(out, "database schema %d -> %d", *p.DBSchemaVersion, *p.TargetSchemaVersion)
+		if p.PendingMigrations != nil {
+			_, _ = fmt.Fprintf(out, " (%d migrations will run)", *p.PendingMigrations)
+		}
+		_, _ = fmt.Fprintln(out)
+	}
 	_, _ = fmt.Fprintf(out, "steps: %s (automatic rollback if the new release is not healthy)\n", strings.Join(p.Steps, ", "))
+	_, _ = fmt.Fprintln(out, "a database backup is taken before the swap")
+	if len(p.RollbackCommands) > 0 {
+		_, _ = fmt.Fprintf(out, "to roll back:\n  %s\n", strings.Join(p.RollbackCommands, "\n  "))
+	}
 }
 
 func printUpgradeAttempt(out io.Writer, a apiclient.SelfUpgradeAttempt) {

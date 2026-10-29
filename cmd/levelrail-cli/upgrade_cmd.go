@@ -28,6 +28,7 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	applyTo := fs.String("version", "", "with --apply or --plan: release `tag` to install (default: latest on the channel)")
 	applyAck := fs.String("ack-breaking", "", "with --apply: comma-separated breaking-change `ids` you acknowledge")
 	planOnly := fs.Bool("plan", false, "show the breaking changes between the running version and the target, change nothing")
+	dryRun := fs.Bool("dry-run", false, "same as --plan: show target schema, migration count and rollback commands, change nothing")
 	attempts := fs.Bool("attempts", false, "list recorded self-upgrade attempts with their step timelines")
 	noWatch := fs.Bool("no-wait", false, "with --apply: return once the upgrade has started instead of following it")
 	fs.Usage = func() {
@@ -44,8 +45,8 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	if *rollbackTo != "" {
 		return runUpgradeRollback(ctx, client, *rollbackTo, *yes, jsonOut, of, stdout, stderr)
 	}
-	if *apply || *planOnly {
-		return runUpgradeApply(ctx, client, upgradeApplyOptions{target: *applyTo, ack: *applyAck, plan: *planOnly && !*apply, watch: !*noWatch}, jsonOut, of, stdout, stderr)
+	if *apply || *planOnly || *dryRun {
+		return runUpgradeApply(ctx, client, upgradeApplyOptions{target: *applyTo, ack: *applyAck, plan: *dryRun || (*planOnly && !*apply), watch: !*noWatch}, jsonOut, of, stdout, stderr)
 	}
 	if *attempts {
 		return runUpgradeAttempts(ctx, client, jsonOut, of, stdout, stderr)

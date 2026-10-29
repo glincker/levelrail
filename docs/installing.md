@@ -534,6 +534,12 @@ Pick the path that matches how you installed. The self-update (next section) is 
 
 The CLI also takes a fresh [control plane backup](/control-plane-backup) unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
 
+### Preview the upgrade
+
+`levelrail-cli upgrade --dry-run` changes nothing and prints the target version, breaking changes, the database schema move (for example `database schema 3034 -> 3048 (14 migrations will run)`), the fact that a database backup is taken before the swap, and the exact rollback commands. On a host where the service does not listen on `localhost:8080`, set `APP_API_URL` first (the address in `APP_HTTP_ADDR` of the unit); `emergency-token` prints the full line for you.
+
+The one command that upgrades is `levelrail-cli upgrade --apply`.
+
 ### Upgrade with automatic rollback
 
 Settings > Updates > **Upgrade to vX.Y.Z now** (or **Schedule upgrade**) and `levelrail-cli upgrade --apply` run the safe self-update. It:

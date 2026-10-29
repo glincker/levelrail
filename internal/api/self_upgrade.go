@@ -184,6 +184,12 @@ type selfUpgradePlanResource struct {
 	// Edge is set when the channel's target is the edge container image,
 	// which this self-upgrade does not apply.
 	Edge *edgeGuidance `json:"edge,omitempty"`
+	// Schema fields are omitted when the live database or the target manifest is unreadable.
+	DBSchemaVersion     *int `json:"db_schema_version,omitempty"`
+	TargetSchemaVersion *int `json:"target_schema_version,omitempty"`
+	// PendingMigrations is how many migrations the upgrade will run, when known.
+	PendingMigrations *int     `json:"pending_migrations,omitempty"`
+	RollbackCommands  []string `json:"rollback_commands,omitempty"`
 }
 
 const errEdgeNotApplicable = "edge builds are container images, not release binaries: pull the image instead, or switch the channel to beta or stable"
@@ -192,6 +198,23 @@ var selfUpgradeSteps = []string{
 	selfupgrade.StepDownload, selfupgrade.StepChecksum, selfupgrade.StepSignature, selfupgrade.StepProbe,
 	selfupgrade.StepBackup, selfupgrade.StepMigrationCheck, selfupgrade.StepStop, selfupgrade.StepSwap,
 	selfupgrade.StepStart, selfupgrade.StepHealth,
+}
+
+// fillPlanSchema adds the schema versions, the migration count and the exact
+// rollback commands so an operator can judge an upgrade before running it.
+func (rt *Router) fillPlanSchema(ctx context.Context, plan *selfUpgradePlanResource, r upgrade.HistoryRelease) {
+	db := rt.liveSchemaVersion(ctx)
+	target := rt.releaseHist.schemaFor(ctx, r)
+	plan.DBSchemaVersion, plan.TargetSchemaVersion = optInt(db), optInt(target)
+	if db >= 0 && target >= 0 {
+		if n, err := store.MigrationsBetween(db, target); err == nil {
+			plan.PendingMigrations = &n
+		}
+	}
+	plan.RollbackCommands = []string{
+		"levelrail-cli upgrade --rollback-plan " + version.Version,
+		"sudo levelrail rollback",
+	}
 }
 
 func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (selfUpgradePlanResource, int, string) {
@@ -210,6 +233,9 @@ func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (self
 		for _, r := range releases {
 			notes = append(notes, selfupgrade.ReleaseNotes{Tag: r.Tag, Body: r.Body})
 			known = known || r.Tag == target
+			if r.Tag == target && rt.releaseHist != nil {
+				rt.fillPlanSchema(ctx, &plan, r)
+			}
 		}
 		if !known {
 			return plan, http.StatusNotFound, "that release was not found"
