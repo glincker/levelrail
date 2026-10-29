@@ -344,6 +344,15 @@
         "engine": {
           "$ref": "#/$defs/database/properties/engine"
         },
+        "pooler": {
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
         "project": {
           "minLength": 1,
           "type": "string"
@@ -476,6 +485,7 @@
                 "field": {
                   "enum": [
                     "url",
+                    "direct_url",
                     "host",
                     "port",
                     "username",
@@ -513,6 +523,30 @@
       },
       "required": [
         "project"
+      ],
+      "type": "object"
+    },
+    "file": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "mode": {
+          "pattern": "^0?[0-7]{3,4}$",
+          "type": "string"
+        },
+        "path": {
+          "pattern": "^/",
+          "type": "string"
+        },
+        "secret": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "content"
       ],
       "type": "object"
     },
@@ -1097,6 +1131,12 @@
             "$ref": "#/$defs/envValue"
           },
           "type": "object"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/file"
+          },
+          "type": "array"
         },
         "headers": {
           "items": {

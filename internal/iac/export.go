@@ -342,6 +342,9 @@ func (e *exporter) databases() {
 		s := map[string]any{"engine": db.Engine}
 		putIf(s, "version", db.Version)
 		putIf(s, "project", project)
+		if db.Pooler {
+			s["pooler"] = map[string]any{"enabled": true}
+		}
 		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindDatabase, Metadata: outMeta{Name: name}, Spec: s})
 	}
 }

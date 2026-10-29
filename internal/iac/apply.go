@@ -96,6 +96,15 @@ func (x *executor) ensureTag(ctx context.Context, name string) (string, error) {
 	return out.ID, nil
 }
 
+// setDatabasePooler uses the same routes as the CLI and dashboard.
+func (x *executor) setDatabasePooler(ctx context.Context, db string, enabled bool) error {
+	method := http.MethodDelete
+	if enabled {
+		method = http.MethodPost
+	}
+	return x.do(ctx, method, "/api/v1/databases/"+esc(db)+"/pooler", nil, nil)
+}
+
 func (x *executor) setDatabaseProject(ctx context.Context, db, project string) error {
 	if project == "" {
 		return nil

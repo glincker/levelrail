@@ -154,6 +154,13 @@ func (f *fakeCP) buildRoutes() []fakeRoute {
 		f.dbs[m[1]]["project_id"] = b["project_id"]
 		return f.dbs[m[1]], nil
 	})
+	for _, m := range []string{"POST", "DELETE"} {
+		on := m == "POST"
+		f.route(m, `/api/v1/databases/([^/]+)/pooler`, func(mm []string, _ map[string]any) (any, error) {
+			f.dbs[mm[1]]["pooler_enabled"] = on
+			return f.dbs[mm[1]], nil
+		})
+	}
 	f.appRoutes()
 	f.extraRoutes()
 	return f.routes

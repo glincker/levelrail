@@ -70,6 +70,7 @@ type wireDatabase struct {
 	Engine    string `json:"engine"`
 	Version   string `json:"version"`
 	ProjectID string `json:"project_id,omitempty"`
+	Pooler    bool   `json:"pooler_enabled,omitempty"`
 }
 
 type wireApp struct {

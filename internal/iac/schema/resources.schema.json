@@ -59,7 +59,12 @@
       "properties": {
         "engine": { "$ref": "#/$defs/database/properties/engine" },
         "version": { "type": "string", "minLength": 1 },
-        "project": { "type": "string", "minLength": 1 }
+        "project": { "type": "string", "minLength": 1 },
+        "pooler": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean" } }
+        }
       }
     },
     "appSpec": {
