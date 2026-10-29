@@ -90,27 +90,5 @@ func (d *DeleteRunner) DeleteBackup(ctx context.Context, historyID string) error
 // than shared, the same small-independent-struct tradeoff this package's
 // other resolvers already make.
 func (d *DeleteRunner) resolveDestination(ctx context.Context, targetID string) (Destination, error) {
-	target, err := d.Store.GetBackupTarget(ctx, targetID)
-	if err != nil {
-		return Destination{}, fmt.Errorf("get backup target %q: %w", targetID, err)
-	}
-
-	secretsKey := store.BackupTargetSecretsKey(targetID)
-	accessKeyID, err := d.Secrets.Resolve(ctx, secretsKey, "access_key_id")
-	if err != nil {
-		return Destination{}, fmt.Errorf("resolve access key id for target %q: %w", targetID, err)
-	}
-	secretAccessKey, err := d.Secrets.Resolve(ctx, secretsKey, "secret_access_key")
-	if err != nil {
-		return Destination{}, fmt.Errorf("resolve secret access key for target %q: %w", targetID, err)
-	}
-
-	return Destination{
-		Provider:        target.Provider,
-		Endpoint:        target.Endpoint,
-		Region:          target.Region,
-		Bucket:          target.Bucket,
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
-	}, nil
+	return resolveCopyDestination(ctx, d.Store, d.Secrets, targetID)
 }
