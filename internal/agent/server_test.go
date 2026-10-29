@@ -382,13 +382,15 @@ func TestServer_NotifyShutdown_SendsGoAway(t *testing.T) {
 
 	srv.NotifyShutdown()
 
-	select {
-	case msg := <-stream.sent:
-		if msg.GetGoAway() == nil {
-			t.Errorf("sent message = %+v, want a GoAway payload", msg)
+	// Config pushes can precede the GoAway frame, so skip until it arrives.
+	timeout := time.After(2 * time.Second)
+	for gotGoAway := false; !gotGoAway; {
+		select {
+		case msg := <-stream.sent:
+			gotGoAway = msg.GetGoAway() != nil
+		case <-timeout:
+			t.Fatal("timed out waiting for the GoAway frame")
 		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("timed out waiting for the GoAway frame")
 	}
 
 	stream.recvErr = errors.New("connection reset")
