@@ -15,6 +15,7 @@ const (
 	ReasonPromote  = "promote"
 	ReasonRollback = "rollback"
 	ReasonRevert   = "revert"
+	ReasonDeploy   = "deploy"
 )
 
 // Binder is the store surface that makes bindings authoritative. It lives here

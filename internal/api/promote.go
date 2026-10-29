@@ -141,6 +141,9 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rel := rt.promotionRelease(r.Context(), res.source)
+	if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusForbidden, "your account lacks the required ability on the target app (needs "+AbilityDeploy+")"), appRef(res.target.Name)) {
+		return
+	}
 	if req.ReleaseID != "" {
 		if rel, ok = rt.requestedRelease(w, r, res.source.Name, req.ReleaseID); !ok {
 			return
@@ -152,9 +155,6 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if status, msg := rt.enforceImageSignature(r.Context(), sigRef); status != 0 {
 		writeError(w, status, msg)
-		return
-	}
-	if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusForbidden, "your account lacks the required ability on the target app (needs "+AbilityDeploy+")"), appRef(res.target.Name)) {
 		return
 	}
 	if promoteNeedsConfirmation(res.env, req.Confirm) {
