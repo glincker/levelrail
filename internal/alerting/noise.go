@@ -44,7 +44,13 @@ type NoiseControl struct {
 	groups     *groupBuffer
 	suppressed map[string]suppression
 	lastPrune  time.Time
+
+	// onFired lets a best-effort consumer see recorded firings; it must not block.
+	onFired func(HistoryEntry)
 }
+
+// SetFiredHook registers fn to be called with each recorded firing.
+func (n *NoiseControl) SetFiredHook(fn func(HistoryEntry)) { n.onFired = fn }
 
 type suppression struct {
 	ev        Event
@@ -181,6 +187,10 @@ func (n *NoiseControl) record(ctx context.Context, sc alertScope, r Rule, event,
 	}
 	if err := n.store.RecordHistory(ctx, e); err != nil {
 		n.logger.Error("alerting: record history failed", slog.String("rule_id", r.ID), slog.String("error", err.Error()))
+		return
+	}
+	if n.onFired != nil && event == EventFired {
+		n.onFired(e)
 	}
 }
 
