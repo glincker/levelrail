@@ -27,6 +27,7 @@ levelrail-cli doctor              # same checks as the dashboard
 levelrail-cli doctor --fix        # print a plan of safe auto fixes, ask, apply, re-run
 levelrail-cli doctor --fix --yes  # apply without asking
 levelrail-cli doctor --output json
+levelrail-cli doctor disk         # only the disk checks, with the top consumers and a cleanup suggestion
 levelrail-cli doctor --local      # Docker, disk and ports only, no control plane needed
 ```
 
@@ -73,6 +74,7 @@ One or more checks failed. See above.
 | This server | `disk_space` | Free space on the data volume, with an auto cleanup fix |
 | | `inodes` | Free inodes on the data volume (`APP_DOCTOR_INODE_WARN_PERCENT`) |
 | | `docker_root_disk` | Free space under Docker's storage root |
+| | `disk_hygiene` | Free space on the data dir and Docker root, Docker image, build cache, volume and container sizes (largest first) and a suggested cleanup command; warns below `APP_DOCTOR_DISK_WARN_FREE_PCT` percent free (default 10). Read-only, nothing is deleted |
 | | `data_dir_writable`, `ram`, `cpu`, `disk_io_latency`, `database` | Data directory, memory, CPU, disk latency, SQLite |
 | Network | `port_80`, `port_443` | Who holds the ingress ports |
 | | `firewall` | Host firewall rules for ports 80 and 443 |

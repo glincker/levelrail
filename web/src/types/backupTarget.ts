@@ -28,6 +28,8 @@ export interface BackupTarget {
   created_at: string
   // True when new database dumps to this target are age-sealed.
   encrypt_dumps: boolean
+  // Read-only APP_BACKUP_LOCAL_ROOT, set for local targets only.
+  local_root?: string
 }
 
 export interface BackupTargetEncryption {
