@@ -1,0 +1,68 @@
+---
+title: "Self-host Radicale with Docker"
+sidebarTitle: "Radicale"
+description: "Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file."
+"og:url": "https://docs.levelrail.com/self-host/radicale"
+---
+
+Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file.
+
+This page describes the Levelrail template for Radicale (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://radicale.org/v3.html.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `radicale` | `kozea/radicale:3.9.0` | 5232 | `data -&#62; /var/lib/radicale` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `radicale` | `RADICALE_PASSWORD` | Generated at deploy |
+| `radicale` | `RADICALE_USER` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`radicale`): RADICALE_PASSWORD, RADICALE_USER.
+- Stores data in named volumes (`radicale`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Radicale with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Radicale. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy radicale --name my-radicale
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+
+All templates are listed in the [self-host gallery](/self-host).
