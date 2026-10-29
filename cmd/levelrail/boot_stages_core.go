@@ -24,6 +24,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/migrateagent"
+	"github.com/GLINCKER/levelrail/internal/release"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -49,6 +50,7 @@ func (s *bootState) openStore() error {
 		}
 	})
 	recordUpgradeHistory(ctx, db, obs, logger)
+	release.Install(db, release.ModeFromEnv(), logger)
 	applyTakeoverBoot(ctx, db, logger)
 	importSelfUpgradeJournal(ctx, db, logger)
 	resolveServerProfile(ctx, db, logger)
