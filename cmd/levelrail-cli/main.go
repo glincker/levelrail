@@ -262,6 +262,18 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAPIResources(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollout":
 		return runRollout(prog, args[1:], stdout, stderr, lookupEnv)
+	case "get":
+		return runGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "describe":
+		return runDescribe(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "edit":
+		return runEdit(prog, args[1:], stdout, stderr, lookupEnv)
+	case "port-forward":
+		return runPortForward(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cp":
+		return runCp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "config":
 		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
@@ -484,6 +496,12 @@ Usage:
   %[1]s api-resources                                         list resource kinds
   %[1]s rollout status|history|undo|restart <app>             kubectl style aliases over deploy commands
   %[1]s config get-contexts|current-context|use-context       switch between saved profiles
+  %[1]s get <kind> [name] [-o wide|json|yaml|name] [-l SEL]   list or show apps, databases and nodes
+  %[1]s describe <kind> <name>                                 one resource with conditions and recent events
+  %[1]s delete <kind> <name> [--yes]                           delete an app or a database
+  %[1]s edit app <name> [--yes]                                edit the app document in $EDITOR and apply it
+  %[1]s port-forward <app|db/name> [LOCAL:]REMOTE              friendly alias over the app and database tunnels
+  %[1]s cp <app/volume:path> <local>                           copy a file to or from an app volume
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
