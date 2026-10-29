@@ -79,13 +79,13 @@ export function ResultRow({
       tabIndex={-1}
       onClick={onSelect}
       className={cn(
-        'flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm outline-none',
+        'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] outline-none',
         active
-          ? 'bg-muted text-foreground'
-          : 'text-foreground/90 hover:bg-muted/60',
+          ? 'bg-foreground/10 text-foreground'
+          : 'text-foreground/90 hover:bg-foreground/5',
       )}
     >
-      <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-5">
+      <span className="flex size-6 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-6">
         {item.icon}
       </span>
       <span className="min-w-0 truncate">
