@@ -1,0 +1,219 @@
+{
+  "page": {
+    "title": "Primeros pasos",
+    "subtitle": "El camino más corto desde una instalación nueva hasta una primera aplicación en vivo, con backup y monitoreo.",
+    "loadError": "No se pudo cargar la guía de configuración: {{message}}",
+    "retry": "Reintentar",
+    "rootOnly": "Solo un administrador puede cambiar la guía de configuración. Aun así puedes seguir los pasos de abajo."
+  },
+  "summary": {
+    "ready": "{{percent}}% listo para producción",
+    "steps": "{{done}} de {{total}} pasos completados",
+    "nextUp": "Lo siguiente",
+    "allDoneTitle": "Todo está configurado",
+    "allDoneBody": "Todos los pasos están completados u omitidos. Restablece la guía cuando quieras para revisar tus decisiones.",
+    "serverAddress": "Dirección de este servidor: {{address}}",
+    "essentialTitle": "Publica tu primera aplicación",
+    "essentialHelp": "Crea una aplicación desde un enlace de Git o un template, y ábrela en tu navegador."
+  },
+  "actions": {
+    "skip": "Omitir",
+    "undo": "Deshacer",
+    "markDone": "Marcar como hecho",
+    "hide": "Ocultar por ahora",
+    "show": "Mostrar la guía de nuevo",
+    "reset": "Restablecer",
+    "resetConfirmTitle": "¿Restablecer la guía de configuración?",
+    "resetConfirmBody": "Esto borra todos los pasos omitidos y los completados manualmente, y vuelve a mostrar la guía. No cambia nada de lo que configuraste.",
+    "hidden": "La guía está oculta. Sigue disponible desde esta página.",
+    "saveError": "No se pudo actualizar la guía: {{message}}"
+  },
+  "meta": {
+    "minutes": "Unos {{count}} min",
+    "optional": "Opcional",
+    "progress": "{{done}} de {{total}}",
+    "blocked": "Primero haz \"{{step}}\""
+  },
+  "state": {
+    "todo": "Pendiente",
+    "in_progress": "En curso",
+    "done": "Hecho",
+    "skipped": "Omitido",
+    "not_applicable": "No hace falta"
+  },
+  "reason": {
+    "tls_terminated_upstream": "Tu proxy termina el TLS, así que aquí no se administra ningún certificado.",
+    "proxy_mode": "Se sirve a través de tu proxy inverso.",
+    "unavailable": "No se pudo comprobar en este momento.",
+    "http_only": "La URL del panel es HTTP sin cifrar. Cámbiala a https.",
+    "no_alert_rule": "Existe un canal. Crea una regla de alerta para que se use.",
+    "certificates_pending": "Esperando a que se emitan los certificados.",
+    "acme_disabled": "Los certificados automáticos están desactivados.",
+    "marked_done": "Marcado como hecho por un operador."
+  },
+  "steps": {
+    "secure_admin": {
+      "title": "Protege la cuenta de administrador",
+      "what": "Agrega una segunda verificación al iniciar sesión, ya sea un código de una app de autenticación (dos pasos) o una passkey (inicia sesión con tu huella, rostro o PIN del dispositivo), a la cuenta que controla cada despliegue.",
+      "why": "Una contraseña robada nunca debería bastar para llegar a tus servidores.",
+      "cta": "Abrir seguridad"
+    },
+    "sign_in_recovery": {
+      "title": "Configura una forma de volver a entrar",
+      "what": "Conecta el correo, o aprueba los inicios de sesión nuevos desde un dispositivo de confianza, para poder volver a entrar si pierdes tu contraseña.",
+      "why": "Si pierdes tu contraseña o passkey, así recuperas el acceso a tus servidores.",
+      "cta": "Abrir seguridad"
+    },
+    "security_review": {
+      "title": "Revisa tus valores de seguridad predeterminados",
+      "what": "Revisa las protecciones que vienen activadas, como la protección contra repetición de webhooks y la auditoría de lecturas sensibles, y cambia las que no se ajusten a tu entorno.",
+      "why": "Estos valores son seguros para la mayoría de las instalaciones. Revisarlos una vez evita que alguna protección quede desactivada por accidente.",
+      "cta": "Revisar valores"
+    },
+    "public_address": {
+      "title": "Define la dirección del panel y activa HTTPS",
+      "what": "Elige la dirección web con la que abres este panel. La opción gratuita es la dirección https creada a partir de la IP de este servidor, con un certificado real y sin configurar DNS.",
+      "why": "Una vez activado HTTPS, iniciar sesión por HTTP sin cifrar deja de funcionar, así que conviene hacerlo pronto.",
+      "cta": "Activar HTTPS"
+    },
+    "git_provider": {
+      "title": "Conecta un origen Git o despliega una imagen",
+      "what": "Vincula GitHub, GitLab, Bitbucket o Gitea para que un push despliegue tu aplicación. Si despliegas una imagen de contenedor ya preparada, omite este paso.",
+      "why": "Los repositorios vinculados te dan despliegues automáticos y un historial de despliegues ligado a los commits.",
+      "cta": "Conectar Git"
+    },
+    "first_app": {
+      "title": "Despliega tu primera aplicación",
+    "titleLive": "Tu primera aplicación está en ejecución",
+      "what": "Crea una aplicación desde un repositorio, una imagen de contenedor o un template. La plataforma la compila, la inicia y le da una dirección https.",
+      "why": "Demuestra que el ciclo de compilación, despliegue y rollback funciona en este servidor.",
+      "cta": "Crear una aplicación"
+    },
+    "app_domain": {
+      "title": "Pon la aplicación en tu dominio",
+      "what": "Asocia tu propio nombre de host a la aplicación y apunta su registro DNS (la entrada en tu registrador de dominios) a este servidor.",
+      "why": "Los usuarios reales llegan a la aplicación por su nombre, no por una IP y un puerto.",
+      "cta": "Agregar un dominio"
+    },
+    "dns": {
+      "title": "Conecta un proveedor de DNS o un proxy",
+      "what": "Deja que la plataforma edite los registros DNS por ti con Cloudflare o Route 53, o ejecútala detrás de un proxy inverso que ya tengas.",
+      "why": "Los registros y certificados dejan de ser copiar y pegar a mano.",
+      "cta": "Conectar DNS"
+    },
+    "tls": {
+      "title": "Revisa el certificado HTTPS de la aplicación",
+      "what": "Confirma que cada dominio sirve un certificado en el que confían los navegadores y que se renueva solo (TLS es el cifrado detrás de https).",
+      "why": "Los navegadores advierten ante certificados inválidos, y una renovación fallida en silencio deja la aplicación caída.",
+      "cta": "Revisar certificados"
+    },
+    "backup_target": {
+      "title": "Agrega un destino de backups",
+      "what": "Envía los backups a un almacenamiento que no esté en este servidor, cualquier servicio compatible con S3 como AWS S3, Backblaze B2 o Cloudflare R2.",
+      "why": "Un backup en el mismo disco no sobrevive al disco.",
+      "cta": "Agregar un destino"
+    },
+    "first_backup": {
+      "title": "Haz el primer backup",
+      "what": "Guarda una copia de la base de datos de la propia plataforma, que contiene la definición de cada aplicación, para poder recuperarla.",
+      "why": "Perder esa base de datos significa perder la definición de todas las aplicaciones.",
+      "cta": "Crear un backup"
+    },
+    "verified_restore": {
+      "title": "Verifica una restauración",
+      "what": "Ejecuta una verificación sobre un backup para comprobar que realmente se puede restaurar.",
+      "why": "Un backup sin probar es una esperanza, no un backup.",
+      "cta": "Verificar un backup"
+    },
+    "notifications": {
+      "title": "Agrega un canal de notificaciones y una regla de alerta",
+      "what": "Envía alertas por correo, Slack, Discord, Telegram o un webhook, y luego crea una regla de alerta que lo use.",
+      "why": "Te enteras de un crashloop o de un certificado por vencer antes que tus usuarios.",
+      "cta": "Agregar un canal"
+    },
+    "teammate": {
+      "title": "Invita a un compañero",
+      "what": "Da acceso a una segunda persona para que la plataforma no dependa de un solo inicio de sesión.",
+      "why": "Alguien más puede actuar cuando no estés. Omítelo si trabajas solo.",
+      "cta": "Invitar a alguien"
+    },
+    "upgrades": {
+      "title": "Elige una política de actualizaciones",
+      "what": "Decide cómo se actualiza la plataforma: automáticamente en una ventana, o solo cuando tú lo indiques.",
+      "why": "Las correcciones de seguridad te llegan sin un reinicio sorpresa a mitad del día.",
+      "cta": "Elegir una política"
+    }
+  },
+  "chip": {
+    "label": "Configuración al {{percent}}%",
+    "cta": "Continuar la configuración",
+    "open": "Abrir la guía de configuración"
+  },
+  "wizard": {
+    "continue": "Mira todo lo que falta antes de producción en la guía de Primeros pasos"
+  },
+  "nav": {
+    "label": "Primeros pasos"
+  },
+  "hint": {
+    "line": "Parte de la configuración: {{step}}.",
+    "cta": "Abrir la guía"
+  },
+  "sample": {
+    "cta": "Desplegar una aplicación de ejemplo",
+    "creating": "Desplegando...",
+    "created": "Aplicación de ejemplo creada. Estará en vivo en un momento.",
+    "exists": "Ya existe una aplicación de ejemplo en este servidor.",
+    "error": "No se pudo desplegar la aplicación de ejemplo: {{message}}",
+    "open": "Abrir la aplicación de ejemplo"
+  },
+  "first": {
+    "title": "Despliega tu primera aplicación",
+    "titleLive": "Tu primera aplicación está en ejecución",
+    "subtitle": "Elige un camino. Cada uno termina con una aplicación en ejecución y un enlace que puedes abrir.",
+    "sample": {
+      "title": "Aplicación de ejemplo",
+      "description": "Un clic. Ejecuta {{image}}, unos pocos megabytes, con un health check en {{path}}.",
+      "cta": "Desplegar aplicación de ejemplo",
+      "creating": "Creando...",
+      "retry": "Reintentar"
+    },
+    "template": {
+      "title": "Desde un template",
+      "description": "Elige un servicio ya preparado del catálogo.",
+      "cta": "Explorar templates"
+    },
+    "repo": {
+      "title": "Tu propio repositorio",
+      "description": "Compila desde un repositorio. El nombre sale del repositorio y la compilación se detecta sola.",
+      "cta": "Desplegar un repositorio"
+    },
+    "more": {
+      "import": "¿Vienes de otra plataforma? Impórtala",
+      "git": "Conecta GitHub para desplegar en cada push"
+    },
+    "url": {
+      "preview": "Sin un dominio definido, una aplicación recibe una dirección como {{url}}."
+    },
+    "status": {
+      "liveDetail": "{{name}} pasó su health check y está sirviendo tráfico.",
+      "noAddress": "Todavía no tiene una dirección pública. Agrega un dominio en la pestaña Dominios de la aplicación para acceder desde internet.",
+      "failed": "{{name}} no está en buen estado",
+      "diagnosing": "Diagnosticando...",
+      "deploying": "Desplegando {{name}}",
+      "deployingDetail": "{{status}}. Descargando la imagen, iniciando el contenedor y esperando a que pase el health check.",
+      "expectedWait": "Puede tardar hasta unos dos minutos mientras se emite el certificado.",
+      "slow": "Está tardando más de lo normal. Las imágenes grandes tardan en una conexión lenta; los registros muestran qué está pasando.",
+      "certNote": "Tu navegador puede advertir sobre el certificado hasta que HTTPS esté activo.",
+      "retry": "Reintentar el despliegue",
+      "openApp": "Abrir la aplicación",
+      "viewLogs": "Ver registros",
+      "goLive": "Agregar un dominio",
+      "done": "Ir al panel"
+    }
+  },
+  "more": {
+    "title": "Deja todo listo para producción",
+    "help": "Estos pasos hacen más seguro el servidor para usuarios reales. Ninguno bloquea tu primer despliegue."
+  }
+}
