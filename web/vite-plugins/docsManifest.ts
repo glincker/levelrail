@@ -224,12 +224,51 @@ function extractCategories(
   return categories
 }
 
+interface NavNode {
+  tab?: string
+  group?: string
+  pages?: (string | NavNode)[]
+  groups?: NavNode[]
+}
+
+// The hosted docs site publishes what docs/docs.json lists, so that is the source of truth:
+// each listed page maps to "Tab / Group". Pages not listed (internal notes) get no section.
+function publishedSections(): Map<string, string> {
+  const out = new Map<string, string>()
+  try {
+    const nav = JSON.parse(
+      readFileSync(path.join(docsDir, 'docs.json'), 'utf8'),
+    ) as { navigation?: { tabs?: NavNode[] } }
+    const walk = (node: NavNode, tab: string, group: string) => {
+      const g = node.group ?? group
+      for (const g2 of node.groups ?? []) walk(g2, tab, g)
+      for (const entry of node.pages ?? []) {
+        if (typeof entry === 'string') {
+          const route =
+            entry === 'index' ? '/' : `/${entry.replace(/^\/+/, '')}`
+          if (!out.has(route)) out.set(route, g ? `${tab} / ${g}` : tab)
+        } else walk(entry, tab, g)
+      }
+    }
+    for (const t of nav.navigation?.tabs ?? []) walk(t, t.tab ?? '', '')
+  } catch {
+    // no docs.json: nothing is marked published and search keeps every page
+  }
+  return out
+}
+
 export function buildDocsManifest(): DocsManifest {
   const files = listMarkdownFiles(docsDir).filter((f) => f !== 'index.md')
 
   const pages: Record<string, DocPageMeta> = {}
   for (const relFile of files) {
     pages[filePathToRoutePath(relFile)] = extractPage(relFile)
+  }
+
+  const sections = publishedSections()
+  for (const [route, section] of sections) {
+    const page = pages[route]
+    if (page) page.section = section
   }
 
   const pagesByPath = new Map(Object.entries(pages))

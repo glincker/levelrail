@@ -6,7 +6,6 @@ import {
   BotGlassIcon,
   FunnelGlassIcon,
   LayersGlassIcon,
-  RestoreGlassIcon,
 } from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
 import { parseMode } from '@/lib/paletteMode'
@@ -56,7 +55,6 @@ interface Input {
   ps: ReturnType<typeof usePaletteSearch>
   baseItems: PaletteItem[]
   recentKeys: string[]
-  recentSearches: string[]
   expanded: ReadonlySet<string>
   expand: (kind: string) => void
   currentApp?: string
@@ -64,7 +62,7 @@ interface Input {
 
 // Builds the flat header/item list the palette renders, for both the idle and the searching state.
 export function usePaletteEntries(input: Input): PaletteEntry[] {
-  const { ps, baseItems, recentKeys, recentSearches, expanded, expand } = input
+  const { ps, baseItems, recentKeys, expanded, expand } = input
   const { currentApp } = input
   const { t } = useTranslation('palette')
   const navigate = useNavigate()
@@ -217,28 +215,6 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
       })
       push('Suggested', groupLabel('Suggested'), [...suggested, ...quick])
       push(
-        'Recent',
-        groupLabel('Recent'),
-        recentKeys.flatMap((k) => {
-          const item = byKey.get(k)
-          return item
-            ? [{ ...item, key: `recent-${item.key}`, group: 'Recent' }]
-            : []
-        }),
-      )
-      push(
-        'recentSearches',
-        t('groups.recentSearches'),
-        recentSearches.map((s) => ({
-          key: `recent-search-${s}`,
-          label: s,
-          group: 'recentSearches',
-          icon: <RestoreGlassIcon size="1.4em" />,
-          keepOpen: true,
-          run: () => ps.applyQuery(s),
-        })),
-      )
-      push(
         'savedSearches',
         t('groups.savedSearches'),
         (savedRows ?? []).map((s) => ({
@@ -362,7 +338,6 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     baseItems,
     currentApp,
     recentKeys,
-    recentSearches,
     savedRows,
     deleteSavedSearch,
     experimental,

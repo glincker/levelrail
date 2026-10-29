@@ -16,6 +16,8 @@ export interface DocPageMeta {
   headings: DocHeading[]
   /** Plain-text excerpt of the page's paragraph content, for full-text search (see docsSearch.ts). */
   body: string
+  /** "Tab / Group" on the hosted docs site; absent for pages the site does not publish. */
+  section?: string
 }
 
 export interface DocCategory {

@@ -173,7 +173,9 @@
       "none": "No docs match \"{{term}}\"",
       "open": "Open docs",
       "inPage": "in {{title}}",
-      "pill": "Docs"
+      "pill": "Docs",
+      "local": "local docs",
+      "openSite": "Open docs site"
     },
     "assistant": {
       "header": "Assistant",
@@ -206,5 +208,13 @@
       "tag": "Tag",
       "env": "Environment"
     }
+  },
+  "bubbles": {
+    "label": "Recent and suggested",
+    "recent": "Recent",
+    "mostUsed": "Most used",
+    "nextUp": "Next up",
+    "remove": "Remove {{name}}",
+    "clear": "Clear history"
   }
 }

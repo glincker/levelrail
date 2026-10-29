@@ -8,6 +8,7 @@ import {
   HashGlassIcon,
   PackageGlassIcon,
 } from '@thesvg/ui-react'
+import { BrandContext } from '@/lib/brandContext'
 import type { PaletteMode } from '@/lib/paletteMode'
 import { recordModeUse } from '@/lib/paletteModeUse'
 import { brandForRegistryHost, registryHostOf } from '@/lib/registryRef'
@@ -43,6 +44,7 @@ export function usePaletteModeItems(
 ): ModeItems | null {
   const { t } = useTranslation('palette')
   const navigate = useNavigate()
+  const docsUrl = React.useContext(BrandContext)?.DocsURL ?? ''
   const term = mode?.term ?? ''
   const debounced = useDebouncedValue(term, DEBOUNCE_MS)
   const ready = debounced.length >= MIN_TERM
@@ -117,29 +119,43 @@ export function usePaletteModeItems(
         pages: MAX_DOCS,
         headings: 2,
       }).flatMap((page) => {
-        const open = (hash?: string) => () =>
-          void navigate({
-            to: '/help/$',
-            params: { _splat: page.path.replace(/^\//, '') },
-            hash,
-          })
+        const newTab = (url: string) => () => {
+          window.open(url, '_blank', 'noopener,noreferrer')
+        }
+        const frag = (hash?: string) => (hash ? `#${hash}` : '')
+        const localUrl = (hash?: string) =>
+          `${window.location.origin}/help${page.path}${frag(hash)}`
+        const siteUrl = (hash?: string) =>
+          `${docsUrl.replace(/\/+$/, '')}${page.path}${frag(hash)}`
+        // Enter opens the hosted docs in a new tab when the brand has one, else the local page; Tab opens the local page.
+        const actions = (hash?: string) =>
+          docsUrl
+            ? {
+                run: newTab(siteUrl(hash)),
+                secondary: newTab(localUrl(hash)),
+                secondaryHint: t('modes.docs.local'),
+              }
+            : { run: newTab(localUrl(hash)) }
         const excerpt = (manifest.pages[page.path]?.body ?? '').slice(0, 180)
         const preview = {
           kind: 'doc' as const,
           description: excerpt,
           path: `/help${page.path}`,
-          primaryLabel: t('modes.docs.open'),
+          primaryLabel: docsUrl
+            ? t('modes.docs.openSite')
+            : t('modes.docs.open'),
+          facts: page.section ? [page.section] : undefined,
         }
         const rows: PaletteItem[] = [
           {
             key: `mode-docs-${page.path}`,
             label: page.title,
-            subtitle: page.path,
+            subtitle: page.section ?? page.path,
             stacked: true,
             group: 'docs',
             icon,
             preview,
-            run: open(),
+            ...actions(),
           },
         ]
         for (const h of page.headings) {
@@ -151,7 +167,7 @@ export function usePaletteModeItems(
             group: 'docs',
             icon,
             preview: { ...preview, path: `/help${page.path}#${h.id}` },
-            run: open(h.id),
+            ...actions(h.id),
           })
         }
         return rows
@@ -354,6 +370,7 @@ export function usePaletteModeItems(
     debounced,
     ready,
     docs.data,
+    docsUrl,
     images.data,
     images.isPending,
     images.isError,
