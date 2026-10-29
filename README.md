@@ -25,6 +25,9 @@ One Go binary, Docker runtime, no Kubernetes. Apache 2.0.</p>
   <a href="CHANGELOG.md">Changelog</a> &middot;
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a>
 </p>
+<!-- i18n-nav:start -->
+<p>English &middot; <a href="docs/i18n/README.zh-Hans.md">简体中文</a> &middot; <a href="docs/i18n/README.es.md">Español</a> &middot; <a href="docs/i18n/README.pt-BR.md">Português (BR)</a> &middot; <a href="docs/i18n/README.de.md">Deutsch</a> &middot; <a href="docs/i18n/README.fr.md">Français</a> &middot; <a href="docs/i18n/README.ja.md">日本語</a></p>
+<!-- i18n-nav:end -->
 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880"></picture>
 </div>
 
