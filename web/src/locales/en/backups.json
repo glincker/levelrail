@@ -409,5 +409,17 @@
       "storage": "storage",
       "schedule": "schedule"
     }
+  },
+  "volumeFiles": {
+    "title": "Files",
+    "volume": "Volume",
+    "up": "Up",
+    "upload": "Upload file",
+    "loading": "Loading files",
+    "empty": "This directory is empty.",
+    "truncated": "Listing truncated. Open a subdirectory to see the rest.",
+    "download": "Download {{name}}",
+    "delete": "Delete {{name}}",
+    "confirm": "Confirm"
   }
 }

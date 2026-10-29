@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { AppVolumesEditor } from '../../../components/AppVolumesEditor'
 import { AppVolumeBackupsSection } from '../../../components/AppVolumeBackupsSection'
+import { AppVolumeFilesSection } from '../../../components/AppVolumeFilesSection'
 import { AppBindMountsSection } from '../../../components/AppBindMountsSection'
 
 // Real deep-linkable route for an app's named Docker volumes: attach/
@@ -25,6 +26,7 @@ function VolumesSection() {
     <div className="space-y-6">
       <AppVolumesEditor appName={name} volumes={app.volumes} />
       <AppVolumeBackupsSection appName={name} volumes={app.volumes} />
+      <AppVolumeFilesSection appName={name} volumes={app.volumes} />
       <AppBindMountsSection bindMounts={app.bind_mounts} />
     </div>
   )
