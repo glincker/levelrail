@@ -21,7 +21,7 @@ export interface PageTemplateProps {
   eyebrow?: ReactNode
   /** A BrandTile, or any hero tile. Wins over `icon`. */
   logo?: ReactNode
-  /** Phosphor icon rendered in a neutral hero tile. */
+  /** UI icon rendered in a neutral hero tile. */
   icon?: ReactNode
   /** Status badge or pill beside the title. */
   status?: ReactNode

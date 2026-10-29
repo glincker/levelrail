@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleQuestionMarkGlassIcon } from '@thesvg/ui-react'
 import { loadDocsManifest } from '../../lib/docsManifestLoader'
 
 export const Route = createFileRoute('/help/')({
@@ -14,7 +14,7 @@ function HelpIndexPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <LifebuoyIcon className="size-5" aria-hidden="true" />
+          <CircleQuestionMarkGlassIcon className="size-6" aria-hidden="true" />
         </div>
         <div>
           <h2 className="text-base font-semibold text-foreground">

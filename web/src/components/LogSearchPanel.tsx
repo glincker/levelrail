@@ -10,7 +10,7 @@ import {
   SortAzGlassIcon,
   XGlassIcon,
 } from '@thesvg/ui-react'
-import { TextAlignLeftIcon } from '@phosphor-icons/react/dist/ssr'
+import { ListGlassIcon } from '@thesvg/ui-react'
 import { LogFilterBar } from './LogFilterBar'
 import { Button } from './ui/button'
 import {
@@ -310,7 +310,7 @@ export function LogSearchPanel({
               setWrap((w) => !w)
             }}
           >
-            <TextAlignLeftIcon className="size-4.5" aria-hidden="true" />
+            <ListGlassIcon className="size-5.5" aria-hidden="true" />
             {t('explorer.wrap')}
           </Button>
           <a

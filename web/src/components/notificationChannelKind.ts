@@ -27,7 +27,7 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
 }
 
 // Only the brand-mark kinds map to a BrandIconName; generic/email/pushover/
-// gotify/lark render through a Phosphor icon instead (BrandIcon.tsx's own
+// gotify/lark render through a UI icon instead (BrandIcon.tsx's own
 // documented brand-vs-chrome boundary), chosen by the caller: gotify and
 // lark have no brand mark available in @thesvg/react yet.
 export const CHANNEL_KIND_BRAND_ICON: Partial<

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import type { SSOSettings } from '@/queries/sso'
 import { useSetSSOEnforce } from '@/queries/sso'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -40,7 +40,7 @@ export function SSOEnforcementCard({ settings }: { settings: SSOSettings }) {
         </div>
       </Field>
       <Alert>
-        <LifebuoyIcon size="1.4em" />
+        <ShieldAlertGlassIcon size="1.4em" />
         <AlertDescription>{t('enforce.breakGlass')}</AlertDescription>
       </Alert>
     </FormSection>

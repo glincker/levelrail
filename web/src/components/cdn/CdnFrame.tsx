@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { ZapGlassIcon } from '@thesvg/ui-react'
+import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { PageBanner } from '../PageBanner'
 import { LazyCdnDiagram } from '../banners/LazyPass3Diagrams'
 import type { CdnWindow } from '../../queries/cdnCache'
@@ -68,7 +68,7 @@ export function CdnFrame({
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<ZapGlassIcon size="1.4em" />}
+        icon={<GlobeGlassIcon size="1.4em" />}
         titleKey="cdn:nav.label"
         titleText={title}
         descriptionKey="cdn:nav.label"

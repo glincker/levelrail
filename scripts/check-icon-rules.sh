@@ -2,10 +2,9 @@
 # Icon and logo rules for the web app.
 #   1. Brand, vendor and product marks come from @thesvg/react only, through
 #      BrandIcon / BrandTile (named brands) or lib/templateLogos.ts (catalog).
-#   2. UI icons (actions, navigation, status) come from @thesvg/ui-react for all
-#      new code, in the glass look (the *GlassIcon exports). The goal is to remove
-#      Phosphor entirely. Existing Phosphor imports (@phosphor-icons/react/dist/ssr) stay
-#      until their file is touched; add no new ones. Type-only imports of Icon are fine.
+#   2. UI icons (actions, navigation, status) come from @thesvg/ui-react, in the
+#      glass look (the *GlassIcon exports). Phosphor is removed: any import of
+#      @phosphor-icons fails. Type-only imports of UiIcon are fine.
 #   3. No other icon library, no hand-drawn vendor SVGs, no raster logos.
 # Usage: scripts/check-icon-rules.sh [file...]   (default: every web/src ts and tsx)
 
@@ -27,7 +26,11 @@ for f in "${files[@]}"; do
 	[ -f "$f" ] || continue
 
 	if grep -n -E "from '(lucide-react|react-icons|@heroicons|@tabler/|@radix-ui/react-icons|@iconify|@fortawesome|remixicon|phosphor-react)" "$f" >/dev/null; then
-		note "$f imports a second icon library; UI icons are Phosphor only (@phosphor-icons/react/dist/ssr)"
+		note "$f imports a second icon library; UI icons come from @thesvg/ui-react"
+	fi
+
+	if grep -n -E "@phosphor-icons" "$f" >/dev/null; then
+		note "$f references Phosphor, which is removed; use @thesvg/ui-react glass icons"
 	fi
 
 	case "$f" in
@@ -38,10 +41,6 @@ for f in "${files[@]}"; do
 		fi
 		;;
 	esac
-
-	if grep -n -E "^import \{[^}]*\} from '@phosphor-icons/react'$" "$f" >/dev/null; then
-		note "$f imports Phosphor from the package root; use @phosphor-icons/react/dist/ssr"
-	fi
 
 	if grep -n -E "<img[^>]*src=\"[^\"]*(logo|brand|vendor)[^\"]*\.(png|jpe?g|svg|webp)\"" "$f" >/dev/null; then
 		note "$f renders a raster or file logo; use a @thesvg/react mark through BrandTile"

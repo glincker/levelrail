@@ -1,5 +1,7 @@
 # ADR 014: Phosphor icons replace lucide-react in /web
 
+> Status: Superseded. UI icons now come from `@thesvg/ui-react` in the glass look and Phosphor is removed. Kept for history.
+
 Status: Accepted
 
 Date: 2026-08-13

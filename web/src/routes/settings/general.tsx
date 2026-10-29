@@ -6,7 +6,7 @@ import {
   MailGlassIcon,
   SettingsGlassIcon,
 } from '@thesvg/ui-react'
-import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleQuestionMarkGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -156,7 +156,7 @@ function GeneralSettingsPage() {
                     }
                     nativeButton={false}
                   >
-                    <LifebuoyIcon size="1.4em" />
+                    <CircleQuestionMarkGlassIcon size="1.4em" />
                     <span>Support</span>
                   </Button>
                 ) : null}

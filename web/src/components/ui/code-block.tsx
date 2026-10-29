@@ -5,7 +5,7 @@ import {
   EyeGlassIcon,
   EyeOffGlassIcon,
 } from '@thesvg/ui-react'
-import { TextAlignLeftIcon } from '@phosphor-icons/react/dist/ssr'
+import { ListGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { COPY_FEEDBACK_MS } from '@/lib/copyFeedback'
 import { cn } from '@/lib/utils'
@@ -203,7 +203,7 @@ export function CodeBlock({
                 setWrapped((v) => !v)
               }}
             >
-              <TextAlignLeftIcon size="1.4em" aria-hidden="true" />
+              <ListGlassIcon size="1.4em" aria-hidden="true" />
               {t('codeBlock.wrap')}
             </Button>
           ) : null}

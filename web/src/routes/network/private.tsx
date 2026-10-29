@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
-import { Share2GlassIcon } from '@thesvg/ui-react'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyPrivateNetworksDiagram } from '../../components/banners/LazyPass3Diagrams'
 import { PrivateNetworkMap } from '../../components/network/private/PrivateNetworkMap'
@@ -56,7 +56,7 @@ function PrivateNetworksPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<Share2GlassIcon size="1.4em" />}
+        icon={<LockGlassIcon size="1.4em" />}
         titleKey="privateNetworks:page.title"
         descriptionKey={
           empty

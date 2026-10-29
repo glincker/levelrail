@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import {
   DatabaseGlassIcon,
   FunnelGlassIcon,
-  PackageGlassIcon,
+  LayersGlassIcon,
   PlusGlassIcon,
 } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -214,7 +214,7 @@ function AppListPage() {
       actions={headerActions}
       banner={
         <PageBanner
-          icon={<PackageGlassIcon size="1.4em" />}
+          icon={<LayersGlassIcon size="1.4em" />}
           titleKey="common:appsList.title"
           descriptionKey={
             noApps

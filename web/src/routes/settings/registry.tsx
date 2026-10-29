@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ServerGlassIcon } from '@thesvg/ui-react'
+import { PackageGlassIcon } from '@thesvg/ui-react'
 import {
   registrySettingsQueryOptions,
   useRegistrySettings,
@@ -47,7 +47,7 @@ function RegistrySettingsPage() {
       title={t('builtInRegistryPage.title')}
       banner={
         <PageBanner
-          icon={<ServerGlassIcon size="1.4em" />}
+          icon={<PackageGlassIcon size="1.4em" />}
           titleKey="settings:builtInRegistryPage.title"
           descriptionKey={
             settings.enabled

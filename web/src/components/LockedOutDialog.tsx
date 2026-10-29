@@ -7,7 +7,6 @@ import {
   ShieldCheckGlassIcon,
   TerminalGlassIcon,
 } from '@thesvg/ui-react'
-import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -93,7 +92,7 @@ export function LockedOutDialog() {
           />
         }
       >
-        <LifebuoyIcon className="size-4.5" aria-hidden="true" />
+        <KeyGlassIcon className="size-5.5" aria-hidden="true" />
         {t('lockedOut.link')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

@@ -12,7 +12,7 @@ import {
   SunGlassIcon,
   type UiIcon,
 } from '@thesvg/ui-react'
-import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleQuestionMarkGlassIcon } from '@thesvg/ui-react'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import {
   DropdownMenu,
@@ -177,7 +177,7 @@ export function AccountMenu() {
             {t('shell.accountMenu.changelog')}
           </DropdownMenuLinkItem>
           <DropdownMenuLinkItem render={<Link to="/help" />}>
-            <LifebuoyIcon size="1.4em" />
+            <CircleQuestionMarkGlassIcon size="1.4em" />
             {t('shell.accountMenu.help')}
           </DropdownMenuLinkItem>
           {brand.DocsURL ? (

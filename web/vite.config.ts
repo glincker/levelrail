@@ -43,7 +43,7 @@ export default defineConfig({
             },
             {
               name: 'icons',
-              test: /node_modules[\\/]@phosphor-icons[\\/]/,
+              test: /node_modules[\\/]@thesvg[\\/]ui-react[\\/]/,
               tags: ['$initial'],
               priority: 30,
             },

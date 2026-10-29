@@ -63,7 +63,7 @@ const FIXED_OPTIONS: WizardOptionDef[] = [
     description:
       "Point us at your repository, we'll build and deploy it for you.",
     // No brand mark for this one: git itself isn't one of the vendored
-    // @thesvg/react logos, so this reuses the same Phosphor icon
+    // @thesvg/react logos, so this reuses the same UI icon
     // DeployTriggerForm.tsx's "Build from source" tab already uses for
     // the same concept.
     icon: <GitBranchGlassIcon className="size-8" />,

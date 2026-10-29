@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { LayersGlassIcon } from '@thesvg/ui-react'
+import { BoxGlassIcon } from '@thesvg/ui-react'
 import { PageBanner } from '../PageBanner'
 import { LazyImagesDiagram } from '../banners/LazyPass3Diagrams'
 
@@ -11,7 +11,7 @@ export function ImagesBanner({
   const size = empty ? 'hero' : 'compact'
   return (
     <PageBanner
-      icon={<LayersGlassIcon size="1.4em" />}
+      icon={<BoxGlassIcon size="1.4em" />}
       titleKey="images:title"
       descriptionKey={empty ? 'images:banner.description' : 'images:subtitle'}
       action={action}

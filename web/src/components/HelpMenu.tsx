@@ -8,7 +8,6 @@ import {
   MessageCircleGlassIcon,
   SocialGithubGlassIcon,
 } from '@thesvg/ui-react'
-import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -58,7 +57,7 @@ export function HelpMenu() {
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem render={<Link to="/help" />}>
-          <LifebuoyIcon size="1.4em" />
+          <CircleQuestionMarkGlassIcon size="1.4em" />
           {t('shell.help.docs')}
         </DropdownMenuItem>
         <DropdownMenuItem
