@@ -36,6 +36,14 @@ const (
 	WidgetAlertStatus    = "alert_status"
 	WidgetNodeCapacity   = "node_capacity"
 	WidgetLink           = "link"
+
+	// Fleet-wide types read the whole fleet, so they take no target.
+	WidgetFleetHealth    = "fleet_health"
+	WidgetFleetTraffic   = "fleet_traffic"
+	WidgetTopApps        = "top_apps"
+	WidgetDeployActivity = "deploy_activity"
+	WidgetFleetCapacity  = "fleet_capacity"
+	WidgetAttention      = "attention"
 )
 
 // Target names the app, database or node a widget reads from.
