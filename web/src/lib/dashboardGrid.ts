@@ -16,6 +16,12 @@ export const WIDGET_TYPES: WidgetType[] = [
   'alert_status',
   'node_capacity',
   'link',
+  'fleet_health',
+  'fleet_traffic',
+  'top_apps',
+  'deploy_activity',
+  'fleet_capacity',
+  'attention',
 ]
 
 export const WIDGET_SIZES: WidgetSize[] = ['S', 'M', 'L']
