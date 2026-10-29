@@ -1,7 +1,7 @@
 name: Template request
 description: Ask for a service template to be added to the catalog
 title: "template: "
-labels: ["template", "needs-triage"]
+labels: ["type/feature", "needs-triage"]
 body:
   - type: markdown
     attributes:

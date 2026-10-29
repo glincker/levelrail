@@ -1,7 +1,7 @@
 name: Migration problem
 description: Moving an app or setup from another platform to Levelrail failed
 title: "migration: "
-labels: ["migration", "needs-triage"]
+labels: ["type/fix", "needs-triage"]
 body:
   - type: markdown
     attributes:

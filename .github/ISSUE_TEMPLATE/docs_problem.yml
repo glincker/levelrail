@@ -1,7 +1,7 @@
 name: Docs problem
 description: Something in the documentation is wrong, unclear or missing
 title: "docs: "
-labels: ["documentation", "needs-triage"]
+labels: ["type/docs", "needs-triage"]
 body:
   - type: markdown
     attributes:
