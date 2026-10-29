@@ -1,8 +1,6 @@
+import { Suspense, lazy } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ResourceLabelsCard } from '../../../components/ResourceLabelsCard'
-import { AppResourceTree } from '../../../components/apps/AppResourceTree'
-import { AppAnalysis } from '../../../components/apps/AppAnalysis'
-import { AppReleases } from '../../../components/apps/AppReleases'
 import { useApp } from '../../../queries/apps'
 import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../hooks/useDeployProgress'
@@ -15,6 +13,24 @@ import { PendingChangesNotice } from '../../../components/apps/PendingChangesNot
 import { TemplateUpgradeBadge } from '../../../components/apps/TemplateUpgradeBadge'
 import { PanelHost } from '../../../components/plugins/PanelHost'
 import { Skeleton } from '@/components/ui/skeleton'
+
+// These sections render nothing in many setups, so they load as their own
+// chunks and run their queries only once the chunk arrives.
+const AppResourceTree = lazy(() =>
+  import('../../../components/apps/AppResourceTree').then((m) => ({
+    default: m.AppResourceTree,
+  })),
+)
+const AppReleases = lazy(() =>
+  import('../../../components/apps/AppReleases').then((m) => ({
+    default: m.AppReleases,
+  })),
+)
+const AppAnalysis = lazy(() =>
+  import('../../../components/apps/AppAnalysis').then((m) => ({
+    default: m.AppAnalysis,
+  })),
+)
 
 // The loader primes deploy attempts (same query the Deploys tab uses); app
 // and conditions come from the cache the parent layout route already primed.
@@ -37,9 +53,11 @@ function OverviewSection() {
       <FailureContextCard appName={name} />
       <RecommendedNextCard app={app} latest={attempts[0]} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
-      <AppResourceTree app={app} conditions={conditions} />
-      <AppReleases appName={name} />
-      <AppAnalysis appName={name} />
+      <Suspense fallback={null}>
+        <AppResourceTree app={app} conditions={conditions} />
+        <AppReleases appName={name} />
+        <AppAnalysis appName={name} />
+      </Suspense>
       <SleepHistoryCard appName={name} hideWhenOff />
       <ResourceLabelsCard path="apps" name={name} />
       <PanelHost slot="app-detail" appId={name} />
