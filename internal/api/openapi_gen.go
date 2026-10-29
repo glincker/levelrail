@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1820 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1824 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1350,6 +1350,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/model-cache/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneModelCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/model-catalog", Ability: "AbilityRead", Group: "Other", Handler: "handleModelCatalog", Description: ""},
 	{Method: "POST", Path: "/api/v1/model-endpoints/test", Ability: "AbilityWrite", Group: "Other", Handler: "handleTestEndpointInput", Description: ""},
+	{Method: "GET", Path: "/api/v1/monitors", Ability: "AbilityRead", Group: "Other", Handler: "handleListMonitors", Description: "List uptime monitors. Answers 404 unless APP_MONITORS_ENABLED is set."},
+	{Method: "POST", Path: "/api/v1/monitors", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateMonitor", Description: "Create an http or tcp uptime monitor. Header values are stored encrypted and never returned."},
+	{Method: "DELETE", Path: "/api/v1/monitors/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteMonitor", Description: "Delete a monitor with its results and rollups."},
+	{Method: "GET", Path: "/api/v1/monitors/{id}/results", Ability: "AbilityRead", Group: "Other", Handler: "handleMonitorResults", Description: "Recent raw results and hourly rollups for a monitor (window and limit query parameters)."},
 	{Method: "GET", Path: "/api/v1/network-shares", Ability: "AbilityRead", Group: "Other", Handler: "handleListNetworkShares", Description: "Network shares (network_shares.go): an NFS/CIFS export mountable as a Docker local-driver volume. Same ability tiers as registry credentials just above: POST/PUT/DELETE handle a live CIFS password, test is a read-only reachability dial."},
 	{Method: "POST", Path: "/api/v1/network-shares", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateNetworkShare", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/network-shares/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteNetworkShare", Description: ""},

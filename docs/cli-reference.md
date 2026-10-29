@@ -1015,6 +1015,28 @@ levelrail-cli alerts silence web <rule-id> --for 4h --reason "planned migration"
 levelrail-cli alerts history --app web --outcome failed --limit 20
 ```
 
+## Monitors
+
+Experimental uptime monitors. The server must set `APP_MONITORS_ENABLED=true`, otherwise these commands get a 404. See [Monitors](/monitors).
+
+```
+levelrail-cli monitors create --name NAME --kind http --url URL [--method GET] [--header NAME=VALUE]... [--expect 200-299,301] [--contains TEXT] [--follow-redirects] [--interval 60s] [--timeout 5s]
+levelrail-cli monitors create --name NAME --kind tcp --host HOST --port PORT [--interval 60s] [--timeout 5s]
+levelrail-cli monitors list
+levelrail-cli monitors results <id> [--window 24h] [--limit N]
+levelrail-cli monitors delete <id>
+```
+
+- `--header` values are stored encrypted and never returned; only header names are listed.
+- `--expect` takes comma separated codes or ranges and defaults to `200-399`. Redirects are not followed unless `--follow-redirects` is set.
+- Interval floors, the timeout cap and the monitor count limit come from the control plane `APP_MONITOR_*` settings, and an error names the setting.
+- Targets on private or loopback addresses are refused unless the control plane allows private outbound targets.
+
+```
+levelrail-cli monitors create --name "Site" --kind http --url https://example.com/health --contains ok
+levelrail-cli monitors results mon_1a2b3c4d5e6f7a8b --window 6h
+```
+
 ## Status page
 
 The opt-in public status page. It stays off until `set --enable`. Only public component names, statuses and operator written announcements are published; targets (app names, hostnames, check URLs) stay private. See [Status page](/status-page).

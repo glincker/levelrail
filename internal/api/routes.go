@@ -51,6 +51,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerBuildPerformanceRoutes(mux)
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)
+	rt.registerMonitorRoutes(mux)
 	rt.registerResourceAdvisorRoutes(mux)
 	rt.registerSilenceRoutes(mux)
 	rt.registerUsageCostRoutes(mux)
