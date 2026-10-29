@@ -1889,11 +1889,19 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 		host, port = ep.host, ep.port
 	}
 
+	// The pooler shares the database's namespace: same host, other port.
+	// Cross-node apps keep the direct route, the mesh only maps 5432.
+	pooled := database.PoolerActive(desiredDB) && !crossNode
 	switch field {
 	case "host":
 		return host, nil
 	case "port":
+		if pooled {
+			return strconv.Itoa(database.PoolerPort), nil
+		}
 		return strconv.Itoa(port), nil
+	case "direct_url":
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	case "database":
 		return dbName, nil
 	case "username":
@@ -1901,6 +1909,10 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	case "password":
 		return c.resolveDatabasePassword(ctx, dbName, desiredDB.Engine)
 	case "url":
+		if pooled {
+			// Client to pooler stays inside the namespace bridge, no TLS there.
+			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, database.PoolerPort, false)
+		}
 		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	default:
 		return "", fmt.Errorf("unsupported database field %q", field)

@@ -12,7 +12,7 @@ import (
 
 // connectionFields are the database values an env var may reference; the
 // control plane resolves them at container create, so no value is ever read here.
-var connectionFields = map[string]bool{"url": true, "host": true, "port": true, "username": true, "password": true, "database": true}
+var connectionFields = map[string]bool{"url": true, "direct_url": true, "host": true, "port": true, "username": true, "password": true, "database": true}
 
 const defaultConnectionField = "url"
 

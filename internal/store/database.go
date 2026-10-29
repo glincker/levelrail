@@ -138,6 +138,28 @@ type DesiredDatabase struct {
 	// retry never prompts about its own volume.
 	ExistingVolume string
 	VolumeResolved bool
+
+	// PoolerEnabled runs a transaction pooler beside a Postgres database;
+	// only SetDatabasePooler writes it.
+	PoolerEnabled bool
+}
+
+// SetDatabasePooler turns the managed pooler on or off for name.
+func (db *DB) SetDatabasePooler(ctx context.Context, name string, enabled bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases SET pooler_enabled = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, enabled, name)
+	if err != nil {
+		return fmt.Errorf("store: set pooler for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set pooler for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -609,7 +631,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved"
+const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -627,7 +649,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		suspended                 bool
 		pitrEnabled               bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended

@@ -478,7 +478,11 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			env["PGDATA"] = postgresDataPath
 		}
 		command := postgresCommand(c.tls, c.effectiveSlowQueryThresholdMs(), desired.PITREnabled)
-		return c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)
+		res, err := c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)
+		if err != nil {
+			return res, err
+		}
+		return c.withPooler(ctx, desired, res), nil
 
 	case store.EngineMySQL:
 		if c.mysqlCreds == nil {
@@ -595,6 +599,10 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 // retried into an error. Does not remove the container's data volume;
 // see dataVolumeName's own doc comment.
 func (c *Controller) Teardown(ctx context.Context) error {
+	// The pooler shares the database's namespace, so it goes first.
+	if err := c.removePooler(ctx); err != nil {
+		return err
+	}
 	target := containerName(c.dbName)
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
