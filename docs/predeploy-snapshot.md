@@ -27,6 +27,8 @@ levelrail-cli apps rollback my-app --with-data
 
 This restores the snapshot of the newest deploy into a new database (named `<db>-rb-<suffix>`), points the app's database links at it, and redeploys the previous release. The original database is not modified, so you can still inspect or reattach it. Pass `--deploy <id>` to undo a specific deploy. Apps in a protected environment must use the plain rollback.
 
+In the dashboard, open the menu on a deploy in the app's Deploys history and choose Roll back with data. The dialog shows the snapshots taken before that deploy and warns that databases are restored into new ones and the links swapped. It is disabled, with the reason, when no usable snapshot exists or the environment is protected.
+
 Snapshots are listed at `GET /api/v1/apps/{name}/predeploy-snapshots`.
 
 ## Limits
