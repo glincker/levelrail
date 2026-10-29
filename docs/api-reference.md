@@ -2037,6 +2037,14 @@ Routes that do not fit an existing group.
 | POST | /api/v1/app-types | AbilityRoot | handleSaveAppType |
 | POST | /api/v1/app-types/{name}/publish | AbilityRoot | handlePublishAppType |
 | POST | /api/v1/app-types/{name}/check | AbilityRead | handleCheckAppType |
+| GET | /public/status.atom | Public | handlePublicStatusAtom |
+| GET | /public/status/history | Public | handlePublicStatusHistory |
+| GET | /public/status/incidents/{id} | Public | handlePublicStatusIncident |
+| GET | /public/status/badge.svg | Public | handlePublicStatusBadge |
+| GET | /api/v1/status-page/groups | AbilityRead | handleListStatusGroups |
+| POST | /api/v1/status-page/groups | AbilityWrite | handleCreateStatusGroup |
+| PUT | /api/v1/status-page/groups/{id} | AbilityWrite | handleUpdateStatusGroup |
+| DELETE | /api/v1/status-page/groups/{id} | AbilityWrite | handleDeleteStatusGroup |
 
 ## See also
 
