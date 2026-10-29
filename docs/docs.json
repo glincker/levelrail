@@ -260,6 +260,7 @@
               "traffic-export",
               "audit-event-schema",
               "control-plane-backup",
+              "whole-server-recovery",
               "archives",
               "disaster-recovery",
               "upgrade-safely",
