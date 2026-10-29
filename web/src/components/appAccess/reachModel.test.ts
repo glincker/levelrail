@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { ProbeTarget } from '../../queries/appExposure'
 import type { AppUrlAddress, AppUrls } from '../../queries/appUrls'
 import { deriveReach, resolveSecurity, reasonKey } from './reachModel'
 
@@ -103,6 +104,35 @@ describe('deriveReach hero priority', () => {
       'internal',
     ])
     expect(m.autoExpand).toBe(false)
+  })
+})
+
+describe('deriveReach with a failing automatic domain', () => {
+  const down: ProbeTarget[] = [
+    { kind: 'fallback', url: auto.url ?? '', ok: false },
+  ]
+
+  it('promotes the address that answers and keeps the domain listed', () => {
+    const m = deriveReach(urls([auto, lan, loop]), down)
+    expect(m.hero?.kind).toBe('private')
+    expect(m.demoted).toBe(true)
+    expect(m.others.some((r) => r.automatic)).toBe(true)
+  })
+
+  it('keeps the automatic domain when nothing else answers or it is live', () => {
+    expect(deriveReach(urls([auto]), down).hero?.automatic).toBe(true)
+    const live: ProbeTarget[] = [
+      { kind: 'fallback', url: auto.url ?? '', ok: true },
+    ]
+    expect(deriveReach(urls([auto, lan]), live).demoted).toBe(false)
+  })
+
+  it('does not swap when the container itself is down', () => {
+    const m = deriveReach(urls([auto, lan]), [
+      ...down,
+      { kind: 'container', url: '', ok: false },
+    ])
+    expect(m.hero?.automatic).toBe(true)
   })
 })
 

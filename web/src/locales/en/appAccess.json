@@ -75,7 +75,8 @@
   "advanced": {
     "title": "Advanced: addresses for other apps and this server",
     "hint": "Only needed when wiring apps together or working on the server itself.",
-    "noPublic": "This server has no public address, so the private network address is the way in."
+    "noPublic": "This server has no public address, so the private network address is the way in.",
+    "autoDown": "The free test address did not answer from this server. It needs public DNS and open ports 80 and 443, so the address above is the one to use."
   },
   "id": {
     "domain": "Domain",

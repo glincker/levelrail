@@ -129,7 +129,7 @@ export function AppAccessCard({ appName }: { appName: string }) {
       },
     )
 
-  const model = data ? deriveReach(data) : null
+  const model = data ? deriveReach(data, check.data?.targets) : null
   const row = (addr: ReachAddress) => (
     <ReachRow
       key={addr.key}
@@ -178,6 +178,11 @@ export function AppAccessCard({ appName }: { appName: string }) {
                 checking={check.isPending}
                 onRecheck={() => check.mutate()}
               />
+            ) : null}
+            {model.demoted ? (
+              <p className="text-xs text-muted-foreground">
+                {t('advanced.autoDown')}
+              </p>
             ) : null}
             {model.promoted ? (
               <p className="text-xs text-muted-foreground">
