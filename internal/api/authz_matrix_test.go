@@ -290,6 +290,8 @@ var resourceKinds = []struct {
 }{
 	{"/api/v1/apps/{name}", "app:", "app", "{name}"},
 	{"/api/v1/databases/{name}", "database:", "database", "{name}"},
+	{"/api/v2/apps/{name}", "app:", "app-v2", "{name}"},
+	{"/api/v2/databases/{name}", "database:", "database-v2", "{name}"},
 	{"/api/v1/models/{name}", "model:", "model", "{name}"},
 	{"/api/v1/assets/buckets/{id}", "asset_bucket:", "asset_bucket", "{id}"},
 }

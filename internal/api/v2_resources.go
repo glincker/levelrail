@@ -30,6 +30,7 @@ type v2Server struct {
 	cfg      v2WatchConfig
 	backfill sync.Once
 	streams  chan struct{}
+	applyMu  sync.Mutex
 }
 
 func newV2Server(rt *Router) *v2Server {
@@ -187,7 +188,16 @@ func (s *v2Server) handleGet(kind string) http.HandlerFunc {
 			writeError(w, http.StatusNotFound, strings.ToLower(v2KindFor(kind))+" not found")
 			return
 		}
-		writeJSON(w, http.StatusOK, items[0])
+		resp := v2ApplyResponse{v2Object: items[0]}
+		if fs, ok := s.rt.apps.(v2FieldStore); ok && kind != v2PathNodes {
+			owners, err := fs.ListManagedFields(r.Context(), v2StoreKind(kind), name)
+			if err != nil {
+				s.rt.internalError(w, "api: v2 get "+kind+": managed fields", err)
+				return
+			}
+			resp.Metadata.ManagedFields = groupManagedFields(owners)
+		}
+		writeJSON(w, http.StatusOK, resp)
 	}
 }
 

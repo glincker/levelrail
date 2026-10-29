@@ -2027,6 +2027,9 @@ Routes that do not fit an existing group.
 | GET | /api/v2/databases/{name} | AbilityRead | handleGet |
 | GET | /api/v2/nodes | AbilityRoot | handleList |
 | GET | /api/v2/nodes/{name} | AbilityRoot | handleGet |
+| PATCH | /api/v2/apps/{name} | AbilityWrite | handleApply |
+| PATCH | /api/v2/databases/{name} | AbilityWrite | handleApply |
+| PATCH | /api/v2/{kind}/{name} | AbilityWrite | handleApplyUnsupported |
 
 ## See also
 

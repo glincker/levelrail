@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1802 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1805 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1585,10 +1585,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
 	{Method: "GET", Path: "/api/v2/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleList", Description: ""},
 	{Method: "GET", Path: "/api/v2/apps/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGet", Description: ""},
+	{Method: "PATCH", Path: "/api/v2/apps/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleApply", Description: ""},
 	{Method: "GET", Path: "/api/v2/databases", Ability: "AbilityRead", Group: "Other", Handler: "handleList", Description: ""},
 	{Method: "GET", Path: "/api/v2/databases/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGet", Description: ""},
+	{Method: "PATCH", Path: "/api/v2/databases/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleApply", Description: ""},
 	{Method: "GET", Path: "/api/v2/nodes", Ability: "AbilityRoot", Group: "Other", Handler: "handleList", Description: ""},
 	{Method: "GET", Path: "/api/v2/nodes/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGet", Description: ""},
+	{Method: "PATCH", Path: "/api/v2/{kind}/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleApplyUnsupported", Description: ""},
 	{Method: "GET", Path: "/gate/login", Ability: "Public", Group: "Other", Handler: "handleGateLogin", Description: ""},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
