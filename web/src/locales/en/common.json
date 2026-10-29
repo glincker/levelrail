@@ -145,6 +145,21 @@
       }
     }
   },
+  "appAnalysis": {
+    "confidence": "{{level}} confidence",
+    "causes": "Suspected causes",
+    "hide": "Hide report",
+    "loadFailed": "Could not load this report.",
+    "loading": "Loading report",
+    "recommendations": "Recommendations",
+    "status": {
+      "complete": "Complete",
+      "insufficient_data": "Insufficient data"
+    },
+    "timeline": "Timeline",
+    "title": "Analysis",
+    "view": "View report"
+  },
   "appReleases": {
     "title": "Releases",
     "current": "Current"
