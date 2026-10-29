@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1799 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1800 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -359,6 +359,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppResourceRecommendation", Description: "Read-only resource right-sizing suggestion (resource_recommendation.go): synthesizes the app's historical CPU/memory usage and current limits into a deterministic raise/lower/keep suggestion per dimension. AbilityRead, same sensitivity as diagnose above; never writes anything, never applied automatically."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/restart", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestartApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollback-targets", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListRollbackTargets", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRollout", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/save-as-template", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSaveAppAsTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSchedule", Description: ""},

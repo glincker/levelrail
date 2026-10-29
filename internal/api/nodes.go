@@ -556,6 +556,9 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		rt.previewNodeDrain(w, r)
 		return
 	}
+	if rt.refuseDrainBudget(w, r) {
+		return
+	}
 	if rt.multiNode != nil {
 		rt.handleStartDrain(w, r)
 		return

@@ -26,6 +26,12 @@ func runRollout(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	case "pause", "resume":
 		_, _ = fmt.Fprintf(stderr, "%s: rollout %s is not available: there is no API to hold a rollout open. Use \"%s apps freeze\" for scheduled deploy windows or \"%s apps stop\" to stop an app.\n", prog, args[0], prog, prog)
 		return exitUsage
+	case "waves":
+		return runRolloutWaves(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status":
+		if len(args) > 1 && args[1] != "-h" && args[1] != "--help" {
+			printRolloutSummary(prog, args[1:], stdout, lookupEnv)
+		}
 	}
 	target, ok := rolloutVerbs[args[0]]
 	if !ok {
@@ -38,7 +44,10 @@ func runRollout(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 
 func rolloutUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s rollout status <app> [flags]     wait for the latest deploy to converge (same as apps wait)
+  %[1]s rollout status <app> [flags]     show rolling waves and replica counts, then wait for the
+                                       latest deploy to converge (same as apps wait)
+  %[1]s rollout waves <app> [--json]     show the rollout policy and the last rolling deploy's
+                                       wave, updated, ready, unavailable and surge counts
   %[1]s rollout history <app> [flags]    list deploy attempts, newest first (same as apps deploys list)
   %[1]s rollout undo <app> [flags]       roll back to the previous deploy (same as apps rollback)
   %[1]s rollout restart <app> [flags]    restart the app (same as apps restart)

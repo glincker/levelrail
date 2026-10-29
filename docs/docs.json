@@ -203,6 +203,7 @@
               "screenshots",
               "docker",
               "zero-downtime-deploys",
+              "rollout-control",
               "preview-environments",
               "deploy-contexts"
             ],

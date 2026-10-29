@@ -335,7 +335,7 @@ var Tree = map[string]*Node{
 	"api-docs":                 nil,
 	"api-resources":            nil,
 	"explain":                  nil,
-	"rollout":                  {Subs: map[string]*Node{"status": nil, "history": nil, "undo": nil, "restart": nil}},
+	"rollout":                  {Subs: map[string]*Node{"status": nil, "waves": nil, "history": nil, "undo": nil, "restart": nil}},
 	"config":                   {Subs: map[string]*Node{"get-contexts": nil, "current-context": nil, "use-context": nil}},
 	"get":                      nil,
 	"describe":                 nil,
