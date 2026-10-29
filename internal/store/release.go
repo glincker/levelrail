@@ -122,6 +122,12 @@ func (db *DB) queryReleases(ctx context.Context, where string, args ...any) ([]R
 // history row, in one transaction. A repeat for the current release is a
 // no-op, so replays and out of order hooks stay idempotent.
 func (db *DB) RecordShadowBinding(ctx context.Context, app, environmentID, releaseID, reason, by string) (bool, error) {
+	return db.RetargetBinding(ctx, app, environmentID, releaseID, reason, by, "")
+}
+
+// RetargetBinding is RecordShadowBinding that also names the approval that
+// authorized the move, so history can answer who allowed a release.
+func (db *DB) RetargetBinding(ctx context.Context, app, environmentID, releaseID, reason, by, approvalID string) (bool, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return false, fmt.Errorf("store: begin shadow binding: %w", err)
@@ -146,15 +152,24 @@ func (db *DB) RecordShadowBinding(ctx context.Context, app, environmentID, relea
 		return false, fmt.Errorf("store: write binding %q: %w", app, err)
 	}
 	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO environment_binding_history (app, release_id, changed_at, changed_by, reason)
-		VALUES (?, ?, ?, ?, ?)
-	`, app, releaseID, now, by, reason); err != nil {
+		INSERT INTO environment_binding_history (app, release_id, changed_at, changed_by, reason, approval_id)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, app, releaseID, now, by, reason, approvalID); err != nil {
 		return false, fmt.Errorf("store: append binding history %q: %w", app, err)
 	}
 	if err := tx.Commit(); err != nil {
 		return false, fmt.Errorf("store: commit shadow binding %q: %w", app, err)
 	}
 	return true, nil
+}
+
+// GetRelease returns the release with this id, or nil when none exists.
+func (db *DB) GetRelease(ctx context.Context, id string) (*Release, error) {
+	rels, err := db.queryReleases(ctx, `WHERE id = ?`, id)
+	if err != nil || len(rels) == 0 {
+		return nil, err
+	}
+	return &rels[0], nil
 }
 
 // GetEnvironmentBinding returns app's binding, or nil when none exists.
