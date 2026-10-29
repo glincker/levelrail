@@ -658,3 +658,22 @@ Test hygiene found this way: a test that saves a URL with a public hostname
 must not resolve DNS (set `netguard.AllowPrivateEnv` through a helper), a live
 test that parses an SSE stream must skip `event: status` frames, and a timing
 comparison should use the fastest of several runs, not the median.
+
+## Local dev loop for parallel agents
+
+- Pre-commit lint runs with `--allow-parallel-runners` and one cache shared by
+  all worktrees (`LEVELRAIL_LINT_CACHE` overrides the path). If a binary still
+  reports the single-run lock, the hook retries for `APP_LINT_LOCK_WAIT_SECONDS`
+  (default 300), then fails with a message. Lint is never skipped silently.
+- Pre-push clears the `GIT_*` variables git exports to hooks, so tests that
+  create their own repositories behave the same in the foreground as in the
+  background.
+- Pre-push runs `go run ./scripts/gen-api-reference -check` when a routes file
+  or a generated API output changed, and prints the regenerate command if stale.
+- `scripts/gate-api.sh [-r regex]` runs `./internal/api -short` in CI's lanes
+  (`GATE_API_LANES`, default 4) with `GATE_API_CONCURRENCY` lanes at a time,
+  printing only failures and a summary line.
+- `scripts/clean-agent-worktrees.sh [--apply]` lists, and with `--apply`
+  removes, linked worktrees that are clean and fully contained in a remote
+  branch. It never touches the primary worktree, the current one, or any
+  dirty or unpushed tree.
