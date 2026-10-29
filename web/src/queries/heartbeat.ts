@@ -1,7 +1,11 @@
 // GET/PUT /api/v1/settings/heartbeat (internal/api/settings_heartbeat.go).
 // URLs are write-only: the server only ever returns their hosts.
 
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface HeartbeatStatus {
@@ -15,12 +19,14 @@ export interface HeartbeatStatus {
   last_ping_at?: string
   last_result?: 'ok' | 'fail_reported' | 'unhealthy' | 'error'
   last_error?: string
+  agent_silence_host?: string
 }
 
 export interface HeartbeatUpdate {
   url?: string
   fail_url?: string
   body_enabled?: boolean
+  agent_silence_url?: string
 }
 
 export const heartbeatKeys = {

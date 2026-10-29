@@ -32,8 +32,10 @@ function HeartbeatForm({ status }: { status: HeartbeatStatus }) {
   const save = useUpdateHeartbeat()
   const [url, setUrl] = useState('')
   const [failUrl, setFailUrl] = useState('')
+  const [silenceUrl, setSilenceUrl] = useState('')
   const envManaged = status.source === 'env'
   const locked = envManaged || !status.can_store_url
+  const silenceLocked = !envManaged && !status.can_store_url
 
   const done = () => toast.add({ title: t('heartbeat.saved'), type: 'success' })
   const submit = (e: React.FormEvent) => {
@@ -42,15 +44,16 @@ function HeartbeatForm({ status }: { status: HeartbeatStatus }) {
       {
         ...(url.trim() ? { url: url.trim() } : {}),
         ...(failUrl.trim() ? { fail_url: failUrl.trim() } : {}),
+        ...(silenceUrl.trim() ? { agent_silence_url: silenceUrl.trim() } : {}),
       },
       {
         onSuccess: () => {
           setUrl('')
           setFailUrl('')
+          setSilenceUrl('')
           done()
         },
-        onError: (err) =>
-          toast.add({ title: err.message, type: 'error' }),
+        onError: (err) => toast.add({ title: err.message, type: 'error' }),
       },
     )
   }
@@ -98,6 +101,26 @@ function HeartbeatForm({ status }: { status: HeartbeatStatus }) {
         />
         <FieldDescription>{t('heartbeat.failUrlHint')}</FieldDescription>
       </Field>
+      <Field>
+        <FieldLabel htmlFor="heartbeat-agent-silence-url">
+          {t('heartbeat.agentSilenceUrl')}
+        </FieldLabel>
+        <SecretInput
+          id="heartbeat-agent-silence-url"
+          className="min-h-11"
+          value={silenceUrl}
+          disabled={silenceLocked}
+          hasExistingValue={Boolean(status.agent_silence_host)}
+          onChange={(e) => setSilenceUrl(e.target.value)}
+        />
+        <FieldDescription>
+          {status.agent_silence_host
+            ? t('heartbeat.agentSilenceSet', {
+                host: status.agent_silence_host,
+              })
+            : t('heartbeat.agentSilenceHint')}
+        </FieldDescription>
+      </Field>
       <div className="flex min-h-11 items-center justify-between gap-3">
         <FieldLabel htmlFor="heartbeat-body">{t('heartbeat.body')}</FieldLabel>
         <Switch
@@ -113,7 +136,11 @@ function HeartbeatForm({ status }: { status: HeartbeatStatus }) {
         <Button
           type="submit"
           className="min-h-11"
-          disabled={locked || save.isPending || (!url.trim() && !failUrl.trim())}
+          disabled={
+            save.isPending ||
+            (locked && silenceLocked) ||
+            (!url.trim() && !failUrl.trim() && !silenceUrl.trim())
+          }
         >
           {t('heartbeat.save')}
         </Button>
@@ -123,11 +150,22 @@ function HeartbeatForm({ status }: { status: HeartbeatStatus }) {
             variant="outline"
             className="min-h-11"
             disabled={save.isPending}
-            onClick={() =>
-              save.mutate({ url: '' }, { onSuccess: done })
-            }
+            onClick={() => save.mutate({ url: '' }, { onSuccess: done })}
           >
             {t('heartbeat.clear')}
+          </Button>
+        ) : null}
+        {status.agent_silence_host ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            disabled={save.isPending}
+            onClick={() =>
+              save.mutate({ agent_silence_url: '' }, { onSuccess: done })
+            }
+          >
+            {t('heartbeat.clearAgentSilence')}
           </Button>
         ) : null}
       </div>
@@ -157,7 +195,10 @@ export function HeartbeatCard() {
                 : t('heartbeat.result.none')}
             </Badge>
             {data.last_ping_at ? (
-              <time dateTime={data.last_ping_at} className="text-muted-foreground">
+              <time
+                dateTime={data.last_ping_at}
+                className="text-muted-foreground"
+              >
                 {new Date(data.last_ping_at).toLocaleString()}
               </time>
             ) : null}
