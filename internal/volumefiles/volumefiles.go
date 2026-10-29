@@ -237,7 +237,7 @@ func (s *Store) Write(p string, r io.Reader, maxBytes int64) (int64, error) {
 	}
 	dir := path.Dir(rel)
 	if dir != "." {
-		if err := s.root.MkdirAll(dir, 0o755); err != nil {
+		if err := s.mkdirAllOwned(dir); err != nil {
 			return 0, mapErr(err)
 		}
 	}
@@ -352,4 +352,27 @@ func Classify(err error) error {
 		}
 	}
 	return err
+}
+
+// mkdirAllOwned creates dir and any missing parents, each owned like its parent where chown is allowed.
+func (s *Store) mkdirAllOwned(dir string) error {
+	parts := strings.Split(dir, "/")
+	cur := ""
+	for _, part := range parts {
+		parent := cur
+		if parent == "" {
+			parent = "."
+		}
+		cur = path.Join(cur, part)
+		if _, err := s.root.Lstat(cur); err == nil {
+			continue
+		}
+		if err := s.root.Mkdir(cur, 0o755); err != nil {
+			return err
+		}
+		if err := s.matchOwner(parent, cur); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -73,21 +73,52 @@ func (rt *Router) volumeFileTarget(w http.ResponseWriter, r *http.Request) (Volu
 	return node, dockerVolume, true
 }
 
-// writeVolumeFileError maps a volumefiles error, which may have crossed the agent wire as text, to a status.
-func (rt *Router) writeVolumeFileError(w http.ResponseWriter, msg string, err error, attrs ...slog.Attr) {
-	switch e := volumefiles.Classify(err); {
-	case errors.Is(e, volumefiles.ErrPathEscapes):
-		writeError(w, http.StatusBadRequest, "path is outside the volume")
-	case errors.Is(e, volumefiles.ErrNotFound):
-		writeError(w, http.StatusNotFound, "no such file in this volume")
-	case errors.Is(e, volumefiles.ErrIsDirectory):
-		writeError(w, http.StatusBadRequest, "path is a directory")
-	case errors.Is(e, volumefiles.ErrNotRegular):
-		writeError(w, http.StatusBadRequest, "path is not a regular file")
-	case errors.Is(e, volumefiles.ErrTooLarge):
-		writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("file exceeds the %d MB upload limit", volumefiles.MaxUploadBytes()>>20))
-	default:
+// writeVolumeFileError writes the mapped error and returns the status it wrote.
+func (rt *Router) writeVolumeFileError(w http.ResponseWriter, msg string, err error, attrs ...slog.Attr) int {
+	e := volumefiles.Classify(err)
+	status := volumeFileStatus(e)
+	if status == http.StatusInternalServerError {
 		rt.internalError(w, msg, err, attrs...)
+		return status
+	}
+	writeError(w, status, volumeFileMessage(e))
+	return status
+}
+
+func volumeFileStatus(e error) int {
+	switch {
+	case errors.Is(e, volumefiles.ErrPathEscapes), errors.Is(e, volumefiles.ErrIsDirectory), errors.Is(e, volumefiles.ErrNotRegular):
+		return http.StatusBadRequest
+	case errors.Is(e, volumefiles.ErrNotFound):
+		return http.StatusNotFound
+	case errors.Is(e, volumefiles.ErrTooLarge):
+		return http.StatusRequestEntityTooLarge
+	}
+	return http.StatusInternalServerError
+}
+
+func volumeFileMessage(e error) string {
+	switch {
+	case errors.Is(e, volumefiles.ErrPathEscapes):
+		return "path is outside the volume"
+	case errors.Is(e, volumefiles.ErrNotFound):
+		return "no such file in this volume"
+	case errors.Is(e, volumefiles.ErrIsDirectory):
+		return "path is a directory"
+	case errors.Is(e, volumefiles.ErrNotRegular):
+		return "path is not a regular file"
+	}
+	return fmt.Sprintf("file exceeds the %d MB upload limit", volumefiles.MaxUploadBytes()>>20)
+}
+
+// withReadSensitive also demands read:sensitive: an edit can overwrite or expose file contents.
+func (rt *Router) withReadSensitive(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !rt.callerHasAbility(r, AbilityReadSensitive) {
+			writeError(w, http.StatusForbidden, "this action also needs the read:sensitive ability")
+			return
+		}
+		next(w, r)
 	}
 }
 
@@ -101,9 +132,13 @@ func (rt *Router) auditVolumeFile(r *http.Request, action, app, volume, filePath
 		rt.logger.Warn("api: volume file audit id failed", slog.String("error", err.Error()))
 		return
 	}
+	ability := AbilityWrite
+	if action == http.MethodGet {
+		ability = AbilityReadSensitive
+	}
 	entry := store.AuditEntry{
 		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
-		Ability: AbilityWrite, Method: action, Path: "/api/v1/apps/" + app + "/volumes/" + volume + "/files#" + filePath, StatusCode: status,
+		Ability: ability, Method: action, Path: "/api/v1/apps/" + app + "/volumes/" + volume + "/files#" + filePath, StatusCode: status,
 		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
 	}
@@ -150,7 +185,8 @@ func (rt *Router) handleDownloadVolumeFile(w http.ResponseWriter, r *http.Reques
 	}
 	rc, err := node.VolumeRead(r.Context(), dockerVolume, p)
 	if err != nil {
-		rt.writeVolumeFileError(w, "api: download volume file failed", err, slog.String("name", r.PathValue("name")))
+		st := rt.writeVolumeFileError(w, "api: download volume file failed", err, slog.String("name", r.PathValue("name")))
+		rt.auditVolumeFile(r, http.MethodGet, r.PathValue("name"), r.PathValue("volume"), p, st)
 		return
 	}
 	defer func() { _ = rc.Close() }()
@@ -182,8 +218,8 @@ func (rt *Router) handlePutVolumeFile(w http.ResponseWriter, r *http.Request) {
 	}
 	cr := &countingReader{r: http.MaxBytesReader(w, r.Body, limit+1)}
 	if err := node.VolumeWrite(r.Context(), dockerVolume, p, cr, limit); err != nil {
-		rt.auditVolumeFile(r, http.MethodPut, r.PathValue("name"), r.PathValue("volume"), p, http.StatusInternalServerError)
-		rt.writeVolumeFileError(w, "api: upload volume file failed", err, slog.String("name", r.PathValue("name")))
+		st := rt.writeVolumeFileError(w, "api: upload volume file failed", err, slog.String("name", r.PathValue("name")))
+		rt.auditVolumeFile(r, http.MethodPut, r.PathValue("name"), r.PathValue("volume"), p, st)
 		return
 	}
 	rt.auditVolumeFile(r, http.MethodPut, r.PathValue("name"), r.PathValue("volume"), p, http.StatusOK)
@@ -202,8 +238,8 @@ func (rt *Router) handleDeleteVolumeFile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := node.VolumeRemove(r.Context(), dockerVolume, p); err != nil {
-		rt.auditVolumeFile(r, http.MethodDelete, r.PathValue("name"), r.PathValue("volume"), p, http.StatusInternalServerError)
-		rt.writeVolumeFileError(w, "api: delete volume file failed", err, slog.String("name", r.PathValue("name")))
+		st := rt.writeVolumeFileError(w, "api: delete volume file failed", err, slog.String("name", r.PathValue("name")))
+		rt.auditVolumeFile(r, http.MethodDelete, r.PathValue("name"), r.PathValue("volume"), p, st)
 		return
 	}
 	rt.auditVolumeFile(r, http.MethodDelete, r.PathValue("name"), r.PathValue("volume"), p, http.StatusOK)
@@ -260,8 +296,8 @@ func (rt *Router) handleRestoreVolumeFile(w http.ResponseWriter, r *http.Request
 	limit := volumefiles.MaxUploadBytes()
 	cr := &countingReader{r: entry}
 	if err := node.VolumeWrite(r.Context(), dockerVolume, rel, cr, limit); err != nil {
-		rt.auditVolumeFile(r, "RESTORE", name, vol, rel, http.StatusInternalServerError)
-		rt.writeVolumeFileError(w, "api: restore volume file failed", err, slog.String("name", name))
+		st := rt.writeVolumeFileError(w, "api: restore volume file failed", err, slog.String("name", name))
+		rt.auditVolumeFile(r, "RESTORE", name, vol, rel, st)
 		return
 	}
 	rt.auditVolumeFile(r, "RESTORE", name, vol, rel, http.StatusOK)

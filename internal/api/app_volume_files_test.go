@@ -185,3 +185,16 @@ func TestTarEntry(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestVolumeFileStatus_MapsRealStatuses(t *testing.T) {
+	for err, want := range map[error]int{
+		volumefiles.ErrPathEscapes: http.StatusBadRequest,
+		volumefiles.ErrNotFound:    http.StatusNotFound,
+		volumefiles.ErrTooLarge:    http.StatusRequestEntityTooLarge,
+		errors.New("boom"):         http.StatusInternalServerError,
+	} {
+		if got := volumeFileStatus(volumefiles.Classify(err)); got != want {
+			t.Errorf("%v = %d, want %d", err, got, want)
+		}
+	}
+}

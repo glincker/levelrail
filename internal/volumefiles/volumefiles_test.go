@@ -229,3 +229,13 @@ func TestEnvLimits(t *testing.T) {
 		t.Fatal("EffectiveLimit")
 	}
 }
+
+func TestStore_WriteCreatesNestedDirectories(t *testing.T) {
+	s, vol, _ := newVolume(t)
+	if _, err := s.Write("a/b/c.txt", strings.NewReader("x"), 10); err != nil {
+		t.Fatal(err)
+	}
+	if st, err := os.Stat(filepath.Join(vol, "a", "b")); err != nil || !st.IsDir() {
+		t.Fatalf("nested dir missing: %v", err)
+	}
+}

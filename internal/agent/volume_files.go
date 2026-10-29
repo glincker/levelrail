@@ -15,7 +15,7 @@ import (
 var ErrVolumeFilesUnsupported = errors.New("agent: this runtime cannot resolve a volume's host directory")
 
 type volumeMounter interface {
-	VolumeMountpoint(ctx context.Context, name string) (string, error)
+	VolumeMountpointIfExists(ctx context.Context, name string) (string, error)
 }
 
 // VolumeFileEntry is one item of a volume directory listing.
@@ -30,7 +30,7 @@ func openVolumeStore(ctx context.Context, rt docker.Runtime, volume string) (*vo
 	if volume == "" {
 		return nil, errors.New("agent: volume file operation needs a volume name")
 	}
-	dir, err := vm.VolumeMountpoint(ctx, volume)
+	dir, err := vm.VolumeMountpointIfExists(ctx, volume)
 	if err != nil {
 		return nil, err
 	}
