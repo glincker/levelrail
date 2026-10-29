@@ -21,7 +21,7 @@ const (
 	secretsService = "heartbeat"
 	secretURL      = "url"
 	secretFailURL  = "fail_url"
-	maxRedirects   = 3
+	secretAgentURL = "agent_silence_url"
 )
 
 // Result words recorded after each tick.
@@ -96,24 +96,7 @@ func New(o Options) *Service {
 	}
 	s := &Service{cfg: o.Config, secrets: o.Secrets, state: o.State, health: o.Health, logger: logger,
 		version: o.Version, agent: o.UserAgent, started: time.Now(), wake: make(chan struct{}, 1)}
-	s.client = &http.Client{
-		Timeout: o.Config.Timeout,
-		Transport: &http.Transport{
-			Proxy:               nil,
-			DialContext:         guardedDialer(o.Config.AllowPrivate, o.Config.Timeout).DialContext,
-			TLSHandshakeTimeout: o.Config.Timeout,
-			DisableKeepAlives:   true,
-		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > maxRedirects {
-				return errors.New("too many redirects")
-			}
-			if !strings.EqualFold(req.URL.Hostname(), via[0].URL.Hostname()) || (via[0].URL.Scheme == "https" && req.URL.Scheme != "https") {
-				return errors.New("redirect to another host refused")
-			}
-			return nil
-		},
-	}
+	s.client = NewClient(o.Config.AllowPrivate, o.Config.Timeout)
 	return s
 }
 
@@ -282,6 +265,8 @@ type Status struct {
 	LastPingAt   time.Time `json:"last_ping_at,omitzero"`
 	LastResult   string    `json:"last_result,omitempty"`
 	LastError    string    `json:"last_error,omitempty"`
+	// AgentSilenceHost is the host agents ping when the control plane goes quiet; empty when unset.
+	AgentSilenceHost string `json:"agent_silence_host,omitempty"`
 }
 
 // Status reports the current configuration and last outcome.
@@ -292,6 +277,7 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 	}
 	out := Status{Configured: tg.url != "", Source: tg.source, Host: HostOf(tg.url), FailHost: HostOf(tg.failURL),
 		IntervalSecs: int(s.cfg.Interval.Seconds()), BodyEnabled: !s.cfg.BodyOff, CanStoreURL: s.secrets != nil && s.cfg.URL == ""}
+	out.AgentSilenceHost = HostOf(s.AgentSilenceURL(ctx))
 	if s.state != nil {
 		st, serr := s.state.GetHeartbeatState(ctx)
 		if serr != nil {
@@ -308,11 +294,28 @@ type Update struct {
 	URL     *string
 	FailURL *string
 	Body    *bool
+	// AgentSilenceURL is the off-host URL every agent pings when it loses the control plane.
+	AgentSilenceURL *string
+}
+
+// AgentSilenceURL returns the stored agent silence URL, or "" when none is set.
+func (s *Service) AgentSilenceURL(ctx context.Context) string {
+	if s.secrets == nil {
+		return ""
+	}
+	if ok, err := s.secrets.Exists(ctx, secretsService, secretAgentURL); err != nil || !ok {
+		return ""
+	}
+	v, err := s.secrets.Resolve(ctx, secretsService, secretAgentURL)
+	if err != nil {
+		return ""
+	}
+	return v
 }
 
 // Apply validates and stores an Update, then pings at once so the monitor sees the new URL.
 func (s *Service) Apply(ctx context.Context, u Update) error {
-	if s.cfg.URL != "" {
+	if s.cfg.URL != "" && (u.URL != nil || u.FailURL != nil || u.Body != nil) {
 		return ErrEnvManaged
 	}
 	if s.secrets == nil {
@@ -321,7 +324,7 @@ func (s *Service) Apply(ctx context.Context, u Update) error {
 	for _, f := range []struct {
 		v   *string
 		key string
-	}{{u.URL, secretURL}, {u.FailURL, secretFailURL}} {
+	}{{u.URL, secretURL}, {u.FailURL, secretFailURL}, {u.AgentSilenceURL, secretAgentURL}} {
 		if f.v == nil {
 			continue
 		}

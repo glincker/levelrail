@@ -14,6 +14,8 @@ type heartbeatUpdateRequest struct {
 	URL     *string `json:"url"`
 	FailURL *string `json:"fail_url"`
 	Body    *bool   `json:"body_enabled"`
+
+	AgentSilenceURL *string `json:"agent_silence_url"`
 }
 
 func (rt *Router) handleGetHeartbeat(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +42,7 @@ func (rt *Router) handlePutHeartbeat(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	err := rt.heartbeatSvc.Apply(r.Context(), heartbeat.Update{URL: req.URL, FailURL: req.FailURL, Body: req.Body})
+	err := rt.heartbeatSvc.Apply(r.Context(), heartbeat.Update{URL: req.URL, FailURL: req.FailURL, Body: req.Body, AgentSilenceURL: req.AgentSilenceURL})
 	switch {
 	case errors.Is(err, heartbeat.ErrEnvManaged):
 		writeError(w, http.StatusConflict, err.Error()+"; unset it to manage the heartbeat here")

@@ -165,6 +165,13 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 	if dir := os.Getenv("APP_AGENT_STORAGE_DIR"); dir != "" {
 		opts = append(opts, agent.WithFileStorage(dir))
 	}
+	if scfg, serr := agent.SilenceConfigFromEnv(os.LookupEnv); serr != nil {
+		logger.Error("control plane silence watcher disabled", slog.String("error", serr.Error()))
+	} else {
+		w := agent.NewSilenceWatcher(scfg, holder.Current().NodeID, logger, randInt63n)
+		go w.Run(ctx)
+		opts = append(opts, agent.WithSilenceWatcher(w))
+	}
 	if d := heartbeatIntervalFromEnv(); d > 0 {
 		opts = append(opts, agent.WithHeartbeatInterval(d))
 	}

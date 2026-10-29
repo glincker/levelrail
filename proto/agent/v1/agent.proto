@@ -231,6 +231,11 @@ message RenewalReport {
 // RenewNow asks the agent to renew its certificate immediately.
 message RenewNow {}
 
+// SilenceConfig sets or clears (empty url) the control plane silence watcher.
+message SilenceConfig {
+  string url = 1;
+}
+
 // ControlMessage is one frame the control plane sends down the Session
 // stream: a request, or one frame of an in-flight exec's stdin,
 // cancellation, or output flow control.
@@ -254,6 +259,8 @@ message ControlMessage {
     // the control plane's own bounded GracefulStop timeout.
     GoAway go_away = 9;
     RenewNow renew_now = 10;
+    // SilenceConfig carries the off-host URL the agent pings if the control plane goes quiet.
+    SilenceConfig silence_config = 11;
   }
 }
 

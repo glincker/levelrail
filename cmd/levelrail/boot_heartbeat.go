@@ -30,6 +30,9 @@ func (s *bootState) startHeartbeat() {
 	}
 	svc := heartbeat.New(opts)
 	s.apiRouter.SetHeartbeat(svc)
+	if s.agentServer != nil {
+		s.agentServer.SetSilenceSource(svc.AgentSilenceURL)
+	}
 	go svc.Run(s.ctx)
 }
 
