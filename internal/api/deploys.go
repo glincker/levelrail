@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/release"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -54,6 +55,15 @@ type deployTriggerRequest struct {
 	// releaseID is set by a rollback while bindings are authoritative, after
 	// the ownership check on ReleaseID; it is never read from the body.
 	releaseID string
+	// bindingReason overrides the history reason for a release deploy.
+	bindingReason string
+}
+
+func (r deployTriggerRequest) bindingReasonOr(def string) string {
+	if r.bindingReason != "" {
+		return r.bindingReason
+	}
+	return def
 }
 
 // deployTriggerResult is POST .../deploys and POST .../promote's shared
@@ -111,7 +121,11 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			return
 		}
-		req.Image, req.releaseID, req.Rollback = rel.ImageRef, rel.ID, false
+		req.Image, req.releaseID = rel.ImageRef, rel.ID
+		req.bindingReason = release.ReasonDeploy
+		if req.Rollback {
+			req.bindingReason = bindingReasonRollback
+		}
 	}
 	if req.Image == "" {
 		writeError(w, http.StatusBadRequest, "image is required")
@@ -127,7 +141,8 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Rollback && !rt.checkRollbackTarget(w, r, *existing, req.Image) {
+	// A release ref is digest pinned and already owned, so the history check is moot.
+	if req.Rollback && req.ReleaseID == "" && !rt.checkRollbackTarget(w, r, *existing, req.Image) {
 		return
 	}
 
@@ -223,7 +238,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 			return
 		}
 	}
-	undo, err := rt.retargetBinding(r.Context(), existing, req.releaseID, bindingReasonRollback, rt.actorLabel(r), "")
+	undo, err := rt.retargetBinding(r.Context(), existing, req.releaseID, req.bindingReasonOr(bindingReasonRollback), rt.actorLabel(r), "")
 	if err != nil {
 		rt.internalError(w, "api: rollback: retarget binding failed", err, slog.String("name", name))
 		return

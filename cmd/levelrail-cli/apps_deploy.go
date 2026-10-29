@@ -161,6 +161,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 
 func withRelease(req apiclient.DeployTriggerRequest, releaseID string) apiclient.DeployTriggerRequest {
 	req.ReleaseID = releaseID
+	req.Rollback = releaseID != ""
 	return req
 }
 

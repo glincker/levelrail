@@ -91,3 +91,38 @@ func TestPipelinePromoteBindingsOffKeepsTag(t *testing.T) {
 		t.Errorf("binding written while off: %+v", b)
 	}
 }
+
+func TestPipelinePromoteGatesRunBeforeRetarget(t *testing.T) {
+	t.Setenv(release.EnvBindings, "on")
+	ctx := context.Background()
+
+	t.Run("protected target", func(t *testing.T) {
+		a, db, _ := seedPipelinePromotion(t)
+		if err := db.SaveProject(ctx, store.Project{ID: "proj_1", Name: "p", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SaveEnvironment(ctx, store.Environment{ID: "env_p", ProjectID: "proj_1", Name: "prod", Protected: true, CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SetServiceEnvironment(ctx, "web-prod", "env_p"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := a.Promote(ctx, "web-staging", "web-prod", func(string) {}); err == nil {
+			t.Fatal("promote into a protected environment succeeded")
+		}
+		if b, _ := db.GetEnvironmentBinding(ctx, "web-prod"); b != nil {
+			t.Errorf("binding retargeted before the protected gate: %+v", b)
+		}
+	})
+
+	t.Run("frozen target", func(t *testing.T) {
+		a, db, _ := seedPipelinePromotion(t)
+		if _, err := db.ReplaceDeployFreezeWindows(ctx, store.DeployFreezeScopeApp("web-prod"), []store.DeployFreezeWindow{{Cron: "* * * * *", Duration: 2 * time.Hour}}); err != nil {
+			t.Fatal(err)
+		}
+		_, _ = a.Promote(ctx, "web-staging", "web-prod", func(string) {})
+		if b, _ := db.GetEnvironmentBinding(ctx, "web-prod"); b != nil {
+			t.Errorf("binding retargeted for a held deploy: %+v", b)
+		}
+	})
+}

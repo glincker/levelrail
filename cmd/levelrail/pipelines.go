@@ -231,6 +231,24 @@ func (a *pipelineActions) protectedCheck(ctx context.Context, svc *store.Desired
 	return nil
 }
 
+// gated runs the protected-environment and freeze checks push repeats and
+// reports a freeze, so a binding is never retargeted for a deploy that is
+// refused or held.
+func (a *pipelineActions) gated(ctx context.Context, service string) (bool, error) {
+	svc, err := a.db.GetDesiredService(ctx, service)
+	if err != nil {
+		return false, fmt.Errorf("load service %q: %w", service, err)
+	}
+	if err := a.protectedCheck(ctx, svc); err != nil {
+		return false, err
+	}
+	status, err := deploy.CheckFreeze(ctx, a.db, service, time.Now())
+	if err != nil {
+		return false, err
+	}
+	return status.Frozen, nil
+}
+
 func (a *pipelineActions) push(ctx context.Context, service, image, strategy string, log func(string)) (store.DesiredService, error) {
 	svc, err := a.db.GetDesiredService(ctx, service)
 	if err != nil {
@@ -340,6 +358,14 @@ func (a *pipelineActions) bindingPromote(ctx context.Context, src *store.Desired
 	if rel == nil {
 		return src.Image, noop, nil
 	}
+	frozen, err := a.gated(ctx, to)
+	if err != nil {
+		return "", noop, err
+	}
+	if frozen {
+		// A held deploy keeps the tag; the binding moves only for a deploy that runs.
+		return src.Image, noop, nil
+	}
 	target, err := a.db.GetDesiredService(ctx, to)
 	if err != nil {
 		return "", noop, fmt.Errorf("load service %q: %w", to, err)
@@ -382,7 +408,12 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 	}
 	undo := func() {}
 	if release.ModeFromEnv().Authoritative() {
-		if id := release.RollbackReleaseID(ctx, a.db, attempt); id != "" {
+		id := release.RollbackReleaseID(ctx, a.db, attempt)
+		frozen, gerr := a.gated(ctx, service)
+		if gerr != nil {
+			return "", gerr
+		}
+		if id != "" && !frozen {
 			var err error
 			if undo, err = release.Retarget(ctx, a.db, release.AuditorFor(a.db, a.logger), a.logger, *svc, id, release.ReasonRollback, "pipeline", ""); err != nil {
 				return "", err
