@@ -336,6 +336,7 @@
               "observability",
               "traffic-observability",
               "status-page",
+              "monitors",
               "scheduled-maintenance",
               "deploy-policies",
               "whats-new-panel"
