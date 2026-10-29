@@ -18,7 +18,7 @@ func runAppsUpgrade(prog string, args []string, stdout, stderr io.Writer, lookup
 	interval := fs.Duration("interval", 5*time.Second, "how often to poll the upgrade while following it")
 	waitMax := fs.Duration("wait-timeout", 15*time.Minute, "stop following after this long")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps upgrade <app-name> --yes [flags]\n\nApplies the current catalog template to an app deployed from one. It refuses\non blockers and when the app volumes have no fresh backup, deploys the new\nspec, watches the release and rolls back on a crash loop or failed deploy.\nWithout --yes it prints the plan and changes nothing.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps upgrade <app-name> --yes [--no-wait] [--interval D] [--wait-timeout D] [flags]\n\nApplies the current catalog template to an app deployed from one. It refuses\non blockers and when the app volumes have no fresh backup, deploys the new\nspec, watches the release and rolls back on a crash loop or failed deploy.\nWithout --yes it prints the plan and changes nothing.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps upgrade", "app name"}, lookupEnv)

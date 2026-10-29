@@ -22,7 +22,13 @@ Shows or changes the second destination every new backup is copied to once it
 lands in its primary destination. Only backups finished after copying is turned
 on are copied. Changing the setting needs a write-sensitive token.
 `, prog)
-	if len(args) < 2 || args[0] != "copy" || (args[1] != "show" && args[1] != "set") {
+	if len(args) < 2 || (args[1] != "show" && args[1] != "set") {
+		_, _ = fmt.Fprint(stderr, usage)
+		return exitUsage
+	}
+	switch args[0] {
+	case "copy":
+	default:
 		_, _ = fmt.Fprint(stderr, usage)
 		return exitUsage
 	}

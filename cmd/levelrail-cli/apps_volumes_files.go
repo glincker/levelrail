@@ -13,7 +13,7 @@ func runAppsVolumesLs(prog string, args []string, stdout, stderr io.Writer, look
 	var limit int
 	fs.IntVar(&limit, "limit", 0, "max entries (default: the server cap)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps volumes ls <app> <volume> [path] [flags]\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps volumes ls <app> <volume> [path] [--limit N] [flags]\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)

@@ -15,11 +15,16 @@ const rehydratePollEnv = "APP_REHYDRATE_POLL_INTERVAL"
 
 // runControlPlane dispatches "control-plane rehydrate plan|run|status".
 func runControlPlane(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	if len(args) == 0 || args[0] != "rehydrate" {
-		if len(args) > 0 && (args[0] == "-h" || args[0] == "--help" || args[0] == "help") {
-			_, _ = fmt.Fprint(stdout, controlPlaneUsage(prog))
-			return exitOK
-		}
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, controlPlaneUsage(prog))
+		return exitUsage
+	}
+	switch args[0] {
+	case "rehydrate":
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, controlPlaneUsage(prog))
+		return exitOK
+	default:
 		_, _ = fmt.Fprint(stderr, controlPlaneUsage(prog))
 		return exitUsage
 	}
