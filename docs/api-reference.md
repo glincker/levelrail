@@ -667,6 +667,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/template-upgrade | AbilityDeploy | handleApplyTemplateUpgrade |
 | GET | /api/v1/apps/{name}/template-upgrade/run | AbilityRead | handleGetTemplateUpgradeRun |
 | GET | /api/v1/apps/{name}/rollout | AbilityRead | handleGetRollout |
+| PUT | /api/v1/apps/{name}/rollout | AbilityDeploy | handlePutRollout |
+| DELETE | /api/v1/apps/{name}/rollout | AbilityDeploy | handleDeleteRollout |
 
 </Accordion>
 

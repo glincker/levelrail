@@ -158,6 +158,10 @@ spec:
       - {container_port: 53, host_port: 53, protocol: tcp}
 ```
 
+#### Rollout policy
+
+`service.rollout` sets `max_surge`, `max_unavailable` and `min_available` (each an integer such as `2` or a percent such as `25%`). Apply saves it through `PUT /api/v1/apps/{name}/rollout`, the same policy a spec deploy and `levelrail-cli rollout status` read, and export prints it back. The plan shows `rollout.min_available: 1 -> 2`. Fields left out inherit the `APP_ROLLOUT_*` env defaults. An app document without a `rollout` key never touches the saved policy; `DELETE /api/v1/apps/{name}/rollout` returns an app to the defaults.
+
 #### Scheduled jobs
 
 `service.jobs` is the app.yaml jobs list. Apply matches jobs by name: a new name is created, a changed one is updated in place (its run history is kept). Jobs created in the dashboard or CLI that the files do not list are kept, and removed only by prune on an app the source manages. A job that the app's own app.yaml declares is left alone with a warning, so each job has one owner. An app document without a `jobs` key never touches the app's jobs.

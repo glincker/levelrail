@@ -424,6 +424,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	if f.Environment != "" && f.Project == "" {
 		s.at("spec.environment", "an environment needs a project")
 	}
+	f.Rollout = rolloutFromSpec(svc.Rollout)
 	f.Jobs = jobsFromSpec(svc.Jobs, s)
 	for _, v := range svc.Volumes {
 		if v.Name != "" {

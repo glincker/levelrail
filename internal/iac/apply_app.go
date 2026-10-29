@@ -140,6 +140,9 @@ func (x *executor) afterApp(ctx context.Context, r *Resource, want appFields, li
 			return fmt.Errorf("set secret %s: %w", name, err)
 		}
 	}
+	if err := x.syncRollout(ctx, r.Name, want.Rollout); err != nil {
+		return err
+	}
 	connsChanged, err := x.syncConnections(ctx, r.Name, want.Connections, live, prune)
 	if err != nil {
 		return err
@@ -150,6 +153,20 @@ func (x *executor) afterApp(ctx context.Context, r *Resource, want appFields, li
 	}
 	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0 || connsChanged || volsChanged) {
 		return x.do(ctx, http.MethodPost, app+"/restart", nil, nil)
+	}
+	return nil
+}
+
+// syncRollout saves a declared rollout policy; an undeclared one is left alone.
+func (x *executor) syncRollout(ctx context.Context, app string, want *rolloutFields) error {
+	if want == nil {
+		return nil
+	}
+	if la, ok := x.st.apps[app]; ok && la.rollout != nil && *la.rollout == *want {
+		return nil
+	}
+	if err := x.do(ctx, http.MethodPut, "/api/v1/apps/"+esc(app)+"/rollout", want, nil); err != nil {
+		return fmt.Errorf("set rollout: %w", err)
 	}
 	return nil
 }

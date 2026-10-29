@@ -30,6 +30,24 @@ type healthFields struct {
 	ReadyTimeout string       `json:"readyTimeout,omitempty" yaml:"readyTimeout,omitempty"`
 }
 
+// rolloutFields mirrors the app rollout policy; empty values inherit env defaults.
+type rolloutFields struct {
+	MaxSurge       string `json:"max_surge,omitempty" yaml:"max_surge,omitempty"`
+	MaxUnavailable string `json:"max_unavailable,omitempty" yaml:"max_unavailable,omitempty"`
+	MinAvailable   string `json:"min_available,omitempty" yaml:"min_available,omitempty"`
+}
+
+func rolloutFromSpec(r *spec.Rollout) *rolloutFields {
+	if r == nil {
+		return nil
+	}
+	out := rolloutFields{MaxSurge: r.MaxSurge, MaxUnavailable: r.MaxUnavailable, MinAvailable: r.MinAvailable}
+	if out == (rolloutFields{}) {
+		return nil
+	}
+	return &out
+}
+
 type resourceFields struct {
 	Memory     string  `json:"memory,omitempty" yaml:"memory,omitempty"`
 	CPU        float64 `json:"cpu,omitempty" yaml:"cpu,omitempty"`
@@ -57,6 +75,7 @@ type appFields struct {
 	Resources   *resourceFields   `json:"resources,omitempty"`
 	Health      *healthFields     `json:"health,omitempty"`
 	Hooks       *hookFields       `json:"hooks,omitempty"`
+	Rollout     *rolloutFields    `json:"rollout,omitempty"`
 	Labels      map[string]string `json:"labels,omitempty"`
 	Command     []string          `json:"command,omitempty"`
 	Project     string            `json:"project,omitempty"`

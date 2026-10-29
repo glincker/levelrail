@@ -15,6 +15,8 @@ type liveApp struct {
 	secrets map[string]bool
 	// jobs is nil until read; it is read only for apps that declare jobs.
 	jobs map[string]wireJob
+	// rollout is nil when the app has no saved policy or it was not read.
+	rollout *rolloutFields
 }
 
 // State is the live control plane data a plan needs, read through the API
@@ -306,6 +308,11 @@ func (l loader) scopedOne(ctx context.Context, r *Resource, loadEnvs func(string
 				return err
 			}
 		}
+		if _, declared := r.Fields["rollout"]; declared {
+			if err := l.rolloutOf(ctx, r.Name); err != nil {
+				return err
+			}
+		}
 		if p := stringField(r.Fields, "project"); p != "" {
 			return loadEnvs(p)
 		}
@@ -368,6 +375,24 @@ func (l loader) jobsOf(ctx context.Context, app string) error {
 		if j.Name != "" {
 			la.jobs[j.Name] = j
 		}
+	}
+	return nil
+}
+
+// rolloutOf reads the saved rollout policy; an app without one stays nil.
+func (l loader) rolloutOf(ctx context.Context, app string) error {
+	la, ok := l.st.apps[app]
+	if !ok {
+		return nil
+	}
+	var res struct {
+		Policy rolloutFields `json:"policy"`
+	}
+	if err := l.get(ctx, "/api/v1/apps/"+esc(app)+"/rollout", &res); err != nil {
+		return l.st.note("rollout/"+app, fmt.Errorf("read rollout of %s: %w", app, err))
+	}
+	if res.Policy != (rolloutFields{}) {
+		la.rollout = &res.Policy
 	}
 	return nil
 }

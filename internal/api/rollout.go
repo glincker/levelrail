@@ -51,6 +51,59 @@ func (rt *Router) handleGetRollout(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
+// rolloutPolicyWriter is what an app store needs to persist a rollout policy.
+type rolloutPolicyWriter interface {
+	SetRolloutPolicy(ctx context.Context, p store.RolloutPolicy) error
+	DeleteRolloutPolicy(ctx context.Context, serviceName string) error
+}
+
+// handlePutRollout handles PUT /api/v1/apps/{name}/rollout: it replaces the
+// saved policy, the same block a spec deploy saves.
+func (rt *Router) handlePutRollout(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	w2, ok := rt.apps.(rolloutPolicyWriter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "rollout policies are not available")
+		return
+	}
+	var req rolloutpolicy.Policy
+	if !decodeReq(w, r, &req) {
+		return
+	}
+	if err := (&spec.Rollout{MaxSurge: req.MaxSurge, MaxUnavailable: req.MaxUnavailable, MinAvailable: req.MinAvailable}).Validate(name); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !rt.appExists(w, r, name) {
+		return
+	}
+	err := w2.SetRolloutPolicy(r.Context(), store.RolloutPolicy{ServiceName: name, MaxSurge: req.MaxSurge, MaxUnavailable: req.MaxUnavailable, MinAvailable: req.MinAvailable})
+	if err != nil {
+		rt.internalError(w, "api: set rollout policy failed", err, slog.String("name", name))
+		return
+	}
+	writeJSON(w, http.StatusOK, req)
+}
+
+// handleDeleteRollout handles DELETE /api/v1/apps/{name}/rollout: the app
+// goes back to the env defaults.
+func (rt *Router) handleDeleteRollout(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	w2, ok := rt.apps.(rolloutPolicyWriter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "rollout policies are not available")
+		return
+	}
+	if !rt.appExists(w, r, name) {
+		return
+	}
+	if err := w2.DeleteRolloutPolicy(r.Context(), name); err != nil {
+		rt.internalError(w, "api: clear rollout policy failed", err, slog.String("name", name))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (rt *Router) rolloutPolicy(ctx context.Context, name string) (rolloutpolicy.Policy, error) {
 	src, ok := rt.apps.(application.RolloutPolicySource)
 	if !ok {

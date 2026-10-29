@@ -69,6 +69,7 @@ type outService struct {
 	Strategy       string               `yaml:"strategy,omitempty"`
 	Labels         map[string]string    `yaml:"labels,omitempty"`
 	Hooks          *hookFields          `yaml:"hooks,omitempty"`
+	Rollout        *rolloutFields       `yaml:"rollout,omitempty"`
 	Command        []string             `yaml:"command,omitempty"`
 	Volumes        []outVolume          `yaml:"volumes,omitempty"`
 }
@@ -229,6 +230,11 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 	if f.PublishedPorts != nil {
 		svc.PublishedPorts = *f.PublishedPorts
 	}
+	e.st.apps[a.Name] = &liveApp{}
+	if err := l.rolloutOf(ctx, a.Name); err != nil {
+		return err
+	}
+	svc.Rollout = e.st.apps[a.Name].rollout
 	if f.BindAddress != bindaddr.Default {
 		svc.BindAddress = f.BindAddress
 	}
