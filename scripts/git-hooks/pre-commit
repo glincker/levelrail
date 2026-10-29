@@ -295,6 +295,13 @@ if [ -n "$staged_install_scripts" ]; then
 	fi
 fi
 
+# Non-failing: a stale translation never blocks a README edit.
+if git diff --cached --name-only -- README.md | grep -q . && ls docs/i18n/README.*.md >/dev/null 2>&1; then
+	if scripts/i18n/readme-sync.sh check 2>/dev/null | grep -qE '^(STALE|MISSING)'; then
+		echo "pre-commit: translated READMEs are stale: run scripts/i18n/readme-sync.sh update"
+	fi
+fi
+
 if [ "$fail" -ne 0 ]; then
 	echo ""
 	echo "pre-commit checks failed, commit aborted."
