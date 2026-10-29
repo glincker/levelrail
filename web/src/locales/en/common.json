@@ -145,6 +145,17 @@
       }
     }
   },
+  "appResourceTree": {
+    "title": "Resources",
+    "groups": {
+      "databases": "Databases",
+      "deployment": "Deployment",
+      "domains": "Domains",
+      "env": "Env keys",
+      "replicas": "Replicas",
+      "volumes": "Volumes"
+    }
+  },
   "appSectionHelp": "Read the guide for this page",
   "appActions": {
     "deploy": "Deploy",
