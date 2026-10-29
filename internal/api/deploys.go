@@ -49,6 +49,9 @@ type deployTriggerRequest struct {
 	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 	freezeOverride
 	policyOverride
+	// releaseID is set by a rollback while bindings are authoritative; it is
+	// never read from the request body.
+	releaseID string
 }
 
 // deployTriggerResult is POST .../deploys and POST .../promote's shared
@@ -184,7 +187,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 	if protected {
-		approval, ok := rt.requestDeployApproval(w, r, env, existing.Name, "", store.DeployApprovalActionDeploy, req.Image, deployApprovalOptions{freezeOverride: note, pull: req.Pull})
+		approval, ok := rt.requestDeployApproval(w, r, env, existing.Name, "", store.DeployApprovalActionDeploy, req.Image, deployApprovalOptions{freezeOverride: note, pull: req.Pull, releaseID: req.releaseID})
 		if !ok {
 			return
 		}
@@ -211,10 +214,16 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 			return
 		}
 	}
+	undo, err := rt.retargetBinding(r.Context(), existing, req.releaseID, bindingReasonRollback, rt.actorLabel(r), "")
+	if err != nil {
+		rt.internalError(w, "api: rollback: retarget binding failed", err, slog.String("name", name))
+		return
+	}
 	var attemptID string
 	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf, attemptID: &attemptID})
 	rt.attachPredeploySnapshots(r.Context(), name, snapshotIDs, attemptID)
 	if err != nil {
+		undo()
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if errors.Is(err, docker.ErrImageNotFound) {
 			writeError(w, http.StatusUnprocessableEntity, "image pull failed: "+err.Error())

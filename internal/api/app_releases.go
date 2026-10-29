@@ -31,9 +31,19 @@ type releaseResource struct {
 	SourceReason    string `json:"source_reason"`
 }
 
+// bindingResource is one retarget of the app's binding.
+type bindingResource struct {
+	ReleaseID string `json:"release_id"`
+	At        string `json:"at"`
+	Reason    string `json:"reason"`
+	Actor     string `json:"actor"`
+}
+
 type appReleasesResource struct {
 	Releases         []releaseResource `json:"releases"`
 	CurrentReleaseID string            `json:"current_release_id"`
+	// Bindings is the binding history, newest first; omitted only while off (shadow and on both return it).
+	Bindings []bindingResource `json:"bindings,omitempty"`
 }
 
 // handleListAppReleases handles GET /api/v1/apps/{name}/releases, a read
@@ -70,6 +80,10 @@ func (rt *Router) handleListAppReleases(w http.ResponseWriter, r *http.Request) 
 		if _, seen := reasons[h.ReleaseID]; !seen {
 			reasons[h.ReleaseID] = h.Reason
 		}
+	}
+	for i := len(hist) - 1; i >= 0; i-- {
+		h := hist[i]
+		out.Bindings = append(out.Bindings, bindingResource{ReleaseID: h.ReleaseID, At: h.ChangedAt.UTC().Format(time.RFC3339), Reason: h.Reason, Actor: h.ChangedBy})
 	}
 	for _, rel := range rels {
 		digest := releaseDigest(rel.ImageRef)

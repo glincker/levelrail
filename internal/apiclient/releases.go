@@ -16,10 +16,19 @@ type ReleaseResource struct {
 	SourceReason    string `json:"source_reason"`
 }
 
+// BindingResource is one entry of an app's binding history.
+type BindingResource struct {
+	ReleaseID string `json:"release_id"`
+	At        string `json:"at"`
+	Reason    string `json:"reason"`
+	Actor     string `json:"actor"`
+}
+
 // AppReleasesResource is the list plus the app's current binding.
 type AppReleasesResource struct {
 	Releases         []ReleaseResource `json:"releases"`
 	CurrentReleaseID string            `json:"current_release_id"`
+	Bindings         []BindingResource `json:"bindings,omitempty"`
 }
 
 // ListAppReleases calls GET /api/v1/apps/{name}/releases.

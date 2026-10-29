@@ -122,6 +122,22 @@ func (db *DB) queryReleases(ctx context.Context, where string, args ...any) ([]R
 // history row, in one transaction. A repeat for the current release is a
 // no-op, so replays and out of order hooks stay idempotent.
 func (db *DB) RecordShadowBinding(ctx context.Context, app, environmentID, releaseID, reason, by string) (bool, error) {
+	return db.RetargetBinding(ctx, app, environmentID, releaseID, reason, by, "")
+}
+
+// RetargetBinding is RecordShadowBinding that also names the approval that
+// authorized the move, so history can answer who allowed a release.
+func (db *DB) RetargetBinding(ctx context.Context, app, environmentID, releaseID, reason, by, approvalID string) (bool, error) {
+	return db.retargetBinding(ctx, app, environmentID, releaseID, reason, by, approvalID, nil)
+}
+
+// RetargetBindingIf is RetargetBinding that only writes while the binding
+// still names expected, so an undo never overwrites a newer retarget.
+func (db *DB) RetargetBindingIf(ctx context.Context, app, environmentID, releaseID, expected, reason, by, approvalID string) (bool, error) {
+	return db.retargetBinding(ctx, app, environmentID, releaseID, reason, by, approvalID, &expected)
+}
+
+func (db *DB) retargetBinding(ctx context.Context, app, environmentID, releaseID, reason, by, approvalID string, expected *string) (bool, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return false, fmt.Errorf("store: begin shadow binding: %w", err)
@@ -132,6 +148,9 @@ func (db *DB) RecordShadowBinding(ctx context.Context, app, environmentID, relea
 	err = tx.QueryRowContext(ctx, `SELECT release_id FROM environment_bindings WHERE app = ?`, app).Scan(&current)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return false, fmt.Errorf("store: read binding %q: %w", app, err)
+	}
+	if expected != nil && current.String != *expected {
+		return false, nil
 	}
 	if current.Valid && current.String == releaseID {
 		return false, nil
@@ -146,15 +165,50 @@ func (db *DB) RecordShadowBinding(ctx context.Context, app, environmentID, relea
 		return false, fmt.Errorf("store: write binding %q: %w", app, err)
 	}
 	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO environment_binding_history (app, release_id, changed_at, changed_by, reason)
-		VALUES (?, ?, ?, ?, ?)
-	`, app, releaseID, now, by, reason); err != nil {
+		INSERT INTO environment_binding_history (app, release_id, changed_at, changed_by, reason, approval_id)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, app, releaseID, now, by, reason, approvalID); err != nil {
 		return false, fmt.Errorf("store: append binding history %q: %w", app, err)
 	}
 	if err := tx.Commit(); err != nil {
 		return false, fmt.Errorf("store: commit shadow binding %q: %w", app, err)
 	}
 	return true, nil
+}
+
+// UnbindRelease clears app's binding after a failed first deploy, but only
+// while it still names expected. The history row records which release was
+// removed, with reason "unbound".
+func (db *DB) UnbindRelease(ctx context.Context, app, expected, by string) (bool, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("store: begin unbind %q: %w", app, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	res, err := tx.ExecContext(ctx, `UPDATE environment_bindings SET release_id = NULL, updated_at = ?, updated_by = ? WHERE app = ? AND release_id = ?`, now, by, app, expected)
+	if err != nil {
+		return false, fmt.Errorf("store: unbind release %q: %w", app, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return false, nil
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO environment_binding_history (app, release_id, changed_at, changed_by, reason) VALUES (?, ?, ?, ?, 'unbound')`, app, expected, now, by); err != nil {
+		return false, fmt.Errorf("store: append unbind history %q: %w", app, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("store: commit unbind %q: %w", app, err)
+	}
+	return true, nil
+}
+
+// GetRelease returns the release with this id, or nil when none exists.
+func (db *DB) GetRelease(ctx context.Context, id string) (*Release, error) {
+	rels, err := db.queryReleases(ctx, `WHERE id = ?`, id)
+	if err != nil || len(rels) == 0 {
+		return nil, err
+	}
+	return &rels[0], nil
 }
 
 // GetEnvironmentBinding returns app's binding, or nil when none exists.
