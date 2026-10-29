@@ -42,8 +42,10 @@ Iterate on the smallest thing that proves the change, and let CI be the
 backstop instead of running it all by hand.
 
 1. **While coding**: test only what you touched, not the whole tree.
-   `scripts/affected-tests.sh` runs the changed packages plus their
-   dependents; for a single package use `go test -short ./internal/foo`.
+   `scripts/test-slice.sh` is the default: it runs only the tests in changed
+   test files and the test file matching each changed source file
+   (`--list` shows the plan). `scripts/affected-tests.sh` is the wider option:
+   changed packages plus their dependents.
    Web: `cd web && npx tsc -b && npx vitest run --changed`.
 2. **Prove it works for real**: unit tests can pass on a feature that does
    not work. Boot the actual control plane from your tree and drive it with
