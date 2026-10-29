@@ -29,4 +29,6 @@ export interface ResourceRecommendation {
   cpu: DimensionRecommendation
   oom_detected_at?: string
   oom_excerpt?: string
+  estimated_monthly_saving_usd?: number
+  saving_provider?: string
 }

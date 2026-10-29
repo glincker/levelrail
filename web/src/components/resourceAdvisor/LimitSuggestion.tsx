@@ -13,6 +13,7 @@ import {
 } from '../../queries/resourceRecommendation'
 import { formatBytes, formatNanoCpus } from '../../lib/format'
 import { ApiError } from '../../lib/apiError'
+import { formatMonthlySaving } from './recommendationFormat'
 import type { DimensionRecommendation } from '../../types/resourceRecommendation'
 
 const CONFIDENCE_VARIANT = {
@@ -48,7 +49,11 @@ function Dimension({
           {t(`suggestion.confidence.${rec.confidence}`)}
         </Badge>
       </div>
-      {rec.action ? (
+      {!rec.data_sufficient ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t('suggestion.insufficient')}
+        </p>
+      ) : rec.action ? (
         <p className="mt-2 flex items-center gap-2 text-sm text-foreground">
           {icon}
           {rec.action === 'keep'
@@ -93,6 +98,7 @@ export function LimitSuggestion(props: Props) {
       <p className="text-sm text-muted-foreground">{t('suggestion.error')}</p>
     )
   }
+  const saving = formatMonthlySaving(data.estimated_monthly_saving_usd)
   return (
     <div className="space-y-3">
       {data.oom_detected_at ? (
@@ -118,6 +124,16 @@ export function LimitSuggestion(props: Props) {
           format={formatNanoCpus}
         />
       </div>
+      {saving ? (
+        <p className="text-sm text-foreground">
+          {data.saving_provider
+            ? t('suggestion.saving', {
+                amount: saving,
+                provider: data.saving_provider,
+              })
+            : t('suggestion.savingNoProvider', { amount: saving })}
+        </p>
+      ) : null}
       <p className="text-xs text-muted-foreground">
         {t('suggestion.basedOn', {
           window: data.lookback_label ?? data.lookback_window,
