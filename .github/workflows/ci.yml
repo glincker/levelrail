@@ -57,7 +57,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
 
       - name: Detect
         id: detect
@@ -125,7 +125,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
 
       - name: Check for duplicate migration versions
         run: scripts/check-migration-versions.sh
@@ -200,8 +200,9 @@ jobs:
           cache-prefix: go-build
           save: ${{ github.event_name == 'push' }}
 
+      # Fixed-input tests of the CI scripts: only a planner change or a main push needs them.
       - name: Planner table tests
-        if: needs.plan.outputs.scope != 'none' || needs.changes.outputs.planner == 'true'
+        if: needs.changes.outputs.planner == 'true' || github.event_name == 'push'
         run: |
           scripts/test-ci-go-plan.sh
           scripts/test-ci-changes.sh
@@ -536,11 +537,11 @@ jobs:
           echo "::error::Detect changed areas: ${{ needs.changes.result }}"
           exit 1
 
-      # Full history: --new-from-rev and the workflow diff need the base commit.
+      # PRs diff against HEAD^1 (depth 2); pushes diff against github.event.before, so they keep full history.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
 
       # Only the workflow files this diff touched: release.yml carries
       # shellcheck warnings that predate this step.

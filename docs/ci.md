@@ -66,7 +66,7 @@ Go toolchain) sorts changed files into areas:
 | File outside any package (`docs/`, root files, `proto/`) | Packages whose Go files name it in a string literal, for example `internal/api` for `docs/api-reference.md` |
 | `web/` | Web job; config, lockfile or test setup changes run the full vitest suite |
 | `docs/*.md` (except `docs/changelog/`, which the in-app help does not bundle) | Web bundle build and the help page tests |
-| `scripts/test-ci-*.sh`, `scripts/ci-test-weights.txt`, `scripts/refresh-test-weights.sh` | The planner table tests (`Build, vet`), no Go test lane |
+| `scripts/test-ci-*.sh`, `scripts/ci-test-weights.txt`, `scripts/refresh-test-weights.sh` | The planner table tests (`Build, vet`, also on every `main` push), no Go test lane |
 | `.github/actions/setup-go-cached/` | Every Go lane (live suites in smoke mode) |
 | `install.sh`, `install-cli.sh`, `install-cli.ps1`, `scripts/test-install-*`, `deploy/packaging/` | installers end to end: Ubuntu and Debian containers, plus the CLI installer natively on macOS and Windows |
 | Other `.github/workflows/*` | actionlint on the changed files |
