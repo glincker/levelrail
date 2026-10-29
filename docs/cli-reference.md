@@ -1518,6 +1518,16 @@ Prints every HTTP route registered on the control plane: method, path, required 
 levelrail-cli api-docs --query "routes[?method=='GET'].path"
 ```
 
+## App types
+
+```
+levelrail-cli app-types list
+levelrail-cli app-types apply -f FILE [--publish]
+levelrail-cli app-types check NAME -f SPEC_FILE [--version N] [--fail]
+```
+
+App types let an admin define a governed shape for apps (workload, typed parameters, allowed build methods and add-ons, fixed values, per-environment-kind rules). The feature is off until the control plane runs with `LEVELRAIL_APPTYPE_ENABLED=on`; limits come from `LEVELRAIL_APPTYPE_MAX_PARAMS`, `LEVELRAIL_APPTYPE_MAX_SCHEMA_BYTES`, `LEVELRAIL_APPTYPE_MAX_PATTERN_LEN` and `LEVELRAIL_APPTYPE_MAX_VERSIONS`. `apply` saves a draft from a YAML or JSON file, and `--publish` freezes it as the next immutable version (root only). `check` is a dry run of an app spec against a published version and prints each violation with a readable message and a next step; nothing is enforced at deploy yet.
+
 ## Deploy link
 
 ```
