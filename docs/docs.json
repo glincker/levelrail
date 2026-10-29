@@ -244,6 +244,7 @@
               "external-databases",
               "connecting-apps-to-databases",
               "backups-and-storage",
+              "backup-copies",
               "prove-your-backups-work",
               "object-storage",
               "network-shares",

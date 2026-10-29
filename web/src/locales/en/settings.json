@@ -1530,6 +1530,33 @@
       }
     }
   },
+  "backupCopies": {
+    "title": "Second destination",
+    "description": "Copy every new backup to another destination after it lands in its primary one. Only backups finished after you turn this on are copied.",
+    "destination": "Copy backups to",
+    "choose": "Choose a destination",
+    "enable": "Turn on copies",
+    "update": "Change destination",
+    "toggle": "Copy backups to the second destination",
+    "on": "Copying to {{name}}",
+    "saved": "Backup copy settings saved",
+    "saveFailed": "Could not save backup copy settings",
+    "empty": "No backups have been queued for copying yet.",
+    "status": {
+      "pending": "Waiting",
+      "copying": "Copying",
+      "succeeded": "Copied",
+      "failed": "Failed, retrying"
+    },
+    "table": {
+      "label": "Backup copies",
+      "resource": "Resource",
+      "status": "Status",
+      "lag": "Lag",
+      "finished": "Backup finished",
+      "error": "Last error"
+    }
+  },
   "backupTargetsPage": {
     "rail": {
       "label": "Backup targets summary",
