@@ -2347,6 +2347,8 @@ type BackupTargetResource struct {
 	CreatedAt string `json:"created_at"`
 	// EncryptDumps is true when new database dumps are age-sealed.
 	EncryptDumps bool `json:"encrypt_dumps"`
+	// LocalRoot is the control plane APP_BACKUP_LOCAL_ROOT, set for local targets only.
+	LocalRoot string `json:"local_root,omitempty"`
 }
 
 // BackupTargetEncryptionResource mirrors internal/api's backupTargetEncryptionResource.

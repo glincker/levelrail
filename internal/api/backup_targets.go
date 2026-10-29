@@ -74,15 +74,18 @@ type backupTargetResource struct {
 	CreatedAt string `json:"created_at"`
 	// EncryptDumps is true when new database dumps to this target are age-sealed.
 	EncryptDumps bool `json:"encrypt_dumps"`
+	// LocalRoot is the read-only APP_BACKUP_LOCAL_ROOT a local target lives under; empty for other providers.
+	LocalRoot string `json:"local_root,omitempty"`
 }
 
 // backupProviderLocal is the API-only provider name for a host directory target.
 const backupProviderLocal = "local"
 
 func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
-	provider, endpoint := t.Provider, t.Endpoint
+	provider, endpoint, localRoot := t.Provider, t.Endpoint, ""
 	if strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) {
 		provider, endpoint = backupProviderLocal, ""
+		localRoot = backup.LocalRootFromEnv(os.LookupEnv)
 	}
 	return backupTargetResource{
 		ID:           t.ID,
@@ -93,6 +96,7 @@ func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
 		Bucket:       t.Bucket,
 		CreatedAt:    t.CreatedAt,
 		EncryptDumps: t.EncryptDumps,
+		LocalRoot:    localRoot,
 	}
 }
 

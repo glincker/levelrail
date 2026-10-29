@@ -47,6 +47,9 @@ func printBackupTargetHuman(out io.Writer, t backupTargetResource) {
 		_, _ = fmt.Fprintf(out, "region:    %s\n", t.Region)
 	}
 	_, _ = fmt.Fprintf(out, "bucket:    %s\n", t.Bucket)
+	if t.LocalRoot != "" {
+		_, _ = fmt.Fprintf(out, "local root: %s\n", t.LocalRoot)
+	}
 	_, _ = fmt.Fprintf(out, "created:   %s\n", t.CreatedAt)
 	_, _ = fmt.Fprintf(out, "encrypt dumps: %t\n", t.EncryptDumps)
 }
