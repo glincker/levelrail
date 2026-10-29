@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/costestimate"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/rightsizing"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -39,6 +40,9 @@ type resourceRecommendationResource struct {
 	CPU            dimensionRecommendationResource `json:"cpu"`
 	OOMDetectedAt  string                          `json:"oom_detected_at,omitempty"`
 	OOMExcerpt     string                          `json:"oom_excerpt,omitempty"`
+	// Set only when the engine suggests lowering and the cost model prices a drop.
+	EstimatedMonthlySavingUSD float64 `json:"estimated_monthly_saving_usd,omitempty"`
+	SavingProvider            string  `json:"saving_provider,omitempty"`
 }
 
 func toDimensionRecommendationResource(d rightsizing.DimensionRecommendation) dimensionRecommendationResource {
@@ -132,7 +136,24 @@ func (rt *Router) handleAppResourceRecommendation(w http.ResponseWriter, r *http
 		OOM:                rt.findOOMEvidence(ctx, name, resourceID, from, now),
 	})
 
-	writeJSON(w, http.StatusOK, toResourceRecommendationResource(result))
+	out := toResourceRecommendationResource(result)
+	applyRecommendationSaving(&out, result, currentMemory, currentNanoCPUs)
+	writeJSON(w, http.StatusOK, out)
+}
+
+// applyRecommendationSaving prices only dimensions the engine says to lower
+// with enough data; every other dimension keeps its current size.
+func applyRecommendationSaving(out *resourceRecommendationResource, res rightsizing.Result, mem, cpu int64) {
+	sugMem, sugCPU := mem, cpu
+	if res.Memory.DataSufficient && res.Memory.Action == rightsizing.ActionLower {
+		sugMem = res.Memory.SuggestedLimit
+	}
+	if res.CPU.DataSufficient && res.CPU.Action == rightsizing.ActionLower {
+		sugCPU = res.CPU.SuggestedLimit
+	}
+	if s, ok := costestimate.Saving(mem, cpu, sugMem, sugCPU, costestimate.RateTableFromEnv()); ok {
+		out.EstimatedMonthlySavingUSD, out.SavingProvider = s.USD, s.ProviderKey
+	}
 }
 
 func toRightsizingSamples(samples []telemetry.Sample) []rightsizing.Sample {

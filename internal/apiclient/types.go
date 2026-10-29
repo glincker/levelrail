@@ -3570,6 +3570,9 @@ type ResourceRecommendationResource struct {
 	CPU            DimensionRecommendationResource `json:"cpu"`
 	OOMDetectedAt  string                          `json:"oom_detected_at,omitempty"`
 	OOMExcerpt     string                          `json:"oom_excerpt,omitempty"`
+
+	EstimatedMonthlySavingUSD float64 `json:"estimated_monthly_saving_usd,omitempty"`
+	SavingProvider            string  `json:"saving_provider,omitempty"`
 }
 
 // CostEstimateProviderResource mirrors internal/api's

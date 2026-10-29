@@ -452,6 +452,9 @@ func printResourceRecommendationHuman(out io.Writer, label string, r resourceRec
 		lookback = r.LookbackWindow
 	}
 	_, _ = fmt.Fprintf(out, "lookback: %s\n", lookback)
+	if r.EstimatedMonthlySavingUSD > 0 {
+		_, _ = fmt.Fprintf(out, "estimated saving: about $%.2f/month (%s reference rates)\n", r.EstimatedMonthlySavingUSD, r.SavingProvider)
+	}
 	if r.OOMDetectedAt != "" {
 		_, _ = fmt.Fprintf(out, "\nOOM signal: killed on %s\n  %s\n", r.OOMDetectedAt, r.OOMExcerpt)
 	}
