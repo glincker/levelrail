@@ -123,11 +123,9 @@ func TestTeamAuthzMatrix_OtherTeamIsInvisible(t *testing.T) {
 	routes := loadMatrixRoutes(t)
 	for _, role := range allTeamRoles {
 		t.Run(role, func(t *testing.T) {
-			var bad []string
-			checked := 0
+			var checkedRoutes []matrixRoute
 			for _, r := range routes {
-				path := otherTeamPath(r.pattern)
-				if path == "" || r.key() == "DELETE /api/v1/teams/{id}/members/me" {
+				if otherTeamPath(r.pattern) == "" || r.key() == "DELETE /api/v1/teams/{id}/members/me" {
 					continue
 				}
 				if _, public := publicRoutes[r.key()]; public {
@@ -136,12 +134,16 @@ func TestTeamAuthzMatrix_OtherTeamIsInvisible(t *testing.T) {
 				if _, lib := libraryOnlyRoutes[r.key()]; lib {
 					continue
 				}
-				checked++
-				got := matrixDo(f.rt, r.method, path, func(req *http.Request) { req.AddCookie(f.cookies[role]) })
-				if got != http.StatusNotFound && got != http.StatusForbidden && got != http.StatusUnauthorized {
-					bad = append(bad, r.key()+" -> "+http.StatusText(got))
-				}
+				checkedRoutes = append(checkedRoutes, r)
 			}
+			checked := len(checkedRoutes)
+			bad := probeParallel(checkedRoutes, func(r matrixRoute) string {
+				got := matrixDo(f.rt, r.method, otherTeamPath(r.pattern), func(req *http.Request) { req.AddCookie(f.cookies[role]) })
+				if got != http.StatusNotFound && got != http.StatusForbidden && got != http.StatusUnauthorized {
+					return r.key() + " -> " + http.StatusText(got)
+				}
+				return ""
+			})
 			if checked < 100 {
 				t.Fatalf("only %d team owned routes checked, the path mapping drifted", checked)
 			}
@@ -158,26 +160,26 @@ func TestTeamAuthzMatrix_OtherTeamIsInvisible(t *testing.T) {
 func TestTeamAuthzMatrix_TenantInstanceRoutesClosed(t *testing.T) {
 	t.Parallel()
 	f := newTeamFixture(t)
-	var bad []string
-	for _, r := range loadMatrixRoutes(t) {
+	bad := probeParallel(loadMatrixRoutes(t), func(r matrixRoute) string {
 		_, path, _ := strings.Cut(r.key(), " ")
 		if otherTeamPath(r.pattern) != "" || routeIsTenantOpen(r.key(), path) {
-			continue
+			return ""
 		}
 		if _, public := publicRoutes[r.key()]; public {
-			continue
+			return ""
 		}
 		if _, lib := libraryOnlyRoutes[r.key()]; lib {
-			continue
+			return ""
 		}
 		if _, ok := tenantSessionOnly[r.key()]; ok {
-			continue
+			return ""
 		}
 		got := matrixDo(f.rt, r.method, concretePath(r.pattern, "web"), func(req *http.Request) { req.AddCookie(f.cookies[store.TeamRoleOwner]) })
 		if got != http.StatusForbidden && got != http.StatusUnauthorized {
-			bad = append(bad, r.key()+" -> "+http.StatusText(got))
+			return r.key() + " -> " + http.StatusText(got)
 		}
-	}
+		return ""
+	})
 	if len(bad) > 0 {
 		sort.Strings(bad)
 		t.Errorf("instance routes a team owner reaches (gate it, or review and list it in tenantRoutes or tenantSessionOnly):\n%s", strings.Join(bad, "\n"))
@@ -188,31 +190,31 @@ func TestTeamAuthzMatrix_TenantInstanceRoutesClosed(t *testing.T) {
 // nothing of team A either.
 func TestTeamAuthzMatrix_ViewerCannotMutateOwnTeam(t *testing.T) {
 	f := newTeamFixture(t)
-	var bad []string
-	for _, r := range loadMatrixRoutes(t) {
+	bad := probeParallel(loadMatrixRoutes(t), func(r matrixRoute) string {
 		switch r.method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 		default:
-			continue
+			return ""
 		}
 		path := otherTeamPath(r.pattern)
 		if path == "" {
-			continue
+			return ""
 		}
 		for _, swap := range [][2]string{{appB, appA}, {dbB, dbA}, {projB, projA}, {envB, envA}, {teamB, teamA}, {approvalB, approvalA}} {
 			path = strings.Replace(path, swap[0], swap[1], 1)
 		}
 		if _, ok := readOnlyMayMutate[r.key()]; ok {
-			continue
+			return ""
 		}
 		if r.key() == "DELETE /api/v1/teams/{id}/members/me" {
-			continue
+			return ""
 		}
 		got := matrixDo(f.rt, r.method, path, func(req *http.Request) { req.AddCookie(f.cookies[store.TeamRoleViewer]) })
 		if got != http.StatusForbidden && got != http.StatusUnauthorized {
-			bad = append(bad, r.key()+" -> "+http.StatusText(got))
+			return r.key() + " -> " + http.StatusText(got)
 		}
-	}
+		return ""
+	})
 	if len(bad) > 0 {
 		sort.Strings(bad)
 		t.Errorf("mutating routes a team viewer reaches on its own team:\n%s", strings.Join(bad, "\n"))

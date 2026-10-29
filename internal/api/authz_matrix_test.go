@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -186,6 +188,38 @@ func concretePathFor(pattern, param, name string) string {
 	})
 }
 
+// probeParallel runs fn over items on a worker pool and returns the
+// non-empty results sorted; the probes only read one shared router.
+func probeParallel[T any](items []T, fn func(T) string) []string {
+	var (
+		mu  sync.Mutex
+		out []string
+		wg  sync.WaitGroup
+	)
+	jobs := make(chan T)
+	// Capped so probes stay inside matrixDo's 2s timeout on a loaded host.
+	for range min(runtime.GOMAXPROCS(0), 4) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for it := range jobs {
+				if msg := fn(it); msg != "" {
+					mu.Lock()
+					out = append(out, msg)
+					mu.Unlock()
+				}
+			}
+		}()
+	}
+	for _, it := range items {
+		jobs <- it
+	}
+	close(jobs)
+	wg.Wait()
+	sort.Strings(out)
+	return out
+}
+
 func matrixDo(rt *Router, method, path string, mutate func(*http.Request)) int {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -233,18 +267,18 @@ func TestAuthzMatrix_PublicAllowlistIsCurrent(t *testing.T) {
 func TestAuthzMatrix_UnauthenticatedGets401(t *testing.T) {
 	t.Parallel()
 	rt, _, _ := newPipelineRouter(t)
-	var bad []string
-	for _, r := range loadMatrixRoutes(t) {
+	bad := probeParallel(loadMatrixRoutes(t), func(r matrixRoute) string {
 		if _, public := publicRoutes[r.key()]; public {
-			continue
+			return ""
 		}
 		if _, lib := libraryOnlyRoutes[r.key()]; lib {
-			continue
+			return ""
 		}
 		if got := matrixDo(rt, r.method, concretePath(r.pattern, "web"), nil); got != http.StatusUnauthorized {
-			bad = append(bad, r.key()+" -> "+http.StatusText(got))
+			return r.key() + " -> " + http.StatusText(got)
 		}
-	}
+		return ""
+	})
 	if len(bad) > 0 {
 		t.Errorf("routes that do not answer an anonymous request with 401 (add auth or a reasoned publicRoutes entry):\n%s", strings.Join(bad, "\n"))
 	}
@@ -253,28 +287,28 @@ func TestAuthzMatrix_UnauthenticatedGets401(t *testing.T) {
 func TestAuthzMatrix_ReadOnlyTokenCannotMutate(t *testing.T) {
 	rt, db, _ := newPipelineRouter(t)
 	tok := seedMatrixToken(t, db, "ro", []string{AbilityRead})
-	var bad []string
-	for _, r := range loadMatrixRoutes(t) {
+	bad := probeParallel(loadMatrixRoutes(t), func(r matrixRoute) string {
 		switch r.method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 		default:
-			continue
+			return ""
 		}
 		if _, ok := publicRoutes[r.key()]; ok {
-			continue
+			return ""
 		}
 		if _, ok := readOnlyMayMutate[r.key()]; ok {
-			continue
+			return ""
 		}
 		if _, lib := libraryOnlyRoutes[r.key()]; lib {
-			continue
+			return ""
 		}
 		// Session-only routes (requireAuth) answer a bearer token 401, not 403.
 		got := matrixDo(rt, r.method, concretePath(r.pattern, "web"), bearer(tok))
 		if got != http.StatusForbidden && got != http.StatusUnauthorized {
-			bad = append(bad, r.key()+" -> "+http.StatusText(got))
+			return r.key() + " -> " + http.StatusText(got)
 		}
-	}
+		return ""
+	})
 	if len(bad) > 0 {
 		t.Errorf("mutating routes reachable with a read-only token:\n%s", strings.Join(bad, "\n"))
 	}
@@ -311,8 +345,7 @@ func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
 
 	for _, k := range resourceKinds {
 		t.Run(k.label, func(t *testing.T) {
-			var bad []string
-			checked := 0
+			var routes []matrixRoute
 			for _, r := range loadMatrixRoutes(t) {
 				if !strings.Contains(r.pattern, k.pathPrefix) {
 					continue
@@ -320,8 +353,12 @@ func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
 				if _, ok := denyExempt[r.key()]; ok {
 					continue
 				}
-				checked++
+				routes = append(routes, r)
+			}
+			checked := len(routes)
+			bad := probeParallel(routes, func(r matrixRoute) string {
 				victim := concretePathFor(r.pattern, k.param, "victim")
+				var msgs []string
 				for name, mutate := range map[string]func(*http.Request){
 					"session": func(req *http.Request) { req.AddCookie(cookie) },
 					"token":   bearer(tokPlain),
@@ -330,9 +367,10 @@ func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
 					if got == http.StatusForbidden {
 						continue
 					}
-					bad = append(bad, r.key()+" ("+name+") -> "+http.StatusText(got))
+					msgs = append(msgs, r.key()+" ("+name+") -> "+http.StatusText(got))
 				}
-			}
+				return strings.Join(msgs, "\n")
+			})
 			if checked == 0 {
 				t.Fatalf("no %s routes checked", k.label)
 			}
