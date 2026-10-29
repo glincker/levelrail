@@ -6,6 +6,7 @@
 #      new code, in the glass look (the *GlassIcon exports). The goal is to remove
 #      Phosphor entirely. Existing Phosphor imports (@phosphor-icons/react/dist/ssr) stay
 #      until their file is touched; add no new ones. Type-only imports of Icon are fine.
+#      New Phosphor and lucide-react imports are blocked by the pre-commit diff check (ADR 053).
 #   3. No other icon library, no hand-drawn vendor SVGs, no raster logos.
 # Usage: scripts/check-icon-rules.sh [file...]   (default: every web/src ts and tsx)
 
@@ -26,8 +27,8 @@ for f in "${files[@]}"; do
 	case "$f" in web/src/*.ts | web/src/*.tsx) ;; *) continue ;; esac
 	[ -f "$f" ] || continue
 
-	if grep -n -E "from '(lucide-react|react-icons|@heroicons|@tabler/|@radix-ui/react-icons|@iconify|@fortawesome|remixicon|phosphor-react)" "$f" >/dev/null; then
-		note "$f imports a second icon library; UI icons are Phosphor only (@phosphor-icons/react/dist/ssr)"
+	if grep -n -E "from '(react-icons|@heroicons|@tabler/|@radix-ui/react-icons|@iconify|@fortawesome|remixicon|phosphor-react)" "$f" >/dev/null; then
+		note "$f imports a second icon library; UI icons come from @thesvg/ui-react (ADR 053)"
 	fi
 
 	case "$f" in
