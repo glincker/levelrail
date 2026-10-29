@@ -1,0 +1,53 @@
+{
+  "banner": {
+    "title": "Despliegue de prueba",
+    "body": "Se desplegó para probar el template. Consérvala como aplicación permanente, o deténla y elimínala cuando termines. Mientras tanto sigue en ejecución como cualquier otra aplicación.",
+    "keep": "Conservar esta aplicación",
+    "delete": "Detener y eliminar"
+  },
+  "dialog": {
+    "title": "Conservar {{name}} como aplicación permanente",
+    "description": "Deja de marcarse como prueba desechable y se muestra como cualquier otra aplicación, con todos los servicios de la misma aplicación. Nada se reinicia y nada se elimina.",
+    "checklistTitle": "Lo que debería tener una aplicación permanente",
+    "checklistHint": "Configúralo ahora o después; cada elemento abre la pantalla que lo hace.",
+    "cancel": "Cancelar",
+    "confirm": "Conservar aplicación",
+    "keeping": "Conservando...",
+    "loading": "Comprobando...",
+    "done": "Hecho",
+    "todo": "Sin configurar",
+    "items": {
+      "domain": {
+        "label": "Un dominio propio",
+        "done": "Sirve {{domain}}",
+        "todo": "Solo la dirección generada por ahora",
+        "action": "Agregar un dominio"
+      },
+      "backup": {
+        "label": "Un calendario de backups para sus volúmenes",
+        "done": "{{count}} de {{total}} volúmenes programados",
+        "todo": "Ningún volumen tiene calendario de backups",
+        "none": "No hay volúmenes de los que hacer backup",
+        "action": "Programar backups"
+      },
+      "alert": {
+        "label": "Una regla de alerta",
+        "done": "{{count}} reglas de alerta",
+        "todo": "Nada te avisa cuando falla",
+        "action": "Agregar una regla de alerta"
+      },
+      "placement": {
+        "label": "Un proyecto y un entorno",
+        "done": "{{project}} / {{environment}}",
+        "projectOnly": "Proyecto {{project}}, sin entorno",
+        "todo": "Aún no está en un proyecto",
+        "action": "Elegir dónde vive"
+      }
+    }
+  },
+  "toast": {
+    "kept": "{{name}} ahora es una aplicación permanente.",
+    "alreadyKept": "{{name}} ya se había conservado.",
+    "failed": "No se pudo conservar la aplicación."
+  }
+}
