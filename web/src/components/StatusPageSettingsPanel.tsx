@@ -6,6 +6,9 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { StatusBrandingFields } from './StatusBrandingFields'
+import { brandingValid, type BrandingValues } from '../lib/statusPageHelpers'
+import { StatusPublicLinks } from './StatusPublicLinks'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
 import {
   useSaveStatusPageSettings,
@@ -27,6 +30,14 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
   const [title, setTitle] = useState(initial.title)
   const [description, setDescription] = useState(initial.description)
   const [domain, setDomain] = useState(initial.custom_domain)
+  const [branding, setBranding] = useState<BrandingValues>({
+    accent: initial.accent ?? '',
+    logo_url: initial.logo_url ?? '',
+    about: initial.about ?? '',
+    website: initial.website ?? '',
+    noindex: initial.noindex ?? false,
+    powered_by: initial.powered_by ?? true,
+  })
   const save = useSaveStatusPageSettings()
 
   return (
@@ -35,7 +46,17 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
       onSubmit={(e) => {
         e.preventDefault()
         save.mutate(
-          { enabled, title, description, custom_domain: domain },
+          {
+            enabled,
+            title,
+            description,
+            custom_domain: domain,
+            ...branding,
+            accent: branding.accent.trim(),
+            logo_url: branding.logo_url.trim(),
+            about: branding.about.trim(),
+            website: branding.website.trim(),
+          },
           {
             onSuccess: () => {
               toast.add({ title: 'Status page saved.', type: 'success' })
@@ -92,12 +113,16 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
           served.
         </FieldDescription>
       </Field>
+      <StatusBrandingFields value={branding} onChange={setBranding} />
       {save.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {save.error.message}
         </p>
       ) : null}
-      <Button type="submit" disabled={save.isPending}>
+      <Button
+        type="submit"
+        disabled={save.isPending || !brandingValid(branding)}
+      >
         {save.isPending ? 'Saving...' : 'Save'}
       </Button>
     </form>
@@ -177,6 +202,7 @@ export function StatusPageSettingsPanel() {
         </p>
       )}
       <SettingsForm key={data.title + String(data.enabled)} initial={data} />
+      <StatusPublicLinks settings={data} />
       <PreviewCard />
     </div>
   )

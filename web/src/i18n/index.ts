@@ -25,6 +25,7 @@ export const NAMESPACES = [
   'alertSetup',
   'environments',
   'stacks',
+  'statusPage',
   'migration',
   'migrate',
   'domains',
