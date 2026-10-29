@@ -148,7 +148,7 @@ var Tree = map[string]*Node{
 		"build-cache":        {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "remove": nil}},
 		"health":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "discover": nil}},
 		"health-score":       nil,
-		"volumes":            {Subs: map[string]*Node{"get": nil, "attach": nil, "detach": nil}},
+		"volumes":            {Subs: map[string]*Node{"get": nil, "attach": nil, "detach": nil, "ls": nil, "cp": nil, "rm": nil}},
 		"integrations":       {Subs: map[string]*Node{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},
 	"jobs":       {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "run": nil, "history": nil, "logs": nil, "enable": nil, "disable": nil, "pause": nil, "resume": nil, "delete": nil, "next": nil}},

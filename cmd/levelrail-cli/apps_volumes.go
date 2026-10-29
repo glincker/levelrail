@@ -23,6 +23,12 @@ func runAppsVolumes(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsVolumesAttach(prog, args[1:], stdout, stderr, lookupEnv)
 	case "detach":
 		return runAppsVolumesDetach(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ls":
+		return runAppsVolumesLs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cp":
+		return runAppsVolumesCp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rm":
+		return runAppsVolumesRm(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps volumes subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsVolumesUsage(prog))
@@ -35,6 +41,9 @@ func appsVolumesUsage(prog string) string {
   %[1]s apps volumes get <name> [flags]                                          list an app's named Docker volumes
   %[1]s apps volumes attach <name> --name NAME --path PATH [flags]   attach a new named volume
   %[1]s apps volumes detach <name> --name NAME [flags]                remove an attached volume
+  %[1]s apps volumes ls <app> <volume> [path] [flags]                  list files in a volume
+  %[1]s apps volumes cp <app> <volume> <src> <dst> [flags]             download or upload one file (remote side starts with ':')
+  %[1]s apps volumes rm <app> <volume> <path> [flags]                  delete one file
 
 NAME is the volume's logical name (lowercase letters, numbers, and
 hyphens, starting with a letter), scoped to this service; PATH is the
