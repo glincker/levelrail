@@ -64,6 +64,8 @@ type databaseResource struct {
 	Suspended bool `json:"suspended,omitempty"`
 	// TLSEnabled is computed on read and not settable, since TLS activates automatically at creation.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
+	// PoolerEnabled is response-only; set it via POST and DELETE .../pooler.
+	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
@@ -82,6 +84,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 		PublicBindAddress:  d.PublicBindAddress,
 		Resources:          d.Resources,
 		Suspended:          d.Suspended,
+		PoolerEnabled:      d.PoolerEnabled,
 	}
 }
 

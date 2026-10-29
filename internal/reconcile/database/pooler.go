@@ -32,8 +32,8 @@ const PoolerPort = 6432
 const PoolerConditionType = "PoolerReady"
 
 const (
-	poolerTargetLabelKey = "levelrail.pooler.target"
-	poolerConfigLabelKey = "levelrail.pooler.config"
+	poolerTargetLabelKey = "db.pooler-target"
+	poolerConfigLabelKey = "db.pooler-config"
 )
 
 // PoolerContainerName is the pooler child container for dbName.

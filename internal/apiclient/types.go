@@ -1630,6 +1630,8 @@ type DatabaseResource struct {
 	// database's connection string (DATABASE_URL/REDIS_URL, injected
 	// into consuming app containers) is TLS-encrypted.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
+	// PoolerEnabled mirrors databaseResource.PoolerEnabled; toggle via .../pooler.
+	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
 }
 
 // DatabaseEngineResource mirrors internal/api's databaseEngineResource

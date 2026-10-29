@@ -860,6 +860,9 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/provision/discard | AbilityWrite | handleDiscardPendingDatabase |
 | PUT | /api/v1/databases/{name}/pending-settings | AbilityWrite | handleUpdatePendingDatabase |
 | POST | /api/v1/databases/{name}/credentials/reveal | AbilityRoot | handleRevealDatabaseCredentials |
+| GET | /api/v1/databases/{name}/pooler | AbilityRead | handleGetDatabasePooler |
+| POST | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleEnableDatabasePooler |
+| DELETE | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleDisableDatabasePooler |
 
 ## Projects / Organizations / Environments
 

@@ -51,6 +51,11 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// No GET: handleGetDatabase already returns the fields.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/public-access", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleSetDatabasePublicAccess))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/public-access", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleClearDatabasePublicAccess))
+	// Connection pooler (database_pooler.go): it changes the URL every linked
+	// app receives, so toggling it sits with public access at WriteSensitive.
+	mux.HandleFunc("GET /api/v1/databases/{name}/pooler", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabasePooler))
+	mux.HandleFunc("POST /api/v1/databases/{name}/pooler", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleEnableDatabasePooler))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/pooler", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleDisableDatabasePooler))
 
 	// Stop/start, per database (database_stop_start.go). AbilityWriteSensitive,
 	// same tier public-access above uses: taking a database offline (and,

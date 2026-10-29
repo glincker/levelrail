@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1796 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1799 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -706,6 +706,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPlacement", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetPlacement", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/placement/decision", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPlacementDecision", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/pooler", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDisableDatabasePooler", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/pooler", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabasePooler", Description: "Connection pooler (database_pooler.go): it changes the URL every linked app receives, so toggling it sits with public access at WriteSensitive."},
+	{Method: "POST", Path: "/api/v1/databases/{name}/pooler", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleEnableDatabasePooler", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/provision", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseProvision", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/provision/discard", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleDiscardPendingDatabase", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/provision/retry", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleRetryDatabaseProvision", Description: ""},
