@@ -37,6 +37,7 @@ type applyFlags struct {
 	vars            stringMapFlag
 	varFiles        stringListFlag
 	allowEnv        stringListFlag
+	serverSide      serverSideFlags
 }
 
 func applyUsage(prog, name string) string {
@@ -49,7 +50,10 @@ applied, 1 error, 2 changes pending (with --exit-code, or always for diff).
 
 Flags:
   -f PATH              resource file, directory or "-" for stdin (repeatable)
-  --dry-run            print the plan, change nothing
+  --dry-run[=server]   print the plan, change nothing; with --server-side the server merges and validates
+  --server-side        merge each App or Database document on the server, owning only the fields sent
+  --field-manager NAME who owns the fields of a --server-side apply (default: the command name)
+  --force-conflicts    with --server-side, take over fields another manager owns
   --exit-code          with --dry-run, exit 2 when changes are pending
   --prune              delete what this --source created and the files no longer declare
   --source NAME        tag apps this run manages; required by --prune
@@ -69,7 +73,14 @@ Flags:
 func bindApplyFlags(fs *flag.FlagSet, diff bool) *applyFlags {
 	f := &applyFlags{secrets: stringMapFlag{}, vars: stringMapFlag{}}
 	fs.Var(&f.files, "f", "resource file, directory or - for stdin (repeatable)")
-	f.dryRun = fs.Bool("dry-run", diff, "print the plan and change nothing")
+	dry := diff
+	f.dryRun = &dry
+	fs.Var(&dryRunFlag{on: f.dryRun, mode: "true"}, "dry-run", "print the plan and change nothing (=server with --server-side)")
+	f.serverSide = serverSideFlags{
+		on:      fs.Bool("server-side", false, "merge documents on the server, owning only the fields sent"),
+		manager: fs.String("field-manager", "", "field manager name for --server-side"),
+		force:   fs.Bool("force-conflicts", false, "with --server-side, take over fields another manager owns"),
+	}
 	f.prune = fs.Bool("prune", false, "delete managed resources absent from the files")
 	f.yes = fs.Bool("yes", false, "do not ask for confirmation")
 	f.project = fs.String("project", "", "only the documents belonging to this project")
@@ -97,6 +108,9 @@ func runApplyKind(prog, name string, diff bool, args []string, stdout, stderr io
 	c, code, ok := parseCLICall(prog, name, applyUsage(prog, name), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { af = bindApplyFlags(fs, diff) })
 	if !ok {
 		return code
+	}
+	if *af.serverSide.on && !diff {
+		return runServerSideApply(c, prog, af, af.serverSide)
 	}
 	req, err := buildIaCRequest(af, lookupEnv)
 	if err != nil {

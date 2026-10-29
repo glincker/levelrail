@@ -96,30 +96,29 @@ func TestKubectlPortAndRemoteParsing(t *testing.T) {
 }
 
 func TestKubectlEditConflictKeepsEdit(t *testing.T) {
-	gets := 0
+	var sentVersion string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/v2/apps/web":
-			gets++
-			rv := "1"
-			if gets > 1 {
-				rv = "2"
-			}
-			_, _ = w.Write([]byte(`{"kind":"App","metadata":{"name":"web","resourceVersion":"` + rv + `"}}`))
-		case "/api/v1/export":
-			_, _ = w.Write([]byte(`{"files":[{"name":"web.yaml","content":"a: 1\n"}]}`))
+		switch {
+		case r.URL.Path == "/api/v2/apps/web" && r.Method == http.MethodPatch:
+			sentVersion = r.URL.Query().Get("resourceVersion")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"error":"resourceVersion precondition failed: web is at 2, not 1"}`))
+		case r.URL.Path == "/api/v2/apps/web":
+			_, _ = w.Write([]byte(`{"kind":"App","metadata":{"name":"web","resourceVersion":"1"}}`))
+		case r.URL.Path == "/api/v1/export":
+			_, _ = w.Write([]byte(`{"files":[{"name":"web.yaml","content":"spec:\n  a: 1\n"}]}`))
 		default:
 			http.NotFound(w, r)
 		}
 	}))
 	defer srv.Close()
 	old := editorRunner
-	editorRunner = func(_, path string) error { return appendFile(path, "b: 2\n") }
+	editorRunner = func(_, path string) error { return appendFile(path, "  b: 2\n") }
 	defer func() { editorRunner = old }()
 
 	var out, errb bytes.Buffer
 	code := run("lr", []string{"edit", "app", "web", "--yes", "--token", "t"}, &out, &errb, kubectlLookup(srv.URL))
-	if code == exitOK || !strings.Contains(errb.String()+out.String(), "conflict") {
+	if code == exitOK || sentVersion != "1" || !strings.Contains(errb.String()+out.String(), "precondition failed") {
 		t.Errorf("want conflict, code %d out %q err %q", code, out.String(), errb.String())
 	}
 }
