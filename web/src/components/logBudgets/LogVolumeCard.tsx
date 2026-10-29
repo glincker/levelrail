@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon, ScrollIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilGlassIcon, ScrollGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -71,7 +71,7 @@ function BudgetCell({ row, canEdit }: { row: LogUsageApp; canEdit: boolean }) {
           aria-label={t('editFor', { app: row.app })}
           onClick={() => setEditing(true)}
         >
-          <PencilSimpleIcon />
+          <PencilGlassIcon size="1.2em" />
         </Button>
       )}
       {canEdit && row.percent !== null && row.percent > 100 && (
@@ -197,7 +197,7 @@ export function LogVolumeCard() {
         {usage.data && apps.length === 0 && (
           <EmptyState
             compact
-            icon={<ScrollIcon className="size-4" />}
+            icon={<ScrollGlassIcon className="size-4.5" />}
             title={t('emptyTitle')}
             description={t('emptyDescription')}
           />

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowCircleUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowUpGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { selfUpgradeAttemptsQueryOptions } from '../../queries/selfUpgrade'
 import { AttemptRow } from './updates/AttemptRow'
@@ -24,8 +24,8 @@ export function UpgradeAttempts({
   if (!latest) {
     return (
       <div className="flex flex-col items-center gap-1 rounded-md border border-dashed border-border px-4 py-6 text-center">
-        <ArrowCircleUpIcon
-          className="size-6 text-muted-foreground"
+        <ArrowUpGlassIcon
+          className="size-7 text-muted-foreground"
           aria-hidden="true"
         />
         <p className="text-sm font-medium">{t('selfUpgrade.noAttempts')}</p>

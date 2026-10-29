@@ -6,10 +6,10 @@ import { useEnvironmentScope } from '../../lib/environmentScope'
 import { getProjectScope } from '../../lib/projectScope'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
-  ArrowUpIcon,
-  RocketLaunchIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowUpGlassIcon,
+  CircleAlertGlassIcon,
+  RocketGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { StatusPill } from '@/components/kit'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -240,7 +240,7 @@ export function DeploymentsPage({
       width="wide"
       banner={
         <PageBanner
-          icon={<RocketLaunchIcon />}
+          icon={<RocketGlassIcon size="1.2em" />}
           titleKey="deploys:banner.title"
           descriptionKey={
             isEmpty
@@ -308,7 +308,7 @@ export function DeploymentsPage({
         {stream.pending.length > 0 && (
           <div className="sticky top-2 z-10 flex justify-center pb-2">
             <Button size="sm" onClick={showNew}>
-              <ArrowUpIcon aria-hidden="true" />
+              <ArrowUpGlassIcon size="1.2em" aria-hidden="true" />
               {stream.pending.length} new
             </Button>
           </div>
@@ -319,7 +319,9 @@ export function DeploymentsPage({
         <DeploymentsSkeleton />
       ) : listQuery.isError && all.length === 0 ? (
         <EmptyState
-          icon={<WarningCircleIcon />}
+          icon={
+            <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+          }
           title="Deployments could not be loaded"
           description={listQuery.error.message}
           action={
@@ -337,7 +339,7 @@ export function DeploymentsPage({
       ) : rows.length === 0 && !listQuery.hasNextPage ? (
         filtered ? (
           <EmptyState
-            icon={<RocketLaunchIcon />}
+            icon={<RocketGlassIcon size="1.2em" />}
             title="No deployments match"
             description="Try removing a filter or widening your search."
             action={

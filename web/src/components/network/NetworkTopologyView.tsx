@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { Share2GlassIcon } from '@thesvg/ui-react'
 import type { NetworkTopologyResponse } from '../../types/networkTopology'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NodeGroupCard } from './NodeGroupCard'
@@ -72,7 +72,7 @@ export function NetworkTopologyView({
   if (empty) {
     return (
       <EmptyState
-        icon={<ShareNetworkIcon className="size-5" />}
+        icon={<Share2GlassIcon className="size-5.5" />}
         title={t('empty.title')}
         description={t('empty.description')}
         action={

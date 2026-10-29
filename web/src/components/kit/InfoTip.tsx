@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
-import { InfoIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon } from '@thesvg/ui-react'
 import {
   Popover,
   PopoverContent,
@@ -34,7 +34,7 @@ export function InfoTip({
         delay={200}
         className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
       >
-        <InfoIcon className="size-3.5" aria-hidden="true" />
+        <InfoGlassIcon className="size-4 text-tone-info" aria-hidden="true" />
       </PopoverTrigger>
       <PopoverContent
         id={id}

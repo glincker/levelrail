@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { PlayIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlayGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -92,7 +92,7 @@ export function ControlPlaneDrCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <ShieldCheckIcon className="size-4" />
+              <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
             </div>
             <div>
               <CardTitle>{t('drCard.title')}</CardTitle>
@@ -109,7 +109,7 @@ export function ControlPlaneDrCard() {
                 start(run.mutate, t('drCard.labelBackup'))
               }}
             >
-              <PlayIcon className="size-3.5" aria-hidden="true" />
+              <PlayGlassIcon className="size-4" aria-hidden="true" />
               {status.backup_running
                 ? t('drCard.backingUp')
                 : t('drCard.runNow')}

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  FolderOpenIcon,
-  LinkBreakIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FolderGlassIcon,
+  PlusGlassIcon,
+  UnlinkGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -161,12 +161,12 @@ export function AppBucketsCard({ app }: Readonly<{ app: AppDetail }>) {
         {bound.length === 0 && !buckets.isPending ? (
           <EmptyState
             compact
-            icon={<FolderOpenIcon className="size-5" aria-hidden="true" />}
+            icon={<FolderGlassIcon className="size-5.5" aria-hidden="true" />}
             title={t('card.empty')}
             description={t('card.description')}
             action={
               <Button type="button" size="sm" onClick={() => setCreating(true)}>
-                <PlusIcon aria-hidden="true" />
+                <PlusGlassIcon size="1.2em" aria-hidden="true" />
                 {t('card.emptyAction')}
               </Button>
             }
@@ -191,7 +191,7 @@ export function AppBucketsCard({ app }: Readonly<{ app: AppDetail }>) {
               variant="outline"
               onClick={() => setCreating(true)}
             >
-              <PlusIcon aria-hidden="true" />
+              <PlusGlassIcon size="1.2em" aria-hidden="true" />
               {t('card.create')}
             </Button>
             {bindable.length > 0 ? (
@@ -282,11 +282,11 @@ function BucketRow({
         </div>
         <div className="flex gap-2">
           <Button type="button" size="sm" onClick={onBrowse}>
-            <FolderOpenIcon aria-hidden="true" />
+            <FolderGlassIcon size="1.2em" aria-hidden="true" />
             {t('card.browse')}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={onUnbind}>
-            <LinkBreakIcon aria-hidden="true" />
+            <UnlinkGlassIcon size="1.2em" aria-hidden="true" />
             {t('card.unbind')}
           </Button>
         </div>

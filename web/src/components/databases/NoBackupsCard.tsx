@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CloudSlashIcon } from '@phosphor-icons/react/dist/ssr'
+import { CloudGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // Shown instead of the backups section for an engine that keeps nothing on
@@ -10,7 +10,7 @@ export function NoBackupsCard({ engine }: { engine: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudSlashIcon className="size-4" aria-hidden="true" />
+          <CloudGlassIcon className="size-4.5" aria-hidden="true" />
           {t('noBackups.title')}
         </CardTitle>
       </CardHeader>

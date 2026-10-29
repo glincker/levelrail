@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CopyIcon,
-  LinkIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  LinkGlassIcon,
+  RefreshCwGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -70,7 +70,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LinkIcon className="size-4 text-muted-foreground" />
+          <LinkGlassIcon className="size-4.5 text-muted-foreground" />
           {t('buildHooks.title')}
           <InfoTip label={t('buildHooks.infoTipLabel')}>
             {t('buildHooks.description')}
@@ -96,7 +96,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                 variant="outline"
                 onClick={() => copy(revealedUrl)}
               >
-                <CopyIcon className="size-4" />
+                <CopyGlassIcon className="size-4.5" />
                 {t('buildHooks.copy')}
               </Button>
             </div>
@@ -145,7 +145,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                       })
                     }
                   >
-                    <ArrowsClockwiseIcon className="size-4" />
+                    <RefreshCwGlassIcon className="size-4.5" />
                     {t('buildHooks.rotate')}
                   </Button>
                   <Button
@@ -167,7 +167,7 @@ export function BuildHooksCard({ appName }: { appName: string }) {
                       })
                     }}
                   >
-                    <TrashIcon className="size-4" />
+                    <TrashGlassIcon className="size-4.5" />
                     {confirming === hook.id
                       ? t('buildHooks.confirmRevoke')
                       : t('buildHooks.revoke')}

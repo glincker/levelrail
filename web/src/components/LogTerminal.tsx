@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowsInIcon,
-  ArrowsOutIcon,
-  PauseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  MaximizeGlassIcon,
+  MinimizeGlassIcon,
+  PauseGlassIcon,
+} from '@thesvg/ui-react'
 import type { LogLine } from '../hooks/useLogStream'
 import {
   filterLogLines,
@@ -290,9 +290,9 @@ export function LogTerminal({
         className="absolute top-12 right-2 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
       >
         {isFullscreen ? (
-          <ArrowsInIcon className="size-3.5" aria-hidden="true" />
+          <MinimizeGlassIcon className="size-4" aria-hidden="true" />
         ) : (
-          <ArrowsOutIcon className="size-3.5" aria-hidden="true" />
+          <MaximizeGlassIcon className="size-4" aria-hidden="true" />
         )}
       </button>
 
@@ -303,7 +303,7 @@ export function LogTerminal({
           aria-label={t('live.pause')}
           className="absolute top-12 right-10 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
         >
-          <PauseIcon className="size-3.5" aria-hidden="true" />
+          <PauseGlassIcon className="size-4" aria-hidden="true" />
         </button>
       )}
 
@@ -313,7 +313,7 @@ export function LogTerminal({
           onClick={handleResumeClick}
           className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-lg focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-700"
         >
-          <ArrowDownIcon className="size-3.5" aria-hidden="true" />
+          <ArrowDownGlassIcon className="size-4" aria-hidden="true" />
           {t('live.resume', {
             count: Math.max(0, lines.length - pausedAtCount),
           })}

@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -89,7 +89,7 @@ function PolicyForm({
     <form className="space-y-4" onSubmit={onSubmit}>
       {policy.new_device_approval ? null : (
         <Alert>
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{t('policy.approvalOff')}</AlertDescription>
         </Alert>
       )}
@@ -173,7 +173,10 @@ function AccountApprovalCard() {
       <CardContent className="space-y-3 text-sm">
         {data.reset_flagged ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{t('account.flagged')}</AlertDescription>
           </Alert>
         ) : null}

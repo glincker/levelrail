@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import { PageBanner } from '../PageBanner'
 import { NetworkSharesDiagram } from '../banners/NetworkSharesDiagram'
 import { CreateNetworkShareDialog } from '../CreateNetworkShareDialog'
@@ -15,7 +15,7 @@ export function NetworkSharesPage({
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<HardDrivesIcon />}
+        icon={<ServerGlassIcon size="1.2em" />}
         titleKey="settings:networkSharesPage.title"
         descriptionKey={
           isEmpty

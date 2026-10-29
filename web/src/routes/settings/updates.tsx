@@ -4,7 +4,7 @@ import {
 } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowCircleUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowUpGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -64,7 +64,7 @@ function UpdatesSettingsError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation('updates')
   return (
     <PageTemplate
-      icon={<ArrowCircleUpIcon />}
+      icon={<ArrowUpGlassIcon size="1.2em" />}
       title={t('page.title')}
       description={t('page.description')}
     >
@@ -121,7 +121,7 @@ function UpdatesSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<ArrowCircleUpIcon />}
+      icon={<ArrowUpGlassIcon size="1.2em" />}
       title={t('page.title')}
       description={t('page.description')}
     >

@@ -23,8 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { SidebarSimpleIcon } from '@phosphor-icons/react/dist/ssr'
-
+import { PanelLeftGlassIcon } from '@thesvg/ui-react'
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '16rem'
@@ -271,7 +270,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <SidebarSimpleIcon />
+      <PanelLeftGlassIcon size="1.2em" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

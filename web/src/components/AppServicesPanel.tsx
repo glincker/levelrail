@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { StackIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon, LayersGlassIcon } from '@thesvg/ui-react'
 import { useAppGroup } from '../queries/appGroup'
 import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import {
@@ -76,7 +76,10 @@ export function AppServicesPanel({ appName }: { appName: string }) {
           <span className="text-xs text-muted-foreground">
             {svc.domains && svc.domains.length > 0 ? (
               <span className="flex items-center gap-1">
-                <GlobeIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                <GlobeGlassIcon
+                  className="size-4 shrink-0"
+                  aria-hidden="true"
+                />
                 {svc.domains[0]}
                 {svc.domains.length > 1 ? ` +${svc.domains.length - 1}` : ''}
               </span>
@@ -114,7 +117,7 @@ export function AppServicesPanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <StackIcon className="size-4" />
+          <LayersGlassIcon className="size-4.5" />
           Services
         </CardTitle>
         <CardDescription>

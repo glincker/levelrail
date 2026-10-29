@@ -2,10 +2,10 @@ import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowClockwiseIcon,
-  StackIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LayersGlassIcon,
+  RotateCwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useComposeStack, useRedeployCompose } from '../queries/composeStack'
 import type { ComposePhase, ComposeStackService } from '../types/compose'
 import { formatAge } from '../lib/format'
@@ -123,7 +123,7 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
       return null
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
         <AlertDescription>
           {t('stack.loadFailed', { message: stack.error.message })}
         </AlertDescription>
@@ -149,7 +149,7 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <StackIcon className="size-4" aria-hidden="true" />
+          <LayersGlassIcon className="size-4.5" aria-hidden="true" />
           {t('stack.title')}
           <Badge variant={PHASE_VARIANT[data.phase]}>
             {t(`stack.phase.${data.phase}`)}
@@ -179,7 +179,7 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
               runRedeploy()
             }}
           >
-            <ArrowClockwiseIcon />
+            <RotateCwGlassIcon size="1.2em" />
             {t('stack.redeployAll')}
           </Button>
           <ComposeRollbackDialog

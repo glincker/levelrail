@@ -1,4 +1,4 @@
-import { MagicWandIcon } from '@phosphor-icons/react/dist/ssr'
+import { WandGlassIcon } from '@thesvg/ui-react'
 import { ActionMenu } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { LB_PRESETS, type LbPreset } from './presets'
@@ -12,7 +12,7 @@ export function PresetPicker({
     <ActionMenu
       trigger={
         <Button type="button" variant="outline" size="sm">
-          <MagicWandIcon data-icon="inline-start" />
+          <WandGlassIcon size="1.2em" data-icon="inline-start" />
           Presets
         </Button>
       }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
@@ -147,7 +147,7 @@ export function ApproveDialog({
                 setRows((cur) => cur.filter((x) => x.id !== r.id))
               }}
             >
-              <TrashIcon aria-hidden="true" />
+              <TrashGlassIcon size="1.2em" aria-hidden="true" />
             </Button>
           </div>
         ))}
@@ -160,7 +160,7 @@ export function ApproveDialog({
             setNextId((n) => n + 1)
           }}
         >
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.2em" aria-hidden="true" />
           {t('approval.addSecret')}
         </Button>
       </div>

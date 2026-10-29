@@ -1,4 +1,4 @@
-import { EnvelopeIcon } from '@phosphor-icons/react/dist/ssr'
+import { MailGlassIcon } from '@thesvg/ui-react'
 import { BrandLogoBadge, BrandTile } from '../BrandLogoBadge'
 
 /** ProviderMark shows a provider's thesvg mark, falling back to a monogram tile (never a blank one). */
@@ -13,7 +13,10 @@ export function ProviderMark({
   generic?: boolean
 }) {
   const fallback = generic ? (
-    <EnvelopeIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+    <MailGlassIcon
+      className="size-4.5 text-muted-foreground"
+      aria-hidden="true"
+    />
   ) : (
     <BrandTile name={logoId ?? label} label={label} size="xs" />
   )

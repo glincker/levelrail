@@ -3,10 +3,10 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ListIcon,
-  MagnifyingGlassIcon,
-  SquaresFourIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LayoutGridGlassIcon,
+  ListGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import { SkeletonList } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { Input } from '@/components/ui/input'
@@ -109,9 +109,9 @@ export function AppsPanel() {
         </h2>
         <div className="flex items-center gap-2">
           <span className="relative">
-            <MagnifyingGlassIcon
+            <SearchGlassIcon
               aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
               value={query}
@@ -138,9 +138,9 @@ export function AppsPanel() {
               )}
             >
               {v === 'grid' ? (
-                <SquaresFourIcon className="size-4" />
+                <LayoutGridGlassIcon className="size-4.5" />
               ) : (
-                <ListIcon className="size-4" />
+                <ListGlassIcon className="size-4.5" />
               )}
             </button>
           ))}

@@ -1,9 +1,9 @@
 import {
-  ArrowsClockwiseIcon,
-  DotsThreeIcon,
-  ExportIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EllipsisGlassIcon,
+  RefreshCwGlassIcon,
+  ShareGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import {
   ActionMenu,
   AnimatedNumber,
@@ -73,14 +73,15 @@ export function LbHeader({
           title={checkSupported ? undefined : UNSUPPORTED_HINT}
           onClick={onCheck}
         >
-          <ArrowsClockwiseIcon
+          <RefreshCwGlassIcon
+            size="1.2em"
             data-icon="inline-start"
             className={checking ? 'animate-spin' : undefined}
           />
           Check now{cooldown > 0 ? ` (${cooldown}s)` : ''}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={onExport}>
-          <ExportIcon data-icon="inline-start" />
+          <ShareGlassIcon size="1.2em" data-icon="inline-start" />
           Export
         </Button>
         <ActionMenu
@@ -91,7 +92,7 @@ export function LbHeader({
               variant="ghost"
               aria-label="More actions"
             >
-              <DotsThreeIcon />
+              <EllipsisGlassIcon size="1.2em" />
             </Button>
           }
           items={[
@@ -99,7 +100,7 @@ export function LbHeader({
               id: 'remove',
               label: 'Remove load balancer',
               description: 'Domains go back to a single upstream',
-              icon: <TrashIcon />,
+              icon: <TrashGlassIcon size="1.2em" />,
               tone: 'danger',
               onSelect: onRemove,
             },

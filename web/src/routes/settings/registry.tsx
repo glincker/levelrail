@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import {
   registrySettingsQueryOptions,
   useRegistrySettings,
@@ -47,7 +47,7 @@ function RegistrySettingsPage() {
       title={t('builtInRegistryPage.title')}
       banner={
         <PageBanner
-          icon={<HardDrivesIcon />}
+          icon={<ServerGlassIcon size="1.2em" />}
           titleKey="settings:builtInRegistryPage.title"
           descriptionKey={
             settings.enabled

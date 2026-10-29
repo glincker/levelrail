@@ -1,12 +1,12 @@
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  MinusCircleIcon,
-  QuestionIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  LoaderCircleGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { ConditionsPanel } from '../ConditionsPanel'
@@ -21,13 +21,13 @@ import { RolloutCountsPanel } from './RolloutCountsPanel'
 import { useDeployDetailT } from './useDeployDetailT'
 import type { TimelineRow } from './timelineRows'
 
-const ICON: Record<DeployStageStatus, Icon> = {
-  pending: CircleIcon,
-  running: SpinnerGapIcon,
-  done: CheckCircleIcon,
-  failed: WarningCircleIcon,
-  skipped: MinusCircleIcon,
-  unknown: QuestionIcon,
+const ICON: Record<DeployStageStatus, UiIcon> = {
+  pending: CircleGlassIcon,
+  running: LoaderCircleGlassIcon,
+  done: CircleCheckGlassIcon,
+  failed: CircleAlertGlassIcon,
+  skipped: CircleMinusGlassIcon,
+  unknown: CircleQuestionMarkGlassIcon,
 }
 
 const ICON_CLASS: Record<DeployStageStatus, string> = {

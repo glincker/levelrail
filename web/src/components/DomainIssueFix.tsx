@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../hooks/useIsRoot'
@@ -36,7 +36,7 @@ function SwitchToAcme({ domain }: { domain: Domain }) {
         })
       }}
     >
-      <WrenchIcon aria-hidden="true" />
+      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
       {t('page.fix.useAcme')}
     </Button>
   )
@@ -56,7 +56,7 @@ function DomainPageLink({ domain, label }: { domain: Domain; label: string }) {
         />
       }
     >
-      <WrenchIcon aria-hidden="true" />
+      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
       {label}
     </Button>
   )
@@ -94,7 +94,7 @@ export function DomainIssueFix({
             nativeButton={false}
             render={<Link to="/dns" />}
           >
-            <WrenchIcon aria-hidden="true" />
+            <WrenchGlassIcon size="1.2em" aria-hidden="true" />
             {t('page.fix.connectDns')}
           </Button>
         </span>
@@ -113,7 +113,7 @@ export function DomainIssueFix({
                 <Link to="/apps/$name" params={{ name: domain.service_name }} />
               }
             >
-              <WrenchIcon aria-hidden="true" />
+              <WrenchGlassIcon size="1.2em" aria-hidden="true" />
               {t('page.fix.checkApp')}
             </Button>
           )}

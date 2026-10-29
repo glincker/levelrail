@@ -1,32 +1,32 @@
 import { useMemo, type ReactNode } from 'react'
 import {
-  ArrowUUpLeftIcon,
-  ArrowsOutIcon,
-  GlobeIcon,
-  KeyIcon,
-  PowerIcon,
-  RocketLaunchIcon,
-  ShareNetworkIcon,
-  SlidersHorizontalIcon,
-  SnowflakeIcon,
-  WrenchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GlobeGlassIcon,
+  KeyGlassIcon,
+  MaximizeGlassIcon,
+  PowerGlassIcon,
+  RocketGlassIcon,
+  Share2GlassIcon,
+  SlidersHorizontalGlassIcon,
+  SnowflakeGlassIcon,
+  UndoGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import { InfoTip, StatusPill, Timeline } from '@/components/kit'
 import type { TimelineItem, Tone } from '@/components/kit'
 import { useAppChanges, type AppChange } from '../queries/appChanges'
 
 const KIND_ICON: Record<AppChange['kind'], ReactNode> = {
-  deploy: <RocketLaunchIcon />,
-  rollback: <ArrowUUpLeftIcon />,
-  config: <SlidersHorizontalIcon />,
-  env: <KeyIcon />,
-  secret: <KeyIcon />,
-  domain: <GlobeIcon />,
-  scale: <ArrowsOutIcon />,
-  loadbalancer: <ShareNetworkIcon />,
-  freeze: <SnowflakeIcon />,
-  maintenance: <WrenchIcon />,
-  lifecycle: <PowerIcon />,
+  deploy: <RocketGlassIcon size="1.2em" />,
+  rollback: <UndoGlassIcon size="1.2em" />,
+  config: <SlidersHorizontalGlassIcon size="1.2em" />,
+  env: <KeyGlassIcon size="1.2em" />,
+  secret: <KeyGlassIcon size="1.2em" />,
+  domain: <GlobeGlassIcon size="1.2em" />,
+  scale: <MaximizeGlassIcon size="1.2em" />,
+  loadbalancer: <Share2GlassIcon size="1.2em" />,
+  freeze: <SnowflakeGlassIcon size="1.2em" />,
+  maintenance: <WrenchGlassIcon size="1.2em" />,
+  lifecycle: <PowerGlassIcon size="1.2em" />,
 }
 
 function kindTone(c: AppChange): Tone {

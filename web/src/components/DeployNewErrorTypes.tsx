@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SparkleIcon } from '@phosphor-icons/react/dist/ssr'
+import { SparklesGlassIcon } from '@thesvg/ui-react'
 import { useLogSignatures } from '../queries/logExplorer'
 
 // "3 new error types since this deploy": error signatures that appeared after
@@ -28,7 +28,10 @@ export function DeployNewErrorTypes({
   }
   return (
     <p className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-      <SparkleIcon className="size-4 text-tone-warning" aria-hidden="true" />
+      <SparklesGlassIcon
+        className="size-4.5 text-tone-warning"
+        aria-hidden="true"
+      />
       <span>{t('explorer.newErrorTypes', { count: data.new_count })}</span>
       <Link
         to="/apps/$name/logs"

@@ -1,4 +1,4 @@
-import { DownloadSimpleIcon, FilesIcon } from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon, FilesGlassIcon } from '@thesvg/ui-react'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { logArchiveDownloadUrl, useLogArchiveObjects } from '../queries/storage'
 
@@ -28,7 +28,7 @@ export function LogArchiveObjects({
         id={`archive-objects-${appName}`}
         className="flex items-center gap-2 text-sm font-semibold text-foreground"
       >
-        <FilesIcon className="size-4" aria-hidden="true" />
+        <FilesGlassIcon className="size-4.5" aria-hidden="true" />
         Archived objects
       </h2>
       {objects.isPending ? (
@@ -58,7 +58,7 @@ export function LogArchiveObjects({
                   download
                   className="inline-flex items-center gap-1 text-foreground underline-offset-4 hover:underline"
                 >
-                  <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+                  <DownloadGlassIcon className="size-4" aria-hidden="true" />
                   Download
                 </a>
               </span>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import type { SSOGroupMapping } from '@/queries/sso'
 import { useSaveSSOMappings } from '@/queries/sso'
 import type { RoleResource } from '@/queries/roles'
@@ -120,7 +120,7 @@ export function SSOGroupMappingsCard({
                   setRows((rs) => rs.filter((x) => x.key !== r.key))
                 }
               >
-                <TrashIcon aria-hidden="true" />
+                <TrashGlassIcon size="1.2em" aria-hidden="true" />
               </Button>
             </div>
           ))}
@@ -128,7 +128,7 @@ export function SSOGroupMappingsCard({
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" onClick={add}>
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.2em" aria-hidden="true" />
           {t('mappings.add')}
         </Button>
         <Button type="button" disabled={save.isPending} onClick={submit}>

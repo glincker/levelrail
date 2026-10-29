@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import {
-  ArrowSquareOutIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -100,8 +97,8 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
         {existing ? (
           <div className="flex items-center justify-between gap-4 rounded-lg border border-input bg-muted/50 p-3">
             <div className="flex min-w-0 items-start gap-2">
-              <PlugsConnectedIcon
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              <PlugGlassIcon
+                className="mt-0.5 size-4.5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <div className="min-w-0">
@@ -190,7 +187,7 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
               disabled={pending}
               onClick={() => handleSave(true)}
             >
-              <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
+              <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
               {setLogDrain.isPending
                 ? 'Saving...'
                 : existing

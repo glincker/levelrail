@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import { TIME_RANGE_PRESETS, type TimeRangeKey } from '../lib/timeRange'
 
@@ -52,7 +52,7 @@ export function TimeRangeControls({
         ))}
       </div>
       <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
-        <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
         Refresh
       </Button>
       {children}

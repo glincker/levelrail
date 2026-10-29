@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  CubeIcon,
-  GlobeSimpleIcon,
-  LaptopIcon,
-  StackIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  BoxGlassIcon,
+  ComputerGlassIcon,
+  GlobeGlassIcon,
+  LayersGlassIcon,
+  TerminalGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
@@ -20,12 +20,12 @@ import { SectionHeading } from './SectionHeading'
 
 type WayKey = 'image' | 'compose' | 'run' | 'site' | 'computer'
 
-const WAYS: { key: WayKey; icon: Icon }[] = [
-  { key: 'image', icon: CubeIcon },
-  { key: 'compose', icon: StackIcon },
-  { key: 'run', icon: TerminalWindowIcon },
-  { key: 'site', icon: GlobeSimpleIcon },
-  { key: 'computer', icon: LaptopIcon },
+const WAYS: { key: WayKey; icon: UiIcon }[] = [
+  { key: 'image', icon: BoxGlassIcon },
+  { key: 'compose', icon: LayersGlassIcon },
+  { key: 'run', icon: TerminalGlassIcon },
+  { key: 'site', icon: GlobeGlassIcon },
+  { key: 'computer', icon: ComputerGlassIcon },
 ]
 
 /**

@@ -1,4 +1,4 @@
-import { StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon } from '@thesvg/ui-react'
 import { useAppRollout } from '../../queries/appRollout'
 import { useDeployDetailT } from './useDeployDetailT'
 
@@ -26,8 +26,8 @@ export function RolloutCountsPanel({ appName }: { appName: string }) {
       className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border px-3 py-2"
     >
       <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-        <StackIcon
-          className="size-4 text-muted-foreground"
+        <LayersGlassIcon
+          className="size-4.5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('rollout.counts.wave', { wave: p.wave, waves: p.waves })}

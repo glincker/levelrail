@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import { Switch } from '@/components/ui/switch'
@@ -42,7 +42,7 @@ export function AutoRollbackCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ArrowCounterClockwiseIcon className="size-4 text-muted-foreground" />
+          <RotateCcwGlassIcon className="size-4.5 text-muted-foreground" />
           {t('autoRollback.title')}
           <InfoTip
             label={t('autoRollback.infoTipLabel')}

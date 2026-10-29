@@ -1,10 +1,10 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  FileCodeIcon,
-  UploadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FileCodeGlassIcon,
+  RefreshCwGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -114,7 +114,7 @@ export function InfrastructurePage() {
         onChange={(e) => void handleUpload(e)}
       />
       <PageBanner
-        icon={<FileCodeIcon />}
+        icon={<FileCodeGlassIcon size="1.2em" />}
         titleKey="settings:iacPage.title"
         descriptionKey={
           hero
@@ -129,7 +129,7 @@ export function InfrastructurePage() {
               variant={hero ? 'default' : 'outline'}
               onClick={() => uploadRef.current?.click()}
             >
-              <UploadSimpleIcon aria-hidden="true" />
+              <UploadGlassIcon size="1.2em" aria-hidden="true" />
               {t('iacPage.upload')}
             </Button>
           </>
@@ -311,7 +311,7 @@ function PlanCard({
         {error ? (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" size="sm" onClick={onRetry}>
-              <ArrowsClockwiseIcon aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
               {t('iacPage.planAgain')}
             </Button>
             <span className="text-xs text-muted-foreground">
@@ -348,7 +348,7 @@ function ResultCard({
         {error ? (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" size="sm" onClick={onReplan}>
-              <ArrowsClockwiseIcon aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
               {t('iacPage.planAgain')}
             </Button>
             <span className="text-xs text-muted-foreground">

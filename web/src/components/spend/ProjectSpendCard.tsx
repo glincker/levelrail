@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PauseCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CirclePauseGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -212,7 +212,7 @@ export function ProjectSpendCard({
                 preview.mutate()
               }}
             >
-              <PauseCircleIcon aria-hidden="true" />
+              <CirclePauseGlassIcon size="1.2em" aria-hidden="true" />
               {t('actions.preview')}
             </Button>
             <Button

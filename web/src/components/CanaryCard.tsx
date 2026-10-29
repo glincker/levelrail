@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GitForkIcon } from '@phosphor-icons/react/dist/ssr'
+import { GitForkGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -82,7 +82,7 @@ export function CanaryCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitForkIcon className="size-4 text-muted-foreground" />
+          <GitForkGlassIcon className="size-4.5 text-muted-foreground" />
           {t('canary.title')}
           <InfoTip label={t('canary.infoTipLabel')}>
             {t('canary.description')}

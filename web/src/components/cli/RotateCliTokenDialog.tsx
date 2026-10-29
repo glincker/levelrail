@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -116,9 +116,9 @@ export function RotateCliTokenDialog({
               {p.live ? (
                 <Button type="button" onClick={p.copy}>
                   {p.copied ? (
-                    <CheckIcon aria-hidden="true" />
+                    <CheckGlassIcon size="1.2em" aria-hidden="true" />
                   ) : (
-                    <CopyIcon aria-hidden="true" />
+                    <CopyGlassIcon size="1.2em" aria-hidden="true" />
                   )}
                   {t('connectCli.copy')}
                 </Button>

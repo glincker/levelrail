@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  CopyIcon,
-  FileIcon,
-  GlobeHemisphereWestIcon,
-  LinkIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  FileGlassIcon,
+  GlobeGlassIcon,
+  LinkGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -57,7 +57,10 @@ function Thumb({
           className="size-full object-cover"
         />
       ) : (
-        <FileIcon aria-hidden="true" className="size-5 text-muted-foreground" />
+        <FileGlassIcon
+          aria-hidden="true"
+          className="size-5.5 text-muted-foreground"
+        />
       )}
     </div>
   )
@@ -127,9 +130,9 @@ function AssetRow({
         }}
       >
         {isPublic ? (
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.2em" aria-hidden="true" />
         ) : (
-          <LinkIcon aria-hidden="true" />
+          <LinkGlassIcon size="1.2em" aria-hidden="true" />
         )}
       </Button>
       <Button
@@ -143,7 +146,7 @@ function AssetRow({
           void copy('cdn')
         }}
       >
-        <GlobeHemisphereWestIcon aria-hidden="true" />
+        <GlobeGlassIcon size="1.2em" aria-hidden="true" />
       </Button>
       <Button
         type="button"
@@ -154,7 +157,7 @@ function AssetRow({
           onDelete(item)
         }}
       >
-        <TrashIcon aria-hidden="true" />
+        <TrashGlassIcon size="1.2em" aria-hidden="true" />
       </Button>
     </li>
   )
@@ -216,7 +219,7 @@ export function AssetList({ bucket }: Readonly<{ bucket: AssetBucket }>) {
         <EmptyState
           compact
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<FileIcon className="size-5" />}
+          icon={<FileGlassIcon className="size-5.5" />}
           title={t('items.title')}
           description={t('items.empty')}
         />

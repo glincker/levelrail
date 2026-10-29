@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TargetIcon } from '@phosphor-icons/react/dist/ssr'
+import { TargetGlassIcon } from '@thesvg/ui-react'
 import { Suggestion } from '@/components/kit'
 import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
@@ -48,7 +48,7 @@ export function SloSuggestion({
   return (
     <Suggestion
       tone="info"
-      icon={<TargetIcon />}
+      icon={<TargetGlassIcon size="1.2em" />}
       title={t('slo.title', { target: DEFAULT_SLO_TARGET })}
       detail={`${t('slo.detail', { target: DEFAULT_SLO_TARGET })}${
         channelId ? '' : ` ${t('slo.noChannel')}`

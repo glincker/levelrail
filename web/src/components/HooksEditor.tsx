@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { TerminalIcon } from '@phosphor-icons/react/dist/ssr'
+import { TerminalGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { useAppHookRuns, type HookRun } from '../queries/appHookRuns'
@@ -78,7 +78,7 @@ export function HooksEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TerminalIcon className="size-4" />
+          <TerminalGlassIcon className="size-4.5" />
           Deploy hooks
         </CardTitle>
         <CardDescription>

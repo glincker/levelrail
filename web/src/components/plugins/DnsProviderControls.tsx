@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { BrandIcon } from '@/components/BrandIcon'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -41,7 +41,7 @@ export function DnsProviderControls({ plugin }: Readonly<{ plugin: Plugin }>) {
           disabled={!ready || test.isPending}
           onClick={() => test.mutate(plugin.name, { onError: fail })}
         >
-          <PlugsConnectedIcon aria-hidden="true" />
+          <PlugGlassIcon size="1.2em" aria-hidden="true" />
           {test.isPending ? t('dns.testing') : t('dns.test')}
         </Button>
         <Button

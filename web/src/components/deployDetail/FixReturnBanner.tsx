@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { ArrowsClockwiseIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRedeployApp } from '../../hooks/useRedeployApp'
@@ -70,7 +70,7 @@ export function FixReturnBanner({
         disabled={pending}
         onClick={handleRedeploy}
       >
-        <ArrowsClockwiseIcon aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
         {t('fixReturn.redeploy')}
       </Button>
       <Link
@@ -90,7 +90,7 @@ export function FixReturnBanner({
           setDismissed(true)
         }}
       >
-        <XIcon aria-hidden="true" />
+        <XGlassIcon size="1.2em" aria-hidden="true" />
       </Button>
     </section>
   )

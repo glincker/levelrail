@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,7 +46,7 @@ function BudgetRow({ b }: { b: UsageBudget }) {
             disabled={remove.isPending}
             onClick={() => remove.mutate(b.id)}
           >
-            <TrashIcon />
+            <TrashGlassIcon size="1.2em" />
           </Button>
         </div>
       </div>

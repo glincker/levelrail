@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  CopyIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CopyGlassIcon,
+  RefreshCwGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -102,9 +102,9 @@ function DnsRecordRow({ label, value }: { label: string; value: string }) {
         aria-label={copied ? `${label} copied` : `Copy ${label}`}
       >
         {copied ? (
-          <CheckIcon className="size-3.5" />
+          <CheckGlassIcon className="size-4" />
         ) : (
-          <CopyIcon className="size-3.5" />
+          <CopyGlassIcon className="size-4" />
         )}
       </Button>
     </div>
@@ -116,29 +116,33 @@ const STATUS_META: Record<
   {
     label: string
     variant: VariantProps<typeof badgeVariants>['variant']
-    icon: Icon
+    icon: UiIcon
   }
 > = {
-  connected: { label: 'Connected', variant: 'success', icon: CheckCircleIcon },
+  connected: {
+    label: 'Connected',
+    variant: 'success',
+    icon: CircleCheckGlassIcon,
+  },
   propagating: {
     label: 'Propagating',
     variant: 'warning',
-    icon: WarningCircleIcon,
+    icon: CircleAlertGlassIcon,
   },
   not_resolving: {
     label: 'Not resolving yet',
     variant: 'warning',
-    icon: WarningCircleIcon,
+    icon: CircleAlertGlassIcon,
   },
   resolves_elsewhere: {
     label: 'Points elsewhere',
     variant: 'destructive',
-    icon: WarningCircleIcon,
+    icon: CircleAlertGlassIcon,
   },
   unconfigured: {
     label: 'Unable to check',
     variant: 'muted',
-    icon: WarningCircleIcon,
+    icon: CircleAlertGlassIcon,
   },
 }
 
@@ -303,8 +307,8 @@ export function DomainCheckPanel({
           onClick={onRefetch}
           disabled={isFetching}
         >
-          <ArrowsClockwiseIcon
-            className={isFetching ? 'size-3.5 animate-spin' : 'size-3.5'}
+          <RefreshCwGlassIcon
+            className={isFetching ? 'size-4 animate-spin' : 'size-4'}
           />
           {isFetching ? t('dnsCheck.checking') : 'Check now'}
         </Button>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, XCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, CircleXGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import type { AppImportSource } from '../queries/appImport'
@@ -42,8 +42,8 @@ export function MigrationSourceTest({
           <Alert>
             <AlertDescription className="space-y-1">
               <span className="flex items-start gap-2">
-                <CheckCircleIcon
-                  className="mt-0.5 size-4 shrink-0"
+                <CircleCheckGlassIcon
+                  className="mt-0.5 size-4.5 shrink-0 text-tone-success"
                   aria-hidden
                 />
                 {t('appImport.connect.testOk', {
@@ -75,7 +75,10 @@ export function MigrationSourceTest({
           <Alert variant="destructive">
             <AlertDescription className="space-y-1 break-words">
               <span className="flex items-start gap-2">
-                <XCircleIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <CircleXGlassIcon
+                  className="mt-0.5 size-4.5 shrink-0 text-tone-danger"
+                  aria-hidden
+                />
                 {t(
                   `appImport.connect.testFailure.${res.failure ?? 'unreachable'}`,
                 )}

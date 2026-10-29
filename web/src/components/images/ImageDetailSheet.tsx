@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -79,7 +79,11 @@ export function ImageDetailSheet({ node, image, onClose }: Props) {
                       verify.mutate(image.id)
                     }}
                   >
-                    <ShieldCheckIcon aria-hidden="true" />
+                    <ShieldCheckGlassIcon
+                      className="text-tone-success"
+                      size="1.2em"
+                      aria-hidden="true"
+                    />
                     {verify.isPending
                       ? t('detail.verifying')
                       : t('detail.verify')}

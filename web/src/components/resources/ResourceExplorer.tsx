@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MagnifyingGlassIcon, StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
@@ -79,7 +79,8 @@ export function ResourceExplorer({
       <section className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-52 flex-1">
-            <MagnifyingGlassIcon
+            <SearchGlassIcon
+              size="1.2em"
               className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
@@ -172,7 +173,7 @@ export function ResourceExplorer({
           <Skeleton className="h-64 w-full rounded-lg" />
         ) : list.isError ? (
           <EmptyState
-            icon={<StackIcon className="size-5" />}
+            icon={<LayersGlassIcon className="size-5.5" />}
             title={t('list.errorTitle')}
             description={list.error.message}
             action={
@@ -183,7 +184,7 @@ export function ResourceExplorer({
           />
         ) : items.length === 0 ? (
           <EmptyState
-            icon={<MagnifyingGlassIcon className="size-5" />}
+            icon={<SearchGlassIcon className="size-5.5" />}
             title={t('list.emptyTitle')}
             description={t('list.emptyDescription')}
             action={

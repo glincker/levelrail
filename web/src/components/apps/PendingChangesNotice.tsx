@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowClockwiseIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useApplyPending, usePendingChanges } from '../../queries/appTimeline'
@@ -19,7 +19,10 @@ export function PendingChangesNotice({
   const restart = data.apply_action === 'restart'
   return (
     <Alert role="status" className="flex items-center gap-2 py-1.5">
-      <WarningIcon className="size-4 shrink-0" aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="size-4.5 shrink-0 text-tone-warning"
+        aria-hidden="true"
+      />
       <AlertDescription className="flex flex-1 flex-wrap items-center gap-x-2">
         <span className="font-medium">{t('pendingChanges.title')}</span>
         <span className="text-muted-foreground">
@@ -37,7 +40,7 @@ export function PendingChangesNotice({
           apply.mutate()
         }}
       >
-        <ArrowClockwiseIcon className="size-4" aria-hidden="true" />
+        <RotateCwGlassIcon className="size-4.5" aria-hidden="true" />
         {apply.isPending
           ? t('pendingChanges.applying')
           : t(restart ? 'pendingChanges.restart' : 'pendingChanges.redeploy')}

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LightbulbIcon } from '@phosphor-icons/react/dist/ssr'
+import { LightbulbGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,8 +29,8 @@ export function Finding({
       {children}
       {evidence ? (
         <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-          <LightbulbIcon
-            className="mt-0.5 size-3.5 shrink-0"
+          <LightbulbGlassIcon
+            className="mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
           <span>{evidence}</span>
@@ -98,8 +98,8 @@ export function DatabaseFinding({
         </div>
       ) : null}
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-        <LightbulbIcon
-          className="mt-0.5 size-3.5 shrink-0"
+        <LightbulbGlassIcon
+          className="mt-0.5 size-4 shrink-0"
           aria-hidden="true"
         />
         <span>{need.evidence}</span>

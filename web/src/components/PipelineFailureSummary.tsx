@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { baseJobName } from '../lib/pipelineStatus'
 import { firstFailure } from '../lib/pipelineFailure'
@@ -31,8 +31,8 @@ export function PipelineFailureSummary({
       className="space-y-1 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm"
     >
       <p className="flex flex-wrap items-center gap-1.5 font-medium text-foreground">
-        <WarningCircleIcon
-          className="size-4 text-destructive"
+        <CircleAlertGlassIcon
+          className="size-4.5 text-destructive"
           aria-hidden="true"
         />
         {t('failure.title')}

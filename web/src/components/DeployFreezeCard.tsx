@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
-  PlusIcon,
-  SnowflakeIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlusGlassIcon,
+  SnowflakeGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
@@ -63,7 +63,7 @@ export function DeployFreezeCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SnowflakeIcon className="size-4 text-muted-foreground" />
+          <SnowflakeGlassIcon className="size-4.5 text-muted-foreground" />
           Deploy freeze
           {status.frozen ? (
             <Badge variant="warning">
@@ -143,7 +143,7 @@ export function DeployFreezeCard({ appName }: { appName: string }) {
                   aria-label={`Remove freeze window ${i + 1}`}
                   onClick={() => setDraft(windows.filter((_, j) => j !== i))}
                 >
-                  <TrashIcon className="size-3.5" />
+                  <TrashGlassIcon className="size-4" />
                 </Button>
               </li>
             ))}
@@ -172,7 +172,7 @@ export function DeployFreezeCard({ appName }: { appName: string }) {
             size="sm"
             onClick={() => setDraft([...windows, { ...EMPTY_WINDOW }])}
           >
-            <PlusIcon className="size-3.5" data-icon="inline-start" />
+            <PlusGlassIcon className="size-4" data-icon="inline-start" />
             Add window
           </Button>
           <Button

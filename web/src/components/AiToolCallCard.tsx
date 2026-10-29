@@ -1,9 +1,9 @@
 import {
-  CheckCircleIcon,
-  MagnifyingGlassIcon,
-  ShieldWarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  SearchGlassIcon,
+  ShieldAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import type { AiToolCall } from '../types/aiAssistant'
 import { Badge } from '@/components/ui/badge'
@@ -68,7 +68,7 @@ function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
   if (toolCall.resolution === 'rejected') {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-        <XCircleIcon className="size-4 shrink-0 text-destructive" />
+        <CircleXGlassIcon className="size-4.5 shrink-0 text-destructive" />
         <span>
           {t('toolCall.rejected')}{' '}
           <span className="font-medium text-foreground">
@@ -80,9 +80,9 @@ function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
   }
 
   const icon = toolCall.read_only ? (
-    <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
+    <SearchGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
   ) : (
-    <CheckCircleIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+    <CircleCheckGlassIcon className="size-4.5 shrink-0 text-green-600 dark:text-green-400" />
   )
   const verb = toolCall.read_only
     ? t('toolCall.checked')
@@ -143,7 +143,7 @@ export function AiToolCallCard({
     <Card className="border-amber-300 dark:border-amber-800">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
-          <ShieldWarningIcon className="size-4 text-amber-600 dark:text-amber-400" />
+          <ShieldAlertGlassIcon className="size-4.5 text-amber-600 dark:text-amber-400" />
           {toolCall.tool_name}
           <Badge variant="warning">{t('toolCall.confirmationRequired')}</Badge>
         </CardTitle>

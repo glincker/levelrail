@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import { lexer, type Token, type Tokens } from 'marked'
 import {
-  InfoIcon,
-  LightbulbIcon,
-  WarningCircleIcon,
-  WarningIcon,
-  ChatCenteredTextIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  InfoGlassIcon,
+  LightbulbGlassIcon,
+  MessageSquareGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { stripNoteComments } from '../../lib/releaseNotes'
 import { CodeBlock } from '@/components/ui/code-block'
@@ -17,11 +17,11 @@ const ALERT_RE = /^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n?/i
 const SAFE_HREF = /^(https?:\/\/|mailto:)/i
 
 const ALERT_ICON: Record<AlertKind, ReactNode> = {
-  note: <InfoIcon className="size-4" />,
-  tip: <LightbulbIcon className="size-4" />,
-  important: <ChatCenteredTextIcon className="size-4" />,
-  warning: <WarningIcon className="size-4" />,
-  caution: <WarningCircleIcon className="size-4" />,
+  note: <InfoGlassIcon className="size-4.5 text-tone-info" />,
+  tip: <LightbulbGlassIcon className="size-4.5" />,
+  important: <MessageSquareGlassIcon className="size-4.5" />,
+  warning: <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />,
+  caution: <CircleAlertGlassIcon className="size-4.5 text-tone-danger" />,
 }
 
 const ALERT_TONE: Record<AlertKind, string> = {

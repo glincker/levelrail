@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Trans, useTranslation } from 'react-i18next'
-import { GlobeIcon, PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon, PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { DOMAIN_PATTERN } from '../lib/domainWizard'
 import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
 import { DomainStepper } from './domains/DomainStepper'
@@ -115,7 +115,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeIcon className="size-4" aria-hidden="true" />
+          <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
           {t('editor.title')}
         </CardTitle>
         <CardDescription>
@@ -192,7 +192,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                             remove(index)
                           }}
                         >
-                          <XIcon aria-hidden="true" />
+                          <XGlassIcon size="1.2em" aria-hidden="true" />
                           <span className="sr-only">{t('editor.remove')}</span>
                         </Button>
                       </Field>
@@ -285,7 +285,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                   append({ value: '' })
                 }}
               >
-                <PlusIcon aria-hidden="true" />
+                <PlusGlassIcon size="1.2em" aria-hidden="true" />
                 {t('editor.add')}
               </Button>
               <Button type="submit" size="sm" disabled={updateApp.isPending}>

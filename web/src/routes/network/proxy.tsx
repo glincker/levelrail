@@ -8,7 +8,7 @@ import { ProxyProviderCard } from '../../components/ProxyProviderCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon } from '@thesvg/ui-react'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyTopologyDiagram } from '../../components/banners/LazyPass3Diagrams'
 
@@ -37,7 +37,7 @@ function ProxyPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<ArrowsLeftRightIcon />}
+        icon={<ArrowLeftRightGlassIcon size="1.2em" />}
         titleKey="networkProxy:page.title"
         descriptionKey={
           empty

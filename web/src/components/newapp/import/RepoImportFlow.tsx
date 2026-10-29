@@ -3,7 +3,7 @@ import { useDraft } from '../../../hooks/useDraft'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -211,8 +211,8 @@ export function RepoImportFlow({
           />
         </div>
         <div className="relative">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          <SearchGlassIcon
+            className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -239,7 +239,7 @@ export function RepoImportFlow({
                 reset('', null)
               }}
             >
-              <XIcon aria-hidden="true" />
+              <XGlassIcon size="1.2em" aria-hidden="true" />
             </Button>
           ) : null}
         </div>

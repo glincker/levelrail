@@ -2,11 +2,11 @@ import { useCallback, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  DeviceMobileIcon,
-  QrCodeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  QrCodeGlassIcon,
+  SmartphoneGlassIcon,
+} from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -64,9 +64,9 @@ function CopyRow({ value, label }: { value: string; label: string }) {
           }}
         >
           {copied ? (
-            <CheckIcon aria-hidden="true" />
+            <CheckGlassIcon size="1.2em" aria-hidden="true" />
           ) : (
-            <CopyIcon aria-hidden="true" />
+            <CopyGlassIcon size="1.2em" aria-hidden="true" />
           )}
           {copied ? t('mobileDevices.copied') : t('mobileDevices.copy')}
         </Button>
@@ -108,12 +108,12 @@ function MobileDevicesPage() {
 
   return (
     <PageTemplate
-      icon={<DeviceMobileIcon />}
+      icon={<SmartphoneGlassIcon size="1.2em" />}
       title={t('mobileDevices.title')}
       description={t('mobileDevices.description')}
       actions={
         <Button type="button" onClick={startPairing}>
-          <QrCodeIcon aria-hidden="true" />
+          <QrCodeGlassIcon size="1.2em" aria-hidden="true" />
           {t('mobileDevices.pair')}
         </Button>
       }
@@ -157,7 +157,7 @@ function MobileDevicesPage() {
       ) : devices.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<DeviceMobileIcon className="size-5" />}
+          icon={<SmartphoneGlassIcon className="size-5.5" />}
           title={t('mobileDevices.emptyTitle')}
           description={t('mobileDevices.emptyDescription')}
         />

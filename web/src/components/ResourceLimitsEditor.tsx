@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { CpuIcon } from '@phosphor-icons/react/dist/ssr'
+import { CpuGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail, ServiceResources } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { formatBytes, formatNanoCpus } from '../lib/format'
@@ -212,7 +212,7 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CpuIcon className="size-4" />
+          <CpuGlassIcon className="size-4.5" />
           Resource limits
         </CardTitle>
         <CardDescription>

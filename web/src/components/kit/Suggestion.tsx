@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { SpinnerGapIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderCircleGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { TONE, type Tone } from './tone'
@@ -82,7 +82,8 @@ export function Suggestion({
                   onClick={() => void run(i, a)}
                 >
                   {pending && (
-                    <SpinnerGapIcon
+                    <LoaderCircleGlassIcon
+                      size="1.2em"
                       className="animate-spin"
                       aria-hidden="true"
                     />
@@ -101,7 +102,7 @@ export function Suggestion({
           onClick={onDismiss}
           className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          <XIcon className="size-3.5" aria-hidden="true" />
+          <XGlassIcon className="size-4" aria-hidden="true" />
         </button>
       )}
     </div>

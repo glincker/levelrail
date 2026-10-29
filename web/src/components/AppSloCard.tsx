@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TargetIcon } from '@phosphor-icons/react/dist/ssr'
+import { TargetGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -150,8 +150,8 @@ export function AppSloCard({
   return (
     <section className="mt-3 rounded-lg border border-border p-4">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-        <TargetIcon
-          className="size-4 text-muted-foreground"
+        <TargetGlassIcon
+          className="size-4.5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('slo.title')}

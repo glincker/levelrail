@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CheckCircleIcon,
-  CircleDashedIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { SkeletonList } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { Button } from '@/components/ui/button'
@@ -55,10 +55,10 @@ function StepRow({
   const attention = step.source === 'attention'
   const tone = attention ? step.tone : 'neutral'
   const Icon = !attention
-    ? CircleDashedIcon
+    ? CircleDashedGlassIcon
     : tone === 'danger'
-      ? WarningCircleIcon
-      : WarningIcon
+      ? CircleAlertGlassIcon
+      : TriangleAlertGlassIcon
   const title = attention
     ? step.title
     : t(`getStarted:steps.${step.stepId}.title`)
@@ -87,7 +87,7 @@ function StepRow({
           aria-hidden="true"
           className={cn('mt-0.5 shrink-0 [&_svg]:size-5', TONE[tone].text)}
         >
-          <Icon weight={attention ? 'fill' : 'regular'} />
+          <Icon />
         </span>
         <span className="min-w-0">
           <span className="block text-sm font-medium break-words text-foreground">
@@ -143,7 +143,10 @@ function GroupRow({
               TONE[group.tone].text,
             )}
           >
-            <WarningIcon weight="fill" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-medium text-foreground">
@@ -167,7 +170,8 @@ function GroupRow({
             {open
               ? t('nextSteps.group.hide')
               : t('nextSteps.group.show', { count })}
-            <CaretDownIcon
+            <ChevronDownGlassIcon
+              size="1.2em"
               aria-hidden="true"
               className={cn('transition-transform', open && 'rotate-180')}
             />
@@ -240,10 +244,9 @@ export function NextStepsView({
         <SkeletonList rows={2} />
       ) : steps.length === 0 ? (
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <CheckCircleIcon
+          <CircleCheckGlassIcon
             aria-hidden="true"
-            weight="fill"
-            className="mt-0.5 size-4 shrink-0 text-tone-success"
+            className="mt-0.5 size-4.5 shrink-0 text-tone-success"
           />
           <span>{t('nextSteps.quiet', quiet)}</span>
         </p>

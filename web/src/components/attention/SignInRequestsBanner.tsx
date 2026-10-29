@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { SignInRequestCard } from '../signin/SignInRequestCard'
@@ -113,7 +113,7 @@ function CodeRow({ request }: { request: SignInCodeRequest }) {
   const [code, setCode] = useState<string | null>(null)
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      <KeyIcon aria-hidden="true" className="size-5 shrink-0" />
+      <KeyGlassIcon aria-hidden="true" className="size-5.5 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="font-medium">{t('requests.codeTitle')}</p>
         <RequestContext

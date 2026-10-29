@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,7 @@ export function RequirePasswordChangeDialog({ user }: { user: UserResource }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyIcon className="size-4" />
+            <KeyGlassIcon className="size-4.5" />
             {requiring
               ? t('usersPage.passwordChange.requireTitle', {
                   email: user.email,
@@ -55,7 +55,10 @@ export function RequirePasswordChangeDialog({ user }: { user: UserResource }) {
         </DialogHeader>
         {mutation.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{mutation.error.message}</AlertDescription>
           </Alert>
         ) : null}

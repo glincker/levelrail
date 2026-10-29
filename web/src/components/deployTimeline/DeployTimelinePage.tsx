@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ClockCounterClockwiseIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, RestoreGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusPill, SkeletonList } from '@/components/kit'
@@ -64,7 +61,7 @@ export function DeployTimelinePage() {
       width="wide"
       banner={
         <PageBanner
-          icon={<ClockCounterClockwiseIcon />}
+          icon={<RestoreGlassIcon size="1.2em" />}
           titleKey="deployTimeline:title"
           descriptionKey={
             isEmpty
@@ -97,7 +94,9 @@ export function DeployTimelinePage() {
           <SkeletonList rows={6} />
         ) : query.isError ? (
           <EmptyState
-            icon={<WarningCircleIcon />}
+            icon={
+              <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+            }
             title={t('error.title')}
             description={query.error.message}
             action={

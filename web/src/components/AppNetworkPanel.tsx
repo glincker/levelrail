@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import {
-  ArrowRightIcon,
-  CheckIcon,
-  CloudIcon,
-  CopyIcon,
-  GlobeIcon,
-  PackageIcon,
-  ShareNetworkIcon,
-  WifiHighIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  CheckGlassIcon,
+  CloudGlassIcon,
+  CopyGlassIcon,
+  GlobeGlassIcon,
+  PackageGlassIcon,
+  Share2GlassIcon,
+  WifiHighGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import type { Icon } from '@phosphor-icons/react'
 import type { AppDetail } from '../types/appDetail'
 import { useAppNetwork } from '../queries/appNetwork'
 import { DomainDnsCheck } from './DomainDnsCheck'
@@ -57,7 +57,7 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShareNetworkIcon className="size-4" />
+          <Share2GlassIcon className="size-4.5" />
           Network
         </CardTitle>
         <CardDescription>
@@ -196,7 +196,11 @@ function FallbackURLRow({ url }: { url: string }) {
             })
           }}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? (
+            <CheckGlassIcon size="1.2em" />
+          ) : (
+            <CopyGlassIcon size="1.2em" />
+          )}
           {copied ? 'Copied' : 'Copy'}
         </Button>
       </div>
@@ -249,7 +253,7 @@ function TrafficPath({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <PathNode
-        icon={GlobeIcon}
+        icon={GlobeGlassIcon}
         label={domains[0] ?? fallbackHost ?? 'No domain'}
         sublabel={
           domains.length > 1
@@ -260,11 +264,11 @@ function TrafficPath({
         }
         muted={domains.length === 0 && !fallbackHost}
       />
-      <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
-      <PathNode icon={CloudIcon} label="Caddy" sublabel="ingress" />
-      <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
+      <ArrowRightGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
+      <PathNode icon={CloudGlassIcon} label="Caddy" sublabel="ingress" />
+      <ArrowRightGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
       <PathNode
-        icon={WifiHighIcon}
+        icon={WifiHighGlassIcon}
         label={
           running && hostPort
             ? `:${hostPort}`
@@ -275,9 +279,9 @@ function TrafficPath({
         sublabel="this machine"
         muted={!running || !hostPort}
       />
-      <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
+      <ArrowRightGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
       <PathNode
-        icon={PackageIcon}
+        icon={PackageGlassIcon}
         label={`:${containerPort}`}
         sublabel="container"
       />
@@ -296,7 +300,7 @@ function PathNode({
   sublabel,
   muted,
 }: {
-  icon: Icon
+  icon: UiIcon
   label: string
   sublabel?: string
   muted?: boolean

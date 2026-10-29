@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  DownloadSimpleIcon,
-  KeyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  DownloadGlassIcon,
+  KeyGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -67,7 +67,7 @@ export function ControlPlaneDrKeygen({
           })
         }}
       >
-        <KeyIcon className="size-3.5" aria-hidden="true" />
+        <KeyGlassIcon className="size-4" aria-hidden="true" />
         {t('controlPlaneDrKeygen.trigger')}
       </Button>
       <Dialog
@@ -86,7 +86,10 @@ export function ControlPlaneDrKeygen({
           {pair !== null ? (
             <div className="space-y-3">
               <Alert>
-                <WarningIcon className="size-4" aria-hidden="true" />
+                <TriangleAlertGlassIcon
+                  className="size-4.5 text-tone-warning"
+                  aria-hidden="true"
+                />
                 <AlertDescription>
                   {t('controlPlaneDrKeygen.warning')}
                 </AlertDescription>
@@ -104,9 +107,9 @@ export function ControlPlaneDrKeygen({
                   }}
                 >
                   {copied ? (
-                    <CheckIcon className="size-3.5" aria-hidden="true" />
+                    <CheckGlassIcon className="size-4" aria-hidden="true" />
                   ) : (
-                    <CopyIcon className="size-3.5" aria-hidden="true" />
+                    <CopyGlassIcon className="size-4" aria-hidden="true" />
                   )}
                   {t('controlPlaneDrKeygen.copy')}
                 </Button>
@@ -122,7 +125,7 @@ export function ControlPlaneDrKeygen({
                     setSaved(true)
                   }}
                 >
-                  <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+                  <DownloadGlassIcon className="size-4" aria-hidden="true" />
                   {t('controlPlaneDrKeygen.download')}
                 </Button>
               </div>

@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ClockIcon,
-  ProhibitIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  BanGlassIcon,
+  ClockGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -38,7 +38,7 @@ function DeltaRow({
     ...delta.databases.map((d) => `database:${d}`),
   ]
   const gained = kind === 'gains'
-  const Icon = gained ? ArrowUpIcon : ArrowDownIcon
+  const Icon = gained ? ArrowUpGlassIcon : ArrowDownGlassIcon
   const tone = gained ? TONE.success : TONE.danger
   return (
     <li className="flex flex-col gap-1">
@@ -112,7 +112,7 @@ function ChangeBlock({ change }: { change: PrincipalChange }) {
         <p
           className={cn('flex items-center gap-1.5 text-xs', TONE.warning.text)}
         >
-          <ClockIcon className="size-3.5" aria-hidden="true" />
+          <ClockGlassIcon className="size-4" aria-hidden="true" />
           {t('impact.recentlyUsed')}
         </p>
       ) : null}
@@ -161,7 +161,7 @@ export function ImpactPreview({
       ) : null}
       {data?.guard.blocked ? (
         <Alert variant="destructive">
-          <ProhibitIcon />
+          <BanGlassIcon size="1.2em" />
           <AlertDescription>{t('impact.guardBlocked')}</AlertDescription>
         </Alert>
       ) : null}

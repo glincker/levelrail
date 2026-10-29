@@ -1,4 +1,4 @@
-import { RobotIcon } from '@phosphor-icons/react/dist/ssr'
+import { BotGlassIcon } from '@thesvg/ui-react'
 import { Button } from './ui/button'
 
 // One toggle chip per known agent name. Selecting the active chip clears the
@@ -34,7 +34,7 @@ export function AgentFilterChips({
               onChange(selected ? undefined : name)
             }}
           >
-            <RobotIcon className="size-3.5" aria-hidden="true" />
+            <BotGlassIcon className="size-4" aria-hidden="true" />
             {name}
           </Button>
         )

@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, LightbulbIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CheckGlassIcon,
+  LightbulbGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import {
   looksSensitive,
   newRowId,
@@ -161,17 +165,17 @@ export function AddVariableRow({
       {keyError ? <p className="text-xs text-destructive">{keyError}</p> : null}
       {suggestSecret ? (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <LightbulbIcon aria-hidden className="size-3.5" />
+          <LightbulbGlassIcon aria-hidden className="size-4" />
           {t('add.suggestSecret')}
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-          <XIcon />
+          <XGlassIcon size="1.2em" />
           {t('add.cancel')}
         </Button>
         <Button type="submit" size="sm" disabled={!ready}>
-          <CheckIcon />
+          <CheckGlassIcon size="1.2em" />
           {t('add.add')}
         </Button>
       </div>

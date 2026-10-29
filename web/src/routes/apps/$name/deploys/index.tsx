@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { GearSixIcon } from '@phosphor-icons/react/dist/ssr'
+import { SettingsGlassIcon } from '@thesvg/ui-react'
 import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../hooks/useDeployProgress'
 import { useApp } from '../../../../queries/apps'
@@ -85,7 +85,7 @@ function DeploysSection() {
             nativeButton={false}
             render={<Link to="/apps/$name/deploy-settings" params={{ name }} />}
           >
-            <GearSixIcon className="size-3.5" data-icon="inline-start" />
+            <SettingsGlassIcon className="size-4" data-icon="inline-start" />
             {t('deployHistory.settingsLinkCta')}
           </Button>
         </CardContent>

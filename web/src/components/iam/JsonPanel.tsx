@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleNotchIcon,
-  LockSimpleIcon,
-  WarningCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  LoaderCircleGlassIcon,
+  LockGlassIcon,
+} from '@thesvg/ui-react'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
@@ -77,11 +77,11 @@ export function JsonPanel({
           )}
         >
           {checking ? (
-            <CircleNotchIcon className="size-3.5 animate-spin motion-reduce:animate-none" />
+            <LoaderCircleGlassIcon className="size-4 animate-spin motion-reduce:animate-none" />
           ) : valid ? (
-            <CheckCircleIcon className="size-3.5" />
+            <CircleCheckGlassIcon className="size-4 text-tone-success" />
           ) : (
-            <XCircleIcon className="size-3.5 text-destructive" />
+            <CircleXGlassIcon className="size-4 text-destructive" />
           )}
           {checking
             ? t('builder.issues.checking')
@@ -107,8 +107,8 @@ export function JsonPanel({
               key={`${f.kind}:${f.message}`}
               className="flex items-start gap-1.5 text-xs text-muted-foreground"
             >
-              <WarningCircleIcon
-                className={cn('mt-0.5 size-3.5 shrink-0', TONE.warning.text)}
+              <CircleAlertGlassIcon
+                className={cn('mt-0.5 size-4 shrink-0', TONE.warning.text)}
               />
               <span>
                 {f.message} <span className="text-foreground">{f.fix}</span>
@@ -120,7 +120,7 @@ export function JsonPanel({
 
       <div className="space-y-1.5 rounded-lg border border-dashed border-border p-3">
         <h4 className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-          <LockSimpleIcon className="size-3.5" aria-hidden="true" />
+          <LockGlassIcon className="size-4" aria-hidden="true" />
           {t('builder.conditions.title')}
         </h4>
         <p className="text-xs text-muted-foreground">

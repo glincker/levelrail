@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useIsRoot } from '../hooks/useIsRoot'
@@ -32,7 +32,7 @@ export function RestartControlPlaneButton({
   return (
     <>
       <Button variant={variant} disabled={busy} onClick={() => setOpen(true)}>
-        <ArrowsClockwiseIcon className="size-4" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-4.5" aria-hidden="true" />
         {label ?? t('controlPlaneRestart.action')}
       </Button>
       <ConfirmDialog

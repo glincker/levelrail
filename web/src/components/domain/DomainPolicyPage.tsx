@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -91,7 +91,7 @@ export function DomainPolicyPage({
       <div className="space-y-4">
         {header}
         <EmptyState
-          icon={<WarningCircleIcon className="size-5" />}
+          icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
           title={t('page.missingAppTitle')}
           description={t('page.missingApp')}
           action={
@@ -120,7 +120,7 @@ export function DomainPolicyPage({
       <div className="space-y-4">
         {header}
         <EmptyState
-          icon={<WarningCircleIcon className="size-5" />}
+          icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
           title={t('page.loadFailed')}
           description={error?.message ?? ''}
           action={

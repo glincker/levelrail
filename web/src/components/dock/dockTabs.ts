@@ -1,8 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
-import {
-  ChatCircleTextIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { MessageCircleGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
 import type { ExperimentalFeature } from '../../lib/experimental'
 
 // Lazy so xterm and the chat stack load when a tab first opens, not on every page.
@@ -26,13 +23,13 @@ export const DOCK_TABS: readonly DockTab[] = [
   {
     id: 'ai-chat',
     labelKey: 'dock.tabs.aiChat',
-    icon: ChatCircleTextIcon,
+    icon: MessageCircleGlassIcon,
     component: DockAiChatTab,
   },
   {
     id: 'console',
     labelKey: 'dock.tabs.console',
-    icon: TerminalWindowIcon,
+    icon: TerminalGlassIcon,
     component: DockConsoleTab,
     feature: 'cli-console',
   },

@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  GlobeIcon,
-  PlusIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  GlobeGlassIcon,
+  PlusGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -82,7 +82,7 @@ export function DomainDnsRecordsControl({
           className="flex items-center gap-1.5 text-left"
         >
           <Badge variant="muted" className="shrink-0">
-            <GlobeIcon className="size-3" aria-hidden="true" />
+            <GlobeGlassIcon className="size-3.5" aria-hidden="true" />
             {isLoading
               ? t('recordsControl.title')
               : notConfigured
@@ -97,7 +97,7 @@ export function DomainDnsRecordsControl({
           aria-expanded={false}
           onClick={() => setOpen(true)}
         >
-          <GlobeIcon className="size-3.5" aria-hidden="true" />
+          <GlobeGlassIcon className="size-4" aria-hidden="true" />
           {t('recordsControl.manage')}
         </Button>
       </div>
@@ -108,7 +108,7 @@ export function DomainDnsRecordsControl({
     <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 font-medium text-foreground">
-          <GlobeIcon className="size-4" aria-hidden="true" />
+          <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
           {data?.zone
             ? t('recordsControl.titleForZone', {
                 zone: data.zone.replace(/\.$/, ''),
@@ -130,7 +130,10 @@ export function DomainDnsRecordsControl({
         <Skeleton className="h-24 w-full" />
       ) : notConfigured ? (
         <Alert>
-          <WarningCircleIcon className="size-4" aria-hidden="true" />
+          <CircleAlertGlassIcon
+            className="size-4.5 text-tone-danger"
+            aria-hidden="true"
+          />
           <AlertDescription>{t('recordsControl.noProvider')}</AlertDescription>
         </Alert>
       ) : isError ? (
@@ -241,7 +244,7 @@ export function DomainDnsRecordsControl({
                   })
                 }}
               >
-                <PlusIcon aria-hidden="true" />
+                <PlusGlassIcon size="1.2em" aria-hidden="true" />
                 <span className="sr-only">{t('recordsControl.addRecord')}</span>
               </Button>
             </Field>

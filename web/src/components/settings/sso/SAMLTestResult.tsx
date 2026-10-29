@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import type { SAMLConnection } from '@/queries/sso'
 import { connectionInput, useSaveSAMLConnection } from '@/queries/sso'
 import type { SSOFix, SSOIssue, SSOTestResult } from '@/queries/ssoOidc'
@@ -90,7 +87,7 @@ export function SAMLTestResult({
       'response_invalid'
     return (
       <Alert variant="destructive">
-        <WarningCircleIcon />
+        <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
         <AlertTitle>{t(`saml.test.failure.${key}.title`)}</AlertTitle>
         <AlertDescription className="space-y-1">
           <p>
@@ -112,10 +109,13 @@ export function SAMLTestResult({
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2 text-sm font-medium">
         {ev.allowed ? (
-          <CheckCircleIcon className="size-5 text-success" aria-hidden="true" />
+          <CircleCheckGlassIcon
+            className="size-5.5 text-success"
+            aria-hidden="true"
+          />
         ) : (
-          <WarningCircleIcon
-            className="size-5 text-destructive"
+          <CircleAlertGlassIcon
+            className="size-5.5 text-destructive"
             aria-hidden="true"
           />
         )}

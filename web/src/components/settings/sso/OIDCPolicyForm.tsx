@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
+import { FlaskConicalGlassIcon } from '@thesvg/ui-react'
 import type { OAuthSSOPolicy, OAuthSSOPolicyInput } from '@/queries/ssoOidc'
 import {
   policyInput,
@@ -189,7 +189,7 @@ export function OIDCPolicyForm({
             variant="outline"
             render={<a href={ssoTestStartURL(policy.provider)} />}
           >
-            <FlaskIcon aria-hidden="true" />
+            <FlaskConicalGlassIcon size="1.2em" aria-hidden="true" />
             {t('oidc.test.button')}
           </Button>
         ) : null}

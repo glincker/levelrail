@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { StatusPill, type Tone } from '@/components/kit'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -91,7 +91,7 @@ function ReleaseRow({
             onPreview(release.version)
           }}
         >
-          <ArrowCounterClockwiseIcon className="size-4" />
+          <RotateCcwGlassIcon className="size-4.5" />
           {t('history.preview')}
         </Button>
       </div>

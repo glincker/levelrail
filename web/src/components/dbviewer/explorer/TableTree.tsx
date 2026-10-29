@@ -3,13 +3,13 @@ import type { KeyboardEvent } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CaretDownIcon,
-  CaretRightIcon,
-  EyeIcon,
-  MagnifyingGlassIcon,
-  TableIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  EyeGlassIcon,
+  RefreshCwGlassIcon,
+  SearchGlassIcon,
+  SpreadsheetGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -131,8 +131,8 @@ export function TableTree({
     <aside className="space-y-2">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          <SearchGlassIcon
+            className="pointer-events-none absolute left-2 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -155,7 +155,7 @@ export function TableTree({
           aria-label={t('viewer.explorer.refresh')}
           onClick={onRefresh}
         >
-          <ArrowsClockwiseIcon className="size-4" aria-hidden="true" />
+          <RefreshCwGlassIcon className="size-4.5" aria-hidden="true" />
         </Button>
       </div>
       <p className="text-xs text-muted-foreground" aria-live="polite">
@@ -226,9 +226,15 @@ export function TableTree({
                   {item.type === 'schema' ? (
                     <>
                       {collapsed.has(item.schema) && !query ? (
-                        <CaretRightIcon className="size-3" aria-hidden="true" />
+                        <ChevronRightGlassIcon
+                          className="size-3.5"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <CaretDownIcon className="size-3" aria-hidden="true" />
+                        <ChevronDownGlassIcon
+                          className="size-3.5"
+                          aria-hidden="true"
+                        />
                       )}
                       <span className="truncate">{item.schema}</span>
                       <span className="ml-auto tabular-nums">{item.count}</span>
@@ -236,13 +242,13 @@ export function TableTree({
                   ) : (
                     <>
                       {item.table.kind === 'table' ? (
-                        <TableIcon
-                          className="size-4 shrink-0 text-muted-foreground"
+                        <SpreadsheetGlassIcon
+                          className="size-4.5 shrink-0 text-muted-foreground"
                           aria-hidden="true"
                         />
                       ) : (
-                        <EyeIcon
-                          className="size-4 shrink-0 text-muted-foreground"
+                        <EyeGlassIcon
+                          className="size-4.5 shrink-0 text-muted-foreground"
                           aria-hidden="true"
                         />
                       )}

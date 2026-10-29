@@ -1,18 +1,18 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleDashedIcon,
-  ClockIcon,
-  HourglassIcon,
-  LockKeyIcon,
-  PushPinIcon,
-  ScissorsIcon,
-  ShieldCheckIcon,
-  WarningCircleIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CircleXGlassIcon,
+  ClockGlassIcon,
+  CountdownGlassIcon,
+  LockGlassIcon,
+  PinGlassIcon,
+  ScissorsGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { formatAbsolute } from '../../lib/dateFormat'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -25,13 +25,13 @@ import type {
 import { approvalExpiry } from './approval'
 import { DriftBadge } from './StackDrift'
 
-const STATUS_VIEW: Record<StackRevisionStatus, { tone: Tone; icon: Icon }> = {
-  pending_approval: { tone: 'warning', icon: HourglassIcon },
-  applying: { tone: 'info', icon: ClockIcon },
-  applied: { tone: 'success', icon: CheckCircleIcon },
-  partial: { tone: 'warning', icon: WarningCircleIcon },
-  failed: { tone: 'danger', icon: XCircleIcon },
-  superseded: { tone: 'neutral', icon: CircleDashedIcon },
+const STATUS_VIEW: Record<StackRevisionStatus, { tone: Tone; icon: UiIcon }> = {
+  pending_approval: { tone: 'warning', icon: CountdownGlassIcon },
+  applying: { tone: 'info', icon: ClockGlassIcon },
+  applied: { tone: 'success', icon: CircleCheckGlassIcon },
+  partial: { tone: 'warning', icon: CircleAlertGlassIcon },
+  failed: { tone: 'danger', icon: CircleXGlassIcon },
+  superseded: { tone: 'neutral', icon: CircleDashedGlassIcon },
 }
 
 export function RevisionStatusBadge({
@@ -61,7 +61,7 @@ export function RevisionStatus({
       {revision.rejected ? (
         <StatusBadge
           tone="danger"
-          icon={XCircleIcon}
+          icon={CircleXGlassIcon}
           label={t('status.rejected')}
         />
       ) : (
@@ -91,32 +91,40 @@ export function StackFlags({ stack }: Readonly<{ stack: Stack }>) {
             revision: stack.lock.revision,
           })}
         >
-          <LockKeyIcon aria-hidden="true" />
+          <LockGlassIcon size="1.2em" aria-hidden="true" />
           {t('flags.locked')}
         </Badge>
       ) : null}
       {stack.pinned_revision ? (
         <Badge variant="info">
-          <PushPinIcon aria-hidden="true" />
+          <PinGlassIcon size="1.2em" aria-hidden="true" />
           {t('flags.pinned', { revision: stack.pinned_revision })}
         </Badge>
       ) : null}
       <DriftBadge drift={stack.drift} />
       {stack.drift_policy === 'lock' ? (
         <Badge variant="outline">
-          <WarningIcon aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="text-tone-warning"
+            size="1.2em"
+            aria-hidden="true"
+          />
           {t('flags.driftLock')}
         </Badge>
       ) : null}
       {stack.require_approval ? (
         <Badge variant="outline">
-          <ShieldCheckIcon aria-hidden="true" />
+          <ShieldCheckGlassIcon
+            className="text-tone-success"
+            size="1.2em"
+            aria-hidden="true"
+          />
           {t('flags.approval')}
         </Badge>
       ) : null}
       {stack.allow_prune ? (
         <Badge variant="outline">
-          <ScissorsIcon aria-hidden="true" />
+          <ScissorsGlassIcon size="1.2em" aria-hidden="true" />
           {t('flags.prune')}
         </Badge>
       ) : null}

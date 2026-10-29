@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -363,7 +363,11 @@ export function FindingsStep({
                   })
                 }}
               >
-                <CheckCircleIcon aria-hidden="true" />
+                <CircleCheckGlassIcon
+                  className="text-tone-success"
+                  size="1.2em"
+                  aria-hidden="true"
+                />
                 {t('findings.advanced.validateDirectory')}
               </Button>
             </div>

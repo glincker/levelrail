@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  SpinnerGapIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { functionsQueryOptions } from '../../../queries/functions'
@@ -33,13 +33,13 @@ export function DeployResult({
   const url =
     fns.data?.functions.find((f) => f.name === name)?.url ?? fallbackUrl
 
-  let Status = SpinnerGapIcon
+  let Status = LoaderCircleGlassIcon
   let message = t('deploy.result.building')
   if (live) {
-    Status = CheckCircleIcon
+    Status = CircleCheckGlassIcon
     message = t('deploy.result.live', { name })
   } else if (failed) {
-    Status = WarningIcon
+    Status = TriangleAlertGlassIcon
     message = t('deploy.result.failed')
   }
 

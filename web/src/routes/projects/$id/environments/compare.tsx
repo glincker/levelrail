@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon } from '@thesvg/ui-react'
 import {
   environmentListQueryOptions,
   useEnvironments,
@@ -75,7 +75,7 @@ function EnvironmentComparePage() {
       breadcrumb={<Breadcrumbs projectId={id} />}
       title={
         <span className="flex items-center gap-2">
-          <ArrowsLeftRightIcon className="size-4 text-muted-foreground" />
+          <ArrowLeftRightGlassIcon className="size-4.5 text-muted-foreground" />
           Compare environments
         </span>
       }
@@ -106,13 +106,13 @@ function EnvironmentComparePage() {
 
       {!a || !b ? (
         <EmptyState
-          icon={<ArrowsLeftRightIcon className="size-5" />}
+          icon={<ArrowLeftRightGlassIcon className="size-5.5" />}
           title="Pick two environments to compare"
           description="Choose an environment for A and B above to see which env var keys drift between them."
         />
       ) : a === b ? (
         <EmptyState
-          icon={<ArrowsLeftRightIcon className="size-5" />}
+          icon={<ArrowLeftRightGlassIcon className="size-5.5" />}
           title="Pick two different environments"
           description="A and B are the same environment right now; there's nothing to compare."
         />

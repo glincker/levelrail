@@ -3,11 +3,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  CheckIcon,
-  CopyIcon,
-  EnvelopeIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  MailGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -140,7 +140,7 @@ export function InviteMemberDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
-        <EnvelopeIcon />
+        <MailGlassIcon size="1.2em" />
         Invite member
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -164,7 +164,11 @@ export function InviteMemberDialog({
                 variant="outline"
                 onClick={copyLink}
               >
-                {copied ? <CheckIcon /> : <CopyIcon />}
+                {copied ? (
+                  <CheckGlassIcon size="1.2em" />
+                ) : (
+                  <CopyGlassIcon size="1.2em" />
+                )}
                 {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>
@@ -188,7 +192,7 @@ export function InviteMemberDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <EnvelopeIcon className="size-4 text-muted-foreground" />
+                <MailGlassIcon className="size-4.5 text-muted-foreground" />
                 Invite member
               </DialogTitle>
               <DialogDescription>
@@ -249,7 +253,10 @@ export function InviteMemberDialog({
 
               {createInvite.isError ? (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.2em"
+                  />
                   <AlertDescription>
                     {createInvite.error.message}
                   </AlertDescription>

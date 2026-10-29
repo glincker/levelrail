@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -122,7 +122,7 @@ export function EnvironmentsTable({
                 variant="ghost"
                 aria-label={`${t('settings.edit')} ${env.name}`}
               >
-                <PencilSimpleIcon />
+                <PencilGlassIcon size="1.2em" />
               </Button>
             }
           />
@@ -137,7 +137,7 @@ export function EnvironmentsTable({
                 disabled={isBuiltIn(env)}
                 aria-label={`${t('settings.delete')} ${env.name}`}
               >
-                <TrashIcon />
+                <TrashGlassIcon size="1.2em" />
               </Button>
             }
           />

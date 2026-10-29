@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowBendUpLeftIcon,
-  DotsThreeIcon,
-  LockSimpleIcon,
-  PlusIcon,
-  ShieldCheckIcon,
-  ShieldSlashIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EllipsisGlassIcon,
+  LockGlassIcon,
+  PlusGlassIcon,
+  ReplyGlassIcon,
+  ShieldCheckGlassIcon,
+  ShieldOffGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { MASKED_VALUE, type EnvRow } from '../../lib/envRows'
 import type { EnvTier } from '../../lib/envProvenance'
 import { EnvVarValue } from './EnvVarValue'
@@ -61,7 +61,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
         </span>
         {row.sensitive && row.type === 'plain' ? (
           <Badge variant="outline" className="gap-1">
-            <LockSimpleIcon aria-hidden />
+            <LockGlassIcon size="1.2em" aria-hidden />
             {t('sensitive.badge')}
           </Badge>
         ) : null}
@@ -79,7 +79,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
               size="sm"
               onClick={props.onOverride}
             >
-              <PlusIcon />
+              <PlusGlassIcon size="1.2em" />
               {t('actions.override')}
             </Button>
           </div>
@@ -92,7 +92,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
               props.onChange({ ...row, removed: false })
             }}
           >
-            <ArrowBendUpLeftIcon />
+            <ReplyGlassIcon size="1.2em" />
             {t('actions.undoRemove')}
           </Button>
         ) : (
@@ -136,7 +136,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                 />
               }
             >
-              <DotsThreeIcon weight="bold" />
+              <EllipsisGlassIcon size="1.2em" />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {existingPlain ? (
@@ -147,7 +147,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                         props.onSensitivity(false)
                       }}
                     >
-                      <ShieldSlashIcon />
+                      <ShieldOffGlassIcon size="1.2em" />
                       {t('actions.markPlain')}
                     </DropdownMenuItem>
                   ) : (
@@ -156,7 +156,10 @@ export function EnvVarRow(props: EnvVarRowProps) {
                         props.onSensitivity(true)
                       }}
                     >
-                      <ShieldCheckIcon />
+                      <ShieldCheckGlassIcon
+                        className="text-tone-success"
+                        size="1.2em"
+                      />
                       {t('actions.markSensitive')}
                     </DropdownMenuItem>
                   )}
@@ -169,7 +172,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                   </DropdownMenuItem>
                   {props.canConvert ? (
                     <DropdownMenuItem onClick={props.onConvert}>
-                      <LockSimpleIcon />
+                      <LockGlassIcon size="1.2em" />
                       {t('actions.convert')}
                     </DropdownMenuItem>
                   ) : null}
@@ -181,7 +184,7 @@ export function EnvVarRow(props: EnvVarRowProps) {
                   props.onChange({ ...row, removed: true })
                 }}
               >
-                <TrashIcon />
+                <TrashGlassIcon size="1.2em" />
                 {t('actions.remove')}
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageGlassIcon } from '@thesvg/ui-react'
 import { registryCredentialListQueryOptions } from '../../queries/registryCredentials'
 import { RegistryCredentialTable } from '../../components/RegistryCredentialTable'
 import { CreateRegistryCredentialDialog } from '../../components/CreateRegistryCredentialDialog'
@@ -68,7 +68,7 @@ function RegistryCredentialsPage() {
 
   return (
     <PageTemplate
-      icon={<PackageIcon />}
+      icon={<PackageGlassIcon size="1.2em" />}
       eyebrow={t('registryPage.eyebrow')}
       title={t('registryPage.title')}
       description={t('registryPage.description')}

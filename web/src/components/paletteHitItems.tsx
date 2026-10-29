@@ -1,41 +1,41 @@
 import * as React from 'react'
 import type { TFunction } from 'i18next'
 import {
-  BookOpenIcon,
-  BookmarkSimpleIcon,
-  DatabaseIcon,
-  FolderIcon,
-  GearIcon,
-  GlobeIcon,
-  HardDrivesIcon,
-  LightningIcon,
-  RocketLaunchIcon,
-  SquaresFourIcon,
-  StackIcon,
-  TagIcon,
-  TreeStructureIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BinaryTreeGlassIcon,
+  BookOpenGlassIcon,
+  BookmarkGlassIcon,
+  DatabaseGlassIcon,
+  FolderGlassIcon,
+  GlobeGlassIcon,
+  LayersGlassIcon,
+  LayoutGridGlassIcon,
+  RocketGlassIcon,
+  ServerGlassIcon,
+  SettingsGlassIcon,
+  TagGlassIcon,
+  ZapGlassIcon,
+} from '@thesvg/ui-react'
 import type { SearchHit } from '../queries/search'
 import type { PaletteItem } from './commandPaletteData'
 
 const KIND_ICONS: Record<string, React.ReactNode> = {
-  app: <StackIcon />,
-  database: <DatabaseIcon />,
-  node: <HardDrivesIcon />,
-  domain: <GlobeIcon />,
-  template: <SquaresFourIcon />,
-  project: <FolderIcon />,
-  environment: <TreeStructureIcon />,
-  tag: <TagIcon />,
-  deployment: <RocketLaunchIcon />,
-  setting: <GearIcon />,
-  doc: <BookOpenIcon />,
-  action: <LightningIcon />,
-  saved: <BookmarkSimpleIcon />,
+  app: <LayersGlassIcon size="1.2em" />,
+  database: <DatabaseGlassIcon size="1.2em" />,
+  node: <ServerGlassIcon size="1.2em" />,
+  domain: <GlobeGlassIcon size="1.2em" />,
+  template: <LayoutGridGlassIcon size="1.2em" />,
+  project: <FolderGlassIcon size="1.2em" />,
+  environment: <BinaryTreeGlassIcon size="1.2em" />,
+  tag: <TagGlassIcon size="1.2em" />,
+  deployment: <RocketGlassIcon size="1.2em" />,
+  setting: <SettingsGlassIcon size="1.2em" />,
+  doc: <BookOpenGlassIcon size="1.2em" />,
+  action: <ZapGlassIcon size="1.2em" />,
+  saved: <BookmarkGlassIcon size="1.2em" />,
 }
 
 export function kindIcon(kind: string): React.ReactNode {
-  return KIND_ICONS[kind] ?? <StackIcon />
+  return KIND_ICONS[kind] ?? <LayersGlassIcon size="1.2em" />
 }
 
 export type HrefNavigate = (opts: {

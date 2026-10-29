@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { TrashIcon, WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon, WrenchGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
@@ -31,7 +31,7 @@ function MaintenancePage() {
 
   return (
     <PageTemplate
-      icon={<WrenchIcon />}
+      icon={<WrenchGlassIcon size="1.2em" />}
       title={t('title')}
       description={t('description')}
       actions={notConfigured ? null : <ScheduleMaintenanceDialog />}
@@ -45,7 +45,7 @@ function MaintenancePage() {
       ) : null}
       {data && data.length === 0 ? (
         <EmptyState
-          icon={<WrenchIcon />}
+          icon={<WrenchGlassIcon size="1.2em" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />
@@ -82,7 +82,7 @@ function MaintenancePage() {
                     remove.mutate(w.id)
                   }}
                 >
-                  <TrashIcon className="size-3.5" aria-hidden="true" />
+                  <TrashGlassIcon className="size-4" aria-hidden="true" />
                   {t('cancel')}
                 </Button>
               )}

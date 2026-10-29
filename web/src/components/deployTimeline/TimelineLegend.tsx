@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowUUpLeftIcon,
-  BellRingingIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  CircleXGlassIcon,
+  UndoGlassIcon,
+} from '@thesvg/ui-react'
 import { BAR_CLASS, barTone } from '../../lib/deployTimeline'
 
 const SWATCHES = [
@@ -30,22 +30,20 @@ export function TimelineLegend() {
         </li>
       ))}
       <li className="flex items-center gap-1.5">
-        <ArrowUUpLeftIcon aria-hidden="true" weight="fill" className="size-3" />
+        <UndoGlassIcon aria-hidden="true" className="size-3.5" />
         {t('legend.rolledBack')}
       </li>
       <li className="flex items-center gap-1.5">
-        <XCircleIcon
+        <CircleXGlassIcon
           aria-hidden="true"
-          weight="fill"
-          className="size-3 text-tone-danger"
+          className="size-3.5 text-tone-danger"
         />
         {t('legend.failed')}
       </li>
       <li className="flex items-center gap-1.5">
-        <BellRingingIcon
+        <BellRingGlassIcon
           aria-hidden="true"
-          weight="fill"
-          className="size-3 text-tone-warning"
+          className="size-3.5 text-tone-warning"
         />
         {t('legend.alert')}
       </li>

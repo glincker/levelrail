@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { TrayIcon } from '@phosphor-icons/react/dist/ssr'
+import { InboxGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { inboxUnread } from '../../lib/inboxEntries'
 import { useInboxEntries } from '../../queries/inboxFeed'
@@ -21,7 +21,7 @@ export function InboxBadge() {
       render={<Link to="/inbox" />}
       nativeButton={false}
     >
-      <TrayIcon />
+      <InboxGlassIcon size="1.2em" />
       {unread > 0 ? (
         <span
           aria-hidden="true"

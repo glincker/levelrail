@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CheckboxField, FieldMessage, NativeSelect } from './PolicyShared'
@@ -119,7 +119,7 @@ export function ForwarderEditor({
                   disabled={i === 0}
                   onClick={() => onChange(moveItem(rules, i, i - 1))}
                 >
-                  <ArrowUpIcon />
+                  <ArrowUpGlassIcon size="1.2em" />
                 </Button>
                 <Button
                   type="button"
@@ -129,7 +129,7 @@ export function ForwarderEditor({
                   disabled={i === rules.length - 1}
                   onClick={() => onChange(moveItem(rules, i, i + 1))}
                 >
-                  <ArrowDownIcon />
+                  <ArrowDownGlassIcon size="1.2em" />
                 </Button>
                 <Button
                   type="button"
@@ -138,7 +138,7 @@ export function ForwarderEditor({
                   aria-label={t('common.remove')}
                   onClick={() => onChange(rules.filter((_, j) => j !== i))}
                 >
-                  <TrashIcon />
+                  <TrashGlassIcon size="1.2em" />
                 </Button>
               </div>
             </div>
@@ -283,7 +283,7 @@ export function ForwarderEditor({
           ])
         }
       >
-        <PlusIcon />
+        <PlusGlassIcon size="1.2em" />
         {t('forwarders.add')}
       </Button>
     </div>

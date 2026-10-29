@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricChartCard } from '@/components/MetricChartCard'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { isDashboardMetric, isHttpUrl } from '@/lib/dashboardGrid'
 import { chartPalette } from '@/lib/chartPalette'
 import { formatMoney } from '@/lib/usageFormat'
@@ -321,7 +321,7 @@ function LinkWidget({ w }: { w: DashboardWidget }) {
           {new URL(url).host}
         </span>
       </span>
-      <ArrowSquareOutIcon aria-hidden="true" className="size-4 shrink-0" />
+      <ExternalLinkGlassIcon aria-hidden="true" className="size-4.5 shrink-0" />
     </a>
   )
 }

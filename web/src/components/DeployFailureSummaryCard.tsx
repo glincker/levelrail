@@ -1,10 +1,10 @@
 import { useId, useState, type ReactNode } from 'react'
 import {
-  ArrowCounterClockwiseIcon,
-  LightbulbIcon,
-  TerminalIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  LightbulbGlassIcon,
+  RotateCcwGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import type { LogLine } from '../hooks/useLogStream'
 import type { ReconcileCondition } from '../types/deploy'
 import type { DeployAttempt } from '../types/deployAttempt'
@@ -130,8 +130,8 @@ export function DeployFailureSummaryCard({
             id={headingId}
             className="flex items-center gap-2 text-sm font-semibold text-foreground"
           >
-            <WarningCircleIcon
-              className="size-4 text-destructive"
+            <CircleAlertGlassIcon
+              className="size-4.5 text-destructive"
               aria-hidden="true"
             />
             What went wrong
@@ -172,7 +172,7 @@ export function DeployFailureSummaryCard({
             {summary.cause ? (
               <div>
                 <dt className="flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  <LightbulbIcon className="size-3.5" aria-hidden="true" />
+                  <LightbulbGlassIcon className="size-4" aria-hidden="true" />
                   Likely cause and fix
                 </dt>
                 <dd className="mt-1 text-foreground">
@@ -212,7 +212,7 @@ export function DeployFailureSummaryCard({
               size="sm"
               onClick={viewLogs}
             >
-              <TerminalIcon aria-hidden="true" />
+              <TerminalGlassIcon size="1.2em" aria-hidden="true" />
               View full logs
             </Button>
             <RetrySplitButton
@@ -235,7 +235,7 @@ export function DeployFailureSummaryCard({
                 disabled={rollback.isPending}
                 onClick={rollBack}
               >
-                <ArrowCounterClockwiseIcon aria-hidden="true" />
+                <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />
                 Roll back to last good
               </Button>
             ) : null}

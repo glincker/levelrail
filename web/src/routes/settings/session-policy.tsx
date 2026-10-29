@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { GearSixIcon, TimerIcon } from '@phosphor-icons/react/dist/ssr'
+import { ClockGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
@@ -95,7 +95,7 @@ function SessionPolicyPage() {
 
   return (
     <PageTemplate
-      icon={<TimerIcon />}
+      icon={<ClockGlassIcon size="1.2em" />}
       eyebrow={t('policy.eyebrow')}
       title={t('policy.title')}
       description={t('policy.description')}
@@ -127,7 +127,7 @@ function SessionPolicyPage() {
               size="sm"
               onClick={() => setEditing(team)}
             >
-              <GearSixIcon aria-hidden="true" />
+              <SettingsGlassIcon size="1.2em" aria-hidden="true" />
               {t('policy.edit')}
             </Button>
           </li>

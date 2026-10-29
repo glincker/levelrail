@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { DownloadSimpleIcon, PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon, PackageGlassIcon } from '@thesvg/ui-react'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatSize } from '../lib/format'
@@ -24,8 +24,8 @@ export function PipelineArtifactsPanel({
         id="run-artifacts"
         className="flex items-center gap-1.5 text-sm font-semibold text-foreground"
       >
-        <PackageIcon
-          className="size-4 text-muted-foreground"
+        <PackageGlassIcon
+          className="size-4.5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('artifacts.title')}
@@ -68,7 +68,7 @@ export function PipelineArtifactsPanel({
                 aria-label={t('artifacts.downloadLabel', { job: a.job })}
                 className={buttonVariants({ variant: 'outline', size: 'sm' })}
               >
-                <DownloadSimpleIcon aria-hidden="true" />
+                <DownloadGlassIcon size="1.2em" aria-hidden="true" />
                 {t('artifacts.download')}
               </a>
             </li>

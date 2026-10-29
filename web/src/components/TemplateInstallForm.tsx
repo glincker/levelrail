@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  KeyIcon,
-  RocketLaunchIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  KeyGlassIcon,
+  RocketGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useInstallTemplate } from '../queries/composeStack'
 import type { TemplateManifest } from '../types/compose'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -122,8 +122,8 @@ export function TemplateInstallForm({
         <ul className="space-y-1">
           {generated.map((p) => (
             <li key={p.key} className="flex items-start gap-2 text-sm">
-              <KeyIcon
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              <KeyGlassIcon
+                className="mt-0.5 size-4.5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <span>
@@ -159,13 +159,13 @@ export function TemplateInstallForm({
       ))}
       {error || install.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{error ?? install.error?.message}</AlertDescription>
         </Alert>
       ) : null}
       <div className="flex justify-end">
         <Button type="submit" disabled={install.isPending}>
-          <RocketLaunchIcon />
+          <RocketGlassIcon size="1.2em" />
           {install.isPending ? t('install.working') : t('install.submit')}
         </Button>
       </div>

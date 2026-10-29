@@ -4,12 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  CloudArrowUpIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  FolderIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  FolderGlassIcon,
+  TriangleAlertGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -192,7 +192,7 @@ export function CreateBackupTargetDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <CloudArrowUpIcon className="size-4 text-muted-foreground" />
+                <UploadGlassIcon className="size-4.5 text-muted-foreground" />
                 Connect bucket
               </DialogTitle>
             </DialogHeader>
@@ -227,7 +227,7 @@ export function CreateBackupTargetDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <CloudArrowUpIcon className="size-4 text-muted-foreground" />
+                <UploadGlassIcon className="size-4.5 text-muted-foreground" />
                 Connect bucket
               </DialogTitle>
               <DialogDescription>
@@ -291,7 +291,10 @@ export function CreateBackupTargetDialog() {
                 <Field>
                   <FieldLabel htmlFor="backup-target-path">
                     <span className="flex items-center gap-2">
-                      <FolderIcon className="size-4" aria-hidden="true" />
+                      <FolderGlassIcon
+                        className="size-4.5"
+                        aria-hidden="true"
+                      />
                       {t('backupTargetLocal.path')}
                     </span>
                   </FieldLabel>
@@ -401,9 +404,9 @@ export function CreateBackupTargetDialog() {
                         className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                       >
                         {revealSecret ? (
-                          <EyeSlashIcon className="size-4" />
+                          <EyeOffGlassIcon className="size-4.5" />
                         ) : (
-                          <EyeIcon className="size-4" />
+                          <EyeGlassIcon className="size-4.5" />
                         )}
                       </button>
                     </div>
@@ -414,7 +417,10 @@ export function CreateBackupTargetDialog() {
 
               {generalError ? (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.2em"
+                  />
                   <AlertDescription>{generalError}</AlertDescription>
                 </Alert>
               ) : null}

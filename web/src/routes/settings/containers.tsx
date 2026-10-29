@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
-  CheckCircleIcon,
-  CubeIcon,
-  MinusCircleIcon,
-  StackIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BoxGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  LayersGlassIcon,
+} from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -60,7 +60,11 @@ const COLUMNS: ResponsiveColumn<ContainerResource>[] = [
     width: 'w-28',
     cell: (c) => (
       <Badge variant={c.running ? 'success' : 'muted'}>
-        {c.running ? <CheckCircleIcon /> : <MinusCircleIcon />}
+        {c.running ? (
+          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+        ) : (
+          <CircleMinusGlassIcon size="1.2em" />
+        )}
         {c.running ? 'Running' : 'Stopped'}
       </Badge>
     ),
@@ -110,7 +114,7 @@ function ContainersPage() {
 
   return (
     <PageTemplate
-      icon={<StackIcon />}
+      icon={<LayersGlassIcon size="1.2em" />}
       title={t('containersPage.title')}
       description={t('containersPage.description')}
     >
@@ -121,13 +125,13 @@ function ContainersPage() {
       {isError ? (
         error instanceof ApiError && error.status === 501 ? (
           <Alert>
-            <WarningCircleIcon />
+            <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
             <AlertTitle>{t('containersPage.notAvailable')}</AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
         ) : (
           <Alert variant="destructive">
-            <WarningCircleIcon />
+            <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
             <AlertTitle>{t('containersPage.listFailed')}</AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
@@ -138,7 +142,7 @@ function ContainersPage() {
         containers.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<CubeIcon className="size-5" />}
+            icon={<BoxGlassIcon className="size-5.5" />}
             title={t('containersPage.emptyTitle')}
             description={t('containersPage.emptyDescription')}
           />

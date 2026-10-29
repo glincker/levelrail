@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SealCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { BadgeCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -12,7 +12,10 @@ export function TemplateVerifiedBadge({ className }: { className?: string }) {
       className={cn('gap-1 text-primary', className)}
       title={t('verified.hint')}
     >
-      <SealCheckIcon className="size-3" aria-hidden="true" />
+      <BadgeCheckGlassIcon
+        className="size-3.5 text-tone-success"
+        aria-hidden="true"
+      />
       {t('verified.badge')}
     </Badge>
   )

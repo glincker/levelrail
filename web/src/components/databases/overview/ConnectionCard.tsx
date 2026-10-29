@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react/dist/ssr'
+import { EyeGlassIcon, EyeOffGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -62,9 +62,9 @@ export function ConnectionCard({ database }: { database: DatabaseResource }) {
               onClick={() => setReveal((v) => !v)}
             >
               {reveal ? (
-                <EyeSlashIcon aria-hidden="true" />
+                <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
               ) : (
-                <EyeIcon aria-hidden="true" />
+                <EyeGlassIcon size="1.2em" aria-hidden="true" />
               )}
               {reveal
                 ? t('connection.maskPassword')

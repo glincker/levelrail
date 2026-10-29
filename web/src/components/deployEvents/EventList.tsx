@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsLeftRightIcon,
-  ArrowUUpLeftIcon,
-  ChartLineUpIcon,
-  EyeIcon,
-  FlagCheckeredIcon,
-  GitBranchIcon,
-  HammerIcon,
-  HeartbeatIcon,
-  ListChecksIcon,
-  TerminalWindowIcon,
-  UploadSimpleIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  ArrowLeftRightGlassIcon,
+  ChartLineGlassIcon,
+  EyeGlassIcon,
+  FlagGlassIcon,
+  GitBranchGlassIcon,
+  HammerGlassIcon,
+  ListChecksGlassIcon,
+  TerminalGlassIcon,
+  UndoGlassIcon,
+  UploadGlassIcon,
+  WebhookGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
@@ -27,18 +27,18 @@ import type { DeployEvent, DeployEventKind } from '../../types/deployEvents'
 import { ImpactCard } from './ImpactCard'
 
 const KIND_ICON: Record<DeployEventKind, ReactNode> = {
-  trigger: <GitBranchIcon />,
-  build: <HammerIcon />,
-  log: <TerminalWindowIcon />,
-  image_push: <UploadSimpleIcon />,
-  hook: <WebhooksLogoIcon />,
-  step: <ListChecksIcon />,
-  readiness: <HeartbeatIcon />,
-  cutover: <ArrowsLeftRightIcon />,
-  watch: <EyeIcon />,
-  rollback: <ArrowUUpLeftIcon />,
-  outcome: <FlagCheckeredIcon />,
-  traffic_impact: <ChartLineUpIcon />,
+  trigger: <GitBranchGlassIcon size="1.2em" />,
+  build: <HammerGlassIcon size="1.2em" />,
+  log: <TerminalGlassIcon size="1.2em" />,
+  image_push: <UploadGlassIcon size="1.2em" />,
+  hook: <WebhookGlassIcon size="1.2em" />,
+  step: <ListChecksGlassIcon size="1.2em" />,
+  readiness: <ActivityGlassIcon size="1.2em" />,
+  cutover: <ArrowLeftRightGlassIcon size="1.2em" />,
+  watch: <EyeGlassIcon size="1.2em" />,
+  rollback: <UndoGlassIcon size="1.2em" />,
+  outcome: <FlagGlassIcon size="1.2em" />,
+  traffic_impact: <ChartLineGlassIcon size="1.2em" />,
 }
 
 function clock(at: string): string {

@@ -2,10 +2,10 @@ import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  ScrollIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  RotateCcwGlassIcon,
+  ScrollGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -115,7 +115,7 @@ export function InvocationsTable({
             search={{ tab: 'search', from: inv.logs_from, to: inv.logs_to }}
             className="inline-flex items-center gap-1 text-sm hover:underline"
           >
-            <ScrollIcon className="size-3.5" aria-hidden="true" />
+            <ScrollGlassIcon className="size-4" aria-hidden="true" />
             {t('observe.openLogs')}
           </Link>
         ),
@@ -148,7 +148,9 @@ export function InvocationsTable({
   } else if (query.isError) {
     body = (
       <EmptyState
-        icon={<WarningCircleIcon />}
+        icon={
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+        }
         title={t('observe.loadError', { message: query.error.message })}
         description=""
         action={
@@ -165,7 +167,7 @@ export function InvocationsTable({
   } else if (query.data.invocations.length === 0) {
     body = (
       <EmptyState
-        icon={<ScrollIcon />}
+        icon={<ScrollGlassIcon size="1.2em" />}
         title={t('observe.emptyTitle')}
         description={t('observe.emptyBody')}
       />
@@ -187,10 +189,7 @@ export function InvocationsTable({
                 onReplay(inv)
               }}
             >
-              <ArrowCounterClockwiseIcon
-                className="size-4"
-                aria-hidden="true"
-              />
+              <RotateCcwGlassIcon className="size-4.5" aria-hidden="true" />
               {t('observe.replay')}
             </Button>
           ) : null

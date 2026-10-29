@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ClockCountdownIcon } from '@phosphor-icons/react/dist/ssr'
+import { CountdownGlassIcon } from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -181,8 +181,8 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-              <ClockCountdownIcon
-                className="size-4 text-muted-foreground"
+              <CountdownGlassIcon
+                className="size-4.5 text-muted-foreground"
                 aria-hidden="true"
               />
               {t('title')}
@@ -201,7 +201,7 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
             <p className="text-sm text-destructive">{error.message}</p>
           ) : tasks.length === 0 ? (
             <EmptyState
-              icon={<ClockCountdownIcon className="size-5" />}
+              icon={<CountdownGlassIcon className="size-5.5" />}
               title={t('empty.title')}
               description={t('empty.description')}
               action={<JobDialog appName={appName} />}

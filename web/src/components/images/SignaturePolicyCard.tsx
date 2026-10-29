@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SealCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { BadgeCheckGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,10 @@ export function SignaturePolicyCard({ mode }: { mode: 'off' | 'enforce' }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="space-y-0.5">
           <h2 className="flex items-center gap-2 text-sm font-medium">
-            <SealCheckIcon className="size-4" aria-hidden="true" />
+            <BadgeCheckGlassIcon
+              className="size-4.5 text-tone-success"
+              aria-hidden="true"
+            />
             {t('policy.title')}
           </h2>
           <p className="text-xs text-muted-foreground">

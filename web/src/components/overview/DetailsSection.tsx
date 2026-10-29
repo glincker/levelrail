@@ -1,4 +1,4 @@
-import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import {
   Collapsible,
   CollapsiblePanel,
@@ -23,8 +23,8 @@ export function DetailsSection({
   return (
     <Collapsible>
       <CollapsibleTrigger className="group flex items-center gap-2 py-1 text-sm font-medium">
-        <CaretRightIcon
-          className="size-3.5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
+        <ChevronRightGlassIcon
+          className="size-4 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
           aria-hidden="true"
         />
         Configuration and diagnostics

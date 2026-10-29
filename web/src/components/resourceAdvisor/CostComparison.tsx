@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, CoinsIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, CoinsGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import {
   Collapsible,
@@ -78,8 +78,8 @@ export function CostComparison({ appName }: { appName: string }) {
     <Collapsible className="border-t border-border pt-3">
       <div className="flex items-center gap-2">
         <CollapsibleTrigger className="group flex w-auto items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <CaretDownIcon className="size-3 transition-transform group-data-[panel-open]:rotate-180" />
-          <CoinsIcon className="size-4" />
+          <ChevronDownGlassIcon className="size-3.5 transition-transform group-data-[panel-open]:rotate-180" />
+          <CoinsGlassIcon className="size-4.5" />
           {t('cost.title')}
         </CollapsibleTrigger>
         <HelpLink path="/cost-estimate" label={t('cost.help')} />

@@ -1,15 +1,15 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  ArrowsClockwiseIcon,
-  GitCommitIcon,
-  RocketLaunchIcon,
-  StackIcon,
-  TimerIcon,
-  UserIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  ClockGlassIcon,
+  CommitGraphGlassIcon,
+  LayersGlassIcon,
+  RefreshCwGlassIcon,
+  RocketGlassIcon,
+  RotateCcwGlassIcon,
+  UserGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { RelativeTime, StatusPill } from '@/components/kit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDurationMs } from '../../lib/deployDuration'
@@ -21,10 +21,10 @@ import {
 import type { DeployAttempt } from '../../types/deployAttempt'
 import type { TimelineEntry } from '../../queries/appTimeline'
 
-const KIND_ICON: Record<HistoryKind, Icon> = {
-  deploy: RocketLaunchIcon,
-  rollback: ArrowCounterClockwiseIcon,
-  restart: ArrowsClockwiseIcon,
+const KIND_ICON: Record<HistoryKind, UiIcon> = {
+  deploy: RocketGlassIcon,
+  rollback: RotateCcwGlassIcon,
+  restart: RefreshCwGlassIcon,
 }
 
 export interface AppHistoryTimelineProps {
@@ -52,7 +52,7 @@ export function AppHistoryTimeline({
         <CardTitle>{t('appHistory.title')}</CardTitle>
         {managedByStack ? (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <StackIcon className="size-3.5" aria-hidden="true" />
+            <LayersGlassIcon className="size-4" aria-hidden="true" />
             {t('appHistory.managedBy', { stack: managedByStack })}
           </span>
         ) : null}
@@ -101,19 +101,19 @@ function HistoryRow({
       <StatusPill size="sm" tone={entry.tone} label={status} />
       {entry.who ? (
         <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <UserIcon className="size-3.5" aria-hidden="true" />
+          <UserGlassIcon className="size-4" aria-hidden="true" />
           {entry.who}
         </span>
       ) : null}
       {entry.sha ? (
         <span className="inline-flex items-center gap-1 font-mono text-muted-foreground">
-          <GitCommitIcon className="size-3.5" aria-hidden="true" />
+          <CommitGraphGlassIcon className="size-4" aria-hidden="true" />
           {entry.sha}
         </span>
       ) : null}
       {duration ? (
         <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <TimerIcon className="size-3.5" aria-hidden="true" />
+          <ClockGlassIcon className="size-4" aria-hidden="true" />
           {duration}
         </span>
       ) : null}

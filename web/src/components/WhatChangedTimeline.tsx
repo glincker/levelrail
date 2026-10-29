@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  BellRingingIcon,
-  CircleIcon,
-  GaugeIcon,
-  GearIcon,
-  RocketLaunchIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  CircleGlassIcon,
+  GaugeGlassIcon,
+  RocketGlassIcon,
+  RotateCcwGlassIcon,
+  SettingsGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import type { ComponentType } from 'react'
 import { sortTimeline } from '../lib/timeline'
 import type { TimelineEvent, TimelineKind } from '../types/investigate'
@@ -18,14 +18,14 @@ type IconType = ComponentType<{
 }>
 
 const KIND_ICON: Partial<Record<TimelineKind, IconType>> = {
-  deploy: RocketLaunchIcon,
-  rollback: ArrowCounterClockwiseIcon,
-  restart: ArrowCounterClockwiseIcon,
-  saturation: GaugeIcon,
-  alert: BellRingingIcon,
-  config: GearIcon,
-  env: GearIcon,
-  secret: GearIcon,
+  deploy: RocketGlassIcon,
+  rollback: RotateCcwGlassIcon,
+  restart: RotateCcwGlassIcon,
+  saturation: GaugeGlassIcon,
+  alert: BellRingGlassIcon,
+  config: SettingsGlassIcon,
+  env: SettingsGlassIcon,
+  secret: SettingsGlassIcon,
 }
 
 const SEVERITY_TEXT = {
@@ -53,7 +53,7 @@ export function WhatChangedTimeline({
   return (
     <ol className="space-y-2">
       {sorted.map((e, i) => {
-        const Icon = KIND_ICON[e.kind] ?? CircleIcon
+        const Icon = KIND_ICON[e.kind] ?? CircleGlassIcon
         return (
           <li
             key={`${e.at}-${e.kind}-${i}`}
@@ -68,7 +68,10 @@ export function WhatChangedTimeline({
                 {e.title}
                 {e.likely_cause ? (
                   <span className="ml-2 inline-flex items-center gap-1 rounded bg-tone-warning-soft px-1.5 py-0.5 text-xs font-medium text-tone-warning">
-                    <WarningIcon className="size-3" aria-hidden="true" />
+                    <TriangleAlertGlassIcon
+                      className="size-3.5 text-tone-warning"
+                      aria-hidden="true"
+                    />
                     {t('investigation.likelyCause')}
                   </span>
                 ) : null}

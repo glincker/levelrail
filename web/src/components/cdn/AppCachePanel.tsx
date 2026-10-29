@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CloudArrowDownIcon,
-  GlobeIcon,
-  PackageIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DownloadGlassIcon,
+  GlobeGlassIcon,
+  PackageGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
@@ -148,7 +148,7 @@ function Body({ app, data }: Readonly<{ app: string; data: AppCache }>) {
   if (data.domains.length === 0) {
     return (
       <EmptyState
-        icon={<GlobeIcon className="size-5" />}
+        icon={<GlobeGlassIcon className="size-5.5" />}
         title={t('app.noDomainsTitle')}
         description={t('app.noDomainsBody')}
         action={
@@ -177,7 +177,7 @@ function Body({ app, data }: Readonly<{ app: string; data: AppCache }>) {
             b.hits + b.misses > 0 ? (b.hits / (b.hits + b.misses)) * 100 : 0,
           )}
           tone="success"
-          icon={<ArrowsClockwiseIcon aria-hidden="true" />}
+          icon={<RefreshCwGlassIcon size="1.2em" aria-hidden="true" />}
           info={t('tiles.hitRateSince')}
         />
         <MetricTile
@@ -185,14 +185,14 @@ function Body({ app, data }: Readonly<{ app: string; data: AppCache }>) {
           value={formatSize(totals.hit_bytes)}
           series={data.series.map((b) => b.hit_bytes)}
           tone="info"
-          icon={<CloudArrowDownIcon aria-hidden="true" />}
+          icon={<DownloadGlassIcon size="1.2em" aria-hidden="true" />}
           info={t('tiles.savedSince')}
         />
         <MetricTile
           label={t('tiles.entries')}
           value={formatCount(totals.entries)}
           unit={formatSize(totals.bytes)}
-          icon={<PackageIcon aria-hidden="true" />}
+          icon={<PackageGlassIcon size="1.2em" aria-hidden="true" />}
         />
       </div>
       <Card>

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CopyIcon,
-  LockKeyIcon,
-  LockKeyOpenIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  CopyGlassIcon,
+  LockGlassIcon,
+  LockOpenGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -44,14 +44,14 @@ function KeyDisclosure({ encryption }: { encryption: CoverageEncryption }) {
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <CaretDownIcon className="size-3.5" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
         {t('safety.keyDetails')}
       </CollapsibleTrigger>
       <CollapsiblePanel>
         <div className="mt-2 space-y-2 text-sm text-muted-foreground">
           <p>{t('safety.keyHint')}</p>
           <Button type="button" size="sm" variant="outline" onClick={copy}>
-            <CopyIcon className="size-3.5" aria-hidden="true" />
+            <CopyGlassIcon className="size-4" aria-hidden="true" />
             {t('safety.copyKey')}
           </Button>
         </div>
@@ -67,7 +67,11 @@ function KeyWarning() {
   if (hidden) return null
   return (
     <Alert>
-      <WarningIcon aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.2em"
+        aria-hidden="true"
+      />
       <AlertDescription className="space-y-2">
         <p>{t('safety.keyNotStored')}</p>
         <div className="flex flex-wrap gap-2">
@@ -130,12 +134,12 @@ export function StorageSafetyCard({
         <div className="flex flex-wrap items-center gap-2">
           {encryption.enabled ? (
             <Badge variant="success">
-              <LockKeyIcon className="size-3" aria-hidden="true" />
+              <LockGlassIcon className="size-3.5" aria-hidden="true" />
               {t('safety.encrypted')}
             </Badge>
           ) : (
             <Badge variant="warning">
-              <LockKeyOpenIcon className="size-3" aria-hidden="true" />
+              <LockOpenGlassIcon className="size-3.5" aria-hidden="true" />
               {t('safety.notEncrypted')}
             </Badge>
           )}
@@ -174,7 +178,11 @@ export function StorageSafetyCard({
 
       {warnings.map((w) => (
         <Alert key={w.target_id} variant="destructive">
-          <WarningIcon aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="text-tone-warning"
+            size="1.2em"
+            aria-hidden="true"
+          />
           <AlertDescription>
             <strong>{t('protection.target', { id: w.target_id })}</strong>{' '}
             {w.probe_error

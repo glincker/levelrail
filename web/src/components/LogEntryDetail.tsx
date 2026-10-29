@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import { useLogSearch } from '../queries/logs'
 import type { LogEntry } from '../types/logs'
@@ -101,7 +101,7 @@ export function LogEntryDetail({
               void navigator.clipboard.writeText(entry.message)
             }}
           >
-            <CopyIcon className="size-3.5" aria-hidden="true" />
+            <CopyGlassIcon className="size-4" aria-hidden="true" />
           </Button>
           <Button
             type="button"
@@ -110,7 +110,7 @@ export function LogEntryDetail({
             aria-label={t('explorer.closeDetail')}
             onClick={onClose}
           >
-            <XIcon className="size-3.5" aria-hidden="true" />
+            <XGlassIcon className="size-4" aria-hidden="true" />
           </Button>
         </div>
       </div>

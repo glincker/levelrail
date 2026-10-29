@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { RocketGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -175,7 +175,7 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
 
       {guide.complete ? (
         <EmptyState
-          icon={<RocketLaunchIcon className="size-6" />}
+          icon={<RocketGlassIcon className="size-7" />}
           title={t('summary.allDoneTitle')}
           description={t('summary.allDoneBody')}
         />

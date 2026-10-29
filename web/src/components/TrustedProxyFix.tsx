@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon, WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, WrenchGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -23,7 +23,7 @@ export function TrustedProxyFix() {
 
   return (
     <Alert variant="destructive">
-      <WrenchIcon className="size-4" aria-hidden="true" />
+      <WrenchGlassIcon className="size-4.5" aria-hidden="true" />
       <AlertTitle>
         {t('edge.fix.title', { proxy: t(`edge.proxy.${det.proxy}`) })}
       </AlertTitle>
@@ -64,7 +64,7 @@ export function TrustedProxyFix() {
               })
             }}
           >
-            <ArrowsClockwiseIcon className="size-4" aria-hidden="true" />
+            <RefreshCwGlassIcon className="size-4.5" aria-hidden="true" />
             {t('edge.fix.recheck')}
           </Button>
         </div>

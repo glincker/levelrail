@@ -1,8 +1,5 @@
 import { Suspense, useEffect, useRef } from 'react'
-import {
-  ArrowClockwiseIcon,
-  ChatCircleTextIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { MessageCircleGlassIcon, RotateCwGlassIcon } from '@thesvg/ui-react'
 import { useAiChatSession } from '../hooks/useAiChatSession'
 import { takeAiChatSeed } from '../lib/aiChatSeed'
 import { AiChatComposer } from './AiChatComposer'
@@ -67,7 +64,7 @@ export function AiChatPanel({
           disabled={connectionState === 'connecting'}
           onClick={startNewSession}
         >
-          <ArrowClockwiseIcon />
+          <RotateCwGlassIcon size="1.2em" />
           New chat
         </Button>
       </div>
@@ -82,7 +79,7 @@ export function AiChatPanel({
         <div className="flex-1" />
       ) : messages.length === 0 ? (
         <EmptyState
-          icon={<ChatCircleTextIcon className="size-5" />}
+          icon={<MessageCircleGlassIcon className="size-5.5" />}
           title="Ask about your platform"
           description="Logs, metrics, deploy history, and crashloop diagnosis are read automatically. Anything that changes state (deploy, rollback, restart) always waits for your approval first."
           className="flex-1"

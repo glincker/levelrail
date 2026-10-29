@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { MetricTile, SkeletonList } from '@/components/kit'
@@ -56,7 +56,7 @@ export function BuildCachePanel({ pruneOpen, onPruneOpenChange }: Props) {
                 onPruneOpenChange(true)
               }}
             >
-              <BroomIcon aria-hidden="true" />
+              <BroomGlassIcon size="1.2em" aria-hidden="true" />
               {t('cache.prune')}
             </Button>
           ) : null}

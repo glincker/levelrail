@@ -1,7 +1,4 @@
-import {
-  ClockCounterClockwiseIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { useAiSessions, useDeleteAiSession } from '../queries/aiAssistant'
 import { formatAge } from '../lib/format'
 import { Button } from '@/components/ui/button'
@@ -39,7 +36,7 @@ export function AiChatHistoryMenu({
       <DropdownMenuTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ClockCounterClockwiseIcon />
+        <RestoreGlassIcon size="1.2em" />
         History
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -56,7 +53,7 @@ export function AiChatHistoryMenu({
                   onResume(session.id)
                 }}
               >
-                <ClockCounterClockwiseIcon />
+                <RestoreGlassIcon size="1.2em" />
                 <span className="truncate">
                   {session.id === activeSessionId
                     ? 'Current session'
@@ -72,7 +69,7 @@ export function AiChatHistoryMenu({
                   deleteSession.mutate(session.id)
                 }}
               >
-                <TrashIcon />
+                <TrashGlassIcon size="1.2em" />
                 Delete this session
               </DropdownMenuItem>
             </div>

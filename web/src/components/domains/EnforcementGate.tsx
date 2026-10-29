@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { HelpLink } from '../HelpLink'
 import {
@@ -29,7 +29,10 @@ export function EnforcedBadge({
   if (isEnforced(enforcement, control)) return <>{children}</>
   return (
     <Badge variant="warning" className="shrink-0">
-      <WarningIcon className="size-3" aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="size-3.5 text-tone-warning"
+        aria-hidden="true"
+      />
       {t('enforcement.savedNotEnforced')}
     </Badge>
   )

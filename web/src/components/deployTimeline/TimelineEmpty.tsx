@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { GhostPreview } from '../GhostPreview'
@@ -80,7 +80,7 @@ export function TimelineEmpty({
     >
       <EmptyState
         compact
-        icon={<ClockCounterClockwiseIcon className="size-5" />}
+        icon={<RestoreGlassIcon className="size-5.5" />}
         title={t('empty.title')}
         description={t('empty.body', { range: t(`zoom.${zoom}`) })}
         action={

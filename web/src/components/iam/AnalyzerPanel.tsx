@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  CheckCircleIcon,
-  InfoIcon,
-  WarningCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  ArrowRightGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  InfoGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -37,12 +37,12 @@ const SEVERITY_TONE: Record<FindingSeverity, Tone> = {
   info: 'info',
 }
 
-const SEVERITY_ICON: Record<FindingSeverity, Icon> = {
-  critical: XCircleIcon,
-  high: XCircleIcon,
-  medium: WarningCircleIcon,
-  low: WarningCircleIcon,
-  info: InfoIcon,
+const SEVERITY_ICON: Record<FindingSeverity, UiIcon> = {
+  critical: CircleXGlassIcon,
+  high: CircleXGlassIcon,
+  medium: CircleAlertGlassIcon,
+  low: CircleAlertGlassIcon,
+  info: InfoGlassIcon,
 }
 
 function verdictFor(score: number): 'ready' | 'attention' | 'blocked' {
@@ -102,7 +102,7 @@ function FindingCard({
             onClick={() => onOpenPolicy(f.policy_id ?? '')}
           >
             {t('analyzer.openPolicy')}
-            <ArrowRightIcon />
+            <ArrowRightGlassIcon size="1.2em" />
           </Button>
         ) : null}
         {f.principal_id ? (
@@ -115,7 +115,7 @@ function FindingCard({
             }
           >
             {t('analyzer.openPrincipal')}
-            <ArrowRightIcon />
+            <ArrowRightGlassIcon size="1.2em" />
           </Button>
         ) : null}
       </div>
@@ -195,7 +195,7 @@ export function AnalyzerPanel({
       {findings.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<CheckCircleIcon className="size-5" />}
+          icon={<CircleCheckGlassIcon className="size-5.5 text-tone-success" />}
           title={t('analyzer.clean.title')}
           description={t('analyzer.clean.description')}
         />

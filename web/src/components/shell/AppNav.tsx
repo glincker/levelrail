@@ -1,12 +1,12 @@
 import { useEffect, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  EyeIcon,
-  HardDrivesIcon,
-  RocketLaunchIcon,
-  ShareNetworkIcon,
-  WrenchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EyeGlassIcon,
+  RocketGlassIcon,
+  ServerGlassIcon,
+  Share2GlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import {
   SidebarGroup,
@@ -38,11 +38,11 @@ import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { usePersistedToggles } from './usePersistedToggles'
 
 const GROUP_ICONS: Record<AppTabGroupId, React.ReactNode> = {
-  basics: <RocketLaunchIcon />,
-  network: <ShareNetworkIcon />,
-  data: <HardDrivesIcon />,
-  observe: <EyeIcon />,
-  advanced: <WrenchIcon />,
+  basics: <RocketGlassIcon size="1.2em" />,
+  network: <Share2GlassIcon size="1.2em" />,
+  data: <ServerGlassIcon size="1.2em" />,
+  observe: <EyeGlassIcon size="1.2em" />,
+  advanced: <WrenchGlassIcon size="1.2em" />,
 }
 
 const APP_NAV_STORAGE_KEY = 'shell.nav.app.open'

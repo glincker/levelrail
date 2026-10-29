@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SignpostIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { SignpostGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -81,13 +81,13 @@ export function DomainRedirectControl({
           {active ? (
             <EnforcedBadge domain={domain} control="redirect">
               <Badge variant="success" className="shrink-0">
-                <SignpostIcon className="size-3" />
+                <SignpostGlassIcon className="size-3.5" />
                 Redirecting to {redirect?.target_url}
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <SignpostIcon className="size-3" />
+              <SignpostGlassIcon className="size-3.5" />
               No redirect
             </Badge>
           )}
@@ -98,7 +98,7 @@ export function DomainRedirectControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <SignpostIcon className="size-3.5" />
+          <SignpostGlassIcon className="size-4" />
           {open ? 'Hide' : active ? 'Manage' : 'Add redirect'}
         </Button>
       </div>
@@ -155,13 +155,19 @@ export function DomainRedirectControl({
 
           {setRedirect.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>{setRedirect.error.message}</AlertDescription>
             </Alert>
           ) : null}
           {clearRedirect.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>{clearRedirect.error.message}</AlertDescription>
             </Alert>
           ) : null}

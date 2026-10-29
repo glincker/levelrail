@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SkeletonList, StatusPill } from '@/components/kit'
 import { useDeployEventComparison } from '../../queries/deployEvents'
@@ -87,7 +87,9 @@ export function CompareView({ id, other }: { id: string; other: string }) {
   if (q.isError) {
     return (
       <EmptyState
-        icon={<WarningCircleIcon />}
+        icon={
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+        }
         title={t('compare.errorTitle')}
         description={q.error.message}
       />

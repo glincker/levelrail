@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { BellSlashIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellOffGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDismissAttentionItem } from '../../queries/deviceAuth'
@@ -35,7 +35,7 @@ export function CopyItemControls({
           toast.add({ title: t('copyFailure.snoozed'), type: 'info' })
         }}
       >
-        <BellSlashIcon />
+        <BellOffGlassIcon size="1.2em" />
       </Button>
       <Button
         type="button"
@@ -55,7 +55,7 @@ export function CopyItemControls({
           })
         }}
       >
-        <XIcon />
+        <XGlassIcon size="1.2em" />
       </Button>
     </div>
   )

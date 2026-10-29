@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ListChecksIcon } from '@phosphor-icons/react/dist/ssr'
+import { ListChecksGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -39,7 +39,7 @@ export function TopRulesCard({
         {ranked.length === 0 ? (
           <EmptyState
             compact
-            icon={<ListChecksIcon className="size-5" />}
+            icon={<ListChecksGlassIcon className="size-5.5" />}
             title={t('rules.emptyTitle')}
             description={t('rules.emptyHelp')}
             action={

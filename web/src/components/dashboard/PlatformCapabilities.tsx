@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import {
-  ArrowsClockwiseIcon,
-  DatabaseIcon,
-  ListChecksIcon,
-  PulseIcon,
-  RobotIcon,
-  ShareNetworkIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  ActivityGlassIcon,
+  BotGlassIcon,
+  DatabaseGlassIcon,
+  ListChecksGlassIcon,
+  RefreshCwGlassIcon,
+  Share2GlassIcon,
+  ShieldCheckGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useBrand } from '../../hooks/useBrand'
 
 interface Capability {
   key: string
-  icon: Icon
+  icon: UiIcon
   label: string
   detail: string
 }
@@ -23,49 +23,49 @@ interface Capability {
 const CAPABILITIES: Capability[] = [
   {
     key: 'deploys',
-    icon: ArrowsClockwiseIcon,
+    icon: RefreshCwGlassIcon,
     label: 'Zero-downtime deploys',
     detail:
       'Rolling, recreate, or blue-green strategy, gated on real readiness and liveness probes. Rollback to a pinned prior image is always available.',
   },
   {
     key: 'observability',
-    icon: PulseIcon,
+    icon: ActivityGlassIcon,
     label: 'Observability built in',
     detail:
       'Node-local metrics at 15s resolution and full-text log search, no separate Grafana or Loki install. Deploy markers overlay directly on the metric charts.',
   },
   {
     key: 'databases',
-    icon: DatabaseIcon,
+    icon: DatabaseGlassIcon,
     label: 'Eight managed databases',
     detail:
       'Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and automatic post-backup verification.',
   },
   {
     key: 'mesh',
-    icon: ShareNetworkIcon,
+    icon: Share2GlassIcon,
     label: 'Multi-node from day one',
     detail:
       'A WireGuard mesh and internal DNS across nodes, with cordon and drain. No inbound ports are required on any managed server.',
   },
   {
     key: 'attention',
-    icon: ListChecksIcon,
+    icon: ListChecksGlassIcon,
     label: 'Know what needs attention',
     detail:
       'The Status page and the attention CLI command list failing apps, offline nodes, and expiring certificates, with a disk pressure banner and stalled renewal detection.',
   },
   {
     key: 'iam',
-    icon: ShieldCheckIcon,
+    icon: ShieldCheckGlassIcon,
     label: 'Resource-scoped IAM',
     detail:
       'AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.',
   },
   {
     key: 'mcp',
-    icon: RobotIcon,
+    icon: BotGlassIcon,
     label: 'AI-ready API',
     detail:
       '144 MCP tools (beta), backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.',

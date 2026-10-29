@@ -1,7 +1,7 @@
 import { Display } from '@/components/ui/typography'
 import { formatDeltaPercent } from '@/lib/deltaPercent'
 import type { ReactNode } from 'react'
-import { ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowDownGlassIcon, ArrowUpGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { AnimatedNumber } from './AnimatedNumber'
 import { InfoTip } from './InfoTip'
@@ -30,7 +30,7 @@ export interface MetricTileProps {
 function DeltaChip({ delta }: { delta: MetricDelta }) {
   const tone = deltaTone(delta)
   const t = TONE[tone]
-  const Arrow = delta.direction === 'up' ? ArrowUpIcon : ArrowDownIcon
+  const Arrow = delta.direction === 'up' ? ArrowUpGlassIcon : ArrowDownGlassIcon
   return (
     <span
       data-testid="metric-delta"
@@ -41,7 +41,7 @@ function DeltaChip({ delta }: { delta: MetricDelta }) {
         t.text,
       )}
     >
-      <Arrow className="size-3" weight="bold" aria-hidden="true" />
+      <Arrow className="size-3" aria-hidden="true" />
       {formatDeltaPercent(delta.value)}
       <span className="sr-only">
         {delta.direction === 'up' ? ' up' : ' down'},{' '}

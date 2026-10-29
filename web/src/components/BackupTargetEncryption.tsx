@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { LockKeyIcon, LockSimpleOpenIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, LockOpenGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmAction } from '@/components/ui/confirm-action'
@@ -11,12 +11,12 @@ export function DumpEncryptionBadge({ target }: { target: BackupTarget }) {
   const { t } = useTranslation('settings')
   return target.encrypt_dumps ? (
     <Badge variant="success" className="gap-1.5">
-      <LockKeyIcon className="size-3.5" aria-hidden="true" />
+      <LockGlassIcon className="size-4" aria-hidden="true" />
       {t('backupTargetsPage.encryption.on')}
     </Badge>
   ) : (
     <Badge variant="muted" className="gap-1.5">
-      <LockSimpleOpenIcon className="size-3.5" aria-hidden="true" />
+      <LockOpenGlassIcon className="size-4" aria-hidden="true" />
       {t('backupTargetsPage.encryption.off')}
     </Badge>
   )
@@ -36,7 +36,7 @@ export function EnableDumpEncryptionButton({
     <ConfirmAction
       trigger={(openDialog) => (
         <Button type="button" variant="outline" size="sm" onClick={openDialog}>
-          <LockKeyIcon className="size-3.5" aria-hidden="true" />
+          <LockGlassIcon className="size-4" aria-hidden="true" />
           {t('backupTargetsPage.encryption.enable')}
         </Button>
       )}

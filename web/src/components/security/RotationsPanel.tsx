@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -37,7 +37,7 @@ export function RotationsPanel() {
       <CardContent>
         {rows.length === 0 ? (
           <EmptyState
-            icon={<ArrowsClockwiseIcon />}
+            icon={<RefreshCwGlassIcon size="1.2em" />}
             title={t('overview.title')}
             description={t('overview.empty')}
           />

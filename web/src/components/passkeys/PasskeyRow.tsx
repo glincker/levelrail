@@ -1,12 +1,12 @@
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  PencilSimpleIcon,
-  TrashIcon,
-  WarningIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  PencilGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import {
   type PasskeyResource,
   useDeletePasskey,
@@ -109,7 +109,7 @@ export function PasskeyRow({
                 disabled={rename.isPending}
                 aria-label={t('row.save')}
               >
-                <CheckIcon />
+                <CheckGlassIcon size="1.2em" />
               </Button>
               <Button
                 type="button"
@@ -122,7 +122,7 @@ export function PasskeyRow({
                   rename.reset()
                 }}
               >
-                <XIcon />
+                <XGlassIcon size="1.2em" />
               </Button>
             </form>
           ) : (
@@ -138,7 +138,7 @@ export function PasskeyRow({
                   setEditing(true)
                 }}
               >
-                <PencilSimpleIcon />
+                <PencilGlassIcon size="1.2em" />
               </Button>
             </p>
           )}
@@ -194,7 +194,7 @@ export function PasskeyRow({
           setRemoveOpen(true)
         }}
       >
-        <TrashIcon />
+        <TrashGlassIcon size="1.2em" />
       </Button>
       <ConfirmDialog
         open={removeOpen}
@@ -215,7 +215,10 @@ export function PasskeyRow({
       >
         {blocked ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription className="space-y-2">
               <p className="font-medium">{t('remove.blockedTitle')}</p>
               <p>{t('remove.blockedBody')}</p>
@@ -234,7 +237,10 @@ export function PasskeyRow({
           </Alert>
         ) : isLast ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{t('remove.lastWarning')}</AlertDescription>
           </Alert>
         ) : null}

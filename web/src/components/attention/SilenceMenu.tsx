@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BellSlashIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellOffGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
@@ -90,7 +90,7 @@ export function SilenceMenu({
             />
           }
         >
-          <BellSlashIcon />
+          <BellOffGlassIcon size="1.2em" />
           {t('silence.button')}
         </PopoverTrigger>
         <PopoverContent align="end" className="w-60">

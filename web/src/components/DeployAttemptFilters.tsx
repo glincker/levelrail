@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import type { DeployAttempt } from '../types/deployAttempt'
 import {
   EMPTY_DEPLOY_FILTERS,
@@ -67,8 +67,8 @@ export function DeployAttemptFilterBar({
   return (
     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="relative w-full sm:w-64">
-        <MagnifyingGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+        <SearchGlassIcon
+          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -103,7 +103,7 @@ export function DeployAttemptFilterBar({
           size="sm"
           onClick={() => onChange(EMPTY_DEPLOY_FILTERS)}
         >
-          <XIcon className="size-3.5" data-icon="inline-start" />
+          <XGlassIcon className="size-4" data-icon="inline-start" />
           {t('deployHistory.filters.clear')}
         </Button>
       ) : null}

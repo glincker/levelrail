@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from 'react'
 import {
-  CircleNotchIcon,
-  WifiSlashIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LoaderCircleGlassIcon,
+  WifiOffGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Alert,
   AlertAction,
@@ -31,7 +31,7 @@ export function ConnectionBanner() {
 
   return (
     <Alert variant="destructive" className="rounded-none border-x-0 border-t-0">
-      <WifiSlashIcon />
+      <WifiOffGlassIcon size="1.2em" />
       <AlertTitle>Can&apos;t reach the control plane. Retrying...</AlertTitle>
       <AlertDescription>
         <span role="status" aria-live="polite">
@@ -50,7 +50,10 @@ export function ConnectionBanner() {
             }}
           >
             {state.probing ? (
-              <CircleNotchIcon className="motion-safe:animate-spin" />
+              <LoaderCircleGlassIcon
+                size="1.2em"
+                className="motion-safe:animate-spin"
+              />
             ) : null}
             Retry now
           </Button>
@@ -65,7 +68,7 @@ export function ConnectionBanner() {
           title="Dismiss for now"
           onClick={dismissConnectionBanner}
         >
-          <XIcon />
+          <XGlassIcon size="1.2em" />
         </Button>
       </AlertAction>
     </Alert>

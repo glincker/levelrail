@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  CheckIcon,
-  CopyIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  TextAlignLeftIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+} from '@thesvg/ui-react'
+import { TextAlignLeftIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { COPY_FEEDBACK_MS } from '@/lib/copyFeedback'
 import { cn } from '@/lib/utils'
@@ -94,9 +94,9 @@ function CopyButton({
         onClick={onCopy}
       >
         {state === 'copied' ? (
-          <CheckIcon aria-hidden="true" />
+          <CheckGlassIcon size="1.2em" aria-hidden="true" />
         ) : (
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.2em" aria-hidden="true" />
         )}
         {state === 'copied' ? t('codeBlock.copied') : t('codeBlock.copy')}
       </Button>
@@ -127,9 +127,9 @@ function RevealButton({
       onClick={onToggle}
     >
       {revealed ? (
-        <EyeSlashIcon aria-hidden="true" />
+        <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
       ) : (
-        <EyeIcon aria-hidden="true" />
+        <EyeGlassIcon size="1.2em" aria-hidden="true" />
       )}
       {revealed ? t('codeBlock.hide') : t('codeBlock.reveal')}
     </Button>

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
-  CheckCircleIcon,
-  GlobeIcon,
-  PlugsConnectedIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  GlobeGlassIcon,
+  PlugGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
@@ -161,7 +161,7 @@ export function AppExposurePanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugsConnectedIcon className="size-4" />
+          <PlugGlassIcon className="size-4.5" />
           {t('title')}
         </CardTitle>
         <CardDescription>{t('description')}</CardDescription>
@@ -325,7 +325,7 @@ function PlanView({ plan }: { plan: ExposurePlan }) {
       )}
       {plan.warnings?.includes('plain_http') && (
         <Alert variant="destructive">
-          <WarningIcon className="size-4" />
+          <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
           <AlertDescription>{t('plainHttpWarning')}</AlertDescription>
         </Alert>
       )}
@@ -353,8 +353,8 @@ function UrlList({
               key={`${u.kind}-${u.url}`}
               className="flex flex-wrap items-center gap-2"
             >
-              <GlobeIcon
-                className="size-4 text-muted-foreground"
+              <GlobeGlassIcon
+                className="size-4.5 text-muted-foreground"
                 aria-hidden="true"
               />
               <span className="text-muted-foreground">
@@ -415,7 +415,7 @@ function ReachabilityCheck({ appName }: { appName: string }) {
 
 function ProbeRow({ target }: { target: ProbeTarget }) {
   const { t } = useTranslation('appExposure')
-  const Icon = target.ok ? CheckCircleIcon : XCircleIcon
+  const Icon = target.ok ? CircleCheckGlassIcon : CircleXGlassIcon
   const fix =
     target.failure === 'firewall_closed' ? (
       <Link

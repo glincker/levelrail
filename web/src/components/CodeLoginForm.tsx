@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   isMFARequired,
   useFinishSignIn,
@@ -120,7 +120,10 @@ export function CodeLoginForm({
         </Field>
         {request.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{request.error.message}</AlertDescription>
           </Alert>
         ) : null}
@@ -166,7 +169,7 @@ export function CodeLoginForm({
     >
       {request.data ? (
         <Alert>
-          <CheckCircleIcon />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
           <AlertDescription>{request.data.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -212,7 +215,7 @@ export function CodeLoginForm({
       </Field>
       {redeem.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{redeem.error.message}</AlertDescription>
         </Alert>
       ) : null}

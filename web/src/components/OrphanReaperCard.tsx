@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { BroomIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -52,7 +52,7 @@ export function OrphanReaperCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
-          <BroomIcon className="size-4" aria-hidden="true" />
+          <BroomGlassIcon className="size-4.5" aria-hidden="true" />
           {t('orphans.title')}
         </CardTitle>
         <CardDescription>{t('orphans.description')}</CardDescription>

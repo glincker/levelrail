@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -535,7 +535,7 @@ export function CreateAppFields({
 
       {createApp.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{createApp.error.message}</AlertDescription>
         </Alert>
       ) : null}

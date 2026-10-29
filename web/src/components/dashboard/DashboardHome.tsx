@@ -1,8 +1,8 @@
 import { Suspense, lazy, useState, type ReactNode } from 'react'
 import {
-  CaretDownIcon,
-  SlidersHorizontalIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  SlidersHorizontalGlassIcon,
+} from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import type { AppListEntry } from '../../types/appDetail'
@@ -62,9 +62,9 @@ function UsageDetails() {
         className="flex items-center gap-1.5 text-sm font-semibold text-foreground"
       >
         {t('usageDetails.title')}
-        <CaretDownIcon
+        <ChevronDownGlassIcon
           aria-hidden="true"
-          className={`size-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`size-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open ? (
@@ -125,7 +125,7 @@ function StartView({
                 setEditing((v) => !v)
               }}
             >
-              <SlidersHorizontalIcon />
+              <SlidersHorizontalGlassIcon size="1.2em" />
               {editing ? t('customize.done') : null}
             </Button>
           </span>

@@ -1,13 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import {
-  CheckCircleIcon,
-  PlusIcon,
-  ProhibitIcon,
-  ShieldIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  PlusGlassIcon,
+  ShieldGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   firewallRuleListQueryOptions,
   useCreateFirewallRule,
@@ -87,7 +87,7 @@ function FirewallPage() {
 
   return (
     <PageTemplate
-      icon={<ShieldIcon />}
+      icon={<ShieldGlassIcon size="1.2em" />}
       title={t('firewallPage.title')}
       description={t('firewallPage.description')}
       actions={<AddFirewallRuleDialog />}
@@ -99,8 +99,8 @@ function FirewallPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <ShieldIcon
-                className="size-4 text-muted-foreground"
+              <ShieldGlassIcon
+                className="size-4.5 text-muted-foreground"
                 aria-hidden="true"
               />
               {t('firewallRules.liveStatus')}
@@ -118,7 +118,7 @@ function FirewallPage() {
       {rules.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<ShieldIcon className="size-5" />}
+          icon={<ShieldGlassIcon className="size-5.5" />}
           title={t('firewallRules.emptyTitle')}
           description={t('firewallRules.emptyBody')}
           action={<AddFirewallRuleDialog />}
@@ -178,14 +178,17 @@ function ActionBadge({ action }: { action: FirewallRuleAction }) {
   if (action === 'deny') {
     return (
       <Badge variant="destructive" className="gap-1">
-        <ProhibitIcon className="size-3" aria-hidden="true" />
+        <BanGlassIcon className="size-3.5" aria-hidden="true" />
         {t('firewallRules.deny')}
       </Badge>
     )
   }
   return (
     <Badge variant="success" className="gap-1">
-      <CheckCircleIcon className="size-3" aria-hidden="true" />
+      <CircleCheckGlassIcon
+        className="size-3.5 text-tone-success"
+        aria-hidden="true"
+      />
       {t('firewallRules.allow')}
     </Badge>
   )
@@ -218,7 +221,11 @@ function CloseWarning({
   }
   return (
     <Alert variant="destructive">
-      <WarningIcon aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.2em"
+        aria-hidden="true"
+      />
       <AlertTitle>
         {action === 'deny'
           ? t('firewallRules.closeTitle')
@@ -281,7 +288,7 @@ function AddFirewallRuleDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
-        <PlusIcon aria-hidden="true" />
+        <PlusGlassIcon size="1.2em" aria-hidden="true" />
         {t('firewallRules.addRule')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -385,7 +392,11 @@ function AddFirewallRuleDialog() {
 
           {createRule.isError ? (
             <Alert variant="destructive">
-              <WarningIcon aria-hidden="true" />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+                aria-hidden="true"
+              />
               <AlertDescription>{createRule.error.message}</AlertDescription>
             </Alert>
           ) : null}
@@ -442,14 +453,14 @@ function DeleteFirewallRuleDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <TrashIcon aria-hidden="true" />
+        <TrashGlassIcon size="1.2em" aria-hidden="true" />
         {t('firewallRules.remove')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WarningIcon
-              className="size-4 text-destructive"
+            <TriangleAlertGlassIcon
+              className="size-4.5 text-destructive"
               aria-hidden="true"
             />
             {t('firewallRules.removeTitle')}
@@ -468,7 +479,11 @@ function DeleteFirewallRuleDialog({
         </DialogHeader>
         {deleteRule.isError ? (
           <Alert variant="destructive">
-            <WarningIcon aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+              aria-hidden="true"
+            />
             <AlertDescription>{deleteRule.error.message}</AlertDescription>
           </Alert>
         ) : null}

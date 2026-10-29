@@ -1,4 +1,4 @@
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 
@@ -29,7 +29,7 @@ export function DraftRestoredNotice({
           onClick={onDismiss}
           aria-label="Dismiss"
         >
-          <XIcon />
+          <XGlassIcon size="1.2em" />
         </Button>
       </AlertAction>
     </Alert>

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  FingerprintIcon,
-  PlayIcon,
-  PlusIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  FingerprintPatternGlassIcon,
+  PlayGlassIcon,
+  PlusGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   isPasskeySupported,
   usePasskeys,
@@ -38,7 +38,7 @@ export function PasskeysCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FingerprintIcon className="size-4 text-muted-foreground" />
+          <FingerprintPatternGlassIcon className="size-4.5 text-muted-foreground" />
           {t('card.title')}
         </CardTitle>
         <CardDescription>{t('card.description')}</CardDescription>
@@ -47,7 +47,7 @@ export function PasskeysCard() {
         {passkeys.length === 0 ? (
           <EmptyState
             compact
-            icon={<FingerprintIcon className="size-5" />}
+            icon={<FingerprintPatternGlassIcon className="size-5.5" />}
             title={t('empty.title')}
             description={t('empty.body')}
             action={
@@ -58,7 +58,7 @@ export function PasskeysCard() {
                   setAddOpen(true)
                 }}
               >
-                <PlusIcon />
+                <PlusGlassIcon size="1.2em" />
                 {t('empty.action')}
               </Button>
             }
@@ -66,10 +66,7 @@ export function PasskeysCard() {
         ) : (
           <>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <CheckCircleIcon
-                className="size-4 text-tone-success"
-                weight="fill"
-              />
+              <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
               {t('card.statusEnabled', { count: passkeys.length })}
             </p>
             <ul className="divide-y divide-border">
@@ -86,7 +83,10 @@ export function PasskeysCard() {
             </ul>
             {passkeys.length === 1 ? (
               <Alert>
-                <ShieldCheckIcon />
+                <ShieldCheckGlassIcon
+                  className="text-tone-success"
+                  size="1.2em"
+                />
                 <AlertTitle>{t('nudge.backupTitle')}</AlertTitle>
                 <AlertDescription className="space-y-2">
                   <p>{t('nudge.backupBody')}</p>
@@ -98,7 +98,7 @@ export function PasskeysCard() {
                       setAddOpen(true)
                     }}
                   >
-                    <PlusIcon />
+                    <PlusGlassIcon size="1.2em" />
                     {t('nudge.backupAction')}
                   </Button>
                 </AlertDescription>
@@ -113,7 +113,7 @@ export function PasskeysCard() {
                   setAddOpen(true)
                 }}
               >
-                <PlusIcon />
+                <PlusGlassIcon size="1.2em" />
                 {t('card.add')}
               </Button>
               <Button
@@ -125,19 +125,25 @@ export function PasskeysCard() {
                   test.mutate()
                 }}
               >
-                <PlayIcon />
+                <PlayGlassIcon size="1.2em" />
                 {test.isPending ? t('card.testing') : t('card.test')}
               </Button>
             </div>
             {test.isSuccess ? (
               <Alert role="status">
-                <CheckCircleIcon />
+                <CircleCheckGlassIcon
+                  className="text-tone-success"
+                  size="1.2em"
+                />
                 <AlertDescription>{t('card.testOk')}</AlertDescription>
               </Alert>
             ) : null}
             {test.isError ? (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.2em"
+                />
                 <AlertTitle>{t('card.testFailedTitle')}</AlertTitle>
                 <AlertDescription className="space-y-2">
                   <p>{t(`errors.${classifyPasskeyError(test.error)}`)}</p>
@@ -159,7 +165,10 @@ export function PasskeysCard() {
         )}
         {!supported ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{t('errors.unsupported')}</AlertDescription>
           </Alert>
         ) : null}

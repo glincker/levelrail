@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { FolderOpenIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { FolderGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,8 +16,8 @@ const COLUMNS: ResponsiveColumn<AppBindMount>[] = [
     primary: true,
     cell: (mount) => (
       <span className="inline-flex items-center gap-1.5 font-mono text-xs text-foreground">
-        <FolderOpenIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <FolderGlassIcon
+          className="size-4 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="min-w-0 break-all">{mount.host_path}</span>
@@ -72,7 +72,7 @@ export function AppBindMountsSection({
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>
             Each row below gives this app&rsquo;s container direct read
             {bindMounts.some((m) => !m.read_only) ? '/write ' : ' '}

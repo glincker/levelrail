@@ -1,23 +1,23 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  InfoIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  InfoGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { RelativeTime } from '@/components/kit'
 import { eventKindKey, unixToDate } from '../../lib/nodeTrust'
 import type { NodeSecurityEvent, SecurityOutcome } from '../../types/nodeTrust'
 import { useNodeSecurityEvents } from '../../queries/nodeTrust'
 
-const OUTCOME_ICON: Record<SecurityOutcome, typeof InfoIcon> = {
-  accepted: CheckCircleIcon,
-  rejected: XCircleIcon,
-  failed: XCircleIcon,
-  warning: WarningIcon,
-  info: InfoIcon,
+const OUTCOME_ICON: Record<SecurityOutcome, typeof InfoGlassIcon> = {
+  accepted: CircleCheckGlassIcon,
+  rejected: CircleXGlassIcon,
+  failed: CircleXGlassIcon,
+  warning: TriangleAlertGlassIcon,
+  info: InfoGlassIcon,
 }
 
 const OUTCOME_TONE: Record<SecurityOutcome, string> = {

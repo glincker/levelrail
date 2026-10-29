@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ListChecksIcon,
-  PencilSimpleIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  ListChecksGlassIcon,
+  PencilGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -75,27 +75,27 @@ export function CustomRulesCard({
       {
         id: 'edit',
         label: t('rules.edit'),
-        icon: <PencilSimpleIcon />,
+        icon: <PencilGlassIcon size="1.2em" />,
         onSelect: () => onEdit(rule.id),
       },
       {
         id: 'up',
         label: t('rules.moveUp'),
-        icon: <ArrowUpIcon />,
+        icon: <ArrowUpGlassIcon size="1.2em" />,
         disabled: index === 0,
         onSelect: () => move(rule, -1),
       },
       {
         id: 'down',
         label: t('rules.moveDown'),
-        icon: <ArrowDownIcon />,
+        icon: <ArrowDownGlassIcon size="1.2em" />,
         disabled: index === custom.length - 1,
         onSelect: () => move(rule, 1),
       },
       {
         id: 'delete',
         label: t('rules.delete'),
-        icon: <TrashIcon />,
+        icon: <TrashGlassIcon size="1.2em" />,
         tone: 'danger',
         onSelect: () => setRemoving(rule),
       },
@@ -109,7 +109,7 @@ export function CustomRulesCard({
         <CardDescription>{t('rules.customHelp')}</CardDescription>
         <div data-slot="card-action">
           <Button type="button" size="sm" onClick={onNew}>
-            <PlusIcon />
+            <PlusGlassIcon size="1.2em" />
             {t('rules.new')}
           </Button>
         </div>
@@ -118,7 +118,7 @@ export function CustomRulesCard({
         {custom.length === 0 ? (
           <EmptyState
             compact
-            icon={<ListChecksIcon className="size-5" />}
+            icon={<ListChecksGlassIcon className="size-5.5" />}
             title={t('rules.emptyTitle')}
             description={t('rules.emptyHelp')}
             action={

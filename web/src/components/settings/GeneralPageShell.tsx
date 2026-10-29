@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GearIcon } from '@phosphor-icons/react/dist/ssr'
+import { SettingsGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ export function GeneralPageShell({ children }: { children: ReactNode }) {
 
   return (
     <PageTemplate
-      icon={<GearIcon />}
+      icon={<SettingsGlassIcon size="1.2em" />}
       eyebrow={t('generalPage.eyebrow')}
       title={t('generalPage.title')}
       description={t('generalPage.description')}

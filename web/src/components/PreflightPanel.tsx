@@ -1,4 +1,4 @@
-import { ListChecksIcon } from '@phosphor-icons/react/dist/ssr'
+import { ListChecksGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePreflightApp, usePreflightNewApp } from '../queries/preflight'
@@ -29,7 +29,7 @@ function PreflightBody({
         disabled={pending}
         onClick={run}
       >
-        <ListChecksIcon aria-hidden="true" />
+        <ListChecksGlassIcon size="1.2em" aria-hidden="true" />
         {pending ? 'Checking...' : label}
       </Button>
       {error ? (
@@ -49,7 +49,7 @@ export function AppPreflightCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ListChecksIcon className="size-4" aria-hidden="true" />
+          <ListChecksGlassIcon className="size-4.5" aria-hidden="true" />
           Preflight
         </CardTitle>
       </CardHeader>

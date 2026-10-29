@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  RotateCcwGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   useComposeDown,
   useComposeRevisions,
@@ -60,7 +60,7 @@ export function ComposeRollbackDialog({
           setOpen(true)
         }}
       >
-        <ArrowCounterClockwiseIcon />
+        <RotateCcwGlassIcon size="1.2em" />
         {t('rollback.button')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -106,7 +106,10 @@ export function ComposeRollbackDialog({
           )}
           {rollback.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>{rollback.error.message}</AlertDescription>
             </Alert>
           ) : null}
@@ -156,7 +159,7 @@ export function ComposeDownDialog({ appId }: { appId: string }) {
           setOpen(true)
         }}
       >
-        <TrashIcon />
+        <TrashGlassIcon size="1.2em" />
         {t('down.button')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -179,7 +182,10 @@ export function ComposeDownDialog({ appId }: { appId: string }) {
           </Field>
           {down.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>{down.error.message}</AlertDescription>
             </Alert>
           ) : null}

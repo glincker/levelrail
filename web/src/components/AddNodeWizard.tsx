@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  HardDrivesIcon,
-  PlusIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlusGlassIcon,
+  ServerGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -80,7 +80,7 @@ export function AddNodeWizard() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusIcon />
+        <PlusGlassIcon size="1.2em" />
         Add node
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -128,7 +128,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
       <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <HardDrivesIcon className="size-4 text-muted-foreground" />
+            <ServerGlassIcon className="size-4.5 text-muted-foreground" />
             Add node
           </DialogTitle>
           <DialogDescription>
@@ -173,7 +173,10 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <SkeletonList rows={3} />
         ) : regions.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{regions.error.message}</AlertDescription>
           </Alert>
         ) : (
@@ -212,7 +215,10 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <SkeletonList rows={3} />
         ) : sizes.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{sizes.error.message}</AlertDescription>
           </Alert>
         ) : (
@@ -377,7 +383,10 @@ function WizardBody({ onClose }: { onClose: () => void }) {
         </dl>
         {createProvision.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{createProvision.error.message}</AlertDescription>
           </Alert>
         ) : null}

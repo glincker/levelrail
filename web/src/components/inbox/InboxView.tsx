@@ -10,11 +10,11 @@ import {
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArchiveIcon,
-  CheckIcon,
-  TrashIcon,
-  TrayIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArchiveGlassIcon,
+  CheckGlassIcon,
+  InboxGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -226,7 +226,7 @@ export function InboxView() {
             mark.mutate({ all: true, ids: unread.map((e) => e.id) })
           }}
         >
-          <CheckIcon />
+          <CheckGlassIcon size="1.2em" />
           {t('markAllRead')}
         </Button>
         <Suspense fallback={null}>
@@ -284,7 +284,7 @@ export function InboxView() {
         <ListSkeleton rows={5} />
       ) : list.length === 0 ? (
         <EmptyState
-          icon={<TrayIcon className="size-5" />}
+          icon={<InboxGlassIcon className="size-5.5" />}
           title={t(archived ? 'page.emptyArchivedTitle' : 'page.emptyTitle')}
           description={t(
             archived ? 'page.emptyArchivedBody' : 'page.emptyBody',
@@ -384,7 +384,7 @@ export function InboxView() {
                     toggleArchive(selected)
                   }}
                 >
-                  <ArchiveIcon />
+                  <ArchiveGlassIcon size="1.2em" />
                   {t(selected.archived ? 'page.restore' : 'page.archive')}
                 </Button>
                 {selected.deletable ? (
@@ -396,7 +396,7 @@ export function InboxView() {
                       deleteMany([selected])
                     }}
                   >
-                    <TrashIcon />
+                    <TrashGlassIcon size="1.2em" />
                     {t('bulk.delete')}
                   </Button>
                 ) : null}

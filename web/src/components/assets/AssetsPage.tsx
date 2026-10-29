@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ImagesSquareIcon } from '@phosphor-icons/react/dist/ssr'
+import { ImagesGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
@@ -20,7 +20,7 @@ export function AssetsPage({
 
   return (
     <PageTemplate
-      icon={<ImagesSquareIcon />}
+      icon={<ImagesGlassIcon size="1.2em" />}
       title={t('title')}
       description={t('description')}
       width="wide"
@@ -40,7 +40,7 @@ export function AssetsPage({
       ) : buckets.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<ImagesSquareIcon className="size-5" />}
+          icon={<ImagesGlassIcon className="size-5.5" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />

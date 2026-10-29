@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  KeyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  KeyGlassIcon,
+  RefreshCwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -133,7 +133,11 @@ function HintRow({
   }
   return (
     <Alert variant={hint.severity === 'warning' ? 'destructive' : 'default'}>
-      <WarningIcon aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.2em"
+        aria-hidden="true"
+      />
       <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
         <span>{hint.message}</span>
         {hint.fix.kind === 'rotate_master_key' ? (
@@ -258,7 +262,7 @@ export function EncryptionKeysCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <KeyIcon className="size-4" aria-hidden="true" />
+              <KeyGlassIcon className="size-4.5" aria-hidden="true" />
             </div>
             <div>
               <CardTitle className="flex items-center gap-1.5">
@@ -274,7 +278,7 @@ export function EncryptionKeysCard() {
               size="sm"
               onClick={() => setTarget({ all: true })}
             >
-              <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+              <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
               {t('apps.rotateAll')}
             </Button>
           ) : null}

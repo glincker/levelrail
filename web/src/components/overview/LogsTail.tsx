@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { useIsMobile } from '../../hooks/use-mobile'
 import { useLogStream } from '../../hooks/useLogStream'
 import { LEVEL_DOT, levelOf } from './logLevels'
@@ -57,9 +57,9 @@ export function LogsTail({ appName }: { appName: string }) {
           className="flex items-center gap-1.5 text-sm font-medium"
         >
           {open ? (
-            <CaretDownIcon className="size-3.5" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
           ) : (
-            <CaretRightIcon className="size-3.5" aria-hidden="true" />
+            <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
           )}
           Live logs
         </button>

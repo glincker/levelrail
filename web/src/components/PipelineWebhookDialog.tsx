@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CopyIcon,
-  TrashIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  RefreshCwGlassIcon,
+  TrashGlassIcon,
+  WebhookGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -53,7 +53,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
             })
           }
         >
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.2em" aria-hidden="true" />
         </Button>
       </div>
     </div>
@@ -150,7 +150,7 @@ function WebhookBody({
               )
             }
           >
-            <WebhooksLogoIcon aria-hidden="true" />
+            <WebhookGlassIcon size="1.2em" aria-hidden="true" />
             {t('webhook.enable')}
           </Button>
         </div>
@@ -205,7 +205,7 @@ function WebhookBody({
                 rotate.mutate(undefined, { onSuccess: accept, onError: fail })
               }
             >
-              <ArrowsClockwiseIcon aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
               {t('webhook.rotate')}
             </Button>
             <Button
@@ -219,7 +219,7 @@ function WebhookBody({
                 })
               }
             >
-              <TrashIcon aria-hidden="true" />
+              <TrashGlassIcon size="1.2em" aria-hidden="true" />
               {t('webhook.delete')}
             </Button>
           </div>
@@ -245,7 +245,7 @@ export function PipelineWebhookDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <WebhooksLogoIcon aria-hidden="true" />
+        <WebhookGlassIcon size="1.2em" aria-hidden="true" />
         {t('webhook.button')}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">

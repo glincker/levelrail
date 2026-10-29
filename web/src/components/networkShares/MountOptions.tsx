@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -43,7 +43,7 @@ export function MountOptions({
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium">
-        <CaretDownIcon aria-hidden="true" className="size-4" />
+        <ChevronDownGlassIcon aria-hidden="true" className="size-4.5" />
         {t('networkSharesPage.dialog.advanced')}
       </CollapsibleTrigger>
       <CollapsiblePanel>

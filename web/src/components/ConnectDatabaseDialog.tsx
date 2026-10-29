@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowLeftIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -130,7 +127,7 @@ export function ConnectDatabaseDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger ?? <Button size="sm" variant="outline" />}>
-        <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+        <PlugGlassIcon className="size-4.5" aria-hidden="true" />
         {t('external.connect.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -254,7 +251,7 @@ export function ConnectDatabaseDialog({
                 )
               }}
             >
-              <ArrowLeftIcon className="size-3.5" aria-hidden="true" />
+              <ArrowLeftGlassIcon className="size-4" aria-hidden="true" />
               {t('external.connect.back')}
             </Button>
           ) : null}

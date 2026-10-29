@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import {
   Collapsible,
   CollapsiblePanel,
@@ -18,8 +18,8 @@ export function ReachAdvanced({
   return (
     <Collapsible defaultOpen={defaultOpen}>
       <CollapsibleTrigger className="group/adv flex items-center gap-2 rounded-md py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring">
-        <CaretDownIcon
-          className="size-4 -rotate-90 text-muted-foreground motion-safe:transition-transform group-data-[panel-open]/adv:rotate-0"
+        <ChevronDownGlassIcon
+          className="size-4.5 -rotate-90 text-muted-foreground motion-safe:transition-transform group-data-[panel-open]/adv:rotate-0"
           aria-hidden="true"
         />
         {t('advanced.title')}

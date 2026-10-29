@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowSquareOutIcon,
-  CheckIcon,
-  CopyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  ExternalLinkGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import type { ProbeTarget } from '../../queries/appExposure'
 import { ProbeNote, ScopeChip, SecurityChip } from './ReachParts'
@@ -67,7 +67,10 @@ export function ReachRow({
       <div className="flex shrink-0 flex-wrap items-center gap-1">
         {addr.allowNetwork ? (
           <Button size="sm" variant="outline" onClick={onAllow}>
-            <WarningIcon className="size-3.5" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-4 text-tone-warning"
+              aria-hidden="true"
+            />
             {t('actions.allowNetwork')}
           </Button>
         ) : null}
@@ -86,9 +89,9 @@ export function ReachRow({
             onClick={() => copy(addr.value)}
           >
             {copied ? (
-              <CheckIcon className="size-3.5" aria-hidden="true" />
+              <CheckGlassIcon className="size-4" aria-hidden="true" />
             ) : (
-              <CopyIcon className="size-3.5" aria-hidden="true" />
+              <CopyGlassIcon className="size-4" aria-hidden="true" />
             )}
           </Button>
         ) : null}
@@ -100,7 +103,7 @@ export function ReachRow({
             aria-label={t('actions.open', { what })}
             className={buttonVariants({ size: 'icon-sm', variant: 'ghost' })}
           >
-            <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
+            <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
           </a>
         ) : null}
       </div>

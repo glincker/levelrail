@@ -1,10 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import {
-  CaretDownIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
 import {
   Popover,
   PopoverContent,
@@ -119,8 +116,8 @@ export function Combobox({
         >
           {triggerLabel}
         </span>
-        <CaretDownIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <ChevronDownGlassIcon
+          className="size-4 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
       </PopoverTrigger>
@@ -130,8 +127,8 @@ export function Combobox({
         onKeyDown={handleKeyDown}
       >
         <div className="relative mb-1.5">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+          <SearchGlassIcon
+            className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input

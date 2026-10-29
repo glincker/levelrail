@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { TerminalWindowIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TerminalGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -57,7 +57,7 @@ function BannerBody({
       role="alert"
       className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-primary/30 bg-primary/10 px-4 py-2 text-sm"
     >
-      <TerminalWindowIcon aria-hidden="true" className="size-5 shrink-0" />
+      <TerminalGlassIcon aria-hidden="true" className="size-5.5 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="font-medium">{t('deviceLogin.bannerTitle')}</p>
         <p className="text-xs text-muted-foreground">
@@ -75,7 +75,10 @@ function BannerBody({
         </p>
         {request.ip_mismatch ? (
           <p className="flex items-center gap-1 text-xs font-medium text-destructive">
-            <WarningIcon aria-hidden="true" className="size-3.5" />
+            <TriangleAlertGlassIcon
+              aria-hidden="true"
+              className="size-4 text-tone-warning"
+            />
             {t('deviceLogin.ipMismatch', { ip: request.requester_ip })}
           </p>
         ) : null}

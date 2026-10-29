@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -120,7 +120,7 @@ export function HistoryCard({
         {past.length === 0 && !active ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<ClockCounterClockwiseIcon className="size-5" />}
+            icon={<RestoreGlassIcon className="size-5.5" />}
             title={t('history.emptyTitle')}
             description={t('history.empty')}
           />

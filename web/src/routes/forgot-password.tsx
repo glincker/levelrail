@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon } from '@thesvg/ui-react'
 import { brandQueryOptions } from '../queries/brand'
 import { useBrand } from '../hooks/useBrand'
 import { BrandMarkGlyph } from '../components/BrandMarkGlyph'
@@ -50,7 +50,7 @@ function ForgotPasswordPage() {
             to="/login"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeftIcon className="size-3.5" />
+            <ArrowLeftGlassIcon className="size-4" />
             Back to sign in
           </Link>
         </CardContent>

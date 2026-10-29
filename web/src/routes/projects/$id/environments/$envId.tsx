@@ -3,10 +3,10 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  ArrowsLeftRightIcon,
-  PackageIcon,
-  StackSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftRightGlassIcon,
+  LayersGlassIcon,
+  PackageGlassIcon,
+} from '@thesvg/ui-react'
 import {
   projectDetailQueryOptions,
   useProject,
@@ -101,7 +101,7 @@ function EnvironmentDetailPage() {
       breadcrumb={<Breadcrumbs projectId={id} environmentId={envId} />}
       title={
         <span className="flex items-center gap-2">
-          <StackSimpleIcon className="size-4 text-muted-foreground" />
+          <LayersGlassIcon className="size-4.5 text-muted-foreground" />
           {environment.name}
         </span>
       }
@@ -120,8 +120,8 @@ function EnvironmentDetailPage() {
                 />
               }
             >
-              <ArrowsLeftRightIcon
-                className="size-3.5"
+              <ArrowLeftRightGlassIcon
+                className="size-4"
                 data-icon="inline-start"
               />
               Compare
@@ -174,7 +174,7 @@ function EnvironmentDetailPage() {
 
       {envApps.length === 0 ? (
         <EmptyState
-          icon={<PackageIcon className="size-5" />}
+          icon={<PackageGlassIcon className="size-5.5" />}
           title={`No apps tagged with "${environment.name}" yet`}
           description="Tag an app with this environment from the app's own Overview page."
         />

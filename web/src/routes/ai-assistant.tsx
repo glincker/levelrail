@@ -1,6 +1,6 @@
 import { requireExperimental } from '../lib/experimental'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { GearIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
+import { BotGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import {
   aiAssistantSettingsQueryOptions,
   useAiAssistantSettings,
@@ -36,12 +36,12 @@ function AiAssistantPage() {
           <AiChatPanel />
         ) : (
           <EmptyState
-            icon={<RobotIcon className="size-5" />}
+            icon={<BotGlassIcon className="size-5.5" />}
             title="No AI provider configured"
             description="Add a BYOK API key in Settings to start chatting."
             action={
               <Button size="sm" render={<Link to="/settings/ai-assistant" />}>
-                <GearIcon />
+                <SettingsGlassIcon size="1.2em" />
                 Configure AI Assistant
               </Button>
             }

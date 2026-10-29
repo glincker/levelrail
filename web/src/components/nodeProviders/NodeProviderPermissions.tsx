@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import type { NodeProviderMethod } from '../../types/nodeProvision'
 
 const PERMISSION_KEYS = {
@@ -32,7 +32,10 @@ export function NodeProviderPermissions({
       className="space-y-1 rounded-lg border border-border bg-muted/30 p-3 text-xs"
     >
       <h3 className="flex items-center gap-1.5 text-sm font-medium">
-        <ShieldCheckIcon aria-hidden="true" className="size-4" />
+        <ShieldCheckGlassIcon
+          aria-hidden="true"
+          className="size-4.5 text-tone-success"
+        />
         {t('nodeProviders.permissionsTitle')}
       </h3>
       <p className="text-muted-foreground">{t(PERMISSION_KEYS[provider])}</p>

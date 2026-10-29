@@ -2,11 +2,11 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeftIcon,
-  DotsThreeIcon,
-  HardDrivesIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  EllipsisGlassIcon,
+  ServerGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { ActionMenu } from '@/components/kit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,12 +40,12 @@ export function NodeDetailHeader({
           to="/nodes"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeftIcon className="size-3" aria-hidden="true" />
+          <ArrowLeftGlassIcon className="size-3.5" aria-hidden="true" />
           {t('detail.back')}
         </Link>
       </div>
       <PageBanner
-        icon={<HardDrivesIcon />}
+        icon={<ServerGlassIcon size="1.2em" />}
         titleKey={node.name}
         descriptionKey={`nodes:detail.banner.${state}`}
         illustration={<LazyNodesDiagram size={size} />}
@@ -64,14 +64,14 @@ export function NodeDetailHeader({
                   size="icon-sm"
                   aria-label={t('row.actions', { name: node.name })}
                 >
-                  <DotsThreeIcon aria-hidden="true" />
+                  <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
                 </Button>
               }
               items={[
                 {
                   id: 'delete',
                   label: t('delete.trigger'),
-                  icon: <TrashIcon />,
+                  icon: <TrashGlassIcon size="1.2em" />,
                   tone: 'danger',
                   onSelect: () => {
                     setDeleteOpen(true)

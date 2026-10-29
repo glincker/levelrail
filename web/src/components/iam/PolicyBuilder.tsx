@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -187,7 +187,10 @@ export function PolicyBuilder({
         {!ready ? (
           catalog.isError || resources.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>
                 {(catalog.error ?? resources.error)?.message}
               </AlertDescription>
@@ -254,7 +257,10 @@ export function PolicyBuilder({
 
               {advanced ? (
                 <Alert>
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.2em"
+                  />
                   <AlertDescription>
                     {t('builder.json.advancedHint')}
                   </AlertDescription>
@@ -297,7 +303,7 @@ export function PolicyBuilder({
                       }))
                     }
                   >
-                    <PlusIcon />
+                    <PlusGlassIcon size="1.2em" />
                     {t('builder.addStatement')}
                   </Button>
                 </div>
@@ -335,7 +341,10 @@ export function PolicyBuilder({
 
         {saveError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{saveError}</AlertDescription>
           </Alert>
         ) : null}

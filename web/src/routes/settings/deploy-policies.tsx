@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -129,7 +129,7 @@ function DeployPoliciesPage() {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckIcon />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
       title={t('title')}
       description={t('description')}
     >

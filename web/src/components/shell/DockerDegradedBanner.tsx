@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { WarningCircleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { useDockerDegraded } from './useDockerDegraded'
 
@@ -17,7 +17,7 @@ export function DockerDegradedBanner({
       className="flex h-9 shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 text-sm text-destructive"
     >
       <span aria-hidden="true" className="[&_svg]:size-4">
-        <WarningCircleIcon />
+        <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
       </span>
       <span className="min-w-0 flex-1 truncate">
         {t('dockerDegraded.message')}
@@ -44,7 +44,7 @@ export function DockerDegradedBanner({
         title={t('dockerDegraded.dismiss')}
         onClick={state.dismiss}
       >
-        <XIcon />
+        <XGlassIcon size="1.2em" />
       </Button>
     </div>
   )

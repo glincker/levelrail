@@ -1,6 +1,6 @@
 import { Display } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
-import { TrendDownIcon, TrendUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrendingDownGlassIcon, TrendingUpGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDeltaPct, formatMoney, groupName } from '../../lib/usageFormat'
 import type { UsageReport } from '../../types/usage'
@@ -81,9 +81,9 @@ export function UsageMovers({ report }: { report: UsageReport }) {
             return (
               <li key={g.key} className="flex items-center gap-2 text-sm">
                 {up ? (
-                  <TrendUpIcon className="size-4 text-destructive" />
+                  <TrendingUpGlassIcon className="size-4.5 text-destructive" />
                 ) : (
-                  <TrendDownIcon className="size-4 text-muted-foreground" />
+                  <TrendingDownGlassIcon className="size-4.5 text-muted-foreground" />
                 )}
                 <span>
                   {t(up ? 'movers.up' : 'movers.down', {

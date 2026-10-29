@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  QuestionIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  CircleXGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,10 +26,10 @@ function EvaluationRow({ e }: { e: PlacementEvaluation }) {
   const state = !e.eligible ? 'refused' : e.unverified ? 'unverified' : 'fits'
   const Icon =
     state === 'refused'
-      ? XCircleIcon
+      ? CircleXGlassIcon
       : state === 'unverified'
-        ? QuestionIcon
-        : CheckCircleIcon
+        ? CircleQuestionMarkGlassIcon
+        : CircleCheckGlassIcon
   const detail = e.eligible
     ? e.dimensions
         .map((d) =>
@@ -83,7 +83,7 @@ function DecisionBlock({
       )}
       {(decision.warnings ?? []).map((w) => (
         <Alert key={w}>
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{w}</AlertDescription>
         </Alert>
       ))}
@@ -118,7 +118,7 @@ export function PlacementDecisionPanel({
   if (decision.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
         <AlertDescription className="space-y-2">
           <p>
             {t('decision.loadFailed')} {decision.error.message}

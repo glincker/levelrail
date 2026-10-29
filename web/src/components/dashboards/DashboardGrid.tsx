@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  ArrowRightGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   moveWidget,
@@ -62,7 +62,7 @@ export function DashboardGrid({
                     aria-label={t('grid.moveEarlier', { title })}
                     onClick={() => onChange(moveWidget(widgets, w.id, -1))}
                   >
-                    <ArrowLeftIcon />
+                    <ArrowLeftGlassIcon size="1.2em" />
                   </Button>
                   <Button
                     type="button"
@@ -72,7 +72,7 @@ export function DashboardGrid({
                     aria-label={t('grid.moveLater', { title })}
                     onClick={() => onChange(moveWidget(widgets, w.id, 1))}
                   >
-                    <ArrowRightIcon />
+                    <ArrowRightGlassIcon size="1.2em" />
                   </Button>
                   {WIDGET_SIZES.map((size) => (
                     <Button
@@ -96,7 +96,7 @@ export function DashboardGrid({
                     aria-label={t('grid.remove', { title })}
                     onClick={() => onChange(removeWidget(widgets, w.id))}
                   >
-                    <TrashIcon />
+                    <TrashGlassIcon size="1.2em" />
                   </Button>
                 </div>
               ) : null}

@@ -1,11 +1,11 @@
 import { useMemo, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowUUpLeftIcon,
-  ArrowsClockwiseIcon,
-  GitBranchIcon,
-  GitCommitIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CommitGraphGlassIcon,
+  GitBranchGlassIcon,
+  RefreshCwGlassIcon,
+  UndoGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { RelativeTime, SkeletonLine } from '@/components/kit'
 import {
@@ -63,9 +63,9 @@ function TitleCell({ d }: { d: Deployment }) {
   const kind = rowKind(d)
   const sub = subtitle(d)
   const Lead = isRollback(d)
-    ? ArrowUUpLeftIcon
+    ? UndoGlassIcon
     : kind === 'redeploy'
-      ? ArrowsClockwiseIcon
+      ? RefreshCwGlassIcon
       : null
   return (
     <span className="flex min-w-0 flex-col">
@@ -149,7 +149,7 @@ export function DeploymentList({
         cell: (d) =>
           !isRollback(d) && d.commit_sha ? (
             <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
-              <GitCommitIcon className="size-3.5" aria-hidden="true" />
+              <CommitGraphGlassIcon className="size-4" aria-hidden="true" />
               {shortSha(d.commit_sha)}
             </span>
           ) : null,
@@ -162,7 +162,10 @@ export function DeploymentList({
         cell: (d) =>
           !isRollback(d) && d.branch ? (
             <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
-              <GitBranchIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              <GitBranchGlassIcon
+                className="size-4 shrink-0"
+                aria-hidden="true"
+              />
               <span className="truncate">{d.branch}</span>
             </span>
           ) : null,

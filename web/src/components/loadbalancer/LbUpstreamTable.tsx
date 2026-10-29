@@ -1,4 +1,4 @@
-import { DotsThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import { EllipsisGlassIcon } from '@thesvg/ui-react'
 import {
   ActionMenu,
   AnimatedNumber,
@@ -184,7 +184,7 @@ export function LbUpstreamTable({
                     size="icon"
                     aria-label={`Actions for ${u.dial || `replica ${u.replica}`}`}
                   >
-                    <DotsThreeIcon />
+                    <EllipsisGlassIcon size="1.2em" />
                   </Button>
                 }
                 items={[

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 import { Button } from '../ui/button'
 import { toast } from '../ui/toast'
@@ -74,7 +74,7 @@ export function EdgeUpdateGuidance({
             className="inline-flex items-center gap-1 font-mono text-primary hover:underline"
           >
             {t('edge.commit', { commit: edge.commit.slice(0, 7) })}
-            <ArrowSquareOutIcon className="size-3.5" />
+            <ExternalLinkGlassIcon className="size-4" />
           </a>
         ) : edge.commit ? (
           <span className="font-mono">

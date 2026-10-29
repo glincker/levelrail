@@ -1,13 +1,13 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  GaugeIcon,
-  StackIcon,
-  WarningCircleIcon,
-  WrenchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  GaugeGlassIcon,
+  LayersGlassIcon,
+  RefreshCwGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import { PageBanner } from '@/components/PageBanner'
 import { LazyHealthDiagram } from '@/components/banners/LazyInfraDiagrams'
 import { Badge } from '@/components/ui/badge'
@@ -124,7 +124,7 @@ function MetricsGrid({ h }: { h: CPHealth }) {
               })
             : t('readPoolDisabled')
         }
-        icon={<StackIcon aria-hidden className="size-3.5" />}
+        icon={<LayersGlassIcon aria-hidden className="size-4" />}
       />
       <Metric
         label={t('wal')}
@@ -223,7 +223,7 @@ export function ControlPlaneHealthPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<GaugeIcon />}
+        icon={<GaugeGlassIcon size="1.2em" />}
         titleKey="settings:controlPlaneHealth.title"
         descriptionKey={
           hero
@@ -235,9 +235,17 @@ export function ControlPlaneHealthPage() {
             {data ? (
               <Badge variant={statusVariant}>
                 {data.status === 'ok' ? (
-                  <CheckCircleIcon aria-hidden="true" />
+                  <CircleCheckGlassIcon
+                    className="text-tone-success"
+                    size="1.2em"
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <WarningCircleIcon aria-hidden="true" />
+                  <CircleAlertGlassIcon
+                    className="text-tone-danger"
+                    size="1.2em"
+                    aria-hidden="true"
+                  />
                 )}
                 {t(`controlPlaneHealth.status.${data.status}`)}
               </Badge>
@@ -250,7 +258,7 @@ export function ControlPlaneHealthPage() {
                 void refetch()
               }}
             >
-              <ArrowsClockwiseIcon aria-hidden="true" />
+              <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
               {isFetching
                 ? t('controlPlaneHealth.rechecking')
                 : t('controlPlaneHealth.recheck')}
@@ -334,7 +342,7 @@ export function ControlPlaneHealthPage() {
                               if (f.fix) apply(f.fix)
                             }}
                           >
-                            <WrenchIcon />
+                            <WrenchGlassIcon size="1.2em" />
                             {t(`controlPlaneHealth.fixes.${f.fix}`)}
                           </Button>
                           <Collapsible>

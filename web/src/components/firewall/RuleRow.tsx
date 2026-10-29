@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { DotsThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import { EllipsisGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { ActionMenu, type ActionMenuItem } from '@/components/kit/ActionMenu'
@@ -80,7 +80,7 @@ export function RuleRow({
             size="icon-sm"
             aria-label={t('rules.actionsFor', { name: rule.name })}
           >
-            <DotsThreeIcon weight="bold" />
+            <EllipsisGlassIcon size="1.2em" />
           </Button>
         }
         items={menuItems}

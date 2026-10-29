@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  TrendDownIcon,
-  TrendUpIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  TrendingDownGlassIcon,
+  TrendingUpGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -34,11 +34,11 @@ function Dimension({
   const value = format(rec.suggested_limit)
   const icon =
     rec.action === 'raise' ? (
-      <TrendUpIcon className="size-4" />
+      <TrendingUpGlassIcon className="size-4.5" />
     ) : rec.action === 'lower' ? (
-      <TrendDownIcon className="size-4" />
+      <TrendingDownGlassIcon className="size-4.5" />
     ) : (
-      <CheckCircleIcon className="size-4" />
+      <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
     )
   return (
     <div className="rounded-md border border-border p-3">
@@ -97,7 +97,7 @@ export function LimitSuggestion(props: Props) {
     <div className="space-y-3">
       {data.oom_detected_at ? (
         <Alert variant="destructive">
-          <WarningCircleIcon />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
           <AlertDescription>
             {t('suggestion.oom', {
               date: new Date(data.oom_detected_at).toLocaleString(),

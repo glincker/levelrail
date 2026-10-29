@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  KeyIcon,
-  ProhibitIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  KeyGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import type { SCIMToken, SCIMTokenCreated, SSOSettings } from '@/queries/sso'
 import {
   useCreateSCIMToken,
@@ -130,7 +130,7 @@ export function SCIMCard({
               onChange={(e) => setName(e.target.value)}
             />
             <Button type="submit" disabled={!name.trim() || create.isPending}>
-              <KeyIcon aria-hidden="true" />
+              <KeyGlassIcon size="1.2em" aria-hidden="true" />
               {t('scim.create')}
             </Button>
           </form>
@@ -171,7 +171,7 @@ export function SCIMCard({
                       rotate.mutate(tok.id, { onSuccess: setShown })
                     }
                   >
-                    <ArrowsClockwiseIcon aria-hidden="true" />
+                    <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
                     {t('scim.rotate')}
                   </Button>
                   <Button
@@ -180,7 +180,7 @@ export function SCIMCard({
                     size="sm"
                     onClick={() => setRevoking(tok)}
                   >
-                    <ProhibitIcon aria-hidden="true" />
+                    <BanGlassIcon size="1.2em" aria-hidden="true" />
                     {t('scim.revoke')}
                   </Button>
                 </>

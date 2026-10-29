@@ -8,8 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
-
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -279,7 +278,7 @@ function FieldHint({
             className="inline-flex items-center gap-0.5"
           >
             {linkText}
-            <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+            <ExternalLinkGlassIcon className="size-3.5" aria-hidden="true" />
           </a>
         </>
       ) : null}

@@ -2,19 +2,19 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ScrollIcon,
-  ArrowsClockwiseIcon,
-  ArrowCounterClockwiseIcon,
-  DotsThreeIcon,
-  ProhibitIcon,
-  GitBranchIcon,
-  GitCommitIcon,
-  GitDiffIcon,
-  ArrowSquareOutIcon,
-  LockSimpleIcon,
-  WarningCircleIcon,
-  DatabaseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleAlertGlassIcon,
+  CommitGraphGlassIcon,
+  DatabaseGlassIcon,
+  EllipsisGlassIcon,
+  ExternalLinkGlassIcon,
+  GitBranchGlassIcon,
+  GitCompareGlassIcon,
+  LockGlassIcon,
+  RefreshCwGlassIcon,
+  RotateCcwGlassIcon,
+  ScrollGlassIcon,
+} from '@thesvg/ui-react'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
 import type { EnvironmentResource } from '../types/environment'
@@ -188,7 +188,7 @@ export function DeployAttemptRow({
       id: 'compare',
       label: 'Compare to current',
       description: 'See what changed against the live release',
-      icon: <GitDiffIcon className="size-4" />,
+      icon: <GitCompareGlassIcon className="size-4.5" />,
       onSelect: () => {
         void navigate({
           to: '/apps/$name/deploys/compare',
@@ -205,7 +205,7 @@ export function DeployAttemptRow({
             description: attempt.image_digest
               ? t('deployHistory.promoteHint')
               : 'No digest recorded: redeploys by image tag',
-            icon: <ArrowCounterClockwiseIcon className="size-4" />,
+            icon: <RotateCcwGlassIcon className="size-4.5" />,
             disabled: rollbackBlocked,
             onSelect: handleRollback,
           },
@@ -219,7 +219,7 @@ export function DeployAttemptRow({
             description: t('publishLock.rollbackLockHint', {
               ns: 'deploySafety',
             }),
-            icon: <LockSimpleIcon className="size-4" />,
+            icon: <LockGlassIcon className="size-4.5" />,
             disabled: rollbackBlocked || rollbackAndLock.isPending,
             onSelect: () =>
               rollbackAndLock.mutate(attempt.id, { onError: lockToastError }),
@@ -232,7 +232,7 @@ export function DeployAttemptRow({
             id: 'rollback-with-data',
             label: t('rollbackWithData.menuLabel', { ns: 'deploys' }),
             description: t('rollbackWithData.menuHint', { ns: 'deploys' }),
-            icon: <DatabaseIcon className="size-4" />,
+            icon: <DatabaseGlassIcon className="size-4.5" />,
             onSelect: () => {
               setDataDialogOpen(true)
             },
@@ -248,7 +248,7 @@ export function DeployAttemptRow({
               attempt.status === 'running'
                 ? 'Stops the build; the serving release is untouched'
                 : 'Removes it from the queue',
-            icon: <ProhibitIcon className="size-4" />,
+            icon: <BanGlassIcon className="size-4.5" />,
             tone: 'danger' as const,
             onSelect: () => {
               setCancelDialogOpen(true)
@@ -296,7 +296,6 @@ export function DeployAttemptRow({
           )}
         >
           <StatusIcon
-            weight="fill"
             className={cn(
               'size-5',
               attempt.status === 'running' &&
@@ -358,7 +357,7 @@ export function DeployAttemptRow({
                 id: attempt.rerun_of,
               })}
             >
-              <ArrowsClockwiseIcon className="size-3" aria-hidden="true" />
+              <RefreshCwGlassIcon className="size-3.5" aria-hidden="true" />
               {t('deployHistory.rerunOf', {
                 id: attempt.rerun_of.slice(0, 12),
               })}
@@ -377,13 +376,13 @@ export function DeployAttemptRow({
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {attempt.branch ? (
             <span className="inline-flex items-center gap-1">
-              <GitBranchIcon className="size-3.5" aria-hidden="true" />
+              <GitBranchGlassIcon className="size-4" aria-hidden="true" />
               <span className="font-mono">{attempt.branch}</span>
             </span>
           ) : null}
           {attempt.commit_sha ? (
             <span className="inline-flex items-center gap-1 font-mono">
-              <GitCommitIcon className="size-3.5" aria-hidden="true" />
+              <CommitGraphGlassIcon className="size-4" aria-hidden="true" />
               {attempt.commit_sha.slice(0, 7)}
             </span>
           ) : null}
@@ -414,9 +413,8 @@ export function DeployAttemptRow({
 
         {attempt.failure || attempt.error ? (
           <div className="mt-2 flex items-start gap-2 rounded-md border border-tone-danger-border bg-tone-danger-soft px-3 py-2 text-sm">
-            <WarningCircleIcon
-              weight="fill"
-              className="mt-0.5 size-4 shrink-0 text-tone-danger"
+            <CircleAlertGlassIcon
+              className="mt-0.5 size-4.5 shrink-0 text-tone-danger"
               aria-hidden="true"
             />
             <div className="min-w-0">
@@ -459,7 +457,10 @@ export function DeployAttemptRow({
               />
             }
           >
-            <ArrowSquareOutIcon className="size-3.5" data-icon="inline-start" />
+            <ExternalLinkGlassIcon
+              className="size-4"
+              data-icon="inline-start"
+            />
             {t('deployHistory.visit')}
           </Button>
         ) : null}
@@ -479,7 +480,10 @@ export function DeployAttemptRow({
               />
             }
           >
-            <ArrowSquareOutIcon className="size-3.5" data-icon="inline-start" />
+            <ExternalLinkGlassIcon
+              className="size-4"
+              data-icon="inline-start"
+            />
             {t('deployHistory.visit')}
           </Button>
         ) : null}
@@ -500,10 +504,7 @@ export function DeployAttemptRow({
             disabled={rollbackBlocked}
             onClick={handleRollback}
           >
-            <ArrowCounterClockwiseIcon
-              className="size-3.5"
-              data-icon="inline-start"
-            />
+            <RotateCcwGlassIcon className="size-4" data-icon="inline-start" />
             {t('deployHistory.promote')}
           </Button>
         ) : null}
@@ -514,7 +515,7 @@ export function DeployAttemptRow({
           className="max-sm:hidden"
           render={<Link {...detail} />}
         >
-          <ScrollIcon className="size-3.5" data-icon="inline-start" />
+          <ScrollGlassIcon className="size-4" data-icon="inline-start" />
           {attempt.status === 'running'
             ? t('deployHistory.watchLog')
             : attempt.status === 'failed'
@@ -528,7 +529,7 @@ export function DeployAttemptRow({
               size="sm"
               aria-label={`More actions for ${title}`}
             >
-              <DotsThreeIcon weight="bold" className="size-4" />
+              <EllipsisGlassIcon className="size-4.5" />
             </Button>
           }
           items={menuItems}

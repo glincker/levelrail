@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ClockCountdownIcon } from '@phosphor-icons/react/dist/ssr'
+import { CountdownGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -106,7 +106,7 @@ export function BansTable({
         ) : error ? (
           <EmptyState
             compact
-            icon={<ClockCountdownIcon className="size-5" />}
+            icon={<CountdownGlassIcon className="size-5.5" />}
             title={t('bans.loadFailed')}
             description={error.message}
             action={
@@ -123,7 +123,7 @@ export function BansTable({
         ) : rows.length === 0 ? (
           <EmptyState
             compact
-            icon={<ClockCountdownIcon className="size-5" />}
+            icon={<CountdownGlassIcon className="size-5.5" />}
             title={t('bans.emptyTitle')}
             description={t('bans.emptyHelp')}
           />

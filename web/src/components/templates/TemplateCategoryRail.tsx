@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { ALL_CATEGORIES } from '../../lib/templateCatalogView'
 import { categoryStyle } from '../../lib/templateCategoryStyle'
@@ -17,19 +17,20 @@ export function TemplateCategoryRail({
   onChange: (category: string) => void
 }) {
   const { t } = useTranslation('templates')
-  const items: [string, string, number, typeof SquaresFourIcon, string][] = [
+  const items: [string, string, number, typeof LayoutGridGlassIcon, string][] =
     [
-      ALL_CATEGORIES,
-      t('marketplace.categories.all'),
-      total,
-      SquaresFourIcon,
-      'text-foreground/70',
-    ],
-    ...categoryCounts.map(([name, count]): (typeof items)[number] => {
-      const style = categoryStyle(name)
-      return [name, name, count, style.icon, style.toneClass]
-    }),
-  ]
+      [
+        ALL_CATEGORIES,
+        t('marketplace.categories.all'),
+        total,
+        LayoutGridGlassIcon,
+        'text-foreground/70',
+      ],
+      ...categoryCounts.map(([name, count]): (typeof items)[number] => {
+        const style = categoryStyle(name)
+        return [name, name, count, style.icon, style.toneClass]
+      }),
+    ]
   return (
     <nav
       aria-label={t('marketplace.categories.label')}

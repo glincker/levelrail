@@ -1,6 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { RocketGlassIcon } from '@thesvg/ui-react'
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -26,7 +26,7 @@ export function GetStartedNavItem() {
           isActive={pathname === '/get-started'}
           tooltip={label}
         >
-          <RocketLaunchIcon />
+          <RocketGlassIcon size="1.2em" />
           <span>{t('nav.label')}</span>
           <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {guide?.ready_percent ?? 0}%

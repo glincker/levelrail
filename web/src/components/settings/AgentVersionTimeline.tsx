@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon } from '@thesvg/ui-react'
 import { formatRelative } from '@/components/kit/formatRelative'
 import type { AgentVersionChange } from '../../queries/upgradeHistory'
 
@@ -30,7 +30,7 @@ export function AgentVersionTimeline({
             {c.from_version !== '' ? (
               <>
                 <span className="font-mono">{c.from_version}</span>
-                <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+                <ArrowRightGlassIcon className="size-4 text-muted-foreground" />
               </>
             ) : (
               <span className="text-muted-foreground">

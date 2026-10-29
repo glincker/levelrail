@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PaperPlaneTiltIcon } from '@phosphor-icons/react/dist/ssr'
+import { SendGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -94,7 +94,7 @@ export function EmailDeliveryCard() {
                 send.mutate({ to: to.trim(), providerId: targetId })
               }}
             >
-              <PaperPlaneTiltIcon aria-hidden="true" />
+              <SendGlassIcon size="1.2em" aria-hidden="true" />
               {send.isPending
                 ? t('emailDelivery.test.sending')
                 : t('emailDelivery.test.send')}

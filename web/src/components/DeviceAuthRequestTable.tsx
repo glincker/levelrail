@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TerminalGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { DeviceLoginConfirmDialog } from './attention/DeviceLoginConfirmDialog'
 import {
   ResponsiveTable,
@@ -9,7 +9,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { TerminalWindowIcon } from '@phosphor-icons/react/dist/ssr'
 import { toast } from '@/components/ui/toast'
 import {
   useApproveDeviceAuthRequest,
@@ -58,7 +57,7 @@ export function DeviceAuthRequestTable({
     return (
       <EmptyState
         compact
-        icon={<TerminalWindowIcon className="size-4" />}
+        icon={<TerminalGlassIcon className="size-4.5" />}
         title={t('deviceLogin.emptyTitle')}
         description={t('deviceLogin.emptyBody')}
       />
@@ -100,7 +99,10 @@ export function DeviceAuthRequestTable({
               className="ml-1.5 inline-flex items-center gap-1 text-xs font-medium text-destructive"
               title={t('deviceLogin.ipMismatch', { ip: request.requester_ip })}
             >
-              <WarningIcon aria-hidden="true" className="size-3.5" />
+              <TriangleAlertGlassIcon
+                aria-hidden="true"
+                className="size-4 text-tone-warning"
+              />
               {t('deviceLogin.review')}
             </span>
           ) : null}

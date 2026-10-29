@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { Share2GlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -223,7 +223,7 @@ export function PrivateNetworksPanel({
         {networks.length === 0 ? (
           <EmptyState
             compact
-            icon={<ShareNetworkIcon className="size-5" />}
+            icon={<Share2GlassIcon className="size-5.5" />}
             title={t('networks.empty')}
             description={t('networks.emptyHint')}
           />

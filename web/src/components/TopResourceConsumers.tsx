@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ChartBarIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChartColumnGlassIcon } from '@thesvg/ui-react'
 import type { AppListEntry } from '../types/appDetail'
 import type { AppResourceUsage } from '../types/appResourceUsage'
 import { useAppResourceUsage } from '../queries/appResourceUsage'
@@ -71,8 +71,8 @@ export function TopResourceConsumers({ apps }: { apps: AppListEntry[] }) {
     <Card size="sm">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
-          <ChartBarIcon
-            className="size-4 text-muted-foreground"
+          <ChartColumnGlassIcon
+            className="size-4.5 text-muted-foreground"
             aria-hidden="true"
           />
           Top resource consumers

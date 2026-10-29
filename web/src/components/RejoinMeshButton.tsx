@@ -1,4 +1,4 @@
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRejoinNodeMesh } from '../queries/mesh'
@@ -45,7 +45,7 @@ export function RejoinMeshButton({
         })
       }}
     >
-      <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
+      <PlugGlassIcon className="size-4" aria-hidden="true" />
       {rejoin.isPending ? 'Requesting...' : 'Rejoin'}
     </Button>
   )

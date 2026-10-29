@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -124,7 +124,7 @@ export function DashboardTabBar({
               />
             }
           >
-            <CaretDownIcon aria-hidden="true" />
+            <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             {overflow.map((id) => (

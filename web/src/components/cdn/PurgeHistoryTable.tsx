@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -32,7 +32,7 @@ export function PurgeHistoryTable({ app }: Readonly<{ app: string }>) {
     return (
       <EmptyState
         compact
-        icon={<ClockCounterClockwiseIcon className="size-4" />}
+        icon={<RestoreGlassIcon className="size-4.5" />}
         title={t('history.emptyTitle')}
         description={t('history.emptyBody')}
       />

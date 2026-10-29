@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import type { SessionOnLimit, SessionPolicy } from '@/queries/sessionPolicy'
 import {
   useClearSessionPolicy,
@@ -183,7 +183,7 @@ export function SessionPolicyForm({
               })
             }
           >
-            <TrashIcon aria-hidden="true" />
+            <TrashGlassIcon size="1.2em" aria-hidden="true" />
             {t('policy.clear')}
           </Button>
         ) : (

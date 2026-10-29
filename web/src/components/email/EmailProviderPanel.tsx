@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -171,7 +171,7 @@ export function EmailProviderPanel({
               className="inline-flex items-center gap-1 text-xs underline"
             >
               {t('emailPresets.docs')}
-              <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+              <ExternalLinkGlassIcon className="size-3.5" aria-hidden="true" />
             </a>
           ) : null}
         </div>

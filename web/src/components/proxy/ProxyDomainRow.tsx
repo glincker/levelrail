@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon } from '@thesvg/ui-react'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -92,7 +92,11 @@ export function ProxyVerifyButton({ row }: { row: ProxyDomain }) {
       }}
     >
       {verify.isPending ? (
-        <SpinnerIcon className="animate-spin" aria-hidden="true" />
+        <LoaderGlassIcon
+          size="1.2em"
+          className="animate-spin"
+          aria-hidden="true"
+        />
       ) : null}
       {verify.isPending
         ? t('proxySetup.domains.verifying')

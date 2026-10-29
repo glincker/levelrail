@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -24,14 +24,14 @@ function EnvironmentsSettingsPage() {
   )
   const createTrigger = (
     <Button type="button">
-      <PlusIcon />
+      <PlusGlassIcon size="1.2em" />
       {t('settings.create')}
     </Button>
   )
 
   return (
     <PageTemplate
-      icon={<StackIcon />}
+      icon={<LayersGlassIcon size="1.2em" />}
       title={t('settings.title')}
       description={t('settings.description')}
       actions={<EnvironmentFormDialog trigger={createTrigger} />}
@@ -43,7 +43,7 @@ function EnvironmentsSettingsPage() {
       ) : (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<StackIcon className="size-5" />}
+          icon={<LayersGlassIcon className="size-5.5" />}
           title={t('settings.empty.title')}
           description={t('settings.empty.description')}
           action={<EnvironmentFormDialog trigger={createTrigger} />}

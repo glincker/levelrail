@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleDashedIcon,
-  HourglassIcon,
-  PauseCircleIcon,
-  WrenchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CirclePauseGlassIcon,
+  CountdownGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -35,13 +35,13 @@ function StateBadge({ plugin }: Readonly<{ plugin: Plugin }>) {
       return plugin.running ? (
         <StatusBadge
           tone="success"
-          icon={CheckCircleIcon}
+          icon={CircleCheckGlassIcon}
           label={t('state.running')}
         />
       ) : (
         <StatusBadge
           tone="warning"
-          icon={HourglassIcon}
+          icon={CountdownGlassIcon}
           label={t('state.stopped')}
         />
       )
@@ -49,7 +49,7 @@ function StateBadge({ plugin }: Readonly<{ plugin: Plugin }>) {
       return (
         <StatusBadge
           tone="warning"
-          icon={CircleDashedIcon}
+          icon={CircleDashedGlassIcon}
           label={t('state.installed')}
         />
       )
@@ -57,7 +57,7 @@ function StateBadge({ plugin }: Readonly<{ plugin: Plugin }>) {
       return (
         <StatusBadge
           tone="danger"
-          icon={HourglassIcon}
+          icon={CountdownGlassIcon}
           label={t('state.removing')}
         />
       )
@@ -65,7 +65,7 @@ function StateBadge({ plugin }: Readonly<{ plugin: Plugin }>) {
       return (
         <StatusBadge
           tone="neutral"
-          icon={PauseCircleIcon}
+          icon={CirclePauseGlassIcon}
           label={t('state.disabled')}
         />
       )
@@ -178,13 +178,13 @@ export function PluginTable({
                         })
                       }
                     >
-                      <WrenchIcon aria-hidden="true" />
+                      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
                       {t('fix.restart')}
                     </Button>
                   ) : null}
                   {p.fix === 'trust_key' ? (
                     <Button type="button" size="sm" onClick={onTrustKeys}>
-                      <WrenchIcon aria-hidden="true" />
+                      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
                       {t('fix.trustKey')}
                     </Button>
                   ) : null}
@@ -194,7 +194,7 @@ export function PluginTable({
                       size="sm"
                       onClick={() => onUpgrade(p)}
                     >
-                      <WrenchIcon aria-hidden="true" />
+                      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
                       {t('fix.reinstall')}
                     </Button>
                   ) : null}

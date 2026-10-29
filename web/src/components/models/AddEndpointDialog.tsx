@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -96,7 +96,7 @@ export function AddEndpointDialog({
       }}
     >
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <PlugsConnectedIcon aria-hidden="true" />
+        <PlugGlassIcon size="1.2em" aria-hidden="true" />
         {t('endpoint.add.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">

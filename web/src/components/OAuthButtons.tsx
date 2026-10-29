@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
+import { UniversityGlassIcon } from '@thesvg/ui-react'
 import type { PublicOAuthProvider } from '../queries/oauth'
 import { publicOAuthProvidersQueryOptions } from '../queries/oauth'
 import { devModeQueryOptions } from '../queries/devMode'
@@ -81,7 +81,7 @@ export function OAuthButtons() {
           render={<a href={startSAMLURL(p.id)} />}
         >
           <span className="flex size-6 items-center justify-center rounded bg-muted text-muted-foreground">
-            <BuildingsIcon aria-hidden="true" />
+            <UniversityGlassIcon size="1.2em" aria-hidden="true" />
           </span>
           {t('foundation.signIn.continueWith', { provider: p.name })}
         </Button>

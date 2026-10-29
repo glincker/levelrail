@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ProhibitIcon,
-  ShieldCheckIcon,
-  ShieldWarningIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  ShieldAlertGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import type { NodeTrustResource } from '../../types/nodeTrust'
 
 const TONE: Record<string, string> = {
@@ -23,12 +23,12 @@ export function TrustStatusLine({ trust }: { trust: NodeTrustResource }) {
   const { state, reason } = trust.status
   const Icon =
     state === 'verified'
-      ? ShieldCheckIcon
+      ? ShieldCheckGlassIcon
       : state === 'revoked'
-        ? ProhibitIcon
+        ? BanGlassIcon
         : state === 'rejected' || state === 'expired'
-          ? WarningIcon
-          : ShieldWarningIcon
+          ? TriangleAlertGlassIcon
+          : ShieldAlertGlassIcon
   return (
     <p
       className={`flex items-start gap-2 text-sm font-medium ${TONE[state] ?? ''}`}

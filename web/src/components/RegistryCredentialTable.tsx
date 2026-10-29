@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PackageIcon, PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -113,7 +113,7 @@ function TestButton({ credential }: { credential: RegistryCredential }) {
         })
       }}
     >
-      <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
+      <PlugGlassIcon className="size-4" aria-hidden="true" />
       {testCredential.isPending
         ? t('registryPage.table.testing')
         : t('registryPage.table.test')}
@@ -136,7 +136,7 @@ export function RegistryCredentialTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5.5" />}
         title={t('registryPage.empty.title')}
         description={t('registryPage.empty.body')}
         action={action}

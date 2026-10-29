@@ -1,13 +1,13 @@
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowClockwiseIcon,
-  GaugeIcon,
-  CheckCircleIcon,
-  CircleNotchIcon,
-  KeyIcon,
-  MoonIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  GaugeGlassIcon,
+  KeyGlassIcon,
+  LoaderCircleGlassIcon,
+  MoonGlassIcon,
+  RotateCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -30,28 +30,36 @@ function ModelStatusBadge({ model }: { model: ModelResource }) {
   switch (modelPhase(model)) {
     case 'ready':
       return (
-        <StatusBadge variant="success" label="Loaded" icon={CheckCircleIcon} />
+        <StatusBadge
+          variant="success"
+          label="Loaded"
+          icon={CircleCheckGlassIcon}
+        />
       )
     case 'progress':
       return (
         <StatusBadge
           variant="warning"
           label={model.status.reason}
-          icon={CircleNotchIcon}
+          icon={LoaderCircleGlassIcon}
         />
       )
     case 'deleting':
       return (
-        <StatusBadge variant="muted" label="Deleting" icon={CircleNotchIcon} />
+        <StatusBadge
+          variant="muted"
+          label="Deleting"
+          icon={LoaderCircleGlassIcon}
+        />
       )
     case 'idle':
-      return <StatusBadge variant="muted" label="Idle" icon={MoonIcon} />
+      return <StatusBadge variant="muted" label="Idle" icon={MoonGlassIcon} />
     default:
       return (
         <StatusBadge
           variant="destructive"
           label={model.status.reason}
-          icon={WarningCircleIcon}
+          icon={CircleAlertGlassIcon}
         />
       )
   }
@@ -142,7 +150,7 @@ export function ModelRow({ model }: { model: ModelResource }) {
             })
           }}
         >
-          <ArrowClockwiseIcon aria-hidden="true" />
+          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -165,7 +173,7 @@ export function ModelRow({ model }: { model: ModelResource }) {
             })
           }}
         >
-          <KeyIcon aria-hidden="true" />
+          <KeyGlassIcon size="1.2em" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -181,7 +189,7 @@ export function ModelRow({ model }: { model: ModelResource }) {
             />
           }
         >
-          <GaugeIcon aria-hidden="true" />
+          <GaugeGlassIcon size="1.2em" aria-hidden="true" />
         </Button>
         <DeleteModelDialog name={model.name} disabled={deleting} />
       </span>

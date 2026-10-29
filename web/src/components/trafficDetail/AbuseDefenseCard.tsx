@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LightbulbIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { LightbulbGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -146,7 +146,7 @@ function RateFields({
         </div>
       </div>
       <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-        <LightbulbIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        <LightbulbGlassIcon className="size-4 shrink-0" aria-hidden="true" />
         <span>
           {suggestion.from_traffic
             ? t('abuse.suggestionFromPeak', {
@@ -410,7 +410,10 @@ export function AbuseDefenseCard({
       className="rounded-xl bg-linear-to-b from-card to-muted/50 text-card-foreground shadow-card ring-1 ring-foreground/10"
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-4 pb-3">
-        <ShieldCheckIcon className="size-4" aria-hidden="true" />
+        <ShieldCheckGlassIcon
+          className="size-4.5 text-tone-success"
+          aria-hidden="true"
+        />
         <h3 className="text-sm font-medium">{t('abuse.title')}</h3>
         {data ? (
           <Badge variant={conditionVariant(data)}>

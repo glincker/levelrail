@@ -1,13 +1,13 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CodeIcon,
-  DownloadSimpleIcon,
-  ListIcon,
-  PlusIcon,
-  ShieldIcon,
-  UploadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CodeGlassIcon,
+  DownloadGlassIcon,
+  ListGlassIcon,
+  PlusGlassIcon,
+  ShieldGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import type { ExportFormat } from '../../queries/envProtection'
 import { Button } from '@/components/ui/button'
 import {
@@ -54,7 +54,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         onClick={props.onAdd}
         disabled={props.mode === 'bulk'}
       >
-        <PlusIcon />
+        <PlusGlassIcon size="1.2em" />
         {t('toolbar.add')}
       </Button>
       <Button
@@ -63,7 +63,11 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         variant="outline"
         onClick={props.onToggleMode}
       >
-        {props.mode === 'table' ? <CodeIcon /> : <ListIcon />}
+        {props.mode === 'table' ? (
+          <CodeGlassIcon size="1.2em" />
+        ) : (
+          <ListGlassIcon size="1.2em" />
+        )}
         {props.mode === 'table' ? t('toolbar.bulk') : t('toolbar.table')}
       </Button>
       <Button
@@ -74,7 +78,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
           fileRef.current?.click()
         }}
       >
-        <UploadSimpleIcon />
+        <UploadGlassIcon size="1.2em" />
         {t('toolbar.import')}
       </Button>
       <input
@@ -96,7 +100,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         <DropdownMenuTrigger
           render={<Button type="button" size="sm" variant="outline" />}
         >
-          <DownloadSimpleIcon />
+          <DownloadGlassIcon size="1.2em" />
           {t('toolbar.export')}
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -132,7 +136,7 @@ export function EnvEditorToolbar(props: EnvEditorToolbarProps) {
         <PopoverTrigger
           render={<Button type="button" size="sm" variant="outline" />}
         >
-          <ShieldIcon />
+          <ShieldGlassIcon size="1.2em" />
           {t('toolbar.protection')}
         </PopoverTrigger>
         <PopoverContent className="w-80">

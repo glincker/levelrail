@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useLogBudget, useLogUsage } from '../../queries/logBudgets'
@@ -41,7 +41,7 @@ export function AppLogBudgetField({ app }: { app: string }) {
               aria-label={t('editFor', { app })}
               onClick={() => setEditing(true)}
             >
-              <PencilSimpleIcon />
+              <PencilGlassIcon size="1.2em" />
             </Button>
           )}
         </>

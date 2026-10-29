@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
-import { ArrowFatLinesUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowUpGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,7 +48,7 @@ export function TemplateUpgradeBadge({
   if (active) {
     return (
       <Alert role="status" className="py-1.5">
-        <ArrowFatLinesUpIcon className="size-4 shrink-0" aria-hidden="true" />
+        <ArrowUpGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
         <AlertDescription className="flex flex-wrap items-center gap-x-2">
           <span className="font-medium">
             {t(`templateUpgrade.run.${active.state}`)}
@@ -66,7 +66,7 @@ export function TemplateUpgradeBadge({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Badge variant="info" className="gap-1">
-        <ArrowFatLinesUpIcon className="size-3.5" aria-hidden="true" />
+        <ArrowUpGlassIcon className="size-4" aria-hidden="true" />
         {t('templateUpgrade.badge')}
       </Badge>
       <span className="text-xs text-muted-foreground">

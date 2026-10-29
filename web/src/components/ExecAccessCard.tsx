@@ -1,4 +1,4 @@
-import { LockKeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
@@ -40,7 +40,7 @@ export function ExecAccessCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockKeyIcon className="size-4 text-muted-foreground" />
+          <LockGlassIcon className="size-4.5 text-muted-foreground" />
           Shell/exec access
         </CardTitle>
       </CardHeader>

@@ -2,13 +2,13 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowUUpLeftIcon,
-  ArrowsClockwiseIcon,
-  ClockCounterClockwiseIcon,
-  GitDiffIcon,
-  RocketLaunchIcon,
-  StopCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleStopGlassIcon,
+  GitCompareGlassIcon,
+  RefreshCwGlassIcon,
+  RestoreGlassIcon,
+  RocketGlassIcon,
+  UndoGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/kit'
 import type { Deployment } from '../../types/deployment'
@@ -79,7 +79,7 @@ export function DrawerActions({
         <ActionButton
           label="Redeploy"
           keyHint="r"
-          icon={<ArrowsClockwiseIcon aria-hidden="true" />}
+          icon={<RefreshCwGlassIcon size="1.2em" aria-hidden="true" />}
           reason={redeployReason(d)}
           onClick={() => {
             onAction('redeploy', d)
@@ -88,7 +88,7 @@ export function DrawerActions({
         <ActionButton
           label="Roll back to this"
           keyHint="b"
-          icon={<ArrowUUpLeftIcon aria-hidden="true" />}
+          icon={<UndoGlassIcon size="1.2em" aria-hidden="true" />}
           reason={rollbackReason(d)}
           onClick={() => {
             onAction('rollback', d)
@@ -106,7 +106,7 @@ export function DrawerActions({
             />
           }
         >
-          <GitDiffIcon aria-hidden="true" />
+          <GitCompareGlassIcon size="1.2em" aria-hidden="true" />
           Compare
         </Button>
         <Button
@@ -115,19 +115,19 @@ export function DrawerActions({
           nativeButton={false}
           render={<Link to="/deploy-events/$id" params={{ id: d.id }} />}
         >
-          <ClockCounterClockwiseIcon aria-hidden="true" />
+          <RestoreGlassIcon size="1.2em" aria-hidden="true" />
           {t('open')}
         </Button>
         <ActionButton
           label="Promote"
-          icon={<RocketLaunchIcon aria-hidden="true" />}
+          icon={<RocketGlassIcon size="1.2em" aria-hidden="true" />}
           reason={promoteReason(d, hasProject)}
           onClick={onPromote}
         />
         <ActionButton
           label="Cancel"
           keyHint="c"
-          icon={<StopCircleIcon aria-hidden="true" />}
+          icon={<CircleStopGlassIcon size="1.2em" aria-hidden="true" />}
           reason={cancelReason(d)}
           onClick={() => {
             onAction('cancel', d)

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  EyeIcon,
-  EyeSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useStepUpGate } from '../../hooks/useStepUpGate'
@@ -91,16 +91,16 @@ export function RevealEmailSecret({ providerId, field }: Readonly<Props>) {
             </code>
             <Button type="button" variant="outline" size="sm" onClick={copy}>
               {copied ? (
-                <CheckIcon aria-hidden="true" />
+                <CheckGlassIcon size="1.2em" aria-hidden="true" />
               ) : (
-                <CopyIcon aria-hidden="true" />
+                <CopyGlassIcon size="1.2em" aria-hidden="true" />
               )}
               {copied
                 ? t('emailDelivery.reveal.copied')
                 : t('emailDelivery.reveal.copy')}
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={hide}>
-              <EyeSlashIcon aria-hidden="true" />
+              <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
               {t('emailDelivery.reveal.hide')}
             </Button>
           </div>
@@ -117,7 +117,7 @@ export function RevealEmailSecret({ providerId, field }: Readonly<Props>) {
             void reveal()
           }}
         >
-          <EyeIcon aria-hidden="true" />
+          <EyeGlassIcon size="1.2em" aria-hidden="true" />
           {t('emailDelivery.reveal.show')}
         </Button>
       )}

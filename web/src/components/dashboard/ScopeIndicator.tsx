@@ -1,9 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  FunnelSimpleIcon,
-  GlobeHemisphereWestIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { FunnelGlassIcon, GlobeGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useProjectScope } from '../../lib/projectScope'
 import { clearScope, useScopeName } from './useScopeName'
@@ -15,7 +11,7 @@ export function ScopeIndicator() {
   if (name === '') return null
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-muted py-0.5 pr-0.5 pl-2 text-xs text-foreground">
-      <FunnelSimpleIcon aria-hidden="true" className="size-3" />
+      <FunnelGlassIcon aria-hidden="true" className="size-3.5" />
       <span className="max-w-48 truncate">{t('scope.label', { name })}</span>
       <button
         type="button"
@@ -23,7 +19,7 @@ export function ScopeIndicator() {
         onClick={clearScope}
         className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none"
       >
-        <XIcon aria-hidden="true" className="size-3" />
+        <XGlassIcon aria-hidden="true" className="size-3.5" />
       </button>
     </span>
   )
@@ -40,7 +36,7 @@ export function InstanceWideLabel() {
       title={t('scope.instanceWideHint')}
       className="inline-flex items-center gap-1 text-xs text-muted-foreground"
     >
-      <GlobeHemisphereWestIcon aria-hidden="true" className="size-3" />
+      <GlobeGlassIcon aria-hidden="true" className="size-3.5" />
       {t('scope.instanceWide')}
       <span className="sr-only">{t('scope.instanceWideHint')}</span>
     </span>

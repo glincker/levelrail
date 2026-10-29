@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { WarningIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -145,8 +145,8 @@ function BulkDialog({
             <ResultList results={plan.results} />
             {action === 'delete' && targets.length > 0 ? (
               <p className="flex items-start gap-1.5 text-sm text-destructive">
-                <WarningIcon
-                  className="mt-0.5 size-4 shrink-0"
+                <TriangleAlertGlassIcon
+                  className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
                 This permanently deletes {targets.length} app(s). It is recorded
@@ -256,7 +256,7 @@ export function AppsBulkBar({
           aria-label="Clear selection"
           onClick={onClear}
         >
-          <XIcon />
+          <XGlassIcon size="1.2em" />
         </Button>
       </div>
       {open ? (

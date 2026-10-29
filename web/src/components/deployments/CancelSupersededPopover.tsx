@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { SkipForwardIcon } from '@phosphor-icons/react/dist/ssr'
+import { SkipForwardGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -73,7 +73,7 @@ export function CancelSupersededPopover({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <SkipForwardIcon aria-hidden="true" />
+        <SkipForwardGlassIcon size="1.2em" aria-hidden="true" />
         Queue
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">

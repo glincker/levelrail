@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TimerIcon } from '@phosphor-icons/react/dist/ssr'
+import { ClockGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { BuildSpeedAdvice } from './BuildSpeedAdvice'
@@ -60,7 +60,7 @@ export function BuildTrendCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TimerIcon aria-hidden="true" className="size-4" />
+          <ClockGlassIcon aria-hidden="true" className="size-4.5" />
           {t('trend.title')}
         </CardTitle>
       </CardHeader>

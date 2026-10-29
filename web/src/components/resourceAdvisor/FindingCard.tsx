@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  ClockCountdownIcon,
-  EyeSlashIcon,
-  ArrowCounterClockwiseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  CountdownGlassIcon,
+  EyeOffGlassIcon,
+  RotateCcwGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -197,7 +197,7 @@ export function FindingCard({ finding: f }: { finding: AdvisorFinding }) {
       {f.evidence.samples > 0 ? (
         <Collapsible>
           <CollapsibleTrigger className="group flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
-            <CaretDownIcon className="size-3 transition-transform group-data-[panel-open]:rotate-180" />
+            <ChevronDownGlassIcon className="size-3.5 transition-transform group-data-[panel-open]:rotate-180" />
             {t('finding.evidence')}
           </CollapsibleTrigger>
           <CollapsiblePanel className="space-y-3 pt-3">
@@ -230,7 +230,7 @@ export function FindingCard({ finding: f }: { finding: AdvisorFinding }) {
             onClick={() => change('restore')}
             disabled={state.isPending}
           >
-            <ArrowCounterClockwiseIcon />
+            <RotateCcwGlassIcon size="1.2em" />
             {t('finding.restore')}
           </Button>
         ) : (
@@ -241,7 +241,7 @@ export function FindingCard({ finding: f }: { finding: AdvisorFinding }) {
               onClick={() => change('snooze')}
               disabled={state.isPending}
             >
-              <ClockCountdownIcon />
+              <CountdownGlassIcon size="1.2em" />
               {t('finding.snooze')}
             </Button>
             <Button
@@ -250,7 +250,7 @@ export function FindingCard({ finding: f }: { finding: AdvisorFinding }) {
               onClick={() => change('dismiss')}
               disabled={state.isPending}
             >
-              <EyeSlashIcon />
+              <EyeOffGlassIcon size="1.2em" />
               {t('finding.dismiss')}
             </Button>
           </>

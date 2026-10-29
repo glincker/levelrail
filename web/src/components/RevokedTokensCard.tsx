@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { CaretDownIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -52,7 +52,7 @@ export function RevokedTokensCard({ tokens }: { tokens: TokenResource[] }) {
           {t('tokensPage.revoked.title')}
           <Badge variant="muted">{revoked.length}</Badge>
         </span>
-        <CaretDownIcon className="size-4" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
       </CollapsibleTrigger>
       <CollapsiblePanel className="space-y-3 pt-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -87,7 +87,7 @@ export function RevokedTokensCard({ tokens }: { tokens: TokenResource[] }) {
                 setConfirming(true)
               }}
             >
-              <TrashIcon aria-hidden="true" />
+              <TrashGlassIcon size="1.2em" aria-hidden="true" />
               {t('tokensPage.revoked.cleanNow')}
             </Button>
           ) : null}

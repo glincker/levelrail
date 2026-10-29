@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -78,7 +78,7 @@ export function PITRRestoreIntoNewDialog({
       <DialogTrigger
         render={<Button variant="outline" size="sm" disabled={!canRestore} />}
       >
-        <ClockCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RestoreGlassIcon className="size-4" aria-hidden="true" />
         {t('pitrNew.restoreButton')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

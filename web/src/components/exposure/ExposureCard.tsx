@@ -1,11 +1,11 @@
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CaretRightIcon,
-  GlobeHemisphereWestIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  GlobeGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -109,9 +109,9 @@ function FindingRow({
             onClick={onToggle}
           >
             {open ? (
-              <CaretDownIcon aria-hidden="true" />
+              <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
             ) : (
-              <CaretRightIcon aria-hidden="true" />
+              <ChevronRightGlassIcon size="1.2em" aria-hidden="true" />
             )}
             {open ? t('hideDetails') : t('details')}
           </Button>
@@ -192,8 +192,8 @@ export function ExposureCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
-          <GlobeHemisphereWestIcon
-            className="size-4 text-muted-foreground"
+          <GlobeGlassIcon
+            className="size-4.5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('title')}
@@ -231,7 +231,9 @@ export function ExposureCard() {
         {rows.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<ShieldCheckIcon className="size-5" />}
+            icon={
+              <ShieldCheckGlassIcon className="size-5.5 text-tone-success" />
+            }
             title={t('emptyTitle')}
             description={t('emptyBody')}
           />

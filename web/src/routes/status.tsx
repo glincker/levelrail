@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  HeartbeatIcon,
-  InfoIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  CircleAlertGlassIcon,
+  InfoGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '../components/shell/PageTemplate'
@@ -211,8 +211,8 @@ function ItemActions({ item }: { item: AttentionItem }) {
 }
 
 function severityIcon(severity: AttentionItem['severity']) {
-  if (severity === 'critical') return WarningCircleIcon
-  return severity === 'info' ? InfoIcon : WarningIcon
+  if (severity === 'critical') return CircleAlertGlassIcon
+  return severity === 'info' ? InfoGlassIcon : TriangleAlertGlassIcon
 }
 
 export function StatusPage() {
@@ -229,7 +229,7 @@ export function StatusPage() {
       title={t('statusPage.title')}
       banner={
         <PageBanner
-          icon={<HeartbeatIcon />}
+          icon={<ActivityGlassIcon size="1.2em" />}
           titleKey="attention:statusPage.title"
           descriptionKey={
             healthy

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
@@ -60,7 +60,7 @@ export function HistoryPanel({
             })
           }}
         >
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-4" aria-hidden="true" />
           {t('viewer.console.history.clear')}
         </Button>
       </div>
@@ -141,7 +141,7 @@ export function SavedPanel({
               remove.mutate(q.id)
             }}
           >
-            <TrashIcon className="size-4" aria-hidden="true" />
+            <TrashGlassIcon className="size-4.5" aria-hidden="true" />
           </Button>
         </li>
       ))}

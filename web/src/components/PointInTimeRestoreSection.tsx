@@ -1,9 +1,9 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import {
-  ClockCounterClockwiseIcon,
-  InfoIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  InfoGlassIcon,
+  RestoreGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -132,8 +132,8 @@ function PointInTimeRestoreCard({
               )}
             </p>
             <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <InfoIcon
-                className="mt-0.5 size-3.5 shrink-0"
+              <InfoGlassIcon
+                className="mt-0.5 size-4 shrink-0 text-tone-info"
                 aria-hidden="true"
               />
               Only recoverable going forward from the moment you enable this.
@@ -330,13 +330,16 @@ function PITRRestoreDialog({
       <DialogTrigger
         render={<Button variant="outline" size="sm" disabled={!canRestore} />}
       >
-        <ClockCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RestoreGlassIcon className="size-4" aria-hidden="true" />
         Restore to timestamp
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-4.5 text-tone-warning"
+              aria-hidden="true"
+            />
             Restore &ldquo;{databaseName}&rdquo; to a point in time?
           </DialogTitle>
           <DialogDescription>

@@ -1,4 +1,4 @@
-import { CpuIcon, LightningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CpuGlassIcon, ZapGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import type { ModelCompute } from '../../types/modelsCpu'
@@ -16,19 +16,19 @@ export function DeployComputeSwitch({
     id: ModelCompute
     label: string
     hint: string
-    icon: typeof CpuIcon
+    icon: typeof CpuGlassIcon
   }[] = [
     {
       id: 'gpu',
       label: t('cpu.switch.gpu'),
       hint: t('cpu.switch.gpuHint'),
-      icon: LightningIcon,
+      icon: ZapGlassIcon,
     },
     {
       id: 'cpu',
       label: t('cpu.switch.cpu'),
       hint: t('cpu.switch.cpuHint'),
-      icon: CpuIcon,
+      icon: CpuGlassIcon,
     },
   ]
   return (

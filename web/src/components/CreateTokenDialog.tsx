@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { z } from 'zod'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -169,7 +169,7 @@ export function CreateTokenDialog() {
           />
         ) : (
           <CreateFlowShell
-            icon={<KeyIcon className="size-4 text-muted-foreground" />}
+            icon={<KeyGlassIcon className="size-4.5 text-muted-foreground" />}
             title={t('tokens.create.title')}
             description={t('tokens.create.description')}
             steps={TOKEN_STEPS}

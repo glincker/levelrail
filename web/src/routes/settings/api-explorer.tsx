@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { CodeIcon } from '@phosphor-icons/react/dist/ssr'
+import { CodeGlassIcon } from '@thesvg/ui-react'
 import { openAPISpecQueryOptions, useOpenAPISpec } from '@/queries/openapi'
 import type { OpenAPIRoute } from '@/queries/openapi'
 import { ApiExplorerRoute } from '@/components/settings/ApiExplorerRoute'
@@ -56,7 +56,7 @@ function ApiExplorerPage() {
 
   return (
     <PageTemplate
-      icon={<CodeIcon />}
+      icon={<CodeGlassIcon size="1.2em" />}
       title={t('apiExplorerPage.title')}
       description={t('apiExplorerPage.description')}
     >
@@ -110,7 +110,10 @@ function ApiExplorerPage() {
 function ApiExplorerPending() {
   const { t } = useTranslation('settings')
   return (
-    <PageTemplate title={t('apiExplorerPage.title')} icon={<CodeIcon />}>
+    <PageTemplate
+      title={t('apiExplorerPage.title')}
+      icon={<CodeGlassIcon size="1.2em" />}
+    >
       <ListSkeleton rows={8} />
     </PageTemplate>
   )

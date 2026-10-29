@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { SparkleIcon } from '@phosphor-icons/react/dist/ssr'
+import { SparklesGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -45,7 +45,7 @@ export function WhatsNewPanel() {
           />
         }
       >
-        <SparkleIcon />
+        <SparklesGlassIcon size="1.2em" />
         {unread > 0 ? (
           <span
             aria-hidden="true"

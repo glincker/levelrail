@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import type { NodeDrain, NodeDrainStatus } from '../../types/nodeMoves'
@@ -36,7 +36,7 @@ export function NodeDrainProgress({ drain }: { drain: NodeDrain }) {
     <div className="space-y-3">
       {drain.error ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertTitle>{t('drain.errorTitle')}</AlertTitle>
           <AlertDescription>
             <p>{drain.error}</p>

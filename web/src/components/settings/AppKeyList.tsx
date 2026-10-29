@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { AppKeyStatus } from '../../queries/encryptionKeys'
@@ -42,7 +42,7 @@ function AppKeyRow({
         onClick={() => onRotate(entry.app)}
         aria-label={`${t('apps.rotate')}: ${entry.app}`}
       >
-        <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
         {t('apps.rotate')}
       </Button>
     </div>

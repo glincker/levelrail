@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  BuildingsIcon,
-  GearSixIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlusGlassIcon,
+  SettingsGlassIcon,
+  UniversityGlassIcon,
+} from '@thesvg/ui-react'
 import type { SAMLConnection } from '@/queries/sso'
 import { fetchSAMLTestResult } from '@/queries/sso'
 import type { SSOTestResult } from '@/queries/ssoOidc'
@@ -98,7 +98,7 @@ export function SAMLConnectionList({
 
   const addButton = (
     <Button type="button" onClick={() => setEditing({ kind: 'new' })}>
-      <PlusIcon aria-hidden="true" />
+      <PlusGlassIcon size="1.2em" aria-hidden="true" />
       {t('page.addConnection')}
     </Button>
   )
@@ -107,7 +107,7 @@ export function SAMLConnectionList({
     <FormSection title={t('list.title')} description={t('list.description')}>
       {connections.length === 0 ? (
         <EmptyState
-          icon={<BuildingsIcon className="size-5" />}
+          icon={<UniversityGlassIcon className="size-5.5" />}
           title={t('list.emptyTitle')}
           description={t('list.emptyBody')}
           action={addButton}
@@ -148,7 +148,7 @@ export function SAMLConnectionList({
                     size="sm"
                     onClick={() => setEditing({ kind: 'edit', connection: c })}
                   >
-                    <GearSixIcon aria-hidden="true" />
+                    <SettingsGlassIcon size="1.2em" aria-hidden="true" />
                     {t('list.configure')}
                   </Button>
                 </li>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -64,7 +64,7 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
           />
         </label>
         <Button type="submit" size="sm">
-          <MagnifyingGlassIcon className="size-3.5" aria-hidden="true" />
+          <SearchGlassIcon className="size-4" aria-hidden="true" />
           {t('viewer.keys.scan')}
         </Button>
       </form>

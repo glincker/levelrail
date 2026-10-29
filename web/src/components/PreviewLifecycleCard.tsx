@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GearSixIcon } from '@phosphor-icons/react/dist/ssr'
+import { SettingsGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -55,7 +55,7 @@ export function PreviewLifecycleCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GearSixIcon className="size-4 text-muted-foreground" />
+          <SettingsGlassIcon className="size-4.5 text-muted-foreground" />
           {t('lifecycle.title')}
         </CardTitle>
         <CardDescription>{t('lifecycle.description')}</CardDescription>

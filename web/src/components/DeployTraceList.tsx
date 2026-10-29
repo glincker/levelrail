@@ -1,11 +1,11 @@
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  MinusCircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useDeployDetailT } from './deployDetail/useDeployDetailT'
 import type {
   DeployStepEvent,
@@ -55,45 +55,48 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
   switch (status) {
     case 'done':
       return (
-        <CheckCircleIcon
+        <CircleCheckGlassIcon
+          size="1.2em"
           className={cn(base, 'text-success-foreground')}
-          weight="fill"
           aria-hidden="true"
         />
       )
     case 'running':
       return (
-        <SpinnerGapIcon
+        <LoaderCircleGlassIcon
+          size="1.2em"
           className={cn(base, 'animate-spin text-muted-foreground')}
           aria-hidden="true"
         />
       )
     case 'failed':
       return (
-        <WarningCircleIcon
+        <CircleAlertGlassIcon
+          size="1.2em"
           className={cn(base, 'text-destructive')}
-          weight="fill"
           aria-hidden="true"
         />
       )
     case 'warning':
       return (
-        <WarningIcon
+        <TriangleAlertGlassIcon
+          size="1.2em"
           className={cn(base, 'text-warning-foreground')}
-          weight="fill"
           aria-hidden="true"
         />
       )
     case 'skipped':
       return (
-        <MinusCircleIcon
+        <CircleMinusGlassIcon
+          size="1.2em"
           className={cn(base, 'text-muted-foreground')}
           aria-hidden="true"
         />
       )
     default:
       return (
-        <CircleIcon
+        <CircleGlassIcon
+          size="1.2em"
           className={cn(base, 'text-muted-foreground/50')}
           aria-hidden="true"
         />

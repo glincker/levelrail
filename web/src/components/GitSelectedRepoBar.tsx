@@ -1,4 +1,4 @@
-import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
@@ -30,8 +30,8 @@ export function GitSelectedRepoBar({
         <div className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium text-foreground">
           <span className="truncate">{option.displayPath}</span>
           {option.private ? (
-            <LockSimpleIcon
-              className="size-3.5 shrink-0 text-muted-foreground"
+            <LockGlassIcon
+              className="size-4 shrink-0 text-muted-foreground"
               aria-label="Private repository"
             />
           ) : null}

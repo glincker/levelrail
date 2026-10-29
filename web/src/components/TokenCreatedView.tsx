@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
-  CheckIcon,
-  CopyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { CreateFlowHeader, CreateFlowSteps } from './CreateFlowKit'
@@ -36,7 +36,7 @@ export function TokenCreatedView({
       />
       <CreateFlowSteps steps={TOKEN_STEPS} currentIndex={1} />
       <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-        <WarningIcon className="mt-0.5 size-4 shrink-0" />
+        <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
         <p className="text-sm">
           Copy this token now. It will not be shown again.
         </p>
@@ -46,7 +46,11 @@ export function TokenCreatedView({
           {created.token}
         </code>
         <Button type="button" size="sm" variant="outline" onClick={copyToken}>
-          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? (
+            <CheckGlassIcon size="1.2em" />
+          ) : (
+            <CopyGlassIcon size="1.2em" />
+          )}
           {copied ? 'Copied' : 'Copy'}
         </Button>
       </div>

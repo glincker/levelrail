@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import {
   Select,
   SelectContent,
@@ -65,7 +65,7 @@ export function RetentionDaysSelect({
             >
               {label(days)}
               {locked ? (
-                <LockSimpleIcon className="size-3.5" aria-hidden="true" />
+                <LockGlassIcon className="size-4" aria-hidden="true" />
               ) : null}
             </SelectItem>
           )

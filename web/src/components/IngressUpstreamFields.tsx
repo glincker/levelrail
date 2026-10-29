@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import type { IngressSettings } from '../queries/domains'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
@@ -32,7 +32,7 @@ export function IngressUpstreamFields({
     <div className="space-y-3 rounded-md border border-border p-3">
       {settings.tls_terminated_upstream ? (
         <Alert>
-          <ShieldCheckIcon className="size-4" />
+          <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
           <AlertTitle>{t('ingressUpstream.bannerTitle')}</AlertTitle>
           <AlertDescription>
             {t('ingressUpstream.bannerBody')}

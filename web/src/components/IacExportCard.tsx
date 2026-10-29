@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -97,7 +97,7 @@ export function IacExportCard() {
               variant="outline"
               onClick={() => download(text, `${fileName}.yaml`)}
             >
-              <DownloadSimpleIcon className="size-4" />
+              <DownloadGlassIcon className="size-4.5" />
               Download
             </Button>
           ) : null}

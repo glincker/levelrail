@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon } from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -43,7 +43,7 @@ export function ModelDetailPage({
         to="/models"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeftIcon aria-hidden="true" className="size-3.5" />
+        <ArrowLeftGlassIcon aria-hidden="true" className="size-4" />
         AI models
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">

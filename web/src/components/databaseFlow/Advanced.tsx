@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import {
@@ -72,9 +72,12 @@ export function Advanced({
           className="flex w-full items-center justify-between gap-2 px-3 py-2 text-sm font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           {t('flow.advanced.title')}
-          <CaretDownIcon
+          <ChevronDownGlassIcon
             aria-hidden="true"
-            className={cn('size-4 transition-transform', open && 'rotate-180')}
+            className={cn(
+              'size-4.5 transition-transform',
+              open && 'rotate-180',
+            )}
           />
         </button>
         {open ? (

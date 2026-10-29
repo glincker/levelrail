@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { FolderIcon, StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { FolderGlassIcon, LayersGlassIcon } from '@thesvg/ui-react'
 import {
   SidebarMenuAction,
   SidebarMenuButton,
@@ -70,7 +70,7 @@ function ProjectApps({
             size="sm"
             isActive={isAppActive(pathname, app.name)}
           >
-            <StackIcon />
+            <LayersGlassIcon size="1.2em" />
             <span>{app.name}</span>
           </SidebarMenuSubButton>
         </SidebarMenuSubItem>
@@ -100,7 +100,7 @@ function ProjectTreeRow({
         isActive={isProjectActive(pathname, project.id)}
         className="pr-7"
       >
-        <FolderIcon />
+        <FolderGlassIcon size="1.2em" />
         <span>{project.name}</span>
       </SidebarMenuSubButton>
       <button

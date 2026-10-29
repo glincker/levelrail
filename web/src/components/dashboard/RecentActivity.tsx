@@ -3,12 +3,12 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleNotchIcon,
-  PauseCircleIcon,
-  RocketLaunchIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CirclePauseGlassIcon,
+  CircleXGlassIcon,
+  LoaderCircleGlassIcon,
+  RocketGlassIcon,
+} from '@thesvg/ui-react'
 import { RelativeTime, SkeletonList, type Tone } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
@@ -28,19 +28,31 @@ const STATUS_VIEW: Record<
   DeployAttempt['status'],
   { tone: Tone; icon: ReactNode }
 > = {
-  succeeded: { tone: 'success', icon: <CheckCircleIcon weight="fill" /> },
-  failed: { tone: 'danger', icon: <XCircleIcon weight="fill" /> },
+  succeeded: {
+    tone: 'success',
+    icon: <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />,
+  },
+  failed: {
+    tone: 'danger',
+    icon: <CircleXGlassIcon className="text-tone-danger" size="1.2em" />,
+  },
   running: {
     tone: 'info',
     icon: (
-      <CircleNotchIcon className="animate-spin motion-reduce:animate-none" />
+      <LoaderCircleGlassIcon
+        size="1.2em"
+        className="animate-spin motion-reduce:animate-none"
+      />
     ),
   },
-  held: { tone: 'warning', icon: <PauseCircleIcon /> },
-  superseded: { tone: 'neutral', icon: <RocketLaunchIcon /> },
-  queued: { tone: 'neutral', icon: <PauseCircleIcon /> },
-  canceled: { tone: 'neutral', icon: <XCircleIcon /> },
-  pending: { tone: 'warning', icon: <PauseCircleIcon /> },
+  held: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.2em" /> },
+  superseded: { tone: 'neutral', icon: <RocketGlassIcon size="1.2em" /> },
+  queued: { tone: 'neutral', icon: <CirclePauseGlassIcon size="1.2em" /> },
+  canceled: {
+    tone: 'neutral',
+    icon: <CircleXGlassIcon className="text-tone-danger" size="1.2em" />,
+  },
+  pending: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.2em" /> },
 }
 
 function Row({ row, last }: { row: DeployRow; last: boolean }) {

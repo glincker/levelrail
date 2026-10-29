@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { CodeBlock } from '@/components/ui/code-block'
 import { SkeletonLine } from '@/components/kit'
@@ -87,7 +87,7 @@ export function RevisionView({
           aria-label={t('revision.close')}
           onClick={onClose}
         >
-          <XIcon aria-hidden="true" />
+          <XGlassIcon size="1.2em" aria-hidden="true" />
         </Button>
       </header>
       {isPending ? (

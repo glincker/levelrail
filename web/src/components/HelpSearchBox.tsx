@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Input } from '@/components/ui/input'
 import { searchDocs } from '../lib/docsSearch'
 import type { DocsManifest } from '../types/docs'
@@ -17,7 +17,7 @@ export function HelpSearchBox({ manifest }: { manifest: DocsManifest }) {
 
   return (
     <div className="relative">
-      <MagnifyingGlassIcon className="pointer-events-none absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
+      <SearchGlassIcon className="pointer-events-none absolute top-2.5 left-2.5 size-4.5 text-muted-foreground" />
       <Input
         value={query}
         onChange={(event) => {

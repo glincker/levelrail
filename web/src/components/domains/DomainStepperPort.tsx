@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { appDetailQueryOptions, useUpdateApp } from '../../queries/apps'
@@ -46,7 +46,7 @@ export function PortStep({
         />
       ) : null}
       <Button type="button" size="sm" onClick={onNext}>
-        <ArrowRightIcon />
+        <ArrowRightGlassIcon size="1.2em" />
         {t('stepper.port.next')}
       </Button>
     </StepBody>

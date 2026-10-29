@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowRightIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -135,8 +135,8 @@ export function StandaloneDomainForm({
             <span className="break-all">
               https://{domain || t('standalone.domainPlaceholder')}
             </span>
-            <ArrowRightIcon
-              className="size-3.5 shrink-0 text-muted-foreground"
+            <ArrowRightGlassIcon
+              className="size-4 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
             <span className="break-all">{v?.target_url ?? target}</span>
@@ -165,8 +165,8 @@ export function StandaloneDomainForm({
           className="space-y-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-2.5 text-sm"
         >
           <p className="flex items-start gap-2 font-medium">
-            <WarningIcon
-              className="mt-0.5 size-4 shrink-0 text-tone-warning"
+            <TriangleAlertGlassIcon
+              className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {t('standalone.confirmTitle')}

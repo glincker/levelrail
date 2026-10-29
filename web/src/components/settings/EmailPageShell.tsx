@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { EnvelopeIcon } from '@phosphor-icons/react/dist/ssr'
+import { MailGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import type { EmailSettings } from '../../queries/emailSettings'
@@ -17,7 +17,7 @@ export function EmailPageShell({
 
   return (
     <PageTemplate
-      icon={<EnvelopeIcon />}
+      icon={<MailGlassIcon size="1.2em" />}
       eyebrow={t('emailPage.eyebrow')}
       title={t('emailPage.title')}
       description={t('emailPage.description')}

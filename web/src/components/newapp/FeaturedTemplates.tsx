@@ -1,10 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowRightIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -72,7 +69,7 @@ export function FeaturedTemplates() {
             {list.length > 0
               ? t('source.templates.seeAll', { count: list.length })
               : t('source.templates.browse')}
-            <ArrowRightIcon className="size-3.5" aria-hidden="true" />
+            <ArrowRightGlassIcon className="size-4" aria-hidden="true" />
           </Link>
         }
       >
@@ -81,8 +78,8 @@ export function FeaturedTemplates() {
       {list.length > 0 ? (
         <>
           <div className="relative">
-            <MagnifyingGlassIcon
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            <SearchGlassIcon
+              className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input

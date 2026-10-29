@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CaretDownIcon,
-  HammerIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  HammerGlassIcon,
+  RefreshCwGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -42,7 +42,7 @@ export function RetrySplitButton({
         disabled={pending}
         onClick={onRetry}
       >
-        <ArrowsClockwiseIcon aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
         {t('deployRetry.retry')}
       </Button>
       {canRebuild ? (
@@ -59,16 +59,16 @@ export function RetrySplitButton({
               />
             }
           >
-            <CaretDownIcon aria-hidden="true" />
+            <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem onClick={onRebuild}>
-              <HammerIcon aria-hidden="true" />
+              <HammerGlassIcon size="1.2em" aria-hidden="true" />
               {t('deployRetry.rebuild')}
             </DropdownMenuItem>
             {noCacheSupported ? (
               <DropdownMenuItem onClick={onRebuildNoCache}>
-                <TrashIcon aria-hidden="true" />
+                <TrashGlassIcon size="1.2em" aria-hidden="true" />
                 {t('deployRetry.rebuildNoCache')}
               </DropdownMenuItem>
             ) : null}

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
-  BellRingingIcon,
-  CheckCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  CircleCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldHint, FieldLabel } from '@/components/ui/field'
 import {
@@ -130,7 +130,7 @@ export function BrowserPushField({
             void handleEnable()
           }}
         >
-          <BellRingingIcon className="size-3.5" aria-hidden="true" />
+          <BellRingGlassIcon className="size-4" aria-hidden="true" />
           {ready
             ? 'Enabled on this browser'
             : createSubscription.isPending
@@ -139,21 +139,30 @@ export function BrowserPushField({
         </Button>
         {ready ? (
           <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+            <CircleCheckGlassIcon
+              className="size-4 text-tone-success"
+              aria-hidden="true"
+            />
             Ready
           </span>
         ) : null}
       </div>
       {publicKeyError ? (
         <span className="flex items-center gap-1 text-xs text-destructive">
-          <WarningIcon className="size-3.5" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="size-4 text-tone-warning"
+            aria-hidden="true"
+          />
           Browser push is not configured on this control plane (no master key
           set).
         </span>
       ) : null}
       {error ? (
         <span className="flex items-center gap-1 text-xs text-destructive">
-          <WarningIcon className="size-3.5" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="size-4 text-tone-warning"
+            aria-hidden="true"
+          />
           {error}
         </span>
       ) : null}

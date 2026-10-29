@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useApplyCachePreset } from '../../queries/cdnCache'
@@ -166,7 +166,7 @@ export function CacheTab({
                       })
                     }
                   >
-                    <TrashIcon />
+                    <TrashGlassIcon size="1.2em" />
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-end gap-2">
@@ -287,7 +287,7 @@ export function CacheTab({
               })
             }
           >
-            <PlusIcon />
+            <PlusGlassIcon size="1.2em" />
             {t('cache.add')}
           </Button>
           <p className="text-xs text-muted-foreground">{t('cache.safety')}</p>

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { CodeBlock } from '@/components/ui/code-block'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { ProxySetupResult } from '../../queries/proxyIntegration'
 
@@ -23,7 +23,7 @@ export function ProxyProviderResult({
   if (failure) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
         <AlertTitle>
           {failure.applying
             ? t('proxyPicker.applyFailed')

@@ -1,13 +1,13 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  LockKeyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  ExternalLinkGlassIcon,
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  LockGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -184,14 +184,18 @@ function DrawerBody({
       <div className="space-y-4 px-4">
         {!canWrite ? (
           <Alert>
-            <LockKeyIcon aria-hidden="true" />
+            <LockGlassIcon size="1.2em" aria-hidden="true" />
             <AlertDescription>{t('aiAssistantPage.rootOnly')}</AlertDescription>
           </Alert>
         ) : null}
 
         {provider.status_detail && provider.has_key ? (
           <Alert variant="destructive">
-            <WarningIcon aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+              aria-hidden="true"
+            />
             <AlertDescription>{provider.status_detail}</AlertDescription>
           </Alert>
         ) : null}
@@ -231,7 +235,11 @@ function DrawerBody({
                 setShowKey((v) => !v)
               }}
             >
-              {showKey ? <EyeSlashIcon /> : <EyeIcon />}
+              {showKey ? (
+                <EyeOffGlassIcon size="1.2em" />
+              ) : (
+                <EyeGlassIcon size="1.2em" />
+              )}
             </Button>
           </div>
           <FieldDescription id={keyHelpId}>
@@ -248,7 +256,10 @@ function DrawerBody({
                   className="inline-flex items-center gap-1 text-brand underline-offset-4 hover:underline"
                 >
                   {t('aiAssistantPage.drawer.getKey')}
-                  <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+                  <ExternalLinkGlassIcon
+                    className="size-3.5"
+                    aria-hidden="true"
+                  />
                 </a>
               </>
             ) : null}
@@ -301,7 +312,11 @@ function DrawerBody({
 
         {saveError ? (
           <Alert variant="destructive">
-            <WarningIcon aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+              aria-hidden="true"
+            />
             <AlertTitle>{saveError.message}</AlertTitle>
             {saveError.fix ? (
               <AlertDescription>{saveError.fix}</AlertDescription>
@@ -309,7 +324,11 @@ function DrawerBody({
           </Alert>
         ) : save.isError ? (
           <Alert variant="destructive">
-            <WarningIcon aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+              aria-hidden="true"
+            />
             <AlertTitle>{save.error.message}</AlertTitle>
           </Alert>
         ) : null}
@@ -337,13 +356,13 @@ function DrawerBody({
             {testResult ? (
               <>
                 {testOk ? (
-                  <CheckCircleIcon
-                    className="size-4 shrink-0 text-tone-success transition-[transform,opacity] duration-300 motion-reduce:transition-none starting:scale-50 starting:opacity-0"
+                  <CircleCheckGlassIcon
+                    className="size-4.5 shrink-0 text-tone-success transition-[transform,opacity] duration-300 motion-reduce:transition-none starting:scale-50 starting:opacity-0"
                     aria-hidden="true"
                   />
                 ) : (
-                  <WarningIcon
-                    className="size-4 shrink-0 text-tone-danger"
+                  <TriangleAlertGlassIcon
+                    className="size-4.5 shrink-0 text-tone-danger"
                     aria-hidden="true"
                   />
                 )}

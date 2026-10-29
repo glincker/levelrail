@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { CpuIcon } from '@phosphor-icons/react/dist/ssr'
+import { CpuGlassIcon } from '@thesvg/ui-react'
 import type {
   DatabaseResource,
   ServiceResources,
@@ -242,7 +242,7 @@ export function DatabaseResourceLimitsEditor({
       />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CpuIcon className="size-4" />
+          <CpuGlassIcon className="size-4.5" />
           Resource limits
         </CardTitle>
         <CardDescription>

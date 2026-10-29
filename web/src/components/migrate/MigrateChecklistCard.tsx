@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, CircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, CircleGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -131,9 +131,9 @@ function StepRow({
     <li className="space-y-2 py-3">
       <div className="flex flex-wrap items-center gap-2">
         {done ? (
-          <CheckCircleIcon className="size-5 text-tone-success" weight="fill" />
+          <CircleCheckGlassIcon className="size-5.5 text-tone-success" />
         ) : (
-          <CircleIcon className="size-5 text-muted-foreground" />
+          <CircleGlassIcon className="size-5.5 text-muted-foreground" />
         )}
         <span className="font-medium">{t(`steps.${step.id}`)}</span>
         <Badge variant={done ? 'success' : 'muted'}>

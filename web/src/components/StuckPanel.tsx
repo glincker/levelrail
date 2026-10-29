@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -60,7 +60,11 @@ export function StuckPanel({
           setOverride(!open)
         }}
       >
-        {open ? <CaretDownIcon /> : <CaretRightIcon />}
+        {open ? (
+          <ChevronDownGlassIcon size="1.2em" />
+        ) : (
+          <ChevronRightGlassIcon size="1.2em" />
+        )}
         <span className="font-medium">{t('stuck.title')}</span>
         <Badge variant={data.stuck ? 'destructive' : 'warning'}>
           {t('stuck.notReadyFor', {

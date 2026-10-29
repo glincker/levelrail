@@ -1,24 +1,24 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CubeIcon,
-  HeartbeatIcon,
-  RocketLaunchIcon,
-  UploadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  BoxGlassIcon,
+  RocketGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { cardAnchor } from './groups'
 
 const STEPS = [
-  { key: 'build', href: `#${cardAnchor('buildCache')}`, Icon: CubeIcon },
-  { key: 'push', href: '#build', Icon: UploadSimpleIcon },
+  { key: 'build', href: `#${cardAnchor('buildCache')}`, Icon: BoxGlassIcon },
+  { key: 'push', href: '#build', Icon: UploadGlassIcon },
   {
     key: 'rollout',
     href: `#${cardAnchor('strategy')}`,
-    Icon: RocketLaunchIcon,
+    Icon: RocketGlassIcon,
   },
   {
     key: 'healthCheck',
     href: `#${cardAnchor('safety')}`,
-    Icon: HeartbeatIcon,
+    Icon: ActivityGlassIcon,
   },
 ] as const
 

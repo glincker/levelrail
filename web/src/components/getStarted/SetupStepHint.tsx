@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { RocketGlassIcon } from '@thesvg/ui-react'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { guideStep, isOpen, showGuideEntryPoints } from '../../lib/setupGuide'
 import type { SetupGuideStepId } from '../../lib/setupGuide'
@@ -17,7 +17,7 @@ export function SetupStepHint({ step }: { step: SetupGuideStepId }) {
   }
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-      <RocketLaunchIcon aria-hidden="true" className="size-4" />
+      <RocketGlassIcon aria-hidden="true" className="size-4.5" />
       {t('hint.line', { step: t(`steps.${step}.title`) })}
       <Link
         to="/get-started"

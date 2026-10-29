@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import type { ParseKeys } from 'i18next'
 import { useTranslation } from 'react-i18next'
-import { LightbulbIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { LightbulbGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
 import { Suggestion, type SuggestionAction } from '@/components/kit'
 import {
@@ -97,9 +97,13 @@ export function DeploySuggestions({
           tone={s.severity === 'warning' ? 'warning' : 'info'}
           icon={
             s.severity === 'warning' ? (
-              <WarningIcon aria-hidden="true" />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+                aria-hidden="true"
+              />
             ) : (
-              <LightbulbIcon aria-hidden="true" />
+              <LightbulbGlassIcon size="1.2em" aria-hidden="true" />
             )
           }
           title={t(copyKey(s, 'title'), s.params)}

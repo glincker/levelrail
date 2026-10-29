@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -209,7 +209,7 @@ export default function ConnectWithTokenDialog({
               disabled={!canSubmit || probe.isPending}
               onClick={() => probe.mutate(body)}
             >
-              <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+              <PlugGlassIcon className="size-4.5" aria-hidden="true" />
               {probe.isPending
                 ? t('gitConnections.add.testing')
                 : t('gitConnections.token.check')}
@@ -277,7 +277,7 @@ export default function ConnectWithTokenDialog({
             disabled={!canSubmit || create.isPending}
             onClick={submit}
           >
-            <PlusIcon className="size-4" aria-hidden="true" />
+            <PlusGlassIcon className="size-4.5" aria-hidden="true" />
             {create.isPending
               ? t('gitConnections.add.verifying')
               : t('gitConnections.add.connect')}

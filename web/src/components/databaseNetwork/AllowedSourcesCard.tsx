@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FireIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { FlameGlassIcon, PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -117,7 +117,7 @@ function RulesEditor({
                 setDraft((d) => d.filter((x) => x.key !== r.key))
               }}
             >
-              <TrashIcon aria-hidden="true" />
+              <TrashGlassIcon size="1.2em" aria-hidden="true" />
             </Button>
           </div>
         ))}
@@ -130,7 +130,7 @@ function RulesEditor({
             setCounter((c) => c + 1)
           }}
         >
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.2em" aria-hidden="true" />
           {t('rules.add')}
         </Button>
       </div>
@@ -231,7 +231,7 @@ export function AllowedSourcesCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <FireIcon className="size-4" aria-hidden="true" />
+          <FlameGlassIcon className="size-4.5" aria-hidden="true" />
           {t('rules.title')}
         </CardTitle>
         <p className="text-xs text-muted-foreground">

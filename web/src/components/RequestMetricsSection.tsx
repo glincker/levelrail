@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { MetricChartCard } from './MetricChartCard'
 import { Skeleton } from './ui/skeleton'
 import { useRequestSeries } from '../queries/requests'
@@ -109,7 +109,10 @@ export function RequestMetricsSection({
   if (points.length === 0) {
     return (
       <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/30 p-3 text-sm text-muted-foreground">
-        <GlobeIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <GlobeGlassIcon
+          className="mt-0.5 size-4.5 shrink-0"
+          aria-hidden="true"
+        />
         <p>{t('requests.empty')}</p>
       </div>
     )

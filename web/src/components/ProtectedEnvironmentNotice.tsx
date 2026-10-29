@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Checkbox } from '@/components/ui/checkbox'
 
 // Gates a deploy-shaped action (deploy, rollback, promote) whose target
@@ -20,7 +20,10 @@ export function ProtectedEnvironmentNotice({
   return (
     <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
       <div className="flex items-start gap-2">
-        <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <TriangleAlertGlassIcon
+          className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+          aria-hidden="true"
+        />
         <p className="text-sm">
           &ldquo;{environmentName}&rdquo; is a protected environment. Confirm
           you mean to proceed.

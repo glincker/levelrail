@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CaretRightIcon,
-  DownloadSimpleIcon,
-  FileCodeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  DownloadGlassIcon,
+  FileCodeGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { CodeBlock } from '@/components/ui/code-block'
 
@@ -29,7 +29,7 @@ export function TemplateStackFile({
   const { t } = useTranslation('templates')
   const [open, setOpen] = useState(false)
   if (compose.trim() === '') return null
-  const Caret = open ? CaretDownIcon : CaretRightIcon
+  const Caret = open ? ChevronDownGlassIcon : ChevronRightGlassIcon
   return (
     <section
       aria-labelledby="template-stackfile"
@@ -47,7 +47,7 @@ export function TemplateStackFile({
             className="inline-flex items-center gap-1.5 rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <Caret className="size-4" aria-hidden="true" />
-            <FileCodeIcon className="size-4" aria-hidden="true" />
+            <FileCodeGlassIcon className="size-4.5" aria-hidden="true" />
             {t('stackFile.title')}
           </button>
         </h2>
@@ -64,7 +64,7 @@ export function TemplateStackFile({
               downloadYaml(compose, `${slug}.compose.yaml`)
             }}
           >
-            <DownloadSimpleIcon aria-hidden="true" />
+            <DownloadGlassIcon size="1.2em" aria-hidden="true" />
             {t('stackFile.download')}
           </Button>
         ) : null}

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { useTranslation } from 'react-i18next'
 import { AppImportWizard } from '../../components/AppImportWizard'
@@ -17,7 +17,7 @@ function ImportPlatformPage() {
   const { t: ts } = useTranslation('settings')
   return (
     <PageTemplate
-      icon={<ArrowsLeftRightIcon />}
+      icon={<ArrowLeftRightGlassIcon size="1.2em" />}
       title={ts('importPlatformPage.title')}
       description={ts('importPlatformPage.description')}
     >

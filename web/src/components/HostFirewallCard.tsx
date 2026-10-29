@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { HostFirewallToggle } from './HostFirewallToggle'
@@ -16,8 +16,8 @@ export function HostFirewallCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
-          <ShieldCheckIcon
-            className="size-4 text-muted-foreground"
+          <ShieldCheckGlassIcon
+            className="size-4.5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('hostFirewall.title')}

@@ -1,19 +1,19 @@
 import {
-  ArrowSquareOutIcon,
-  BroomIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  DatabaseIcon,
-  GitForkIcon,
-  GitPullRequestIcon,
-  HandPalmIcon,
-  ProhibitIcon,
-  ShieldCheckIcon,
-  SpinnerIcon,
-  TrashIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  BanGlassIcon,
+  BroomGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  ClockGlassIcon,
+  DatabaseGlassIcon,
+  ExternalLinkGlassIcon,
+  GitForkGlassIcon,
+  GitPullRequestGlassIcon,
+  HandGlassIcon,
+  LoaderGlassIcon,
+  ShieldCheckGlassIcon,
+  TrashGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
@@ -71,12 +71,12 @@ const STATUS_BADGE_VARIANT: Record<
   limit_reached: 'muted',
 }
 
-const STATUS_ICON: Record<PreviewEnvironmentStatus, Icon> = {
-  deploying: SpinnerIcon,
-  active: CheckCircleIcon,
-  failed: WarningCircleIcon,
-  awaiting_approval: HandPalmIcon,
-  limit_reached: ProhibitIcon,
+const STATUS_ICON: Record<PreviewEnvironmentStatus, UiIcon> = {
+  deploying: LoaderGlassIcon,
+  active: CircleCheckGlassIcon,
+  failed: CircleAlertGlassIcon,
+  awaiting_approval: HandGlassIcon,
+  limit_reached: BanGlassIcon,
 }
 
 function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
@@ -108,8 +108,8 @@ function EphemeralDatabaseRow({
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5">
       <div className="flex min-w-0 items-center gap-2">
-        <DatabaseIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <DatabaseGlassIcon
+          className="size-4 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="truncate font-mono text-xs text-foreground">
@@ -148,8 +148,8 @@ function DatabaseIsolationRow({
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5">
       <div className="flex min-w-0 items-center gap-2">
-        <ShieldCheckIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <ShieldCheckGlassIcon
+          className="size-4 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="truncate font-mono text-xs text-foreground">
@@ -272,7 +272,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <GitPullRequestIcon className="size-4 text-muted-foreground" />
+            <GitPullRequestGlassIcon className="size-4.5 text-muted-foreground" />
             Preview environments
           </CardTitle>
           {hasStale ? (
@@ -284,7 +284,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
               onClick={sweepStale}
               title="Tears down every stale preview across all apps, not just this one."
             >
-              <BroomIcon />
+              <BroomGlassIcon size="1.2em" />
               Sweep stale previews
             </Button>
           ) : null}
@@ -338,7 +338,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
         {enabled ? (
           previews.isLoading ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <SpinnerIcon className="size-4 animate-spin" />
+              <LoaderGlassIcon className="size-4.5 animate-spin" />
               Loading previews...
             </p>
           ) : previews.data && previews.data.length > 0 ? (
@@ -356,13 +356,19 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       <PreviewStatusBadge status={preview.status} />
                       {preview.is_fork ? (
                         <Badge variant="muted" className="rounded-full">
-                          <GitForkIcon className="size-3" aria-hidden="true" />
+                          <GitForkGlassIcon
+                            className="size-3.5"
+                            aria-hidden="true"
+                          />
                           Fork
                         </Badge>
                       ) : null}
                       {preview.stale ? (
                         <Badge variant="warning" className="rounded-full">
-                          <ClockIcon className="size-3" aria-hidden="true" />
+                          <ClockGlassIcon
+                            className="size-3.5"
+                            aria-hidden="true"
+                          />
                           Stale
                         </Badge>
                       ) : null}
@@ -381,7 +387,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                             className="inline-flex items-center gap-1 font-mono text-foreground hover:underline"
                           >
                             {preview.domain}
-                            <ArrowSquareOutIcon className="size-3" />
+                            <ExternalLinkGlassIcon className="size-3.5" />
                           </a>
                         </>
                       ) : null}
@@ -444,7 +450,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                         tearDown(preview.pr_number)
                       }}
                     >
-                      <TrashIcon />
+                      <TrashGlassIcon size="1.2em" />
                       Tear down
                     </Button>
                   </div>

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { PlugsIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { useTranslation } from 'react-i18next'
@@ -158,7 +158,7 @@ export function PortEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugsIcon className="size-4" />
+          <PlugGlassIcon className="size-4.5" />
           Port
         </CardTitle>
         <CardDescription>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -53,7 +53,7 @@ export function CleanupOverviewTab() {
   if (targets.length === 0) {
     return (
       <EmptyState
-        icon={<BroomIcon className="size-6" />}
+        icon={<BroomGlassIcon className="size-7" />}
         title={t('empty.title')}
         description={t('empty.body')}
         action={

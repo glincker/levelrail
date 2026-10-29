@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useRegistryStatus } from '../../queries/registry'
@@ -15,7 +15,7 @@ export function BuiltInRegistryCard() {
     <Card>
       <CardContent className="flex flex-wrap items-center gap-4">
         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <HardDrivesIcon aria-hidden="true" className="size-5" />
+          <ServerGlassIcon aria-hidden="true" className="size-5.5" />
         </span>
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">

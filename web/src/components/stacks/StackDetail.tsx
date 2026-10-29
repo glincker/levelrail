@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeftIcon,
-  LockSimpleOpenIcon,
-  PushPinSlashIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  LockOpenGlassIcon,
+  PinGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -92,7 +92,7 @@ export function StackDetail({
     <div className="space-y-3">
       <header className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeftIcon aria-hidden="true" />
+          <ArrowLeftGlassIcon size="1.2em" aria-hidden="true" />
           {t('detail.back')}
         </Button>
         <h2 className="text-base font-semibold">{stack.name}</h2>
@@ -109,7 +109,7 @@ export function StackDetail({
                 setPin(null)
               }}
             >
-              <PushPinSlashIcon aria-hidden="true" />
+              <PinGlassIcon size="1.2em" aria-hidden="true" />
               {t('actions.unpin')}
             </Button>
           ) : null}
@@ -128,7 +128,7 @@ export function StackDetail({
                 })
               }}
             >
-              <LockSimpleOpenIcon aria-hidden="true" />
+              <LockOpenGlassIcon size="1.2em" aria-hidden="true" />
               {t('actions.unlock')}
             </Button>
           ) : null}
@@ -140,7 +140,7 @@ export function StackDetail({
               setDeleting(true)
             }}
           >
-            <TrashIcon aria-hidden="true" />
+            <TrashGlassIcon size="1.2em" aria-hidden="true" />
             {t('actions.delete')}
           </Button>
         </span>

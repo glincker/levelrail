@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PaperPlaneTiltIcon } from '@phosphor-icons/react/dist/ssr'
+import { SendGlassIcon } from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -118,7 +118,7 @@ export function FunctionConsole({ name }: Readonly<{ name: string }>) {
         </div>
       </div>
       <Button onClick={send} disabled={invoke.isPending}>
-        <PaperPlaneTiltIcon className="size-4" aria-hidden="true" />
+        <SendGlassIcon className="size-4.5" aria-hidden="true" />
         {invoke.isPending ? t('console.sending') : t('console.send')}
       </Button>
       {invoke.isPending ? (

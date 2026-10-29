@@ -1,4 +1,4 @@
-import { ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRestartProject } from '../queries/projects'
@@ -47,7 +47,7 @@ export function RestartProjectButton({
         })
       }}
     >
-      <ArrowClockwiseIcon className="size-3.5" aria-hidden="true" />
+      <RotateCwGlassIcon className="size-4" aria-hidden="true" />
       {restartProject.isPending ? 'Restarting...' : 'Restart all'}
     </Button>
   )

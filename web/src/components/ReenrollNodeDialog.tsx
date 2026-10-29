@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckIcon,
-  CopyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  RefreshCwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -62,7 +62,7 @@ export function ReenrollNodeDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
         {t('reenroll.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -74,7 +74,7 @@ export function ReenrollNodeDialog({
         {created ? (
           <>
             <div className="flex items-start gap-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-2.5 text-tone-warning">
-              <WarningIcon className="mt-0.5 size-4 shrink-0" />
+              <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
               <p className="text-sm">
                 {t('reenroll.shownOnce', {
                   time: new Date(created.expires_at).toLocaleTimeString(),
@@ -117,7 +117,11 @@ export function ReenrollNodeDialog({
                     })
                   }}
                 >
-                  {copied ? <CheckIcon /> : <CopyIcon />}
+                  {copied ? (
+                    <CheckGlassIcon size="1.2em" />
+                  ) : (
+                    <CopyGlassIcon size="1.2em" />
+                  )}
                   {copied ? t('reenroll.copied') : t('reenroll.copy')}
                 </Button>
               </div>
@@ -138,7 +142,10 @@ export function ReenrollNodeDialog({
           <>
             {createToken.isError ? (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.2em"
+                />
                 <AlertDescription>{createToken.error.message}</AlertDescription>
               </Alert>
             ) : null}

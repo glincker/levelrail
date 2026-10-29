@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -46,13 +46,16 @@ export function ConfirmDeleteBackupDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
+        <TrashGlassIcon className="size-4" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-4.5 text-tone-warning"
+              aria-hidden="true"
+            />
             Delete this backup?
           </DialogTitle>
           <DialogDescription>

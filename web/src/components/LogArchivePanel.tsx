@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArchiveIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArchiveGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -257,7 +257,7 @@ export function LogArchivePanel({ appName }: { appName: string }) {
           id={`archive-policy-${appName}`}
           className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"
         >
-          <ArchiveIcon className="size-4" aria-hidden="true" />
+          <ArchiveGlassIcon className="size-4.5" aria-hidden="true" />
           Archive schedule for {scope}
         </h2>
         <PolicyForm

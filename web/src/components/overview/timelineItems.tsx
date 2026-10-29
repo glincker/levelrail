@@ -1,17 +1,17 @@
 import {
-  ArrowArcLeftIcon,
-  ArrowClockwiseIcon,
-  ArrowsOutIcon,
-  GearIcon,
-  KeyIcon,
-  MoonIcon,
-  PauseIcon,
-  PlayIcon,
-  RocketLaunchIcon,
-  ShieldWarningIcon,
-  SnowflakeIcon,
-  SunIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  KeyGlassIcon,
+  MaximizeGlassIcon,
+  MoonGlassIcon,
+  PauseGlassIcon,
+  PlayGlassIcon,
+  RocketGlassIcon,
+  RotateCwGlassIcon,
+  SettingsGlassIcon,
+  ShieldAlertGlassIcon,
+  SnowflakeGlassIcon,
+  SunGlassIcon,
+  UndoGlassIcon,
+} from '@thesvg/ui-react'
 import type { Tone } from '@/components/kit'
 import type {
   TimelineEntry,
@@ -22,19 +22,21 @@ import type {
 export const TIMELINE_MAX_ITEMS = 8
 
 const KIND_ICON: Record<TimelineKind, React.ReactNode> = {
-  deploy: <RocketLaunchIcon />,
-  rollback: <ArrowArcLeftIcon />,
-  restart: <ArrowClockwiseIcon />,
-  env_change: <KeyIcon />,
-  secret_change: <KeyIcon />,
-  config_change: <GearIcon />,
-  scale: <ArrowsOutIcon />,
-  freeze_override: <SnowflakeIcon />,
-  scan_gate_override: <ShieldWarningIcon />,
-  suspend: <PauseIcon />,
-  resume: <PlayIcon />,
-  slept: <MoonIcon />,
-  woke: <SunIcon />,
+  deploy: <RocketGlassIcon size="1.2em" />,
+  rollback: <UndoGlassIcon size="1.2em" />,
+  restart: <RotateCwGlassIcon size="1.2em" />,
+  env_change: <KeyGlassIcon size="1.2em" />,
+  secret_change: <KeyGlassIcon size="1.2em" />,
+  config_change: <SettingsGlassIcon size="1.2em" />,
+  scale: <MaximizeGlassIcon size="1.2em" />,
+  freeze_override: <SnowflakeGlassIcon size="1.2em" />,
+  scan_gate_override: (
+    <ShieldAlertGlassIcon className="text-tone-warning" size="1.2em" />
+  ),
+  suspend: <PauseGlassIcon size="1.2em" />,
+  resume: <PlayGlassIcon size="1.2em" />,
+  slept: <MoonGlassIcon size="1.2em" />,
+  woke: <SunGlassIcon size="1.2em" />,
 }
 
 const STATUS_TONE: Record<TimelineStatus, Tone> = {

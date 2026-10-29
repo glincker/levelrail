@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import type {
   OAuthSSOPolicy,
   SSOFix,
@@ -93,7 +90,7 @@ export function OIDCTestResult({
   if (result.status === 'failed' || !result.evaluation) {
     return (
       <Alert variant="destructive">
-        <WarningCircleIcon />
+        <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
         <AlertTitle>{t('oidc.test.failedTitle')}</AlertTitle>
         <AlertDescription>
           {t('oidc.test.failedBody', { code: result.failure_code ?? '' })}
@@ -107,10 +104,13 @@ export function OIDCTestResult({
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2 text-sm font-medium">
         {ev.allowed ? (
-          <CheckCircleIcon className="size-5 text-success" aria-hidden="true" />
+          <CircleCheckGlassIcon
+            className="size-5.5 text-success"
+            aria-hidden="true"
+          />
         ) : (
-          <WarningCircleIcon
-            className="size-5 text-destructive"
+          <CircleAlertGlassIcon
+            className="size-5.5 text-destructive"
             aria-hidden="true"
           />
         )}

@@ -1,12 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ClockCounterClockwiseIcon,
-  HardDrivesIcon,
-  MoonIcon,
-  PlugsConnectedIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  MoonGlassIcon,
+  PlugGlassIcon,
+  RestoreGlassIcon,
+  ServerGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { ReactNode } from 'react'
 import { RelativeTime } from '../kit/RelativeTime'
@@ -74,7 +74,13 @@ export function AppHeaderBadges({
           <Chip
             variant="destructive"
             label={t('badges.attention', { count: attentionCount })}
-            icon={<WarningCircleIcon aria-hidden="true" />}
+            icon={
+              <CircleAlertGlassIcon
+                className="text-tone-danger"
+                size="1.2em"
+                aria-hidden="true"
+              />
+            }
           >
             {t('badges.attention', { count: attentionCount })}
           </Chip>
@@ -83,7 +89,7 @@ export function AppHeaderBadges({
       {app.node_offline && app.node_id ? (
         <Link to="/nodes/$id" params={{ id: app.node_id }}>
           <Badge variant="warning" title={t('badges.nodeOffline')}>
-            <HardDrivesIcon aria-hidden="true" />
+            <ServerGlassIcon size="1.2em" aria-hidden="true" />
             <span>
               {t('badges.nodeOffline')}
               {offlineSince ? (
@@ -100,7 +106,7 @@ export function AppHeaderBadges({
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>
           <Chip
             label={tSleep('badge.title')}
-            icon={<MoonIcon aria-hidden="true" />}
+            icon={<MoonGlassIcon size="1.2em" aria-hidden="true" />}
           >
             <AsleepFor since={asleepSince} />
           </Chip>
@@ -110,7 +116,7 @@ export function AppHeaderBadges({
         <Link to="/apps/$name/network" params={{ name: app.name }}>
           <Chip
             label={portLabel}
-            icon={<PlugsConnectedIcon aria-hidden="true" />}
+            icon={<PlugGlassIcon size="1.2em" aria-hidden="true" />}
           >
             {portLabel}
           </Chip>
@@ -120,7 +126,7 @@ export function AppHeaderBadges({
         <Link to="/nodes/$id" params={{ id: app.node_id }}>
           <Chip
             label={app.node_name ?? app.node_id}
-            icon={<HardDrivesIcon aria-hidden="true" />}
+            icon={<ServerGlassIcon size="1.2em" aria-hidden="true" />}
           >
             {app.node_name ?? app.node_id}
           </Chip>
@@ -130,7 +136,7 @@ export function AppHeaderBadges({
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>
           <Chip
             label={deployedLabel}
-            icon={<ClockCounterClockwiseIcon aria-hidden="true" />}
+            icon={<RestoreGlassIcon size="1.2em" aria-hidden="true" />}
           >
             {deployedLabel} <RelativeTime at={lastOk.finished_at} />
           </Chip>

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ClockIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ClockGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   isApprovalRequired,
   RateLimitError,
@@ -199,13 +199,13 @@ export function LoginForm({
 
       {isRateLimited ? (
         <Alert variant="destructive">
-          <ClockIcon />
+          <ClockGlassIcon size="1.2em" />
           <AlertTitle>Too many attempts</AlertTitle>
           <AlertDescription>Try again in {secondsRemaining}s.</AlertDescription>
         </Alert>
       ) : login.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{login.error.message}</AlertDescription>
         </Alert>
       ) : null}

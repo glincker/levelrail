@@ -1,5 +1,5 @@
 import type { ComponentProps, FormEvent, ReactNode } from 'react'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   DialogDescription,
   DialogFooter,
@@ -92,7 +92,7 @@ export function CreateFlowError({ message }: { message?: string | null }) {
   }
   return (
     <Alert variant="destructive">
-      <WarningIcon />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
       <AlertDescription>{message}</AlertDescription>
     </Alert>
   )

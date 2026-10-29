@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon } from '@thesvg/ui-react'
 import type { SAMLConnection } from '@/queries/sso'
 import { useImportSAMLMetadata } from '@/queries/sso'
 import { Button } from '@/components/ui/button'
@@ -80,7 +80,7 @@ export function SAMLMetadataImport({
             disabled={!ready || importMetadata.isPending}
             onClick={run}
           >
-            <DownloadSimpleIcon aria-hidden="true" />
+            <DownloadGlassIcon size="1.2em" aria-hidden="true" />
             {t('form.import.button')}
           </Button>
         </div>

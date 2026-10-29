@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -48,7 +48,7 @@ function TestButton({ share }: { share: NetworkShare }) {
         })
       }}
     >
-      <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
+      <PlugGlassIcon className="size-4" aria-hidden="true" />
       {testShare.isPending ? 'Testing...' : 'Test connection'}
     </Button>
   )

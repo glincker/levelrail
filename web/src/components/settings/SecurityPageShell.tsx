@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +16,7 @@ export function SecurityPageShell({ children }: { children: ReactNode }) {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckIcon />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
       eyebrow={t('securityPage.eyebrow')}
       title={t('securityPage.title')}
       description={t('securityPage.description')}

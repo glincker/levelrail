@@ -1,7 +1,4 @@
-import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import type { ProbeAttempt } from '../types/probeAttempt'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -33,15 +30,13 @@ export function ProbeAttemptsPanel({ attempts }: { attempts: ProbeAttempt[] }) {
               className="flex items-start gap-3 px-4 py-2 first:pt-0 last:pb-0"
             >
               {a.success ? (
-                <CheckCircleIcon
-                  className="mt-0.5 size-4 shrink-0 text-success-foreground"
-                  weight="fill"
+                <CircleCheckGlassIcon
+                  className="mt-0.5 size-4.5 shrink-0 text-success-foreground"
                   aria-hidden="true"
                 />
               ) : (
-                <WarningCircleIcon
-                  className="mt-0.5 size-4 shrink-0 text-destructive"
-                  weight="fill"
+                <CircleAlertGlassIcon
+                  className="mt-0.5 size-4.5 shrink-0 text-destructive"
                   aria-hidden="true"
                 />
               )}

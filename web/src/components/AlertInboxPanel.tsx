@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BellSlashIcon, CheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellOffGlassIcon, CheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -75,7 +75,7 @@ export function AlertInboxPanel() {
               )
             }}
           >
-            <CheckIcon />
+            <CheckGlassIcon size="1.2em" />
             {t('markAllRead')}
           </Button>
         </div>
@@ -86,7 +86,7 @@ export function AlertInboxPanel() {
       ) : inbox.isError ? (
         <EmptyState
           compact
-          icon={<BellSlashIcon className="size-5" />}
+          icon={<BellOffGlassIcon className="size-5.5" />}
           title={t('loadError')}
           description={inbox.error.message}
           action={
@@ -103,7 +103,7 @@ export function AlertInboxPanel() {
       ) : items.length === 0 ? (
         <EmptyState
           compact
-          icon={<CheckIcon className="size-5" />}
+          icon={<CheckGlassIcon className="size-5.5" />}
           title={t('empty.title')}
           description={t('empty.body')}
         />

@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowsLeftRightIcon,
-  ShieldWarningIcon,
-  StackSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftRightGlassIcon,
+  LayersGlassIcon,
+  ShieldAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,7 @@ export function ProjectEnvironmentsPanel({ projectId }: { projectId: string }) {
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-2">
-          <StackSimpleIcon className="size-4" />
+          <LayersGlassIcon className="size-4.5" />
           Environments
         </CardTitle>
         <div className="flex items-center gap-2">
@@ -40,8 +40,8 @@ export function ProjectEnvironmentsPanel({ projectId }: { projectId: string }) {
                 />
               }
             >
-              <ArrowsLeftRightIcon
-                className="size-3.5"
+              <ArrowLeftRightGlassIcon
+                className="size-4"
                 data-icon="inline-start"
               />
               Compare
@@ -70,8 +70,8 @@ export function ProjectEnvironmentsPanel({ projectId }: { projectId: string }) {
                   className="flex items-center gap-1 hover:underline"
                 >
                   {env.protected ? (
-                    <ShieldWarningIcon
-                      className="size-3.5 text-destructive"
+                    <ShieldAlertGlassIcon
+                      className="size-4 text-destructive"
                       aria-label="Protected"
                     />
                   ) : null}

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { NEXTJS_VARY, canVaryOn } from '../../lib/cachePresets'
 import {
@@ -95,7 +95,7 @@ export function CacheReasons({
                     fix.mutate({ domains: r.domains, headers: [header] })
                   }
                 >
-                  <WrenchIcon aria-hidden="true" />
+                  <WrenchGlassIcon size="1.2em" aria-hidden="true" />
                   {t('reasons.fixVary', { header })}
                 </Button>
               ) : null}
@@ -119,7 +119,7 @@ export function CacheReasons({
               })
             }
           >
-            <WrenchIcon aria-hidden="true" />
+            <WrenchGlassIcon size="1.2em" aria-hidden="true" />
             {t('reasons.nextjsFix')}
           </Button>
         </div>

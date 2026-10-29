@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -76,7 +76,7 @@ export function PromotePlan({
       ) : null}
       {(preview.blockers?.length ?? 0) > 0 ? (
         <Alert variant="destructive">
-          <WarningIcon className="size-4" />
+          <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
           <AlertDescription className="space-y-2">
             {preview.blockers?.map((b) => (
               <p key={b}>{b}</p>
@@ -95,7 +95,7 @@ export function PromotePlan({
       ) : null}
       {preview.frozen ? (
         <Alert>
-          <WarningIcon className="size-4" />
+          <TriangleAlertGlassIcon className="size-4.5 text-tone-warning" />
           <AlertDescription className="space-y-2">
             <p className="flex items-center gap-2">
               <StatusPill tone="warning" label="Deploy freeze" size="sm" />

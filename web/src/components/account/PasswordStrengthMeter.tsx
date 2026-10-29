@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CircleGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import {
   MIN_PASSWORD_LENGTH,
@@ -58,12 +58,12 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
             )}
           >
             {req[rule] ? (
-              <CheckIcon
-                className="size-3.5 text-emerald-600"
+              <CheckGlassIcon
+                className="size-4 text-emerald-600"
                 aria-hidden="true"
               />
             ) : (
-              <CircleIcon className="size-3.5" aria-hidden="true" />
+              <CircleGlassIcon className="size-4" aria-hidden="true" />
             )}
             {t(`accountPage.password.rules.${rule}`, {
               min: MIN_PASSWORD_LENGTH,

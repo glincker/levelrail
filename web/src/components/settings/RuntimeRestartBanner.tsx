@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -37,7 +37,7 @@ export function RuntimeRestartBanner({
           setOpen(true)
         }}
       >
-        <ArrowsClockwiseIcon aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
         {t('restart.now')}
       </Button>
     )
@@ -50,7 +50,7 @@ export function RuntimeRestartBanner({
         disabled={isFetching}
         onClick={() => void refetch()}
       >
-        <ArrowsClockwiseIcon aria-hidden="true" />
+        <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
         {t('restart.recheck')}
       </Button>
     )

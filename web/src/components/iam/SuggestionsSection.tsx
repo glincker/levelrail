@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -86,7 +86,7 @@ export function SuggestionsSection({
                 onClick={() => onOpenPrincipal(`token:${s.token_id}`)}
               >
                 {t('analyzer.openPrincipal')}
-                <ArrowRightIcon />
+                <ArrowRightGlassIcon size="1.2em" />
               </Button>
               {s.status === 'idle' ? (
                 <Button

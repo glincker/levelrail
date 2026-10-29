@@ -2,11 +2,10 @@ import { useMemo, useRef, useState } from 'react'
 import type { PointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsInIcon,
-  ArrowCounterClockwiseIcon,
-  MagnifyingGlassMinusIcon,
-  MagnifyingGlassPlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  MinimizeGlassIcon,
+  RotateCcwGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { ProjectTopologyGraph } from '../../types/projectTopology'
 import { useInfraCanvas } from '../../hooks/useInfraCanvas'
@@ -132,7 +131,7 @@ export function InfraCanvas({
           onClick={() => c.zoomBy(1.2)}
           aria-label={t('toolbar.zoomIn')}
         >
-          <MagnifyingGlassPlusIcon className="size-4" aria-hidden="true" />
+          <SearchGlassIcon className="size-4.5" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -140,7 +139,7 @@ export function InfraCanvas({
           onClick={() => c.zoomBy(1 / 1.2)}
           aria-label={t('toolbar.zoomOut')}
         >
-          <MagnifyingGlassMinusIcon className="size-4" aria-hidden="true" />
+          <SearchGlassIcon className="size-4.5" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -148,7 +147,7 @@ export function InfraCanvas({
           onClick={c.fit}
           aria-label={t('toolbar.fit')}
         >
-          <ArrowsInIcon className="size-4" aria-hidden="true" />
+          <MinimizeGlassIcon className="size-4.5" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -156,7 +155,7 @@ export function InfraCanvas({
           onClick={c.resetLayout}
           aria-label={t('toolbar.resetLayout')}
         >
-          <ArrowCounterClockwiseIcon className="size-4" aria-hidden="true" />
+          <RotateCcwGlassIcon className="size-4.5" aria-hidden="true" />
         </Button>
         <span className="px-2 text-xs text-muted-foreground" aria-live="polite">
           {t('toolbar.zoomLevel', { percent: Math.round(c.view.scale * 100) })}

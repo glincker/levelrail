@@ -1,10 +1,10 @@
 import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PencilSimpleIcon,
-  SealCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BadgeCheckGlassIcon,
+  PencilGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -70,7 +70,11 @@ export function ProfileCard() {
               {session.username}
               <Badge variant={session.email_verified ? 'success' : 'muted'}>
                 {session.email_verified ? (
-                  <SealCheckIcon aria-hidden="true" />
+                  <BadgeCheckGlassIcon
+                    className="text-tone-success"
+                    size="1.2em"
+                    aria-hidden="true"
+                  />
                 ) : null}
                 {session.email_verified
                   ? t('accountPage.profile.emailVerified')
@@ -127,7 +131,11 @@ export function ProfileCard() {
                 </p>
                 {update.isError ? (
                   <Alert variant="destructive" className="max-w-md">
-                    <WarningIcon aria-hidden="true" />
+                    <TriangleAlertGlassIcon
+                      className="text-tone-warning"
+                      size="1.2em"
+                      aria-hidden="true"
+                    />
                     <AlertDescription>
                       {t('accountPage.profile.saveError')}
                     </AlertDescription>
@@ -148,7 +156,7 @@ export function ProfileCard() {
                     setEditing(true)
                   }}
                 >
-                  <PencilSimpleIcon aria-hidden="true" />
+                  <PencilGlassIcon size="1.2em" aria-hidden="true" />
                 </Button>
               </dd>
             )}

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  DotsSixVerticalIcon,
-  EyeSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  EyeOffGlassIcon,
+  GripVerticalGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { PINNED_VISIBLE, type WidgetId } from '../../lib/dashboardLayout'
 
@@ -53,7 +53,7 @@ export function WidgetFrame({
           }}
           className="cursor-grab rounded p-1 hover:bg-muted active:cursor-grabbing"
         >
-          <DotsSixVerticalIcon className="size-4" />
+          <GripVerticalGlassIcon className="size-4.5" />
         </span>
         <span className="flex-1 font-medium text-foreground">{name}</span>
         <button
@@ -65,7 +65,7 @@ export function WidgetFrame({
           }}
           className="rounded p-1 hover:bg-muted disabled:opacity-40"
         >
-          <ArrowUpIcon className="size-4" />
+          <ArrowUpGlassIcon className="size-4.5" />
         </button>
         <button
           type="button"
@@ -76,7 +76,7 @@ export function WidgetFrame({
           }}
           className="rounded p-1 hover:bg-muted disabled:opacity-40"
         >
-          <ArrowDownIcon className="size-4" />
+          <ArrowDownGlassIcon className="size-4.5" />
         </button>
         <button
           type="button"
@@ -87,7 +87,7 @@ export function WidgetFrame({
           }}
           className={cn('rounded p-1 hover:bg-muted disabled:opacity-40')}
         >
-          <EyeSlashIcon className="size-4" />
+          <EyeOffGlassIcon className="size-4.5" />
         </button>
       </div>
       {children}

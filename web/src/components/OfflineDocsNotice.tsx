@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { useBrand } from '@/hooks/useBrand'
 import { routePathToDocsSiteUrl, routePathWithHash } from '@/lib/docsPathMapper'
@@ -70,7 +70,7 @@ export function OfflineDocsNotice({ routePath }: OfflineDocsNoticeProps) {
         title={t('offlineNotice.dismiss')}
         className="shrink-0"
       >
-        <XIcon className="size-4" />
+        <XGlassIcon className="size-4.5" />
       </Button>
     </div>
   )

@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  CloudArrowUpIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { PageBanner } from '../../components/PageBanner'
@@ -50,7 +47,7 @@ function BackupsPage() {
       description={t('page.description')}
       banner={
         <PageBanner
-          icon={<CloudArrowUpIcon />}
+          icon={<UploadGlassIcon size="1.2em" />}
           titleKey="backups:page.title"
           descriptionKey={
             isEmpty ? 'backups:banner.description' : 'backups:page.description'
@@ -68,7 +65,10 @@ function BackupsPage() {
                     setProtectOpen(true)
                   }}
                 >
-                  <ShieldCheckIcon />
+                  <ShieldCheckGlassIcon
+                    className="text-tone-success"
+                    size="1.2em"
+                  />
                   {t('summary.protectEverything')}
                 </Button>
               ) : null}

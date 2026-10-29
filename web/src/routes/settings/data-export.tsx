@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ExportIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShareGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -21,7 +21,7 @@ function DataExportPage() {
 
   return (
     <PageTemplate
-      icon={<ExportIcon />}
+      icon={<ShareGlassIcon size="1.2em" />}
       title={t('title')}
       description={t('description')}
       actions={notConfigured ? null : <CreateDataExportDestinationDialog />}
@@ -54,7 +54,7 @@ function DataExportPage() {
 
       {data && data.length === 0 ? (
         <EmptyState
-          icon={<ExportIcon className="size-5" />}
+          icon={<ShareGlassIcon className="size-5.5" />}
           title={t('empty.title')}
           description={t('empty.description')}
           className="border-0 bg-transparent py-6"

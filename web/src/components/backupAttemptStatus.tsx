@@ -1,10 +1,10 @@
 import type { VariantProps } from 'class-variance-authority'
-import type { Icon } from '@phosphor-icons/react'
 import {
-  CheckCircleIcon,
-  SpinnerIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  LoaderGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { BackupStatus } from '../types/backupHistory'
 import type { RestoreStatus } from '../types/restoreHistory'
@@ -34,10 +34,10 @@ const STATUS_BADGE_VARIANT: Record<
   failed: 'destructive',
 }
 
-const STATUS_ICON: Record<AttemptStatus, Icon> = {
-  running: SpinnerIcon,
-  succeeded: CheckCircleIcon,
-  failed: WarningCircleIcon,
+const STATUS_ICON: Record<AttemptStatus, UiIcon> = {
+  running: LoaderGlassIcon,
+  succeeded: CircleCheckGlassIcon,
+  failed: CircleAlertGlassIcon,
 }
 
 export function StatusBadge({ status }: { status: AttemptStatus }) {

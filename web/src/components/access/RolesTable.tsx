@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  IdentificationBadgeIcon,
-  PencilSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { IdCardLanyardGlassIcon, PencilGlassIcon } from '@thesvg/ui-react'
 import { ResponsiveTable, type ResponsiveColumn } from '../ui/responsive-table'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -25,7 +22,7 @@ export function RolesTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<IdentificationBadgeIcon className="size-5" />}
+        icon={<IdCardLanyardGlassIcon className="size-5.5" />}
         title={t('roles.empty.title')}
         description={t('roles.empty.description')}
       />
@@ -100,7 +97,7 @@ export function RolesTable({
                     role={role}
                     trigger={
                       <Button variant="outline" size="sm">
-                        <PencilSimpleIcon />
+                        <PencilGlassIcon size="1.2em" />
                         {t('roles.table.edit')}
                       </Button>
                     }

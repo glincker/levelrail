@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -59,7 +59,7 @@ export function NotificationDeliveryHistoryDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ClockCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RestoreGlassIcon className="size-4" aria-hidden="true" />
         History
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

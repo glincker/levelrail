@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ListMagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { FileSearchGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { ResourceExplorer } from '@/components/resources/ResourceExplorer'
 import { isResourceKind } from '@/lib/resourceLinks'
@@ -40,7 +40,7 @@ function ResourcesPage() {
     <PageTemplate
       title={t('title')}
       description={t('description')}
-      icon={<ListMagnifyingGlassIcon />}
+      icon={<FileSearchGlassIcon size="1.2em" />}
       width="wide"
     >
       <ResourceExplorer

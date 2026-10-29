@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  GitBranchIcon,
-  RocketLaunchIcon,
-  SquaresFourIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  GitBranchGlassIcon,
+  LayoutGridGlassIcon,
+  RocketGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateResourceWizard } from '../CreateResourceWizard'
@@ -112,10 +112,7 @@ export function FirstDeploy({
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-          <RocketLaunchIcon
-            aria-hidden="true"
-            className="size-6 text-primary"
-          />
+          <RocketGlassIcon aria-hidden="true" className="size-7 text-primary" />
           {live ? t('first.titleLive') : t('first.title')}
         </h1>
         {live ? null : (
@@ -131,7 +128,7 @@ export function FirstDeploy({
         <>
           <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
             <PathCard
-              icon={<RocketLaunchIcon className="size-5 text-primary" />}
+              icon={<RocketGlassIcon className="size-5.5 text-primary" />}
               title={t('first.sample.title')}
               description={t('first.sample.description', {
                 image: SAMPLE_APP.image,
@@ -153,7 +150,7 @@ export function FirstDeploy({
             />
             <PathCard
               icon={
-                <SquaresFourIcon className="size-5 text-muted-foreground" />
+                <LayoutGridGlassIcon className="size-5.5 text-muted-foreground" />
               }
               title={t('first.template.title')}
               description={t('first.template.description')}
@@ -169,7 +166,9 @@ export function FirstDeploy({
               }
             />
             <PathCard
-              icon={<GitBranchIcon className="size-5 text-muted-foreground" />}
+              icon={
+                <GitBranchGlassIcon className="size-5.5 text-muted-foreground" />
+              }
               title={t('first.repo.title')}
               description={t('first.repo.description')}
               action={
@@ -190,14 +189,14 @@ export function FirstDeploy({
               className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-2 sm:min-h-0 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             >
               {t('first.more.import')}
-              <ArrowRightIcon aria-hidden="true" className="size-3" />
+              <ArrowRightGlassIcon aria-hidden="true" className="size-3.5" />
             </Link>
             <Link
               to="/settings/github-app"
               className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-2 sm:min-h-0 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             >
               {t('first.more.git')}
-              <ArrowRightIcon aria-hidden="true" className="size-3" />
+              <ArrowRightGlassIcon aria-hidden="true" className="size-3.5" />
             </Link>
           </p>
           {createError ? (

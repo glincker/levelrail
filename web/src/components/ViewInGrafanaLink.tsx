@@ -1,4 +1,4 @@
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { buttonVariants } from '@/components/ui/button'
 import { useObservabilitySettingsOptional } from '../queries/observabilitySettings'
 
@@ -22,7 +22,7 @@ export function ViewInGrafanaLink() {
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
       View in Grafana
-      <ArrowSquareOutIcon />
+      <ExternalLinkGlassIcon size="1.2em" />
     </a>
   )
 }

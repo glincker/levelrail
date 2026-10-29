@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,7 +36,7 @@ export function SourceProblem({
           disabled={refresh.isPending}
           onClick={() => refresh.mutate(source.id)}
         >
-          <ArrowsClockwiseIcon aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
           {refresh.isPending
             ? t('marketplace.rechecking')
             : t('marketplace.recheck')}

@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  HeartbeatIcon,
-  InfoIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  InfoGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { HelpLink } from '@/components/HelpLink'
@@ -45,7 +45,7 @@ function SummaryBanner({
   if (fail === 0 && warn === 0) {
     return (
       <Alert>
-        <CheckCircleIcon />
+        <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
         <AlertTitle>{t('doctorPage.allPassedTitle')}</AlertTitle>
         <AlertDescription>{t('doctorPage.allPassedBody')}</AlertDescription>
       </Alert>
@@ -53,7 +53,7 @@ function SummaryBanner({
   }
   return (
     <Alert variant={fail > 0 ? 'destructive' : 'default'}>
-      <XCircleIcon />
+      <CircleXGlassIcon className="text-tone-danger" size="1.2em" />
       <AlertTitle>
         {fail > 0
           ? t('doctorPage.failedTitle', { count: fail })
@@ -83,7 +83,7 @@ function DoctorPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <HeartbeatIcon className="size-4" />
+          <ActivityGlassIcon className="size-4.5" />
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader
@@ -98,7 +98,8 @@ function DoctorPage() {
                 onClick={rerun}
                 disabled={state.running}
               >
-                <ArrowsClockwiseIcon
+                <RefreshCwGlassIcon
+                  size="1.2em"
                   className={state.running ? 'animate-spin' : ''}
                 />
                 {t('doctorPage.rerun')}
@@ -128,7 +129,7 @@ function DoctorPage() {
 
       {state.error ? (
         <Alert variant="destructive">
-          <XCircleIcon />
+          <CircleXGlassIcon className="text-tone-danger" size="1.2em" />
           <AlertTitle>{t('doctorPage.streamErrorTitle')}</AlertTitle>
           <AlertDescription>{t('doctorPage.streamErrorBody')}</AlertDescription>
         </Alert>
@@ -142,7 +143,7 @@ function DoctorPage() {
       {state.running ? null : <DoctorFixAll onDone={rerun} />}
 
       <Alert>
-        <InfoIcon />
+        <InfoGlassIcon className="text-tone-info" size="1.2em" />
         <AlertTitle>{t('doctorPage.ingressTitle')}</AlertTitle>
         <AlertDescription>
           {t('doctorPage.ingressBody')}{' '}

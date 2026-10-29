@@ -1,8 +1,8 @@
 import {
-  ShieldCheckIcon,
-  ShieldWarningIcon,
-  SpinnerIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LoaderGlassIcon,
+  ShieldAlertGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -126,7 +126,7 @@ function VerificationStatusBadge({
   if (status === 'running') {
     return (
       <Badge variant="muted" className="rounded-full">
-        <SpinnerIcon className="size-3 animate-spin" aria-hidden="true" />
+        <LoaderGlassIcon className="size-3.5 animate-spin" aria-hidden="true" />
         {auto ? 'Auto-verifying...' : 'Verifying...'}
       </Badge>
     )
@@ -134,7 +134,10 @@ function VerificationStatusBadge({
   if (status === 'failed') {
     return (
       <Badge variant="destructive" className="rounded-full" title={error}>
-        <ShieldWarningIcon className="size-3" aria-hidden="true" />
+        <ShieldAlertGlassIcon
+          className="size-3.5 text-tone-warning"
+          aria-hidden="true"
+        />
         {auto ? 'Failed auto-verification' : 'Failed verification'}
       </Badge>
     )
@@ -147,7 +150,10 @@ function VerificationStatusBadge({
         auto ? 'Verified automatically after the scheduled backup' : undefined
       }
     >
-      <ShieldCheckIcon className="size-3" aria-hidden="true" />
+      <ShieldCheckGlassIcon
+        className="size-3.5 text-tone-success"
+        aria-hidden="true"
+      />
       {auto ? 'Auto-verified' : 'Verified'}
     </Badge>
   )

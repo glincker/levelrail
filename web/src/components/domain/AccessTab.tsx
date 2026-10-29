@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GlobeHemisphereWestIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -89,7 +89,7 @@ export function AccessTab({
       <div className="space-y-4">
         <Section title={t('geo.title')} description={t('geo.help')}>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <GlobeHemisphereWestIcon className="size-4" aria-hidden="true" />
+            <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
             {geo.active ? (
               <Badge variant="success">
                 {t('geo.sourceActive', { sources: geo.sources.join(', ') })}

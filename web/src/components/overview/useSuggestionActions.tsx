@@ -2,15 +2,15 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  ArrowClockwiseIcon,
-  GitBranchIcon,
-  GlobeIcon,
-  HeartbeatIcon,
-  MemoryIcon,
-  TerminalWindowIcon,
-  WarningCircleIcon,
-  WrenchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  CircleAlertGlassIcon,
+  GitBranchGlassIcon,
+  GlobeGlassIcon,
+  MemoryStickGlassIcon,
+  RotateCwGlassIcon,
+  TerminalGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
 import { useAppPower } from '../apps/useAppPower'
 import { useApplyPending } from '../../queries/appTimeline'
@@ -19,15 +19,15 @@ import type { DeployAttempt } from '../../types/deployAttempt'
 import type { SuggestionActionKind, SuggestionDescriptor } from './suggestions'
 
 const ICONS: Record<SuggestionActionKind, React.ReactNode> = {
-  open_health: <HeartbeatIcon className="size-5" />,
-  restart: <ArrowClockwiseIcon className="size-5" />,
-  apply_pending: <ArrowClockwiseIcon className="size-5" />,
-  open_logs: <TerminalWindowIcon className="size-5" />,
-  show_fix: <WrenchIcon className="size-5" />,
-  open_deploy: <WarningCircleIcon className="size-5" />,
-  open_domains: <GlobeIcon className="size-5" />,
-  open_resources: <MemoryIcon className="size-5" />,
-  connect_git: <GitBranchIcon className="size-5" />,
+  open_health: <ActivityGlassIcon className="size-5.5" />,
+  restart: <RotateCwGlassIcon className="size-5.5" />,
+  apply_pending: <RotateCwGlassIcon className="size-5.5" />,
+  open_logs: <TerminalGlassIcon className="size-5.5" />,
+  show_fix: <WrenchGlassIcon className="size-5.5" />,
+  open_deploy: <CircleAlertGlassIcon className="size-5.5 text-tone-danger" />,
+  open_domains: <GlobeGlassIcon className="size-5.5" />,
+  open_resources: <MemoryStickGlassIcon className="size-5.5" />,
+  connect_git: <GitBranchGlassIcon className="size-5.5" />,
 }
 
 export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {

@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleNotchIcon,
-  MinusCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { formatElapsed } from '@/lib/upgradeTime'
 import { dedupeReason } from '@/lib/upgradeAttempts'
@@ -17,33 +17,31 @@ type Row =
 function StepIcon({ status }: { status: Row['status'] }) {
   if (status === 'failed') {
     return (
-      <XCircleIcon
-        weight="fill"
-        className="size-4 text-destructive"
+      <CircleXGlassIcon
+        className="size-4.5 text-destructive"
         aria-hidden="true"
       />
     )
   }
   if (status === 'skipped') {
     return (
-      <MinusCircleIcon
-        className="size-4 text-muted-foreground"
+      <CircleMinusGlassIcon
+        className="size-4.5 text-muted-foreground"
         aria-hidden="true"
       />
     )
   }
   if (status === 'running') {
     return (
-      <CircleNotchIcon
-        className="size-4 text-primary motion-safe:animate-spin"
+      <LoaderCircleGlassIcon
+        className="size-4.5 text-primary motion-safe:animate-spin"
         aria-hidden="true"
       />
     )
   }
   return (
-    <CheckCircleIcon
-      weight="fill"
-      className="size-4 text-emerald-600 dark:text-emerald-400"
+    <CircleCheckGlassIcon
+      className="size-4.5 text-emerald-600 dark:text-emerald-400"
       aria-hidden="true"
     />
   )

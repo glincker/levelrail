@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import type { DeployFailure } from '../types/deployFailure'
 import { CodeBlock } from '@/components/ui/code-block'
 
@@ -42,9 +42,9 @@ export function DeployFailureDetails({ failure }: { failure?: DeployFailure }) {
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <CaretRightIcon
+            <ChevronRightGlassIcon
               aria-hidden="true"
-              className={`size-3 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
+              className={`size-3.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
             />
             {t('failureDetails.excerpt')}
           </button>

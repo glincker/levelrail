@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
+import { FlaskConicalGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { demoQueryOptions, useDemoSession } from '@/queries/demo'
@@ -54,7 +54,7 @@ export function DemoLoginEntry() {
           })
         }}
       >
-        <FlaskIcon data-icon="inline-start" />
+        <FlaskConicalGlassIcon size="1.2em" data-icon="inline-start" />
         {session.isPending ? t('login.pending') : t('login.button')}
       </Button>
       {error ? (

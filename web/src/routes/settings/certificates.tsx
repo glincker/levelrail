@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { certificatesQueryOptions } from '../../queries/certificates'
 import { domainsQueryOptions } from '../../queries/domains'
 import { mergeCertificateCenterRows } from '../../lib/certificateCenter'
@@ -62,7 +62,7 @@ function CertificatesPage() {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckIcon />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
       eyebrow={t('certificatesPage.eyebrow')}
       title={t('certificatesPage.title')}
       description={t('certificatesPage.description')}

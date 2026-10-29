@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ export function ChangeDatabaseVersionDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="xs" />}>
-        <PencilSimpleIcon className="size-3" aria-hidden="true" />
+        <PencilGlassIcon className="size-3.5" aria-hidden="true" />
         {t('version.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

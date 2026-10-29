@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon } from '@thesvg/ui-react'
 import {
   ingressSettingsQueryOptions,
   useUpdateIngressSettings,
@@ -31,7 +31,7 @@ export function FallbackDomainsCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeIcon className="size-4" />
+          <GlobeGlassIcon className="size-4.5" />
           {t('fallback.title')}
         </CardTitle>
         <CardDescription>{t('fallback.description')}</CardDescription>

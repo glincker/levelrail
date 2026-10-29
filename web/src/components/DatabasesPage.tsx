@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DatabaseIcon, WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, DatabaseGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -33,7 +33,7 @@ export function DatabasesShell({
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<DatabaseIcon />}
+        icon={<DatabaseGlassIcon size="1.2em" />}
         titleKey="databases:banner.title"
         descriptionKey={DESCRIPTION_KEY[empty ? 'banner' : 'list']}
         action={
@@ -94,7 +94,9 @@ export function DatabasesError({ message }: Readonly<{ message: string }>) {
   return (
     <DatabasesShell size="compact" empty={false}>
       <EmptyState
-        icon={<WarningCircleIcon />}
+        icon={
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+        }
         title={t('list.errorTitle')}
         description={`${t('list.errorBody')} ${message}`}
         action={

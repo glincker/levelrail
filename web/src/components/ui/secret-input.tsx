@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react/dist/ssr'
-
+import { EyeGlassIcon, EyeOffGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 
@@ -61,9 +60,9 @@ function SecretInput({
         className="absolute inset-y-0 right-0 flex w-8 items-center justify-center rounded-r-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
       >
         {revealed ? (
-          <EyeSlashIcon aria-hidden className="size-4" />
+          <EyeOffGlassIcon aria-hidden className="size-4.5" />
         ) : (
-          <EyeIcon aria-hidden className="size-4" />
+          <EyeGlassIcon aria-hidden className="size-4.5" />
         )}
       </button>
     </div>

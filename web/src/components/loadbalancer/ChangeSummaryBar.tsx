@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRightIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Kbd } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import {
@@ -77,8 +77,8 @@ export function ChangeSummaryBar({
               className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs"
             >
               {c.risky ? (
-                <WarningIcon
-                  className="size-3.5 text-tone-warning"
+                <TriangleAlertGlassIcon
+                  className="size-4 text-tone-warning"
                   aria-label="Risky change"
                 />
               ) : null}
@@ -86,7 +86,7 @@ export function ChangeSummaryBar({
               <span className="tabular-nums line-through decoration-muted-foreground/60">
                 {c.before}
               </span>
-              <ArrowRightIcon className="size-3" aria-hidden />
+              <ArrowRightGlassIcon className="size-3.5" aria-hidden />
               <span className="font-medium tabular-nums">{c.after}</span>
             </li>
           ))}
@@ -122,8 +122,8 @@ export function ChangeSummaryBar({
           <ul className="space-y-2 text-sm">
             {risks.map((c) => (
               <li key={c.key} className="flex gap-2">
-                <WarningIcon
-                  className="mt-0.5 size-4 shrink-0 text-tone-warning"
+                <TriangleAlertGlassIcon
+                  className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
                   aria-hidden
                 />
                 <span>

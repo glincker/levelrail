@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { useAttachAppTag, useDetachAppTag, useTags } from '../../queries/tags'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -50,7 +50,7 @@ export function TagChips({
                 if (id) detachTag.mutate(id)
               }}
             >
-              <XIcon className="size-3" aria-hidden="true" />
+              <XGlassIcon className="size-3.5" aria-hidden="true" />
               <span className="sr-only">Remove tag {name}</span>
             </button>
           </Badge>
@@ -61,7 +61,7 @@ export function TagChips({
           render={<Button variant="ghost" size="icon-xs" />}
           aria-label="Add tag"
         >
-          <PlusIcon className="size-3" aria-hidden="true" />
+          <PlusGlassIcon className="size-3.5" aria-hidden="true" />
         </PopoverTrigger>
         <PopoverContent align="start" className="w-56 gap-2">
           <Input

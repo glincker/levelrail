@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CopySimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,7 @@ export function CloneRestoreDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <CopySimpleIcon className="size-3.5" aria-hidden="true" />
+        <CopyGlassIcon className="size-4" aria-hidden="true" />
         Restore as new
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

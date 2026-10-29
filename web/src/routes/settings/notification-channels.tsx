@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { WebhooksLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { WebhookGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
@@ -47,7 +47,7 @@ function NotificationChannelsPage() {
 
   return (
     <PageTemplate
-      icon={<WebhooksLogoIcon />}
+      icon={<WebhookGlassIcon size="1.2em" />}
       eyebrow={t('channelsPage.eyebrow')}
       title={t('channelsPage.title')}
       description={t('channelsPage.description')}

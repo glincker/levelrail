@@ -1,14 +1,13 @@
 import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  DownloadSimpleIcon,
-  GithubLogoIcon,
-  PushPinIcon,
-  PushPinSlashIcon,
-  BookmarkIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BookmarkGlassIcon,
+  CheckGlassIcon,
+  CopyGlassIcon,
+  DownloadGlassIcon,
+  PinGlassIcon,
+  SocialGithubGlassIcon,
+} from '@thesvg/ui-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,9 +87,9 @@ export function DocsPageToolbar({
         className="gap-1.5 text-muted-foreground"
       >
         {pinned ? (
-          <PushPinSlashIcon className="size-3.5" />
+          <PinGlassIcon className="size-4" />
         ) : (
-          <PushPinIcon className="size-3.5" />
+          <PinGlassIcon className="size-4" />
         )}
         {pinned ? t('unpin.label') : t('pin.label')}
       </Button>
@@ -101,7 +100,7 @@ export function DocsPageToolbar({
           rel="noopener noreferrer"
           className={cn(buttonVariants({ size: 'sm' }), 'gap-1.5')}
         >
-          <BookmarkIcon className="size-3.5" />
+          <BookmarkGlassIcon className="size-4" />
           {t('toolbar.openDocsSite')}
         </a>
       )}
@@ -115,14 +114,18 @@ export function DocsPageToolbar({
                 'gap-1.5 text-muted-foreground',
               )}
             >
-              <DownloadSimpleIcon className="size-3.5" />
+              <DownloadGlassIcon className="size-4" />
               {t('toolbar.export')}
             </button>
           }
         />
         <DropdownMenuContent>
           <DropdownMenuItem onClick={handleCopy}>
-            {copied ? <CheckIcon /> : <CopyIcon />}
+            {copied ? (
+              <CheckGlassIcon size="1.2em" />
+            ) : (
+              <CopyGlassIcon size="1.2em" />
+            )}
             {t('toolbar.copyMarkdown')}
           </DropdownMenuItem>
           {githubHref ? (
@@ -131,7 +134,7 @@ export function DocsPageToolbar({
               target="_blank"
               rel="noreferrer"
             >
-              <GithubLogoIcon />
+              <SocialGithubGlassIcon size="1.2em" />
               {t('toolbar.viewSourceGitHub')}
             </DropdownMenuLinkItem>
           ) : null}

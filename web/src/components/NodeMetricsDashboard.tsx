@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { PulseIcon, InfoIcon } from '@phosphor-icons/react/dist/ssr'
+import { ActivityGlassIcon, InfoGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { MetricChartCard } from './MetricChartCard'
 import { TimeRangeControls } from './TimeRangeControls'
@@ -249,8 +249,8 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <PulseIcon
-              className="size-4 text-muted-foreground"
+            <ActivityGlassIcon
+              className="size-4.5 text-muted-foreground"
               aria-hidden="true"
             />
             Node metrics
@@ -285,7 +285,7 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
       </div>
 
       <Alert className="mt-4">
-        <InfoIcon />
+        <InfoGlassIcon className="text-tone-info" size="1.2em" />
         <AlertTitle>What this is, and isn't</AlertTitle>
         <AlertDescription>
           <p>

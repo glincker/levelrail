@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   DialogDescription,
   DialogFooter,
@@ -268,9 +268,9 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
                   className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   {reveal ? (
-                    <EyeSlashIcon className="size-4" aria-hidden="true" />
+                    <EyeOffGlassIcon className="size-4.5" aria-hidden="true" />
                   ) : (
-                    <EyeIcon className="size-4" aria-hidden="true" />
+                    <EyeGlassIcon className="size-4.5" aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -310,7 +310,10 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
           <FieldError id="share-name-error" messageKey={shown('name')} />
           {nameFree ? (
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <CheckCircleIcon aria-hidden="true" className="size-3.5" />
+              <CircleCheckGlassIcon
+                aria-hidden="true"
+                className="size-4 text-tone-success"
+              />
               {t('networkSharesPage.dialog.nameFree')}
             </p>
           ) : (
@@ -330,7 +333,11 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
 
         {create.isError ? (
           <Alert variant="destructive">
-            <WarningIcon aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+              aria-hidden="true"
+            />
             <AlertDescription>{create.error.message}</AlertDescription>
           </Alert>
         ) : null}

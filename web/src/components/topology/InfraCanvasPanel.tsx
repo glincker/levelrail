@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type {
   ProjectTopologyEdge,
@@ -54,7 +54,7 @@ export function InfraCanvasPanel({
           onClick={onClose}
           aria-label={t('panel.close')}
         >
-          <XIcon className="size-4" aria-hidden="true" />
+          <XGlassIcon className="size-4.5" aria-hidden="true" />
         </Button>
       </div>
 

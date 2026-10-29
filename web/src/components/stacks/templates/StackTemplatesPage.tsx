@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
@@ -20,7 +20,7 @@ export function StackTemplatesPage() {
 
   return (
     <PageTemplate
-      icon={<SquaresFourIcon />}
+      icon={<LayoutGridGlassIcon size="1.2em" />}
       title={t('templates.title')}
       description={t('templates.description')}
     >
@@ -31,7 +31,7 @@ export function StackTemplatesPage() {
       ) : templates.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<SquaresFourIcon className="size-5" />}
+          icon={<LayoutGridGlassIcon className="size-5.5" />}
           title={t('templates.empty.title')}
           description={t('templates.empty.description')}
         />

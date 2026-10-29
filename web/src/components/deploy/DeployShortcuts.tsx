@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowCounterClockwiseIcon,
-  RocketLaunchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RocketGlassIcon, RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { GitDeployRef } from '../../queries/gitSourceCommits'
@@ -48,7 +45,7 @@ export function DeployShortcuts({
               onDeployImage(last.image)
             }}
           >
-            <RocketLaunchIcon aria-hidden="true" />
+            <RocketGlassIcon size="1.2em" aria-hidden="true" />
             {t('git.shortcuts.redeployLast')}
           </Button>
         ) : null}
@@ -64,7 +61,7 @@ export function DeployShortcuts({
               setConfirming(true)
             }}
           >
-            <ArrowCounterClockwiseIcon aria-hidden="true" />
+            <RotateCcwGlassIcon size="1.2em" aria-hidden="true" />
             {t('git.shortcuts.rollbackTo')}
           </Button>
         ) : null}

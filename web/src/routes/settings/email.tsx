@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WebhooksLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { WebhookGlassIcon } from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -64,7 +64,7 @@ function EmailSettingsPage() {
         <EmailBrandingCard />
         <Banner
           variant="info"
-          icon={<WebhooksLogoIcon />}
+          icon={<WebhookGlassIcon size="1.2em" />}
           title={t('email.channelsCta')}
           action={
             <Link

@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import {
-  ArrowArcLeftIcon,
-  ArrowClockwiseIcon,
-  ArrowSquareOutIcon,
-  CaretDownIcon,
-  CopyIcon,
-  DotsThreeIcon,
-  GitBranchIcon,
-  PackageIcon,
-  PauseIcon,
-  PlayIcon,
-  RocketLaunchIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  CopyGlassIcon,
+  EllipsisGlassIcon,
+  ExternalLinkGlassIcon,
+  GitBranchGlassIcon,
+  PackageGlassIcon,
+  PauseGlassIcon,
+  PlayGlassIcon,
+  RocketGlassIcon,
+  RotateCwGlassIcon,
+  TrashGlassIcon,
+  UndoGlassIcon,
+} from '@thesvg/ui-react'
 import { ActionMenu, Kbd } from '@/components/kit'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -48,7 +48,7 @@ export function HeroActions({
           rel="noreferrer"
           className={cn(buttonVariants({ size: 'lg' }), 'gap-2')}
         >
-          <ArrowSquareOutIcon aria-hidden="true" />
+          <ExternalLinkGlassIcon size="1.2em" aria-hidden="true" />
           Open app
           <Kbd keys={['O']} />
         </a>
@@ -61,7 +61,7 @@ export function HeroActions({
           className="rounded-r-none"
           onClick={() => onDeploy('existing-image')}
         >
-          <RocketLaunchIcon aria-hidden="true" />
+          <RocketGlassIcon size="1.2em" aria-hidden="true" />
           Deploy
         </Button>
         <ActionMenu
@@ -72,7 +72,7 @@ export function HeroActions({
               className="-ml-px rounded-l-none"
               aria-label="More deploy options"
             >
-              <CaretDownIcon aria-hidden="true" />
+              <ChevronDownGlassIcon size="1.2em" aria-hidden="true" />
             </Button>
           }
           items={[
@@ -81,26 +81,26 @@ export function HeroActions({
               label: actions.redeploying
                 ? 'Redeploying...'
                 : 'Redeploy current',
-              icon: <ArrowClockwiseIcon />,
+              icon: <RotateCwGlassIcon size="1.2em" />,
               disabled: actions.redeploying,
               onSelect: actions.redeploy,
             },
             {
               id: 'deploy-image',
               label: 'Deploy image...',
-              icon: <RocketLaunchIcon />,
+              icon: <RocketGlassIcon size="1.2em" />,
               onSelect: () => onDeploy('existing-image'),
             },
             {
               id: 'build-source',
               label: 'Build from source...',
-              icon: <GitBranchIcon />,
+              icon: <GitBranchGlassIcon size="1.2em" />,
               onSelect: () => onDeploy('build-from-source'),
             },
             {
               id: 'rollback',
               label: 'Rollback...',
-              icon: <ArrowArcLeftIcon />,
+              icon: <UndoGlassIcon size="1.2em" />,
               onSelect: actions.goToDeploys,
             },
           ]}
@@ -110,14 +110,14 @@ export function HeroActions({
       <ActionMenu
         trigger={
           <Button variant="ghost" size="icon-lg" aria-label="More actions">
-            <DotsThreeIcon weight="bold" aria-hidden="true" />
+            <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
           </Button>
         }
         items={[
           {
             id: 'restart',
             label: actions.restartLabel,
-            icon: <ArrowClockwiseIcon />,
+            icon: <RotateCwGlassIcon size="1.2em" />,
             disabled: actions.restarting,
             onSelect: actions.restart,
           },
@@ -128,39 +128,43 @@ export function HeroActions({
               : actions.stopping
                 ? 'Stopping...'
                 : 'Stop',
-            icon: app.suspended ? <PlayIcon /> : <PauseIcon />,
+            icon: app.suspended ? (
+              <PlayGlassIcon size="1.2em" />
+            ) : (
+              <PauseGlassIcon size="1.2em" />
+            ),
             disabled: actions.togglingRunning,
             onSelect: actions.toggleRunning,
           },
           {
             id: 'copy-url',
             label: 'Copy URL',
-            icon: <CopyIcon />,
+            icon: <CopyGlassIcon size="1.2em" />,
             disabled: !url,
             onSelect: actions.copyUrl,
           },
           {
             id: 'promote',
             label: 'Promote...',
-            icon: <RocketLaunchIcon />,
+            icon: <RocketGlassIcon size="1.2em" />,
             onSelect: () => setPromoteOpen(true),
           },
           {
             id: 'clone',
             label: 'Clone...',
-            icon: <CopyIcon />,
+            icon: <CopyGlassIcon size="1.2em" />,
             onSelect: () => setCloneOpen(true),
           },
           {
             id: 'save-as-template',
             label: 'Save as template...',
-            icon: <PackageIcon />,
+            icon: <PackageGlassIcon size="1.2em" />,
             onSelect: () => setSaveAsTemplateOpen(true),
           },
           {
             id: 'delete',
             label: 'Delete...',
-            icon: <TrashIcon />,
+            icon: <TrashGlassIcon size="1.2em" />,
             tone: 'danger',
             onSelect: () => setDeleteOpen(true),
           },

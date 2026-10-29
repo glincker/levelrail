@@ -1,24 +1,24 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  GlobeIcon,
-  HardDrivesIcon,
-  LockIcon,
-  LockOpenIcon,
-  NetworkIcon,
-  PlugsIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  GlobeGlassIcon,
+  LockGlassIcon,
+  LockOpenGlassIcon,
+  NetworkGlassIcon,
+  PlugGlassIcon,
+  ServerGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { ProbeTarget } from '../../queries/appExposure'
 import { reasonKey, type ReachScope, type ReachSecurity } from './reachModel'
 
 const SCOPE_ICON = {
-  internet: GlobeIcon,
-  network: NetworkIcon,
-  server: HardDrivesIcon,
-  apps: PlugsIcon,
+  internet: GlobeGlassIcon,
+  network: NetworkGlassIcon,
+  server: ServerGlassIcon,
+  apps: PlugGlassIcon,
 } as const
 
 export function ScopeChip({ scope }: { scope: ReachScope }) {
@@ -37,10 +37,10 @@ export function SecurityChip({ security }: { security: ReachSecurity }) {
   if (security === 'none') return null
   const Icon =
     security === 'secure'
-      ? LockIcon
+      ? LockGlassIcon
       : security === 'selfSigned'
-        ? LockOpenIcon
-        : WarningIcon
+        ? LockOpenGlassIcon
+        : TriangleAlertGlassIcon
   const variant =
     security === 'secure'
       ? 'success'
@@ -62,7 +62,10 @@ export function ProbeNote({ probe }: { probe: ProbeTarget }) {
   if (probe.ok) {
     return (
       <p className="flex items-center gap-1 text-xs text-tone-success">
-        <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+        <CircleCheckGlassIcon
+          className="size-4 text-tone-success"
+          aria-hidden="true"
+        />
         {t('test.ok', { ms: probe.latency_ms ?? 0 })}
       </p>
     )
@@ -71,7 +74,10 @@ export function ProbeNote({ probe }: { probe: ProbeTarget }) {
     <div className="text-xs text-tone-warning">
       <p className="flex flex-wrap items-center gap-x-2">
         <span className="flex items-center gap-1">
-          <WarningIcon className="size-3.5" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="size-4 text-tone-warning"
+            aria-hidden="true"
+          />
           {t(`test.reason.${reasonKey(probe)}`)}
         </span>
         {probe.detail ? (

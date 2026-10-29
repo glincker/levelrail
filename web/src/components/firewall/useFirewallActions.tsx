@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  ProhibitIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  ExternalLinkGlassIcon,
+  PlusGlassIcon,
+} from '@thesvg/ui-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { ActionMenuItem } from '@/components/kit/ActionMenu'
 import { toast } from '@/components/ui/toast'
@@ -113,19 +113,21 @@ export function useFirewallActions({
         {
           id: 'block',
           label: t('actions.blockIp'),
-          icon: <ProhibitIcon />,
+          icon: <BanGlassIcon size="1.2em" />,
           onSelect: () => blockIp(key),
         },
         {
           id: 'allow',
           label: t('actions.allowIp'),
-          icon: <CheckCircleIcon />,
+          icon: (
+            <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+          ),
           onSelect: () => allowIp(key),
         },
         {
           id: 'rule',
           label: t('actions.createRule'),
-          icon: <PlusIcon />,
+          icon: <PlusGlassIcon size="1.2em" />,
           onSelect: () => onCreateRule({ field: 'ip', value: key }),
         },
       ]
@@ -136,7 +138,7 @@ export function useFirewallActions({
       {
         id: 'rule',
         label: t('actions.createRule'),
-        icon: <ArrowSquareOutIcon />,
+        icon: <ExternalLinkGlassIcon size="1.2em" />,
         onSelect: () => onCreateRule({ field, value: key }),
       },
     ]

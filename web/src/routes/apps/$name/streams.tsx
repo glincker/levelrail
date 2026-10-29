@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PlugsIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { appStreamListQueryOptions } from '../../../queries/appStreams'
 import { AppStreamsPanel } from '../../../components/AppStreamsPanel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,7 +26,7 @@ function StreamsSectionSkeleton() {
     <Card aria-hidden="true">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugsIcon className="size-4" />
+          <PlugGlassIcon className="size-4.5" />
           Streams
         </CardTitle>
         <Skeleton className="h-4 w-72" />

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon } from '@thesvg/ui-react'
 import {
   PageRail,
   PageRailRow,
@@ -61,7 +61,7 @@ export function OAuthRail({ settings }: { settings: OAuthProviderSettings[] }) {
                     copy(url)
                   }}
                 >
-                  <CopyIcon aria-hidden="true" />
+                  <CopyGlassIcon size="1.2em" aria-hidden="true" />
                 </Button>
               </div>
             </PageRailRow>

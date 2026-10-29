@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
-  CheckCircleIcon,
-  FloppyDiskIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  SaveGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
@@ -40,8 +40,8 @@ function IssueList({
             onClick={() => onJump(i.line)}
             className="flex w-full items-start gap-2 rounded-md px-2 py-1 text-left text-destructive hover:bg-destructive/10"
           >
-            <WarningCircleIcon
-              className="mt-0.5 size-4 shrink-0"
+            <CircleAlertGlassIcon
+              className="mt-0.5 size-4.5 shrink-0 text-tone-danger"
               aria-hidden="true"
             />
             <span>
@@ -145,7 +145,7 @@ export function PipelineEditor({
   if (isEdit && existing.error) {
     return (
       <EmptyState
-        icon={<WarningCircleIcon className="size-5" />}
+        icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
         title="Pipeline could not be loaded"
         description={existing.error.message}
         action={
@@ -245,7 +245,10 @@ export function PipelineEditor({
       <div aria-live="polite" className="text-sm">
         {valid ? (
           <p className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
-            <CheckCircleIcon className="size-4" aria-hidden="true" />
+            <CircleCheckGlassIcon
+              className="size-4.5 text-tone-success"
+              aria-hidden="true"
+            />
             Valid
             {validate.data?.jobs ? `, ${validate.data.jobs} jobs` : ''}
           </p>
@@ -256,7 +259,7 @@ export function PipelineEditor({
         )}
       </div>
       <Button onClick={submit} disabled={!valid || save.isPending}>
-        <FloppyDiskIcon aria-hidden="true" />
+        <SaveGlassIcon size="1.2em" aria-hidden="true" />
         {save.isPending ? 'Saving...' : 'Save pipeline'}
       </Button>
     </section>

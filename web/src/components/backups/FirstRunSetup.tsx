@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { TargetSetupForm } from './TargetSetupForm'
 
@@ -15,7 +15,7 @@ export function FirstRunSetup({ unprotected }: { unprotected: number }) {
     >
       <div className="flex items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <CloudArrowUpIcon className="size-5" aria-hidden="true" />
+          <UploadGlassIcon className="size-5.5" aria-hidden="true" />
         </div>
         <div>
           <h2 id="first-run-title" className="text-lg font-semibold">

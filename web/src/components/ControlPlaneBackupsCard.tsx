@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
-  DatabaseIcon,
-  DownloadSimpleIcon,
-  KeyIcon,
-  SealCheckIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BadgeCheckGlassIcon,
+  DatabaseGlassIcon,
+  DownloadGlassIcon,
+  KeyGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -91,7 +91,10 @@ function BackupRow({
             })
           }}
         >
-          <SealCheckIcon className="size-3.5" aria-hidden="true" />
+          <BadgeCheckGlassIcon
+            className="size-4 text-tone-success"
+            aria-hidden="true"
+          />
           {verify.isPending ? 'Verifying...' : 'Verify'}
         </Button>
         <Button
@@ -102,7 +105,7 @@ function BackupRow({
             <a href={controlPlaneBackupDownloadUrl(backup.name)} download />
           }
         >
-          <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+          <DownloadGlassIcon className="size-4" aria-hidden="true" />
           Download
         </Button>
         <Button
@@ -112,7 +115,7 @@ function BackupRow({
             onDelete(backup.name)
           }}
         >
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-4" aria-hidden="true" />
           Delete
         </Button>
       </div>
@@ -189,7 +192,7 @@ export function ControlPlaneBackupsCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <DatabaseIcon className="size-4" />
+              <DatabaseGlassIcon className="size-4.5" />
             </div>
             <div>
               <CardTitle>Control plane backups</CardTitle>
@@ -222,7 +225,7 @@ export function ControlPlaneBackupsCard() {
       <CardContent className="space-y-3">
         <Banner
           variant="info"
-          icon={<KeyIcon />}
+          icon={<KeyGlassIcon size="1.2em" />}
           title="The master key is not included in a backup"
         >
           Secrets in the snapshot are encrypted with it, so a restore without

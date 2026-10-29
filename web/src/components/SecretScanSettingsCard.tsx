@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -172,7 +172,7 @@ export function SecretScanSettingsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldWarningIcon className="size-4 text-muted-foreground" />
+          <ShieldAlertGlassIcon className="size-4.5 text-muted-foreground" />
           {t('settings.title')}
           <InfoTip label={t('settings.title')}>{t('settings.about')}</InfoTip>
         </CardTitle>

@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  PaperPlaneTiltIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { SendGlassIcon, WebhookGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -65,7 +62,7 @@ function TestButton({ channel }: { channel: NotificationChannel }) {
         })
       }}
     >
-      <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
+      <SendGlassIcon className="size-4" aria-hidden="true" />
       {testChannel.isPending
         ? t('channelsPage.table.sending')
         : t('channelsPage.table.test')}
@@ -85,7 +82,7 @@ export function NotificationChannelTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<WebhooksLogoIcon className="size-5" />}
+        icon={<WebhookGlassIcon className="size-5.5" />}
         title={t('channelsPage.empty.title')}
         description={t('channelsPage.empty.body')}
         action={action}

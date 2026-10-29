@@ -1,10 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  KeyIcon,
-  PlusIcon,
-  UsersThreeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon, PlusGlassIcon, UsersGlassIcon } from '@thesvg/ui-react'
 import { isTokenHost } from '../../lib/gitTokenGuides'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -37,12 +33,12 @@ export function GitConnectionsCard({
         {connections.length === 0 ? (
           <EmptyState
             compact
-            icon={<UsersThreeIcon className="size-5" />}
+            icon={<UsersGlassIcon className="size-5.5" />}
             title={t('gitConnections.empty.title')}
             description={t(`gitConnections.empty.description.${provider}`)}
             action={
               <Button type="button" size="sm" onClick={() => setAdding(true)}>
-                <PlusIcon className="size-4" aria-hidden="true" />
+                <PlusGlassIcon className="size-4.5" aria-hidden="true" />
                 {t('gitConnections.add.first')}
               </Button>
             }
@@ -63,7 +59,7 @@ export function GitConnectionsCard({
                 {t('gitConnections.scopeNote')}
               </p>
               <Button type="button" size="sm" onClick={() => setAdding(true)}>
-                <PlusIcon className="size-4" aria-hidden="true" />
+                <PlusGlassIcon className="size-4.5" aria-hidden="true" />
                 {t('gitConnections.add.another')}
               </Button>
             </div>
@@ -78,7 +74,7 @@ export function GitConnectionsCard({
             variant="outline"
             onClick={() => setTokenOpen(true)}
           >
-            <KeyIcon className="size-4" aria-hidden="true" />
+            <KeyGlassIcon className="size-4.5" aria-hidden="true" />
             {t('gitConnectionsHub.add.withToken')}
           </Button>
         </div>

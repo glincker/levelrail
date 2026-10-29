@@ -1,8 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  TerminalIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
 import { useDatabaseStatus } from '../../../queries/databases'
 import { DatabaseLogSearchPanel } from '../../../components/DatabaseLogSearchPanel'
 import { LiveDatabaseLogViewer } from '../../../components/LiveDatabaseLogViewer'
@@ -32,11 +29,11 @@ function LogsSection() {
     <Tabs defaultValue="live" className="flex h-full flex-col gap-3">
       <TabsList className="w-fit">
         <TabsTrigger value="live" className="gap-1.5">
-          <TerminalIcon className="size-4" aria-hidden="true" />
+          <TerminalGlassIcon className="size-4.5" aria-hidden="true" />
           Live
         </TabsTrigger>
         <TabsTrigger value="search" className="gap-1.5">
-          <MagnifyingGlassIcon className="size-4" aria-hidden="true" />
+          <SearchGlassIcon className="size-4.5" aria-hidden="true" />
           Search
         </TabsTrigger>
       </TabsList>

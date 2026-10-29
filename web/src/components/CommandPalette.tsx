@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { useRouterState } from '@tanstack/react-router'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import {
   DialogPortal,
   DialogOverlay,
@@ -231,7 +231,7 @@ export function CommandPalette({
         >
           <DialogTitle className="sr-only">{t('title')}</DialogTitle>
           <div className="flex flex-wrap items-center gap-2 border-b border-border px-3">
-            <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
+            <SearchGlassIcon className="size-4.5 shrink-0 text-muted-foreground" />
             <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
             <Input
               ref={inputRef}

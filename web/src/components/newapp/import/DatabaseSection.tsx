@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DatabaseIcon, LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { DatabaseGlassIcon, LockGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -139,7 +139,7 @@ export function DatabaseSection({
     <Collapsible open={open} onOpenChange={setOpen}>
       <div className="min-w-0 rounded-lg border border-border">
         <CollapsibleTrigger className="flex w-full items-center gap-2 p-3 text-left text-sm font-medium text-foreground">
-          <DatabaseIcon aria-hidden="true" className="size-4 shrink-0" />
+          <DatabaseGlassIcon aria-hidden="true" className="size-4.5 shrink-0" />
           {t('importDatabase.title')}
           <span className="font-normal text-muted-foreground">
             {t('importDatabase.optional')}
@@ -283,7 +283,7 @@ export function DatabaseSection({
                   key={v.key}
                   className="flex min-w-0 items-center gap-2 text-xs"
                 >
-                  <LockSimpleIcon aria-hidden="true" className="size-3.5" />
+                  <LockGlassIcon aria-hidden="true" className="size-4" />
                   <code className="font-mono">{v.key}</code>
                   <span aria-hidden="true">••••••••</span>
                   <span className="min-w-0 truncate text-muted-foreground">

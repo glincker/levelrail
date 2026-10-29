@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import {
-  ArrowsLeftRightIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftRightGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -84,7 +84,7 @@ export function MoveToEnvironmentDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowsLeftRightIcon className="size-3.5" aria-hidden="true" />
+        <ArrowLeftRightGlassIcon className="size-4" aria-hidden="true" />
         Change
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
@@ -143,8 +143,8 @@ export function MoveToEnvironmentDialog({
 
         {setAppEnvironment.isError ? (
           <p className="flex items-start gap-1.5 text-sm text-destructive">
-            <WarningIcon
-              className="mt-0.5 size-4 shrink-0"
+            <TriangleAlertGlassIcon
+              className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {setAppEnvironment.error.message}

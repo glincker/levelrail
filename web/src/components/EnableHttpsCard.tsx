@@ -3,11 +3,11 @@ import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
-  CheckCircleIcon,
-  LockKeyIcon,
-  SpinnerGapIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  LoaderCircleGlassIcon,
+  LockGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { httpsStatusQueryOptions, useEnableHttps } from '../queries/httpsStatus'
 import type { HttpsStatus } from '../queries/httpsStatus'
 import { useUpdateDashboardUrl } from '../queries/dashboardUrl'
@@ -138,12 +138,15 @@ function StatusBody({
     return (
       <div className="space-y-3">
         <p className="flex items-center gap-2 text-sm" role="status">
-          <SpinnerGapIcon className="size-4 animate-spin" />
+          <LoaderCircleGlassIcon className="size-4.5 animate-spin" />
           {t('card.pending', { domain: status.domain })}
         </p>
         {closed.length > 0 ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertTitle>{t('card.preflightTitle')}</AlertTitle>
             <AlertDescription>
               {t('card.preflightBody', {
@@ -162,7 +165,7 @@ function StatusBody({
     return (
       <div className="space-y-3">
         <p className="flex items-center gap-2 text-sm font-medium">
-          <CheckCircleIcon className="size-4 text-tone-success" weight="fill" />
+          <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
           {t('card.issued', { domain: status.domain })}
         </p>
         <p className="text-xs text-muted-foreground">
@@ -170,7 +173,10 @@ function StatusBody({
         </p>
         {status.staging ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{t('card.stagingIssued')}</AlertDescription>
           </Alert>
         ) : (
@@ -188,7 +194,7 @@ function StatusBody({
   return (
     <div className="space-y-3">
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
         <AlertTitle>{t('card.failedTitle')}</AlertTitle>
         <AlertDescription>
           <p>{t(`hint.${status.hint ?? 'unknown'}`)}</p>
@@ -238,7 +244,7 @@ export function EnableHttpsCard({ compact = false }: { compact?: boolean }) {
       <Card>
         <CardContent className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-0.5">
           <p className="flex min-w-0 items-center gap-2 text-sm font-medium">
-            <LockKeyIcon aria-hidden="true" className="size-4 shrink-0" />
+            <LockGlassIcon aria-hidden="true" className="size-4.5 shrink-0" />
             <span className="truncate">{t('card.title')}</span>
           </p>
           <Button
@@ -260,7 +266,7 @@ export function EnableHttpsCard({ compact = false }: { compact?: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockKeyIcon className="size-4" />
+          <LockGlassIcon className="size-4.5" />
           {t('card.title')}
         </CardTitle>
         {status?.state === 'off' && !status.suggested_domain ? (

@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { StopCircleIcon } from '@phosphor-icons/react/dist/ssr'
-
+import { CircleStopGlassIcon } from '@thesvg/ui-react'
 export interface ContainerExitBannerProps {
   exitCode?: number
   oomKilled?: boolean
@@ -41,7 +40,10 @@ export function ContainerExitBanner({
       role="status"
       className="flex items-start gap-2.5 rounded-lg border border-tone-danger-border bg-tone-danger-soft p-3 text-tone-danger"
     >
-      <StopCircleIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <CircleStopGlassIcon
+        className="mt-0.5 size-4.5 shrink-0"
+        aria-hidden="true"
+      />
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-medium">
           {t(headlineKey(oomKilled, time !== ''), {

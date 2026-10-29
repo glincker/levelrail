@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { formatAbsolute } from '../../lib/dateFormat'
 import type { StackDrift } from '../../types/stacks'
@@ -18,7 +18,11 @@ export function DriftBadge({
           : undefined
       }
     >
-      <WarningIcon aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.2em"
+        aria-hidden="true"
+      />
       {t('drift.badge', { count: drift.summary.length })}
     </Badge>
   )

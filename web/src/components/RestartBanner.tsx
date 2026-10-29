@@ -1,10 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -68,8 +65,8 @@ export function RestartBanner() {
     return (
       <Alert role="status" className="mx-4 mt-2 md:mx-6">
         <AlertDescription className="flex items-center gap-2">
-          <CheckCircleIcon
-            className="size-4 text-emerald-600"
+          <CircleCheckGlassIcon
+            className="size-4.5 text-emerald-600"
             aria-hidden="true"
           />
           {t('controlPlaneRestart.back')}
@@ -101,8 +98,8 @@ export function RestartBanner() {
   return (
     <Alert role="status" aria-live="polite" className="mx-4 mt-2 md:mx-6">
       <AlertDescription className="flex items-center gap-2">
-        <ArrowsClockwiseIcon
-          className="size-4 motion-safe:animate-spin"
+        <RefreshCwGlassIcon
+          className="size-4.5 motion-safe:animate-spin"
           aria-hidden="true"
         />
         {state.sawDown

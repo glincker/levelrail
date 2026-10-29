@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChatCircleTextIcon } from '@phosphor-icons/react/dist/ssr'
+import { MessageCircleGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cycleDockMode, toggleDock, useDockState } from './dockStore'
 
@@ -37,7 +37,7 @@ export function DockToggle() {
       title={t('dock.toggleHint')}
       onClick={toggleDock}
     >
-      <ChatCircleTextIcon />
+      <MessageCircleGlassIcon size="1.2em" />
     </Button>
   )
 }

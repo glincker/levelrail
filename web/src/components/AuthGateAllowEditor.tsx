@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PlusIcon,
-  UserIcon,
-  UsersThreeIcon,
-  IdentificationBadgeIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  IdCardLanyardGlassIcon,
+  PlusGlassIcon,
+  UserGlassIcon,
+  UsersGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,9 +23,9 @@ export interface AllowDraft {
 const KINDS: AuthGateRuleKind[] = ['user', 'team', 'role']
 
 const KIND_ICONS = {
-  user: UserIcon,
-  team: UsersThreeIcon,
-  role: IdentificationBadgeIcon,
+  user: UserGlassIcon,
+  team: UsersGlassIcon,
+  role: IdCardLanyardGlassIcon,
 } as const
 
 // Allow list editor for the built-in gate provider. New entries carry what
@@ -85,7 +85,7 @@ export function AuthGateAllowEditor({
                     disabled={disabled}
                     aria-label={t('authGate.allowRemove', { label })}
                   >
-                    <XIcon className="size-3" />
+                    <XGlassIcon className="size-3.5" />
                   </button>
                 </Badge>
               </li>
@@ -140,7 +140,7 @@ export function AuthGateAllowEditor({
           onClick={add}
           disabled={disabled || value.trim() === ''}
         >
-          <PlusIcon className="size-3.5" />
+          <PlusGlassIcon className="size-4" />
           {t('authGate.allowAdd')}
         </Button>
       </div>

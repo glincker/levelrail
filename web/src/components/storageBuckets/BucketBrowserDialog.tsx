@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -128,7 +128,7 @@ function BrowserBody({ bucket }: Readonly<{ bucket: StorageBucket }>) {
           disabled={upload.isPending}
           onClick={() => fileInput.current?.click()}
         >
-          <UploadSimpleIcon aria-hidden="true" />
+          <UploadGlassIcon size="1.2em" aria-hidden="true" />
           {upload.isPending ? t('browser.uploading') : t('browser.upload')}
         </Button>
       </div>
@@ -141,7 +141,7 @@ function BrowserBody({ bucket }: Readonly<{ bucket: StorageBucket }>) {
       ) : rows.length === 0 && !objects.isPending ? (
         <EmptyState
           compact
-          icon={<UploadSimpleIcon className="size-5" aria-hidden="true" />}
+          icon={<UploadGlassIcon className="size-5.5" aria-hidden="true" />}
           title={t('browser.empty')}
           description={t('browser.emptyHint')}
         />

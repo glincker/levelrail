@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { LockKeyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,7 +48,7 @@ function RestrictForm({
         variant="outline"
         disabled={restrict.isPending}
       >
-        <LockKeyIcon />
+        <LockGlassIcon size="1.2em" />
         {t('ports.restrict')}
       </Button>
       {!stream.open_to_all ? (
@@ -136,7 +136,10 @@ export function PortsTab({ app, domain }: { app: string; domain: string }) {
                   role="alert"
                   className="flex items-center gap-1 text-xs text-destructive"
                 >
-                  <WarningIcon className="size-3" aria-hidden="true" />
+                  <TriangleAlertGlassIcon
+                    className="size-3.5 text-tone-warning"
+                    aria-hidden="true"
+                  />
                   {c}
                 </p>
               ))}

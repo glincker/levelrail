@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  LightningIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, ZapGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -33,7 +30,9 @@ export function FunctionsPage() {
   } else if (query.isError) {
     body = (
       <EmptyState
-        icon={<WarningCircleIcon />}
+        icon={
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.2em" />
+        }
         title={t('list.error', { message: query.error.message })}
         description=""
         action={
@@ -56,7 +55,7 @@ export function FunctionsPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<LightningIcon />}
+        icon={<ZapGlassIcon size="1.2em" />}
         titleKey="functions:banner.title"
         descriptionKey={
           isEmpty ? 'functions:banner.description' : 'functions:description'

@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  KeyIcon,
-  PlugsConnectedIcon,
-  PencilSimpleIcon,
-  StarIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  KeyGlassIcon,
+  PencilGlassIcon,
+  PlugGlassIcon,
+  StarGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -30,7 +30,7 @@ function ConnectionStateBadge({
     return (
       <StatusBadge
         tone="warning"
-        icon={KeyIcon}
+        icon={KeyGlassIcon}
         label={t('gitConnections.state.notAuthorized')}
       />
     )
@@ -41,7 +41,7 @@ function ConnectionStateBadge({
       return (
         <StatusBadge
           tone="danger"
-          icon={XCircleIcon}
+          icon={CircleXGlassIcon}
           label={t('gitConnections.state.needsReconnect')}
         />
       )
@@ -49,7 +49,7 @@ function ConnectionStateBadge({
       return (
         <StatusBadge
           tone="warning"
-          icon={WarningIcon}
+          icon={TriangleAlertGlassIcon}
           label={t('gitConnections.state.rateLimited')}
         />
       )
@@ -57,7 +57,7 @@ function ConnectionStateBadge({
       return (
         <StatusBadge
           tone="success"
-          icon={CheckCircleIcon}
+          icon={CircleCheckGlassIcon}
           label={t('gitConnections.state.ok')}
         />
       )
@@ -171,7 +171,7 @@ export function GitConnectionRow({
               variant={needsAuthorization ? 'default' : 'outline'}
               onClick={() => window.location.assign(connection.authorize_path)}
             >
-              <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+              <PlugGlassIcon className="size-4.5" aria-hidden="true" />
               {connection.authorized
                 ? t('gitConnections.reconnect')
                 : t('gitConnections.authorize')}
@@ -183,7 +183,7 @@ export function GitConnectionRow({
             variant="outline"
             onClick={() => setRenaming(true)}
           >
-            <PencilSimpleIcon className="size-4" aria-hidden="true" />
+            <PencilGlassIcon className="size-4.5" aria-hidden="true" />
             {t('gitConnections.rename.action')}
           </Button>
           {canSetDefault && !connection.is_default && connection.authorized ? (
@@ -194,7 +194,7 @@ export function GitConnectionRow({
               disabled={setDefault.isPending}
               onClick={() => setDefault.mutate(connection.id)}
             >
-              <StarIcon className="size-4" aria-hidden="true" />
+              <StarGlassIcon className="size-4.5" aria-hidden="true" />
               {t('gitConnections.setDefault')}
             </Button>
           ) : null}

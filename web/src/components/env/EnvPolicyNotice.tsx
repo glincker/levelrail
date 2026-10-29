@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { InfoIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import type { EnvSettings } from '../../queries/envProtection'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
@@ -10,7 +10,11 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
   if (!settings.policy_valid) {
     return (
       <Alert>
-        <WarningIcon aria-hidden />
+        <TriangleAlertGlassIcon
+          className="text-tone-warning"
+          size="1.2em"
+          aria-hidden
+        />
         <AlertTitle>{t('policy.invalidTitle')}</AlertTitle>
         <AlertDescription>{t('policy.invalidBody')}</AlertDescription>
       </Alert>
@@ -19,7 +23,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
   if (settings.reveal_policy === 'disabled') {
     return (
       <Alert>
-        <InfoIcon aria-hidden />
+        <InfoGlassIcon className="text-tone-info" size="1.2em" aria-hidden />
         <AlertTitle>{t('policy.disabledTitle')}</AlertTitle>
         <AlertDescription>{t('policy.disabledBody')}</AlertDescription>
       </Alert>
@@ -28,7 +32,11 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
   if (settings.reveal_policy === 'allow') {
     return (
       <Alert>
-        <WarningIcon aria-hidden />
+        <TriangleAlertGlassIcon
+          className="text-tone-warning"
+          size="1.2em"
+          aria-hidden
+        />
         <AlertTitle>{t('policy.allowTitle')}</AlertTitle>
         <AlertDescription>{t('policy.allowBody')}</AlertDescription>
       </Alert>
@@ -37,7 +45,7 @@ export function EnvPolicyNotice({ settings }: { settings?: EnvSettings }) {
   if (settings.secrets_write_only) {
     return (
       <Alert>
-        <InfoIcon aria-hidden />
+        <InfoGlassIcon className="text-tone-info" size="1.2em" aria-hidden />
         <AlertTitle>{t('policy.writeOnlyTitle')}</AlertTitle>
         <AlertDescription>{t('policy.writeOnlyBody')}</AlertDescription>
       </Alert>

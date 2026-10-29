@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -44,7 +44,7 @@ function Stepper({ step }: { step: WizardStep }) {
           )}
         >
           <span className="font-mono">
-            {i < current ? <CheckIcon /> : i + 1}
+            {i < current ? <CheckGlassIcon size="1.2em" /> : i + 1}
           </span>
           {t(`wizard.step.${s}`)}
         </li>
@@ -68,7 +68,11 @@ function NameServerList({ servers }: { servers: string[] }) {
         variant="outline"
         onClick={() => copy(servers.join('\n'))}
       >
-        {copied ? <CheckIcon /> : <CopyIcon />}
+        {copied ? (
+          <CheckGlassIcon size="1.2em" />
+        ) : (
+          <CopyGlassIcon size="1.2em" />
+        )}
         {copied ? t('wizard.copied') : t('wizard.copyAll')}
       </Button>
     </div>

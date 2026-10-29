@@ -1,10 +1,10 @@
 import {
-  CheckCircleIcon,
-  PulseIcon,
-  TimerIcon,
-  WarningIcon,
-  ChartBarIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  ChartColumnGlassIcon,
+  CircleCheckGlassIcon,
+  ClockGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { MetricTile } from '@/components/kit'
 import { formatDurationMs } from '../../lib/deployDuration'
 import { formatFailureRate } from '../../lib/deploymentPresentation'
@@ -41,7 +41,7 @@ export function DeploymentsSummary({
       <MetricTile
         label="In progress"
         loading={loading}
-        icon={<PulseIcon />}
+        icon={<ActivityGlassIcon size="1.2em" />}
         value={unavailable ? 'n/a' : (s?.in_progress ?? 0)}
         tone={s && s.in_progress > 0 ? 'info' : 'neutral'}
         info={
@@ -53,7 +53,9 @@ export function DeploymentsSummary({
       <MetricTile
         label="Failure rate (24h)"
         loading={loading}
-        icon={<WarningIcon />}
+        icon={
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
+        }
         value={
           unavailable ? 'n/a' : formatFailureRate(s?.failure_rate_24h ?? null)
         }
@@ -66,7 +68,7 @@ export function DeploymentsSummary({
       <MetricTile
         label="Median duration"
         loading={loading}
-        icon={<TimerIcon />}
+        icon={<ClockGlassIcon size="1.2em" />}
         value={
           unavailable || median === null
             ? 'n/a'
@@ -81,7 +83,9 @@ export function DeploymentsSummary({
       <MetricTile
         label="Needs attention"
         loading={loading}
-        icon={<CheckCircleIcon />}
+        icon={
+          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
+        }
         value={unavailable ? 'n/a' : attention}
         tone={attention > 0 ? 'warning' : 'neutral'}
         onClick={attention > 0 ? onNeedsAttention : undefined}
@@ -95,7 +99,7 @@ export function DeploymentsSummary({
         <MetricTile
           label="Deploys (14 days)"
           loading={loading}
-          icon={<ChartBarIcon />}
+          icon={<ChartColumnGlassIcon size="1.2em" />}
           value={unavailable ? 'n/a' : total14}
           series={unavailable ? undefined : series}
           info={

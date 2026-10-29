@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { routeErrorMessage } from '@/lib/apiError'
@@ -20,7 +20,7 @@ function DnsError({ error }: ErrorComponentProps) {
   const { t } = useTranslation('dns')
   return (
     <EmptyState
-      icon={<WarningCircleIcon className="size-5" />}
+      icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
       title={t('page.loadFailed')}
       description={routeErrorMessage(error)}
     />

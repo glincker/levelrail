@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
+import { CloudGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { PageBanner } from '../../components/PageBanner'
@@ -57,7 +57,7 @@ function NodeProvidersSettingsPage() {
       title={t('nodeProvidersPage.title')}
       banner={
         <PageBanner
-          icon={<CloudIcon />}
+          icon={<CloudGlassIcon size="1.2em" />}
           titleKey="settings:nodeProvidersPage.title"
           descriptionKey={
             connected

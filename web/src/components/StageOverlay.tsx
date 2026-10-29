@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { useNavigate } from '@tanstack/react-router'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import {
   DialogPortal,
   DialogTitle,
@@ -185,7 +185,7 @@ export function StageOverlay({
                 <Button variant="ghost" className="shrink-0" size="icon-sm" />
               }
             >
-              <XIcon />
+              <XGlassIcon size="1.2em" />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
           </div>

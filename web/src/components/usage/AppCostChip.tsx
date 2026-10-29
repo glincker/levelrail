@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CoinsIcon } from '@phosphor-icons/react/dist/ssr'
+import { CoinsGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { useUsageReport } from '../../queries/usage'
 import { formatMoney } from '../../lib/usageFormat'
@@ -25,7 +25,7 @@ export function AppCostChip({ appName }: { appName: string }) {
         className="gap-1.5 py-1"
         data-testid="app-cost-chip"
       >
-        <CoinsIcon />
+        <CoinsGlassIcon size="1.2em" />
         <span>
           {t('chip.label')}:{' '}
           {t('chip.value', { amount: formatMoney(row.total, data.currency) })}

@@ -4,11 +4,10 @@ import { Select as SelectPrimitive } from '@base-ui/react/select'
 import { cn } from '@/lib/utils'
 import { useFieldControl } from '@/components/ui/field-context'
 import {
-  CaretDownIcon,
-  CheckIcon,
-  CaretUpIcon,
-} from '@phosphor-icons/react/dist/ssr'
-
+  CheckGlassIcon,
+  ChevronDownGlassIcon,
+  ChevronUpGlassIcon,
+} from '@thesvg/ui-react'
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
     <SelectPrimitive.Group
@@ -50,11 +49,9 @@ function SelectTrigger({
       {...wired}
     >
       {children}
-      <SelectPrimitive.Icon
-        render={
-          <CaretDownIcon className="pointer-events-none size-4 text-muted-foreground" />
-        }
-      />
+      <SelectPrimitive.Icon className="pointer-events-none flex text-muted-foreground">
+        <ChevronDownGlassIcon size={16} />
+      </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
 }
@@ -136,7 +133,7 @@ function SelectItem({
           <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
         }
       >
-        <CheckIcon className="pointer-events-none" />
+        <CheckGlassIcon size="1.2em" className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   )
@@ -222,7 +219,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <CaretUpIcon />
+      <ChevronUpGlassIcon size="1.2em" />
     </SelectPrimitive.ScrollUpArrow>
   )
 }
@@ -240,7 +237,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <CaretDownIcon />
+      <ChevronDownGlassIcon size="1.2em" />
     </SelectPrimitive.ScrollDownArrow>
   )
 }

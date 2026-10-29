@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  LockSimpleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  LoaderCircleGlassIcon,
+  LockGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { StepperStatus, StepperStep } from '@/lib/upgradeStepper'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -28,20 +28,21 @@ function StatusIcon({
   const cls = 'size-4 shrink-0'
   switch (status) {
     case 'done':
-      return <CheckCircleIcon className={cls} weight="fill" aria-hidden />
+      return <CircleCheckGlassIcon size="1.2em" className={cls} aria-hidden />
     case 'current':
       return (
-        <SpinnerGapIcon
+        <LoaderCircleGlassIcon
+          size="1.2em"
           className={cn(cls, motion && 'animate-spin')}
           aria-hidden
         />
       )
     case 'failed':
-      return <WarningCircleIcon className={cls} weight="fill" aria-hidden />
+      return <CircleAlertGlassIcon size="1.2em" className={cls} aria-hidden />
     case 'blocked':
-      return <LockSimpleIcon className={cls} weight="fill" aria-hidden />
+      return <LockGlassIcon size="1.2em" className={cls} aria-hidden />
     default:
-      return <CircleIcon className={cls} aria-hidden />
+      return <CircleGlassIcon size="1.2em" className={cls} aria-hidden />
   }
 }
 

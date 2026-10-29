@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretRightIcon, GearSixIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import {
   Collapsible,
@@ -49,16 +49,16 @@ export function PlatformSettingsSection({
       className="rounded-lg border border-border bg-card"
     >
       <CollapsibleTrigger className="flex items-center gap-3 px-4 py-3">
-        <CaretRightIcon
+        <ChevronRightGlassIcon
           className={
             open
-              ? 'size-4 shrink-0 rotate-90 transition-transform'
-              : 'size-4 shrink-0 transition-transform'
+              ? 'size-4.5 shrink-0 rotate-90 transition-transform'
+              : 'size-4.5 shrink-0 transition-transform'
           }
           aria-hidden="true"
         />
-        <GearSixIcon
-          className="size-4 shrink-0 text-muted-foreground"
+        <SettingsGlassIcon
+          className="size-4.5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1">

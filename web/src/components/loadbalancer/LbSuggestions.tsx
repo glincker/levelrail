@@ -1,4 +1,4 @@
-import { LightbulbIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { LightbulbGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { SuggestionList } from '@/components/kit'
 import type { LbSuggestion } from './suggestions'
 
@@ -19,7 +19,15 @@ export function LbSuggestions({
       items={items.map((s) => ({
         id: s.id,
         tone: s.tone,
-        icon: s.tone === 'warning' ? <WarningIcon /> : <LightbulbIcon />,
+        icon:
+          s.tone === 'warning' ? (
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
+          ) : (
+            <LightbulbGlassIcon size="1.2em" />
+          ),
         title: s.title,
         detail: s.detail,
         actions: [

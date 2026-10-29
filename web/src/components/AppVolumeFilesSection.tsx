@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowUpIcon,
-  DownloadSimpleIcon,
-  FileIcon,
-  FolderIcon,
-  TrashIcon,
-  UploadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowUpGlassIcon,
+  DownloadGlassIcon,
+  FileGlassIcon,
+  FolderGlassIcon,
+  TrashGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -48,7 +48,7 @@ function FilesBrowser({
           disabled={dir === ''}
           onClick={() => setDir(parentOf(dir))}
         >
-          <ArrowUpIcon aria-hidden />
+          <ArrowUpGlassIcon size="1.2em" aria-hidden />
           {t('volumeFiles.up')}
         </Button>
         <span className="font-mono text-xs text-muted-foreground">/{dir}</span>
@@ -74,7 +74,7 @@ function FilesBrowser({
           disabled={upload.isPending}
           onClick={() => fileInput.current?.click()}
         >
-          <UploadSimpleIcon aria-hidden />
+          <UploadGlassIcon size="1.2em" aria-hidden />
           {t('volumeFiles.upload')}
         </Button>
       </div>
@@ -96,9 +96,9 @@ function FilesBrowser({
           {data?.entries.map((e) => (
             <li key={e.path} className="flex items-center gap-2 px-3 py-1.5">
               {e.type === 'dir' ? (
-                <FolderIcon aria-hidden className="size-4 shrink-0" />
+                <FolderGlassIcon aria-hidden className="size-4.5 shrink-0" />
               ) : (
-                <FileIcon aria-hidden className="size-4 shrink-0" />
+                <FileGlassIcon aria-hidden className="size-4.5 shrink-0" />
               )}
               {e.type === 'dir' ? (
                 <button
@@ -122,7 +122,7 @@ function FilesBrowser({
                     aria-label={t('volumeFiles.download', { name: e.name })}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    <DownloadSimpleIcon aria-hidden className="size-4" />
+                    <DownloadGlassIcon aria-hidden className="size-4.5" />
                   </a>
                   <Button
                     variant={confirming === e.path ? 'destructive' : 'ghost'}
@@ -137,7 +137,7 @@ function FilesBrowser({
                       }
                     }}
                   >
-                    <TrashIcon aria-hidden />
+                    <TrashGlassIcon size="1.2em" aria-hidden />
                     {confirming === e.path ? t('volumeFiles.confirm') : null}
                   </Button>
                 </>

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  QuestionIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -23,10 +23,10 @@ import { SafeMarkdown } from './SafeMarkdown'
 const PAGE = 50
 
 const STATUS_VIEW = {
-  ok: { tone: 'success', icon: CheckCircleIcon },
-  warning: { tone: 'warning', icon: WarningIcon },
-  error: { tone: 'danger', icon: WarningCircleIcon },
-  unknown: { tone: 'neutral', icon: QuestionIcon },
+  ok: { tone: 'success', icon: CircleCheckGlassIcon },
+  warning: { tone: 'warning', icon: TriangleAlertGlassIcon },
+  error: { tone: 'danger', icon: CircleAlertGlassIcon },
+  unknown: { tone: 'neutral', icon: CircleQuestionMarkGlassIcon },
 } as const
 
 function useShowMore(total: number) {

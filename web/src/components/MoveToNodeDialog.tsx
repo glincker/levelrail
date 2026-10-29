@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsLeftRightIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftRightGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -120,7 +120,7 @@ export function MoveToNodeDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowsLeftRightIcon className="size-3.5" aria-hidden="true" />
+        <ArrowLeftRightGlassIcon className="size-4" aria-hidden="true" />
         {t('move.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -178,8 +178,8 @@ export function MoveToNodeDialog({
 
             {volumeNames.length > 0 ? (
               <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
-                <WarningIcon
-                  className="mt-0.5 size-4 shrink-0 text-amber-500"
+                <TriangleAlertGlassIcon
+                  className="mt-0.5 size-4.5 shrink-0 text-amber-500"
                   aria-hidden="true"
                 />
                 <span>
@@ -212,21 +212,30 @@ export function MoveToNodeDialog({
 
         {start.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{start.error.message}</AlertDescription>
           </Alert>
         ) : null}
 
         {move.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{move.error.message}</AlertDescription>
           </Alert>
         ) : null}
 
         {failed ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>
               <p>{move.data?.error || t('move.failedFallback')}</p>
               <p>

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  EyeIcon,
-  EyeSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -81,12 +81,12 @@ export function RevealCredentialCard({
           </div>
           {password ? (
             <Button variant="outline" size="sm" onClick={hide}>
-              <EyeSlashIcon className="size-3.5" aria-hidden="true" />
+              <EyeOffGlassIcon className="size-4" aria-hidden="true" />
               {t('reveal.hide')}
             </Button>
           ) : (
             <Button variant="outline" size="sm" onClick={() => void reveal()}>
-              <EyeIcon className="size-3.5" aria-hidden="true" />
+              <EyeGlassIcon className="size-4" aria-hidden="true" />
               {t('reveal.show')}
             </Button>
           )}
@@ -101,9 +101,9 @@ export function RevealCredentialCard({
               </code>
               <Button variant="outline" size="sm" onClick={copy}>
                 {copied ? (
-                  <CheckIcon aria-hidden="true" />
+                  <CheckGlassIcon size="1.2em" aria-hidden="true" />
                 ) : (
-                  <CopyIcon aria-hidden="true" />
+                  <CopyGlassIcon size="1.2em" aria-hidden="true" />
                 )}
                 {copied ? t('credential.copied') : t('credential.copy')}
               </Button>

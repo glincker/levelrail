@@ -1,4 +1,4 @@
-import { SparkleIcon, SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon, SparklesGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { DetectFrameworkResult } from '../queries/buildDetect'
 
@@ -17,7 +17,7 @@ export function DetectionStatus({
   if (pending) {
     return (
       <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <SpinnerIcon className="size-3.5 animate-spin" aria-hidden="true" />
+        <LoaderGlassIcon className="size-4 animate-spin" aria-hidden="true" />
         Detecting...
       </span>
     )
@@ -25,7 +25,7 @@ export function DetectionStatus({
   if (result?.detected && result.frameworkName) {
     return (
       <Badge variant="muted" className="gap-1">
-        <SparkleIcon className="size-3" aria-hidden="true" />
+        <SparklesGlassIcon className="size-3.5" aria-hidden="true" />
         Detected: {result.frameworkName}
       </Badge>
     )

@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArchiveIcon,
-  BugIcon,
-  TerminalIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArchiveGlassIcon,
+  BugGlassIcon,
+  SearchGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { useDeployStatus } from '../../../queries/deploys'
 import { LogSearchPanel } from '../../../components/LogSearchPanel'
 import { LiveLogViewer } from '../../../components/LiveLogViewer'
@@ -81,19 +81,19 @@ function LogsSection() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <TabsList className="w-fit">
           <TabsTrigger value="live" className="gap-1.5">
-            <TerminalIcon className="size-4" aria-hidden="true" />
+            <TerminalGlassIcon className="size-4.5" aria-hidden="true" />
             Live
           </TabsTrigger>
           <TabsTrigger value="search" className="gap-1.5">
-            <MagnifyingGlassIcon className="size-4" aria-hidden="true" />
+            <SearchGlassIcon className="size-4.5" aria-hidden="true" />
             Search
           </TabsTrigger>
           <TabsTrigger value="errors" className="gap-1.5">
-            <BugIcon className="size-4" aria-hidden="true" />
+            <BugGlassIcon className="size-4.5" aria-hidden="true" />
             {t('explorer.tabErrors')}
           </TabsTrigger>
           <TabsTrigger value="archive" className="gap-1.5">
-            <ArchiveIcon className="size-4" aria-hidden="true" />
+            <ArchiveGlassIcon className="size-4.5" aria-hidden="true" />
             Archive
           </TabsTrigger>
         </TabsList>

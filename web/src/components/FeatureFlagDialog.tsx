@@ -2,10 +2,7 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import {
-  PencilSimpleIcon,
-  PlusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CirclePlusGlassIcon, PencilGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -124,12 +121,12 @@ export function FeatureFlagDialog({
         render={
           isEdit ? (
             <Button variant="outline" size="sm">
-              <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
+              <PencilGlassIcon className="size-4" aria-hidden="true" />
               Edit
             </Button>
           ) : (
             <Button size="sm">
-              <PlusCircleIcon className="size-3.5" aria-hidden="true" />
+              <CirclePlusGlassIcon className="size-4" aria-hidden="true" />
               Create flag
             </Button>
           )
@@ -139,13 +136,13 @@ export function FeatureFlagDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             {isEdit ? (
-              <PencilSimpleIcon
-                className="size-4 text-muted-foreground"
+              <PencilGlassIcon
+                className="size-4.5 text-muted-foreground"
                 aria-hidden="true"
               />
             ) : (
-              <PlusCircleIcon
-                className="size-4 text-muted-foreground"
+              <CirclePlusGlassIcon
+                className="size-4.5 text-muted-foreground"
                 aria-hidden="true"
               />
             )}

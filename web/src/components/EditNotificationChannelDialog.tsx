@@ -4,11 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  CheckCircleIcon,
-  PaperPlaneTiltIcon,
-  PencilSimpleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  PencilGlassIcon,
+  SendGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Sheet,
   SheetContent,
@@ -219,13 +219,13 @@ export function EditNotificationChannelDialog({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger render={<Button variant="outline" size="sm" />}>
-        <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
+        <PencilGlassIcon className="size-4" aria-hidden="true" />
         Edit
       </SheetTrigger>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <PencilSimpleIcon className="size-4 text-muted-foreground" />
+            <PencilGlassIcon className="size-4.5 text-muted-foreground" />
             Edit channel
           </SheetTitle>
           <SheetDescription>
@@ -334,14 +334,17 @@ export function EditNotificationChannelDialog({
               }
               onClick={handleTest}
             >
-              <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
+              <SendGlassIcon className="size-4" aria-hidden="true" />
               {testChannel.isPending || testExisting.isPending
                 ? 'Sending...'
                 : 'Send test message'}
             </Button>
             {verified ? (
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+                <CircleCheckGlassIcon
+                  className="size-4 text-tone-success"
+                  aria-hidden="true"
+                />
                 Test sent
               </span>
             ) : null}
@@ -453,7 +456,10 @@ export function EditNotificationChannelDialog({
 
           {updateChannel.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>{updateChannel.error.message}</AlertDescription>
             </Alert>
           ) : null}

@@ -3,12 +3,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CheckIcon,
-  CopyIcon,
-  PlusIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  ChevronDownGlassIcon,
+  CopyGlassIcon,
+  PlusGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CommandBlock } from '@/components/ui/code-block'
@@ -96,9 +96,9 @@ function ConnectStep({ p }: { p: Pairing }) {
         {p.live ? (
           <Button type="button" size="sm" onClick={p.copy}>
             {p.copied ? (
-              <CheckIcon aria-hidden="true" />
+              <CheckGlassIcon size="1.2em" aria-hidden="true" />
             ) : (
-              <CopyIcon aria-hidden="true" />
+              <CopyGlassIcon size="1.2em" aria-hidden="true" />
             )}
             {t('connectCli.copy')}
           </Button>
@@ -179,7 +179,7 @@ export default function CliCommandCenter({
     <div className="min-w-0 space-y-5">
       <DialogHeader>
         <div className="flex flex-wrap items-center gap-2 pr-8">
-          <TerminalWindowIcon aria-hidden="true" className="size-5" />
+          <TerminalGlassIcon aria-hidden="true" className="size-5.5" />
           <DialogTitle>{t('cliModal.title')}</DialogTitle>
           <Badge
             data-testid="cli-status-chip"
@@ -213,15 +213,15 @@ export default function CliCommandCenter({
               {t('cliModal.started.title')}
               {hasRows ? (
                 <Badge variant="success">
-                  <CheckIcon aria-hidden="true" />
+                  <CheckGlassIcon size="1.2em" aria-hidden="true" />
                   {t('cliModal.started.done')}
                 </Badge>
               ) : null}
             </span>
-            <CaretDownIcon
+            <ChevronDownGlassIcon
               aria-hidden="true"
               className={cn(
-                'size-4 transition-transform motion-reduce:transition-none',
+                'size-4.5 transition-transform motion-reduce:transition-none',
                 showSetup && 'rotate-180',
               )}
             />
@@ -270,7 +270,7 @@ export default function CliCommandCenter({
                 }
               }}
             >
-              <PlusIcon aria-hidden="true" />
+              <PlusGlassIcon size="1.2em" aria-hidden="true" />
               {t('cliModal.manage.connectAnother')}
             </Button>
           ) : null}

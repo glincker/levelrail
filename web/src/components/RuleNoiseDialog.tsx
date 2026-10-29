@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SlidersHorizontalIcon } from '@phosphor-icons/react/dist/ssr'
+import { SlidersHorizontalGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -140,7 +140,7 @@ export function RuleNoiseDialog({
           />
         }
       >
-        <SlidersHorizontalIcon className="size-3.5" aria-hidden="true" />
+        <SlidersHorizontalGlassIcon className="size-4" aria-hidden="true" />
         Noise
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

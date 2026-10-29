@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArchiveIcon,
-  CheckIcon,
-  TrashIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArchiveGlassIcon,
+  CheckGlassIcon,
+  TrashGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 
 export interface InboxBulkBarProps {
@@ -36,7 +36,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         disabled={p.busy}
         onClick={p.onArchive}
       >
-        <ArchiveIcon />
+        <ArchiveGlassIcon size="1.2em" />
         {t(p.archivedView ? 'page.restore' : 'page.archive')}
       </Button>
       <Button
@@ -46,7 +46,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         disabled={p.busy}
         onClick={p.onMarkRead}
       >
-        <CheckIcon />
+        <CheckGlassIcon size="1.2em" />
         {t('markRead')}
       </Button>
       <Button
@@ -57,7 +57,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         title={p.canDelete ? undefined : t('bulk.deleteBlocked')}
         onClick={p.onDelete}
       >
-        <TrashIcon />
+        <TrashGlassIcon size="1.2em" />
         {t('bulk.delete')}
       </Button>
       <Button
@@ -67,7 +67,7 @@ export default function InboxBulkBar(p: InboxBulkBarProps) {
         className="ml-auto"
         onClick={p.onClear}
       >
-        <XIcon />
+        <XGlassIcon size="1.2em" />
         {t('bulk.clear')}
       </Button>
     </div>

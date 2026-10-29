@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -56,8 +56,8 @@ export function DeploymentsFilterBar({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full min-w-48 sm:w-72">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          <SearchGlassIcon
+            className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -97,7 +97,7 @@ export function DeploymentsFilterBar({
                   }}
                   className="flex size-5 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
-                  <XIcon className="size-3" aria-hidden="true" />
+                  <XGlassIcon className="size-3.5" aria-hidden="true" />
                 </button>
               </span>
             </li>

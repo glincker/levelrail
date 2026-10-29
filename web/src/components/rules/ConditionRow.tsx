@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RuleSelect } from './RuleSelect'
@@ -93,7 +93,7 @@ export function ConditionRow({
           aria-label={t('builder.removeCondition', { n })}
           onClick={onRemove}
         >
-          <XIcon />
+          <XGlassIcon size="1.2em" />
         </Button>
       </div>
       {nameError || valueError ? (

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  KeyIcon,
-  LifebuoyIcon,
-  ShieldCheckIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  KeyGlassIcon,
+  ShieldCheckGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
+import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,7 +21,7 @@ import { useBrand } from '../hooks/useBrand'
 
 interface Route {
   id: 'password' | 'token' | 'approve'
-  icon: typeof KeyIcon
+  icon: typeof KeyGlassIcon
   command: string
 }
 
@@ -51,9 +51,9 @@ function CopyLine({ value }: { value: string }) {
         }}
       >
         {copied ? (
-          <CheckIcon aria-hidden="true" />
+          <CheckGlassIcon size="1.2em" aria-hidden="true" />
         ) : (
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.2em" aria-hidden="true" />
         )}
       </Button>
     </div>
@@ -68,17 +68,17 @@ export function LockedOutDialog() {
   const routes: Route[] = [
     {
       id: 'password',
-      icon: KeyIcon,
+      icon: KeyGlassIcon,
       command: `sudo ${bin} recover-admin --username <your username>`,
     },
     {
       id: 'token',
-      icon: ShieldCheckIcon,
+      icon: ShieldCheckGlassIcon,
       command: `sudo ${bin} emergency-token --ttl 1h`,
     },
     {
       id: 'approve',
-      icon: TerminalWindowIcon,
+      icon: TerminalGlassIcon,
       command: `sudo ${bin} approve-signin <request id> --match <number>`,
     },
   ]

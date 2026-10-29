@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  GithubLogoIcon,
-  ArrowSquareOutIcon,
-  PlusIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  ExternalLinkGlassIcon,
+  PlusGlassIcon,
+  SocialGithubGlassIcon,
+} from '@thesvg/ui-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -64,13 +64,13 @@ export function GitHubAppConnectionCard() {
             <div className="space-y-1">
               {status.connected ? (
                 <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
-                  <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
+                  <CircleCheckGlassIcon className="size-4.5 text-green-600 dark:text-green-400" />
                   Connected
                   <InstallationBadge status={status} />
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <XCircleIcon className="size-4" />
+                  <CircleXGlassIcon className="size-4.5 text-tone-danger" />
                   {t('gitConnection.notConnected')}
                 </div>
               )}
@@ -159,7 +159,7 @@ export function GitHubAppConnectionCard() {
                   setPreviewOpen(true)
                 }}
               >
-                <GithubLogoIcon className="size-4" />
+                <SocialGithubGlassIcon className="size-4.5" />
                 Add GitHub App
               </Button>
             </>
@@ -201,7 +201,7 @@ function GitHubAppInstallationsSection() {
               <a href={data.add_org_url} target="_blank" rel="noreferrer" />
             }
           >
-            <PlusIcon className="size-4" />
+            <PlusGlassIcon className="size-4.5" />
             {t('githubAppOrg.addOrg')}
           </Button>
         ) : null}
@@ -304,7 +304,7 @@ export function GitHubAppInstallationRow({
             className="inline-flex items-center gap-1 text-xs underline"
           >
             {t('githubApp.manageAccess')}
-            <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+            <ExternalLinkGlassIcon className="size-3.5" aria-hidden="true" />
           </a>
         ) : null}
       </div>

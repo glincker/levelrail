@@ -1,9 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowClockwiseIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -233,7 +230,7 @@ export function MigrateVerifyCard() {
       className="space-y-3 rounded-xl bg-linear-to-b from-card to-muted/50 p-4 text-sm shadow-card ring-1 ring-foreground/10"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <ShieldCheckIcon className="size-5 text-muted-foreground" />
+        <ShieldCheckGlassIcon className="size-5.5 text-muted-foreground" />
         <h2 className="font-medium">{t('parity.title')}</h2>
         {report ? (
           <>
@@ -269,7 +266,7 @@ export function MigrateVerifyCard() {
             disabled={run.isPending}
             onClick={recheck}
           >
-            <ArrowClockwiseIcon />
+            <RotateCwGlassIcon size="1.2em" />
             {run.isPending ? t('parity.running') : t('parity.recheck')}
           </Button>
         ) : null}

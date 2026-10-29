@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -58,7 +58,7 @@ export function AppImportSSHVolumes({
           disabled={!session.connected || running || start.isPending}
           onClick={() => start.mutate({ id: session.id })}
         >
-          <HardDrivesIcon aria-hidden />
+          <ServerGlassIcon size="1.2em" aria-hidden />
           {results.length > 0
             ? t('appImport.ssh.volumes.again')
             : t('appImport.ssh.volumes.copy')}

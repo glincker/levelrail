@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GearSixIcon } from '@phosphor-icons/react/dist/ssr'
+import { SettingsGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import { StatusPill } from '../kit/StatusPill'
@@ -104,7 +104,7 @@ export function NodeProviderRow({
           dialog.open()
         }}
       >
-        <GearSixIcon aria-hidden="true" />
+        <SettingsGlassIcon size="1.2em" aria-hidden="true" />
         {connected ? t('nodeProviders.update') : t('nodeProviders.connect')}
       </Button>
       <UrlDialog

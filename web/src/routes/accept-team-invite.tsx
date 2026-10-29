@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -93,7 +93,10 @@ function AcceptTeamInvitePage() {
         <CardContent className="space-y-4">
           {invalid ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>
                 {token === '' ? t('accept.missing') : t('accept.invalid')}
               </AlertDescription>
@@ -167,7 +170,10 @@ function AcceptTeamInvitePage() {
               )}
               {accept.isError && (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.2em"
+                  />
                   <AlertDescription>{accept.error.message}</AlertDescription>
                 </Alert>
               )}

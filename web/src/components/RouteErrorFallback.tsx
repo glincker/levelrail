@@ -4,14 +4,14 @@ import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowClockwiseIcon,
-  CheckIcon,
-  CopyIcon,
-  GithubLogoIcon,
-  HouseIcon,
-  PlugsIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CopyGlassIcon,
+  HouseGlassIcon,
+  PlugGlassIcon,
+  RotateCwGlassIcon,
+  SocialGithubGlassIcon,
+} from '@thesvg/ui-react'
 import { ApiError, routeErrorMessage } from '@/lib/apiError'
 import { isConnectivityError } from '@/lib/connectionState'
 import { BrandContext } from '@/lib/brandContext'
@@ -56,9 +56,9 @@ function CopyDetailsButton({ error }: { error: unknown }) {
       }}
     >
       {copied ? (
-        <CheckIcon aria-hidden="true" />
+        <CheckGlassIcon size="1.2em" aria-hidden="true" />
       ) : (
-        <CopyIcon aria-hidden="true" />
+        <CopyGlassIcon size="1.2em" aria-hidden="true" />
       )}
       {copied ? t('routeError.copied') : t('routeError.copy')}
     </Button>
@@ -76,7 +76,7 @@ function ReportLink() {
       rel="noreferrer"
       className={buttonVariants({ variant: 'ghost', size: 'sm' })}
     >
-      <GithubLogoIcon aria-hidden="true" />
+      <SocialGithubGlassIcon size="1.2em" aria-hidden="true" />
       {t('routeError.report')}
     </a>
   )
@@ -95,7 +95,7 @@ function RetryButton({ label, reset }: { label: string; reset: () => void }) {
         reset()
       }}
     >
-      <ArrowClockwiseIcon aria-hidden="true" />
+      <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
       {label}
     </Button>
   )
@@ -206,7 +206,10 @@ export function RouteErrorFallback({
     return (
       <ErrorCard
         icon={
-          <PlugsIcon className="size-5 text-destructive" aria-hidden="true" />
+          <PlugGlassIcon
+            className="size-5.5 text-destructive"
+            aria-hidden="true"
+          />
         }
         title={t('routeError.unreachable.title')}
       >
@@ -227,8 +230,8 @@ export function RouteErrorFallback({
   return (
     <ErrorCard
       icon={
-        <WarningCircleIcon
-          className="size-5 text-destructive"
+        <CircleAlertGlassIcon
+          className="size-5.5 text-destructive"
           aria-hidden="true"
         />
       }
@@ -250,7 +253,7 @@ export function RouteErrorFallback({
         <RetryButton label={t('routeError.generic.retry')} reset={reset} />
         <Link to="/">
           <Button type="button" variant="ghost" size="sm">
-            <HouseIcon aria-hidden="true" />
+            <HouseGlassIcon size="1.2em" aria-hidden="true" />
             {t('routeError.generic.home')}
           </Button>
         </Link>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,7 +45,11 @@ export function TestFixPanel({
 
   return (
     <Alert variant="destructive">
-      <WarningCircleIcon aria-hidden="true" />
+      <CircleAlertGlassIcon
+        className="text-tone-danger"
+        size="1.2em"
+        aria-hidden="true"
+      />
       <AlertTitle>{t('fix.title')}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p className="break-words">{message}</p>

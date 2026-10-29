@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -92,7 +92,7 @@ export function ImportFrontDoor({
             fileRef.current?.click()
           }}
         >
-          <UploadSimpleIcon aria-hidden="true" />
+          <UploadGlassIcon size="1.2em" aria-hidden="true" />
           Upload file
         </Button>
         <input

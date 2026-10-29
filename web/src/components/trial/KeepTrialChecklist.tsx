@@ -2,11 +2,11 @@ import { useQueries } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  CircleNotchIcon,
-  MinusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import { useAlertRules } from '../../queries/alerts'
 import { useEnvironmentListOptional } from '../../queries/environments'
 import { useProjectListOptional } from '../../queries/projects'
@@ -75,11 +75,11 @@ function statusKey(item: KeepItem): StatusKey {
   return item.state === 'done' ? done[item.id] : todo[item.id]
 }
 
-const STATE_ICON: Record<KeepItemState, typeof CircleIcon> = {
-  done: CheckCircleIcon,
-  todo: CircleIcon,
-  loading: CircleNotchIcon,
-  none: MinusCircleIcon,
+const STATE_ICON: Record<KeepItemState, typeof CircleGlassIcon> = {
+  done: CircleCheckGlassIcon,
+  todo: CircleGlassIcon,
+  loading: LoaderCircleGlassIcon,
+  none: CircleMinusGlassIcon,
 }
 
 const STATE_CLASS: Record<KeepItemState, string> = {

@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CopyIcon,
-  KeyIcon,
-  LinkSimpleIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  KeyGlassIcon,
+  LinkGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { columnKind } from '../../../lib/explorerData'
@@ -47,7 +47,7 @@ export function StructureView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" onClick={onOpenConsole}>
-          <TerminalWindowIcon className="size-3.5" aria-hidden="true" />
+          <TerminalGlassIcon className="size-4" aria-hidden="true" />
           {t('viewer.structure.openConsole')}
         </Button>
       </div>
@@ -92,8 +92,8 @@ export function StructureView({
                       <span className="inline-flex items-center gap-1.5">
                         <ColumnTypeIcon kind={columnKind(c.type)} />
                         {c.primary_key ? (
-                          <KeyIcon
-                            className="size-3.5 text-primary"
+                          <KeyGlassIcon
+                            className="size-4 text-primary"
                             aria-label={t('viewer.explorer.primaryKey')}
                           />
                         ) : null}
@@ -118,8 +118,8 @@ export function StructureView({
                             onOpenTable(fk.ref_schema, fk.ref_table)
                           }}
                         >
-                          <LinkSimpleIcon
-                            className="size-3.5"
+                          <LinkGlassIcon
+                            className="size-4"
                             aria-hidden="true"
                           />
                           {fk.ref_table}.{refCol}
@@ -192,7 +192,7 @@ export function StructureView({
                 copy(structure.ddl, 'viewer.structure.ddlCopied')
               }}
             >
-              <CopyIcon className="size-3.5" aria-hidden="true" />
+              <CopyGlassIcon className="size-4" aria-hidden="true" />
               {t('viewer.grid.copy')}
             </Button>
           </div>

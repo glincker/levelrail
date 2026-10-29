@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -111,7 +111,7 @@ export function AppIngressLimitsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeIcon className="size-4" aria-hidden="true" />
+          <GaugeGlassIcon className="size-4.5" aria-hidden="true" />
           {t('appLimits.title')}
         </CardTitle>
         <CardDescription>{t('appLimits.description')}</CardDescription>

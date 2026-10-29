@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeftIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { brandQueryOptions } from '../queries/brand'
 import { useBrand } from '../hooks/useBrand'
 import { BrandMarkGlyph } from '../components/BrandMarkGlyph'
@@ -66,7 +66,10 @@ function AcceptInvitePage() {
             <AcceptInviteForm token={token} />
           ) : (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>
                 This link is missing its invite token. Ask whoever invited you
                 to send a new one.
@@ -77,7 +80,7 @@ function AcceptInvitePage() {
             to="/login"
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeftIcon className="size-3.5" />
+            <ArrowLeftGlassIcon className="size-4" />
             Back to sign in
           </Link>
         </CardContent>

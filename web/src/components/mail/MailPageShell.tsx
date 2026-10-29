@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { EnvelopeIcon } from '@phosphor-icons/react/dist/ssr'
+import { MailGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
 export type MailSection = 'templates' | 'audiences' | 'messages'
@@ -58,7 +58,7 @@ export function MailPageShell({
 
   return (
     <PageTemplate
-      icon={<EnvelopeIcon />}
+      icon={<MailGlassIcon size="1.2em" />}
       eyebrow={t(`${section}.eyebrow`)}
       title={t(`${section}.title`)}
       description={t(`${section}.description`)}

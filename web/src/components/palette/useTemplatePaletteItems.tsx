@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { rankItems } from '@/lib/paletteSearch'
 import {
   serviceTemplatesQueryOptions,
@@ -41,7 +41,7 @@ export function useTemplatePaletteItems(
       label: tpl.name,
       subtitle: tpl.slogan,
       group: 'Templates',
-      icon: <SquaresFourIcon />,
+      icon: <LayoutGridGlassIcon size="1.2em" />,
       keywords: `${tpl.category} ${tpl.id} ${tpl.slogan}`,
       run: () => void navigate({ to: '/deploy', search: { template: tpl.id } }),
       preview: {

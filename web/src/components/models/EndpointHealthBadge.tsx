@@ -1,26 +1,26 @@
 import { useTranslation } from 'react-i18next'
-import type { Icon } from '@phosphor-icons/react'
 import {
-  CheckCircleIcon,
-  CircleNotchIcon,
-  GaugeIcon,
-  LockKeyIcon,
-  WarningCircleIcon,
-  WifiSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  GaugeGlassIcon,
+  LoaderCircleGlassIcon,
+  LockGlassIcon,
+  WifiOffGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { StatusBadge } from '@/components/ui/status-badge'
 import type { EndpointState } from '../../types/modelEndpoints'
 
 const PRESENTATION: Record<
   EndpointState,
-  { variant: 'success' | 'warning' | 'destructive' | 'muted'; icon: Icon }
+  { variant: 'success' | 'warning' | 'destructive' | 'muted'; icon: UiIcon }
 > = {
-  online: { variant: 'success', icon: CheckCircleIcon },
-  slow: { variant: 'warning', icon: GaugeIcon },
-  unreachable: { variant: 'destructive', icon: WifiSlashIcon },
-  auth_failed: { variant: 'destructive', icon: LockKeyIcon },
-  error: { variant: 'destructive', icon: WarningCircleIcon },
-  unknown: { variant: 'muted', icon: CircleNotchIcon },
+  online: { variant: 'success', icon: CircleCheckGlassIcon },
+  slow: { variant: 'warning', icon: GaugeGlassIcon },
+  unreachable: { variant: 'destructive', icon: WifiOffGlassIcon },
+  auth_failed: { variant: 'destructive', icon: LockGlassIcon },
+  error: { variant: 'destructive', icon: CircleAlertGlassIcon },
+  unknown: { variant: 'muted', icon: LoaderCircleGlassIcon },
 }
 
 export function EndpointHealthBadge({

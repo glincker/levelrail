@@ -2,10 +2,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowCounterClockwiseIcon,
-  LightningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RotateCcwGlassIcon, ZapGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -187,7 +184,7 @@ function History() {
                   })
                 }}
               >
-                <ArrowCounterClockwiseIcon />
+                <RotateCcwGlassIcon size="1.2em" />
                 {t('automation.undo')}
               </Button>
             ) : null}
@@ -285,7 +282,7 @@ export function DomainAutomationCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LightningIcon className="size-4" />
+          <ZapGlassIcon className="size-4.5" />
           {t('automation.title')}
         </CardTitle>
         <CardDescription>{t('automation.description')}</CardDescription>

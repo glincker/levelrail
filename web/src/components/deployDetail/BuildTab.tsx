@@ -1,8 +1,8 @@
 import {
-  DownloadSimpleIcon,
-  HourglassIcon,
-  PackageIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CountdownGlassIcon,
+  DownloadGlassIcon,
+  PackageGlassIcon,
+} from '@thesvg/ui-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { buttonVariants } from '@/components/ui/button'
@@ -180,7 +180,7 @@ export function BuildTab({
               download
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
-              <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+              <DownloadGlassIcon className="size-4" aria-hidden="true" />
               {t('build.download')}
             </a>
           </div>
@@ -204,13 +204,13 @@ export function BuildTab({
       ) : steps.length > 0 ? null : (
         <div className="flex items-start gap-3 rounded-lg border border-dashed border-border p-4">
           {emptyKind === 'waiting' ? (
-            <HourglassIcon
-              className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+            <CountdownGlassIcon
+              className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
           ) : (
-            <PackageIcon
-              className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+            <PackageGlassIcon
+              className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
           )}

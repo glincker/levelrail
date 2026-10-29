@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SpinnerIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { GitBuildDetection, GitBuildSuggestion } from '../types/gitSource'
@@ -80,14 +80,14 @@ export function GitBuildSuggestions({
           className="flex items-center gap-2 text-sm text-muted-foreground"
           role="status"
         >
-          <SpinnerIcon className="size-4 animate-spin" />
+          <LoaderGlassIcon className="size-4.5 animate-spin" />
           {t('detected.loading')}
         </p>
       ) : null}
 
       {error ? (
         <div className="flex items-start gap-2 text-destructive" role="alert">
-          <WarningIcon className="mt-0.5 size-4 shrink-0" />
+          <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-tone-warning" />
           <div className="space-y-1">
             <p className="text-sm">
               {t('detected.error', { error: error.message })}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { Share2GlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -47,7 +47,7 @@ export function PrivateNetworkMap({ data }: { data: MapData }) {
   if (data.apps.length === 0) {
     return (
       <EmptyState
-        icon={<ShareNetworkIcon className="size-5" />}
+        icon={<Share2GlassIcon className="size-5.5" />}
         title={t('map.empty')}
         description={t('map.emptyHint')}
       />

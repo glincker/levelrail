@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChartLineGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePipelineInsights } from '../queries/pipelineUx'
@@ -31,8 +31,8 @@ export function PipelineInsightsCard({
     <section className="rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          <ChartLineUpIcon
-            className="size-4 text-muted-foreground"
+          <ChartLineGlassIcon
+            className="size-4.5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('insights.title')}

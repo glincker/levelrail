@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,7 +27,7 @@ export function ZoneSpreadCard() {
   if (zones.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
         <AlertDescription className="space-y-2">
           <p>
             {t('zones.loadFailed')} {zones.error.message}
@@ -63,7 +63,10 @@ export function ZoneSpreadCard() {
       <CardContent className="space-y-4">
         {!data.labeled && firstNode ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertTitle>{t('zones.unlabeledTitle')}</AlertTitle>
             <AlertDescription className="space-y-2">
               <p>{t('zones.unlabeledBody')}</p>

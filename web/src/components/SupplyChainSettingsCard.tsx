@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -124,7 +124,7 @@ export function SupplyChainSettingsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckIcon className="size-4 text-muted-foreground" />
+          <ShieldCheckGlassIcon className="size-4.5 text-muted-foreground" />
           Supply chain
           <InfoTip label="About vulnerability scanning">
             Each Dockerfile build can record a software bill of materials. When

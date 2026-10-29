@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRerunPipelineRun } from '../queries/pipelines'
@@ -97,8 +97,8 @@ export function PipelineFixes({ app, run }: { app: string; run: PipelineRun }) {
   return (
     <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
       <p className="flex items-center gap-1.5 font-medium text-foreground">
-        <WrenchIcon
-          className="size-4 text-muted-foreground"
+        <WrenchGlassIcon
+          className="size-4.5 text-muted-foreground"
           aria-hidden="true"
         />
         {t('fixes.title')}

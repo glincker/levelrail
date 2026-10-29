@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RobotIcon } from '@phosphor-icons/react/dist/ssr'
+import { BotGlassIcon } from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { Badge } from './ui/badge'
 import { ResponsiveTable, type ResponsiveColumn } from './ui/responsive-table'
@@ -66,8 +66,8 @@ function AgentCell({ entry }: { entry: AuditLogEntry }) {
       className="inline-flex items-center gap-1.5 text-foreground"
       title={entry.agent_client}
     >
-      <RobotIcon
-        className="size-3.5 text-muted-foreground"
+      <BotGlassIcon
+        className="size-4 text-muted-foreground"
         aria-hidden="true"
       />
       {entry.agent_name}

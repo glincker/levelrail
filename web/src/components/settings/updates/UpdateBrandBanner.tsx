@@ -1,6 +1,6 @@
 import { useContext, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GithubLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { SocialGithubGlassIcon } from '@thesvg/ui-react'
 import { BrandGlow } from '@/components/ui/brand-glow'
 import { buttonVariants } from '@/components/ui/button'
 import { BrandContext } from '@/lib/brandContext'
@@ -76,7 +76,7 @@ export function UpdateBrandBanner({
             'relative ml-auto border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white',
           )}
         >
-          <GithubLogoIcon />
+          <SocialGithubGlassIcon size="1.2em" />
         </a>
       ) : null}
     </div>

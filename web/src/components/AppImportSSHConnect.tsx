@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  FingerprintIcon,
-  PlugsConnectedIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FingerprintPatternGlassIcon,
+  PlugGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -261,7 +261,7 @@ export function AppImportSSHConnect({ reconnect, onCreated }: Props) {
 
       <section className="space-y-3 rounded-md border p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <FingerprintIcon aria-hidden />
+          <FingerprintPatternGlassIcon size="1.2em" aria-hidden />
           <h4 className="text-sm font-medium">
             {t('appImport.ssh.hostKey.title')}
           </h4>
@@ -377,7 +377,7 @@ export function AppImportSSHConnect({ reconnect, onCreated }: Props) {
           disabled={!canTest || test.isPending}
           onClick={() => runTest()}
         >
-          <PlugsConnectedIcon aria-hidden />
+          <PlugGlassIcon size="1.2em" aria-hidden />
           {test.isPending
             ? t('appImport.ssh.testing')
             : t('appImport.ssh.test')}
@@ -407,7 +407,11 @@ export function AppImportSSHConnect({ reconnect, onCreated }: Props) {
       ) : null}
       {result?.ok && result.overview ? (
         <Alert role="status">
-          <ShieldCheckIcon aria-hidden />
+          <ShieldCheckGlassIcon
+            className="text-tone-success"
+            size="1.2em"
+            aria-hidden
+          />
           <AlertTitle>{t('appImport.ssh.ok.title')}</AlertTitle>
           <AlertDescription className="space-y-1">
             <p>{result.reads ?? t('appImport.ssh.ok.reads')}</p>

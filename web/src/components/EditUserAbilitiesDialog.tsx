@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PencilSimpleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -63,7 +63,7 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <PencilSimpleIcon />
+        <PencilGlassIcon size="1.2em" />
         Edit abilities
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -85,7 +85,10 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
 
         {updateAbilities.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{updateAbilities.error.message}</AlertDescription>
           </Alert>
         ) : null}

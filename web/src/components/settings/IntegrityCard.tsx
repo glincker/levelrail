@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
+import { DatabaseGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -69,7 +69,7 @@ export function IntegrityCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <DatabaseIcon />
+          <DatabaseGlassIcon size="1.2em" />
           {t('controlPlaneHealth.integrity.title')}
           <Badge variant={data.status.healthy ? 'success' : 'destructive'}>
             {t(

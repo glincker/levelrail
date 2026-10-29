@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon } from '@thesvg/ui-react'
 import { SidebarMenuButton, useSidebar } from '@/components/ui/sidebar'
 import { Sparkline, StatusPill, type Tone } from '@/components/kit'
 import { useApp } from '../../queries/apps'
@@ -30,7 +30,7 @@ export function AppNavHeader({ name }: { name: string }) {
         tooltip="Back to Apps"
         size="sm"
       >
-        <ArrowLeftIcon />
+        <ArrowLeftGlassIcon size="1.2em" />
         <span>All apps</span>
       </SidebarMenuButton>
       {rail ? null : (

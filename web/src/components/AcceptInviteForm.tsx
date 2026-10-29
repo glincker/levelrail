@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useAcceptInvite } from '../queries/invites'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -94,7 +94,7 @@ export function AcceptInviteForm({ token }: { token: string }) {
 
       {acceptInvite.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{acceptInvite.error.message}</AlertDescription>
         </Alert>
       ) : null}

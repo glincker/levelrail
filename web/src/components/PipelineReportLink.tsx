@@ -1,4 +1,4 @@
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import type { PipelineRunReport } from '../types/pipelines'
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -22,7 +22,10 @@ export function PipelineReportLink({ report }: { report?: PipelineRunReport }) {
         className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400"
         title={report.warning}
       >
-        <WarningCircleIcon className="size-3.5" aria-hidden="true" />
+        <CircleAlertGlassIcon
+          className="size-4 text-tone-danger"
+          aria-hidden="true"
+        />
         Not reported to {provider}
         <span className="sr-only">: {report.warning}</span>
       </span>

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CopyIcon,
-  RocketLaunchIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  RocketGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -104,8 +104,8 @@ export function StarterTemplatesDialog({
             />
           }
         >
-          <RocketLaunchIcon
-            className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+          <RocketGlassIcon
+            className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />
           <span className="min-w-0">
@@ -119,7 +119,7 @@ export function StarterTemplatesDialog({
         </DialogTrigger>
       ) : (
         <DialogTrigger render={<Button type="button" variant="outline" />}>
-          <RocketLaunchIcon aria-hidden="true" />
+          <RocketGlassIcon size="1.2em" aria-hidden="true" />
           {t('starter.open')}
         </DialogTrigger>
       )}
@@ -224,7 +224,7 @@ export function StarterTemplatesDialog({
                     size="sm"
                     onClick={() => copy(f)}
                   >
-                    <CopyIcon aria-hidden="true" />
+                    <CopyGlassIcon size="1.2em" aria-hidden="true" />
                     {t('starter.copy')}
                   </Button>
                 </div>
@@ -238,7 +238,7 @@ export function StarterTemplatesDialog({
               <CollapsibleTrigger
                 render={<Button type="button" variant="ghost" size="sm" />}
               >
-                <TerminalWindowIcon aria-hidden="true" />
+                <TerminalGlassIcon size="1.2em" aria-hidden="true" />
                 {t('starter.viaCli')}
               </CollapsibleTrigger>
               <CollapsiblePanel>

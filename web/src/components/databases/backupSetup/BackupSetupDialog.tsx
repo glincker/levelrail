@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleNotchIcon,
-  CloudArrowUpIcon,
-  ShieldCheckIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  LoaderCircleGlassIcon,
+  ShieldCheckGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -52,10 +52,10 @@ function DrillStatus({ database }: { database: string }) {
   const state = drillState(resource?.last_drill)
   const Icon =
     state === 'passed'
-      ? ShieldCheckIcon
+      ? ShieldCheckGlassIcon
       : state === 'failed'
-        ? WarningCircleIcon
-        : CircleNotchIcon
+        ? CircleAlertGlassIcon
+        : LoaderCircleGlassIcon
   return (
     <p
       className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground"
@@ -80,7 +80,10 @@ function RunStep({
   if (!started || !latest || latest.status === 'running') {
     return (
       <p className="flex items-center gap-2 text-sm text-foreground">
-        <CircleNotchIcon className="size-4 animate-spin" aria-hidden="true" />
+        <LoaderCircleGlassIcon
+          className="size-4.5 animate-spin"
+          aria-hidden="true"
+        />
         {t('backupSetup.run.progress')}
       </p>
     )
@@ -91,14 +94,20 @@ function RunStep({
         className="flex items-start gap-2 text-sm text-destructive"
         role="alert"
       >
-        <WarningCircleIcon className="mt-0.5 size-4" aria-hidden="true" />
+        <CircleAlertGlassIcon
+          className="mt-0.5 size-4.5 text-tone-danger"
+          aria-hidden="true"
+        />
         {t('backupSetup.run.failed', { error: latest.error ?? '' })}
       </p>
     )
   }
   return (
     <p className="flex items-center gap-2 text-sm text-foreground">
-      <CheckCircleIcon className="size-4 text-success" aria-hidden="true" />
+      <CircleCheckGlassIcon
+        className="size-4.5 text-success"
+        aria-hidden="true"
+      />
       {t('backupSetup.run.done', {
         size: formatBytes(latest.size_bytes ?? 0),
       })}
@@ -188,8 +197,8 @@ export function BackupSetupDialog({
           {step === 'target' ? (
             targets.length === 0 ? (
               <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4 text-center">
-                <CloudArrowUpIcon
-                  className="mx-auto size-5 text-muted-foreground"
+                <UploadGlassIcon
+                  className="mx-auto size-5.5 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <p className="text-sm text-muted-foreground">

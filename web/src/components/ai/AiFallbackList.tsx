@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  DotsSixVerticalIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  GripVerticalGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import { aiProviderBrand } from '../../lib/providerBrands'
@@ -59,8 +59,8 @@ export function AiFallbackList({
             }}
             className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5"
           >
-            <DotsSixVerticalIcon
-              className="size-4 shrink-0 text-muted-foreground"
+            <GripVerticalGlassIcon
+              className="size-4.5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
             <span className="w-5 text-xs text-muted-foreground tabular-nums">
@@ -84,7 +84,7 @@ export function AiFallbackList({
                 onChange(moveItem(fallback, i, i - 1))
               }}
             >
-              <ArrowUpIcon />
+              <ArrowUpGlassIcon size="1.2em" />
             </Button>
             <Button
               variant="ghost"
@@ -97,7 +97,7 @@ export function AiFallbackList({
                 onChange(moveItem(fallback, i, i + 1))
               }}
             >
-              <ArrowDownIcon />
+              <ArrowDownGlassIcon size="1.2em" />
             </Button>
             <Button
               variant="ghost"
@@ -108,7 +108,7 @@ export function AiFallbackList({
                 onChange(fallback.filter((_, j) => j !== i))
               }}
             >
-              <XIcon />
+              <XGlassIcon size="1.2em" />
             </Button>
           </li>
         )

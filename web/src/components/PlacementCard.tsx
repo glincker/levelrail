@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -86,7 +86,10 @@ export function PlacementCard({
           <Skeleton className="h-20 w-full" />
         ) : placement.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription className="space-y-2">
               <p>
                 {t('placement.loadFailed')} {placement.error.message}
@@ -111,7 +114,10 @@ export function PlacementCard({
         )}
         {placement.data?.domain_warnings?.length ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription className="space-y-1">
               <p className="font-medium">{t('placement.domainWarnings')}</p>
               <ul className="list-disc space-y-0.5 pl-4">
@@ -175,7 +181,10 @@ function PlacementBody({
         ) : null}
         {save.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{save.error.message}</AlertDescription>
           </Alert>
         ) : null}

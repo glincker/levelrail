@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useForgotPassword } from '../queries/passwordReset'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -41,7 +41,7 @@ export function ForgotPasswordForm() {
 
       {forgotPassword.isSuccess ? (
         <Alert>
-          <CheckCircleIcon />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.2em" />
           <AlertTitle>Check your email</AlertTitle>
           <AlertDescription>
             If that email matches an account, a reset link is on its way.
@@ -49,7 +49,7 @@ export function ForgotPasswordForm() {
         </Alert>
       ) : forgotPassword.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{forgotPassword.error.message}</AlertDescription>
         </Alert>
       ) : null}

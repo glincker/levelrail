@@ -2,7 +2,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PendingJoinTokensCard } from '../../components/nodes/PendingJoinTokensCard'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import { nodePagesQueryOptions } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
 import { NODE_LIST_GRID, RowSkeleton } from '../../components/NodeRow'
@@ -61,7 +61,7 @@ export function NodeListView({
   return (
     <div className={PAGE_WRAPPER}>
       <PageBanner
-        icon={<HardDrivesIcon />}
+        icon={<ServerGlassIcon size="1.2em" />}
         titleKey="nodes:list.title"
         descriptionKey={
           solo ? 'nodes:banner.description' : 'nodes:list.description'
@@ -140,7 +140,7 @@ export function NodeListPending() {
   return (
     <div className={PAGE_WRAPPER}>
       <PageBanner
-        icon={<HardDrivesIcon />}
+        icon={<ServerGlassIcon size="1.2em" />}
         titleKey="nodes:list.title"
         descriptionKey="nodes:list.description"
         size="compact"

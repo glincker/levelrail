@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { PageSpinner } from '@/components/ui/page-spinner'
 import { DocsRenderer } from '../../components/DocsRenderer'
 import { DocsPageToolbar } from '../../components/DocsPageToolbar'
@@ -31,7 +31,7 @@ function HelpDocPage() {
   if (!page || content === null) {
     return (
       <div className="flex items-start gap-3 rounded-md border border-border p-4 text-sm">
-        <WarningIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <TriangleAlertGlassIcon className="mt-0.5 size-4.5 shrink-0 text-muted-foreground" />
         <div>
           <p className="font-medium text-foreground">Page not found</p>
           <p className="mt-1 text-muted-foreground">

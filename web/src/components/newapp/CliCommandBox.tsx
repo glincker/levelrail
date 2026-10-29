@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 
 /** A monospace command with a copy button. */
@@ -26,9 +26,9 @@ export function CliCommandBox({ command }: { command: string }) {
       </code>
       <Button type="button" size="sm" variant="outline" onClick={copy}>
         {copied ? (
-          <CheckIcon className="size-4" aria-hidden="true" />
+          <CheckGlassIcon className="size-4.5" aria-hidden="true" />
         ) : (
-          <CopyIcon className="size-4" aria-hidden="true" />
+          <CopyGlassIcon className="size-4.5" aria-hidden="true" />
         )}
         {copied ? t('upload.copied') : t('upload.copy')}
       </Button>

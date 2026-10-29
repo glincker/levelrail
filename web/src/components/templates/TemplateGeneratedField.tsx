@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  KeyIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  KeyGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { randomSecret } from '../../lib/templateForm'
 import type { TemplateEnvPrompt } from '../../types/compose'
 import { Button } from '@/components/ui/button'
@@ -35,7 +35,7 @@ export function TemplateGeneratedField({
   return (
     <Field>
       <FieldLabel htmlFor={id}>
-        <KeyIcon className="size-3.5" aria-hidden="true" />
+        <KeyGlassIcon className="size-4" aria-hidden="true" />
         {prompt.label ?? prompt.key}
       </FieldLabel>
       <div className="flex flex-wrap items-center gap-2">
@@ -58,9 +58,9 @@ export function TemplateGeneratedField({
           }}
         >
           {shown ? (
-            <EyeSlashIcon aria-hidden="true" />
+            <EyeOffGlassIcon size="1.2em" aria-hidden="true" />
           ) : (
-            <EyeIcon aria-hidden="true" />
+            <EyeGlassIcon size="1.2em" aria-hidden="true" />
           )}
           {shown ? t('form.generated.hide') : t('form.generated.reveal')}
         </Button>
@@ -72,7 +72,7 @@ export function TemplateGeneratedField({
             onChange(randomSecret(prompt.length ?? 24))
           }}
         >
-          <ArrowsClockwiseIcon aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
           {t('form.generated.regenerate')}
         </Button>
       </div>

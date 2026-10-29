@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowClockwiseIcon, WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon, WrenchGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,7 +35,7 @@ export function EndpointFix({
   const showOllama = apiType === 'ollama' && OLLAMA_BIND_FIXES.has(fix)
   return (
     <Alert variant="destructive" className="space-y-1">
-      <WrenchIcon aria-hidden="true" />
+      <WrenchGlassIcon size="1.2em" aria-hidden="true" />
       <AlertTitle>{t(`endpoint.fix.${fix}.title`)}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>{diagnosis.message}</p>
@@ -86,7 +86,7 @@ export function EndpointFix({
           disabled={rechecking}
           onClick={onRecheck}
         >
-          <ArrowClockwiseIcon aria-hidden="true" />
+          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
           {t('endpoint.recheck')}
         </Button>
       </AlertDescription>

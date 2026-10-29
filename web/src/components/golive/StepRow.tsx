@@ -1,14 +1,14 @@
 import { useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CheckIcon,
-  CopyIcon,
-  MinusCircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CopyGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -28,18 +28,32 @@ export function StatusIcon({ status }: { status: StepStatus }) {
   switch (status) {
     case 'ok':
       return (
-        <CheckCircleIcon className={cls} weight="fill" aria-hidden="true" />
+        <CircleCheckGlassIcon size="1.2em" className={cls} aria-hidden="true" />
       )
     case 'fail':
       return (
-        <WarningCircleIcon className={cls} weight="fill" aria-hidden="true" />
+        <CircleAlertGlassIcon size="1.2em" className={cls} aria-hidden="true" />
       )
     case 'warn':
-      return <WarningIcon className={cls} aria-hidden="true" />
+      return (
+        <TriangleAlertGlassIcon
+          size="1.2em"
+          className={cls}
+          aria-hidden="true"
+        />
+      )
     case 'pending':
-      return <SpinnerGapIcon className={cls} aria-hidden="true" />
+      return (
+        <LoaderCircleGlassIcon
+          size="1.2em"
+          className={cls}
+          aria-hidden="true"
+        />
+      )
     default:
-      return <MinusCircleIcon className={cls} aria-hidden="true" />
+      return (
+        <CircleMinusGlassIcon size="1.2em" className={cls} aria-hidden="true" />
+      )
   }
 }
 
@@ -57,9 +71,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       }}
     >
       {copied ? (
-        <CheckIcon aria-hidden="true" />
+        <CheckGlassIcon size="1.2em" aria-hidden="true" />
       ) : (
-        <CopyIcon aria-hidden="true" />
+        <CopyGlassIcon size="1.2em" aria-hidden="true" />
       )}
     </Button>
   )

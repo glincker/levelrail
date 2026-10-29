@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -71,7 +71,11 @@ export function ApprovePreviewDialog({
           </DialogDescription>
         </DialogHeader>
         <Alert variant="destructive">
-          <ShieldWarningIcon aria-hidden="true" />
+          <ShieldAlertGlassIcon
+            className="text-tone-warning"
+            size="1.2em"
+            aria-hidden="true"
+          />
           <AlertDescription>{t('approve.warning')}</AlertDescription>
         </Alert>
         <div className="flex items-start gap-2">

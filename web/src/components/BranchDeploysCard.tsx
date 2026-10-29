@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  GitBranchIcon,
-  SpinnerIcon,
-  TrashIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  ExternalLinkGlassIcon,
+  GitBranchGlassIcon,
+  LoaderGlassIcon,
+  TrashGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmAction } from '@/components/ui/confirm-action'
@@ -38,10 +38,10 @@ import type {
 
 const SHORT_SHA_LENGTH = 8
 
-const STATUS_ICON: Record<BranchDeployStatus, Icon> = {
-  deploying: SpinnerIcon,
-  active: CheckCircleIcon,
-  failed: WarningCircleIcon,
+const STATUS_ICON: Record<BranchDeployStatus, UiIcon> = {
+  deploying: LoaderGlassIcon,
+  active: CircleCheckGlassIcon,
+  failed: CircleAlertGlassIcon,
 }
 
 const STATUS_TONE: Record<
@@ -76,8 +76,8 @@ function BranchDeployRow({
     <li className="flex flex-wrap items-start justify-between gap-3 py-3">
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <GitBranchIcon
-            className="size-4 text-muted-foreground"
+          <GitBranchGlassIcon
+            className="size-4.5 text-muted-foreground"
             aria-hidden="true"
           />
           <span className="truncate font-mono text-sm">{deploy.branch}</span>
@@ -116,7 +116,7 @@ function BranchDeployRow({
             aria-label={t('list.openLabel', { branch: deploy.branch })}
             render={<a href={deploy.url} target="_blank" rel="noreferrer" />}
           >
-            <ArrowSquareOutIcon aria-hidden="true" />
+            <ExternalLinkGlassIcon size="1.2em" aria-hidden="true" />
             {t('list.open')}
           </Button>
         ) : null}
@@ -137,7 +137,7 @@ function BranchDeployRow({
               aria-label={t('list.deleteLabel', { branch: deploy.branch })}
               onClick={open}
             >
-              <TrashIcon aria-hidden="true" />
+              <TrashGlassIcon size="1.2em" aria-hidden="true" />
               {t('list.delete')}
             </Button>
           )}
@@ -279,7 +279,7 @@ export function BranchDeploysCard({ appName }: { appName: string }) {
           ) : deploys.length === 0 && !query.isPending ? (
             <EmptyState
               compact
-              icon={<GitBranchIcon className="size-5" />}
+              icon={<GitBranchGlassIcon className="size-5.5" />}
               title={t('list.emptyTitle')}
               description={
                 settings?.mode === 'off'

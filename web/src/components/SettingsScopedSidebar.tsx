@@ -1,10 +1,10 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
-  ArrowLeftIcon,
-  CaretDownIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  ChevronDownGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Collapsible,
   CollapsiblePanel,
@@ -139,7 +139,7 @@ export function SettingsScopedSidebar() {
                 render={<Link to="/" />}
                 tooltip={t('nav.back')}
               >
-                <ArrowLeftIcon />
+                <ArrowLeftGlassIcon size="1.2em" />
                 <span>{t('nav.back')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -150,8 +150,8 @@ export function SettingsScopedSidebar() {
       <SidebarGroup className="py-0">
         <SidebarGroupContent>
           <div className="relative">
-            <MagnifyingGlassIcon
-              className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            <SearchGlassIcon
+              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
@@ -181,8 +181,8 @@ export function SettingsScopedSidebar() {
               <CollapsibleTrigger className="group/settings-section">
                 <SidebarGroupLabel className="cursor-pointer justify-between">
                   <span>{section.title}</span>
-                  <CaretDownIcon
-                    className="size-3.5 shrink-0 text-sidebar-foreground/50 transition-transform group-data-panel-open/settings-section:rotate-180"
+                  <ChevronDownGlassIcon
+                    className="size-4 shrink-0 text-sidebar-foreground/50 transition-transform group-data-panel-open/settings-section:rotate-180"
                     aria-hidden="true"
                   />
                 </SidebarGroupLabel>

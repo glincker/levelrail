@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { AlertKindGuidance } from './AlertKindGuidance'
 import { alertKindLabel, isAlertKindCopyKind } from './alertKindCopy'
 import {
-  CaretDownIcon,
-  CaretRightIcon,
-  ClockCounterClockwiseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  RestoreGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -83,9 +83,9 @@ function HistoryRow({ entry }: { entry: AlertHistoryEntry }) {
               className="mr-1 inline-flex size-5 items-center justify-center rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {open ? (
-                <CaretDownIcon className="size-3.5" aria-hidden="true" />
+                <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
               ) : (
-                <CaretRightIcon className="size-3.5" aria-hidden="true" />
+                <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
               )}
             </button>
           ) : null}
@@ -189,7 +189,7 @@ export function AlertHistoryTable({ app }: { app?: string }) {
         <p className="text-sm text-destructive">{error.message}</p>
       ) : entries.length === 0 ? (
         <EmptyState
-          icon={<ClockCounterClockwiseIcon className="size-5" />}
+          icon={<RestoreGlassIcon className="size-5.5" />}
           title="No alert history yet"
           description="Every firing, resolution and suppressed notification is recorded here."
         />

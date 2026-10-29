@@ -2,12 +2,12 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  DownloadSimpleIcon,
-  MagnifyingGlassIcon,
-  ProhibitIcon,
-  TrashIcon,
-  TrayIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  DownloadGlassIcon,
+  InboxGlassIcon,
+  SearchGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -73,7 +73,7 @@ function SubmissionRow({
             size="xs"
             onClick={() => onSpam(s)}
           >
-            <ProhibitIcon />
+            <BanGlassIcon size="1.2em" />
             {s.spam ? t('inbox.markNotSpam') : t('inbox.markSpam')}
           </Button>
           <Button
@@ -83,7 +83,7 @@ function SubmissionRow({
             aria-label={t('inbox.remove')}
             onClick={() => onRemove(s)}
           >
-            <TrashIcon />
+            <TrashGlassIcon size="1.2em" />
           </Button>
         </div>
       </div>
@@ -123,7 +123,7 @@ export function FormInbox({ app, form }: { app: string; form: string }) {
     <section aria-label={t('inbox.title')} className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
-          <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <SearchGlassIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -156,7 +156,7 @@ export function FormInbox({ app, form }: { app: string; form: string }) {
           download
           className={buttonVariants({ variant: 'outline', size: 'sm' })}
         >
-          <DownloadSimpleIcon />
+          <DownloadGlassIcon size="1.2em" />
           {t('inbox.export')}
         </a>
       </div>
@@ -174,7 +174,7 @@ export function FormInbox({ app, form }: { app: string; form: string }) {
       {inbox.isSuccess && rows.length === 0 && (
         <EmptyState
           compact
-          icon={<TrayIcon className="size-5" />}
+          icon={<InboxGlassIcon className="size-5.5" />}
           title={t(
             q || filter !== 'inbox' ? 'inbox.noMatchTitle' : 'inbox.emptyTitle',
           )}

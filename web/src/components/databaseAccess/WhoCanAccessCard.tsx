@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -60,7 +60,10 @@ export function WhoCanAccessCard({ databaseName }: { databaseName: string }) {
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-1.5 text-sm">
-            <ShieldCheckIcon className="size-4" aria-hidden="true" />
+            <ShieldCheckGlassIcon
+              className="size-4.5 text-tone-success"
+              aria-hidden="true"
+            />
             {t('who.title')}
           </CardTitle>
           <p className="text-xs text-muted-foreground">
@@ -83,7 +86,9 @@ export function WhoCanAccessCard({ databaseName }: { databaseName: string }) {
       <CardContent className="space-y-4">
         {isLoading ? null : principals.length === 0 ? (
           <EmptyState
-            icon={<ShieldCheckIcon className="size-5" />}
+            icon={
+              <ShieldCheckGlassIcon className="size-5.5 text-tone-success" />
+            }
             title={t('who.emptyTitle')}
             description={t('who.emptyBody')}
           />

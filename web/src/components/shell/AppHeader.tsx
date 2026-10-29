@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -63,7 +63,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onSearch}
           >
-            <MagnifyingGlassIcon />
+            <SearchGlassIcon size="1.2em" />
             <span className="hidden flex-1 truncate text-left @xl:inline">
               {t('shell.search.placeholder')}
             </span>

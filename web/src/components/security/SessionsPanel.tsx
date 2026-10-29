@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { DesktopIcon, SignOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { LogOutGlassIcon, MonitorGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -104,7 +104,7 @@ function SessionsTable({
       primary: true,
       cell: (s) => (
         <span className="flex items-center gap-2">
-          <DesktopIcon className="size-4 shrink-0" aria-hidden="true" />
+          <MonitorGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
           {s.browser}
           {s.current ? (
             <Badge variant="success">{t('sessions.current')}</Badge>
@@ -191,7 +191,7 @@ function RevokeOthersButton({
         size="sm"
         onClick={() => setOpen(true)}
       >
-        <SignOutIcon aria-hidden="true" />
+        <LogOutGlassIcon size="1.2em" aria-hidden="true" />
         {label}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

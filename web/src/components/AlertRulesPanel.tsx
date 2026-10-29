@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellRingGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
@@ -217,8 +217,8 @@ export function AlertRulesPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <BellRingingIcon
-              className="size-4 text-muted-foreground"
+            <BellRingGlassIcon
+              className="size-4.5 text-muted-foreground"
               aria-hidden="true"
             />
             {ta('rules.title')}
@@ -244,7 +244,7 @@ export function AlertRulesPanel({
           <p className="text-sm text-destructive">{error.message}</p>
         ) : rules.length === 0 ? (
           <EmptyState
-            icon={<BellRingingIcon className="size-5" />}
+            icon={<BellRingGlassIcon className="size-5.5" />}
             title={ta('rules.emptyTitle')}
             description={ta('rules.emptyDescription')}
             action={

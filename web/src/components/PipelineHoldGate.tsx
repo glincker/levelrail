@@ -1,4 +1,4 @@
-import { ThumbsDownIcon, ThumbsUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ThumbsDownGlassIcon, ThumbsUpGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDecidePipelineRunHold } from '../queries/pipelines'
@@ -37,7 +37,7 @@ export function PipelineHoldGate({
         disabled={decide.isPending}
         onClick={() => act('approved')}
       >
-        <ThumbsUpIcon aria-hidden="true" />
+        <ThumbsUpGlassIcon size="1.2em" aria-hidden="true" />
         Approve and run
       </Button>
       <Button
@@ -46,7 +46,7 @@ export function PipelineHoldGate({
         disabled={decide.isPending}
         onClick={() => act('rejected')}
       >
-        <ThumbsDownIcon aria-hidden="true" />
+        <ThumbsDownGlassIcon size="1.2em" aria-hidden="true" />
         Reject
       </Button>
     </div>

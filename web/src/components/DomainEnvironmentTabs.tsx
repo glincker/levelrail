@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,7 +70,7 @@ function EnvironmentSet({
                   run({ remove: [d] })
                 }}
               >
-                <XIcon aria-hidden="true" />
+                <XGlassIcon size="1.2em" aria-hidden="true" />
                 <span className="sr-only">
                   {t('environmentTabs.remove', { domain: d })}
                 </span>
@@ -101,7 +101,7 @@ function EnvironmentSet({
           size="sm"
           disabled={!isValidDomain(next) || edit.isPending}
         >
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.2em" aria-hidden="true" />
           {t('environmentTabs.add')}
         </Button>
       </form>

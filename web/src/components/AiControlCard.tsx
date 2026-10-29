@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { PauseCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CirclePauseGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -172,7 +172,7 @@ export function AiControlCard({ settings }: { settings: AiControlSettings }) {
             onClick={pause}
             disabled={update.isPending || settings.mode === 'off'}
           >
-            <PauseCircleIcon className="size-4" aria-hidden="true" />
+            <CirclePauseGlassIcon className="size-4.5" aria-hidden="true" />
             {t('aiControl.pause')}
           </Button>
         </div>

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { tokenListQueryOptions } from '../../queries/tokens'
 import { useBrand } from '../../hooks/useBrand'
 import { AgentConnectCard } from '../../components/agents/AgentConnectCard'
@@ -23,7 +23,7 @@ function AgentsPage() {
   const brand = useBrand()
   return (
     <PageTemplate
-      icon={<PlugsConnectedIcon />}
+      icon={<PlugGlassIcon size="1.2em" />}
       title={t('agentsPage.title')}
       description={t('agentsPage.description')}
     >

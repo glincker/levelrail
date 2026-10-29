@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ShieldCheckIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,9 +36,15 @@ function RecordRow({
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={pass ? 'success' : 'warning'}>
           {pass ? (
-            <CheckCircleIcon className="size-3" aria-hidden="true" />
+            <CircleCheckGlassIcon
+              className="size-3.5 text-tone-success"
+              aria-hidden="true"
+            />
           ) : (
-            <WarningCircleIcon className="size-3" aria-hidden="true" />
+            <CircleAlertGlassIcon
+              className="size-3.5 text-tone-danger"
+              aria-hidden="true"
+            />
           )}
           {pass
             ? t('emailDelivery.domain.pass')
@@ -86,7 +92,11 @@ export function DomainCheckInline({
           check.mutate(providerId)
         }}
       >
-        <ShieldCheckIcon aria-hidden="true" />
+        <ShieldCheckGlassIcon
+          className="text-tone-success"
+          size="1.2em"
+          aria-hidden="true"
+        />
         {check.isPending
           ? t('emailDelivery.domain.checking')
           : data

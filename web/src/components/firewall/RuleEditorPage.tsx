@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeftIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { RuleEditor } from './RuleEditor'
 import type { RuleSeed } from './useFirewallActions'
@@ -20,7 +20,7 @@ export function RuleEditorPage({
   const { t } = useTranslation('firewall')
   return (
     <PageTemplate
-      icon={<ShieldCheckIcon />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
       title={ruleId ? t('editor.editTitle') : t('editor.newTitle')}
       description={t('editor.description')}
       breadcrumb={
@@ -29,7 +29,7 @@ export function RuleEditorPage({
           search={{ scope: scope || undefined }}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeftIcon aria-hidden="true" className="size-3.5" />
+          <ArrowLeftGlassIcon aria-hidden="true" className="size-4" />
           {t('editor.back')}
         </Link>
       }

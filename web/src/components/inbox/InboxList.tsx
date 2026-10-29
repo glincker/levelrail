@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
 import {
-  ArchiveIcon,
-  CaretDownIcon,
-  CaretRightIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArchiveGlassIcon,
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
@@ -141,7 +141,11 @@ function GroupRow({
         }}
         className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
       >
-        {open ? <CaretDownIcon /> : <CaretRightIcon />}
+        {open ? (
+          <ChevronDownGlassIcon size="1.2em" />
+        ) : (
+          <ChevronRightGlassIcon size="1.2em" />
+        )}
         <span className="truncate font-medium">
           {t('page.group.label', { title: head.title, count: ids.length })}
         </span>
@@ -158,7 +162,7 @@ function GroupRow({
           p.onArchiveMany(row.entries)
         }}
       >
-        <ArchiveIcon />
+        <ArchiveGlassIcon size="1.2em" />
       </Button>
       {canDelete ? (
         <Button
@@ -170,7 +174,7 @@ function GroupRow({
             p.onDeleteMany(row.entries)
           }}
         >
-          <TrashIcon />
+          <TrashGlassIcon size="1.2em" />
         </Button>
       ) : null}
     </div>

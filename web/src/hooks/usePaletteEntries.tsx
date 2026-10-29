@@ -3,11 +3,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  ClockCounterClockwiseIcon,
-  FunnelIcon,
-  RobotIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BotGlassIcon,
+  FunnelGlassIcon,
+  LayersGlassIcon,
+  RestoreGlassIcon,
+} from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
 import { rankItems, relatedFor } from '@/lib/paletteSearch'
 import { STARTER_KEYS } from '@/lib/paletteSearchIndex'
@@ -120,7 +120,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
           key: `suggest-scope-${key}`,
           label: `${key}:`,
           group: 'filters',
-          icon: <FunnelIcon />,
+          icon: <FunnelGlassIcon size="1.2em" />,
           keepOpen: true,
           run: () => ps.setInput(`${head}${key}:`),
         }),
@@ -140,7 +140,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
             key: `suggest-value-${key}-${value}`,
             label: `${key}:${value}`,
             group: 'filters',
-            icon: <FunnelIcon />,
+            icon: <FunnelGlassIcon size="1.2em" />,
             keepOpen: true,
             run: () => ps.acceptScope(chip),
           })
@@ -161,7 +161,12 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
         key: sp.key,
         label: sp.label,
         group: 'Suggested',
-        icon: sp.kind === 'assistant' ? <RobotIcon /> : <StackIcon />,
+        icon:
+          sp.kind === 'assistant' ? (
+            <BotGlassIcon size="1.2em" />
+          ) : (
+            <LayersGlassIcon size="1.2em" />
+          ),
         run: () =>
           void navigate(
             sp.kind === 'assistant'
@@ -219,7 +224,7 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
           key: `recent-search-${s}`,
           label: s,
           group: 'recentSearches',
-          icon: <ClockCounterClockwiseIcon />,
+          icon: <RestoreGlassIcon size="1.2em" />,
           keepOpen: true,
           run: () => ps.applyQuery(s),
         })),

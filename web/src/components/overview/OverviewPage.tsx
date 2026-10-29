@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import {
-  ArrowClockwiseIcon,
-  ArrowSquareOutIcon,
-  CopyIcon,
-  RocketLaunchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  ExternalLinkGlassIcon,
+  RocketGlassIcon,
+  RotateCwGlassIcon,
+} from '@thesvg/ui-react'
 import { useAppStatus } from '../../queries/appStatus'
 import { useGitSource } from '../../queries/gitSources'
 import { useIsStaticSite } from '../../queries/staticSites'
@@ -87,33 +87,33 @@ export function OverviewPage({
         {
           key: 'page-open-app',
           label: `Open ${app.name}`,
-          icon: <ArrowSquareOutIcon />,
+          icon: <ExternalLinkGlassIcon size="1.2em" />,
           run: openApp,
           hint: ['O'],
         },
         {
           key: 'page-deploy',
           label: `Deploy ${app.name}...`,
-          icon: <RocketLaunchIcon />,
+          icon: <RocketGlassIcon size="1.2em" />,
           run: () => setDeployTab('existing-image'),
           hint: ['Shift', 'D'],
         },
         {
           key: 'page-restart',
           label: `Restart ${app.name}`,
-          icon: <ArrowClockwiseIcon />,
+          icon: <RotateCwGlassIcon size="1.2em" />,
           run: restart,
         },
         {
           key: 'page-redeploy',
           label: `Redeploy ${app.name}`,
-          icon: <RocketLaunchIcon />,
+          icon: <RocketGlassIcon size="1.2em" />,
           run: redeploy,
         },
         {
           key: 'page-copy-url',
           label: `Copy URL of ${app.name}`,
-          icon: <CopyIcon />,
+          icon: <CopyGlassIcon size="1.2em" />,
           run: copyUrl,
           hint: ['C'],
         },

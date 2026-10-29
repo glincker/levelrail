@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  CloudIcon,
-  GlobeHemisphereWestIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CloudGlassIcon, GlobeGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -83,7 +80,7 @@ export function NoProviderEmptyState() {
   const { t } = useTranslation('domains')
   return (
     <Alert>
-      <CloudIcon className="size-4" aria-hidden="true" />
+      <CloudGlassIcon className="size-4.5" aria-hidden="true" />
       <AlertDescription>
         {t('baseDomain.noProvider')}{' '}
         <Link to="/domains" className="underline">
@@ -126,7 +123,7 @@ export function AppsBaseDomainCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeHemisphereWestIcon className="size-4" />
+          <GlobeGlassIcon className="size-4.5" />
           {t('baseDomain.title')}
         </CardTitle>
         <CardDescription>{t('baseDomain.description')}</CardDescription>

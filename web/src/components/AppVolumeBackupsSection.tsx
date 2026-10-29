@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -165,8 +165,8 @@ function VolumeRestoreHistoryTable({
 function NoVolumesDeclared() {
   return (
     <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
-      <HardDrivesIcon
-        className="size-5 text-muted-foreground"
+      <ServerGlassIcon
+        className="size-5.5 text-muted-foreground"
         aria-hidden="true"
       />
       <p className="text-sm text-muted-foreground">

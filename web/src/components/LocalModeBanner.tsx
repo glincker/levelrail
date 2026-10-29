@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowCounterClockwiseIcon,
-  LaptopIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ComputerGlassIcon, RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useLocalMode, useResetLocalInstance } from '../queries/localMode'
@@ -23,7 +20,10 @@ export function LocalModeBanner() {
       className="mx-4 mt-2 flex flex-col gap-2 rounded-lg border border-tone-accent-border bg-tone-accent-soft p-3 text-tone-accent sm:flex-row sm:items-center sm:justify-between md:mx-6"
     >
       <div className="flex items-start gap-2">
-        <LaptopIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <ComputerGlassIcon
+          className="mt-0.5 size-4.5 shrink-0"
+          aria-hidden="true"
+        />
         <div className="text-sm">
           <p className="font-medium">{t('localMode.title')}</p>
           <p className="text-foreground/80">
@@ -50,7 +50,7 @@ export function LocalModeBanner() {
             setOpen(true)
           }}
         >
-          <ArrowCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
+          <RotateCcwGlassIcon className="size-4" aria-hidden="true" />
           {t('localMode.reset')}
         </Button>
       ) : null}

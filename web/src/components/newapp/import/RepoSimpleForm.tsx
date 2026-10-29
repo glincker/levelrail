@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DraftBanner } from '../../DraftBanner'
 import { useDraft } from '../../../hooks/useDraft'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -234,7 +234,7 @@ export function RepoSimpleForm({
           ])
         }}
       >
-        <PlusIcon aria-hidden="true" className="size-4" />
+        <PlusGlassIcon aria-hidden="true" className="size-4.5" />
         {t('import.form.addVar')}
       </Button>
 

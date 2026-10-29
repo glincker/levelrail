@@ -1,8 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  CloudArrowUpIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -40,7 +37,7 @@ function StoragePage() {
     <div className="space-y-8">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <CloudArrowUpIcon className="size-4" aria-hidden="true" />
+          <UploadGlassIcon className="size-4.5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader
@@ -67,7 +64,7 @@ function StoragePage() {
         </Alert>
       ) : destinations.isError ? (
         <EmptyState
-          icon={<WarningCircleIcon className="size-5" />}
+          icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
           title={t('storagePage.loadErrorTitle')}
           description={destinations.error.message}
           action={

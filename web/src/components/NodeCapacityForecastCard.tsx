@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useNodeCapacityForecast } from '../queries/nodes'
@@ -41,7 +41,7 @@ function ForecastRow({
   return (
     <div className="flex items-start gap-2">
       <Badge variant={variantFor(metric.days_until_full)} className="mt-0.5">
-        <WarningIcon className="size-3" />
+        <TriangleAlertGlassIcon className="size-3.5 text-tone-warning" />
         {daysLabel(metric.days_until_full)}
       </Badge>
       <p className="text-sm text-foreground">

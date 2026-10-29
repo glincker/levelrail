@@ -1,4 +1,4 @@
-import { InfoIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { formatCpus, formatMemoryMiB } from '../../lib/modelsCpu'
@@ -26,7 +26,11 @@ export function ModelCpuPanel({ model }: { model: ModelResource }) {
   return (
     <div className="space-y-6">
       <Alert>
-        <InfoIcon aria-hidden="true" />
+        <InfoGlassIcon
+          className="text-tone-info"
+          size="1.2em"
+          aria-hidden="true"
+        />
         <AlertTitle>{t('cpu.detail.capsTitle')}</AlertTitle>
         <AlertDescription>
           {t('cpu.detail.caps', {

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  PlugsConnectedIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  PlugGlassIcon,
+  PlusGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import {
@@ -178,9 +178,9 @@ export function AddGitConnectionDialog({
                 }}
               >
                 {copied ? (
-                  <CheckIcon className="size-4" aria-hidden="true" />
+                  <CheckGlassIcon className="size-4.5" aria-hidden="true" />
                 ) : (
-                  <CopyIcon className="size-4" aria-hidden="true" />
+                  <CopyGlassIcon className="size-4.5" aria-hidden="true" />
                 )}
                 {copied
                   ? t('gitConnections.add.callbackCopied')
@@ -313,7 +313,7 @@ export function AddGitConnectionDialog({
                   })
                 }
               >
-                <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+                <PlugGlassIcon className="size-4.5" aria-hidden="true" />
                 {probe.isPending
                   ? t('gitConnections.add.testing')
                   : t('gitConnections.add.test')}
@@ -366,7 +366,7 @@ export function AddGitConnectionDialog({
             disabled={!canSubmit || create.isPending}
             onClick={submit}
           >
-            <PlusIcon className="size-4" aria-hidden="true" />
+            <PlusGlassIcon className="size-4.5" aria-hidden="true" />
             {create.isPending
               ? t(
                   tokenAuth

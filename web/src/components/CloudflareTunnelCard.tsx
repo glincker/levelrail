@@ -1,10 +1,10 @@
 import {
-  CloudCheckIcon,
-  CheckCircleIcon,
-  WarningCircleIcon,
-  MinusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CloudCheckGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
 import type { CloudflareTunnelSettings } from '../queries/cloudflareTunnel'
 import {
@@ -44,10 +44,10 @@ const STATUS_LABEL: Record<CloudflareTunnelSettings['status'], string> = {
   disconnected: 'Disconnected',
 }
 
-const STATUS_ICON: Record<CloudflareTunnelSettings['status'], Icon> = {
-  connected: CheckCircleIcon,
-  error: WarningCircleIcon,
-  disconnected: MinusCircleIcon,
+const STATUS_ICON: Record<CloudflareTunnelSettings['status'], UiIcon> = {
+  connected: CircleCheckGlassIcon,
+  error: CircleAlertGlassIcon,
+  disconnected: CircleMinusGlassIcon,
 }
 
 // Instance-level Cloudflare Tunnel connection: GET/PUT/DELETE
@@ -87,7 +87,7 @@ export function CloudflareTunnelCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudCheckIcon className="size-4" />
+          <CloudCheckGlassIcon className="size-4.5" />
           Cloudflare Tunnel
           <StatusBadge
             variant={STATUS_VARIANT[settings.status]}

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { PushPinIcon } from '@phosphor-icons/react/dist/ssr'
+import { PinGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { RelativeTime } from '@/components/kit/RelativeTime'
 import { useRollbackTargets } from '../queries/deployGate'
@@ -23,8 +23,8 @@ export function RollbackTargetsList({ appName }: { appName: string }) {
               key={target.deploy_id}
               className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
             >
-              <PushPinIcon
-                className="size-3.5 text-muted-foreground"
+              <PinGlassIcon
+                className="size-4 text-muted-foreground"
                 aria-hidden="true"
               />
               <span className="font-mono text-xs break-all">

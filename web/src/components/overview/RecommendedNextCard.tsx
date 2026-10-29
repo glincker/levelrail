@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import {
   computeRecommendations,
   type Recommendation,
@@ -103,7 +103,7 @@ export function RecommendedNextCard({
                     dismiss(r.id)
                   }}
                 >
-                  <XIcon aria-hidden="true" />
+                  <XGlassIcon size="1.2em" aria-hidden="true" />
                 </Button>
               </span>
             </li>

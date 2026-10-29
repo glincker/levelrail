@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CpuIcon } from '@phosphor-icons/react/dist/ssr'
+import { CpuGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -30,7 +30,7 @@ export function FootprintCard({ idle }: { idle: IdleFootprint }) {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <CpuIcon aria-hidden="true" />
+            <CpuGlassIcon size="1.2em" aria-hidden="true" />
             {t('title')}
           </CardTitle>
           <Badge variant={STATUS_VARIANT[idle.status]}>

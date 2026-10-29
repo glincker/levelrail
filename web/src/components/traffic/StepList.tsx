@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  CircleNotchIcon,
-  MinusCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  LoaderCircleGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 
 export type StepState = 'todo' | 'active' | 'done' | 'failed' | 'skipped'
@@ -20,12 +20,12 @@ export interface Step {
   action?: ReactNode
 }
 
-const STATE_ICON: Record<StepState, Icon> = {
-  todo: CircleIcon,
-  active: CircleNotchIcon,
-  done: CheckCircleIcon,
-  failed: XCircleIcon,
-  skipped: MinusCircleIcon,
+const STATE_ICON: Record<StepState, UiIcon> = {
+  todo: CircleGlassIcon,
+  active: LoaderCircleGlassIcon,
+  done: CircleCheckGlassIcon,
+  failed: CircleXGlassIcon,
+  skipped: CircleMinusGlassIcon,
 }
 
 const STATE_TONE: Record<StepState, string> = {
@@ -89,7 +89,6 @@ export function StepList({
             >
               <StepIcon
                 aria-hidden="true"
-                weight={step.state === 'todo' ? 'regular' : 'fill'}
                 className={cn(
                   'mt-0.5 size-4 shrink-0',
                   STATE_TONE[step.state],

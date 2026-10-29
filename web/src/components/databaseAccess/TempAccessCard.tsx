@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -130,7 +130,7 @@ export function TempAccessCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <KeyIcon className="size-4" aria-hidden="true" />
+          <KeyGlassIcon className="size-4.5" aria-hidden="true" />
           {t('temp.title')}
         </CardTitle>
         <p className="text-xs text-muted-foreground">{t('temp.description')}</p>

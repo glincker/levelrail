@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon, HammerIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon, HammerGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { MetricTile, SkeletonList } from '@/components/kit'
@@ -30,7 +30,7 @@ export function BuildsPage() {
       width="wide"
       banner={
         <PageBanner
-          icon={<HammerIcon />}
+          icon={<HammerGlassIcon size="1.2em" />}
           titleKey="buildCenter:title"
           descriptionKey={
             isEmpty ? 'buildCenter:banner.description' : 'buildCenter:subtitle'
@@ -43,7 +43,7 @@ export function BuildsPage() {
                   setPruneOpen(true)
                 }}
               >
-                <BroomIcon />
+                <BroomGlassIcon size="1.2em" />
                 {t('actions.freeCache')}
               </Button>
             ) : null

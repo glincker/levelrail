@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { BroomIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon, ServerGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -87,7 +87,7 @@ export function DiskResilienceCard() {
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
-              <HardDrivesIcon aria-hidden="true" />
+              <ServerGlassIcon size="1.2em" aria-hidden="true" />
               {t('disk.title')}
             </CardTitle>
             <CardDescription>{t('disk.description')}</CardDescription>
@@ -99,7 +99,7 @@ export function DiskResilienceCard() {
               onClick={freeSpace}
               disabled={free.isPending}
             >
-              <BroomIcon aria-hidden="true" />
+              <BroomGlassIcon size="1.2em" aria-hidden="true" />
               {free.isPending ? t('disk.freeing') : t('disk.freeAction')}
             </Button>
           )}

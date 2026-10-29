@@ -1,9 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-  ArrowCounterClockwiseIcon,
-  PushPinIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PinGlassIcon, RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -89,7 +86,7 @@ export function FunctionVersionsTab({ name }: Readonly<{ name: string }>) {
                       )
                     }
                   >
-                    <ArrowCounterClockwiseIcon aria-hidden />
+                    <RotateCcwGlassIcon size="1.2em" aria-hidden />
                     {t('detail.versions.rollback')}
                   </Button>
                   <Button
@@ -104,7 +101,7 @@ export function FunctionVersionsTab({ name }: Readonly<{ name: string }>) {
                       })
                     }
                   >
-                    <PushPinIcon aria-hidden />
+                    <PinGlassIcon size="1.2em" aria-hidden />
                     {t('detail.versions.pin')}
                   </Button>
                 </div>

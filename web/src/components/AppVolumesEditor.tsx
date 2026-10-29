@@ -3,10 +3,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  TrashIcon,
-  HardDrivesIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ServerGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -85,15 +85,18 @@ function DetachVolumeButton({
           />
         }
       >
-        <TrashIcon
-          className="size-4 text-muted-foreground"
+        <TrashGlassIcon
+          className="size-4.5 text-muted-foreground"
           aria-hidden="true"
         />
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-4.5 text-tone-warning"
+              aria-hidden="true"
+            />
             Detach &ldquo;{volume.name}&rdquo;?
           </DialogTitle>
           <DialogDescription>
@@ -189,7 +192,7 @@ export function AppVolumesEditor({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HardDrivesIcon className="size-4" aria-hidden="true" />
+          <ServerGlassIcon className="size-4.5" aria-hidden="true" />
           Volumes
         </CardTitle>
         <CardDescription>

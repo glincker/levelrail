@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ChartBarIcon, DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChartColumnGlassIcon, DatabaseGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -147,7 +147,7 @@ export function EngineStatsPanel({
     <div className="space-y-4">
       <EmptyState
         compact
-        icon={<DatabaseIcon className="size-5" />}
+        icon={<DatabaseGlassIcon className="size-5.5" />}
         title={t('viewer.engineStats.title', { engine })}
         description={
           isCache
@@ -158,7 +158,7 @@ export function EngineStatsPanel({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ChartBarIcon className="size-4" aria-hidden="true" />
+            <ChartColumnGlassIcon className="size-4.5" aria-hidden="true" />
             {isCache
               ? t('viewer.engineStats.cacheTitle')
               : t('viewer.engineStats.objectsTitle')}

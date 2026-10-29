@@ -5,7 +5,7 @@
 // session cookie, exactly like every other settings page's own queries.
 
 import { useMemo, useState } from 'react'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { pathParamNames } from '@/lib/apiExplorerPath'
 import { Badge } from '@/components/ui/badge'
@@ -123,9 +123,9 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
         <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
           {route.ability}
         </Badge>
-        <CaretDownIcon
+        <ChevronDownGlassIcon
           className={cn(
-            'size-4 shrink-0 text-muted-foreground transition-transform',
+            'size-4.5 shrink-0 text-muted-foreground transition-transform',
             open && 'rotate-180',
           )}
         />

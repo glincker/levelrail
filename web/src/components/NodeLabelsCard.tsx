@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -40,7 +40,10 @@ export function NodeLabelsCard({ nodeId }: { nodeId: string }) {
           <Skeleton className="h-9 w-full" />
         ) : labels.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription className="space-y-2">
               <p>
                 {t('labels.loadFailed')} {labels.error.message}
@@ -125,7 +128,7 @@ function LabelsForm({ nodeId, saved }: { nodeId: string; saved: NodeLabels }) {
 
       {save.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{save.error.message}</AlertDescription>
         </Alert>
       ) : null}

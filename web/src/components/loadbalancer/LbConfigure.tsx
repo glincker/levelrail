@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { AlgorithmCards } from './AlgorithmCards'
@@ -35,8 +35,11 @@ export function LbConfigure({
           onClick={() => onOpenChange(!open)}
           className="flex items-center gap-2 rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          <CaretDownIcon
-            className={cn('size-4 transition-transform', !open && '-rotate-90')}
+          <ChevronDownGlassIcon
+            className={cn(
+              'size-4.5 transition-transform',
+              !open && '-rotate-90',
+            )}
             aria-hidden
           />
           Configure

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ export function RevokeInviteDialog({ invite }: { invite: InviteResource }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WarningIcon className="size-4 text-destructive" />
+            <TriangleAlertGlassIcon className="size-4.5 text-destructive" />
             Revoke invite for {invite.email}?
           </DialogTitle>
           <DialogDescription>
@@ -46,7 +46,10 @@ export function RevokeInviteDialog({ invite }: { invite: InviteResource }) {
         </DialogHeader>
         {revokeInvite.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{revokeInvite.error.message}</AlertDescription>
           </Alert>
         ) : null}

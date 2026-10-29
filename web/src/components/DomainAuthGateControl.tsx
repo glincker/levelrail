@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ListBulletsIcon,
-  ShieldCheckIcon,
-  ShieldIcon,
-  ShieldSlashIcon,
-  SignOutIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ListGlassIcon,
+  LogOutGlassIcon,
+  ShieldCheckGlassIcon,
+  ShieldGlassIcon,
+  ShieldOffGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -135,13 +135,13 @@ export function DomainAuthGateControl({
           {on ? (
             <EnforcedBadge domain={domain} control="auth_gate">
               <Badge variant="success" className="shrink-0">
-                <ShieldCheckIcon className="size-3" />
+                <ShieldCheckGlassIcon className="size-3.5 text-tone-success" />
                 {t('authGate.badgeOn')}
               </Badge>
             </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <ShieldSlashIcon className="size-3" />
+              <ShieldOffGlassIcon className="size-3.5" />
               {t('authGate.badgeOff')}
             </Badge>
           )}
@@ -152,7 +152,7 @@ export function DomainAuthGateControl({
           size="sm"
           onClick={() => setOpen((v) => !v)}
         >
-          <ShieldIcon className="size-3.5" />
+          <ShieldGlassIcon className="size-4" />
           {open
             ? t('authGate.hide')
             : on
@@ -362,7 +362,7 @@ export function DomainAuthGateControl({
                       })
                     }
                   >
-                    <SignOutIcon className="size-3.5" />
+                    <LogOutGlassIcon className="size-4" />
                     {revoke.isPending
                       ? t('authGate.revoking')
                       : t('authGate.revokeSessions')}
@@ -373,7 +373,7 @@ export function DomainAuthGateControl({
                     variant="ghost"
                     onClick={() => setShowLog((v) => !v)}
                   >
-                    <ListBulletsIcon className="size-3.5" />
+                    <ListGlassIcon className="size-4" />
                     {showLog
                       ? t('authGate.accessLog.hide')
                       : t('authGate.accessLog.show')}

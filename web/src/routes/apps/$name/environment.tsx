@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { useApp } from '../../../queries/apps'
 import { EnvironmentEditor } from '../../../components/env/EnvironmentEditor'
 import { SecretRotationSection } from '../../../components/env/SecretRotationSection'
@@ -43,9 +43,9 @@ function EnvironmentSection() {
               {t('advanced.description')}
             </span>
           </span>
-          <CaretDownIcon
+          <ChevronDownGlassIcon
             aria-hidden
-            className="mt-1 size-4 transition-transform group-data-[panel-open]/advanced:rotate-180"
+            className="mt-1 size-4.5 transition-transform group-data-[panel-open]/advanced:rotate-180"
           />
         </CollapsibleTrigger>
         <CollapsiblePanel className="space-y-6 pt-4">

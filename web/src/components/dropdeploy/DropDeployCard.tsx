@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SitePublisher } from './SitePublisher'
 
@@ -10,7 +10,7 @@ export function DropDeployCard({ appName }: { appName: string }) {
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <UploadSimpleIcon className="size-4" aria-hidden="true" />
+          <UploadGlassIcon className="size-4.5" aria-hidden="true" />
           {t('drop.cardTitle')}
         </CardTitle>
       </CardHeader>

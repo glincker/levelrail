@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { formatBytes } from '../../lib/format'
 import { registryLinkForImage } from '../../lib/imageRegistry'
 import type { ComposePreviewService } from '../../types/compose'
@@ -78,8 +78,8 @@ export function TemplateFacts({
                         })}
                       >
                         {link.registry}
-                        <ArrowSquareOutIcon
-                          className="size-3"
+                        <ExternalLinkGlassIcon
+                          className="size-3.5"
                           aria-hidden="true"
                         />
                       </a>
@@ -99,7 +99,7 @@ export function TemplateFacts({
               className={EXTERNAL_LINK}
             >
               {t('detail.facts.docsLink')}
-              <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
+              <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
             </a>
           </Row>
         ) : null}

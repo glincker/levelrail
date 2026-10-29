@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,9 +37,9 @@ function CopyField({ label, value }: { label: string; value: string }) {
           aria-label={`${t('credential.copy')} ${label}`}
         >
           {copied ? (
-            <CheckIcon aria-hidden="true" />
+            <CheckGlassIcon size="1.2em" aria-hidden="true" />
           ) : (
-            <CopyIcon aria-hidden="true" />
+            <CopyGlassIcon size="1.2em" aria-hidden="true" />
           )}
           {copied ? t('credential.copied') : t('credential.copy')}
         </Button>

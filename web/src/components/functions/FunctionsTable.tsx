@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit'
 import {
   ResponsiveTable,
@@ -39,7 +39,7 @@ export function FunctionsTable({ items }: Readonly<{ items: FunctionItem[] }>) {
                 className="ml-2 inline-flex align-middle text-muted-foreground hover:text-foreground"
                 aria-label={t('list.visit')}
               >
-                <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
+                <ExternalLinkGlassIcon className="size-4" aria-hidden="true" />
               </a>
             ) : null}
           </span>

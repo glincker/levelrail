@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,11 @@ function CopyRow({ label, value }: { label: string; value: string }) {
         onClick={copy}
         aria-label={t('pooler.copy', { label })}
       >
-        {copied ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
+        {copied ? (
+          <CheckGlassIcon size="1.2em" aria-hidden />
+        ) : (
+          <CopyGlassIcon size="1.2em" aria-hidden />
+        )}
       </Button>
     </div>
   )

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PaperPlaneTiltIcon,
-  PencilSimpleIcon,
-  TrashIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PencilGlassIcon,
+  SendGlassIcon,
+  TrashGlassIcon,
+  WebhookGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -90,7 +90,7 @@ export function TrafficExportRow({ sink, status, onEdit }: Props) {
         <BrandTile name={mark} label={t(`kinds.${sink.kind}`)} />
       ) : (
         <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-          <WebhooksLogoIcon className="size-4" aria-hidden="true" />
+          <WebhookGlassIcon className="size-4.5" aria-hidden="true" />
         </span>
       )}
       <div className="min-w-40 flex-1">
@@ -151,7 +151,7 @@ export function TrafficExportRow({ sink, status, onEdit }: Props) {
           disabled={test.isPending}
           onClick={runTest}
         >
-          <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
+          <SendGlassIcon className="size-4" aria-hidden="true" />
           {test.isPending ? t('row.testing') : t('row.test')}
         </Button>
         <Button
@@ -162,7 +162,7 @@ export function TrafficExportRow({ sink, status, onEdit }: Props) {
             onEdit(sink)
           }}
         >
-          <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
+          <PencilGlassIcon className="size-4" aria-hidden="true" />
         </Button>
         <Button
           variant="outline"
@@ -172,7 +172,7 @@ export function TrafficExportRow({ sink, status, onEdit }: Props) {
             setConfirmOpen(true)
           }}
         >
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-4" aria-hidden="true" />
         </Button>
       </div>
       <ConfirmDialog

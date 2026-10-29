@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { DialogControl } from './dialogControl'
 import { useTranslation } from 'react-i18next'
-import { ArrowsOutIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { MaximizeGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -82,7 +82,7 @@ export function DrainNodeDialog({
         <DialogTrigger
           render={<Button type="button" variant="outline" size="sm" />}
         >
-          <ArrowsOutIcon className="size-3.5" aria-hidden="true" />
+          <MaximizeGlassIcon className="size-4" aria-hidden="true" />
           {t('drain.trigger')}
         </DialogTrigger>
       )}
@@ -102,7 +102,10 @@ export function DrainNodeDialog({
             </DialogHeader>
             {drain.isError ? (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.2em"
+                />
                 <AlertDescription>{drain.error.message}</AlertDescription>
               </Alert>
             ) : null}
@@ -117,8 +120,8 @@ export function DrainNodeDialog({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
-                <WarningIcon
-                  className="size-4 text-amber-600"
+                <TriangleAlertGlassIcon
+                  className="size-4.5 text-amber-600"
                   aria-hidden="true"
                 />
                 {t('drain.title', { name: node.name })}
@@ -164,7 +167,10 @@ export function DrainNodeDialog({
 
             {start.isError ? (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.2em"
+                />
                 <AlertDescription>{start.error.message}</AlertDescription>
               </Alert>
             ) : null}

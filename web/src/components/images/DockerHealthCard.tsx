@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  BroomIcon,
-  CheckCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BroomGlassIcon,
+  CircleCheckGlassIcon,
+  RefreshCwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,7 +48,7 @@ export function DockerHealthCard({
             void health.refetch()
           }}
         >
-          <ArrowsClockwiseIcon aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
           {t('dockerHealth.recheck')}
         </Button>
       </CardHeader>
@@ -74,14 +74,14 @@ export function DockerHealthCard({
                 >
                   <span className="flex items-center gap-2">
                     {check.status === 'ok' ? (
-                      <CheckCircleIcon
+                      <CircleCheckGlassIcon
                         aria-hidden="true"
-                        className="size-4 text-tone-success"
+                        className="size-4.5 text-tone-success"
                       />
                     ) : (
-                      <WarningIcon
+                      <TriangleAlertGlassIcon
                         aria-hidden="true"
-                        className="size-4 text-tone-warning"
+                        className="size-4.5 text-tone-warning"
                       />
                     )}
                     {check.message}
@@ -92,7 +92,7 @@ export function DockerHealthCard({
                     </Badge>
                     {check.fix_action === 'free_space' && canFix ? (
                       <Button size="sm" onClick={onFreeSpace}>
-                        <BroomIcon aria-hidden="true" />
+                        <BroomGlassIcon size="1.2em" aria-hidden="true" />
                         {t('dockerHealth.freeSpace')}
                       </Button>
                     ) : null}

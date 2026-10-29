@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { WarningOctagonIcon } from '@phosphor-icons/react/dist/ssr'
+import { OctagonAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -24,7 +24,10 @@ export function DangerZoneCard({
     <Card className="ring-tone-danger-border">
       <CardHeader>
         <CardTitle className={cn('flex items-center gap-2', TONE.danger.text)}>
-          <WarningOctagonIcon aria-hidden="true" className="size-4" />
+          <OctagonAlertGlassIcon
+            aria-hidden="true"
+            className="size-4.5 text-tone-danger"
+          />
           {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>

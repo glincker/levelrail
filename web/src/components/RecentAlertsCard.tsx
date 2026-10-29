@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
-  BellRingingIcon,
-  CaretDownIcon,
-  CaretRightIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAlertHistory } from '../queries/alertNoise'
@@ -31,9 +31,9 @@ function AlertRow({ entry }: { entry: AlertHistoryEntry }) {
               className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {open ? (
-                <CaretDownIcon className="size-3.5" aria-hidden="true" />
+                <ChevronDownGlassIcon className="size-4" aria-hidden="true" />
               ) : (
-                <CaretRightIcon className="size-3.5" aria-hidden="true" />
+                <ChevronRightGlassIcon className="size-4" aria-hidden="true" />
               )}
             </button>
           ) : null}
@@ -97,8 +97,8 @@ export function RecentAlertsCard() {
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <BellRingingIcon
-            className="size-4 text-muted-foreground"
+          <BellRingGlassIcon
+            className="size-4.5 text-muted-foreground"
             aria-hidden="true"
           />
           Recent alerts

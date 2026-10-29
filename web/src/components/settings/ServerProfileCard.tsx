@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
-import { SlidersHorizontalIcon } from '@phosphor-icons/react/dist/ssr'
+import { SlidersHorizontalGlassIcon } from '@thesvg/ui-react'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -81,7 +81,7 @@ export function ServerProfileCard() {
     <Card id="server-profile">
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <SlidersHorizontalIcon aria-hidden="true" className="size-5" />
+          <SlidersHorizontalGlassIcon aria-hidden="true" className="size-5.5" />
           {t('profile.title')}
           <Badge variant="success">
             {t(`profile.names.${data.configured}`)}

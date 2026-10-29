@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CoinsIcon } from '@phosphor-icons/react/dist/ssr'
+import { CoinsGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -24,7 +24,7 @@ export function CostByTag({ onPickTag }: { onPickTag: (tag: string) => void }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
-          <CoinsIcon />
+          <CoinsGlassIcon size="1.2em" />
           {t('cost.title')}
         </CardTitle>
         <CardDescription>{t('cost.description')}</CardDescription>

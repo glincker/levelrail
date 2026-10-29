@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsLeftRightIcon,
-  CheckCircleIcon,
-  CircleDashedIcon,
-  PauseCircleIcon,
-  PaperPlaneTiltIcon,
-  PencilSimpleIcon,
-  PlusIcon,
-  TrashIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftRightGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CirclePauseGlassIcon,
+  PencilGlassIcon,
+  PlusGlassIcon,
+  SendGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,10 +42,10 @@ import { providerHealth, type ProviderHealth } from './providerHealth'
 import { CARD_FLOAT, PRESS } from './emailStyles'
 
 const HEALTH_ICON = {
-  healthy: CheckCircleIcon,
-  failing: WarningCircleIcon,
-  paused: PauseCircleIcon,
-  untested: CircleDashedIcon,
+  healthy: CircleCheckGlassIcon,
+  failing: CircleAlertGlassIcon,
+  paused: CirclePauseGlassIcon,
+  untested: CircleDashedGlassIcon,
 } as const
 
 const HEALTH_VARIANT = {
@@ -153,7 +153,7 @@ function ProviderRow({
             aria-label={t('emailProviders.row.editLabel', { name })}
             onClick={editing ? onClose : onEdit}
           >
-            <PencilSimpleIcon aria-hidden="true" />
+            <PencilGlassIcon size="1.2em" aria-hidden="true" />
             {t('emailProviders.row.edit')}
           </Button>
           <Button
@@ -167,7 +167,7 @@ function ProviderRow({
               test.mutate({ to: '', providerId: id })
             }}
           >
-            <PaperPlaneTiltIcon aria-hidden="true" />
+            <SendGlassIcon size="1.2em" aria-hidden="true" />
             {test.isPending
               ? t('emailDelivery.test.sending')
               : t('emailProviders.row.test')}
@@ -191,7 +191,7 @@ function ProviderRow({
                 })
               }}
             >
-              <ArrowsLeftRightIcon aria-hidden="true" />
+              <ArrowLeftRightGlassIcon size="1.2em" aria-hidden="true" />
               {t('emailProviders.row.promote')}
             </Button>
           ) : null}
@@ -205,7 +205,7 @@ function ProviderRow({
               setConfirmRemove(true)
             }}
           >
-            <TrashIcon aria-hidden="true" />
+            <TrashGlassIcon size="1.2em" aria-hidden="true" />
             {t('emailProviders.row.remove')}
           </Button>
         </div>
@@ -307,7 +307,7 @@ function AddSlot({
         className={PRESS}
         onClick={onAdd}
       >
-        <PlusIcon aria-hidden="true" />
+        <PlusGlassIcon size="1.2em" aria-hidden="true" />
         {t(`emailProviders.add.${role}.action`)}
       </Button>
     </li>

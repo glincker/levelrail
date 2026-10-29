@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useRegister } from '../queries/auth'
 import { useBrand } from '../hooks/useBrand'
 import { Button } from './ui/button'
@@ -136,7 +136,7 @@ export function RegisterForm({
 
       {adminAlreadyExists ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertTitle>An admin account already exists</AlertTitle>
           <AlertDescription>
             <button
@@ -150,7 +150,7 @@ export function RegisterForm({
         </Alert>
       ) : registerAdmin.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{registerAdmin.error.message}</AlertDescription>
         </Alert>
       ) : null}

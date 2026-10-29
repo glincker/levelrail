@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { DownloadSimpleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -41,7 +41,10 @@ export function DataExportCard() {
         <p className="text-sm text-muted-foreground">{t('export.noSecrets')}</p>
         {failed ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>
                 {start.isError ? t('export.startFailed') : t('export.failed')}
@@ -64,7 +67,7 @@ export function DataExportCard() {
               href={accountExportDownloadUrl(jobId)}
               download
             >
-              <DownloadSimpleIcon aria-hidden="true" />
+              <DownloadGlassIcon size="1.2em" aria-hidden="true" />
               {t('export.download')}
             </a>
             <Button type="button" size="sm" variant="outline" onClick={begin}>

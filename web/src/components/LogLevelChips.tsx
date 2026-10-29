@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react'
 import {
-  BugIcon,
-  InfoIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BugGlassIcon,
+  CircleXGlassIcon,
+  InfoGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import {
   LEVEL_BUCKETS,
@@ -26,22 +26,22 @@ interface LevelMeta {
 const LEVEL_META: Record<LevelBucket, LevelMeta> = {
   error: {
     label: 'error',
-    Icon: XCircleIcon,
+    Icon: CircleXGlassIcon,
     gutter: 'border-red-500 text-red-400',
   },
   warn: {
     label: 'warn',
-    Icon: WarningIcon,
+    Icon: TriangleAlertGlassIcon,
     gutter: 'border-amber-500 text-amber-400',
   },
   info: {
     label: 'info',
-    Icon: InfoIcon,
+    Icon: InfoGlassIcon,
     gutter: 'border-sky-500 text-sky-400',
   },
   debug: {
     label: 'debug',
-    Icon: BugIcon,
+    Icon: BugGlassIcon,
     gutter: 'border-neutral-600 text-neutral-400',
   },
   none: {

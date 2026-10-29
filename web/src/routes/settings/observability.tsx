@@ -12,7 +12,7 @@ import {
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
 import { useTranslation } from 'react-i18next'
-import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChartLineGlassIcon } from '@thesvg/ui-react'
 import { LogVolumeCard } from '../../components/logBudgets/LogVolumeCard'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
@@ -39,7 +39,7 @@ function ObservabilitySettingsPage() {
 
   return (
     <PageTemplate
-      icon={<ChartLineIcon />}
+      icon={<ChartLineGlassIcon size="1.2em" />}
       title={t('observabilityPage.title')}
       description={t('observabilityPage.description')}
     >

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -87,7 +87,7 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ArrowsClockwiseIcon className="size-4" />
+          <RefreshCwGlassIcon className="size-4.5" />
           Deploy strategy
         </CardTitle>
         <CardDescription>

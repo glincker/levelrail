@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GearSixIcon, KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import type { OAuthSSOPolicy, SSOTestResult } from '@/queries/ssoOidc'
 import { fetchSSOTestResult, policyInput } from '@/queries/ssoOidc'
 import type { RoleResource } from '@/queries/roles'
@@ -79,7 +79,7 @@ export function OIDCPolicyList({
     <FormSection title={t('oidc.title')} description={t('oidc.description')}>
       {policies.length === 0 ? (
         <EmptyState
-          icon={<KeyIcon className="size-5" />}
+          icon={<KeyGlassIcon className="size-5.5" />}
           title={t('oidc.emptyTitle')}
           description={t('oidc.emptyBody')}
           compact
@@ -115,7 +115,7 @@ export function OIDCPolicyList({
                 size="sm"
                 onClick={() => setEditing(p.provider)}
               >
-                <GearSixIcon aria-hidden="true" />
+                <SettingsGlassIcon size="1.2em" aria-hidden="true" />
                 {t('list.configure')}
               </Button>
             </li>

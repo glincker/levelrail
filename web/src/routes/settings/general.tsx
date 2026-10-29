@@ -1,12 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
-  BookOpenIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  EnvelopeIcon,
-  LifebuoyIcon,
-  GearIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BookOpenGlassIcon,
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  MailGlassIcon,
+  SettingsGlassIcon,
+} from '@thesvg/ui-react'
+import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -99,12 +99,12 @@ function ConfiguredRow({
     <SettingRow title={label}>
       {configured ? (
         <span className="inline-flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
-          <CheckCircleIcon className="size-4" />
+          <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
           {trueLabel}
         </span>
       ) : (
         <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-          <XCircleIcon className="size-4" />
+          <CircleXGlassIcon className="size-4.5 text-tone-danger" />
           {falseLabel}
         </span>
       )}
@@ -126,7 +126,7 @@ function GeneralSettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                <GearIcon className="size-4" />
+                <SettingsGlassIcon className="size-4.5" />
               </div>
               <div>
                 <CardTitle>{displayName}</CardTitle>
@@ -167,7 +167,7 @@ function GeneralSettingsPage() {
                     render={<a href={`mailto:${brand.SupportEmail}`} />}
                     nativeButton={false}
                   >
-                    <EnvelopeIcon />
+                    <MailGlassIcon size="1.2em" />
                     <span>{brand.SupportEmail}</span>
                   </Button>
                 ) : null}
@@ -184,7 +184,7 @@ function GeneralSettingsPage() {
                     }
                     nativeButton={false}
                   >
-                    <BookOpenIcon />
+                    <BookOpenGlassIcon size="1.2em" />
                     <span>Documentation</span>
                   </Button>
                 ) : null}

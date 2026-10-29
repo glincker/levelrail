@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { EnvelopeIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { MailGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -32,7 +32,7 @@ function EmailMessagesPage() {
       writeAction
       onClick={() => setComposing(true)}
     >
-      <PlusIcon data-icon="inline-start" />
+      <PlusGlassIcon size="1.2em" data-icon="inline-start" />
       {t('messages.compose')}
     </Button>
   )
@@ -57,7 +57,7 @@ function EmailMessagesPage() {
       ) : null}
       {!isLoading && !error && broadcasts.length === 0 ? (
         <EmptyState
-          icon={<EnvelopeIcon className="size-5" />}
+          icon={<MailGlassIcon className="size-5.5" />}
           title={t('messages.history.empty.title')}
           description={t('messages.history.empty.description')}
           action={composeButton}

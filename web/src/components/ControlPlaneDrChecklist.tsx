@@ -1,4 +1,4 @@
-import { CheckCircleIcon, CircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, CircleGlassIcon } from '@thesvg/ui-react'
 import type { ControlPlaneDrChecklist } from '../queries/controlPlaneDr'
 
 const STEPS: { key: keyof ControlPlaneDrChecklist; label: string }[] = [
@@ -25,11 +25,10 @@ export function ControlPlaneDrChecklistView({
       <ol className="space-y-1.5">
         {STEPS.map((s) => {
           const ok = checklist[s.key]
-          const Icon = ok ? CheckCircleIcon : CircleIcon
+          const Icon = ok ? CircleCheckGlassIcon : CircleGlassIcon
           return (
             <li key={s.key} className="flex items-center gap-2 text-sm">
               <Icon
-                weight={ok ? 'fill' : 'regular'}
                 className={
                   ok
                     ? 'size-4 shrink-0 text-emerald-600'

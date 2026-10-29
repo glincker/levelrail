@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ShieldWarningIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  ShieldAlertGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { StatusBadge } from '@/components/ui/status-badge'
 import type { PluginPreview, PluginVerification } from '../../queries/plugins'
@@ -14,12 +14,16 @@ export function VerificationBadge({
   const { t } = useTranslation('plugins')
   const label = t(`verification.${verification.status}`)
   if (verification.status === 'verified') {
-    return <StatusBadge tone="success" icon={CheckCircleIcon} label={label} />
+    return (
+      <StatusBadge tone="success" icon={CircleCheckGlassIcon} label={label} />
+    )
   }
   if (verification.status === 'unsigned') {
-    return <StatusBadge tone="warning" icon={WarningIcon} label={label} />
+    return (
+      <StatusBadge tone="warning" icon={TriangleAlertGlassIcon} label={label} />
+    )
   }
-  return <StatusBadge tone="danger" icon={ShieldWarningIcon} label={label} />
+  return <StatusBadge tone="danger" icon={ShieldAlertGlassIcon} label={label} />
 }
 
 function AbilityRow({
@@ -35,7 +39,7 @@ function AbilityRow({
       {added ? (
         <StatusBadge
           tone="warning"
-          icon={WarningIcon}
+          icon={TriangleAlertGlassIcon}
           label={t('review.newAbility')}
         />
       ) : null}

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockSimpleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { fuzzyMatchIndices } from '@/lib/fuzzy'
 import { spanIndices } from '@/lib/paletteGroups'
@@ -101,8 +101,8 @@ export function ResultRow({
         ) : null}
       </span>
       {item.locked ? (
-        <LockSimpleIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <LockGlassIcon
+          className="size-4 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
       ) : null}
@@ -123,7 +123,7 @@ export function ResultRow({
             item.badge ? '' : 'ml-auto',
           )}
         >
-          <XIcon className="size-3.5" aria-hidden="true" />
+          <XGlassIcon className="size-4" aria-hidden="true" />
         </button>
       ) : null}
       {active ? (
@@ -176,7 +176,7 @@ export function ChipBar({
             className="flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-foreground hover:bg-muted/60"
           >
             {chipLabel(chip)}
-            <XIcon className="size-3" aria-hidden="true" />
+            <XGlassIcon className="size-3.5" aria-hidden="true" />
           </button>
         </li>
       ))}

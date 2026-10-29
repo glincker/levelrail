@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import {
-  CaretDownIcon,
-  KeyIcon,
-  RobotIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BotGlassIcon,
+  ChevronDownGlassIcon,
+  KeyGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -57,7 +57,7 @@ export function TokenTable({ tokens, rotatableIds }: TokenTableProps) {
                 {t('tokens.devFixtureGroupCount', { count: fixtures.length })}
               </Badge>
             </span>
-            <CaretDownIcon className="size-4" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsiblePanel className="space-y-3 pt-3">
             <p className="text-sm text-muted-foreground">
@@ -78,7 +78,7 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
         <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <KeyIcon className="size-5" />
+          <KeyGlassIcon className="size-5.5" />
         </div>
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">
@@ -107,7 +107,10 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
               <Badge variant="muted">{t('tokens.devFixtureBadge')}</Badge>
               {token.abilities.includes('root') ? (
                 <span className="inline-flex items-center gap-1 text-xs text-tone-danger">
-                  <WarningIcon className="size-3.5" aria-hidden="true" />
+                  <TriangleAlertGlassIcon
+                    className="size-4 text-tone-warning"
+                    aria-hidden="true"
+                  />
                   {t('tokens.devFixtureRootWarning')}
                 </span>
               ) : null}
@@ -126,8 +129,8 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
             className="inline-flex items-center gap-1.5 text-foreground"
             title={token.agent.description}
           >
-            <RobotIcon
-              className="size-3.5 text-muted-foreground"
+            <BotGlassIcon
+              className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
             {token.agent.name}

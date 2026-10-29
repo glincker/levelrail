@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PaperPlaneTiltIcon } from '@phosphor-icons/react/dist/ssr'
+import { SendGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -312,7 +312,7 @@ export function BroadcastComposer({
               writeAction
               onClick={() => void review()}
             >
-              <PaperPlaneTiltIcon data-icon="inline-start" />
+              <SendGlassIcon size="1.2em" data-icon="inline-start" />
               {t('messages.composer.review')}
             </Button>
           </DialogFooter>

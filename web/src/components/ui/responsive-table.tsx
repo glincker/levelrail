@@ -6,7 +6,7 @@ import {
   type RefObject,
 } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { DotsThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import { EllipsisGlassIcon } from '@thesvg/ui-react'
 import { ActionMenu, type ActionMenuItem } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import {
@@ -109,7 +109,7 @@ function RowActions<T>({
             size="icon-sm"
             aria-label={actionsLabel?.(row) ?? 'Row actions'}
           >
-            <DotsThreeIcon aria-hidden="true" />
+            <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
           </Button>
         }
         items={items}

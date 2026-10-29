@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  InfoIcon,
-  ShieldWarningIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  InfoGlassIcon,
+  ShieldAlertGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useComposePreview } from '../queries/composeStack'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import type { ComposePreviewService } from '../types/compose'
@@ -31,7 +31,7 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
   if (preview.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
         <AlertDescription>
           {t('preview.loadFailed', { message: preview.error.message })}
         </AlertDescription>
@@ -47,12 +47,15 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
     >
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         {data.valid ? (
-          <CheckCircleIcon
-            className="size-4 text-green-600 dark:text-green-400"
+          <CircleCheckGlassIcon
+            className="size-4.5 text-green-600 dark:text-green-400"
             aria-hidden="true"
           />
         ) : (
-          <WarningIcon className="size-4 text-destructive" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="size-4.5 text-destructive"
+            aria-hidden="true"
+          />
         )}
         {data.valid
           ? t('preview.valid', { count: data.services.length })
@@ -67,7 +70,7 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
       ) : null}
       {data.needs_root ? (
         <Alert>
-          <ShieldWarningIcon />
+          <ShieldAlertGlassIcon className="text-tone-warning" size="1.2em" />
           <AlertDescription>{t('preview.needsRoot')}</AlertDescription>
         </Alert>
       ) : null}
@@ -76,7 +79,10 @@ export function ComposePreviewPanel({ composeYaml }: { composeYaml: string }) {
         ...(data.notices ?? []).map((n) => n.message),
       ].map((msg) => (
         <p key={msg} className="flex gap-1.5 text-xs text-muted-foreground">
-          <InfoIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          <InfoGlassIcon
+            className="mt-0.5 size-4 shrink-0 text-tone-info"
+            aria-hidden="true"
+          />
           {msg}
         </p>
       ))}

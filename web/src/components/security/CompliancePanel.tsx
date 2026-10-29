@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
-import { ShieldCheckIcon, FileZipIcon } from '@phosphor-icons/react/dist/ssr'
+import { FileArchiveGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import {
   accessReviewsQueryOptions,
@@ -95,7 +95,12 @@ function ReviewsCard() {
         </form>
         {(data ?? []).length === 0 ? (
           <EmptyState
-            icon={<ShieldCheckIcon />}
+            icon={
+              <ShieldCheckGlassIcon
+                className="text-tone-success"
+                size="1.2em"
+              />
+            }
             title={t('review.title')}
             description={t('review.empty')}
           />
@@ -204,7 +209,7 @@ function PacksCard() {
         </form>
         {(data ?? []).length === 0 ? (
           <EmptyState
-            icon={<FileZipIcon />}
+            icon={<FileArchiveGlassIcon size="1.2em" />}
             title={t('packs.title')}
             description={t('packs.empty')}
           />

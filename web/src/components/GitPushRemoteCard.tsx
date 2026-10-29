@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckIcon,
-  CopyIcon,
-  GitBranchIcon,
-  ProhibitIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CheckGlassIcon,
+  CopyGlassIcon,
+  GitBranchGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -49,7 +49,11 @@ function CopyLine({ text, label }: { text: string; label: string }) {
           })
         }}
       >
-        {copied ? <CheckIcon /> : <CopyIcon />}
+        {copied ? (
+          <CheckGlassIcon size="1.2em" />
+        ) : (
+          <CopyGlassIcon size="1.2em" />
+        )}
         {copied ? t('push.copied') : t('push.copy')}
       </Button>
     </div>
@@ -112,7 +116,7 @@ export function GitPushRemoteCard({ appName }: { appName: string }) {
   const header = (
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
-        <GitBranchIcon className="size-4 text-muted-foreground" />
+        <GitBranchGlassIcon className="size-4.5 text-muted-foreground" />
         {t('push.title')}
       </CardTitle>
       <CardDescription>{t('push.description')}</CardDescription>
@@ -225,7 +229,7 @@ export function GitPushRemoteCard({ appName }: { appName: string }) {
                   setConfirm('rotate')
                 }}
               >
-                <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+                <RefreshCwGlassIcon className="size-4" aria-hidden="true" />
                 {t('push.rotate')}
               </Button>
               <Button
@@ -235,7 +239,7 @@ export function GitPushRemoteCard({ appName }: { appName: string }) {
                   setConfirm('revoke')
                 }}
               >
-                <ProhibitIcon className="size-3.5" aria-hidden="true" />
+                <BanGlassIcon className="size-4" aria-hidden="true" />
                 {t('push.revoke')}
               </Button>
             </div>

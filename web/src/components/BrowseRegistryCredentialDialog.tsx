@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FolderOpenIcon, TagIcon } from '@phosphor-icons/react/dist/ssr'
+import { FolderGlassIcon, TagGlassIcon } from '@thesvg/ui-react'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
 import {
   Dialog,
@@ -41,7 +41,7 @@ export function BrowseRegistryCredentialDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <FolderOpenIcon className="size-3.5" aria-hidden="true" />
+        <FolderGlassIcon className="size-4" aria-hidden="true" />
         Browse
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -106,7 +106,10 @@ export function BrowseRegistryCredentialDialog({
                     key={tag}
                     className="flex items-center gap-1.5 truncate rounded px-2 py-1 font-mono text-sm text-muted-foreground"
                   >
-                    <TagIcon className="size-3 shrink-0" aria-hidden="true" />
+                    <TagGlassIcon
+                      className="size-3.5 shrink-0"
+                      aria-hidden="true"
+                    />
                     {tag}
                   </li>
                 ))}

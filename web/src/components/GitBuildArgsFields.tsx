@@ -5,7 +5,7 @@ import {
   type FormState,
   type UseFormRegister,
 } from 'react-hook-form'
-import { PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Field,
@@ -78,7 +78,7 @@ export function BuildArgsFields({
                 remove(index)
               }}
             >
-              <XIcon />
+              <XGlassIcon size="1.2em" />
               <span className="sr-only">
                 {t('sourceFields.removeBuildArg')}
               </span>
@@ -96,7 +96,7 @@ export function BuildArgsFields({
           append({ key: '', value: '' })
         }}
       >
-        <PlusIcon />
+        <PlusGlassIcon size="1.2em" />
         {t('sourceFields.addBuildArg')}
       </Button>
     </Field>

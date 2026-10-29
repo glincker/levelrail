@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -178,7 +178,7 @@ function ConfirmSheet({
                     {pv.added_abilities.includes(a) && upgrade ? (
                       <StatusBadge
                         tone="warning"
-                        icon={WarningIcon}
+                        icon={TriangleAlertGlassIcon}
                         label={t('review.newAbility')}
                       />
                     ) : null}

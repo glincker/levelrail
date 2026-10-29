@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { PackageIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { TemplateMarketplace } from '../../components/TemplateMarketplace'
 import { PageBanner } from '../../components/PageBanner'
@@ -42,7 +42,7 @@ function TemplatesPage() {
       initialSelected="browse-templates"
       trigger={
         <Button size="sm" variant="outline">
-          <PlusIcon />
+          <PlusGlassIcon size="1.2em" />
           {t('page.new')}
         </Button>
       }
@@ -57,7 +57,7 @@ function TemplatesPage() {
       description={t('page.description')}
       banner={
         <PageBanner
-          icon={<PackageIcon />}
+          icon={<PackageGlassIcon size="1.2em" />}
           titleKey="templates:page.title"
           descriptionKey="templates:banner.description"
           action={newFromTemplate}

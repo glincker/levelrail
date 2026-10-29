@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -125,7 +125,7 @@ export function GitWorkspacePackages({
           onClick={runCheck}
         >
           {check.isPending ? (
-            <SpinnerIcon className="size-4 animate-spin" />
+            <LoaderGlassIcon className="size-4.5 animate-spin" />
           ) : null}
           {check.isPending ? t('workspace.checking') : t('workspace.check')}
         </Button>

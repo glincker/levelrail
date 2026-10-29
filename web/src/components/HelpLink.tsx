@@ -1,7 +1,7 @@
 import {
-  ArrowSquareOutIcon,
-  QuestionIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleQuestionMarkGlassIcon,
+  ExternalLinkGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Tooltip,
   TooltipContent,
@@ -78,7 +78,7 @@ export function HelpLink({
         )}
       >
         {label}
-        {external ? <ArrowSquareOutIcon className="size-3.5" /> : null}
+        {external ? <ExternalLinkGlassIcon className="size-4" /> : null}
       </a>
     )
   }
@@ -97,7 +97,7 @@ export function HelpLink({
               className,
             )}
           >
-            <QuestionIcon />
+            <CircleQuestionMarkGlassIcon size="1.2em" />
           </a>
         }
       />

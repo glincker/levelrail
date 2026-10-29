@@ -1,9 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  ListBulletsIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ListGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../../types/appDetail'
 import { useRestartApp } from '../../queries/apps'
 import {
@@ -286,7 +283,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
         <EnvPolicyNotice settings={policy} />
         {app.env_dirty ? (
           <Alert>
-            <ArrowsClockwiseIcon aria-hidden />
+            <RefreshCwGlassIcon size="1.2em" aria-hidden />
             <AlertTitle>{t('redeploy.title')}</AlertTitle>
             <AlertDescription>{t('redeploy.description')}</AlertDescription>
             <AlertAction>
@@ -356,7 +353,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
             ) : null}
             {ownRows.length === 0 && !adding ? (
               <EmptyState
-                icon={<ListBulletsIcon />}
+                icon={<ListGlassIcon size="1.2em" />}
                 title={t('empty.title')}
                 description={t('empty.description')}
               />

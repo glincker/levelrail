@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -161,7 +161,7 @@ function FieldRow({
             aria-label={t('designer.moveUp')}
             onClick={() => onMove(-1)}
           >
-            <ArrowUpIcon />
+            <ArrowUpGlassIcon size="1.2em" />
           </Button>
           <Button
             variant="ghost"
@@ -170,7 +170,7 @@ function FieldRow({
             aria-label={t('designer.moveDown')}
             onClick={() => onMove(1)}
           >
-            <ArrowDownIcon />
+            <ArrowDownGlassIcon size="1.2em" />
           </Button>
           <Button
             variant="ghost"
@@ -178,7 +178,7 @@ function FieldRow({
             aria-label={t('designer.remove')}
             onClick={onRemove}
           >
-            <TrashIcon />
+            <TrashGlassIcon size="1.2em" />
           </Button>
         </div>
       </div>
@@ -326,7 +326,7 @@ export function FormDesigner({
           ))}
         </ul>
         <Button writeAction variant="outline" size="sm" onClick={add}>
-          <PlusIcon />
+          <PlusGlassIcon size="1.2em" />
           {usingDefault ? t('designer.customize') : t('designer.addField')}
         </Button>
         <div className="space-y-1.5">

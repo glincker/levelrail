@@ -1,9 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  CheckIcon,
-  CopyIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 
@@ -42,9 +38,9 @@ function CopyCommand({ command, port }: { command: string; port: number }) {
       }}
     >
       {copied ? (
-        <CheckIcon aria-hidden="true" />
+        <CheckGlassIcon size="1.2em" aria-hidden="true" />
       ) : (
-        <CopyIcon aria-hidden="true" />
+        <CopyGlassIcon size="1.2em" aria-hidden="true" />
       )}
     </Button>
   )
@@ -58,7 +54,7 @@ export function TunnelHint({ appName, port, publishedPorts }: TunnelHintProps) {
   return (
     <div className="mt-5 rounded-md bg-muted p-3">
       <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+        <PlugGlassIcon className="size-4.5" aria-hidden="true" />
         {t('tunnel.title')}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">

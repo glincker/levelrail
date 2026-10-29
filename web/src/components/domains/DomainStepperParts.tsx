@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { STEP_IDS, type StepId } from '../../lib/domainStepper'
 
@@ -38,9 +38,8 @@ export function StepperNav({
               )}
             >
               {done && !active ? (
-                <CheckCircleIcon
-                  className="size-3.5 text-emerald-600 dark:text-emerald-400"
-                  weight="fill"
+                <CircleCheckGlassIcon
+                  className="size-4 text-emerald-600 dark:text-emerald-400"
                   aria-hidden="true"
                 />
               ) : (

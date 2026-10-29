@@ -1,10 +1,10 @@
 import {
-  CheckCircleIcon,
-  QuestionIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  TriangleAlertGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { useNodePatchStatus } from '../queries/nodes'
 import type { NodePatchStatusResource } from '../types/nodeDetail'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +14,7 @@ import type { VariantProps } from 'class-variance-authority'
 type PatchState = 'loading' | 'unknown' | 'up-to-date' | 'updates' | 'security'
 
 type PatchStatusConfig = {
-  icon: Icon
+  icon: UiIcon
   variant: VariantProps<typeof badgeVariants>['variant']
   label: string
 }
@@ -54,24 +54,32 @@ function patchStatusConfig(
 ): PatchStatusConfig {
   switch (state) {
     case 'loading':
-      return { icon: QuestionIcon, variant: 'muted', label: 'Checking...' }
+      return {
+        icon: CircleQuestionMarkGlassIcon,
+        variant: 'muted',
+        label: 'Checking...',
+      }
     case 'unknown':
       return {
-        icon: QuestionIcon,
+        icon: CircleQuestionMarkGlassIcon,
         variant: 'muted',
         label: 'Unknown, not checked',
       }
     case 'up-to-date':
-      return { icon: CheckCircleIcon, variant: 'success', label: 'Up to date' }
+      return {
+        icon: CircleCheckGlassIcon,
+        variant: 'success',
+        label: 'Up to date',
+      }
     case 'security':
       return {
-        icon: WarningCircleIcon,
+        icon: CircleAlertGlassIcon,
         variant: 'destructive',
         label: securityLabel(data),
       }
     default:
       return {
-        icon: WarningIcon,
+        icon: TriangleAlertGlassIcon,
         variant: 'warning',
         label: updatesLabel(data),
       }

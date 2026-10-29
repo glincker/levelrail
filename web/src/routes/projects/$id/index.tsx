@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
-  DatabaseIcon,
-  PackageIcon,
-  FolderIcon,
-  ShareNetworkIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  FolderGlassIcon,
+  PackageGlassIcon,
+  Share2GlassIcon,
+} from '@thesvg/ui-react'
 import {
   projectDetailQueryOptions,
   useProject,
@@ -105,7 +105,7 @@ function ProjectDetailPage() {
                   buttonVariants({ variant: 'outline', size: 'sm' }),
                 )}
               >
-                <ShareNetworkIcon aria-hidden="true" />
+                <Share2GlassIcon size="1.2em" aria-hidden="true" />
                 Topology
               </Link>
             )}
@@ -156,7 +156,7 @@ function ProjectDetailPage() {
 
       {isEmpty ? (
         <EmptyState
-          icon={<FolderIcon className="size-5" />}
+          icon={<FolderGlassIcon className="size-5.5" />}
           title="Nothing filed under this project yet"
           description="Assign a project when creating a new app or database, or move an existing one here from its own Overview page."
         />
@@ -166,7 +166,7 @@ function ProjectDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <PackageIcon className="size-4" />
+                  <PackageGlassIcon className="size-4.5" />
                   Apps
                 </CardTitle>
               </CardHeader>
@@ -184,7 +184,7 @@ function ProjectDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DatabaseIcon className="size-4" />
+                  <DatabaseGlassIcon className="size-4.5" />
                   Databases
                 </CardTitle>
               </CardHeader>
@@ -216,7 +216,7 @@ function ProjectDetailPending() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <PackageIcon className="size-4" />
+            <PackageGlassIcon className="size-4.5" />
             Apps
           </CardTitle>
         </CardHeader>
@@ -231,7 +231,7 @@ function ProjectDetailPending() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DatabaseIcon className="size-4" />
+            <DatabaseGlassIcon className="size-4.5" />
             Databases
           </CardTitle>
         </CardHeader>

@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -120,7 +120,7 @@ function FixRow({ appName, fix }: { appName: string; fix: DiagnosisFix }) {
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <WrenchIcon aria-hidden="true" />
+          <WrenchGlassIcon size="1.2em" aria-hidden="true" />
           {open ? 'Hide preview' : 'Preview fix'}
         </Button>
       </div>

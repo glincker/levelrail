@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { COPY_FEEDBACK_MS } from '../lib/copyFeedback'
 import { stripAnsiCodes } from '../lib/ansi'
 import { splitByNeedle } from '../lib/logHighlight'
@@ -135,9 +135,9 @@ export function LogRow({
         className="absolute -top-0.5 right-2 flex h-6 min-w-6 items-center justify-center rounded bg-neutral-800 px-1.5 text-neutral-300 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:text-neutral-100"
       >
         {copied ? (
-          <CheckIcon className="size-3" aria-hidden="true" />
+          <CheckGlassIcon className="size-3.5" aria-hidden="true" />
         ) : (
-          <CopyIcon className="size-3" aria-hidden="true" />
+          <CopyGlassIcon className="size-3.5" aria-hidden="true" />
         )}
       </button>
       {expanded ? (
@@ -151,9 +151,9 @@ export function LogRow({
             className="mt-1 flex min-h-6 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           >
             {copied ? (
-              <CheckIcon className="size-3" aria-hidden="true" />
+              <CheckGlassIcon className="size-3.5" aria-hidden="true" />
             ) : (
-              <CopyIcon className="size-3" aria-hidden="true" />
+              <CopyGlassIcon className="size-3.5" aria-hidden="true" />
             )}
             {copied ? t('logs.copied') : t('logs.copyLine')}
           </button>

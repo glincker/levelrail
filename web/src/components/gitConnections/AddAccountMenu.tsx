@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { KeyIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -63,7 +63,7 @@ export function AddAccountMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button type="button" />}>
-          <PlusIcon className="size-4" aria-hidden="true" />
+          <PlusGlassIcon className="size-4.5" aria-hidden="true" />
           {t('gitConnectionsHub.add.action')}
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-80">
@@ -91,7 +91,7 @@ export function AddAccountMenu() {
             onClick={() => setTokenOpen(true)}
             className="items-start"
           >
-            <KeyIcon className="mt-0.5 size-5" aria-hidden="true" />
+            <KeyGlassIcon className="mt-0.5 size-5.5" aria-hidden="true" />
             <span className="min-w-0">
               <span className="block font-medium text-foreground">
                 {t('gitConnectionsHub.add.withToken')}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ export function RevokeAgentTokensDialog({ disabled }: { disabled: boolean }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WarningIcon className="size-4 text-destructive" />
+            <TriangleAlertGlassIcon className="size-4.5 text-destructive" />
             {t('aiControl.revoke.title')}
           </DialogTitle>
           <DialogDescription>
@@ -44,7 +44,10 @@ export function RevokeAgentTokensDialog({ disabled }: { disabled: boolean }) {
         </DialogHeader>
         {revoke.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{revoke.error.message}</AlertDescription>
           </Alert>
         ) : null}

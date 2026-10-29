@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ArrowClockwiseIcon,
-  ListMagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { FileSearchGlassIcon, RotateCwGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { repoPlanOptions } from '../../queries/importRepoPlan'
@@ -45,7 +42,7 @@ export function ImportPlanPreview({ source }: { source: GitRepoSourceValue }) {
             setRequested(true)
           }}
         >
-          <ListMagnifyingGlassIcon className="size-4" aria-hidden />
+          <FileSearchGlassIcon className="size-4.5" aria-hidden />
           {t('plan.review')}
         </Button>
       </section>
@@ -77,7 +74,7 @@ export function ImportPlanPreview({ source }: { source: GitRepoSourceValue }) {
                 void query.refetch()
               }}
             >
-              <ArrowClockwiseIcon className="size-4" aria-hidden />
+              <RotateCwGlassIcon className="size-4.5" aria-hidden />
               {t('plan.retry')}
             </Button>
           </AlertDescription>

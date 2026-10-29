@@ -1,11 +1,11 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PencilSimpleIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  PencilGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,10 +26,10 @@ export interface PlannedChange {
   detail?: string
 }
 
-const KIND_ICON: Record<ChangeKind, Icon> = {
-  create: PlusIcon,
-  update: PencilSimpleIcon,
-  delete: TrashIcon,
+const KIND_ICON: Record<ChangeKind, UiIcon> = {
+  create: PlusGlassIcon,
+  update: PencilGlassIcon,
+  delete: TrashGlassIcon,
 }
 
 export interface ConfirmChangesDialogProps {

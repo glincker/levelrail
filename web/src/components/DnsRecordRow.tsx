@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  PencilSimpleIcon,
-  TrashIcon,
-  WarningIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  PencilGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -150,7 +150,7 @@ export function RecordRow({
               disabled={saving}
               onClick={() => onSave(draft)}
             >
-              <CheckIcon aria-hidden="true" />
+              <CheckGlassIcon size="1.2em" aria-hidden="true" />
               <span className="sr-only">{t('recordsControl.save')}</span>
             </Button>
             <Button
@@ -160,7 +160,7 @@ export function RecordRow({
               disabled={saving}
               onClick={onCancelEdit}
             >
-              <XIcon aria-hidden="true" />
+              <XGlassIcon size="1.2em" aria-hidden="true" />
               <span className="sr-only">{t('recordsControl.cancel')}</span>
             </Button>
           </div>
@@ -196,7 +196,7 @@ export function RecordRow({
             variant="ghost"
             onClick={onStartEdit}
           >
-            <PencilSimpleIcon aria-hidden="true" />
+            <PencilGlassIcon size="1.2em" aria-hidden="true" />
             <span className="sr-only">{t('recordsControl.editRecord')}</span>
           </Button>
           <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
@@ -210,7 +210,7 @@ export function RecordRow({
                 />
               }
             >
-              <TrashIcon aria-hidden="true" />
+              <TrashGlassIcon size="1.2em" aria-hidden="true" />
               <span className="sr-only">
                 {t('recordsControl.deleteRecord')}
               </span>
@@ -218,7 +218,10 @@ export function RecordRow({
             <DialogContent className="sm:max-w-sm">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-1.5 text-destructive">
-                  <WarningIcon className="size-4" aria-hidden="true" />
+                  <TriangleAlertGlassIcon
+                    className="size-4.5 text-tone-warning"
+                    aria-hidden="true"
+                  />
                   {t('recordsControl.deleteTitle')}
                 </DialogTitle>
                 <DialogDescription>

@@ -2,13 +2,13 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  CheckCircleIcon,
-  CircleDashedIcon,
-  ClockIcon,
-  MinusCircleIcon,
-  SpinnerGapIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CircleMinusGlassIcon,
+  ClockGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -16,11 +16,13 @@ import type { SetupGuideStep, SetupGuideState } from '../../lib/setupGuide'
 import { isOpen } from '../../lib/setupGuide'
 
 const STATE_ICON: Record<SetupGuideState, ReactNode> = {
-  todo: <CircleDashedIcon className="size-5 text-muted-foreground" />,
-  in_progress: <SpinnerGapIcon className="size-5 text-tone-info" />,
-  done: <CheckCircleIcon weight="fill" className="size-5 text-tone-success" />,
-  skipped: <MinusCircleIcon className="size-5 text-muted-foreground" />,
-  not_applicable: <MinusCircleIcon className="size-5 text-muted-foreground" />,
+  todo: <CircleDashedGlassIcon className="size-5.5 text-muted-foreground" />,
+  in_progress: <LoaderCircleGlassIcon className="size-5.5 text-tone-info" />,
+  done: <CircleCheckGlassIcon className="size-5.5 text-tone-success" />,
+  skipped: <CircleMinusGlassIcon className="size-5.5 text-muted-foreground" />,
+  not_applicable: (
+    <CircleMinusGlassIcon className="size-5.5 text-muted-foreground" />
+  ),
 }
 
 export interface StepCardProps {
@@ -102,7 +104,7 @@ export function StepCard({
                   nativeButton={false}
                 >
                   {t(`steps.${step.id}.cta`)}
-                  <ArrowRightIcon aria-hidden="true" />
+                  <ArrowRightGlassIcon size="1.2em" aria-hidden="true" />
                 </Button>
               ))
             ) : step.state !== 'not_applicable' ? (
@@ -160,7 +162,7 @@ function StepMeta({
     <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
       {parts.length > 0 ? (
         <span className="inline-flex items-center gap-1">
-          <ClockIcon aria-hidden="true" className="size-3.5" />
+          <ClockGlassIcon aria-hidden="true" className="size-4" />
           {parts.join(' · ')}
         </span>
       ) : null}

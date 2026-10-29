@@ -3,13 +3,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  ArrowCounterClockwiseIcon,
-  ArrowSquareOutIcon,
-  CaretDownIcon,
-  CaretRightIcon,
-  CheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  CheckGlassIcon,
+  ChevronDownGlassIcon,
+  ChevronRightGlassIcon,
+  ExternalLinkGlassIcon,
+  RotateCcwGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill, type Tone } from '@/components/kit'
 import { formatRelative } from '@/components/kit/formatRelative'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
@@ -91,7 +91,7 @@ function HistoryRow({
               })
             }}
           >
-            <CheckIcon className="size-4" />
+            <CheckGlassIcon className="size-4.5" />
             {t('upgradeHistory.acknowledge')}
           </Button>
         </div>
@@ -106,7 +106,7 @@ function HistoryRow({
         {item.from_version !== '' ? (
           <>
             <VersionChip value={item.from_version} />
-            <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+            <ArrowRightGlassIcon className="size-4 text-muted-foreground" />
           </>
         ) : null}
         <VersionChip value={item.to_version} />
@@ -165,7 +165,7 @@ function HistoryRow({
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
             {t('upgradeHistory.releasePage')}
-            <ArrowSquareOutIcon className="size-3.5" />
+            <ExternalLinkGlassIcon className="size-4" />
           </a>
         ) : item.kind === 'development' ? (
           <span className="text-xs text-muted-foreground">
@@ -180,7 +180,7 @@ function HistoryRow({
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
             {t('upgradeHistory.compare')}
-            <ArrowSquareOutIcon className="size-3.5" />
+            <ExternalLinkGlassIcon className="size-4" />
           </a>
         ) : null}
         {item.rollback_available ? (
@@ -192,7 +192,7 @@ function HistoryRow({
               onRollback(item.from_version)
             }}
           >
-            <ArrowCounterClockwiseIcon className="size-4" />
+            <RotateCcwGlassIcon className="size-4.5" />
             {t('upgradeHistory.rollbackTo', { version: item.from_version })}
           </Button>
         ) : null}
@@ -206,9 +206,9 @@ function HistoryRow({
             }}
           >
             {open ? (
-              <CaretDownIcon className="size-3.5" />
+              <ChevronDownGlassIcon className="size-4" />
             ) : (
-              <CaretRightIcon className="size-3.5" />
+              <ChevronRightGlassIcon className="size-4" />
             )}
             {t('upgradeHistory.notes')}
           </button>

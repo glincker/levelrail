@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  MagnifyingGlassIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
@@ -42,7 +39,7 @@ function RenewButton({ app, domain }: { app: string; domain: string }) {
         })
       }}
     >
-      <ArrowsClockwiseIcon aria-hidden="true" />
+      <RefreshCwGlassIcon size="1.2em" aria-hidden="true" />
       {renew.isPending ? t('certCard.renewing') : t('certCard.renewNow')}
     </Button>
   )
@@ -89,7 +86,7 @@ export function CertExpiryInboxCard({ notice }: { notice: CertNotice }) {
       <div className="flex flex-wrap items-center gap-3">
         {dns || !app ? (
           <a className={buttonVariants({ size: 'sm' })} href={dnsHref}>
-            <MagnifyingGlassIcon aria-hidden="true" />
+            <SearchGlassIcon size="1.2em" aria-hidden="true" />
             {t('certCard.checkDns')}
           </a>
         ) : (

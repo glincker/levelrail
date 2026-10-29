@@ -1,8 +1,8 @@
 import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+} from '@thesvg/ui-react'
 import type { PreflightReport, PreflightStatus } from '../types/preflight'
 
 const STATUS_LABEL: Record<PreflightStatus, string> = {
@@ -14,15 +14,26 @@ const STATUS_LABEL: Record<PreflightStatus, string> = {
 function StatusIcon({ status }: { status: PreflightStatus }) {
   if (status === 'pass') {
     return (
-      <CheckCircleIcon className="size-4 text-success" aria-hidden="true" />
+      <CircleCheckGlassIcon
+        className="size-4.5 text-success"
+        aria-hidden="true"
+      />
     )
   }
   if (status === 'warn') {
     return (
-      <WarningCircleIcon className="size-4 text-warning" aria-hidden="true" />
+      <CircleAlertGlassIcon
+        className="size-4.5 text-warning"
+        aria-hidden="true"
+      />
     )
   }
-  return <XCircleIcon className="size-4 text-destructive" aria-hidden="true" />
+  return (
+    <CircleXGlassIcon
+      className="size-4.5 text-destructive"
+      aria-hidden="true"
+    />
+  )
 }
 
 // Renders one preflight run: each check with its outcome, reason and fix

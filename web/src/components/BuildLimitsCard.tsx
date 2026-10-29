@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -226,7 +226,7 @@ export function BuildLimitsCard({ appName }: { appName: string }) {
     <Card id="build-limits">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeIcon aria-hidden="true" className="size-4" />
+          <GaugeGlassIcon aria-hidden="true" className="size-4.5" />
           {t('limits.title')}
         </CardTitle>
         <p className="text-sm text-muted-foreground">

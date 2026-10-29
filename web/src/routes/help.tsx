@@ -7,11 +7,11 @@ import {
 } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  QuestionIcon,
-  CaretUpIcon,
-  CaretDownIcon,
-  ListBulletsIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ChevronUpGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  ListGlassIcon,
+} from '@thesvg/ui-react'
 import { HelpSearchBox } from '../components/HelpSearchBox'
 import { DocsOnThisPage } from '../components/DocsOnThisPage'
 import { loadDocsManifest } from '../lib/docsManifestLoader'
@@ -112,9 +112,9 @@ function HelpLayout() {
           aria-expanded={isExpanded}
         >
           {isExpanded ? (
-            <CaretDownIcon className="size-3" />
+            <ChevronDownGlassIcon className="size-3.5" />
           ) : (
-            <CaretUpIcon className="size-3" />
+            <ChevronUpGlassIcon className="size-3.5" />
           )}
           {title}
         </button>
@@ -146,7 +146,7 @@ function HelpLayout() {
       <PageHeader
         title={
           <span className="flex items-center gap-2">
-            <QuestionIcon className="size-5 text-muted-foreground" />
+            <CircleQuestionMarkGlassIcon className="size-5.5 text-muted-foreground" />
             Help
           </span>
         }
@@ -216,7 +216,7 @@ function HelpLayout() {
             className="sticky top-4 hidden max-h-[calc(100vh-2rem)] self-start overflow-y-auto xl:block"
           >
             <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              <ListBulletsIcon className="size-3.5" aria-hidden="true" />
+              <ListGlassIcon className="size-4" aria-hidden="true" />
               {tHelp('toc.title')}
             </p>
             <DocsOnThisPage

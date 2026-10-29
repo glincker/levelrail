@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ClockCounterClockwiseIcon,
-  DownloadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon, RestoreGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -335,7 +332,7 @@ export function CleanupHistoryTab() {
             download
             className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
-            <DownloadSimpleIcon aria-hidden="true" />
+            <DownloadGlassIcon size="1.2em" aria-hidden="true" />
             {t('history.exportCsv')}
           </a>
           <a
@@ -343,7 +340,7 @@ export function CleanupHistoryTab() {
             download
             className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
-            <DownloadSimpleIcon aria-hidden="true" />
+            <DownloadGlassIcon size="1.2em" aria-hidden="true" />
             {t('history.exportJson')}
           </a>
         </div>
@@ -366,7 +363,7 @@ export function CleanupHistoryTab() {
       ) : null}
       {runs.isSuccess && list.length === 0 ? (
         <EmptyState
-          icon={<ClockCounterClockwiseIcon className="size-6" />}
+          icon={<RestoreGlassIcon className="size-7" />}
           title={t('history.empty.title')}
           description={
             filtered ? t('history.emptyFiltered') : t('history.empty.body')

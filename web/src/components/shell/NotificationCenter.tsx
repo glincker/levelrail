@@ -3,11 +3,11 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  BellIcon,
-  BellSlashIcon,
-  CheckCircleIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellGlassIcon,
+  BellOffGlassIcon,
+  CircleCheckGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -87,7 +87,7 @@ export function NotificationCenter() {
           />
         }
       >
-        <BellIcon />
+        <BellGlassIcon size="1.2em" />
         {unread > 0 ? (
           <span
             aria-hidden="true"
@@ -130,9 +130,9 @@ export function NotificationCenter() {
         ) : null}
         {groups.length === 0 ? (
           <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center">
-            <CheckCircleIcon
+            <CircleCheckGlassIcon
               aria-hidden="true"
-              className="size-6 text-muted-foreground"
+              className="size-7 text-muted-foreground"
             />
             <p className="text-sm text-muted-foreground">
               You are all caught up.
@@ -205,7 +205,7 @@ export function NotificationCenter() {
                             }
                           }}
                         >
-                          <XIcon />
+                          <XGlassIcon size="1.2em" />
                         </Button>
                       ) : null}
                     </li>
@@ -259,7 +259,7 @@ function SetupActions({ id, snoozed }: { id: string; snoozed: boolean }) {
           snoozeNow(id, '1d')
         }}
       >
-        <BellSlashIcon />
+        <BellOffGlassIcon size="1.2em" />
       </Button>
       <Button
         type="button"
@@ -271,7 +271,7 @@ function SetupActions({ id, snoozed }: { id: string; snoozed: boolean }) {
           snoozeNow(id, 'forever')
         }}
       >
-        <XIcon />
+        <XGlassIcon size="1.2em" />
       </Button>
     </>
   )

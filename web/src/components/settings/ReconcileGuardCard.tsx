@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon, WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon, WrenchGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,7 +19,7 @@ export function ReconcileGuardCard({ guard }: { guard: CPHealthGuard }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          <ShieldCheckIcon />
+          <ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />
           {t('controlPlaneHealth.guard.title')}
         </CardTitle>
       </CardHeader>
@@ -85,7 +85,7 @@ export function ReconcileGuardCard({ guard }: { guard: CPHealthGuard }) {
               )
             }
           >
-            <WrenchIcon />
+            <WrenchGlassIcon size="1.2em" />
             {t('controlPlaneHealth.fixes.reset_reconcile_guard')}
           </Button>
         ) : null}

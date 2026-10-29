@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { dismissTour, TOUR_STEPS } from '@/lib/demoTour'
 
@@ -33,7 +33,7 @@ export function DemoTour({ onClose }: { onClose: () => void }) {
           aria-label={t('tour.skip')}
           onClick={close}
         >
-          <XIcon />
+          <XGlassIcon size="1.2em" />
         </Button>
       </div>
       <h2 className="mt-1 text-sm font-semibold">

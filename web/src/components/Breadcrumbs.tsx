@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CaretRightIcon, HouseIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon, HouseGlassIcon } from '@thesvg/ui-react'
 import { useProjectListOptional } from '../queries/projects'
 import { useOrganizationListOptional } from '../queries/organizations'
 import { useEnvironmentListOptional } from '../queries/environments'
@@ -21,8 +21,8 @@ export const CRUMB_CURRENT_CLASS = 'font-medium text-foreground'
 
 function Separator() {
   return (
-    <CaretRightIcon
-      className="size-3 shrink-0 text-muted-foreground/50"
+    <ChevronRightGlassIcon
+      className="size-3.5 shrink-0 text-muted-foreground/50"
       aria-hidden="true"
     />
   )
@@ -73,7 +73,7 @@ export function Breadcrumbs({
         className={CRUMB_LINK_CLASS}
         aria-label={t('shell.breadcrumb.home')}
       >
-        <HouseIcon className="size-3.5" aria-hidden="true" />
+        <HouseGlassIcon className="size-4" aria-hidden="true" />
       </Link>
 
       {resolvedOrgId ? (

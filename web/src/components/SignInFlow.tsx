@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { FingerprintIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  FingerprintPatternGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   isConditionalPasskeyAvailable,
   isPasskeySupported,
@@ -217,13 +220,16 @@ export function SignInFlow({
             }
             onClick={handlePasskeyButton}
           >
-            <FingerprintIcon />
+            <FingerprintPatternGlassIcon size="1.2em" />
             {t('passkey.discoverable')}
           </Button>
         ) : null}
         {discoverable.isError && !discoverable.variables?.conditional ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>
               {tp(`errors.${classifyPasskeyError(discoverable.error)}`)}
             </AlertDescription>
@@ -240,7 +246,10 @@ export function SignInFlow({
       <div className="space-y-3">
         {finish.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>
               {tp(`errors.${classifyPasskeyError(finish.error)}`)}
             </AlertDescription>
@@ -265,7 +274,7 @@ export function SignInFlow({
             })
           }}
         >
-          <FingerprintIcon />
+          <FingerprintPatternGlassIcon size="1.2em" />
           {finish.isPending
             ? 'Waiting for passkey...'
             : `Sign in as ${username.trim()}`}

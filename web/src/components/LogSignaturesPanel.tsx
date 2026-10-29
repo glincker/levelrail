@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  BellRingingIcon,
-  ListMagnifyingGlassIcon,
-  SparkleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  FileSearchGlassIcon,
+  SparklesGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import { Skeleton } from './ui/skeleton'
 import { TimeRangeControls } from './TimeRangeControls'
@@ -79,7 +79,7 @@ function SignatureRow({
             </span>
             {sig.new ? (
               <span className="inline-flex items-center gap-1 rounded bg-tone-warning-soft px-1.5 py-0.5 font-medium text-tone-warning">
-                <SparkleIcon className="size-3" aria-hidden="true" />
+                <SparklesGlassIcon className="size-3.5" aria-hidden="true" />
                 {t('explorer.newBadge')}
               </span>
             ) : null}
@@ -104,7 +104,7 @@ function SignatureRow({
             onViewLines(sig)
           }}
         >
-          <ListMagnifyingGlassIcon className="size-3.5" aria-hidden="true" />
+          <FileSearchGlassIcon className="size-4" aria-hidden="true" />
           {t('explorer.viewLines')}
         </Button>
         <Button
@@ -115,7 +115,7 @@ function SignatureRow({
             onAlert(sig)
           }}
         >
-          <BellRingingIcon className="size-3.5" aria-hidden="true" />
+          <BellRingGlassIcon className="size-4" aria-hidden="true" />
           {t('explorer.alertOnThis')}
         </Button>
       </div>

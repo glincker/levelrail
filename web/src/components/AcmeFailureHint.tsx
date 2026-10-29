@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import type { AcmeFailure } from '../queries/domainCheck'
 
 // Why a certificate is missing or stuck, in the CA's own words, with the
@@ -18,7 +18,10 @@ export function AcmeFailureHint({
       className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs"
     >
       <p className="flex items-center gap-1.5 font-medium text-foreground">
-        <WarningCircleIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        <CircleAlertGlassIcon
+          className="size-4 shrink-0 text-tone-danger"
+          aria-hidden="true"
+        />
         {failure.renewal ? t('acme.renewalTitle') : t('acme.title')}
       </p>
       {compact ? null : (

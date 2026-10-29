@@ -3,15 +3,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  BellRingingIcon,
-  CheckCircleIcon,
-  DeviceMobileIcon,
-  EnvelopeSimpleIcon,
-  PaperPlaneTiltIcon,
-  PlusCircleIcon,
-  WarningIcon,
-  WebhooksLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  CircleCheckGlassIcon,
+  CirclePlusGlassIcon,
+  MailGlassIcon,
+  SendGlassIcon,
+  SmartphoneGlassIcon,
+  TriangleAlertGlassIcon,
+  WebhookGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -398,7 +398,7 @@ export function CreateNotificationChannelDialog() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WebhooksLogoIcon className="size-4 text-muted-foreground" />
+            <WebhookGlassIcon className="size-4.5 text-muted-foreground" />
             Connect a channel
           </DialogTitle>
           <DialogDescription>
@@ -445,23 +445,23 @@ export function CreateNotificationChannelDialog() {
                             size="sm"
                           />
                         ) : option === 'email' ? (
-                          <EnvelopeSimpleIcon
-                            className="size-5"
+                          <MailGlassIcon
+                            className="size-5.5"
                             aria-hidden="true"
                           />
                         ) : option === 'pushover' ? (
-                          <BellRingingIcon
-                            className="size-5"
+                          <BellRingGlassIcon
+                            className="size-5.5"
                             aria-hidden="true"
                           />
                         ) : option === 'webpush' ? (
-                          <DeviceMobileIcon
-                            className="size-5"
+                          <SmartphoneGlassIcon
+                            className="size-5.5"
                             aria-hidden="true"
                           />
                         ) : (
-                          <WebhooksLogoIcon
-                            className="size-5"
+                          <WebhookGlassIcon
+                            className="size-5.5"
                             aria-hidden="true"
                           />
                         )}
@@ -653,12 +653,15 @@ export function CreateNotificationChannelDialog() {
               disabled={testChannel.isPending || !hasDestination}
               onClick={handleTest}
             >
-              <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
+              <SendGlassIcon className="size-4" aria-hidden="true" />
               {testChannel.isPending ? 'Sending...' : 'Send test message'}
             </Button>
             {verified ? (
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+                <CircleCheckGlassIcon
+                  className="size-4 text-tone-success"
+                  aria-hidden="true"
+                />
                 Test sent
               </span>
             ) : null}
@@ -666,14 +669,17 @@ export function CreateNotificationChannelDialog() {
 
           {createChannel.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.2em"
+              />
               <AlertDescription>{createChannel.error.message}</AlertDescription>
             </Alert>
           ) : null}
 
           <DialogFooter>
             <Button type="submit" disabled={createChannel.isPending}>
-              <PlusCircleIcon className="size-3.5" aria-hidden="true" />
+              <CirclePlusGlassIcon className="size-4" aria-hidden="true" />
               {createChannel.isPending ? 'Connecting...' : 'Connect channel'}
             </Button>
           </DialogFooter>

@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowClockwiseIcon,
-  StopIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  RotateCwGlassIcon,
+  SquareGlassIcon,
+  ThumbsDownGlassIcon,
+  ThumbsUpGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
@@ -73,7 +73,7 @@ function ApprovalGate({
         disabled={decide.isPending}
         onClick={() => act('approved')}
       >
-        <ThumbsUpIcon aria-hidden="true" />
+        <ThumbsUpGlassIcon size="1.2em" aria-hidden="true" />
         {t('detail.approve')}
       </Button>
       <Button
@@ -82,7 +82,7 @@ function ApprovalGate({
         disabled={decide.isPending}
         onClick={() => act('rejected')}
       >
-        <ThumbsDownIcon aria-hidden="true" />
+        <ThumbsDownGlassIcon size="1.2em" aria-hidden="true" />
         {t('detail.reject')}
       </Button>
     </div>
@@ -142,7 +142,7 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
               })
             }
           >
-            <StopIcon aria-hidden="true" />
+            <SquareGlassIcon size="1.2em" aria-hidden="true" />
             {t('detail.cancel')}
           </Button>
         ) : null}
@@ -161,7 +161,7 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
             })
           }
         >
-          <ArrowClockwiseIcon aria-hidden="true" />
+          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
           {t('detail.rerun')}
         </Button>
       </div>
@@ -191,7 +191,7 @@ export function PipelineRunDetail({
   if (error || !run) {
     return (
       <EmptyState
-        icon={<WarningCircleIcon className="size-5" />}
+        icon={<CircleAlertGlassIcon className="size-5.5 text-tone-danger" />}
         title={error ? t('detail.loadFailed') : t('detail.notFound')}
         description={error?.message ?? t('detail.gone')}
         action={

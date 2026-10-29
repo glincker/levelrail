@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
-  CheckCircleIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  KeyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  KeyGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -66,7 +66,7 @@ export function RotateMasterKeyDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <KeyIcon className="size-3.5" aria-hidden="true" />
+        <KeyGlassIcon className="size-4" aria-hidden="true" />
         Rotate master key
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -74,8 +74,8 @@ export function RotateMasterKeyDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
-                <CheckCircleIcon
-                  className="size-4 text-green-600 dark:text-green-400"
+                <CircleCheckGlassIcon
+                  className="size-4.5 text-green-600 dark:text-green-400"
                   aria-hidden="true"
                 />
                 Master key rotated
@@ -88,7 +88,10 @@ export function RotateMasterKeyDialog() {
             </DialogHeader>
             {result.persistedToFile ? (
               <Alert>
-                <CheckCircleIcon />
+                <CircleCheckGlassIcon
+                  className="text-tone-success"
+                  size="1.2em"
+                />
                 <AlertTitle>Written to the master key file</AlertTitle>
                 <AlertDescription>
                   This control plane will pick up the new key automatically on
@@ -97,7 +100,10 @@ export function RotateMasterKeyDialog() {
               </Alert>
             ) : (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.2em"
+                />
                 <AlertTitle>Not persisted to disk</AlertTitle>
                 <AlertDescription>
                   {result.warning ??
@@ -107,7 +113,10 @@ export function RotateMasterKeyDialog() {
             )}
             {result.persistedToFile && result.warning ? (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.2em"
+                />
                 <AlertTitle>Follow-up needed</AlertTitle>
                 <AlertDescription>{result.warning}</AlertDescription>
               </Alert>
@@ -133,7 +142,10 @@ export function RotateMasterKeyDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5 text-destructive">
-                <WarningIcon className="size-4" aria-hidden="true" />
+                <TriangleAlertGlassIcon
+                  className="size-4.5 text-tone-warning"
+                  aria-hidden="true"
+                />
                 Rotate the master key?
               </DialogTitle>
               <DialogDescription>
@@ -179,9 +191,9 @@ export function RotateMasterKeyDialog() {
                   className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   {revealKey ? (
-                    <EyeSlashIcon className="size-4" />
+                    <EyeOffGlassIcon className="size-4.5" />
                   ) : (
-                    <EyeIcon className="size-4" />
+                    <EyeGlassIcon className="size-4.5" />
                   )}
                 </button>
               </div>

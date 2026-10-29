@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,7 +31,10 @@ export function NodeDrainsCard({ nodeId }: { nodeId: string }) {
           <Skeleton className="h-16 w-full" />
         ) : drains.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription className="space-y-2">
               <p>
                 {t('drains.loadFailed')} {drains.error.message}

@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 
 import type { ExistingVolumeInfo } from '../lib/apiError'
@@ -28,7 +28,7 @@ export function ExistingVolumePrompt({
   const data = volumes.find((v) => v.name.endsWith('-data'))
   return (
     <Alert variant="destructive">
-      <WarningIcon />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
       <AlertTitle>{t('existingVolume.title')}</AlertTitle>
       <AlertDescription>
         <p>

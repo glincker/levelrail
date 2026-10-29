@@ -1,6 +1,6 @@
 import { Display } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatSize } from '../../lib/format'
 import type { CoverageSummary as Summary } from '../../types/backupCoverage'
@@ -49,7 +49,10 @@ export function CoverageSummary({
         </div>
         {showAction && summary.unprotected > 0 ? (
           <Button type="button" onClick={onProtect}>
-            <ShieldCheckIcon className="size-4" aria-hidden="true" />
+            <ShieldCheckGlassIcon
+              className="size-4.5 text-tone-success"
+              aria-hidden="true"
+            />
             {t('summary.protectEverything')}
           </Button>
         ) : null}

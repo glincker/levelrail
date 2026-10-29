@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
@@ -40,7 +40,7 @@ export function DeleteNodeDialog({
             setOpen(true)
           }}
         >
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-4" aria-hidden="true" />
           {t('delete.trigger')}
         </Button>
       )}

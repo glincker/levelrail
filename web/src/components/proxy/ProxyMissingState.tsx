@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowUUpLeftIcon,
-  DownloadSimpleIcon,
-  GearSixIcon,
-  InfoIcon,
-  SpinnerIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DownloadGlassIcon,
+  InfoGlassIcon,
+  LoaderGlassIcon,
+  SettingsGlassIcon,
+  UndoGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -120,8 +120,8 @@ export default function ProxyMissingState({
   return (
     <div className="min-w-0 space-y-4">
       <div className="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
-        <InfoIcon
-          className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+        <InfoGlassIcon
+          className="mt-0.5 size-5.5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
         <div className="min-w-0 space-y-1">
@@ -140,7 +140,7 @@ export default function ProxyMissingState({
       </div>
       {refusal ? (
         <Alert>
-          <InfoIcon />
+          <InfoGlassIcon className="text-tone-info" size="1.2em" />
           <AlertTitle>{t('proxyMissing.refusedTitle')}</AlertTitle>
           <AlertDescription>
             <p className="break-words">{refusal}</p>
@@ -157,7 +157,7 @@ export default function ProxyMissingState({
       ) : null}
       <div className="grid min-w-0 gap-3 lg:grid-cols-3">
         <Choice
-          icon={<DownloadSimpleIcon className="size-5" />}
+          icon={<DownloadGlassIcon className="size-5.5" />}
           title={t('proxyMissing.install.title', { proxy: proxyName })}
           body={
             canInstall
@@ -172,14 +172,18 @@ export default function ProxyMissingState({
               onClick={showPlan}
             >
               {loadingPlan ? (
-                <SpinnerIcon className="animate-spin" aria-hidden="true" />
+                <LoaderGlassIcon
+                  size="1.2em"
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
               ) : null}
               {t('proxyMissing.install.action', { proxy: proxyName })}
             </Button>
           ) : null}
         </Choice>
         <Choice
-          icon={<ArrowUUpLeftIcon className="size-5" />}
+          icon={<UndoGlassIcon className="size-5.5" />}
           title={t('proxyMissing.builtin.title')}
           body={t('proxyMissing.builtin.body')}
         >
@@ -193,7 +197,7 @@ export default function ProxyMissingState({
           </Button>
         </Choice>
         <Choice
-          icon={<GearSixIcon className="size-5" />}
+          icon={<SettingsGlassIcon className="size-5.5" />}
           title={t('proxyMissing.elsewhere.title')}
           body={t('proxyMissing.elsewhere.body')}
         >

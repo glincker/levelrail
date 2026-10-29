@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowClockwiseIcon,
-  CopyIcon,
-  DotsThreeIcon,
-  KeyIcon,
-  LinkIcon,
-  PauseIcon,
-  PlayIcon,
-  RocketLaunchIcon,
-  SpinnerIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  EllipsisGlassIcon,
+  KeyGlassIcon,
+  LinkGlassIcon,
+  LoaderGlassIcon,
+  PauseGlassIcon,
+  PlayGlassIcon,
+  RocketGlassIcon,
+  RotateCwGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { ActionMenu } from '@/components/kit'
 import { AppAccessDetailsDialog } from '../templates/AppAccessDetails'
 import { hasTemplateAccess } from '../templates/templateAccess'
@@ -62,7 +62,7 @@ export function AppActionBar({
         onDeploy('existing-image')
       }}
     >
-      <RocketLaunchIcon aria-hidden="true" />
+      <RocketGlassIcon size="1.2em" aria-hidden="true" />
       {t('appActions.deploy', { defaultValue: 'Deploy' })}
     </Button>
   )
@@ -84,12 +84,13 @@ export function AppActionBar({
         onClick={actions.restart}
       >
         {actions.restarting || actions.slowRestart ? (
-          <SpinnerIcon
+          <LoaderGlassIcon
+            size="1.2em"
             aria-hidden="true"
             className="animate-spin motion-reduce:animate-none"
           />
         ) : (
-          <ArrowClockwiseIcon aria-hidden="true" />
+          <RotateCwGlassIcon size="1.2em" aria-hidden="true" />
         )}
         <span className="max-md:sr-only">{actions.restartLabel}</span>
       </Button>
@@ -103,7 +104,7 @@ export function AppActionBar({
               defaultValue: 'More actions',
             })}
           >
-            <DotsThreeIcon aria-hidden="true" />
+            <EllipsisGlassIcon size="1.2em" aria-hidden="true" />
           </Button>
         }
         items={[
@@ -112,7 +113,7 @@ export function AppActionBar({
             label: actions.redeploying
               ? t('appActions.redeploying', { defaultValue: 'Redeploying...' })
               : t('appActions.redeploy', { defaultValue: 'Redeploy current' }),
-            icon: <RocketLaunchIcon />,
+            icon: <RocketGlassIcon size="1.2em" />,
             disabled: actions.redeploying,
             onSelect: actions.redeploy,
           },
@@ -125,14 +126,18 @@ export function AppActionBar({
                 : actions.stopping
                   ? t('appPower.stopping')
                   : t('appActions.stop', { defaultValue: 'Stop' }),
-            icon: app.suspended ? <PlayIcon /> : <PauseIcon />,
+            icon: app.suspended ? (
+              <PlayGlassIcon size="1.2em" />
+            ) : (
+              <PauseGlassIcon size="1.2em" />
+            ),
             disabled: asleep ? wake.isPending : actions.togglingRunning,
             onSelect: asleep ? () => wake.mutate() : actions.toggleRunning,
           },
           {
             id: 'promote',
             label: t('appActions.promote', { defaultValue: 'Promote...' }),
-            icon: <RocketLaunchIcon />,
+            icon: <RocketGlassIcon size="1.2em" />,
             onSelect: () => {
               setPromoteOpen(true)
             },
@@ -140,7 +145,7 @@ export function AppActionBar({
           {
             id: 'clone',
             label: t('appActions.clone', { defaultValue: 'Clone...' }),
-            icon: <CopyIcon />,
+            icon: <CopyGlassIcon size="1.2em" />,
             onSelect: () => {
               setCloneOpen(true)
             },
@@ -150,7 +155,7 @@ export function AppActionBar({
                 {
                   id: 'access-details',
                   label: tt('access.open'),
-                  icon: <KeyIcon />,
+                  icon: <KeyGlassIcon size="1.2em" />,
                   onSelect: () => {
                     setAccessOpen(true)
                   },
@@ -162,7 +167,7 @@ export function AppActionBar({
                 {
                   id: 'deploy-link',
                   label: tn('deployLinkDialog.action'),
-                  icon: <LinkIcon />,
+                  icon: <LinkGlassIcon size="1.2em" />,
                   onSelect: () => {
                     setLinkOpen(true)
                   },
@@ -172,7 +177,7 @@ export function AppActionBar({
           {
             id: 'delete',
             label: t('appActions.delete', { defaultValue: 'Delete...' }),
-            icon: <TrashIcon />,
+            icon: <TrashGlassIcon size="1.2em" />,
             tone: 'danger',
             onSelect: () => {
               setDeleteOpen(true)

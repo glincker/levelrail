@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -95,8 +95,8 @@ export function ConfigureLoadBalancerDialog({
                     pick(app.name)
                   }}
                 >
-                  <PackageIcon
-                    className="size-4 text-muted-foreground"
+                  <PackageGlassIcon
+                    className="size-4.5 text-muted-foreground"
                     aria-hidden="true"
                   />
                   <span className="truncate">{app.name}</span>

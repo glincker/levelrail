@@ -1,4 +1,4 @@
-import { TagIcon } from '@phosphor-icons/react/dist/ssr'
+import { TagGlassIcon } from '@thesvg/ui-react'
 import { useTags } from '../queries/tags'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,7 @@ export function TagFilter({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <TagIcon />
+        <TagGlassIcon size="1.2em" />
         Tags
         {selected.length > 0 ? (
           <Badge variant="muted" className="ml-1 px-1.5 text-[11px]">

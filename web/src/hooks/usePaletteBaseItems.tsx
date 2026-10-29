@@ -1,10 +1,7 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import {
-  KeyboardIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { KeyboardGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
 import { usePageActions } from '@/lib/pageActions'
 import { openCliModal } from '@/lib/cliModalStore'
 import { useTheme, type Theme } from '../components/ThemeProvider'
@@ -76,7 +73,7 @@ export function usePaletteBaseItems(
         label: t('keyboardShortcuts'),
         keywords: t('keyboardShortcutsKeywords'),
         group: 'Actions',
-        icon: <KeyboardIcon />,
+        icon: <KeyboardGlassIcon size="1.2em" />,
         run: onShowShortcuts,
       })
     }
@@ -85,7 +82,7 @@ export function usePaletteBaseItems(
       label: tCli('cliModal.openAction'),
       keywords: tCli('cliModal.openKeywords'),
       group: 'Actions',
-      icon: <TerminalWindowIcon />,
+      icon: <TerminalGlassIcon size="1.2em" />,
       run: openCliModal,
     })
     items.push(...traffic.base, ...resourceItems, ...appTabItems)

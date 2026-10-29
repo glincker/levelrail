@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { UsersThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import { UsersGlassIcon } from '@thesvg/ui-react'
 import {
   Select,
   SelectContent,
@@ -50,7 +50,7 @@ export function TeamSwitcher() {
           className="w-40"
           aria-label={t('switcher.team')}
         >
-          <UsersThreeIcon aria-hidden="true" />
+          <UsersGlassIcon size="1.2em" aria-hidden="true" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

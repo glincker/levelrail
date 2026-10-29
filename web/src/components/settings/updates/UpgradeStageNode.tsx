@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, MinusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, MinusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { PhaseView } from '../../../lib/upgradePhases'
 import { formatElapsed } from '../../../lib/upgradeTime'
@@ -100,13 +100,13 @@ export function UpgradeStageNode({
           )}
         >
           {phase.state === 'ok' ? (
-            <CheckIcon className="size-4" weight="bold" aria-hidden />
+            <CheckGlassIcon className="size-4.5" aria-hidden />
           ) : null}
           {phase.state === 'failed' ? (
-            <XIcon className="size-4" weight="bold" aria-hidden />
+            <XGlassIcon className="size-4.5" aria-hidden />
           ) : null}
           {phase.state === 'skipped' ? (
-            <MinusIcon className="size-4" weight="bold" aria-hidden />
+            <MinusGlassIcon className="size-4.5" aria-hidden />
           ) : null}
         </span>
       </span>

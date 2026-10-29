@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowCounterClockwiseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RotateCcwGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useDatabaseUpgrades } from '../../queries/databaseUpgrades'
 import type { UpgradeKind } from '../../types/databaseUpgrades'
 
@@ -34,7 +31,10 @@ export function UpgradeStepList({
           className="flex items-start gap-2 rounded-md border border-destructive/40 p-3 text-sm text-destructive"
           role="alert"
         >
-          <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
+            aria-hidden="true"
+          />
           {t('steps.majorWarning')}
         </p>
       ) : null}
@@ -58,8 +58,8 @@ export function UpgradeStepList({
         ))}
       </ol>
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
-        <ArrowCounterClockwiseIcon
-          className="mt-0.5 size-4 shrink-0"
+        <RotateCcwGlassIcon
+          className="mt-0.5 size-4.5 shrink-0"
           aria-hidden="true"
         />
         {autoRevert ? t('steps.rollbackAuto') : t('steps.rollbackManual')}

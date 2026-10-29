@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ListMagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { FileSearchGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -71,7 +71,7 @@ export function EdgeAccessPanel({ app }: { app: string }) {
           {list.data && list.data.length === 0 ? (
             <EmptyState
               compact
-              icon={<ListMagnifyingGlassIcon className="size-4" />}
+              icon={<FileSearchGlassIcon className="size-4.5" />}
               title={t('list.emptyTitle')}
               description={t('list.empty')}
               action={

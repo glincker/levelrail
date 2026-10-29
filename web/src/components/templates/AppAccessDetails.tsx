@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ export function AppAccessDetails({ app }: { app: AppDetail }) {
         id="access-details-title"
         className="mb-2 flex items-center gap-1.5 text-sm font-semibold"
       >
-        <KeyIcon className="size-4" aria-hidden="true" />
+        <KeyGlassIcon className="size-4.5" aria-hidden="true" />
         {t('access.title')}
       </h2>
       <TemplateAccessCard app={app} hideLinks />

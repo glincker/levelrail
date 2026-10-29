@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  LockIcon,
-  SlidersHorizontalIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LockGlassIcon,
+  SlidersHorizontalGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -64,7 +64,7 @@ export function PreviewPrEnvEditor({
           setOpen((v) => !v)
         }}
       >
-        <SlidersHorizontalIcon />
+        <SlidersHorizontalGlassIcon size="1.2em" />
         {t('prEnv.button')}
       </Button>
       {open ? (
@@ -87,7 +87,7 @@ export function PreviewPrEnvEditor({
                     <span>{o.key}</span>
                     {o.secret ? (
                       <span className="flex items-center gap-1 text-muted-foreground">
-                        <LockIcon className="size-3.5" aria-hidden="true" />
+                        <LockGlassIcon className="size-4" aria-hidden="true" />
                         {t('prEnv.hidden')}
                       </span>
                     ) : (
@@ -106,7 +106,7 @@ export function PreviewPrEnvEditor({
                     }}
                     aria-label={t('prEnv.remove', { key: o.key })}
                   >
-                    <TrashIcon className="size-4 text-muted-foreground" />
+                    <TrashGlassIcon className="size-4.5 text-muted-foreground" />
                   </Button>
                 </li>
               ))}

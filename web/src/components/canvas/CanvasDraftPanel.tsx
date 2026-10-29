@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { ProjectTopologyGraph } from '../../types/projectTopology'
 import type { DraftOp } from '../../lib/canvasDraft'
@@ -58,7 +58,7 @@ export function CanvasDraftPanel({
     <div className="space-y-5 text-sm">
       <div className="flex flex-wrap gap-2">
         <Button type="button" size="sm" variant="outline" onClick={onAddApp}>
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.2em" aria-hidden="true" />
           {t('add.app')}
         </Button>
         <Button
@@ -67,7 +67,7 @@ export function CanvasDraftPanel({
           variant="outline"
           onClick={onAddDatabase}
         >
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.2em" aria-hidden="true" />
           {t('add.database')}
         </Button>
       </div>
@@ -107,7 +107,7 @@ export function CanvasDraftPanel({
                     aria-label={t('connections.remove', { app, database })}
                     onClick={() => onDisconnect(app, database)}
                   >
-                    <XIcon aria-hidden="true" />
+                    <XGlassIcon size="1.2em" aria-hidden="true" />
                   </Button>
                 </li>
               )
@@ -151,7 +151,7 @@ export function CanvasDraftPanel({
                       aria-label={t('draft.remove', { label })}
                       onClick={() => onRemoveOp(op.id)}
                     >
-                      <XIcon aria-hidden="true" />
+                      <XGlassIcon size="1.2em" aria-hidden="true" />
                     </Button>
                   </li>
                 )

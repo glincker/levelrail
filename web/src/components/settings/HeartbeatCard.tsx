@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
+import { ActivityGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import {
@@ -181,7 +181,7 @@ export function HeartbeatCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HeartbeatIcon aria-hidden="true" />
+          <ActivityGlassIcon size="1.2em" aria-hidden="true" />
           {t('heartbeat.title')}
         </CardTitle>
         <CardDescription>{t('heartbeat.description')}</CardDescription>

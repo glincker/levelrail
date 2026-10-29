@@ -1,9 +1,9 @@
 import {
-  CheckCircleIcon,
-  QuestionIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { useNode } from '../queries/nodes'
 import type { NodeAlertState } from '../types/nodeDetail'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,14 +18,22 @@ type AlertStatusRow = {
 const stateConfig: Record<
   NodeAlertState,
   {
-    icon: Icon
+    icon: UiIcon
     variant: VariantProps<typeof badgeVariants>['variant']
     label: string
   }
 > = {
-  ok: { icon: CheckCircleIcon, variant: 'success', label: 'OK' },
-  firing: { icon: WarningCircleIcon, variant: 'destructive', label: 'Firing' },
-  unknown: { icon: QuestionIcon, variant: 'muted', label: 'Unknown' },
+  ok: { icon: CircleCheckGlassIcon, variant: 'success', label: 'OK' },
+  firing: {
+    icon: CircleAlertGlassIcon,
+    variant: 'destructive',
+    label: 'Firing',
+  },
+  unknown: {
+    icon: CircleQuestionMarkGlassIcon,
+    variant: 'muted',
+    label: 'Unknown',
+  },
 }
 
 // GET /api/v1/nodes/{id}'s alert_status (internal/api/nodes.go's

@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsOutIcon,
-  HardDrivesIcon,
-  LockIcon,
-  LockOpenIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LockGlassIcon,
+  LockOpenGlassIcon,
+  MaximizeGlassIcon,
+  ServerGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusPill } from '@/components/kit/StatusPill'
 import type { Tone } from '@/components/kit/tone'
 import { Badge } from '@/components/ui/badge'
@@ -204,7 +204,7 @@ export function NodesTable({
               aria-hidden="true"
               className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
             >
-              <HardDrivesIcon className="size-4" />
+              <ServerGlassIcon className="size-4.5" />
             </span>
           ),
         }}
@@ -215,7 +215,11 @@ export function NodesTable({
             label: node.schedulable
               ? t('cordon.trigger')
               : t('uncordon.trigger'),
-            icon: node.schedulable ? <LockIcon /> : <LockOpenIcon />,
+            icon: node.schedulable ? (
+              <LockGlassIcon size="1.2em" />
+            ) : (
+              <LockOpenGlassIcon size="1.2em" />
+            ),
             onSelect: () => {
               setDialog({ kind: 'cordon', node })
             },
@@ -223,7 +227,7 @@ export function NodesTable({
           {
             id: 'drain',
             label: t('drain.trigger'),
-            icon: <ArrowsOutIcon />,
+            icon: <MaximizeGlassIcon size="1.2em" />,
             onSelect: () => {
               setDialog({ kind: 'drain', node })
             },
@@ -231,7 +235,7 @@ export function NodesTable({
           {
             id: 'delete',
             label: t('delete.trigger'),
-            icon: <TrashIcon />,
+            icon: <TrashGlassIcon size="1.2em" />,
             tone: 'danger',
             onSelect: () => {
               setDialog({ kind: 'delete', node })

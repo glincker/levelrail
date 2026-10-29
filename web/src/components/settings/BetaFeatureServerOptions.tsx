@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { RestartControlPlaneButton } from '@/components/RestartControlPlaneButton'
 import { Button } from '@/components/ui/button'
 import {
@@ -42,9 +42,9 @@ function CopyLine({ line, label }: { line: string; label: string }) {
       </code>
       <Button type="button" variant="outline" size="sm" onClick={copy}>
         {copied ? (
-          <CheckIcon aria-hidden="true" />
+          <CheckGlassIcon size="1.2em" aria-hidden="true" />
         ) : (
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.2em" aria-hidden="true" />
         )}
         {copied ? t('env.copied') : t('env.copy')}
       </Button>

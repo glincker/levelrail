@@ -1,8 +1,8 @@
 import {
-  ClockCounterClockwiseIcon,
-  WifiHighIcon,
-  WifiSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  RestoreGlassIcon,
+  WifiHighGlassIcon,
+  WifiOffGlassIcon,
+} from '@thesvg/ui-react'
 import { useMeshStatus } from '../../queries/mesh'
 import type { MeshPeerResource } from '../../types/mesh'
 import { DeleteNodeDialog } from '../DeleteNodeDialog'
@@ -72,17 +72,17 @@ function PeerRow({
       <div>
         {!peer.live ? (
           <Badge variant="muted">
-            <ClockCounterClockwiseIcon className="size-3" aria-hidden="true" />
+            <RestoreGlassIcon className="size-3.5" aria-hidden="true" />
             Not peered yet
           </Badge>
         ) : peer.healthy ? (
           <Badge variant="success">
-            <WifiHighIcon className="size-3" aria-hidden="true" />
+            <WifiHighGlassIcon className="size-3.5" aria-hidden="true" />
             Healthy
           </Badge>
         ) : (
           <Badge variant="destructive">
-            <WifiSlashIcon className="size-3" aria-hidden="true" />
+            <WifiOffGlassIcon className="size-3.5" aria-hidden="true" />
             Stale
           </Badge>
         )}

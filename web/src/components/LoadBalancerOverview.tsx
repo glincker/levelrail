@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowsSplitIcon } from '@phosphor-icons/react/dist/ssr'
+import { SplitGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { HelpLink } from './HelpLink'
@@ -114,7 +114,7 @@ export function LoadBalancerOverview() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<ArrowsSplitIcon />}
+        icon={<SplitGlassIcon size="1.2em" />}
         titleKey="common:banners.loadBalancers.title"
         descriptionKey={
           isEmpty

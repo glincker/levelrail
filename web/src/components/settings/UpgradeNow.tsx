@@ -18,7 +18,7 @@ import {
 } from '../../queries/selfUpgrade'
 import { isSeen, markSeen } from '../../lib/upgradeSeen'
 import { scheduleQueryOptions } from '../../queries/upgradeSchedule'
-import { ShieldCheck } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { CliFallback } from './CliFallback'
 import { CopyCommand } from './CopyCommand'
 import { ScheduleUpgradeDialog } from './ScheduleUpgradeDialog'
@@ -263,7 +263,10 @@ export function UpgradeNow() {
       <UpgradePlanPreview pre={pre} />
       {planData && planData.signature_pinned === false ? (
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
+          <ShieldCheckGlassIcon
+            aria-hidden
+            className="mt-0.5 size-4.5 shrink-0 text-tone-success"
+          />
           {t('selfUpgrade.notPinned')}
         </p>
       ) : null}

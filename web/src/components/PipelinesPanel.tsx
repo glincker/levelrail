@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
-  PencilSimpleIcon,
-  PlusIcon,
-  TreeStructureIcon,
-  TrashIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BinaryTreeGlassIcon,
+  PencilGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -84,13 +84,16 @@ function DeletePipelineDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon aria-hidden="true" />
+        <TrashGlassIcon size="1.2em" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-4.5 text-tone-warning"
+              aria-hidden="true"
+            />
             Delete &ldquo;{pipeline.name}&rdquo;?
           </DialogTitle>
           <DialogDescription>
@@ -100,7 +103,10 @@ function DeletePipelineDialog({
         </DialogHeader>
         {del.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.2em"
+            />
             <AlertDescription>{del.error.message}</AlertDescription>
           </Alert>
         ) : null}
@@ -191,7 +197,7 @@ function PipelineRow({
         params={{ name: appName, pipeline: pipeline.name }}
         className={buttonVariants({ variant: 'outline', size: 'sm' })}
       >
-        <PencilSimpleIcon aria-hidden="true" />
+        <PencilGlassIcon size="1.2em" aria-hidden="true" />
         Edit
       </Link>
       <DeletePipelineDialog appName={appName} pipeline={pipeline} />
@@ -208,7 +214,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
       params={{ name: appName }}
       className={buttonVariants({ size: 'sm' })}
     >
-      <PlusIcon aria-hidden="true" />
+      <PlusGlassIcon size="1.2em" aria-hidden="true" />
       New pipeline
     </Link>
   )
@@ -218,8 +224,8 @@ export function PipelinesPanel({ appName }: { appName: string }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-              <TreeStructureIcon
-                className="size-4 text-muted-foreground"
+              <BinaryTreeGlassIcon
+                className="size-4.5 text-muted-foreground"
                 aria-hidden="true"
               />
               Pipelines
@@ -240,7 +246,9 @@ export function PipelinesPanel({ appName }: { appName: string }) {
             <TableSkeleton columnCount={4} rowCount={2} />
           ) : error ? (
             <EmptyState
-              icon={<WarningIcon className="size-5" />}
+              icon={
+                <TriangleAlertGlassIcon className="size-5.5 text-tone-warning" />
+              }
               title="Pipelines could not be loaded"
               description={error.message}
               action={
@@ -257,7 +265,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
             />
           ) : pipelines.length === 0 ? (
             <EmptyState
-              icon={<TreeStructureIcon className="size-5" />}
+              icon={<BinaryTreeGlassIcon className="size-5.5" />}
               title="No pipelines yet"
               description="Define triggers, jobs, and steps in YAML to run tests, build images, and deploy this app."
               action={newLink}

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { HeaderRulesEditor } from './HeaderRulesEditor'
@@ -55,7 +55,10 @@ export function HeadersTab({
               variant="outline"
               onClick={() => set({ security: policies.security_preset })}
             >
-              <ShieldCheckIcon />
+              <ShieldCheckGlassIcon
+                className="text-tone-success"
+                size="1.2em"
+              />
               {t('headers.presetSecurity')}
             </Button>
             <Button

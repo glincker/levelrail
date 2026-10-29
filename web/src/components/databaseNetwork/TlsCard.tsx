@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -64,7 +64,7 @@ export function TlsCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <LockSimpleIcon className="size-4" aria-hidden="true" />
+          <LockGlassIcon className="size-4.5" aria-hidden="true" />
           {t('tls.title')}
           <Badge variant={tls.required ? 'success' : 'muted'}>
             {tls.required ? t('tls.required') : t('tls.optional')}

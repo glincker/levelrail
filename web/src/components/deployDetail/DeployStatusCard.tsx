@@ -1,25 +1,25 @@
 import { Link } from '@tanstack/react-router'
 import {
-  CheckCircleIcon,
-  InfoIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  InfoGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { TONE, type Tone } from '../kit/tone'
 import { cn } from '@/lib/utils'
 import type { DeployAction, DeployState } from '../../lib/deployState'
 import { useDeployDetailT } from './useDeployDetailT'
 
-const TONE_ICON: Record<Tone, Icon> = {
-  neutral: InfoIcon,
-  info: SpinnerGapIcon,
-  success: CheckCircleIcon,
-  warning: WarningIcon,
-  danger: WarningCircleIcon,
-  accent: InfoIcon,
+const TONE_ICON: Record<Tone, UiIcon> = {
+  neutral: InfoGlassIcon,
+  info: LoaderCircleGlassIcon,
+  success: CircleCheckGlassIcon,
+  warning: TriangleAlertGlassIcon,
+  danger: CircleAlertGlassIcon,
+  accent: InfoGlassIcon,
 }
 
 /** DeployStatusCard is the single authoritative statement of where a deploy is. */
@@ -70,7 +70,10 @@ export function DeployStatusCard({
 
       {state.disagreement ? (
         <p className="flex items-start gap-2 rounded-md bg-background/60 px-3 py-2 text-sm text-muted-foreground">
-          <InfoIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <InfoGlassIcon
+            className="mt-0.5 size-4.5 shrink-0 text-tone-info"
+            aria-hidden="true"
+          />
           {msg(state.disagreement)}
         </p>
       ) : null}

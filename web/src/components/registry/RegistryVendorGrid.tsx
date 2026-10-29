@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import { UrlDialog } from '../kit/UrlDialog'
@@ -33,7 +33,7 @@ function VendorTile({ vendor }: { vendor: RegistryVendor }) {
         aria-label={t('registryVendors.connectFor', { vendor: vendor.name })}
         onClick={() => dialog.open()}
       >
-        <PlugsConnectedIcon aria-hidden="true" />
+        <PlugGlassIcon size="1.2em" aria-hidden="true" />
         {t('registryVendors.connect')}
       </Button>
       <UrlDialog

@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
-  GlobeHemisphereWestIcon,
-  LockKeyIcon,
-  ShareNetworkIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GlobeGlassIcon,
+  LockGlassIcon,
+  Share2GlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -138,16 +138,16 @@ export function ReachabilityCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-1.5 text-sm">
-          <ShareNetworkIcon className="size-4" aria-hidden="true" />
+          <Share2GlassIcon className="size-4.5" aria-hidden="true" />
           {t('reach.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert variant={exposed ? 'destructive' : 'default'}>
           {exposed ? (
-            <GlobeHemisphereWestIcon aria-hidden="true" />
+            <GlobeGlassIcon size="1.2em" aria-hidden="true" />
           ) : (
-            <LockKeyIcon aria-hidden="true" />
+            <LockGlassIcon size="1.2em" aria-hidden="true" />
           )}
           <AlertTitle>{verdictText(t, network)}</AlertTitle>
           {network.published ? (

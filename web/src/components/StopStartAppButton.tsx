@@ -1,4 +1,4 @@
-import { PauseIcon, PlayIcon } from '@phosphor-icons/react/dist/ssr'
+import { PauseGlassIcon, PlayGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useStartApp, useStopApp } from '../queries/apps'
@@ -40,7 +40,7 @@ export function StopStartAppButton({
           })
         }}
       >
-        <PlayIcon className="size-3.5" aria-hidden="true" />
+        <PlayGlassIcon className="size-4" aria-hidden="true" />
         {wake.isPending ? 'Waking...' : 'Wake now'}
       </Button>
     )
@@ -63,7 +63,7 @@ export function StopStartAppButton({
           })
         }}
       >
-        <PlayIcon className="size-3.5" aria-hidden="true" />
+        <PlayGlassIcon className="size-4" aria-hidden="true" />
         {startApp.isPending ? 'Starting...' : 'Start'}
       </Button>
     )
@@ -85,7 +85,7 @@ export function StopStartAppButton({
         })
       }}
     >
-      <PauseIcon className="size-3.5" aria-hidden="true" />
+      <PauseGlassIcon className="size-4" aria-hidden="true" />
       {stopApp.isPending ? 'Stopping...' : 'Stop'}
     </Button>
   )

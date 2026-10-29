@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import {
   useDiscoverAppHealth,
   type HealthDiscoveryResult,
@@ -77,8 +74,8 @@ function HealthDiscoveryResultView({
     const found = result.found
     return (
       <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-sm">
-        <CheckCircleIcon
-          className="size-4 shrink-0 text-emerald-600"
+        <CircleCheckGlassIcon
+          className="size-4.5 shrink-0 text-emerald-600"
           aria-hidden="true"
         />
         <span>
@@ -98,13 +95,13 @@ function HealthDiscoveryResultView({
         <li key={a.path} className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5">
             {a.success ? (
-              <CheckCircleIcon
-                className="size-3.5 shrink-0 text-emerald-600"
+              <CircleCheckGlassIcon
+                className="size-4 shrink-0 text-emerald-600"
                 aria-hidden="true"
               />
             ) : (
-              <WarningCircleIcon
-                className="size-3.5 shrink-0 text-muted-foreground"
+              <CircleAlertGlassIcon
+                className="size-4 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
             )}

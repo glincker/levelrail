@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { KeyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -71,7 +71,7 @@ export function ControlPlaneDrEscrow({ status }: { status: ControlPlaneDr }) {
             setOpen(true)
           }}
         >
-          <KeyIcon className="size-3.5" aria-hidden="true" />
+          <KeyGlassIcon className="size-4" aria-hidden="true" />
           Escrow bundle
         </Button>
       </div>
@@ -94,8 +94,8 @@ export function ControlPlaneDrEscrow({ status }: { status: ControlPlaneDr }) {
             role="note"
             className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground"
           >
-            <WarningIcon
-              className="mt-0.5 size-4 shrink-0"
+            <TriangleAlertGlassIcon
+              className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             <span>

@@ -2,17 +2,17 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  BookOpenIcon,
-  ChatCircleDotsIcon,
-  GearIcon,
-  LifebuoyIcon,
-  MonitorIcon,
-  MoonIcon,
-  NotePencilIcon,
-  SignOutIcon,
-  SunIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  BookOpenGlassIcon,
+  LogOutGlassIcon,
+  MessageCircleGlassIcon,
+  MonitorGlassIcon,
+  MoonGlassIcon,
+  SettingsGlassIcon,
+  SquarePenGlassIcon,
+  SunGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
+import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import {
   DropdownMenu,
@@ -32,10 +32,10 @@ import { UserAvatar } from '../account/UserAvatar'
 import { useTheme, type Theme } from '../ThemeProvider'
 import { useAttentionSummary } from './useAttentionSummary'
 
-const THEMES: { value: Theme; icon: Icon }[] = [
-  { value: 'system', icon: MonitorIcon },
-  { value: 'light', icon: SunIcon },
-  { value: 'dark', icon: MoonIcon },
+const THEMES: { value: Theme; icon: UiIcon }[] = [
+  { value: 'system', icon: MonitorGlassIcon },
+  { value: 'light', icon: SunGlassIcon },
+  { value: 'dark', icon: MoonGlassIcon },
 ]
 
 function ThemeRow() {
@@ -153,7 +153,7 @@ export function AccountMenu() {
             aria-label={t('shell.accountMenu.account')}
             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <GearIcon className="size-4" />
+            <SettingsGlassIcon className="size-4.5" />
           </Link>
         </div>
         <div className="p-1">
@@ -167,13 +167,13 @@ export function AccountMenu() {
                 />
               }
             >
-              <ChatCircleDotsIcon />
+              <MessageCircleGlassIcon size="1.2em" />
               {t('shell.accountMenu.feedback')}
             </DropdownMenuLinkItem>
           ) : null}
           <ThemeRow />
           <DropdownMenuLinkItem render={<Link to="/settings/updates" />}>
-            <NotePencilIcon />
+            <SquarePenGlassIcon size="1.2em" />
             {t('shell.accountMenu.changelog')}
           </DropdownMenuLinkItem>
           <DropdownMenuLinkItem render={<Link to="/help" />}>
@@ -186,7 +186,7 @@ export function AccountMenu() {
                 <a href={brand.DocsURL} target="_blank" rel="noreferrer" />
               }
             >
-              <BookOpenIcon />
+              <BookOpenGlassIcon size="1.2em" />
               {t('shell.accountMenu.docs')}
             </DropdownMenuLinkItem>
           ) : null}
@@ -197,7 +197,7 @@ export function AccountMenu() {
               logout.mutate()
             }}
           >
-            <SignOutIcon />
+            <LogOutGlassIcon size="1.2em" />
             {t('shell.account.signOut')}
           </DropdownMenuItem>
         </div>

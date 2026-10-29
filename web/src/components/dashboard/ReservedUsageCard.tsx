@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SkeletonTile } from '@/components/kit'
 import type { AppListEntry } from '../../types/appDetail'
@@ -120,8 +120,8 @@ export function ReservedUsageCard({ apps }: { apps: AppListEntry[] }) {
     <Card size="sm">
       <CardHeader className="space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
-          <GaugeIcon
-            className="size-4 text-muted-foreground"
+          <GaugeGlassIcon
+            className="size-4.5 text-muted-foreground"
             aria-hidden="true"
           />
           {t('fleet.reserved.title')}

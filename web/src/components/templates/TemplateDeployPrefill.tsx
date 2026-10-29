@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -35,7 +35,7 @@ export function TemplateDeployPrefill({ slug }: { slug: string }) {
       query.error instanceof ApiError && query.error.status === 404
     return (
       <EmptyState
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5.5" />}
         title={notFound ? t('prefill.notFoundTitle') : t('prefill.errorTitle')}
         description={
           notFound

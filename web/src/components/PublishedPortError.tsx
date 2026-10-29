@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ApiError } from '../lib/apiError'
@@ -18,7 +18,7 @@ export function PublishedPortError({ error }: { error: Error }) {
   const hintCode = HINT_CODES.find((c) => c === code)
   return (
     <Alert variant="destructive">
-      <WarningIcon />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.2em" />
       <AlertDescription>
         <span>{error.message}</span>
         {hintCode ? (

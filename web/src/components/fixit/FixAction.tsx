@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  WarningCircleIcon,
-  WrenchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  RefreshCwGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -94,7 +94,7 @@ export function FixAction({
   return (
     <div className="mt-2 space-y-2 rounded-md border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <WrenchIcon className="size-4 shrink-0" aria-hidden="true" />
+        <WrenchGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
         <p className="text-sm font-medium text-foreground">{fix.title}</p>
         <Badge variant={RISK_VARIANT[fix.risk]}>{t(`risk.${fix.risk}`)}</Badge>
         <Badge variant="muted">{t(`kind.${fix.kind}`)}</Badge>
@@ -179,7 +179,7 @@ export function FixAction({
             disabled={apply.isPending}
             onClick={run}
           >
-            <ArrowsClockwiseIcon />
+            <RefreshCwGlassIcon size="1.2em" />
             {apply.isPending ? t('rechecking') : t('recheck')}
           </Button>
         ) : null}
@@ -216,7 +216,7 @@ export function FixAction({
 function FixResultLine({ result }: { result: FixResult }) {
   const { t } = useTranslation('fixit')
   const good = result.outcome === 'fixed' || result.outcome === 'skipped'
-  const Icon = good ? CheckCircleIcon : WarningCircleIcon
+  const Icon = good ? CircleCheckGlassIcon : CircleAlertGlassIcon
   return (
     <p
       role="status"
@@ -253,7 +253,7 @@ export function ManualFix({
         disabled={pending}
         onClick={onRecheck}
       >
-        <ArrowsClockwiseIcon />
+        <RefreshCwGlassIcon size="1.2em" />
         {pending ? t('rechecking') : t('recheck')}
       </Button>
       {command ? <FixCli steps={[{ command }]} /> : null}

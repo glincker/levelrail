@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SkipForwardIcon } from '@phosphor-icons/react/dist/ssr'
+import { SkipForwardGlassIcon } from '@thesvg/ui-react'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
@@ -42,7 +42,7 @@ export function CancelSupersededCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SkipForwardIcon className="size-4 text-muted-foreground" />
+          <SkipForwardGlassIcon className="size-4.5 text-muted-foreground" />
           {t('cancelSuperseded.title')}
           <InfoTip label={t('cancelSuperseded.infoLabel')}>
             {t('cancelSuperseded.infoBody')}

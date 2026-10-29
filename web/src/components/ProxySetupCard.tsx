@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlugsIcon, SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -112,7 +112,7 @@ function SetupCardBody({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugsIcon className="size-4" aria-hidden="true" />
+          <PlugGlassIcon className="size-4.5" aria-hidden="true" />
           {t('proxySetup.title')}
         </CardTitle>
         <CardDescription>{t('proxySetup.description')}</CardDescription>
@@ -141,7 +141,11 @@ function SetupCardBody({
             onClick={() => setConfirming(true)}
           >
             {pending ? (
-              <SpinnerIcon className="animate-spin" aria-hidden="true" />
+              <LoaderGlassIcon
+                size="1.2em"
+                className="animate-spin"
+                aria-hidden="true"
+              />
             ) : null}
             {pending ? t('proxySetup.settingUp') : t('proxySetup.setup')}
           </Button>

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { aiControlQueryOptions, useAiControl } from '../../queries/aiControl'
 import { AiControlCard } from '../../components/AiControlCard'
 import {
@@ -31,7 +31,7 @@ function AiControlPage() {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckIcon />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.2em" />}
       title={t('aiControl.title')}
       description={t('aiControl.description')}
     >

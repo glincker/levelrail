@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TagIcon } from '@phosphor-icons/react/dist/ssr'
+import { TagGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -39,7 +39,7 @@ export function ResourceTagFilter({
           />
         }
       >
-        <TagIcon />
+        <TagGlassIcon size="1.2em" />
         {t('tags.filter')}
         {selected.length > 0 ? (
           <Badge variant="muted" className="ml-1 px-1.5 text-[11px]">
