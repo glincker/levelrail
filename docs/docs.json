@@ -325,6 +325,7 @@
               "integrations",
               "cloud-integrations",
               "rollback",
+              "predeploy-snapshot",
               "resilience",
               "resilience-summary",
               "chaos-coverage",
