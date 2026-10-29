@@ -28,6 +28,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/oidc"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/rollbackref"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -333,6 +334,20 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 	image, ok := deploy.PreviousKnownGoodImage(attempts, svc.Image)
 	if !ok {
 		return "", fmt.Errorf("no previous successful deploy of %q to roll back to", service)
+	}
+	// Verify the digest like the API rollback does, so a moved or collected tag fails here.
+	for _, t := range attempts {
+		if t.Status != store.DeployAttemptStatusSucceeded || t.Image != image {
+			continue
+		}
+		pin, _ := a.db.GetRollbackPin(ctx, service, t.ID)
+		inspector, _ := a.resolver.(docker.ImageInspector)
+		ref, status, msg := rollbackref.Resolve(ctx, inspector, a.logger, t, pin)
+		if status != 0 {
+			return "", fmt.Errorf("rollback %s: %s", service, msg)
+		}
+		image = ref
+		break
 	}
 	if _, err := a.push(ctx, service, image, "", log); err != nil {
 		return "", err
