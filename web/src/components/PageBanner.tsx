@@ -59,7 +59,7 @@ export function PageBanner({
     <header
       data-testid={compact ? 'page-banner-compact' : 'page-banner-full'}
       className={cn(
-        'relative isolate flex items-stretch overflow-hidden rounded-3xl border border-border/80 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),inset_0_-1px_0_0_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.25),0_22px_44px_-22px_rgba(0,0,0,0.6)] [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
+        'banner-edge relative isolate flex items-stretch overflow-hidden rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))] [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
         className,
       )}
     >

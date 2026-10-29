@@ -40,13 +40,14 @@ function resolveHelpLink(
   path: string,
   docsUrl: string,
 ): ResolvedHelpLink | null {
-  const [basePath, hash] = splitHash(path)
+  const rooted = path.startsWith('/') ? path : `/${path}`
+  const [basePath, hash] = splitHash(rooted)
 
   if (docsPathIndex.has(basePath)) {
     return { href: `/help${basePath}${hash}`, external: false }
   }
   if (docsUrl) {
-    return { href: `${docsUrl}${path}`, external: true }
+    return { href: `${docsUrl.replace(/\/+$/, '')}${rooted}`, external: true }
   }
   return null
 }

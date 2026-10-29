@@ -121,7 +121,7 @@ export function FirewallPage({
           descriptionKey="firewall:page.description"
           action={
             <>
-              <HelpLink path="firewall" label={t('page.help')} />
+              <HelpLink path="/firewall" label={t('page.help')} />
               {actions}
             </>
           }
