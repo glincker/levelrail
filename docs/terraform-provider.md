@@ -43,6 +43,8 @@ provider "levelrail" {
 | `levelrail_domain` | One hostname routed to an app | `app_name/host` |
 | `levelrail_database` | A managed database and its project | database name |
 | `levelrail_environment_variables` | Variables shared by a project or an environment | `project/<id>` or `environment/<id>` |
+| `levelrail_status_page` | The public status page settings: `enabled`, `title`, `description`, `custom_domain` (one per control plane) | any value, for example `status-page` |
+| `levelrail_status_component` | One status page row: `kind` (`app`, `domain` or `check`), `target`, `name`, `order` | component ID |
 
 Data sources: `levelrail_apps` lists every app with its image, port, project and domains. `levelrail_nodes` lists the fleet and needs a root token.
 
@@ -104,6 +106,9 @@ output "node_count" {
 - `levelrail_environment_variables` only manages the keys you list. Other variables at that scope are left alone, and deleting the resource removes only its own keys.
 - Database engine and version never change in place. A change forces a replace, which destroys data, so use `prevent_destroy` on databases you care about.
 - Deleting a project follows the API's own guard and is refused while it still holds apps.
+
+- `levelrail_status_page` is a singleton. Destroying it turns the page off and clears its fields. See `examples/terraform-provider/status-page.tf`.
+- `levelrail_status_component` is matched by ID, so a component deleted outside Terraform is planned for re-creation. Status incidents are not managed.
 
 ## What is not covered
 
