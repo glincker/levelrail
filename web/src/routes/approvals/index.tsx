@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useState } from 'react'
+import { digestOfImage, unpinnedImage } from '../../lib/imageDigest'
+import { PinnedDigestBadge } from '../../components/PinnedDigestBadge'
 import { useTranslation } from 'react-i18next'
 import { GavelIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -92,7 +94,17 @@ const COLUMNS: ResponsiveColumn<DeployApprovalResource>[] = [
     id: 'image',
     header: 'Image',
     priority: 2,
-    cell: (a) => <span className="font-mono text-xs break-all">{a.image}</span>,
+    cell: (a) => (
+      <span className="font-mono text-xs break-all">
+        {unpinnedImage(a.image)}
+        {digestOfImage(a.image) ? (
+          <PinnedDigestBadge
+            digest={digestOfImage(a.image)}
+            className="ml-1.5"
+          />
+        ) : null}
+      </span>
+    ),
   },
   {
     id: 'status',

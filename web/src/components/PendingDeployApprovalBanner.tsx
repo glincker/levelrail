@@ -8,6 +8,8 @@ import {
   useRejectDeployApproval,
 } from '../queries/deployApprovals'
 import { ApiError } from '../lib/apiError'
+import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
+import { PinnedDigestBadge } from './PinnedDigestBadge'
 import { canDecideApproval } from '../lib/deployApprovalStatus'
 
 // PendingDeployApprovalBanner surfaces a blocked deploy/promote directly
@@ -34,6 +36,7 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
   const reject = useRejectDeployApproval()
 
   const approval = pending.data?.[0]
+  const digest = approval ? digestOfImage(approval.image) : ''
   if (!approval || !canDecideApproval(approval.status)) {
     return null
   }
@@ -86,8 +89,13 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
         <div className="text-sm">
           <p className="font-medium">
             {approval.action === 'promote' ? 'Promotion' : 'Deploy'} to{' '}
-            <span className="break-all font-mono">{approval.image}</span> is
-            awaiting approval.
+            <span className="break-all font-mono">
+              {unpinnedImage(approval.image)}
+            </span>
+            {digest ? (
+              <PinnedDigestBadge digest={digest} className="mx-1" />
+            ) : null}{' '}
+            is awaiting approval.
           </p>
           <p className="text-amber-800/90 dark:text-amber-200/80">
             Requested by {approval.requested_by_name}. This environment is

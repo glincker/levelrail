@@ -16,6 +16,8 @@ import { isFeatureVisible } from '../lib/experimental'
 import { useProjectListOptional } from '../queries/projects'
 import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
 import { useEnvironmentListOptional } from '../queries/environments'
+import { PinnedDigestBadge } from './PinnedDigestBadge'
+import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
 import { TunnelHint } from './apps/TunnelHint'
 
 // Display labels for internal/spec's three strategy constants.
@@ -66,7 +68,12 @@ export function AppOverview({ app }: { app: AppDetail }) {
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-          <Field label="Image" value={app.image} mono />
+          <Field
+            label="Image"
+            value={unpinnedImage(app.image)}
+            mono
+            digest={app.image_digest || digestOfImage(app.image)}
+          />
           <Field label="Port" value={String(app.port)} />
           <Field
             label="Memory limit"
@@ -182,10 +189,12 @@ function Field({
   label,
   value,
   mono,
+  digest,
 }: {
   label: string
   value: string
   mono?: boolean
+  digest?: string
 }) {
   return (
     <div>
@@ -196,6 +205,7 @@ function Field({
         className={`mt-0.5 text-sm text-foreground ${mono ? 'font-mono' : ''}`}
       >
         {value}
+        {digest ? <PinnedDigestBadge digest={digest} className="ml-2" /> : null}
       </dd>
     </div>
   )
