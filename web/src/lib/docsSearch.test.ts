@@ -132,3 +132,48 @@ describe('searchDocsGrouped', () => {
     expect(hits[0]?.headings.length ?? 0).toBeLessThanOrEqual(1)
   })
 })
+
+describe('searchDocsGrouped with published sections', () => {
+  const published: DocsManifest = {
+    categories: [],
+    pages: {
+      '/guide': {
+        file: 'guide.md',
+        title: 'Guide',
+        headings: [],
+        body: 'covers coolify import',
+        section: 'How-to guides / Migrating',
+      },
+      '/internal-report': {
+        file: 'internal-report.md',
+        title: 'Coolify internal report',
+        headings: [],
+        body: 'not published',
+      },
+    },
+  }
+
+  it('hides pages the hosted site does not publish and carries the section', () => {
+    const hits = searchDocsGrouped(published, 'coolify')
+    expect(hits.map((h) => h.path)).toEqual(['/guide'])
+    expect(hits[0]?.section).toBe('How-to guides / Migrating')
+  })
+})
+
+describe('searchDocsGrouped word matching', () => {
+  it('matches several words in any order across title, headings and body', () => {
+    const hits = searchDocsGrouped(manifest, 'mesh multi-node')
+    expect(hits.map((h) => h.path)).toEqual(['/multi-node'])
+    expect(
+      searchDocsGrouped(manifest, 'wireguard nodes').map((h) => h.path),
+    ).toEqual(['/multi-node'])
+    expect(searchDocsGrouped(manifest, 'mesh rollback')).toEqual([])
+  })
+
+  it('prefers the page whose heading holds more of the words', () => {
+    const hits = searchDocsGrouped(manifest, 'control mesh key')
+    expect(hits[0]?.headings.map((h) => h.id)).toEqual([
+      'rotating-the-control-planes-mesh-key',
+    ])
+  })
+})

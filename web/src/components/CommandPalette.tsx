@@ -14,9 +14,14 @@ import {
   isRecentEligible,
   loadRecentKeys,
   pushRecentKey,
+  removeRecentKey,
 } from '@/lib/recentItems'
 import { chipLabel } from '@/lib/paletteQuery'
-import { loadRecentSearches, pushRecentSearch } from '@/lib/paletteSearches'
+import {
+  loadRecentSearches,
+  pushRecentSearch,
+  removeRecentSearch,
+} from '@/lib/paletteSearches'
 import { usePaletteBaseItems } from '../hooks/usePaletteBaseItems'
 import { usePaletteEntries } from '../hooks/usePaletteEntries'
 import { usePaletteSearch } from '../hooks/usePaletteSearch'
@@ -26,6 +31,9 @@ import type { PaletteItem } from './commandPaletteData'
 import { ChipBar, PaletteFooter } from './commandPaletteEntries'
 import { PaletteList } from './paletteList'
 import { ModePills } from './palette/ModePills'
+import { RecentBubbles } from './palette/RecentBubbles'
+import { usePaletteBubbles } from '../hooks/usePaletteBubbles'
+import { clearHistory, recordVisit } from '@/lib/paletteHistory'
 import { parseMode } from '@/lib/paletteMode'
 import { recordModeUse } from '@/lib/paletteModeUse'
 import { firstIndexOfGroup } from '@/lib/paletteJump'
@@ -61,6 +69,7 @@ export function CommandPalette({
   const [recentKeys, setRecentKeys] = React.useState<string[]>(loadRecentKeys)
   const [recentSearches, setRecentSearches] =
     React.useState<string[]>(loadRecentSearches)
+  const [historyVersion, setHistoryVersion] = React.useState(0)
   const [expanded, setExpanded] = React.useState<ReadonlySet<string>>(new Set())
   const [pending, setPending] = React.useState<PaletteItem | null>(null)
   const [saving, setSaving] = React.useState(false)
@@ -80,7 +89,6 @@ export function CommandPalette({
     ps,
     baseItems,
     recentKeys,
-    recentSearches,
     expanded,
     expand,
     currentApp,
@@ -113,6 +121,7 @@ export function CommandPalette({
       setExpanded(new Set())
       setRecentKeys(loadRecentKeys())
       setRecentSearches(loadRecentSearches())
+      setHistoryVersion((v) => v + 1)
     }
   }
 
@@ -160,6 +169,8 @@ export function CommandPalette({
         const originalKey = item.key.replace(/^recent-/, '')
         if (isRecentEligible(originalKey)) {
           setRecentKeys(pushRecentKey(originalKey))
+          recordVisit(originalKey)
+          setHistoryVersion((v) => v + 1)
         }
       }
       item.run()
@@ -167,6 +178,24 @@ export function CommandPalette({
     },
     [close, ps.serverQuery, ps.text],
   )
+
+  const removeKey = React.useCallback((key: string) => {
+    setRecentKeys(removeRecentKey(key))
+  }, [])
+  const removeSearch = React.useCallback((q: string) => {
+    setRecentSearches(removeRecentSearch(q))
+  }, [])
+  const bubbleGroups = usePaletteBubbles({
+    baseItems,
+    recentKeys,
+    recentSearches,
+    version: historyVersion,
+    applyQuery: ps.applyQuery,
+    onRemoveKey: removeKey,
+    onRemoveSearch: removeSearch,
+    select,
+  })
+  const idle = ps.text === '' && ps.chips.length === 0 && !pending
 
   const layered =
     pending !== null || saving || ps.text !== '' || ps.chips.length > 0
@@ -278,6 +307,17 @@ export function CommandPalette({
                 inputRef.current?.focus()
               }}
             />
+            {idle ? (
+              <RecentBubbles
+                groups={bubbleGroups}
+                onClear={() => {
+                  clearHistory()
+                  setRecentKeys([])
+                  setRecentSearches([])
+                  setHistoryVersion((v) => v + 1)
+                }}
+              />
+            ) : null}
             {pending ? (
               <div
                 role="alert"

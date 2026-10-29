@@ -51,15 +51,19 @@ export interface DocPageHit {
   /** Up to a few headings of this page that match, in page order. */
   headings: DocHeading[]
   score: number
+  /** Where the hosted docs site files this page. */
+  section?: string
 }
 
-const TITLE_EXACT = 100
-const TITLE_PART = 60
-const HEADING = 40
-const BODY = 10
+const WORD_TITLE_EXACT = 60
+const WORD_TITLE = 30
+const WORD_HEADING = 15
+const WORD_BODY = 3
+const PHRASE_IN_TITLE = 40
+const PHRASE_IS_TITLE = 100
 
-// One row per page, best page first: title beats heading beats body, and a page
-// is never listed twice however many of its headings match.
+// Word-level search: every word must appear in the title, a heading or the body excerpt,
+// in any order, and a page is listed once however many of its headings match.
 export function searchDocsGrouped(
   manifest: DocsManifest,
   query: string,
@@ -67,24 +71,53 @@ export function searchDocsGrouped(
 ): DocPageHit[] {
   const q = query.trim().toLowerCase()
   if (!q) return []
+  const words = q.split(/\s+/).filter(Boolean)
   const hits: DocPageHit[] = []
+  // When the manifest knows what the hosted site publishes, internal pages stay out of results.
+  const filterPublished = Object.values(manifest.pages).some((p) => p.section)
   for (const [path, page] of Object.entries(manifest.pages)) {
     if (path === '/') continue
+    if (filterPublished && !page.section) continue
     const title = page.title.toLowerCase()
-    const headings = page.headings.filter((h) =>
-      h.text.toLowerCase().includes(q),
-    )
+    const body = page.body.toLowerCase()
+    const headings = page.headings.map((heading, order) => ({
+      heading,
+      order,
+      text: heading.text.toLowerCase(),
+    }))
     let score = 0
-    if (title === q) score = TITLE_EXACT
-    else if (title.includes(q)) score = TITLE_PART
-    else if (headings.length > 0) score = HEADING + Math.min(headings.length, 5)
-    else if (page.body.toLowerCase().includes(q)) score = BODY
-    if (score === 0) continue
+    let matchesAll = true
+    for (const word of words) {
+      let w = 0
+      if (title === word) w = WORD_TITLE_EXACT
+      else if (title.includes(word)) w = WORD_TITLE
+      else if (headings.some((h) => h.text.includes(word))) w = WORD_HEADING
+      else if (body.includes(word)) w = WORD_BODY
+      if (w === 0) {
+        matchesAll = false
+        break
+      }
+      score += w
+    }
+    if (!matchesAll) continue
+    if (title === q) score += PHRASE_IS_TITLE
+    else if (title.includes(q)) score += PHRASE_IN_TITLE
+    const shown = headings
+      .map((h) => ({
+        ...h,
+        hit: words.filter((w) => h.text.includes(w)).length,
+      }))
+      .filter((h) => h.hit > 0)
+      .sort((a, b) => b.hit - a.hit || a.order - b.order)
+      .slice(0, limits.headings)
+      .sort((a, b) => a.order - b.order)
+      .map((h) => h.heading)
     hits.push({
       path,
       title: page.title,
-      headings: headings.slice(0, limits.headings),
+      headings: shown,
       score,
+      section: page.section,
     })
   }
   return hits

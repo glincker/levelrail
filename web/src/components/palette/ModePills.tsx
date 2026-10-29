@@ -4,9 +4,9 @@ import {
   BookOpenGlassIcon,
   BotGlassIcon,
   HashGlassIcon,
-  PackageGlassIcon,
 } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
+import { BrandIcon } from '../BrandIcon'
 import type { PaletteModeKind } from '@/lib/paletteMode'
 import { modesByUse } from '@/lib/paletteModeUse'
 
@@ -20,7 +20,7 @@ const PILLS: Record<
   docker: {
     prefix: 'docker ',
     glyph: 'docker',
-    icon: <PackageGlassIcon size="1.2em" />,
+    icon: <BrandIcon name="docker" mono className="size-4" />,
   },
 }
 

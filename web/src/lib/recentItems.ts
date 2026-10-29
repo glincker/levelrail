@@ -32,6 +32,17 @@ export function pushRecentKey(key: string): string[] {
   return next
 }
 
+/** Drops one key from the recent list and returns the new list. Never throws. */
+export function removeRecentKey(key: string): string[] {
+  const next = loadRecentKeys().filter((k) => k !== key)
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    // Storage unavailable: recents just do not persist.
+  }
+  return next
+}
+
 // Transient actions (run a restart, verify a domain) are not destinations,
 // so they never become a "recent" entry.
 const TRANSIENT_KEY_PREFIXES = ['app-action-', 'suggest-', 'domain-action-']
