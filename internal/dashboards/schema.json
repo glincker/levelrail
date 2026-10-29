@@ -29,7 +29,13 @@
               "cost",
               "alert_status",
               "node_capacity",
-              "link"
+              "link",
+              "fleet_health",
+              "fleet_traffic",
+              "top_apps",
+              "deploy_activity",
+              "fleet_capacity",
+              "attention"
             ]
           },
           "title": { "type": "string", "maxLength": 80 },
