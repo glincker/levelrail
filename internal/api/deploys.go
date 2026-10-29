@@ -214,7 +214,8 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 			return
 		}
 	}
-	if err := rt.retargetBinding(r.Context(), existing, req.releaseID, bindingReasonRollback, rt.actorLabel(r), ""); err != nil {
+	undo, err := rt.retargetBinding(r.Context(), existing, req.releaseID, bindingReasonRollback, rt.actorLabel(r), "")
+	if err != nil {
 		rt.internalError(w, "api: rollback: retarget binding failed", err, slog.String("name", name))
 		return
 	}
@@ -222,6 +223,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf, attemptID: &attemptID})
 	rt.attachPredeploySnapshots(r.Context(), name, snapshotIDs, attemptID)
 	if err != nil {
+		undo()
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if errors.Is(err, docker.ErrImageNotFound) {
 			writeError(w, http.StatusUnprocessableEntity, "image pull failed: "+err.Error())

@@ -42,7 +42,7 @@ type bindingResource struct {
 type appReleasesResource struct {
 	Releases         []releaseResource `json:"releases"`
 	CurrentReleaseID string            `json:"current_release_id"`
-	// Bindings is the binding history, newest first; omitted while bindings are off.
+	// Bindings is the binding history, newest first; omitted only while off (shadow and on both return it).
 	Bindings []bindingResource `json:"bindings,omitempty"`
 }
 

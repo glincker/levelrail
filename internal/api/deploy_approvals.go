@@ -445,6 +445,9 @@ func (rt *Router) applyClaimedApproval(ctx context.Context, a store.DeployApprov
 	var updated store.DesiredService
 	switch a.Action {
 	case store.DeployApprovalActionPromote:
+		if _, gateErr := rt.approvalFreezeNote(ctx, a); gateErr != nil {
+			return deployApprovalDecisionResponse{}, gateErr
+		}
 		image := a.Image
 		if a.ReleaseID != "" {
 			ref, derr := rt.applyReleaseApproval(ctx, a)
@@ -456,12 +459,14 @@ func (rt *Router) applyClaimedApproval(ctx context.Context, a store.DeployApprov
 		if derr := rt.verifyPromotionDigest(ctx, image); derr != nil {
 			return deployApprovalDecisionResponse{}, derr
 		}
-		if err := rt.retargetBinding(ctx, *svc, a.ReleaseID, bindingReasonPromote, a.ApprovedByName, a.ID); err != nil {
-			return deployApprovalDecisionResponse{}, err
+		undo, rerr := rt.retargetBinding(ctx, *svc, a.ReleaseID, bindingReasonPromote, a.ApprovedByName, a.ID)
+		if rerr != nil {
+			return deployApprovalDecisionResponse{}, rerr
 		}
 		target := *svc
 		if a.IncludeEnv {
 			if err := applyPromoteEnvSnapshot(&target, a.PromoteEnv); err != nil {
+				undo()
 				return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: read env snapshot failed: %w", err)
 			}
 		}
@@ -469,16 +474,22 @@ func (rt *Router) applyClaimedApproval(ctx context.Context, a store.DeployApprov
 		if err == nil {
 			rt.recordInstantDeployAttempt(ctx, updated, image, store.DeployAttemptSourcePromote)
 			rt.nudgeReconciler()
+		} else {
+			undo()
 		}
 	default:
 		note, gateErr := rt.approvalFreezeNote(ctx, a)
 		if gateErr != nil {
 			return deployApprovalDecisionResponse{}, gateErr
 		}
-		if err := rt.retargetBinding(ctx, *svc, a.ReleaseID, bindingReasonRollback, a.ApprovedByName, a.ID); err != nil {
-			return deployApprovalDecisionResponse{}, err
+		undo, rerr := rt.retargetBinding(ctx, *svc, a.ReleaseID, bindingReasonRollback, a.ApprovedByName, a.ID)
+		if rerr != nil {
+			return deployApprovalDecisionResponse{}, rerr
 		}
 		updated, err = rt.executeConfirmedDeploy(ctx, *svc, a.Image, confirmedDeployOptions{pull: a.Pull, reason: note})
+		if err != nil {
+			undo()
+		}
 	}
 	if err != nil && a.Pull && a.Action != store.DeployApprovalActionPromote {
 		rt.logger.Error("api: approve deploy approval: fresh pull failed", slog.String("error", err.Error()), slog.String("id", a.ID))

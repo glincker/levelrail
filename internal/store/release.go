@@ -163,6 +163,16 @@ func (db *DB) RetargetBinding(ctx context.Context, app, environmentID, releaseID
 	return true, nil
 }
 
+// UnbindRelease clears app's current release after a failed first deploy; the
+// history rows stay, since they record what was attempted.
+func (db *DB) UnbindRelease(ctx context.Context, app string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE environment_bindings SET release_id = NULL, updated_at = ? WHERE app = ?`,
+		time.Now().UTC().Format(time.RFC3339Nano), app); err != nil {
+		return fmt.Errorf("store: unbind release %q: %w", app, err)
+	}
+	return nil
+}
+
 // GetRelease returns the release with this id, or nil when none exists.
 func (db *DB) GetRelease(ctx context.Context, id string) (*Release, error) {
 	rels, err := db.queryReleases(ctx, `WHERE id = ?`, id)

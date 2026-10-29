@@ -14,6 +14,7 @@ import (
 const (
 	bindingReasonPromote  = "promote"
 	bindingReasonRollback = "rollback"
+	bindingReasonRevert   = "revert"
 )
 
 // releaseBinder is the store surface that makes bindings authoritative.
@@ -55,16 +56,42 @@ func (rt *Router) promotionRelease(ctx context.Context, source store.DesiredServ
 	return rel
 }
 
-// retargetBinding points target's binding at releaseID and records why.
-func (rt *Router) retargetBinding(ctx context.Context, target store.DesiredService, releaseID, reason, by, approvalID string) error {
+// retargetBinding points target's binding at releaseID, audits the move and
+// returns an undo for the caller to run if the deploy then fails, so the
+// binding never names a release that did not run.
+func (rt *Router) retargetBinding(ctx context.Context, target store.DesiredService, releaseID, reason, by, approvalID string) (func(), error) {
+	noop := func() {}
 	b := rt.authoritativeBinder()
 	if b == nil || releaseID == "" {
-		return nil
+		return noop, nil
+	}
+	prev := ""
+	if cur, err := b.GetEnvironmentBinding(ctx, target.Name); err == nil && cur != nil {
+		prev = cur.ReleaseID
 	}
 	if _, err := b.RetargetBinding(ctx, target.Name, target.EnvironmentID, releaseID, reason, by, approvalID); err != nil {
-		return fmt.Errorf("api: retarget binding for %q: %w", target.Name, err)
+		return noop, fmt.Errorf("api: retarget binding for %q: %w", target.Name, err)
 	}
-	return nil
+	rt.auditSystemEvent(ctx, "release-binding", "release_binding.retargeted",
+		fmt.Sprintf("app=%s from=%s to=%s reason=%s approval=%s", target.Name, prev, releaseID, reason, approvalID))
+	return func() {
+		if prev == "" {
+			if u, ok := rt.apps.(interface {
+				UnbindRelease(ctx context.Context, app string) error
+			}); ok {
+				if err := u.UnbindRelease(ctx, target.Name); err != nil {
+					rt.logger.Warn("api: undo binding failed", slog.String("name", target.Name), slog.String("error", err.Error()))
+				}
+			}
+			return
+		}
+		if _, err := b.RetargetBinding(ctx, target.Name, target.EnvironmentID, prev, bindingReasonRevert, by, approvalID); err != nil {
+			rt.logger.Warn("api: undo binding failed", slog.String("name", target.Name), slog.String("error", err.Error()))
+			return
+		}
+		rt.auditSystemEvent(ctx, "release-binding", "release_binding.retargeted",
+			fmt.Sprintf("app=%s from=%s to=%s reason=%s approval=%s", target.Name, releaseID, prev, bindingReasonRevert, approvalID))
+	}, nil
 }
 
 // rollbackReleaseID finds the release a past attempt ran: the one minted from

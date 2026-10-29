@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/imagelife"
 	"github.com/GLINCKER/levelrail/internal/release"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -157,5 +159,75 @@ func TestRollbackBindingsOnRetargetsToPreviousRelease(t *testing.T) {
 	svc, _ := db.GetDesiredService(ctx, "web")
 	if svc.Image != "nginx:1@sha256:aaa" {
 		t.Errorf("image = %q, want the digest ref", svc.Image)
+	}
+}
+
+func TestPromoteBindingsOnFailedApplyKeepsPreviousRelease(t *testing.T) {
+	t.Setenv(release.EnvBindings, "on")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedPromotionFixture(t, db)
+	ctx := context.Background()
+	if err := db.SetEnvironmentProtected(ctx, "env_prod", true); err != nil {
+		t.Fatal(err)
+	}
+	rel := seedSourceRelease(t, db)
+	if _, err := db.InsertRelease(ctx, store.Release{ID: "rel_prev", SourceApp: "web-prod", SourceDeployAttemptID: "prev1", ImageRef: "levelrail/web@sha256:prev", Config: "{}"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.RecordShadowBinding(ctx, "web-prod", "env_prod", "rel_prev", "image", "tester"); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod","confirm":true}`))
+	var result deployTriggerResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &result); err != nil || result.PendingApproval == nil {
+		t.Fatalf("promote = %d %s", rec.Code, rec.Body.String())
+	}
+	approval, _ := db.GetDeployApproval(ctx, result.PendingApproval.ID)
+	approval.IncludeEnv, approval.PromoteEnv = true, "{not json"
+	if _, err := rt.applyClaimedApproval(ctx, approval); err == nil {
+		t.Fatal("apply succeeded, want a failure")
+	}
+	b, _ := db.GetEnvironmentBinding(ctx, "web-prod")
+	if b == nil || b.ReleaseID != "rel_prev" {
+		t.Fatalf("binding = %+v, want it back on rel_prev (not %s)", b, rel.ID)
+	}
+}
+
+type recordRoundTripper struct{ urls []string }
+
+func (r *recordRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	r.urls = append(r.urls, req.URL.String())
+	return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody, Header: http.Header{}, Request: req}, nil
+}
+
+func TestPromoteSignatureCheckUsesReleaseDigestRefWhenOn(t *testing.T) {
+	for _, mode := range []string{"off", "on"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Setenv(release.EnvBindings, mode)
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			seedPromotionFixture(t, db)
+			if mode == "on" {
+				seedSourceRelease(t, db)
+			}
+			rtp := &recordRoundTripper{}
+			rt.imageVerifyMode, rt.imageVerifyKey = ImageVerifyEnforce, &ecdsa.PublicKey{}
+			rt.imageVerifier = &imagelife.Verifier{HTTP: &http.Client{Transport: rtp}}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod","confirm":true}`))
+			if rec.Code != http.StatusConflict {
+				t.Fatalf("promote = %d %s, want 409", rec.Code, rec.Body.String())
+			}
+			if mode == "off" && (len(rtp.urls) != 0 || !strings.Contains(rec.Body.String(), "not pinned")) {
+				t.Errorf("off: urls %v body %s, want the tag refused before any registry call", rtp.urls, rec.Body.String())
+			}
+			if mode == "on" && len(rtp.urls) == 0 {
+				t.Errorf("on: verifier never saw the release digest ref, body %s", rec.Body.String())
+			}
+		})
 	}
 }
