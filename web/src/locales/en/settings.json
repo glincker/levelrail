@@ -3392,5 +3392,9 @@
       "backup_too_old": "Latest backup is older than the age limit",
       "engine_keeps_no_data": "Keeps no data on disk"
     }
+  },
+  "iacHelp": {
+    "hint": "Click a key to see what it does.",
+    "default": "Default: {{value}}."
   }
 }
