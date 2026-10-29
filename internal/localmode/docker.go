@@ -57,6 +57,8 @@ func DockerSocketCandidates(env DockerEnv) []string {
 		add(filepath.Join(home, ".docker", "desktop", "docker.sock"))
 		add(filepath.Join(home, ".colima", "default", "docker.sock"))
 		add(filepath.Join(home, ".rd", "docker.sock"))
+		// OrbStack keeps its socket here and does not always repoint /var/run/docker.sock.
+		add(filepath.Join(home, ".orbstack", "run", "docker.sock"))
 	}
 	if xdg := strings.TrimSpace(env.Getenv("XDG_RUNTIME_DIR")); xdg != "" {
 		add(filepath.Join(xdg, "docker.sock"))
