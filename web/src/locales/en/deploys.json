@@ -23,6 +23,46 @@
       "errorTitle": "Could not update auto-rollback."
     }
   },
+  "predeploySnapshot": {
+    "title": "Pre-deploy database snapshot",
+    "infoTipLabel": "About pre-deploy snapshots",
+    "helpLabel": "Pre-deploy snapshot guide",
+    "modeAriaLabel": "Snapshot mode",
+    "targetAriaLabel": "Backup target for snapshots",
+    "targetAuto": "Default backup target",
+    "unavailable": "Pre-deploy snapshots are not available on this control plane.",
+    "modes": {
+      "off": "Off",
+      "on": "On",
+      "require": "Require"
+    },
+    "modeHints": {
+      "off": "No snapshot is taken before a deploy.",
+      "on": "Snapshot linked databases first. A failed snapshot is recorded and the deploy still goes ahead.",
+      "require": "Snapshot linked databases first. A failed snapshot blocks the deploy."
+    },
+    "toast": {
+      "saved": "Pre-deploy snapshot setting saved.",
+      "errorTitle": "Could not save the snapshot setting."
+    }
+  },
+  "rollbackWithData": {
+    "title": "Roll back with data",
+    "description": "Redeploys the release before this deploy and restores the databases from the snapshot taken just before it.",
+    "snapshotsLabel": "Snapshots taken before this deploy",
+    "takenAt": "Taken",
+    "warning": "Each linked database is restored into a new database and the app's links are swapped to the copies. The original databases are not changed, but writes made since this deploy stay behind in them.",
+    "loading": "Looking for snapshots...",
+    "reasonNoSnapshot": "No usable snapshot was taken before this deploy.",
+    "reasonProtected": "This app is in a protected environment. Use the plain rollback and restore the data by hand.",
+    "reasonLoadFailed": "Could not load the snapshots for this app.",
+    "cancel": "Cancel",
+    "confirm": "Roll back with data",
+    "working": "Rolling back...",
+    "started": "Rolling back with data.",
+    "menuLabel": "Roll back with data",
+    "menuHint": "Undo this deploy and restore its pre-deploy snapshot"
+  },
   "autoRollbackSloBurn": {
     "title": "Auto-rollback on SLO burn",
     "infoTipLabel": "About auto-rollback on SLO burn",

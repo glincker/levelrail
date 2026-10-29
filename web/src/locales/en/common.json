@@ -795,6 +795,7 @@
       "safety": "Sets how long a new release must stay healthy before the old one is retired.",
       "watch": "Keeps watching a release after it goes live and rolls back if it degrades.",
       "autoRollback": "Redeploys the last working image when a crashloop alert fires.",
+      "predeploySnapshot": "Backs up linked databases before each deploy so a rollback can restore the data too.",
       "sloBurn": "Rolls back automatically when the error budget burns too fast after a deploy.",
       "canary": "Sends a small share of traffic to a new image before everyone gets it.",
       "freeze": "Blocks automatic deploys during windows you choose, such as a holiday.",
