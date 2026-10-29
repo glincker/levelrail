@@ -211,6 +211,7 @@ var Tree = map[string]*Node{
 		"encryption":   {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"destinations": {Subs: map[string]*Node{"copy": {Subs: map[string]*Node{"show": nil, "set": nil}}}},
 		"copies":       {Subs: map[string]*Node{"list": nil}},
+		"targets":      {Subs: map[string]*Node{"add": nil, "list": nil}},
 		"drill":        {Subs: map[string]*Node{"run": nil, "list": nil, "show": nil}},
 		"volumes":      {Subs: map[string]*Node{"list": nil, "policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "restore": nil}},
 		"schedule":     {Subs: map[string]*Node{"set": nil, "clear": nil}},

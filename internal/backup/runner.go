@@ -320,7 +320,7 @@ func (r *Runner) ResolveDestination(ctx context.Context, targetID string) (Desti
 		return Destination{}, fmt.Errorf("get backup target %q: %w", targetID, err)
 	}
 
-	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) {
+	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) || strings.HasPrefix(target.Endpoint, LocalEndpointScheme) {
 		return Destination{Provider: target.Provider, Endpoint: target.Endpoint, Bucket: target.Bucket}, nil
 	}
 

@@ -28,7 +28,7 @@ func resolveTargetDestination(ctx context.Context, targets TargetGetter, secrets
 		return Destination{}, fmt.Errorf("get backup target %q: %w", targetID, err)
 	}
 
-	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) {
+	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) || strings.HasPrefix(target.Endpoint, LocalEndpointScheme) {
 		return Destination{}, ErrAgentDestinationUnsupported
 	}
 
@@ -50,4 +50,17 @@ func resolveTargetDestination(ctx context.Context, targets TargetGetter, secrets
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
 	}, nil
+}
+
+// resolveCopyDestination is resolveTargetDestination for flows that go through
+// Routed, so agent directories and local paths need no S3 credentials.
+func resolveCopyDestination(ctx context.Context, targets TargetGetter, secrets SecretsResolver, targetID string) (Destination, error) {
+	target, err := targets.GetBackupTarget(ctx, targetID)
+	if err != nil {
+		return Destination{}, fmt.Errorf("get backup target %q: %w", targetID, err)
+	}
+	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) || strings.HasPrefix(target.Endpoint, LocalEndpointScheme) {
+		return Destination{Provider: target.Provider, Endpoint: target.Endpoint, Bucket: target.Bucket}, nil
+	}
+	return resolveTargetDestination(ctx, targets, secrets, targetID)
 }

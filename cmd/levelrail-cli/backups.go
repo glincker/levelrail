@@ -29,6 +29,8 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsProtectAll(prog, args[1:], stdout, stderr, lookupEnv)
 	case "orphans":
 		return runBackupsOrphans(prog, args[1:], stdout, stderr, lookupEnv)
+	case "targets":
+		return runBackupsTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "drill":
 		return runBackupsDrill(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes":

@@ -1,9 +1,14 @@
 package backup
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strconv"
 	"sync"
@@ -143,22 +148,98 @@ func (c *CopyRunner) RunOnce(ctx context.Context) (int, error) {
 	return ok, nil
 }
 
+// historyGetter is optional on CopyStore: without it the copy skips checksum
+// verification and the manifest sidecar, which only older fakes lack.
+type historyGetter interface {
+	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
+}
+
+// CopyManifestSuffix names the sidecar written next to every copied object so
+// a restore from the second destination alone has the checksum and codec.
+const CopyManifestSuffix = ".manifest.json"
+
+// CopyManifest is the sidecar document: what a restore needs besides the dump.
+type CopyManifest struct {
+	HistoryID      string `json:"history_id"`
+	Resource       string `json:"resource"`
+	ResourceKind   string `json:"resource_kind"`
+	ObjectKey      string `json:"object_key"`
+	SizeBytes      int64  `json:"size_bytes"`
+	ChecksumSHA256 string `json:"checksum_sha256"`
+	Codec          string `json:"codec,omitempty"`
+	ManifestDigest string `json:"manifest_digest,omitempty"`
+	ManifestFiles  int64  `json:"manifest_files,omitempty"`
+	ManifestBytes  int64  `json:"manifest_bytes,omitempty"`
+	FinishedAt     string `json:"finished_at"`
+}
+
 func (c *CopyRunner) copyOne(ctx context.Context, item store.BackupCopy) (int64, error) {
-	src, err := resolveTargetDestination(ctx, c.Store, c.Secrets, item.SourceTargetID)
+	src, err := resolveCopyDestination(ctx, c.Store, c.Secrets, item.SourceTargetID)
 	if err != nil {
 		return 0, err
 	}
-	dst, err := resolveTargetDestination(ctx, c.Store, c.Secrets, item.TargetID)
+	dst, err := resolveCopyDestination(ctx, c.Store, c.Secrets, item.TargetID)
 	if err != nil {
 		return 0, err
+	}
+	var hist store.BackupHistory
+	if hg, ok := c.Store.(historyGetter); ok {
+		if hist, err = hg.GetBackupHistory(ctx, item.BackupHistoryID); err != nil {
+			return 0, fmt.Errorf("read backup record: %w", err)
+		}
 	}
 	body, err := c.Downloader.Download(ctx, src, item.ObjectKey)
 	if err != nil {
 		return 0, fmt.Errorf("read from primary: %w", err)
 	}
 	defer func() { _ = body.Close() }()
-	if err := c.Uploader.Upload(ctx, dst, item.ObjectKey, body, item.BackupSize); err != nil {
+	h := sha256.New()
+	if err := c.Uploader.Upload(ctx, dst, item.ObjectKey, io.TeeReader(body, h), item.BackupSize); err != nil {
 		return 0, fmt.Errorf("write to second destination: %w", err)
 	}
+	sum := hex.EncodeToString(h.Sum(nil))
+	if hist.ChecksumSHA256 != "" && sum != hist.ChecksumSHA256 {
+		return 0, fmt.Errorf("primary object checksum %s does not match the recorded %s", sum, hist.ChecksumSHA256)
+	}
+	if err := c.verifyCopy(ctx, dst, item.ObjectKey, sum); err != nil {
+		return 0, err
+	}
+	if hist.ID != "" {
+		if err := c.writeManifest(ctx, dst, item, hist, sum); err != nil {
+			return 0, err
+		}
+	}
 	return item.BackupSize, nil
+}
+
+// verifyCopy reads the copy back so a truncated or corrupted write is a failed copy.
+func (c *CopyRunner) verifyCopy(ctx context.Context, dst Destination, key, want string) error {
+	rc, err := c.Downloader.Download(ctx, dst, key)
+	if err != nil {
+		return fmt.Errorf("verify second destination: %w", err)
+	}
+	defer func() { _ = rc.Close() }()
+	h := sha256.New()
+	if _, err := io.Copy(h, rc); err != nil {
+		return fmt.Errorf("verify second destination: %w", err)
+	}
+	if got := hex.EncodeToString(h.Sum(nil)); got != want {
+		return fmt.Errorf("copy checksum %s does not match the source %s", got, want)
+	}
+	return nil
+}
+
+func (c *CopyRunner) writeManifest(ctx context.Context, dst Destination, item store.BackupCopy, hist store.BackupHistory, sum string) error {
+	raw, err := json.Marshal(CopyManifest{
+		HistoryID: hist.ID, Resource: item.ResourceName, ResourceKind: item.ResourceKind, ObjectKey: item.ObjectKey,
+		SizeBytes: item.BackupSize, ChecksumSHA256: sum, Codec: hist.Codec, ManifestDigest: hist.ManifestDigest,
+		ManifestFiles: hist.ManifestFiles, ManifestBytes: hist.ManifestBytes, FinishedAt: hist.FinishedAt,
+	})
+	if err != nil {
+		return fmt.Errorf("encode manifest: %w", err)
+	}
+	if err := c.Uploader.Upload(ctx, dst, item.ObjectKey+CopyManifestSuffix, bytes.NewReader(raw), int64(len(raw))); err != nil {
+		return fmt.Errorf("write manifest to second destination: %w", err)
+	}
+	return nil
 }

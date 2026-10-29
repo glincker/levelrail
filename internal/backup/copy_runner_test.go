@@ -39,9 +39,12 @@ type copyTestSecrets struct{}
 
 func (copyTestSecrets) Resolve(context.Context, string, string) (string, error) { return "x", nil }
 
-type copyTestDownloader struct{}
+type copyTestDownloader struct{ up *copyTestUploader }
 
-func (copyTestDownloader) Download(_ context.Context, d Destination, key string) (io.ReadCloser, error) {
+func (c copyTestDownloader) Download(_ context.Context, d Destination, key string) (io.ReadCloser, error) {
+	if v, ok := c.up.got[d.Bucket+"/"+key]; ok {
+		return io.NopCloser(strings.NewReader(v)), nil
+	}
 	return io.NopCloser(strings.NewReader(d.Bucket + ":" + key)), nil
 }
 
@@ -67,7 +70,7 @@ func TestCopyRunnerCopiesToSecondDestination(t *testing.T) {
 		finished: map[string]string{},
 	}
 	up := &copyTestUploader{got: map[string]string{}}
-	r := &CopyRunner{Store: fs, Secrets: copyTestSecrets{}, Downloader: copyTestDownloader{}, Uploader: up, Concurrency: 1}
+	r := &CopyRunner{Store: fs, Secrets: copyTestSecrets{}, Downloader: copyTestDownloader{up: up}, Uploader: up, Concurrency: 1}
 	n, err := r.RunOnce(context.Background())
 	if err != nil || n != 1 {
 		t.Fatalf("RunOnce = %d, %v", n, err)

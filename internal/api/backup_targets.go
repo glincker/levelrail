@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -73,12 +76,19 @@ type backupTargetResource struct {
 	EncryptDumps bool `json:"encrypt_dumps"`
 }
 
+// backupProviderLocal is the API-only provider name for a host directory target.
+const backupProviderLocal = "local"
+
 func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
+	provider, endpoint := t.Provider, t.Endpoint
+	if strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) {
+		provider, endpoint = backupProviderLocal, ""
+	}
 	return backupTargetResource{
 		ID:           t.ID,
 		Name:         t.Name,
-		Provider:     t.Provider,
-		Endpoint:     t.Endpoint,
+		Provider:     provider,
+		Endpoint:     endpoint,
 		Region:       t.Region,
 		Bucket:       t.Bucket,
 		CreatedAt:    t.CreatedAt,
@@ -136,6 +146,16 @@ func validateBackupTargetFields(name, provider, endpoint, region, bucket string)
 }
 
 func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
+	if req.Provider == backupProviderLocal {
+		if req.Name == "" {
+			return errors.New("name is required")
+		}
+		if backup.LocalRootFromEnv(os.LookupEnv) == "" {
+			return errors.New("local targets need " + backup.EnvLocalRoot + " set to an absolute directory on the control plane")
+		}
+		_, err := backup.CleanLocalPath(req.Bucket)
+		return err
+	}
 	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Region, req.Bucket); err != nil {
 		return err
 	}
@@ -242,16 +262,6 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	secretsKey := store.BackupTargetSecretsKey(id)
-	if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "access_key_id", req.AccessKeyID); err != nil {
-		rt.internalError(w, "api: create backup target: set access_key_id failed", err, slog.String("id", id))
-		return
-	}
-	if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "secret_access_key", req.SecretAccessKey); err != nil {
-		rt.internalError(w, "api: create backup target: set secret_access_key failed", err, slog.String("id", id))
-		return
-	}
-
 	target := store.BackupTarget{
 		ID:           id,
 		Name:         req.Name,
@@ -261,6 +271,20 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 		Bucket:       req.Bucket,
 		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
 		EncryptDumps: encryptDumps,
+	}
+	if req.Provider == backupProviderLocal {
+		clean, _ := backup.CleanLocalPath(req.Bucket)
+		target.Provider, target.Endpoint, target.Region, target.Bucket = store.BackupProviderCustom, store.LocalEndpointScheme, "", clean
+	} else {
+		secretsKey := store.BackupTargetSecretsKey(id)
+		if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "access_key_id", req.AccessKeyID); err != nil {
+			rt.internalError(w, "api: create backup target: set access_key_id failed", err, slog.String("id", id))
+			return
+		}
+		if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "secret_access_key", req.SecretAccessKey); err != nil {
+			rt.internalError(w, "api: create backup target: set secret_access_key failed", err, slog.String("id", id))
+			return
+		}
 	}
 	if err := rt.backupTargets.SaveBackupTarget(r.Context(), target); err != nil {
 		rt.internalError(w, "api: create backup target: save failed", err, slog.String("id", id))
