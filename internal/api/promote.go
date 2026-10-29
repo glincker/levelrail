@@ -159,7 +159,11 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 			rt.internalError(w, "api: promote app: snapshot env failed", err, slog.String("name", name))
 			return
 		}
-		approval, ok := rt.requestDeployApproval(w, r, res.env, res.target.Name, res.source.Name, store.DeployApprovalActionPromote, rt.promotionPinnedImage(r.Context(), res.source), deployApprovalOptions{includeEnv: req.IncludeEnv, promoteEnv: snapshot, freezeOverride: freezeNote})
+		pinned, releaseID := rt.promotionPinnedImage(r.Context(), res.source), ""
+		if rel := rt.promotionRelease(r.Context(), res.source); rel != nil {
+			pinned, releaseID = rel.ImageRef, rel.ID
+		}
+		approval, ok := rt.requestDeployApproval(w, r, res.env, res.target.Name, res.source.Name, store.DeployApprovalActionPromote, pinned, deployApprovalOptions{includeEnv: req.IncludeEnv, promoteEnv: snapshot, freezeOverride: freezeNote, releaseID: releaseID})
 		if !ok {
 			return
 		}
@@ -172,6 +176,13 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		applyPromoteEnv(&target, res.source, buildPromoteDiff(res.source, res.target))
 	}
 	image := promoteImageRef(res.source)
+	if rel := rt.promotionRelease(r.Context(), res.source); rel != nil {
+		image = rel.ImageRef
+		if err := rt.retargetBinding(r.Context(), target, rel.ID, bindingReasonPromote, rt.actorLabel(r), ""); err != nil {
+			rt.internalError(w, "api: promote app: retarget binding failed", err, slog.String("target", res.target.Name))
+			return
+		}
+	}
 	updated, err := rt.setDesiredImage(r.Context(), target, image)
 	if err != nil {
 		rt.internalError(w, "api: promote app failed", err, slog.String("source", name), slog.String("target", res.target.Name))

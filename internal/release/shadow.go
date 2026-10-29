@@ -38,9 +38,12 @@ func ModeFromEnv() Mode {
 	}
 }
 
-// Writes reports whether the mode records shadow rows. In this phase on
-// behaves like shadow.
+// Writes reports whether the mode records release rows. On also makes the
+// binding authoritative for promote and rollback (see Mode.Authoritative).
 func (m Mode) Writes() bool { return m == ModeShadow || m == ModeOn }
+
+// Authoritative reports whether promote and rollback decide through bindings.
+func (m Mode) Authoritative() bool { return m == ModeOn }
 
 // Config is the environment neutral subset of a deploy snapshot. It holds no
 // env values, domains, ports, volumes or placement.
@@ -100,6 +103,9 @@ func (s *Shadow) Record(ctx context.Context, attemptID string) error {
 	if a.Status != store.DeployAttemptStatusSucceeded || a.ImageDigest == "" || a.Image == "" {
 		return nil
 	}
+	if s.mode.Authoritative() && s.boundTo(ctx, a.ServiceName, ImageRef(a.Image, a.ImageDigest)) {
+		return nil
+	}
 	cfg, err := json.Marshal(Config{
 		Health: a.Snapshot.Health, Replicas: a.Snapshot.Replicas, Strategy: a.Snapshot.Strategy,
 		Resources: a.Snapshot.Resources, Labels: a.Snapshot.Labels,
@@ -127,6 +133,18 @@ func (s *Shadow) Record(ctx context.Context, attemptID string) error {
 	}
 	_, err = s.db.RecordShadowBinding(ctx, a.ServiceName, envID, rel.ID, a.Source, a.Author)
 	return err
+}
+
+// boundTo reports whether app's binding already points at a release with this
+// ref, so a deploy that applied a retarget does not mint a second release and
+// move the binding off the one an operator chose.
+func (s *Shadow) boundTo(ctx context.Context, app, ref string) bool {
+	b, err := s.db.GetEnvironmentBinding(ctx, app)
+	if err != nil || b == nil || b.ReleaseID == "" {
+		return false
+	}
+	rel, err := s.db.GetRelease(ctx, b.ReleaseID)
+	return err == nil && rel != nil && rel.ImageRef == ref
 }
 
 // ImageRef pins a tag reference to its digest, replacing any existing tag.

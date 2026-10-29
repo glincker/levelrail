@@ -72,6 +72,7 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	req.Image = ref
+	req.releaseID = rt.rollbackReleaseID(r.Context(), *target)
 	restored := *existing
 	if r.URL.Query().Get("config") != "false" {
 		restored = deploy.RestoreSnapshot(*existing, target.Snapshot)
