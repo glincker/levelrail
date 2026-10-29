@@ -1,26 +1,26 @@
-name: "[Feature] Feature request"
+name: Feature request
 description: Suggest an addition or change to Levelrail
-title: "[Feature] "
-labels: ["type/feature", "needs-triage"]
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Before submitting, please check the [open issues](https://github.com/glincker/levelrail/issues) and [roadmap](https://github.com/glincker/levelrail/blob/main/docs/roadmap.md) to confirm this isn't already requested or planned.
+        Before submitting, check the [open issues](https://github.com/glincker/levelrail/issues) and the [roadmap](https://github.com/glincker/levelrail/blob/main/docs/roadmap.md) to confirm this is not already requested or planned. Questions belong in [Discussions](https://github.com/glincker/levelrail/discussions).
 
   - type: textarea
     id: problem
     attributes:
       label: What problem does this solve?
-      description: Describe the problem or limitation you're running into. Focus on the problem before jumping to a solution.
+      description: Describe the problem or limit you hit. Start here, before the solution.
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: Proposed solution
-      description: What you'd like to see happen, as concretely as you can describe it.
+      label: Proposed behavior
+      description: What Levelrail should do, as concretely as you can. Describe the behavior first and implementation details second.
     validations:
       required: true
 
@@ -28,7 +28,7 @@ body:
     id: alternatives
     attributes:
       label: Alternatives considered
-      description: Any other approaches you thought about and why they don't fit as well.
+      description: Other approaches you thought about and why they fit less well.
     validations:
       required: false
 
@@ -36,6 +36,14 @@ body:
     id: context
     attributes:
       label: Additional context
-      description: Anything else relevant, links, prior art in other tools, screenshots.
+      description: Anything else relevant, such as links, prior art in other tools, or screenshots.
     validations:
       required: false
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I am willing to open a pull request for this once the approach is agreed in this issue.
+          required: false

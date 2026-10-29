@@ -14,6 +14,19 @@ that aren't always obvious from the code alone.
 For quick questions before opening an issue, ask in the `#levelrail`
 forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
 
+## Before you open a PR
+
+- Features and larger changes start with an issue. Agree on the approach
+  there before you write code.
+- Bug fixes include a test that fails without the change.
+- PR titles and commits use `<type>: <description>`, for example
+  `fix: keep rollback targets out of image gc`.
+- Small docs fixes (typos, broken links, one unclear sentence) need no
+  issue. Open the PR directly.
+- New to the codebase? Look for issues labeled
+  [`good first issue`](https://github.com/glincker/levelrail/labels/good%20first%20issue)
+  or [`help wanted`](https://github.com/glincker/levelrail/labels/help%20wanted).
+
 ## Branches and commits
 
 - Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
@@ -288,6 +301,9 @@ supersedes.
 
 Use the issue templates. For security issues, see
 [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+Questions and help belong in [GitHub Discussions](https://github.com/glincker/levelrail/discussions)
+or the [docs](https://docs.levelrail.com).
 
 ## Labels
 

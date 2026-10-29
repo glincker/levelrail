@@ -1,20 +1,35 @@
-name: "[Bug] Bug report"
-description: Report something in Levelrail that isn't working as expected
-title: "[Bug] "
-labels: ["type/fix", "needs-triage"]
+name: Bug report
+description: Report something in Levelrail that is not working as expected
+title: "bug: "
+labels: ["bug", "needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug. Please fill out all required fields so it can be triaged quickly.
+        Thanks for the report. Fill in the required fields so it can be triaged quickly.
 
-        If you believe you've found a **security vulnerability**, do NOT file a public issue. See [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) instead.
+        Not sure it is a bug? Ask in [Discussions](https://github.com/glincker/levelrail/discussions) first.
+
+        Found a **security vulnerability**? Do NOT file it here. Use the [private advisory form](https://github.com/glincker/levelrail/security/advisories/new) instead.
 
   - type: input
     id: version
     attributes:
       label: Levelrail version or commit SHA
+      description: Run `levelrail --version` on the affected host. If you built from source, give the commit SHA.
       placeholder: "v0.x.y or a git commit SHA"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: How did you install Levelrail?
+      options:
+        - install.sh
+        - Docker image
+        - Built from source
+        - Other (say more in additional context)
     validations:
       required: true
 
@@ -44,11 +59,35 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: os
+    attributes:
+      label: OS and version
+      placeholder: "Ubuntu 24.04, Debian 12, etc."
+    validations:
+      required: true
+
+  - type: input
+    id: arch
+    attributes:
+      label: CPU architecture
+      placeholder: "amd64 or arm64"
+    validations:
+      required: true
+
+  - type: input
+    id: docker_version
+    attributes:
+      label: Docker version
+      description: Output of `docker version --format '{{.Server.Version}}'`.
+    validations:
+      required: false
+
   - type: textarea
     id: repro
     attributes:
-      label: To reproduce
-      description: Numbered steps to reproduce the behavior.
+      label: Steps to reproduce
+      description: Numbered steps, including the exact commands you ran.
       placeholder: |
         1. Run '...'
         2. Configure '...'
@@ -60,7 +99,15 @@ body:
     id: expected
     attributes:
       label: Expected behavior
-      description: What you expected to happen instead.
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: What you saw. Paste the exact error text if there is one.
     validations:
       required: true
 
@@ -68,24 +115,8 @@ body:
     id: logs
     attributes:
       label: Logs / output
-      description: Relevant log output or error messages. Please redact secrets, tokens, and domain names if they're sensitive.
+      description: "Relevant log output. Redact secrets before you paste: tokens, passwords, API keys, private keys, and any domain names or IPs you consider sensitive."
       render: text
-    validations:
-      required: false
-
-  - type: input
-    id: os
-    attributes:
-      label: OS / distro
-      placeholder: "Ubuntu 24.04, Debian 12, etc."
-    validations:
-      required: false
-
-  - type: input
-    id: docker_version
-    attributes:
-      label: Docker version
-      description: Output of `docker version --format '{{.Server.Version}}'`.
     validations:
       required: false
 

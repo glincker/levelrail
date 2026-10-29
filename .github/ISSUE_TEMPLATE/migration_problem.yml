@@ -1,0 +1,69 @@
+name: Migration problem
+description: Moving an app or setup from another platform to Levelrail failed
+title: "migration: "
+labels: ["migration", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe what you moved and where it broke. Redact secret values from any config you paste.
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where did you move from?
+      options:
+        - Another self-hosted PaaS
+        - A managed app platform
+        - Hand-written Docker or Compose files
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: source_name
+    attributes:
+      label: Platform name and version
+      description: Optional.
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Levelrail version or commit SHA
+      description: Run `levelrail --version` on the affected host.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: step
+    attributes:
+      label: Which step failed?
+      options:
+        - Config import or conversion
+        - Build
+        - Deploy
+        - Domains and TLS
+        - Environment variables or secrets
+        - Volumes and data
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: failed
+    attributes:
+      label: What failed?
+      description: What you expected, what happened, and the exact error text if you have it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Source config (redacted)
+      description: The Compose file, app spec or settings from the old setup. Replace secret values with placeholders.
+      render: yaml
+    validations:
+      required: false
