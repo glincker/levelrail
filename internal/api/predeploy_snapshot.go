@@ -253,6 +253,10 @@ func (rt *Router) snapshotOneDatabase(ctx context.Context, app, prior, targetID,
 	if !storeEngineBackable(db.Engine) {
 		return fail("engine " + db.Engine + " keeps no data on disk")
 	}
+	if est := rt.snapshotSizeEstimate(ctx, dbName); est > predeploySnapshotMaxBytes() {
+		row.SizeBytes = est
+		return fail("estimated snapshot size exceeds " + envPredeploySnapshotMaxMB + ", skipped before backing up")
+	}
 	historyID, err := randomBackupHistoryID()
 	if err != nil {
 		return fail(err.Error())
@@ -275,6 +279,20 @@ func (rt *Router) snapshotOneDatabase(ctx context.Context, app, prior, targetID,
 	}
 	row.Status = store.PredeploySnapshotSucceeded
 	return row
+}
+
+// snapshotSizeEstimate is the newest succeeded backup size for the database, 0 when none exists.
+func (rt *Router) snapshotSizeEstimate(ctx context.Context, dbName string) int64 {
+	rows, err := rt.backupHistory.ListBackupHistory(ctx, dbName, 10, nil)
+	if err != nil {
+		return 0
+	}
+	for _, h := range rows {
+		if h.Status == store.BackupStatusSucceeded && h.SizeBytes > 0 {
+			return h.SizeBytes
+		}
+	}
+	return 0
 }
 
 func storeEngineBackable(engine string) bool { return store.EngineSupportsBackups(engine) }
