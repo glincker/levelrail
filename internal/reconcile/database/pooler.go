@@ -32,8 +32,9 @@ const PoolerPort = 6432
 const PoolerConditionType = "PoolerReady"
 
 const (
-	poolerTargetLabelKey = "db.pooler-target"
-	poolerConfigLabelKey = "db.pooler-config"
+	poolerTargetLabelKey  = "db.pooler-target"
+	poolerConfigLabelKey  = "db.pooler-config"
+	poolerAuthRevLabelKey = "db.pooler-authrev"
 )
 
 // PoolerContainerName is the pooler child container for dbName.
@@ -96,6 +97,13 @@ func poolerConfigRevision(env map[string]string) string {
 	return hex.EncodeToString(h.Sum(nil))[:16]
 }
 
+// poolerCredRevision is a short salted digest, so a rotated password replaces
+// the pooler (its env is fixed at create) without the label exposing it.
+func poolerCredRevision(dbName, password string) string {
+	sum := sha256.Sum256([]byte("pooler-cred:" + dbName + ":" + password))
+	return hex.EncodeToString(sum[:])[:16]
+}
+
 func poolerCondition(status reconcile.ConditionStatus, reason, msg string) reconcile.Condition {
 	return reconcile.Condition{Type: PoolerConditionType, Status: status, Reason: reason, Message: msg}
 }
@@ -138,8 +146,9 @@ func (c *Controller) reconcilePooler(ctx context.Context) reconcile.Condition {
 		// and IP apps already resolve, only the port changes.
 		NetworkMode: "container:" + db.ID,
 		Labels: map[string]string{
-			poolerTargetLabelKey: db.ID,
-			poolerConfigLabelKey: poolerConfigRevision(env),
+			poolerTargetLabelKey:  db.ID,
+			poolerConfigLabelKey:  poolerConfigRevision(env),
+			poolerAuthRevLabelKey: poolerCredRevision(c.dbName, c.postgresCreds.Password),
 		},
 	}
 	if c.prov != nil {
@@ -174,7 +183,7 @@ func (c *Controller) reconcilePooler(ctx context.Context) reconcile.Condition {
 }
 
 // poolerStale is true when the database container was replaced (its old
-// namespace is gone), the image changed, or the pool settings changed.
+// namespace is gone), the image changed, the pool settings changed, or the password rotated.
 func poolerStale(state *docker.ContainerState, spec docker.ContainerSpec) bool {
 	if !docker.SameImageRef(state.Image, spec.Image) {
 		return true
@@ -183,7 +192,8 @@ func poolerStale(state *docker.ContainerState, spec docker.ContainerSpec) bool {
 		return false
 	}
 	return state.Labels[poolerTargetLabelKey] != spec.Labels[poolerTargetLabelKey] ||
-		state.Labels[poolerConfigLabelKey] != spec.Labels[poolerConfigLabelKey]
+		state.Labels[poolerConfigLabelKey] != spec.Labels[poolerConfigLabelKey] ||
+		state.Labels[poolerAuthRevLabelKey] != spec.Labels[poolerAuthRevLabelKey]
 }
 
 func (c *Controller) removeContainer(ctx context.Context, state *docker.ContainerState) error {

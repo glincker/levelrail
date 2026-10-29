@@ -90,3 +90,28 @@ func TestPooler_ImageUnsetKeepsDatabaseReady(t *testing.T) {
 		t.Errorf("pooler reason = %q, want PoolerImageNotConfigured", cond.Reason)
 	}
 }
+
+func TestPooler_ReplacedWhenPasswordRotates(t *testing.T) {
+	t.Setenv(EnvPoolerImage, "example/pooler:1.0.0")
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", PoolerEnabled: true}
+	creds := &PostgresCredentials{Username: "main", Password: "old-pw"}
+	c := New("main", &fakeStore{db: desired}, rt, WithPostgresCredentials(creds))
+	ctx := context.Background()
+	if _, err := c.Reconcile(ctx); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	creates := rt.createCalls
+	creds.Password = "new-pw"
+	if _, err := c.Reconcile(ctx); err != nil {
+		t.Fatalf("Reconcile() after rotation error = %v", err)
+	}
+	if rt.createCalls <= creates {
+		t.Error("pooler kept running with the old password after rotation")
+	}
+	for k, v := range rt.lastCreateSpec.Labels {
+		if strings.Contains(v, "new-pw") {
+			t.Errorf("label %s carries the password", k)
+		}
+	}
+}
