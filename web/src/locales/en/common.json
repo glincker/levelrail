@@ -40,7 +40,8 @@
     "rerunOf": "Retry of {{id}}",
     "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran",
     "current": "Current",
-    "rollbackBadge": "Rollback"
+    "rollbackBadge": "Rollback",
+    "outcomeFailed": "Not serving"
   },
   "actions": {
     "copy": "Copy",

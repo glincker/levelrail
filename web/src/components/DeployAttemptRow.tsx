@@ -335,6 +335,15 @@ export function DeployAttemptRow({
               {t('deployHistory.rollbackBadge')}
             </Badge>
           ) : null}
+          {attempt.outcome === 'failed' && attempt.status !== 'failed' ? (
+            <Badge
+              variant="destructive"
+              className="shrink-0"
+              title={attempt.outcome_reason}
+            >
+              {t('deployHistory.outcomeFailed')}
+            </Badge>
+          ) : null}
           {stageLabel ? (
             <Badge variant="muted" className="shrink-0">
               {stageLabel}
