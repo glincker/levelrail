@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
@@ -14,6 +15,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useExportIac } from '../queries/iac'
 import type { IacExportResult } from '../queries/iac'
+import { resolveFieldHelp, yamlPathAtLine } from '@/lib/schemaHelp'
+import type { FieldHelp } from '@/lib/schemaHelp'
+
+type SchemaRoot = Parameters<typeof resolveFieldHelp>[0]
 
 function joinFiles(res: IacExportResult): string {
   return res.files.map((f) => f.content).join('---\n')
@@ -31,12 +36,32 @@ function download(text: string, name: string) {
 // Reads live state and renders it as resource files. Secret values are never
 // in the output: secret env vars come back as secretRef.
 export function IacExportCard() {
+  const { t } = useTranslation('settings')
   const exportIac = useExportIac()
+  const [schema, setSchema] = useState<SchemaRoot | null>(null)
+  const [help, setHelp] = useState<(FieldHelp & { key: string }) | null>(null)
   const [project, setProject] = useState('')
   const [app, setApp] = useState('')
   const [includeValues, setIncludeValues] = useState(true)
 
   const result = exportIac.data
+
+  // Lazy so the schema stays out of the page chunk until an export exists.
+  useEffect(() => {
+    if (!result || schema) return
+    void import('../../../docs/schemas/resources.schema.json').then((m) =>
+      setSchema(m.default as SchemaRoot),
+    )
+  }, [result, schema])
+
+  function showHelp(el: HTMLTextAreaElement) {
+    if (!schema) return
+    const lines = el.value.split('\n')
+    const line = el.value.slice(0, el.selectionStart).split('\n').length - 1
+    const { kind, path } = yamlPathAtLine(lines, line)
+    const found = path.length ? resolveFieldHelp(schema, kind, path) : null
+    setHelp(found ? { ...found, key: path[path.length - 1] ?? '' } : null)
+  }
   const text = result ? joinFiles(result) : ''
   const fileName = app || project || 'resources'
 
@@ -118,7 +143,24 @@ export function IacExportCard() {
             aria-label="Exported resource files"
             className="min-h-48 font-mono text-xs"
             value={text}
+            onClick={(e) => showHelp(e.currentTarget)}
+            onKeyUp={(e) => showHelp(e.currentTarget)}
           />
+        ) : null}
+        {result ? (
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {help ? (
+              <>
+                <code className="font-mono">{help.key}</code>:{' '}
+                {help.description}
+                {help.defaultValue
+                  ? ` ${t('iacHelp.default', { value: help.defaultValue })}`
+                  : ''}
+              </>
+            ) : (
+              t('iacHelp.hint')
+            )}
+          </p>
         ) : null}
       </CardContent>
     </Card>
