@@ -534,3 +534,30 @@ func mustListOne(t *testing.T, db *DB, databaseName string) BackupHistory {
 	}
 	return got[0]
 }
+
+func TestDeleteBackupHistory_DependentsVerificationCascadesRestoreBlocks(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+	for _, id := range []string{"bkh_v", "bkh_r"} {
+		if err := db.StartBackupHistory(ctx, BackupHistory{ID: id, DatabaseName: "mydb", TargetID: target.ID, ObjectKey: "mydb/x.dump", StartedAt: "2026-08-14T00:00:00Z"}); err != nil {
+			t.Fatalf("StartBackupHistory() error = %v", err)
+		}
+	}
+	if _, err := db.ExecContext(ctx, `INSERT INTO backup_verification (id, backup_history_id, status, started_at) VALUES ('bkv_1', 'bkh_v', 'passed', '2026-08-14T00:02:00Z')`); err != nil {
+		t.Fatalf("seed verification: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `INSERT INTO restore_history (id, database_name, backup_history_id, status, started_at) VALUES ('rst_1', 'mydb', 'bkh_r', 'succeeded', '2026-08-14T00:03:00Z')`); err != nil {
+		t.Fatalf("seed restore: %v", err)
+	}
+
+	if err := db.DeleteBackupHistory(ctx, "bkh_v"); err != nil {
+		t.Fatalf("delete verified backup error = %v, want nil", err)
+	}
+	if err := db.DeleteBackupHistory(ctx, "bkh_r"); !errors.Is(err, ErrBackupInUse) {
+		t.Fatalf("delete restored backup error = %v, want ErrBackupInUse", err)
+	}
+	if _, err := db.GetBackupHistory(ctx, "bkh_r"); err != nil {
+		t.Fatalf("restored backup row must survive: %v", err)
+	}
+}

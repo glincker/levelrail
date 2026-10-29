@@ -63,6 +63,11 @@ func (d *DeleteRunner) DeleteBackup(ctx context.Context, historyID string) error
 		return fmt.Errorf("get backup history %q: %w", historyID, err)
 	}
 
+	// Row first: a backup that restores still reference must keep its object.
+	if err := d.Store.DeleteBackupHistory(ctx, historyID); err != nil {
+		return fmt.Errorf("delete backup history %q: %w", historyID, err)
+	}
+
 	if d.Deleter != nil && h.ObjectKey != "" {
 		dest, destErr := d.resolveDestination(ctx, h.TargetID)
 		switch {
@@ -77,10 +82,6 @@ func (d *DeleteRunner) DeleteBackup(ctx context.Context, historyID string) error
 				recordTombstone(ctx, d.Tombstones, d.log(), h.TargetID, h.ObjectKey, delErr)
 			}
 		}
-	}
-
-	if err := d.Store.DeleteBackupHistory(ctx, historyID); err != nil {
-		return fmt.Errorf("delete backup history %q: %w", historyID, err)
 	}
 	return nil
 }
