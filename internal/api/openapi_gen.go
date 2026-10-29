@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1808 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1812 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -945,6 +945,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/alert-silences/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleExpireAlertSilence", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertTemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/analysis/reports/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAnalysisReport", Description: ""},
+	{Method: "GET", Path: "/api/v1/app-types", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppTypes", Description: ""},
+	{Method: "POST", Path: "/api/v1/app-types", Ability: "AbilityRoot", Group: "Other", Handler: "handleSaveAppType", Description: ""},
+	{Method: "POST", Path: "/api/v1/app-types/{name}/check", Ability: "AbilityRead", Group: "Other", Handler: "handleCheckAppType", Description: ""},
+	{Method: "POST", Path: "/api/v1/app-types/{name}/publish", Ability: "AbilityRoot", Group: "Other", Handler: "handlePublishAppType", Description: ""},
 	{Method: "POST", Path: "/api/v1/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleIaCApply", Description: ""},
 	{Method: "POST", Path: "/api/v1/apply/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/apply/schema", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCSchema", Description: ""},

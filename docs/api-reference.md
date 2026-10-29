@@ -2033,6 +2033,10 @@ Routes that do not fit an existing group.
 | PATCH | /api/v2/databases/{name} | AbilityWrite | handleApply |
 | PATCH | /api/v2/{kind}/{name} | AbilityWrite | handleApplyUnsupported |
 | GET | /api/v1/analysis/reports/{id} | AbilityRead | handleGetAnalysisReport |
+| GET | /api/v1/app-types | AbilityRead | handleListAppTypes |
+| POST | /api/v1/app-types | AbilityRoot | handleSaveAppType |
+| POST | /api/v1/app-types/{name}/publish | AbilityRoot | handlePublishAppType |
+| POST | /api/v1/app-types/{name}/check | AbilityRead | handleCheckAppType |
 
 ## See also
 
