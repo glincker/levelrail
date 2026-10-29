@@ -2,6 +2,7 @@ package heartbeat
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -53,7 +54,7 @@ func testConfig(url string) Config {
 func TestTickPingsWithStatusOnlyBody(t *testing.T) {
 	var hits atomic.Int32
 	var body string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
 		b := make([]byte, 512)
 		n, _ := r.Body.Read(b)
@@ -151,7 +152,7 @@ func TestApplyStoresURLAndStatusShowsHostOnly(t *testing.T) {
 func TestApplyRefusedWhenEnvManaged(t *testing.T) {
 	svc := New(Options{Config: testConfig("https://x.example/p"), Secrets: memSecrets{}})
 	u := "https://y.example/p"
-	if err := svc.Apply(context.Background(), Update{URL: &u}); err != ErrEnvManaged {
+	if err := svc.Apply(context.Background(), Update{URL: &u}); !errors.Is(err, ErrEnvManaged) {
 		t.Fatalf("err = %v", err)
 	}
 }

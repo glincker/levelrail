@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// Environment variables that configure and lock the heartbeat settings.
 const (
 	EnvURL          = "APP_HEARTBEAT_URL"
 	EnvFailURL      = "APP_HEARTBEAT_FAIL_URL"

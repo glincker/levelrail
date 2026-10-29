@@ -69,12 +69,13 @@ func runDatabasesPoolerVerb(prog, verb string, args []string, stdout, stderr io.
 
 	var res apiclient.DatabasePoolerResource
 	var err error
-	if verb == "show" {
+	switch verb {
+	case "show":
 		res, err = client.GetDatabasePooler(context.Background(), name)
-	} else if verb == "enable" {
+	case "enable":
 		res, err = client.EnableDatabasePooler(context.Background(), name, apiclient.DatabasePoolerTuning{PoolSize: *poolSize, MaxClientConn: *maxClientConn})
-	} else {
-		res, err = client.SetDatabasePooler(context.Background(), name, verb == "enable")
+	default:
+		res, err = client.SetDatabasePooler(context.Background(), name, false)
 	}
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s for database %q: %w", cmd, name, err))
