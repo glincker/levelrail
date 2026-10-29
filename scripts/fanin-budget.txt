@@ -10,6 +10,7 @@ internal/chaos 136
 internal/compose 50
 internal/costbudget 136
 internal/dbprovision 39
+internal/deploy 24
 internal/deploysafety 35
 internal/deploytrace 30
 internal/docker 152
@@ -42,3 +43,4 @@ kit/netguard 71
 kit/probe 142
 kit/semver 26
 kit/timeutil 136
+kit/upgrade 24
