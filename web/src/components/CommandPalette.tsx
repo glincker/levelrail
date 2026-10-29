@@ -240,7 +240,7 @@ export function CommandPalette({
           className="fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-2 text-sm text-popover-foreground duration-100 outline-none md:max-w-3xl motion-reduce:animate-none motion-reduce:duration-0 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
           <DialogTitle className="sr-only">{t('title')}</DialogTitle>
-          <div className="banner-edge relative flex flex-wrap items-center gap-3 rounded-full bg-popover/70 px-5 backdrop-blur-2xl backdrop-saturate-150">
+          <div className="banner-edge relative flex flex-wrap items-center gap-3 rounded-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-200 bg-popover/70 px-5 backdrop-blur-2xl backdrop-saturate-150">
             <SearchGlassIcon className="size-6 shrink-0 text-muted-foreground" />
             <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
             <Input
@@ -262,10 +262,10 @@ export function CommandPalette({
               }}
               onKeyDown={handleInputKeyDown}
               placeholder={ps.chips.length > 0 ? '' : t('placeholder')}
-              className="h-14 min-w-32 flex-1 border-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0"
+              className="h-14 min-w-32 flex-1 border-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent"
             />
           </div>
-          <div className="banner-edge relative overflow-hidden rounded-3xl bg-popover/70 backdrop-blur-2xl backdrop-saturate-150">
+          <div className="banner-edge relative overflow-hidden rounded-3xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-4 motion-safe:delay-75 motion-safe:duration-300 motion-safe:fill-mode-backwards bg-popover/70 backdrop-blur-2xl backdrop-saturate-150">
             {pending ? (
               <div
                 role="alert"

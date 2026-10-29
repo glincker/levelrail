@@ -159,5 +159,31 @@
       "action-import": "Import apps from another platform.",
       "action-toggle-theme": "Switch between light, dark and system themes."
     }
+  },
+  "modes": {
+    "docs": {
+      "header": "Docs",
+      "hint": "Type to search the docs, down to headings",
+      "none": "No docs match \"{{term}}\""
+    },
+    "assistant": {
+      "header": "Assistant",
+      "empty": "Open the assistant",
+      "ask": "Ask the assistant: {{term}}"
+    },
+    "docker": {
+      "header": "Docker Hub",
+      "hint": "Type an image name, for example nginx",
+      "searching": "Searching Docker Hub...",
+      "failed": "Docker Hub could not be reached from this server",
+      "none": "No Docker Hub images match \"{{term}}\"",
+      "official": "Official"
+    },
+    "tips": {
+      "header": "Try",
+      "docs": "Search the docs",
+      "assistant": "Ask the assistant",
+      "docker": "Deploy a public image"
+    }
   }
 }

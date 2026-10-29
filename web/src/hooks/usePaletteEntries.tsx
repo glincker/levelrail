@@ -3,12 +3,16 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import {
+  BookOpenGlassIcon,
   BotGlassIcon,
   FunnelGlassIcon,
   LayersGlassIcon,
+  PackageGlassIcon,
   RestoreGlassIcon,
 } from '@thesvg/ui-react'
 import { toast } from '@/components/ui/toast'
+import { parseMode } from '@/lib/paletteMode'
+import { usePaletteModeItems } from './usePaletteModes'
 import { rankItems, relatedFor } from '@/lib/paletteSearch'
 import { STARTER_KEYS } from '@/lib/paletteSearchIndex'
 import { groupHits } from '@/lib/paletteGroups'
@@ -72,6 +76,8 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
   const queryClient = useQueryClient()
   const deleteSavedSearch = useDeleteSavedSearch().mutate
 
+  const mode = React.useMemo(() => parseMode(ps.text), [ps.text])
+  const modeItems = usePaletteModeItems(mode)
   const searching = ps.serverQuery !== ''
   const failed = searching && ps.search.isError
   const hits = React.useMemo<SearchHit[]>(
@@ -111,6 +117,11 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
       }
     }
     const q = ps.text.trim()
+
+    if (modeItems) {
+      push(`mode-${mode?.kind ?? ''}`, modeItems.header, modeItems.items)
+      return out
+    }
 
     const tok = ps.token
     if (tok) {
@@ -256,6 +267,40 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
             }),
         })),
       )
+      const tip = (
+        key: string,
+        label: string,
+        prefix: string,
+        icon: React.ReactNode,
+      ): PaletteItem => ({
+        key: `tip-${key}`,
+        label,
+        subtitle: prefix.trim(),
+        group: 'tips',
+        icon,
+        keepOpen: true,
+        run: () => ps.setInput(prefix),
+      })
+      push('tips', t('modes.tips.header'), [
+        tip(
+          'docs',
+          t('modes.tips.docs'),
+          '/',
+          <BookOpenGlassIcon size="1.4em" />,
+        ),
+        tip(
+          'assistant',
+          t('modes.tips.assistant'),
+          '@',
+          <BotGlassIcon size="1.4em" />,
+        ),
+        tip(
+          'docker',
+          t('modes.tips.docker'),
+          'docker ',
+          <PackageGlassIcon size="1.4em" />,
+        ),
+      ])
       pushStatic(baseItems)
       return out
     }
@@ -342,6 +387,8 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     return out
   }, [
     queryClient,
+    mode,
+    modeItems,
     related,
     templateItems,
     t,

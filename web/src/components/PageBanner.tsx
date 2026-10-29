@@ -39,7 +39,7 @@ export function PageBanner({
     <div
       aria-hidden="true"
       className={cn(
-        'pointer-events-none absolute z-[5] hidden -translate-y-1/2 sm:block',
+        'pointer-events-none absolute z-[5] hidden -translate-y-1/2 sm:block motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-90 motion-safe:duration-500',
         compact ? 'top-1/2 left-4 size-14' : 'top-1/2 left-6 size-24',
       )}
     >
@@ -67,7 +67,7 @@ export function PageBanner({
         <div
           aria-hidden="true"
           className={cn(
-            'grain-orb pointer-events-none absolute -z-10 hidden sm:block',
+            'grain-orb pointer-events-none absolute -z-10 hidden sm:block motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-700',
             compact ? '-top-6 -left-8 size-40' : '-top-10 -left-10 size-60',
           )}
         />
