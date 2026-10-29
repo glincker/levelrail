@@ -535,7 +535,7 @@ export function DeployAttemptRow({
           onOpenChange={setCancelDialogOpen}
         />
       ) : null}
-      {attempt.status === 'succeeded' ? (
+      {attempt.status === 'succeeded' && dataDialogOpen ? (
         <RollbackWithDataDialog
           appName={appName}
           deployId={attempt.id}
