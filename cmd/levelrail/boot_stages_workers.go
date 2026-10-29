@@ -178,7 +178,9 @@ func (s *bootState) startAlerting() {
 	go runCostBudgets(ctx, apiRouter)
 	go runAutoscaler(ctx, apiRouter, autoscale.IntervalFromEnv(autoscale.OSEnv))
 	alertingEngine.SetChanges(withLogSignatures(changes.New(db, db, db, logger), alertingFederator), alertDashboardLink())
-	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger, apiRouter.RuntimeSettings()), alertingDB, db, logger))
+	noiseControl := alerting.NewNoiseControl(alertNoiseConfig(logger, apiRouter.RuntimeSettings()), alertingDB, db, logger)
+	wireAnalysisHook(noiseControl, db, alertingFederator, alertingDB, logger)
+	alertingEngine.SetNoiseControl(noiseControl)
 	go func() {
 		if err := apiRouter.RunStatusPageSampler(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("status page sampler stopped", slog.String("error", err.Error()))

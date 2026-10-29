@@ -54,6 +54,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerAppTrafficTool(server, client)
 	registerDiagnosticTools(server, client)
 	registerResourceRecommendationTools(server, client)
+	registerAnalysisTools(server, client)
 	registerResourceAdviceTools(server, client)
 	registerUsageReportTools(server, client)
 	registerCostExplorerTools(server, client)

@@ -43,7 +43,7 @@ func registerAppTimelineTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_pending_changes",
-		Description: "Show env, secret and config changes saved for an app that its running container does not have yet, with key names only, and whether a restart would apply them. Read-only.",
+		Description: "Show saved env, secret and config changes the running container lacks yet (key names only) and whether a restart would apply them. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.PendingChanges, error) {
 		res, err := client.GetPendingChanges(ctx, in.Name)
 		if err != nil {

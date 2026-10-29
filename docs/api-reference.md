@@ -670,6 +670,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/rollout | AbilityDeploy | handlePutRollout |
 | DELETE | /api/v1/apps/{name}/rollout | AbilityDeploy | handleDeleteRollout |
 | GET | /api/v1/apps/{name}/releases | AbilityRead | handleListAppReleases |
+| GET | /api/v1/apps/{name}/analysis/reports | AbilityRead | handleListAnalysisReports |
 
 </Accordion>
 
@@ -2031,6 +2032,7 @@ Routes that do not fit an existing group.
 | PATCH | /api/v2/apps/{name} | AbilityWrite | handleApply |
 | PATCH | /api/v2/databases/{name} | AbilityWrite | handleApply |
 | PATCH | /api/v2/{kind}/{name} | AbilityWrite | handleApplyUnsupported |
+| GET | /api/v1/analysis/reports/{id} | AbilityRead | handleGetAnalysisReport |
 
 ## See also
 

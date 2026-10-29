@@ -2040,3 +2040,14 @@ levelrail-cli -A apps list
 ```
 
 `explain` documents a resource kind or field from the embedded schema and works offline. It also accepts an app.yaml path (`explain services.web.health.readiness`, or a bare service field such as `explain replicas`) and prints the description, type, allowed values and default; `explain appspec` lists the top level fields, an unknown path suggests the closest match, and `--json` prints the result as JSON. `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.
+
+## Analysis reports
+
+With `APP_ANALYSIS_ENABLED=on`, a firing alert or spend alert writes a deterministic report for the affected app: a summary, a timeline, ranked suspected causes with evidence ids, and recommendations. No model is called. Reports are read only.
+
+```
+levelrail-cli analysis list <app> [--json]
+levelrail-cli analysis show <id> [--json]
+```
+
+Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`.

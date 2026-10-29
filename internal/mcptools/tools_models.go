@@ -115,7 +115,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_model",
-		Description: "Deploy a model container on a GPU node. Asynchronous: watch get_model until ModelLoaded. Returns the OpenAI compatible base URL and a one time API key (see rotate_model_api_key).",
+		Description: "Deploy a model container on a GPU node. Asynchronous: watch get_model until ModelLoaded. Returns the OpenAI compatible base URL and a one time API key.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployModelInput) (*mcp.CallToolResult, apiclient.CreateModelResponse, error) {
 		out, err := client.CreateModel(ctx, apiclient.CreateModelRequest{
 			Name: in.Name, Engine: in.Engine, Model: in.Model, NodeID: in.NodeID, GPUCount: in.GPUCount,

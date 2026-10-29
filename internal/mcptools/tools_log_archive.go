@@ -73,7 +73,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_log_archive_policy",
-		Description: "Create or replace the log archive policy for one app (or all when app_name is omitted): ship node logs to a storage destination on a schedule. Only new logs; use start_log_archive_dump for history.",
+		Description: "Create or replace the log archive policy for one app (or all when app_name is omitted): ship node logs to storage on a schedule. Only new logs; use start_log_archive_dump for history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchivePolicyInput) (*mcp.CallToolResult, apiclient.LogArchivePolicy, error) {
 		out, err := client.SetLogArchivePolicy(ctx, apiclient.LogArchivePolicyRequest{
 			AppName: in.AppName, TargetID: in.TargetID, Interval: in.Interval, RetentionDays: in.RetentionDays, Enabled: in.Enabled,

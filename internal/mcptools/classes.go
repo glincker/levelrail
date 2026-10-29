@@ -170,6 +170,7 @@ var toolTable = map[string]Meta{
 	"list_database_engines":                 {clsR, "databases", 0},
 	"get_database_resource_recommendation":  {clsR, "metrics", 0},
 	"get_resource_recommendation":           {clsR, "metrics", 0},
+	"get_analysis_report":                   {clsR, "metrics", flagUntrusted},
 	resourceAdviceTool:                      {clsR, "metrics", 0},
 	usageReportTool:                         {clsR, "metrics", 0},
 	"cost_explorer":                         {clsR, "metrics", 0},

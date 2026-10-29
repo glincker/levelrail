@@ -310,6 +310,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// automatically.
 	mux.HandleFunc("GET /api/v1/apps/{name}/resource-recommendation", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppResourceRecommendation))
 
+	rt.registerAnalysisRoutes(mux)
+
 	// Read-only list of the app's release snapshots (app_releases.go),
 	// newest first, plus its current binding. AbilityRead, same
 	// sensitivity as resource-recommendation above; empty while
