@@ -128,6 +128,7 @@ func (l *authLibMFA) setup(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: 2fa setup: begin enrollment failed", user.ID, err)
 		return
 	}
+	l.rt.recordAuthAudit(r, user.ID, accountEvent2FASetupStarted, http.StatusOK, nil)
 	writeJSON(w, http.StatusOK, twoFactorSetupResponse{Secret: enroll.Secret, ProvisioningURI: enroll.ProvisioningURI})
 }
 

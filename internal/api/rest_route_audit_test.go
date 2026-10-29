@@ -12,8 +12,8 @@ import (
 // Counts are pinned so adding a mutating route forces a human look at whether it is audited.
 const (
 	pinnedNonGETRoutes   = 1016
-	pinnedExemptions     = 94
-	pinnedKnownAuditGaps = 22
+	pinnedExemptions     = 116
+	pinnedKnownAuditGaps = 0
 )
 
 var restRouteDeclRe = regexp.MustCompile(`mux\.Handle(?:Func)?\("(POST|PUT|PATCH|DELETE)\s*([^"]*)"(?:\s*\+\s*(\w+)(?:\s*\+\s*"([^"]*)")?)?,\s*(.*)$`)
@@ -203,17 +203,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/system/doctor/checks/{id}/run",
 		"POST /api/v1/auth/step-up/passkey/begin",
 	},
-	"per-user UI state or notification preference, no shared platform state": {
-		"POST /api/v1/attention/dismiss",
-		"POST /api/v1/settings/push-subscriptions",
-		"DELETE /api/v1/settings/push-subscriptions/{id}",
-		"POST /api/v1/auth/logout",
-	},
-})
-
-// Real mutating routes with no audit_log row today. Do not add here to silence a new route.
-var restKnownAuditGaps = restExemptionSet(map[string][]string{
-	"known gap, tracked: account or CI-exchange mutation, no audit_log row found in its handler": {
+	"audited inside the handler or by accountEventMiddleware (account.* rows), which this route scan cannot see": {
 		"PATCH /api/v1/auth/profile",
 		"POST /api/v1/auth/sessions/revoke-others",
 		"POST /api/v1/auth/2fa/setup",
@@ -224,11 +214,8 @@ var restKnownAuditGaps = restExemptionSet(map[string][]string{
 		"POST /api/v1/auth/passkeys/register/finish",
 		"DELETE /api/v1/auth/passkeys/{id}",
 		"PATCH /api/v1/auth/passkeys/{id}",
-		"POST /api/v1/auth/device/{user_code}/approve",
-		"POST /api/v1/auth/device/{user_code}/deny",
 		"POST /api/v1/invites/accept",
 		"POST /api/v1/team-invites/accept",
-		"POST /api/v1/ci/stack-oidc-exchange",
 		"DELETE /api/v1/auth/account",
 		"DELETE /api/v1/auth/link/{provider}",
 		"POST /api/v1/auth/email-change",
@@ -237,7 +224,21 @@ var restKnownAuditGaps = restExemptionSet(map[string][]string{
 		"PUT /api/v1/auth/preferences",
 		"DELETE /api/v1/teams/{id}/members/me",
 	},
+	"audited inside the handler by its own lifecycle row (device login, CI exchange)": {
+		"POST /api/v1/auth/device/{user_code}/approve",
+		"POST /api/v1/auth/device/{user_code}/deny",
+		"POST /api/v1/ci/stack-oidc-exchange",
+	},
+	"per-user UI state or notification preference, no shared platform state": {
+		"POST /api/v1/attention/dismiss",
+		"POST /api/v1/settings/push-subscriptions",
+		"DELETE /api/v1/settings/push-subscriptions/{id}",
+		"POST /api/v1/auth/logout",
+	},
 })
+
+// Real mutating routes with no audit_log row today. Do not add here to silence a new route.
+var restKnownAuditGaps = restExemptionSet(map[string][]string{})
 
 func TestRESTMutatingRoutesAreAudited(t *testing.T) {
 	routes := loadRESTMutatingRoutes(t)

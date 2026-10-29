@@ -245,6 +245,7 @@ func (rt *Router) handleAcceptTeamInvite(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	rt.recordTeamEvent(r, inv.TeamID, user.ID, "invite.accepted", user.Email, inv.Role)
+	rt.recordAuthAudit(r, user.ID, accountEventTeamInviteAccepted, http.StatusOK, map[string]string{"team_id": inv.TeamID, "role": inv.Role})
 	writeJSON(w, http.StatusOK, acceptTeamInviteResponse{TeamID: inv.TeamID, Role: inv.Role, Email: user.Email})
 }
 

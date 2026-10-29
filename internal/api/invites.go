@@ -370,6 +370,7 @@ func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: accept invite: establish session failed", err)
 		return
 	}
+	rt.recordAuthAudit(r, user.ID, accountEventInviteAccepted, http.StatusCreated, map[string]string{"invite_id": inv.ID})
 	writeJSON(w, http.StatusCreated, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }
 
