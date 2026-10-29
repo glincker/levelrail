@@ -112,6 +112,9 @@ type Service struct {
 	// Canary tunes staged canary releases (strategy: canary). Nil uses the
 	// APP_CANARY_* defaults.
 	Canary *Canary `yaml:"canary,omitempty"`
+	// Rollout tunes how strategy: rolling replaces replicas and the
+	// disruption budget voluntary operations must respect.
+	Rollout *Rollout `yaml:"rollout,omitempty"`
 
 	// Contexts overrides env and build settings for deploy-preview,
 	// branch-deploy or a "branch:<pattern>" context. Production is the

@@ -1020,6 +1020,33 @@
       },
       "type": "object"
     },
+    "rollout": {
+      "additionalProperties": false,
+      "properties": {
+        "max_surge": {
+          "$ref": "#/$defs/rolloutValue"
+        },
+        "max_unavailable": {
+          "$ref": "#/$defs/rolloutValue"
+        },
+        "min_available": {
+          "$ref": "#/$defs/rolloutValue"
+        }
+      },
+      "type": "object"
+    },
+    "rolloutValue": {
+      "oneOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "pattern": "^([0-9]+|[0-9]{1,2}%|100%)$",
+          "type": "string"
+        }
+      ]
+    },
     "route": {
       "additionalProperties": false,
       "properties": {
@@ -1217,6 +1244,9 @@
         },
         "restart": {
           "type": "string"
+        },
+        "rollout": {
+          "$ref": "#/$defs/rollout"
         },
         "routes": {
           "items": {
