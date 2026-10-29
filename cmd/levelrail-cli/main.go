@@ -186,6 +186,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runPreview(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apply":
 		return runApply(prog, args[1:], stdout, stderr, lookupEnv)
+	case "validate":
+		return runValidate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
 		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":

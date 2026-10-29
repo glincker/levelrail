@@ -1316,6 +1316,11 @@ levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NA
 Validates resource files, prints the plan, and applies it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). <span v-pre>`${{ env.NAME }}`</span> placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly). An unresolved placeholder fails before anything is sent.
 
 ```
+levelrail-cli validate [FILE|DIR|-] [--var NAME=VALUE] [--var-file PATH] [--json]
+```
+Runs the same parse, schema and semantic checks as `apply`, locally: no login, no network. Problems print as `file:line: message (path)`. Exit 0 when valid, 1 on any problem. Placeholders with no `--var` or `--var-file` value are checked with a stand-in value. `--json` prints `{valid, resources, issues}`.
+
+```
 levelrail-cli diff -f dir [flags]
 ```
 Drift between the files and live state; exits 2 when they differ.
