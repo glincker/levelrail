@@ -80,7 +80,7 @@ Set a custom domain (`status-page set --domain status.example.com`) to serve the
 
 Components can be put into named groups (`status-page group add`, then `status-page components set <id> --group NAME --description TEXT`). The page shows each group as a collapsible section (plain `<details>`, no JavaScript) with its worst member status, and the component description under its name. Ungrouped components come first.
 
-Branding is set with `status-page set`: an accent colour (`#RRGGBB`), a logo, plain text about section, a website link, a noindex switch (off by default, so the page is indexable) and the footer credit (on by default). The logo must be an `https` URL on a public host; the page's Content Security Policy allows images from that origin only, and the logo is never fetched by the control plane.
+Branding is set with `status-page set`: an accent colour (`#RRGGBB`), a logo, plain text about section, a website link, a noindex switch (off by default, so the page is indexable) and the footer credit (on by default). The logo must be an `https` URL on a public host; the page's Content Security Policy allows images from that origin only, and the logo is never fetched by the control plane. The page stays noindex after upgrade until you switch it off.
 
 A component with no probe data in the window reads "No data" rather than "Operational". Each of the 90 day bars is coloured by its weighted downtime share: one failed probe among many paints a faint amber mark, and the bar reaches solid red only at the outage share below. Uptime is time-weighted: a degraded probe counts as a fraction of a failed one.
 
