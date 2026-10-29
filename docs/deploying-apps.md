@@ -590,6 +590,7 @@ In the dashboard, each row of the Apps list has an actions menu with Restart, St
 
 - **Input:** `command` is required. `args` is optional and never shell interpreted (raw argv). `timeout_seconds` may shorten but never extend the 30 second server ceiling.
 - **Output:** `stdout`, `stderr`, and `exit_code`, capped at 1 MiB (`truncated: true` past that). A nonzero exit code still returns HTTP 200, because the exec worked and the command failed.
+- **While restarting:** if the app has no running container (a restart or rollout), the call waits up to `APP_EXEC_WAIT_FOR_RUNNING_SECONDS` (default 30, `0` turns it off) for it to come back. Past that it answers 409 with a `Retry-After` header.
 - **Permission:** the `root` ability, not `deploy`. Exec can be switched off per app (it is on by default) with `levelrail-cli apps exec-access disable NAME`, and a disabled app answers 403.
 
 <Warning>

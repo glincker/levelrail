@@ -322,6 +322,7 @@ func TestHandleExecApp_NoRunningContainer_Conflict(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(envExecWaitForRunning, "0")
 			fake := &fakeExecAppRuntime{inspectState: tc.state}
 			rt, db := newTestRouterWithExecRuntime(t, fake)
 			cookie := loginTestSession(t, rt, db)
@@ -331,6 +332,9 @@ func TestHandleExecApp_NoRunningContainer_Conflict(t *testing.T) {
 			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/exec", `{"command":"echo"}`))
 			if rec.Code != http.StatusConflict {
 				t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+			}
+			if rec.Header().Get("Retry-After") == "" {
+				t.Error("missing Retry-After header on the 409")
 			}
 			if fake.execCalls != 0 {
 				t.Errorf("Exec called %d times, want 0: no running container to exec into", fake.execCalls)
