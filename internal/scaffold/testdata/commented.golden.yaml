@@ -1,0 +1,29 @@
+version: 1
+# Services to run, keyed by service name.
+services:
+  web:
+    # How the image is built or sourced.
+    build:
+      # Build input: dockerfile, compose, railpack, static or image.
+      type: dockerfile
+    # Container port the service listens on.
+    port: 3000
+    # Readiness and liveness probes.
+    health:
+      # Probe that gates traffic to a new container.
+      readiness:
+        # HTTP path to request.
+        path: /
+        # Time between checks.
+        interval: 5s
+        # Time to wait for a check.
+        timeout: 2s
+    # Environment variables, as literal strings or secret and reference objects.
+    # env: { LOG_LEVEL: info }
+    # Hostnames routed to this service.
+    # domains: [app.example.com]
+    # Number of container replicas to run.
+    # default: 1
+    # replicas: 2
+    # CPU, memory and GPU limits for each container.
+    # resources: { memory: 512Mi, cpu: 0.5 }
