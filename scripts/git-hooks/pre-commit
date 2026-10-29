@@ -240,30 +240,23 @@ if [ -n "$staged_web_files" ]; then
 	[ "$lint_rc" -eq 0 ] || fail=1
 fi
 
-# Phosphor-only UI icons (ADR 014): lucide-react must never appear in a
-# staged file, the same rule this repo's own PM/QA re-verification loop
-# has manually grepped for on every dispatched change tonight. This
-# script itself is excluded from the sweep, the same reason the em/en
-# dash sweep above excludes it: the check's own source line contains the
-# literal string it's searching for.
-echo "pre-commit: lucide-react sweep (this repo is Phosphor-only, ADR 014)"
-# Lockfiles list transitive dependencies (e.g. @glinui/ui pulls lucide-react); the rule is about our own imports.
-staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v -e '^scripts/git-hooks/pre-commit$' -e '^scripts/check-icon-rules\.sh$' -e '^adr/014-phosphor-icons\.md$' -e 'package-lock\.json$')
-lucide_hits=""
-for f in $staged_all_files; do
-	[ -f "$f" ] || continue
-	if grep -l "lucide-react" "$f" >/dev/null 2>&1; then
-		lucide_hits="$lucide_hits $f"
+# New code uses @thesvg/ui-react (ADR 053): fail only when the staged diff adds
+# a line importing Phosphor or lucide-react. Existing imports stay until migrated.
+echo "pre-commit: no new Phosphor or lucide-react imports (ADR 053)"
+icon_hits=""
+for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|mjs)$'); do
+	if git diff --cached -U0 -- "$f" | grep -E "^\+[^+].*(from|import)[[:space:]]*\(?[[:space:]]*['\"](@phosphor-icons/|lucide-react)" >/dev/null 2>&1; then
+		icon_hits="$icon_hits $f"
 	fi
 done
-if [ -n "$lucide_hits" ]; then
-	echo "lucide-react import found in:$lucide_hits"
-	echo "This repo is Phosphor-icons only (@phosphor-icons/react/dist/ssr, ADR 014)."
+if [ -n "$icon_hits" ]; then
+	echo "new Phosphor or lucide-react import added in:$icon_hits"
+	echo "Use @thesvg/ui-react for new icons (ADR 053); existing Phosphor imports stay until the file is migrated."
 	fail=1
 fi
 
 # Icon and logo rules: brand marks from @thesvg/react through BrandIcon, UI
-# icons from Phosphor only (scripts/check-icon-rules.sh, ADR 014).
+# icons from @thesvg/ui-react (scripts/check-icon-rules.sh, ADR 053).
 echo "pre-commit: icon and logo rules"
 staged_web_src=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^web/src/.*\.(ts|tsx)$')
 if [ -n "$staged_web_src" ]; then

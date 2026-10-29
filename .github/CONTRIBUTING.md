@@ -194,6 +194,9 @@ it separately if you think the set should change.
 - On the frontend: no data fetching inside component bodies, route
   loaders prime the query cache and components read from it. Any list
   that can exceed 50 items is virtualized.
+- Icons: new frontend code uses `@thesvg/ui-react`. Do not add Phosphor or
+  lucide-react imports (ADR 053); pre-commit fails on them. Existing Phosphor
+  imports stay until the file is migrated.
 
 ## Adding a service template
 
