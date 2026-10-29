@@ -18,6 +18,8 @@ type HeartbeatResource struct {
 	LastPingAt   time.Time `json:"last_ping_at,omitzero"`
 	LastResult   string    `json:"last_result,omitempty"`
 	LastError    string    `json:"last_error,omitempty"`
+
+	AgentSilenceHost string `json:"agent_silence_host,omitempty"`
 }
 
 // HeartbeatUpdate is the PUT body; nil fields are left unchanged and an empty URL clears it.
@@ -25,6 +27,8 @@ type HeartbeatUpdate struct {
 	URL     *string `json:"url,omitempty"`
 	FailURL *string `json:"fail_url,omitempty"`
 	Body    *bool   `json:"body_enabled,omitempty"`
+
+	AgentSilenceURL *string `json:"agent_silence_url,omitempty"`
 }
 
 // GetHeartbeat calls GET /api/v1/settings/heartbeat.

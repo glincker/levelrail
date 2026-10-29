@@ -34,8 +34,8 @@ func runSettingsHeartbeat(prog string, args []string, stdout, stderr io.Writer, 
 func settingsHeartbeatUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings heartbeat show [flags]
-  %[1]s settings heartbeat set --url URL [--fail-url URL] [--body on|off] [flags]
-  %[1]s settings heartbeat clear [flags]
+  %[1]s settings heartbeat set --url URL [--fail-url URL] [--body on|off] [--agent-silence-url URL] [flags]
+  %[1]s settings heartbeat clear [--agent-silence] [flags]
 
 An outbound dead-man ping: while the control plane is healthy it calls the
 URL every interval, so an external monitor (Healthchecks, Uptime Kuma push,
@@ -43,9 +43,15 @@ Better Stack) alerts when the pings stop. The URL holds a secret key, so
 it is stored encrypted and only its host is ever shown. Pass --url - to
 read it from stdin and keep it out of shell history.
 
+Agents that lose the control plane for the grace period (APP_AGENT_CP_SILENCE_GRACE
+on the agent, default 5m) ping --agent-silence-url, so a dead control plane is
+noticed even when the box is up. Use your monitor's failure endpoint.
+
 Flags:
   --url string         ping URL (write-only)
   --fail-url string    optional URL called instead when the control plane knows it is unhealthy
+  --agent-silence-url string  URL every agent pings while it cannot reach the control plane (write-only, - reads stdin)
+  --agent-silence      with clear: remove only the agent silence URL
   --body string        send a small status JSON body: on or off
   --token string       API token (default: %[2]s env var, then the credentials file)
   --api-url string     control plane base URL (default: %[3]s env var, then %[4]s)
@@ -57,8 +63,13 @@ Flags:
 
 func runSettingsHeartbeatVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings heartbeat "+verb, "print the heartbeat state as JSON to stdout and nothing else", stderr)
-	var pingURL, failURL, body string
+	var pingURL, failURL, body, silenceURL string
+	var clearSilence bool
+	if verb == "clear" {
+		fs.BoolVar(&clearSilence, "agent-silence", false, "remove only the agent silence URL")
+	}
 	if verb == "set" {
+		fs.StringVar(&silenceURL, "agent-silence-url", "", "URL agents ping when they lose the control plane (- reads stdin)")
 		fs.StringVar(&pingURL, "url", "", "ping URL (required, - reads stdin)")
 		fs.StringVar(&failURL, "fail-url", "", "URL called when the control plane knows it is unhealthy")
 		fs.StringVar(&body, "body", "", "on or off")
@@ -71,12 +82,20 @@ func runSettingsHeartbeatVerb(prog, verb string, args []string, stdout, stderr i
 	var upd apiclient.HeartbeatUpdate
 	switch verb {
 	case "set":
-		if pingURL == "-" {
+		if pingURL == "-" || silenceURL == "-" {
 			line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-			pingURL = strings.TrimSpace(line)
+			line = strings.TrimSpace(line)
+			if pingURL == "-" {
+				pingURL = line
+			} else {
+				silenceURL = line
+			}
 		}
-		if pingURL == "" && failURL == "" && body == "" {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--url, --fail-url or --body is required"))
+		if pingURL == "" && failURL == "" && body == "" && silenceURL == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--url, --fail-url, --agent-silence-url or --body is required"))
+		}
+		if silenceURL != "" {
+			upd.AgentSilenceURL = &silenceURL
 		}
 		if pingURL != "" {
 			upd.URL = &pingURL
@@ -93,7 +112,11 @@ func runSettingsHeartbeatVerb(prog, verb string, args []string, stdout, stderr i
 		}
 	case "clear":
 		empty := ""
-		upd.URL = &empty
+		if clearSilence {
+			upd.AgentSilenceURL = &empty
+		} else {
+			upd.URL = &empty
+		}
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	var (
@@ -114,11 +137,17 @@ func runSettingsHeartbeatVerb(prog, verb string, args []string, stdout, stderr i
 func printHeartbeatHuman(out io.Writer, r apiclient.HeartbeatResource) {
 	if !r.Configured {
 		_, _ = fmt.Fprintln(out, "heartbeat: not configured")
+		if r.AgentSilenceHost != "" {
+			_, _ = fmt.Fprintf(out, "agent silence host: %s\n", r.AgentSilenceHost)
+		}
 		return
 	}
 	_, _ = fmt.Fprintf(out, "heartbeat: pinging %s every %ds (source: %s)\n", r.Host, r.IntervalSecs, r.Source)
 	if r.FailHost != "" {
 		_, _ = fmt.Fprintf(out, "fail url host: %s\n", r.FailHost)
+	}
+	if r.AgentSilenceHost != "" {
+		_, _ = fmt.Fprintf(out, "agent silence host: %s\n", r.AgentSilenceHost)
 	}
 	if r.LastPingAt.IsZero() {
 		_, _ = fmt.Fprintln(out, "last ping: none yet")

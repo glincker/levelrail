@@ -52,6 +52,33 @@ Run Uptime Kuma on a different machine or provider than the server it watches. A
 
 By default a small JSON body: `{"status":"ok","version":"...","uptime_seconds":123}`. A failure ping adds a one word `reason` (`store`, `reconcile` or `agent`). No hostnames, no app names, no identifiers. Set `APP_HEARTBEAT_BODY=off` to send nothing. Redirects to another host are refused, the URL never appears in logs or API responses (only its host), and private destinations are blocked unless you allow them.
 
+## When only the control plane dies
+
+The heartbeat above is sent by the control plane, so it cannot tell you about a control plane that is dead while the box is still up (for example a crashed process that nothing restarts). Agents cover that: when a node has had no contact with the control plane for `APP_AGENT_CP_SILENCE_GRACE`, it pings a URL you choose, naming the node in the body, and stops as soon as the session is back.
+
+Set it in the dashboard (the "Agent silence URL" field on the same card) or with the CLI:
+
+```
+levelrail-cli settings heartbeat set --agent-silence-url -     # reads the URL from stdin
+levelrail-cli settings heartbeat clear --agent-silence
+```
+
+Use the monitor's failure endpoint (Healthchecks: the ping URL with `/fail` appended). The control plane pushes the URL to connected agents over the existing mTLS session, within `APP_AGENT_CP_SILENCE_PUSH_EVERY` of a change. The agent keeps it in memory only, so an agent restarted while the control plane is already down has no URL until it connects once. The URL is stored encrypted and never logged, only its host.
+
+Agent environment:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_AGENT_CP_SILENCE_GRACE` | `5m` | silence before the first ping |
+| `APP_AGENT_CP_SILENCE_INTERVAL` | `1m` | time between pings while silent |
+| `APP_AGENT_CP_SILENCE_MAX_BACKOFF` | `15m` | cap for the wait after a failed ping (it doubles each failure) |
+| `APP_AGENT_CP_SILENCE_JITTER_PCT` | `20` | random extra wait, so a fleet does not ping together |
+| `APP_AGENT_CP_SILENCE_CHECK` | `10s` | how often the agent checks its contact state |
+| `APP_AGENT_CP_SILENCE_TIMEOUT` | `10s` | per request timeout |
+| `APP_HEARTBEAT_ALLOW_PRIVATE` | off | `1` allows loopback and private destinations |
+
+Control plane: `APP_AGENT_CP_SILENCE_PUSH_EVERY` (default `30s`) is how often live sessions re-check the stored URL.
+
 ## What it catches that in-box alerts cannot
 
 Host power loss, kernel panic, OOM kill of the control plane, a full disk that stops the process, a cloud provider outage, a lost network route. It also catches a control plane that is running but wedged, because a stalled reconcile loop stops the pings.
