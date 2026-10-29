@@ -18,6 +18,8 @@ const (
 	EnvRetryBaseDelay      = "APP_AI_RETRY_BASE_DELAY"
 	EnvRetryMaxDelay       = "APP_AI_RETRY_MAX_DELAY"
 	EnvValidateTimeout     = "APP_AI_VALIDATE_TIMEOUT"
+	EnvRepeatLimit         = "APP_AI_REPEAT_LIMIT"
+	EnvEmptyLimit          = "APP_AI_EMPTY_RESULT_LIMIT"
 	defaultStepTimeout     = 120 * time.Second
 	defaultMaxSteps        = 12
 	defaultToolOutputBytes = 32 * 1024
@@ -27,6 +29,8 @@ const (
 	defaultRetryBase       = time.Second
 	defaultRetryMax        = 30 * time.Second
 	defaultValidateTimeout = 10 * time.Second
+	defaultRepeatLimit     = 3
+	defaultEmptyLimit      = 3
 )
 
 // Limits are the harness bounds, resolved from the environment.
@@ -36,6 +40,8 @@ type Limits struct {
 	ToolOutputMaxBytes int
 	DefaultContext     int
 	MonthlyTokenBudget int64
+	RepeatLimit        int
+	EmptyLimit         int
 }
 
 // LimitsFromEnv reads the harness limits; unset or invalid values use defaults,
@@ -47,6 +53,8 @@ func LimitsFromEnv() Limits {
 		ToolOutputMaxBytes: envInt(EnvToolOutputMaxBytes, defaultToolOutputBytes),
 		DefaultContext:     envInt(EnvDefaultContext, defaultContextTokens),
 		MonthlyTokenBudget: int64(envInt(EnvMonthlyTokenBudget, 0)),
+		RepeatLimit:        envInt(EnvRepeatLimit, defaultRepeatLimit),
+		EmptyLimit:         envInt(EnvEmptyLimit, defaultEmptyLimit),
 	}
 }
 
