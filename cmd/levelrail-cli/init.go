@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agentinit"
 	"github.com/GLINCKER/levelrail/internal/projecttpl"
+	"github.com/GLINCKER/levelrail/internal/scaffold"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/kit/stackdetect"
 )
@@ -57,11 +58,14 @@ type initResult struct {
 func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "init", "print the plan and result as JSON to stdout and nothing else", stderr)
 	var dir, mode, mcpBinary, template string
-	var force, dryRun, yes, listTemplates bool
+	var force, dryRun, yes, listTemplates, commented bool
+	var outFile string
 	params := stringMapFlag{}
 	fs.StringVar(&template, "template", "", "write a starter template's files instead of detecting the stack (see --list-templates)")
 	fs.Var(params, "param", "template parameter as KEY=VALUE, repeatable (for example --param name=web --param port=8080)")
 	fs.BoolVar(&listTemplates, "list-templates", false, "list the starter templates and their parameters, then exit")
+	fs.BoolVar(&commented, "commented", false, "comment every app.yaml field from the schema and add the common optional fields as commented-out lines")
+	fs.StringVar(&outFile, "out", "", "write only app.yaml to FILE, or to stdout when '-', and skip AGENTS.md and .mcp.json")
 	fs.StringVar(&dir, "dir", ".", "project directory to initialise")
 	fs.StringVar(&mode, "mode", agentinit.ModeAgentCore, "MCP tool exposure written to .mcp.json: agent-core (small tool profile, default), read-only, standard or full")
 	fs.StringVar(&mcpBinary, "mcp-binary", "", "MCP server binary name (default: derived from the CLI name)")
@@ -114,9 +118,15 @@ func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		}
 	}
 
-	files, err := planInit(dir, stack, opts, force, tplFiles)
+	files, err := planInit(dir, stack, opts, force, tplFiles, commented)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if outFile != "" {
+		if err := writeInitOut(files, outFile, force, dryRun, stdout, stderr); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		return exitOK
 	}
 	res := initResult{
 		Dir:    dir,
@@ -181,7 +191,7 @@ func initNames(prog, mcpBinary string, lookupEnv func(string) (string, bool)) ag
 }
 
 // planInit decides what to do with each generated file without touching disk.
-func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force bool, tpl []projecttpl.File) ([]initFile, error) {
+func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force bool, tpl []projecttpl.File, commented bool) ([]initFile, error) {
 	specPath := "app.yaml"
 	if found, err := spec.DiscoverPath(dir, ""); err == nil {
 		specPath = filepath.Base(found)
@@ -204,6 +214,13 @@ func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force
 		files = append(files, initFile{Path: specPath, content: body})
 	} else {
 		files = append(files, initFile{Path: specPath, Action: initSkip, Reason: "no stack detected: write app.yaml by hand"})
+	}
+	if commented && files[0].content != "" {
+		body, err := scaffold.Commented(files[0].content)
+		if err != nil {
+			return nil, err
+		}
+		files[0].content = body
 	}
 	agentsMD, err := agentinit.AgentsMD(opts)
 	if err != nil {
@@ -344,6 +361,11 @@ a script must pass --yes or --dry-run.
 of the detected app.yaml: web-service, static-site, worker, cron-job or
 build-test-deploy (adds .pipelines/release.yaml). --list-templates shows each
 template's parameters.
+
+--commented puts a one line comment from the schema above each app.yaml field, with a
+default note where the schema has one, and adds port, env, health, domains, replicas
+and resources as commented-out lines. --out FILE writes only app.yaml there, or to
+stdout when FILE is "-" (nothing else is printed); --force overwrites an existing FILE.
 
 --api-url (or the active profile) is written into AGENTS.md and .mcp.json when known.
 --mcp-binary overrides the MCP server binary name.

@@ -161,3 +161,17 @@ func TestInit_TemplateRejectsBadParams(t *testing.T) {
 		t.Fatal("nothing should be written on invalid params")
 	}
 }
+
+func TestInitCommentedOutStdout(t *testing.T) {
+	dir := writeProject(t, map[string]string{"Dockerfile": "FROM scratch\nEXPOSE 8080\n"})
+	code, out, errOut := runInitCLI(t, "--dir", dir, "--commented", "--out", "-")
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	if !strings.Contains(out, "# Container port the service listens on.") || strings.Contains(out, "mcpServers") {
+		t.Fatalf("unexpected output:\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "AGENTS.md")); err == nil {
+		t.Fatal("--out must not write AGENTS.md")
+	}
+}

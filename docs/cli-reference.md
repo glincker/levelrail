@@ -1486,11 +1486,14 @@ Detects the project's stack (Dockerfile, compose file, package.json, go.mod, Pyt
 - Existing files are never overwritten unless `--force` is given. A diff of what would change is shown either way.
 - Without `--yes`, a terminal is asked to confirm; a script must pass `--yes` or `--dry-run`.
 - `--mode` selects the tool exposure written to `.mcp.json`: `agent-core` (the default, a small profile for deploy and debug work), `read-only` (every read tool, no mutations), `standard` (read and mutating tools, no destructive ones) or `full`.
+- `--commented` puts a one line comment from the app schema above each `app.yaml` field, adds a `# default:` note where the schema has one, and lists `port`, `env`, `health`, `domains`, `replicas` and `resources` as commented-out lines. The output still validates.
+- `--out FILE` writes only `app.yaml` to `FILE` and skips `AGENTS.md` and `.mcp.json`; `--out -` prints it to stdout and nothing else. An existing `FILE` needs `--force`.
 - `--api-url` or the active profile is written into `AGENTS.md` and `.mcp.json` when known. `--mcp-binary` overrides the MCP server binary name.
 
 ```
 levelrail-cli init --dry-run
 levelrail-cli init --mode read-only --yes
+levelrail-cli init --commented --out -
 ```
 
 See [Agents](/agents).
