@@ -301,6 +301,7 @@
               "secret-rotation",
               "account",
               "access-control",
+              "labels",
               "teams-and-roles",
               "team-and-project-quotas",
               "environments",
