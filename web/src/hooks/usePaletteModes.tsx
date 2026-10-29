@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -10,16 +10,24 @@ import {
 } from '@thesvg/ui-react'
 import type { PaletteMode } from '@/lib/paletteMode'
 import { recordModeUse } from '@/lib/paletteModeUse'
+import { brandForRegistryHost, registryHostOf } from '@/lib/registryRef'
 import { searchDocsGrouped } from '@/lib/docsSearch'
 import { loadDocsManifest } from '@/lib/docsManifestLoader'
+import { BrandIcon } from '../components/BrandIcon'
 import type { PaletteItem } from '../components/commandPaletteData'
 import { dockerHubKeys, fetchDockerHubSearch } from '../queries/dockerhub'
+import {
+  fetchRegistryCredentialRepositories,
+  registryCredentialKeys,
+  registryCredentialListQueryOptions,
+} from '../queries/registryCredentials'
 import { useSearchSuggest } from '../queries/search'
 import { useDebouncedValue } from './useDebouncedValue'
 
 const MIN_TERM = 2
 const MAX_DOCS = 8
 const MAX_IMAGES = 8
+const MAX_CONNECTED = 4
 const DEBOUNCE_MS = 250
 
 export interface ModeItems {
@@ -50,6 +58,28 @@ export function usePaletteModeItems(
     queryFn: () => fetchDockerHubSearch(debounced),
     enabled: mode?.kind === 'docker' && ready,
     staleTime: 60_000,
+  })
+
+  // Connected registries: each one's repositories are browsed (cached) and filtered by the term.
+  const creds = useQuery({
+    ...registryCredentialListQueryOptions(),
+    enabled: mode?.kind === 'docker',
+  })
+  const credList = React.useMemo(
+    () => (Array.isArray(creds.data) ? creds.data : []),
+    [creds.data],
+  )
+  const looksLikeRef = registryHostOf(term) !== null
+  const browseOn = mode?.kind === 'docker' && ready && !looksLikeRef
+  const repoLists = useQueries({
+    queries: credList.map((c) => ({
+      queryKey: registryCredentialKeys.repositories(c.id),
+      queryFn: () => fetchRegistryCredentialRepositories(c.id),
+      enabled: browseOn,
+      staleTime: 60_000,
+      retry: false,
+    })),
+    combine: (results) => results.map((r) => r.data),
   })
 
   const tagsOn = mode?.kind === 'tags' && debounced.length >= 1
@@ -193,58 +223,130 @@ export function usePaletteModeItems(
               ),
       }
     }
-    const icon = <PackageGlassIcon size="1.4em" />
-    if (!ready) {
+    const hubIcon = <BrandIcon name="docker" className="size-6" />
+    const iconFor = (host: string) => {
+      const brand = brandForRegistryHost(host)
+      return brand ? (
+        <BrandIcon name={brand} className="size-6" />
+      ) : (
+        <PackageGlassIcon size="1.4em" />
+      )
+    }
+    const deploy = (image: string) => () =>
+      void navigate({ to: '/apps/new', search: { deploy: '1', image } })
+    const header = t('modes.docker.header')
+    const ref = registryHostOf(term) ? term : null
+    if (ref) {
+      const host = registryHostOf(ref) ?? ''
       return {
-        header: t('modes.docker.header'),
-        items: hint('mode-docker-hint', t('modes.docker.hint'), icon),
+        header,
+        items: [
+          {
+            key: `mode-image-ref-${ref}`,
+            label: ref,
+            subtitle: t('modes.docker.refHint', { host }),
+            stacked: true,
+            group: 'docker',
+            icon: iconFor(host),
+            preview: {
+              kind: 'image' as const,
+              description: t('modes.docker.refPreview', { ref }),
+              primaryLabel: t('modes.docker.deploy'),
+              facts: [host],
+            },
+            run: deploy(ref),
+          },
+        ],
       }
     }
+    if (!ready) {
+      return {
+        header,
+        items: hint('mode-docker-hint', t('modes.docker.hint'), hubIcon),
+      }
+    }
+    const q = debounced.toLowerCase()
+    const connected: PaletteItem[] = credList.flatMap((c, i) =>
+      (repoLists[i] ?? [])
+        .filter((repo) => repo.toLowerCase().includes(q))
+        .slice(0, MAX_CONNECTED)
+        .map((repo) => {
+          const image = `${c.registry_host}/${repo}`
+          return {
+            key: `mode-image-conn-${c.id}-${repo}`,
+            label: image,
+            subtitle: c.name,
+            stacked: true,
+            group: 'docker',
+            icon: iconFor(c.registry_host),
+            badge: (
+              <span className="text-xs text-muted-foreground">
+                {t('modes.docker.connected')}
+              </span>
+            ),
+            preview: {
+              kind: 'image' as const,
+              description: t('modes.docker.connectedPreview', {
+                name: c.name,
+              }),
+              primaryLabel: t('modes.docker.deploy'),
+              facts: [c.registry_host],
+            },
+            run: deploy(image),
+          }
+        }),
+    )
+    const hub: PaletteItem[] = (images.data ?? [])
+      .slice(0, MAX_IMAGES)
+      .map((r) => ({
+        key: `mode-docker-${r.repo_name}`,
+        label: r.repo_name,
+        subtitle: r.short_description,
+        stacked: true,
+        group: 'docker',
+        preview: {
+          kind: 'image' as const,
+          description: r.short_description,
+          primaryLabel: t('modes.docker.deploy'),
+          facts: [
+            r.is_official
+              ? t('modes.docker.official')
+              : `${r.star_count} stars`,
+          ],
+        },
+        icon: hubIcon,
+        badge: (
+          <span className="text-xs text-muted-foreground">
+            {r.is_official ? t('modes.docker.official') : `★ ${r.star_count}`}
+          </span>
+        ),
+        run: deploy(r.repo_name),
+      }))
+    const items = [...connected, ...hub]
+    if (items.length > 0) return { header, items }
     if (images.isPending) {
       return {
-        header: t('modes.docker.header'),
-        items: hint('mode-docker-loading', t('modes.docker.searching'), icon),
+        header,
+        items: hint(
+          'mode-docker-loading',
+          t('modes.docker.searching'),
+          hubIcon,
+        ),
       }
     }
     if (images.isError) {
       return {
-        header: t('modes.docker.header'),
-        items: hint('mode-docker-error', t('modes.docker.failed'), icon),
+        header,
+        items: hint('mode-docker-error', t('modes.docker.failed'), hubIcon),
       }
     }
-    const repos = (images.data ?? []).slice(0, MAX_IMAGES)
-    const items: PaletteItem[] = repos.map((r) => ({
-      key: `mode-docker-${r.repo_name}`,
-      label: r.repo_name,
-      subtitle: r.short_description,
-      stacked: true,
-      group: 'docker',
-      preview: {
-        kind: 'image',
-        description: r.short_description,
-        primaryLabel: t('modes.docker.deploy'),
-        facts: [
-          r.is_official ? t('modes.docker.official') : `${r.star_count} stars`,
-        ],
-      },
-      icon,
-      badge: (
-        <span className="text-xs text-muted-foreground">
-          {r.is_official ? t('modes.docker.official') : `★ ${r.star_count}`}
-        </span>
-      ),
-      run: () =>
-        void navigate({
-          to: '/apps/new',
-          search: { deploy: '1', image: r.repo_name },
-        }),
-    }))
     return {
-      header: t('modes.docker.header'),
-      items:
-        items.length > 0
-          ? items
-          : hint('mode-docker-none', t('modes.docker.none', { term }), icon),
+      header,
+      items: hint(
+        'mode-docker-none',
+        t('modes.docker.none', { term }),
+        hubIcon,
+      ),
     }
   }, [
     mode,
@@ -255,6 +357,8 @@ export function usePaletteModeItems(
     images.data,
     images.isPending,
     images.isError,
+    credList,
+    repoLists,
     tags.data,
     envs.data,
     setInput,

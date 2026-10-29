@@ -184,14 +184,18 @@
       "pill": "Assistant"
     },
     "docker": {
-      "header": "Docker Hub",
-      "hint": "Type an image name, for example nginx",
+      "header": "Images",
+      "hint": "Type an image name, or a registry address such as ghcr.io/org/app",
       "searching": "Searching Docker Hub...",
       "failed": "Docker Hub could not be reached from this server",
-      "none": "No Docker Hub images match \"{{term}}\"",
+      "none": "No images match \"{{term}}\"",
       "official": "Official",
       "deploy": "Deploy",
-      "pill": "Docker Hub"
+      "pill": "Images",
+      "refHint": "Deploys this exact image from {{host}}",
+      "refPreview": "Deploys {{ref}} as a new app. Works with any registry that this server can reach.",
+      "connected": "Connected",
+      "connectedPreview": "From your connected registry {{name}}."
     },
     "pillsLabel": "Search commands",
     "tags": {

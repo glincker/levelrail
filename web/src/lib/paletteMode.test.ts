@@ -22,6 +22,18 @@ describe('parseMode', () => {
     expect(parseMode('+postgres')).toEqual({ kind: 'docker', term: 'postgres' })
   })
 
+  it('treats a known registry address as an image, and any registry after the docker word', () => {
+    expect(parseMode('ghcr.io/org/app:1')).toEqual({
+      kind: 'docker',
+      term: 'ghcr.io/org/app:1',
+    })
+    expect(parseMode('docker registry.example.com/team/app')).toEqual({
+      kind: 'docker',
+      term: 'registry.example.com/team/app',
+    })
+    expect(parseMode('app.example.com/api')).toBeNull()
+  })
+
   it('reads the tag prefix', () => {
     expect(parseMode('#prod')).toEqual({ kind: 'tags', term: 'prod' })
   })
