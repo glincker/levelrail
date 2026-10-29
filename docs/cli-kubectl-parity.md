@@ -22,6 +22,7 @@ If you already know kubectl, the same muscle memory works here. The generic verb
 | `delete db main` | Deletes the database | `databases delete main` |
 | `edit app web` | Opens the app document in `$VISUAL` or `$EDITOR`, then applies it | `export --app web`, `apply -f` |
 | `apply -f app.yaml` | Plans and applies resource documents | existing |
+| `apply -f app.yaml --server-side` | Merges each App or Database document on the server and records field ownership | `PATCH /api/v2/{kind}/{name}`, see [server-side apply](server-side-apply.md) |
 | `port-forward web 8080:3000` | Local port to an app container port | `apps tunnel web --local-port 8080 --port 3000` |
 | `port-forward db/main 5433` | Local port to a managed database | `databases tunnel main --port 5433` |
 | `cp web/data:conf/app.ini ./app.ini` | Download one file from an app volume | `apps volumes cp` |
@@ -36,7 +37,7 @@ Every verb takes `--json`, `--output` and `--query` like the rest of the CLI. `-
 - `get -o wide` has real extra columns. `table` stays compact.
 - There is no field selector: the API supports label selectors only.
 - `delete` asks for confirmation on a terminal and needs `--yes` in scripts. It never destroys data volumes; use `apps delete --delete-data --confirm NAME` for that.
-- `edit` supports apps. It compares the resource version before and after the editor session. If the app changed meanwhile, nothing is applied and your edit is saved to a temp file whose path is printed.
+- `edit` supports apps. It sends only the fields you changed through server-side apply, with the resource version you opened as a precondition, so the server does the compare-and-swap. If the app changed meanwhile, nothing is applied and your edit is saved to a temp file whose path is printed.
 - `cp` copies single files, not directories, and the remote side is written `APP/VOLUME:PATH`.
 - `port-forward` listens on loopback only.
 - Nodes are read only through `get` and `describe`. Remove one with `nodes delete`.
