@@ -29,8 +29,8 @@
       "required": ["name"],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
-        "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+        "name": { "description": "Resource name, unique within its kind.", "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+        "labels": { "description": "Free-form labels.", "type": "object", "additionalProperties": { "type": "string" } }
       }
     },
     "literalEnv": {
@@ -40,16 +40,16 @@
     "projectSpec": {
       "type": "object",
       "additionalProperties": false,
-      "properties": { "env": { "$ref": "#/$defs/literalEnv" } }
+      "properties": { "env": { "description": "Environment variables shared by the project.", "$ref": "#/$defs/literalEnv" } }
     },
     "environmentSpec": {
       "type": "object",
       "required": ["project"],
       "additionalProperties": false,
       "properties": {
-        "project": { "type": "string", "minLength": 1 },
-        "protected": { "type": "boolean" },
-        "env": { "$ref": "#/$defs/literalEnv" }
+        "project": { "description": "Name of the project the environment belongs to.", "type": "string", "minLength": 1 },
+        "protected": { "description": "Mark the environment as protected.", "type": "boolean" },
+        "env": { "description": "Environment variables for this environment.", "$ref": "#/$defs/literalEnv" }
       }
     },
     "databaseSpec": {
@@ -57,10 +57,11 @@
       "required": ["engine"],
       "additionalProperties": false,
       "properties": {
-        "engine": { "$ref": "#/$defs/database/properties/engine" },
-        "version": { "type": "string", "minLength": 1 },
-        "project": { "type": "string", "minLength": 1 },
+        "engine": { "description": "Database engine.", "$ref": "#/$defs/database/properties/engine" },
+        "version": { "description": "Engine version.", "type": "string", "minLength": 1 },
+        "project": { "description": "Name of the project the database belongs to.", "type": "string", "minLength": 1 },
         "pooler": {
+          "description": "Connection pooler in front of the database.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -76,26 +77,26 @@
       "required": ["service"],
       "additionalProperties": false,
       "properties": {
-        "project": { "type": "string", "minLength": 1 },
-        "environment": { "type": "string", "minLength": 1 },
-        "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
-        "service": { "$ref": "#/$defs/service" }
+        "project": { "description": "Name of the project the app belongs to.", "type": "string", "minLength": 1 },
+        "environment": { "description": "Name of the environment the app deploys to.", "type": "string", "minLength": 1 },
+        "tags": { "description": "Tags attached to the app.", "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
+        "service": { "description": "The service definition, same fields as an app.yaml service.", "$ref": "#/$defs/service" }
       }
     },
     "domainSpec": {
       "type": "object",
       "required": ["app"],
       "additionalProperties": false,
-      "properties": { "app": { "type": "string", "minLength": 1 } }
+      "properties": { "app": { "description": "Name of the app the domain points to.", "type": "string", "minLength": 1 } }
     },
     "pipelineSpec": {
       "type": "object",
       "required": ["app", "yaml"],
       "additionalProperties": false,
       "properties": {
-        "app": { "type": "string", "minLength": 1 },
-        "yaml": { "type": "string", "minLength": 1 },
-        "enabled": { "type": "boolean" }
+        "app": { "description": "Name of the app the pipeline belongs to.", "type": "string", "minLength": 1 },
+        "yaml": { "description": "Pipeline definition as YAML text.", "type": "string", "minLength": 1 },
+        "enabled": { "description": "Whether the pipeline runs.", "type": "boolean" }
       }
     },
     "alertRuleSpec": {
@@ -103,16 +104,16 @@
       "required": ["app", "type"],
       "additionalProperties": false,
       "properties": {
-        "app": { "type": "string", "minLength": 1 },
-        "type": { "type": "string", "minLength": 1 },
-        "metric": { "type": "string" },
-        "comparator": { "type": "string" },
-        "threshold": { "type": "number" },
-        "for": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
-        "restartCountThreshold": { "type": "integer", "minimum": 0 },
-        "restartWindow": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
-        "channel": { "type": "string" },
-        "enabled": { "type": "boolean" }
+        "app": { "description": "Name of the app the rule watches.", "type": "string", "minLength": 1 },
+        "type": { "description": "Kind of alert rule.", "type": "string", "minLength": 1 },
+        "metric": { "description": "Metric the rule evaluates.", "type": "string" },
+        "comparator": { "description": "Comparison applied to the threshold.", "type": "string" },
+        "threshold": { "description": "Value the metric is compared against.", "type": "number" },
+        "for": { "description": "How long the condition must hold before alerting.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "restartCountThreshold": { "description": "Restart count that triggers a restart alert.", "type": "integer", "minimum": 0 },
+        "restartWindow": { "description": "Window the restart count is measured over.", "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "channel": { "description": "Notification channel to alert.", "type": "string" },
+        "enabled": { "description": "Whether the rule is active.", "type": "boolean" }
       }
     }
   }
