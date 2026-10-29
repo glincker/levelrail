@@ -985,5 +985,10 @@
     "filterLabel": "Filter by label",
     "filterPlaceholder": "env=prod,tier!=db",
     "filterInvalid": "That selector could not be read."
+  },
+  "pinnedDigest": {
+    "tip": "Approval deploys exactly this image even if the tag moves.",
+    "copy": "Copy full image digest",
+    "copied": "Image digest copied"
   }
 }
