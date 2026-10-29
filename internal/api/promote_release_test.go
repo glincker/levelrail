@@ -231,3 +231,51 @@ func TestPromoteSignatureCheckUsesReleaseDigestRefWhenOn(t *testing.T) {
 		})
 	}
 }
+
+func TestBindingUndoDoesNotRevertNewerRetarget(t *testing.T) {
+	t.Setenv(release.EnvBindings, "on")
+	rt, db := newTestRouter(t)
+	seedPromotionFixture(t, db)
+	ctx := context.Background()
+	for _, id := range []string{"rel_a", "rel_b", "rel_c"} {
+		if _, err := db.InsertRelease(ctx, store.Release{ID: id, SourceApp: "web-prod", SourceDeployAttemptID: "att_" + id, ImageRef: "levelrail/web@sha256:" + id, Config: "{}"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	target, _ := db.GetDesiredService(ctx, "web-prod")
+	if _, err := db.RecordShadowBinding(ctx, "web-prod", "env_prod", "rel_a", "image", "tester"); err != nil {
+		t.Fatal(err)
+	}
+	undo, err := rt.retargetBinding(ctx, *target, "rel_b", bindingReasonPromote, "alice", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.RetargetBinding(ctx, "web-prod", "env_prod", "rel_c", bindingReasonPromote, "bob", ""); err != nil {
+		t.Fatal(err)
+	}
+	undo()
+	if b, _ := db.GetEnvironmentBinding(ctx, "web-prod"); b == nil || b.ReleaseID != "rel_c" {
+		t.Fatalf("binding = %+v, want the newer rel_c kept", b)
+	}
+}
+
+type failingBindingRead struct{ *store.DB }
+
+func (failingBindingRead) GetEnvironmentBinding(context.Context, string) (*store.EnvironmentBinding, error) {
+	return nil, context.DeadlineExceeded
+}
+
+func TestRetargetFailsBeforeWritingWhenBindingReadFails(t *testing.T) {
+	t.Setenv(release.EnvBindings, "on")
+	rt, db := newTestRouter(t)
+	seedPromotionFixture(t, db)
+	ctx := context.Background()
+	rt.apps = failingBindingRead{db}
+	target, _ := db.GetDesiredService(ctx, "web-prod")
+	if _, err := rt.retargetBinding(ctx, *target, "rel_x", bindingReasonPromote, "alice", ""); err == nil {
+		t.Fatal("retarget succeeded, want the read error")
+	}
+	if hist, _ := db.ListBindingHistory(ctx, "web-prod"); len(hist) != 0 {
+		t.Errorf("history = %+v, want no write", hist)
+	}
+}

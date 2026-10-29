@@ -24,6 +24,8 @@ type releaseBinder interface {
 	GetEnvironmentBinding(ctx context.Context, app string) (*store.EnvironmentBinding, error)
 	ListBindingHistory(ctx context.Context, app string) ([]store.BindingHistoryEntry, error)
 	RetargetBinding(ctx context.Context, app, environmentID, releaseID, reason, by, approvalID string) (bool, error)
+	RetargetBindingIf(ctx context.Context, app, environmentID, releaseID, expected, reason, by, approvalID string) (bool, error)
+	UnbindRelease(ctx context.Context, app, expected, by string) (bool, error)
 }
 
 // authoritativeBinder returns the store only when APP_RELEASE_BINDINGS=on, so
@@ -58,40 +60,59 @@ func (rt *Router) promotionRelease(ctx context.Context, source store.DesiredServ
 
 // retargetBinding points target's binding at releaseID, audits the move and
 // returns an undo for the caller to run if the deploy then fails, so the
-// binding never names a release that did not run.
+// binding never names a release that did not run. The undo only applies while
+// the binding still names releaseID, so a newer retarget is never reverted.
 func (rt *Router) retargetBinding(ctx context.Context, target store.DesiredService, releaseID, reason, by, approvalID string) (func(), error) {
 	noop := func() {}
 	b := rt.authoritativeBinder()
 	if b == nil || releaseID == "" {
 		return noop, nil
 	}
+	cur, err := b.GetEnvironmentBinding(ctx, target.Name)
+	if err != nil {
+		return noop, fmt.Errorf("api: read binding for %q: %w", target.Name, err)
+	}
 	prev := ""
-	if cur, err := b.GetEnvironmentBinding(ctx, target.Name); err == nil && cur != nil {
+	if cur != nil {
 		prev = cur.ReleaseID
 	}
-	if _, err := b.RetargetBinding(ctx, target.Name, target.EnvironmentID, releaseID, reason, by, approvalID); err != nil {
+	moved, err := b.RetargetBinding(ctx, target.Name, target.EnvironmentID, releaseID, reason, by, approvalID)
+	if err != nil {
 		return noop, fmt.Errorf("api: retarget binding for %q: %w", target.Name, err)
 	}
+	if !moved {
+		return noop, nil
+	}
 	rt.auditSystemEvent(ctx, "release-binding", "release_binding.retargeted",
-		fmt.Sprintf("app=%s from=%s to=%s reason=%s approval=%s", target.Name, prev, releaseID, reason, approvalID))
+		fmt.Sprintf("app=%s from=%s to=%s reason=%s approval=%s by=%s", target.Name, prev, releaseID, reason, approvalID, by))
 	return func() {
+		// A cancelled request must still be able to undo its own move.
+		ctx := context.WithoutCancel(ctx)
 		if prev == "" {
-			if u, ok := rt.apps.(interface {
-				UnbindRelease(ctx context.Context, app string) error
-			}); ok {
-				if err := u.UnbindRelease(ctx, target.Name); err != nil {
-					rt.logger.Warn("api: undo binding failed", slog.String("name", target.Name), slog.String("error", err.Error()))
-				}
+			done, err := b.UnbindRelease(ctx, target.Name, releaseID, by)
+			rt.finishUndo(ctx, target.Name, done, err)
+			if done {
+				rt.auditSystemEvent(ctx, "release-binding", "release_binding.unbound",
+					fmt.Sprintf("app=%s release=%s approval=%s by=%s", target.Name, releaseID, approvalID, by))
 			}
 			return
 		}
-		if _, err := b.RetargetBinding(ctx, target.Name, target.EnvironmentID, prev, bindingReasonRevert, by, approvalID); err != nil {
-			rt.logger.Warn("api: undo binding failed", slog.String("name", target.Name), slog.String("error", err.Error()))
-			return
+		done, err := b.RetargetBindingIf(ctx, target.Name, target.EnvironmentID, prev, releaseID, bindingReasonRevert, by, approvalID)
+		rt.finishUndo(ctx, target.Name, done, err)
+		if done {
+			rt.auditSystemEvent(ctx, "release-binding", "release_binding.retargeted",
+				fmt.Sprintf("app=%s from=%s to=%s reason=%s approval=%s by=%s", target.Name, releaseID, prev, bindingReasonRevert, approvalID, by))
 		}
-		rt.auditSystemEvent(ctx, "release-binding", "release_binding.retargeted",
-			fmt.Sprintf("app=%s from=%s to=%s reason=%s approval=%s", target.Name, releaseID, prev, bindingReasonRevert, approvalID))
 	}, nil
+}
+
+func (rt *Router) finishUndo(_ context.Context, app string, done bool, err error) {
+	switch {
+	case err != nil:
+		rt.logger.Warn("api: undo binding failed", slog.String("name", app), slog.String("error", err.Error()))
+	case !done:
+		rt.logger.Info("api: undo binding skipped, a newer retarget won", slog.String("name", app))
+	}
 }
 
 // rollbackReleaseID finds the release a past attempt ran: the one minted from
