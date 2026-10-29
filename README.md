@@ -32,6 +32,18 @@ Levelrail is an open source (Apache 2.0) **self-hosted PaaS** for developers and
 
 **Status:** pre-1.0 (v0.x). Single-server is production ready per [Feature status](docs/feature-status.md); multi-node is beta.
 
+## Which install is for me?
+
+| I am... | Run | Doc |
+| --- | --- | --- |
+| On a Linux server (VPS or bare metal) and want to deploy apps | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` | [Installing](docs/installing.md) |
+| Trying it locally first | Open the dev container in [Codespaces](https://codespaces.new/glincker/levelrail) | [Installing](docs/installing.md#option-3-build-from-source) |
+| Only needing the CLI on my laptop | `brew install glincker/tap/levelrail-cli` or `npm install -g levelrail-cli` | [Installing just the CLI](docs/installing.md#installing-just-the-cli) |
+| Running Docker and want a container | `docker pull ghcr.io/glincker/levelrail` | [Docker](docs/installing.md#option-2-docker) |
+| Using a coding agent | `npx skills add https://github.com/glincker/levelrail --skill levelrail` | [MCP server](docs/mcp.md) |
+
+The server installs on Linux only. macOS and Windows are CLI-only targets.
+
 ## Table of contents
 
 [Quickstart](#quickstart-install-a-self-hosted-vercel-alternative) &middot; [How it works](#how-it-works) &middot; [Verify what you install](#verify-what-you-install) &middot; [Why Levelrail](#why-people-pick-levelrail) &middot; [Production ready](#production-ready-with-receipts) &middot; [Coolify alternative](#levelrail-vs-coolify-dokploy-caprover-and-dokku-coolify-alternative) &middot; [Features](#what-you-get) &middot; [Guides](#guides) &middot; [FAQ](#faq) &middot; [For AI agents](#for-ai-agents-and-crawlers)
@@ -119,6 +131,19 @@ More fixes: [Troubleshooting](docs/troubleshooting.md). Full install options (Do
     </td>
   </tr>
 </table>
+
+### Install the CLI only
+
+For your laptop or a CI runner, to control a server that already runs Levelrail:
+
+```bash
+brew install glincker/tap/levelrail-cli
+npm install -g levelrail-cli
+curl -fsSL https://levelrail.com/install-cli.sh | sh
+irm https://levelrail.com/install-cli.ps1 | iex
+```
+
+The first two work on any supported platform, the third is for macOS and Linux, the last for Windows PowerShell.
 
 ## How it works
 
@@ -245,6 +270,16 @@ Maintain an open-source app? Let people run it on their own server in a few clic
 [![Deploy to Levelrail](docs/assets/brand/deploy-button-split.svg)](docs/deploy-button.md)
 
 Copy-paste snippets and the four badge styles: [Deploy button](docs/deploy-button.md) and the [Brand kit](docs/brand.md).
+
+## What is next
+
+Planned, not promised. Dates are targets and items can move or drop. Full list in the [roadmap](docs/roadmap.md).
+
+- Real-host runs for the multi-node mesh and an idle-footprint number.
+- Public ACME checks: renewal near expiry and DNS-01 wildcards.
+- More upgrade and downgrade testing across releases.
+- Release snapshots and environment bindings.
+- A first stable release, only when the hardening evidence is in. No date is set.
 
 ## FAQ
 

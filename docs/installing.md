@@ -434,6 +434,20 @@ Works on Intel and Apple silicon, with the same checksum and signature checks. I
 curl -fsSL https://levelrail.com/install-cli.sh | LEVELRAIL_MODIFY_PATH=1 sh
 ```
 </Tab>
+<Tab title="Homebrew">
+```bash
+brew install glincker/tap/levelrail-cli
+```
+
+Installs the CLI and shell completions on macOS or Linux.
+</Tab>
+<Tab title="npm">
+```bash
+npm install -g levelrail-cli
+```
+
+Pulls the binary for your platform (Linux, macOS or Windows, amd64 or arm64) as an optional dependency. Check it with `levelrail-cli help`.
+</Tab>
 <Tab title="Windows">
 ```powershell
 irm https://levelrail.com/install-cli.ps1 | iex
