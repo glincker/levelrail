@@ -88,14 +88,26 @@ export function ResultRow({
       <span className="flex size-6 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-6">
         {item.icon}
       </span>
-      <span className="min-w-0 truncate">
-        <Highlighted
-          text={item.label}
-          query={query}
-          spans={item.highlightSpans}
-        />
+      <span
+        className={cn(
+          'min-w-0',
+          item.stacked ? 'flex flex-1 flex-col' : 'truncate',
+        )}
+      >
+        <span className="truncate">
+          <Highlighted
+            text={item.label}
+            query={query}
+            spans={item.highlightSpans}
+          />
+        </span>
         {item.subtitle ? (
-          <span className="ml-2 text-xs text-muted-foreground">
+          <span
+            className={cn(
+              'truncate text-xs text-muted-foreground',
+              item.stacked ? '' : 'ml-2',
+            )}
+          >
             {item.subtitle}
           </span>
         ) : null}

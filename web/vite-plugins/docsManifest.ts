@@ -122,6 +122,40 @@ function extractBody(lines: string[]): string {
   return parts.join(' ').slice(0, BODY_EXCERPT_MAX_CHARS)
 }
 
+const ACRONYMS = new Set([
+  'api',
+  'cdn',
+  'ci',
+  'cli',
+  'dns',
+  'gpu',
+  'http',
+  'https',
+  'iam',
+  'mfa',
+  'oidc',
+  'saml',
+  'scim',
+  'sql',
+  'ssh',
+  'sso',
+  'tcp',
+  'tls',
+  'udp',
+  'ui',
+  'url',
+])
+
+function humanizeFile(relFile: string): string {
+  const base = (relFile.split('/').pop() ?? relFile).replace(/\.md$/i, '')
+  const words = base
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((w) => (ACRONYMS.has(w.toLowerCase()) ? w.toUpperCase() : w))
+  const text = words.join(' ')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 function extractPage(relFile: string): DocPageMeta {
   const raw = readFileSync(path.join(docsDir, relFile), 'utf8')
   const body = stripFrontmatter(raw)
@@ -129,7 +163,14 @@ function extractPage(relFile: string): DocPageMeta {
   let title: string | undefined
   const headings: DocPageMeta['headings'] = []
   const seen = new Map<string, number>()
+  let inFence = false
   for (const line of lines) {
+    // A "# comment" inside a code block is not a heading.
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
     const h1 = /^#\s+(.+)$/.exec(line)
     if (h1 && !title) {
       title = h1[1]?.trim()
@@ -144,7 +185,7 @@ function extractPage(relFile: string): DocPageMeta {
   }
   return {
     file: relFile,
-    title: title ?? relFile,
+    title: title ?? humanizeFile(relFile),
     headings,
     body: extractBody(lines),
   }

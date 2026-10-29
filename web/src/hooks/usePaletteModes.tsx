@@ -8,7 +8,7 @@ import {
   PackageGlassIcon,
 } from '@thesvg/ui-react'
 import type { PaletteMode } from '@/lib/paletteMode'
-import { searchDocs } from '@/lib/docsSearch'
+import { searchDocsGrouped } from '@/lib/docsSearch'
 import { loadDocsManifest } from '@/lib/docsManifestLoader'
 import type { PaletteItem } from '../components/commandPaletteData'
 import { dockerHubKeys, fetchDockerHubSearch } from '../queries/dockerhub'
@@ -74,20 +74,50 @@ export function usePaletteModeItems(
           items: hint('mode-docs-loading', t('loading'), icon),
         }
       }
-      const found = searchDocs(docs.data, debounced).slice(0, MAX_DOCS)
-      const items: PaletteItem[] = found.map((r, i) => ({
-        key: `mode-docs-${r.path}-${r.heading?.id ?? i}`,
-        label: r.heading?.text ?? r.title,
-        subtitle: r.heading ? r.title : r.path,
-        group: 'docs',
-        icon,
-        run: () =>
+      const manifest = docs.data
+      const items: PaletteItem[] = searchDocsGrouped(manifest, debounced, {
+        pages: MAX_DOCS,
+        headings: 2,
+      }).flatMap((page) => {
+        const open = (hash?: string) => () =>
           void navigate({
             to: '/help/$',
-            params: { _splat: r.path.replace(/^\//, '') },
-            hash: r.heading?.id,
-          }),
-      }))
+            params: { _splat: page.path.replace(/^\//, '') },
+            hash,
+          })
+        const excerpt = (manifest.pages[page.path]?.body ?? '').slice(0, 180)
+        const preview = {
+          kind: 'doc' as const,
+          description: excerpt,
+          path: `/help${page.path}`,
+          primaryLabel: t('modes.docs.open'),
+        }
+        const rows: PaletteItem[] = [
+          {
+            key: `mode-docs-${page.path}`,
+            label: page.title,
+            subtitle: page.path,
+            stacked: true,
+            group: 'docs',
+            icon,
+            preview,
+            run: open(),
+          },
+        ]
+        for (const h of page.headings) {
+          rows.push({
+            key: `mode-docs-${page.path}#${h.id}`,
+            label: h.text,
+            subtitle: t('modes.docs.inPage', { title: page.title }),
+            stacked: true,
+            group: 'docs',
+            icon,
+            preview: { ...preview, path: `/help${page.path}#${h.id}` },
+            run: open(h.id),
+          })
+        }
+        return rows
+      })
       return {
         header: t('modes.docs.header'),
         items:
@@ -108,6 +138,11 @@ export function usePaletteModeItems(
                 : t('modes.assistant.ask', { term }),
             group: 'assistant',
             icon: <BotGlassIcon size="1.4em" />,
+            preview: {
+              kind: 'assistant',
+              description: t('modes.assistant.preview'),
+              primaryLabel: t('modes.assistant.open'),
+            },
             run: () => void navigate({ to: '/ai-assistant' }),
           },
         ],
@@ -137,7 +172,16 @@ export function usePaletteModeItems(
       key: `mode-docker-${r.repo_name}`,
       label: r.repo_name,
       subtitle: r.short_description,
+      stacked: true,
       group: 'docker',
+      preview: {
+        kind: 'image',
+        description: r.short_description,
+        primaryLabel: t('modes.docker.deploy'),
+        facts: [
+          r.is_official ? t('modes.docker.official') : `${r.star_count} stars`,
+        ],
+      },
       icon,
       badge: (
         <span className="text-xs text-muted-foreground">

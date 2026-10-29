@@ -97,13 +97,19 @@
       "page": "Page",
       "app": "App",
       "template": "Template",
-      "action": "Action"
+      "action": "Action",
+      "doc": "Docs page",
+      "image": "Docker image",
+      "assistant": "Assistant"
     },
     "generic": {
       "page": "Opens this page.",
       "app": "Opens the app overview. Tab jumps to its logs.",
       "template": "Deploys this template as a new app.",
-      "action": "Runs this action."
+      "action": "Runs this action.",
+      "doc": "Opens this docs page.",
+      "image": "Deploys this image as a new app.",
+      "assistant": "Opens the assistant."
     },
     "starter": {
       "action-create-app": "Start here: create your first app from a repo or an image.",
@@ -164,12 +170,16 @@
     "docs": {
       "header": "Docs",
       "hint": "Type to search the docs, down to headings",
-      "none": "No docs match \"{{term}}\""
+      "none": "No docs match \"{{term}}\"",
+      "open": "Open docs",
+      "inPage": "in {{title}}"
     },
     "assistant": {
       "header": "Assistant",
       "empty": "Open the assistant",
-      "ask": "Ask the assistant: {{term}}"
+      "ask": "Ask the assistant: {{term}}",
+      "preview": "Ask a question about your servers, apps or the docs. The assistant opens in its own page.",
+      "open": "Open assistant"
     },
     "docker": {
       "header": "Docker Hub",
@@ -177,7 +187,8 @@
       "searching": "Searching Docker Hub...",
       "failed": "Docker Hub could not be reached from this server",
       "none": "No Docker Hub images match \"{{term}}\"",
-      "official": "Official"
+      "official": "Official",
+      "deploy": "Deploy"
     },
     "tips": {
       "header": "Try",

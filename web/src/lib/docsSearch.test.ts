@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { searchDocs } from './docsSearch'
+import { searchDocs, searchDocsGrouped } from './docsSearch'
 import type { DocsManifest } from '../types/docs'
 
 const manifest: DocsManifest = {
@@ -106,5 +106,29 @@ describe('searchDocs', () => {
 
   it('returns no results for a query that matches nothing', () => {
     expect(searchDocs(manifest, 'xyznotarealterm')).toEqual([])
+  })
+})
+
+describe('searchDocsGrouped', () => {
+  it('lists a page once with its matching headings, title matches first', () => {
+    const hits = searchDocsGrouped(manifest, 'mesh')
+    expect(hits.map((h) => h.path)).toEqual(['/multi-node'])
+    expect(hits[0]?.headings.map((h) => h.id)).toEqual([
+      'rotating-the-control-planes-mesh-key',
+    ])
+    const byTitle = searchDocsGrouped(manifest, 'troubleshooting')
+    expect(byTitle[0]?.path).toBe('/troubleshooting')
+  })
+
+  it('ranks a heading match above a body-only match and skips the index page', () => {
+    const hits = searchDocsGrouped(manifest, 'rollback')
+    expect(hits.map((h) => h.path)).toEqual(['/troubleshooting'])
+    expect(searchDocsGrouped(manifest, '')).toEqual([])
+  })
+
+  it('caps pages and headings', () => {
+    const hits = searchDocsGrouped(manifest, 'e', { pages: 1, headings: 1 })
+    expect(hits).toHaveLength(1)
+    expect(hits[0]?.headings.length ?? 0).toBeLessThanOrEqual(1)
   })
 })

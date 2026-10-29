@@ -64,6 +64,8 @@ export interface PaletteItem {
   badge?: React.ReactNode
   /** Muted second line, e.g. why an entry is locked. */
   subtitle?: string
+  /** Show the subtitle on its own line under the label, for long text. */
+  stacked?: boolean
   /** True for a gated destination that is switched off. */
   locked?: boolean
   /** Label spans to highlight, computed by the server for search hits. */
@@ -85,7 +87,7 @@ export interface PaletteItem {
 }
 
 export interface PalettePreviewData {
-  kind: 'page' | 'app' | 'template' | 'action'
+  kind: 'page' | 'app' | 'template' | 'action' | 'doc' | 'image' | 'assistant'
   description?: string
   path?: string
   /** Label of the primary (Enter) button. */
