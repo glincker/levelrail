@@ -13,7 +13,9 @@
     "copyUrl": "Copy address",
     "recheck": "Check again",
     "showDetails": "Show details",
-    "hideDetails": "Hide details"
+    "hideDetails": "Hide details",
+    "openOnNetwork": "Open on this network (IP and port)",
+    "addDomain": "Add a domain"
   },
   "allow": {
     "title": "Allow network access?",
@@ -49,7 +51,9 @@
   },
   "hero": {
     "title": "Open your app",
-    "stopped": "The app is not running, so this address will not answer until it starts."
+    "stopped": "The app is not running, so this address will not answer until it starts.",
+    "fixTitle": "This address does not answer from outside yet. Pick a way in:",
+    "fixHint": "Open on this network gives an IP and port that works on your local network without a domain. A domain makes the app reachable from the internet."
   },
   "status": {
     "live": "Live",

@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowSquareOutIcon,
@@ -42,19 +43,23 @@ function StatusPill({ status }: { status: HeroStatus }) {
 
 interface ReachHeroProps {
   addr: ReachAddress
+  appName: string
   running: boolean
   probe?: ProbeTarget
   checking: boolean
   onRecheck: () => void
+  onAllow: () => void
 }
 
 /** The best address to open, with its live status and TLS state. */
 export function ReachHero({
   addr,
+  appName,
   running,
   probe,
   checking,
   onRecheck,
+  onAllow,
 }: ReachHeroProps) {
   const { t } = useTranslation('appAccess')
   const { copied, copy } = useCopyAddress()
@@ -84,6 +89,24 @@ export function ReachHero({
         <ScopeChip scope={addr.scope} />
       </div>
       {probe && !checking ? <ProbeNote probe={probe} /> : null}
+      {status === 'down' ? (
+        <div className="space-y-2 rounded-md border border-border bg-background/60 p-3">
+          <p className="text-sm">{t('hero.fixTitle')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={onAllow}>
+              {t('actions.openOnNetwork')}
+            </Button>
+            <Link
+              to="/apps/$name/network"
+              params={{ name: appName }}
+              className={buttonVariants({ size: 'sm', variant: 'outline' })}
+            >
+              {t('actions.addDomain')}
+            </Link>
+          </div>
+          <p className="text-xs text-muted-foreground">{t('hero.fixHint')}</p>
+        </div>
+      ) : null}
       {!running ? (
         <p className="text-xs text-muted-foreground">{t('hero.stopped')}</p>
       ) : null}

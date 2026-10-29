@@ -173,10 +173,12 @@ export function AppAccessCard({ appName }: { appName: string }) {
             {model.hero ? (
               <ReachHero
                 addr={model.hero}
+                appName={appName}
                 running={model.running}
                 probe={heroProbeFor(model.hero, check.data)}
                 checking={check.isPending}
                 onRecheck={() => check.mutate()}
+                onAllow={askAllow}
               />
             ) : null}
             {model.demoted ? (
