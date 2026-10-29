@@ -25,6 +25,7 @@ type explainField struct {
 	Required    bool     `json:"required"`
 	Description string   `json:"description,omitempty"`
 	Enum        []string `json:"enum,omitempty"`
+	Default     any      `json:"default,omitempty"`
 }
 
 type explainResult struct {
@@ -33,6 +34,7 @@ type explainResult struct {
 	Type        string         `json:"type"`
 	Description string         `json:"description,omitempty"`
 	Enum        []string       `json:"enum,omitempty"`
+	Default     any            `json:"default,omitempty"`
 	Fields      []explainField `json:"fields,omitempty"`
 }
 
@@ -214,8 +216,12 @@ func (d *schemaDoc) explain(path string) (explainResult, error) {
 			node = d.resolve(items)
 		}
 	}
+	return d.result(path, kind, node), nil
+}
+
+func (d *schemaDoc) result(path, kind string, node schemaNode) explainResult {
 	node = d.resolve(node)
-	res := explainResult{Path: path, Kind: kind, Type: d.typeName(d.resolve(node)), Enum: enumValues(node)}
+	res := explainResult{Path: path, Kind: kind, Type: d.typeName(node), Enum: enumValues(node), Default: node["default"]}
 	res.Description, _ = node["description"].(string)
 	props, required := d.properties(node)
 	names := make([]string, 0, len(props))
@@ -226,9 +232,9 @@ func (d *schemaDoc) explain(path string) (explainResult, error) {
 	for _, name := range names {
 		p := props[name]
 		desc, _ := p["description"].(string)
-		res.Fields = append(res.Fields, explainField{Name: name, Type: d.typeName(p), Required: required[name], Description: desc, Enum: enumValues(p)})
+		res.Fields = append(res.Fields, explainField{Name: name, Type: d.typeName(p), Required: required[name], Description: desc, Enum: enumValues(p), Default: p["default"]})
 	}
-	return res, nil
+	return res
 }
 
 func runExplain(prog string, args []string, stdout, stderr io.Writer, _ func(string) (string, bool)) int {
@@ -258,6 +264,13 @@ func runExplain(prog string, args []string, stdout, stderr io.Writer, _ func(str
 	}
 	res, err := doc.explain(fs.Arg(0))
 	if err != nil {
+		if appRes, ok := explainAppPath(fs.Arg(0)); ok {
+			res, err = appRes, nil
+		} else if hint := appPathError(fs.Arg(0), doc.kinds()); hint != nil {
+			err = hint
+		}
+	}
+	if err != nil {
 		return reportError(stdout, stderr, *jsonOut, err)
 	}
 	if err := renderResult(stdout, format, *queryFlag, res, func() { printExplainHuman(stdout, res) }); err != nil {
@@ -271,6 +284,9 @@ func printExplainHuman(out io.Writer, r explainResult) {
 	_, _ = fmt.Fprintf(out, "KIND:   %s\nPATH:   %s\nTYPE:   %s\n", r.Kind, r.Path, r.Type)
 	if len(r.Enum) > 0 {
 		_, _ = fmt.Fprintf(out, "VALUES: %s\n", strings.Join(r.Enum, ", "))
+	}
+	if r.Default != nil {
+		_, _ = fmt.Fprintf(out, "DEFAULT: %v\n", r.Default)
 	}
 	if r.Description != "" {
 		_, _ = fmt.Fprintf(out, "\nDESCRIPTION:\n  %s\n", r.Description)
@@ -293,10 +309,13 @@ func printExplainHuman(out io.Writer, r explainResult) {
 func explainUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s explain <kind[.field[.field...]]> [flags]
+  %[1]s explain <app.yaml path> [flags]
 
 Documents a resource kind or one of its fields from the embedded resource
 schema, for example "%[1]s explain app.spec.service". Works offline.
-List the kinds with "%[1]s api-resources".
+List the kinds with "%[1]s api-resources". An app.yaml path such as
+"services.web.health.readiness" or "replicas" is also accepted; "appspec"
+lists the top level fields.
 
 Flags:
   --json            print the result as JSON, nothing else
