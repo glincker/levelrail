@@ -109,6 +109,11 @@ func (p *planner) planApp(r *Resource) {
 			delete(liveMap, k)
 		}
 	}
+	if _, want := f["files"]; want && len(live.files) > 0 {
+		liveMap["files"] = toMap(struct {
+			Files []fileFields `json:"files"`
+		}{live.files})["files"]
+	}
 	if _, want := f["rollout"]; want && live.rollout != nil {
 		liveMap["rollout"] = toMap(live.rollout)
 	}

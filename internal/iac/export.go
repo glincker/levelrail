@@ -70,6 +70,7 @@ type outService struct {
 	Labels         map[string]string    `yaml:"labels,omitempty"`
 	Hooks          *hookFields          `yaml:"hooks,omitempty"`
 	Rollout        *rolloutFields       `yaml:"rollout,omitempty"`
+	Files          []fileFields         `yaml:"files,omitempty"`
 	Command        []string             `yaml:"command,omitempty"`
 	Volumes        []outVolume          `yaml:"volumes,omitempty"`
 }
@@ -235,6 +236,11 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 		return err
 	}
 	svc.Rollout = e.st.apps[a.Name].rollout
+	files, err := l.liveFiles(ctx, a.Name)
+	if err != nil {
+		return fmt.Errorf("read files of %s: %w", a.Name, err)
+	}
+	svc.Files = files
 	if f.BindAddress != bindaddr.Default {
 		svc.BindAddress = f.BindAddress
 	}

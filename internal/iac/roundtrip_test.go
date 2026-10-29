@@ -37,6 +37,13 @@ func TestV0810SettingsRoundTrip(t *testing.T) {
 			change: "    rollout: {max_surge: 25%, max_unavailable: \"1\", min_available: \"1\"}\n",
 		},
 		{
+			name:   "files",
+			yaml:   "    files:\n      - {path: /etc/app.conf, content: \"a=1\"}\n",
+			saved:  func(f *fakeCP) bool { return f.files["api"]["/etc/app.conf"]["content"] == "a=1" },
+			export: "path: /etc/app.conf",
+			change: "    files:\n      - {path: /etc/app.conf, content: \"a=2\"}\n",
+		},
+		{
 			name:   "labels",
 			yaml:   "    labels: {team: core}\n",
 			saved:  func(f *fakeCP) bool { l, _ := f.apps["api"]["labels"].(map[string]any); return l["team"] == "core" },

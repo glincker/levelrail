@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -31,6 +32,7 @@ type fakeCP struct {
 	alerts    map[string]map[string]map[string]any
 	jobs      map[string]map[string]map[string]any
 	rollouts  map[string]map[string]any
+	files     map[string]map[string]map[string]any
 	channels  []map[string]any
 	deny      func(method, path string) bool
 	lbOff     bool
@@ -42,7 +44,7 @@ type fakeCP struct {
 func newFake() *fakeCP {
 	f := &fakeCP{projects: map[string]map[string]any{}, envs: map[string]map[string]any{}, envVars: map[string]map[string]any{}, tags: map[string]map[string]any{},
 		dbs: map[string]map[string]any{}, apps: map[string]map[string]any{}, secrets: map[string]map[string]bool{}, lbs: map[string]map[string]any{},
-		pipelines: map[string]map[string]map[string]any{}, alerts: map[string]map[string]map[string]any{}, jobs: map[string]map[string]map[string]any{}, rollouts: map[string]map[string]any{}}
+		pipelines: map[string]map[string]map[string]any{}, alerts: map[string]map[string]map[string]any{}, jobs: map[string]map[string]map[string]any{}, rollouts: map[string]map[string]any{}, files: map[string]map[string]map[string]any{}}
 	f.channels = []map[string]any{{"id": "ch1", "name": "ops"}}
 	f.routes = f.buildRoutes()
 	return f
@@ -311,6 +313,21 @@ func (f *fakeCP) extraRoutes() {
 		return b, nil
 	})
 	f.jobRoutes()
+	f.route("GET", `/api/v1/apps/([^/]+)/files`, func(m []string, _ map[string]any) (any, error) {
+		return map[string]any{"app_name": m[1], "files": list(f.files[m[1]])}, nil
+	})
+	f.route("PUT", `/api/v1/apps/([^/]+)/files`, func(m []string, b map[string]any) (any, error) {
+		if f.files[m[1]] == nil {
+			f.files[m[1]] = map[string]map[string]any{}
+		}
+		f.files[m[1]][b["path"].(string)] = b
+		return nil, nil
+	})
+	f.route("DELETE", `/api/v1/apps/([^/]+)/files\?path=(.+)`, func(m []string, _ map[string]any) (any, error) {
+		p, _ := url.QueryUnescape(m[2])
+		delete(f.files[m[1]], p)
+		return nil, nil
+	})
 	f.route("GET", `/api/v1/apps/([^/]+)/rollout`, func(m []string, _ map[string]any) (any, error) {
 		return map[string]any{"app": m[1], "policy": f.rollouts[m[1]]}, nil
 	})

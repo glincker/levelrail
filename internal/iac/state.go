@@ -17,6 +17,8 @@ type liveApp struct {
 	jobs map[string]wireJob
 	// rollout is nil when the app has no saved policy or it was not read.
 	rollout *rolloutFields
+	// files holds the live non-secret inline files; nil until read.
+	files []fileFields
 }
 
 // State is the live control plane data a plan needs, read through the API
@@ -308,6 +310,11 @@ func (l loader) scopedOne(ctx context.Context, r *Resource, loadEnvs func(string
 				return err
 			}
 		}
+		if _, declared := r.Fields["files"]; declared {
+			if err := l.filesOf(ctx, r.Name); err != nil {
+				return err
+			}
+		}
 		if _, declared := r.Fields["rollout"]; declared {
 			if err := l.rolloutOf(ctx, r.Name); err != nil {
 				return err
@@ -376,6 +383,39 @@ func (l loader) jobsOf(ctx context.Context, app string) error {
 			la.jobs[j.Name] = j
 		}
 	}
+	return nil
+}
+
+// liveFiles reads an app's inline files; secret files are write-only and skipped.
+func (l loader) liveFiles(ctx context.Context, app string) ([]fileFields, error) {
+	var res struct {
+		Files []struct {
+			fileFields
+			Secret bool `json:"secret"`
+		} `json:"files"`
+	}
+	if err := l.get(ctx, "/api/v1/apps/"+esc(app)+"/files", &res); err != nil {
+		return nil, err
+	}
+	var out []fileFields
+	for _, f := range res.Files {
+		if !f.Secret {
+			out = append(out, f.fileFields)
+		}
+	}
+	return out, nil
+}
+
+func (l loader) filesOf(ctx context.Context, app string) error {
+	la, ok := l.st.apps[app]
+	if !ok {
+		return nil
+	}
+	files, err := l.liveFiles(ctx, app)
+	if err != nil {
+		return l.st.note("files/"+app, fmt.Errorf("read files of %s: %w", app, err))
+	}
+	la.files = files
 	return nil
 }
 

@@ -2,6 +2,7 @@ package iac
 
 import (
 	"fmt"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,6 +36,26 @@ type rolloutFields struct {
 	MaxSurge       string `json:"max_surge,omitempty" yaml:"max_surge,omitempty"`
 	MaxUnavailable string `json:"max_unavailable,omitempty" yaml:"max_unavailable,omitempty"`
 	MinAvailable   string `json:"min_available,omitempty" yaml:"min_available,omitempty"`
+}
+
+// fileFields is one non-secret inline file; secret files never appear in documents.
+type fileFields struct {
+	Path    string `json:"path" yaml:"path"`
+	Content string `json:"content" yaml:"content"`
+	Mode    string `json:"mode" yaml:"mode,omitempty"`
+}
+
+func filesFromSpec(in []spec.File) []fileFields {
+	out := make([]fileFields, 0, len(in))
+	for _, f := range in {
+		mode := f.Mode
+		if mode == "" {
+			mode = spec.DefaultFileMode
+		}
+		out = append(out, fileFields{Path: path.Clean(f.Path), Content: f.Content, Mode: mode})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
+	return out
 }
 
 func rolloutFromSpec(r *spec.Rollout) *rolloutFields {
@@ -76,6 +97,7 @@ type appFields struct {
 	Health      *healthFields     `json:"health,omitempty"`
 	Hooks       *hookFields       `json:"hooks,omitempty"`
 	Rollout     *rolloutFields    `json:"rollout,omitempty"`
+	Files       []fileFields      `json:"files,omitempty"`
 	Labels      map[string]string `json:"labels,omitempty"`
 	Command     []string          `json:"command,omitempty"`
 	Project     string            `json:"project,omitempty"`

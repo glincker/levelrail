@@ -162,6 +162,12 @@ spec:
 
 `service.rollout` sets `max_surge`, `max_unavailable` and `min_available` (each an integer such as `2` or a percent such as `25%`). Apply saves it through `PUT /api/v1/apps/{name}/rollout`, the same policy a spec deploy and `levelrail-cli rollout status` read, and export prints it back. The plan shows `rollout.min_available: 1 -> 2`. Fields left out inherit the `APP_ROLLOUT_*` env defaults. An app document without a `rollout` key never touches the saved policy; `DELETE /api/v1/apps/{name}/rollout` returns an app to the defaults.
 
+#### Inline files
+
+`service.files` lists text files written into the container (`path`, `content`, optional `mode`). Apply sets each one through `PUT /api/v1/apps/{name}/files` and removes live files the list omits, so a declared list owns the app's non-secret files; export prints them back. Secret files are rejected in documents, because their content would sit in git: set them from the dashboard or CLI, and apply leaves them alone. Files are fixed at container create, so a change restarts the app unless `--no-deploy` is set. An app document without `files` never touches them.
+
+Pre-deploy snapshot policy, the CI gate of a git source and the heartbeat monitor are instance or git-source settings, not part of an App document yet; manage them from the dashboard, CLI or API.
+
 #### Scheduled jobs
 
 `service.jobs` is the app.yaml jobs list. Apply matches jobs by name: a new name is created, a changed one is updated in place (its run history is kept). Jobs created in the dashboard or CLI that the files do not list are kept, and removed only by prune on an app the source manages. A job that the app's own app.yaml declares is left alone with a warning, so each job has one owner. An app document without a `jobs` key never touches the app's jobs.
