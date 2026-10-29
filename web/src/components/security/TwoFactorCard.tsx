@@ -16,6 +16,7 @@ import {
   useSetupTwoFactor,
   twoFactorStatusQueryOptions,
 } from '../../queries/twoFactor'
+import { QrCode } from './QrCode'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
   Card,
@@ -237,6 +238,10 @@ function EnableTwoFactorDialog() {
               </Alert>
             ) : setup.data ? (
               <form onSubmit={handleConfirm} className="space-y-3">
+                <QrCode value={setup.data.provisioning_uri} />
+                <p className="text-center text-xs text-muted-foreground">
+                  {t('accountPage.twoFactor.qrFallback')}
+                </p>
                 <CopyableValue
                   value={setup.data.secret}
                   label={t('accountPage.twoFactor.setupKey')}
