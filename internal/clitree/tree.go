@@ -402,6 +402,7 @@ var Tree = map[string]*Node{
 	"compliance":     {Subs: map[string]*Node{"evidence": {Subs: map[string]*Node{"create": nil, "list": nil, "download": nil, "verify": nil}}, "access-review": {Subs: map[string]*Node{"start": nil, "list": nil, "show": nil, "keep": nil, "revoke": nil, "complete": nil}}}},
 	"otel":           {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "add": nil, "test": nil, "remove": nil}}}},
 	"policy":         {Subs: map[string]*Node{"list": nil, "set": nil, "check": nil}},
+	"app-types":      {Subs: map[string]*Node{"list": nil, "apply": nil, "check": nil}},
 	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
 	"assets":         {Subs: map[string]*Node{"buckets": {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "set": nil, "probe": nil, "delete": nil}}, "usage": nil, "ls": nil, "upload": nil, "url": nil, "rm": nil}},
