@@ -18,7 +18,7 @@ import (
 func registerSettingsTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_oauth_providers",
-		Description: "List every OAuth sign-in provider (google, github, oidc) and its settings: enabled, client_id, allowed_email_domain, issuer_url, display_name, and a has_client_secret boolean. The client secret itself is never returned.",
+		Description: "List every OAuth sign-in provider (google, github, oidc) and its settings, with a has_client_secret boolean. The secret is never returned.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.OAuthProviderSettingsResource, error) {
 		settings, err := client.ListOAuthProviderSettings(ctx)
 		if err != nil {
@@ -29,7 +29,7 @@ func registerSettingsTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_email_settings",
-		Description: "Outbound email settings: backend and non-secret fields, plus the configured providers (one primary, at most one backup) with role, enabled, last_ok_at and credential_set. Secrets return only as *_set booleans.",
+		Description: "Outbound email settings: backend, non-secret fields and configured providers (one primary, at most one backup). Secrets return only as *_set booleans.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, emailSettingsWithProviders, error) {
 		settings, err := client.GetEmailSettings(ctx)
 		if err != nil {

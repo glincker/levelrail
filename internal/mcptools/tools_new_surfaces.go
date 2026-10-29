@@ -157,7 +157,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_zones",
-		Description: "List failure domains with nodes and workloads. capacity adds totals per provider, region, zone and single-zone warnings; node_id gives preflight checks and fixes. Root token.",
+		Description: "List failure domains with nodes and workloads. capacity adds totals and single-zone warnings; node_id gives preflight checks. Root token.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listZonesInput) (*mcp.CallToolResult, listZonesOutput, error) {
 		if in.NodeID != "" {
 			ob, err := client.GetNodeOnboarding(ctx, in.NodeID)

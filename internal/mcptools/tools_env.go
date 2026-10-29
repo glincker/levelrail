@@ -39,7 +39,7 @@ type EnvChangeResult struct {
 func registerEnvTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "set_app_env",
-		Description: "Set or change one environment variable on an app. With secret true the value is stored encrypted and is write-only: no tool ever returns it. Saved to desired state only: the container keeps its old environment until deploy_app or restart_app.",
+		Description: "Set one environment variable on an app. With secret true the value is encrypted and write-only. Takes effect on the next deploy_app or restart_app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setAppEnvInput) (*mcp.CallToolResult, EnvChangeResult, error) {
 		res, err := setAppEnv(ctx, client, in)
 		if err != nil {

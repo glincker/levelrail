@@ -34,7 +34,7 @@ func registerControlPlaneDRTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_control_plane_offbox_backups",
-		Description: "List the encrypted off-box backups of the control plane database at the configured destination, newest first: object key, size, creation time and whether the upload completed.",
+		Description: "List the encrypted off-box control plane database backups, newest first: object key, size, creation time and upload completion.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, controlPlaneOffboxBackupsOutput, error) {
 		list, err := client.ListControlPlaneOffboxBackups(ctx)
 		if err != nil {
@@ -45,7 +45,7 @@ func registerControlPlaneDRTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_control_plane_drill_status",
-		Description: "Get the last automated restore drill of the control plane backups: when it ran, whether it passed, whether it was partial (checksum only, no decryption), how long it took, and when the next one is due.",
+		Description: "Last automated restore drill of the control plane backups: when it ran, whether it passed or was partial (checksum only), how long it took, and when the next one is due.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, controlPlaneDrillOutput, error) {
 		st, err := client.GetControlPlaneDR(ctx)
 		if err != nil {

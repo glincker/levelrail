@@ -10,12 +10,12 @@ import (
 )
 
 type iacFileInput struct {
-	Name    string `json:"name" jsonschema:"file name used in error messages, e.g. infra/web.yaml"`
-	Content string `json:"content" jsonschema:"the YAML text: one or more resource documents separated by ---"`
+	Name    string `json:"name" jsonschema:"file name, e.g. infra/web.yaml"`
+	Content string `json:"content" jsonschema:"YAML, documents separated by ---"`
 }
 
 type planApplyInput struct {
-	Files           []iacFileInput `json:"files" jsonschema:"resource files. Kinds: Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule. Documents never hold secret values, reference secrets with secretRef"`
+	Files           []iacFileInput `json:"files" jsonschema:"resource YAML files (Project, Environment, Tag, Database, App, Domain, LoadBalancer, Pipeline, AlertRule). Secrets only by secretRef"`
 	Source          string         `json:"source,omitempty" jsonschema:"name of this apply source; apps it creates carry a managed-by tag. Required for prune"`
 	Project         string         `json:"project,omitempty" jsonschema:"only the documents belonging to this project"`
 	Prune           bool           `json:"prune,omitempty" jsonschema:"delete apps this source created that the files no longer declare"`
@@ -47,7 +47,7 @@ func registerIaCTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "apply_resources",
-		Description: "Apply declarative resource files in dependency order with the caller's own permissions. Pass expected_plan_hash from plan_apply so it only proceeds if nothing changed. Each item reports applied, failed, denied or skipped. prune deletes apps no longer declared. Secrets are referenced by name.",
+		Description: "Apply resource files in dependency order with the caller's permissions. Pass expected_plan_hash from plan_apply to refuse drift. Items report applied, failed, denied or skipped. prune deletes undeclared apps.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planApplyInput) (*mcp.CallToolResult, iac.ApplyResult, error) {
 		res, err := client.ApplyIaC(ctx, in.request())
 		if err != nil {

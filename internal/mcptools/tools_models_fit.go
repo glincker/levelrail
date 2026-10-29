@@ -24,7 +24,7 @@ type checkModelFitInput struct {
 func registerModelFitTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "check_model_fit",
-		Description: "Estimate whether a model fits each GPU node's free VRAM (fits, tight, wont_fit, unknown), best node first. Give engine and model for a candidate, or name for a deployed model. Estimates only.",
+		Description: "Estimate whether a model fits each GPU node's free VRAM (fits, tight, wont_fit, unknown), best first. Give engine and model, or name for a deployed model.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in checkModelFitInput) (*mcp.CallToolResult, apiclient.ModelFitReport, error) {
 		if in.Name != "" {
 			out, err := client.GetModelFit(ctx, in.Name)

@@ -52,7 +52,7 @@ func registerBuildCacheTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_build_cache",
-		Description: "Point an app's BuildKit remote build cache (or the default for every app) at a storage destination. Layers are stored under build-cache/<app>/. A cache failure never fails a build, it is recorded as a warning. Takes a destination id only, never bucket credentials.",
+		Description: "Point an app's BuildKit remote build cache (or the default) at a storage destination id. A cache failure never fails a build.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setBuildCacheInput) (*mcp.CallToolResult, apiclient.BuildCacheSetting, error) {
 		out, err := client.SetBuildCache(ctx, apiclient.BuildCacheRequest{AppName: in.AppName, TargetID: in.TargetID, Mode: in.Mode, Enabled: in.Enabled})
 		if err != nil {

@@ -22,7 +22,7 @@ func registerBackupTargetTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "test_backup_target_connection",
-		Description: "Probe a backup target's stored credentials against its bucket now, to catch a bad credential or missing bucket before the next backup fails. Never uploads, downloads or deletes.",
+		Description: "Probe a backup target's credentials against its bucket now, before the next backup fails. Never uploads, downloads or deletes.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in backupTargetIDInput) (*mcp.CallToolResult, backupTargetTestResult, error) {
 		if err := client.TestBackupTarget(ctx, in.ID); err != nil {
 			return nil, backupTargetTestResult{}, fmt.Errorf("test backup target %q: %w", in.ID, err)

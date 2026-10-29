@@ -16,16 +16,16 @@ type stackNameInput struct {
 
 type stackRunInput struct {
 	Name             string            `json:"name" jsonschema:"stack name"`
-	Files            []iacFileInput    `json:"files" jsonschema:"resource YAML files; secrets only by secretRef"`
+	Files            []iacFileInput    `json:"files" jsonschema:"resource YAML files"`
 	Vars             map[string]string `json:"vars,omitempty"`
-	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty" jsonschema:"hash from plan_stack"`
+	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty" jsonschema:"from plan_stack"`
 }
 
 type applyStackInput struct {
 	Name             string            `json:"name" jsonschema:"stack name"`
-	Files            []iacFileInput    `json:"files" jsonschema:"resource YAML files; secrets only by secretRef"`
+	Files            []iacFileInput    `json:"files" jsonschema:"resource YAML files"`
 	Vars             map[string]string `json:"vars,omitempty"`
-	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty" jsonschema:"hash from plan_stack"`
+	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty" jsonschema:"from plan_stack"`
 	Confirm          bool              `json:"confirm" jsonschema:"must be true; plan_stack first"`
 }
 
@@ -61,6 +61,15 @@ type stackRunOutput struct {
 	PendingApproval bool             `json:"pending_approval,omitempty"`
 	Issues          []string         `json:"issues,omitempty"`
 	Warnings        []string         `json:"warnings,omitempty"`
+}
+
+type planStackOutput struct {
+	Stack    string           `json:"stack"`
+	Summary  iac.Summary      `json:"summary"`
+	PlanHash string           `json:"plan_hash,omitempty"`
+	Changes  []stackChangeOut `json:"changes,omitempty"`
+	Issues   []string         `json:"issues,omitempty"`
+	Warnings []string         `json:"warnings,omitempty"`
 }
 
 func stackRequest(in stackRunInput) apiclient.StackRequest {
@@ -120,12 +129,12 @@ func registerStackTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "plan_stack",
 		Description: "Dry run of a stack apply: change list and plan hash. Changes nothing.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in stackRunInput) (*mcp.CallToolResult, stackRunOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in stackRunInput) (*mcp.CallToolResult, planStackOutput, error) {
 		res, _, err := client.PlanStack(ctx, in.Name, stackRequest(in))
 		if err != nil {
-			return nil, stackRunOutput{}, fmt.Errorf("plan stack %q: %w", in.Name, err)
+			return nil, planStackOutput{}, fmt.Errorf("plan stack %q: %w", in.Name, err)
 		}
-		return nil, stackRunOutput{
+		return nil, planStackOutput{
 			Stack: res.Stack, Summary: res.Plan.Summary, PlanHash: res.Plan.Hash, Changes: stackChanges(res.Plan),
 			Issues: issueStrings(res.Issues), Warnings: res.Warnings,
 		}, nil
@@ -133,7 +142,7 @@ func registerStackTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "apply_stack",
-		Description: "Apply files to a stack. Needs confirm=true and write access; returns the plan summary, never secret values.",
+		Description: "Apply files to a stack. Needs confirm=true and write access; returns a summary, never secret values.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in applyStackInput) (*mcp.CallToolResult, stackRunOutput, error) {
 		if !in.Confirm {
 			return nil, stackRunOutput{}, errors.New("apply_stack needs confirm=true; run plan_stack first and review the changes")
