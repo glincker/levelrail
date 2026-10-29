@@ -1,0 +1,1107 @@
+{
+  "authGate": {
+    "badgeOn": "Puerta de autenticación activada",
+    "badgeOff": "Sin puerta de autenticación",
+    "setUp": "Agregar una puerta de autenticación",
+    "manage": "Administrar",
+    "hide": "Ocultar",
+    "description": "Cada solicitud la revisa primero tu servicio de autenticación. Una respuesta 2xx la deja pasar; cualquier otra (como una redirección a tu página de inicio de sesión) vuelve al visitante sin cambios. Las copias de los encabezados de abajo enviadas por el visitante siempre se eliminan, así que no se pueden falsificar.",
+    "enabled": "Puerta activada",
+    "urlLabel": "URL del servicio de autenticación",
+    "urlHelp": "http o https, sin usuario ni contraseña. Las direcciones internas son válidas.",
+    "checkPathLabel": "Ruta de verificación",
+    "copyHeadersLabel": "Encabezados que se pasan a la aplicación",
+    "copyHeadersHelp": "Separados por comas, hasta 16. Se copian de la respuesta de autenticación solo cuando responde 2xx.",
+    "timeoutLabel": "Tiempo de espera en segundos",
+    "timeoutHelp": "Déjalo en blanco para usar el valor del servidor ({{seconds}}s). Si el servicio de autenticación está caído o es demasiado lento, los visitantes reciben un error, nunca la aplicación.",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "remove": "Quitar puerta de autenticación",
+    "removing": "Quitando...",
+    "errors": {
+      "urlRequired": "Escribe la URL de tu servicio de autenticación.",
+      "timeout": "El tiempo de espera debe ser un número entero de segundos."
+    },
+    "providerLabel": "Quién verifica a los visitantes",
+    "providerExternal": "Mi servicio de autenticación",
+    "providerBuiltin": "Inicio de sesión de {{name}}",
+    "builtinHelp": "Los visitantes inician sesión con su cuenta de {{name}} (incluidas las passkeys y la verificación en dos pasos) y solo pasan las personas de abajo. La aplicación recibe X-User, X-Email y X-Name.",
+    "builtinUnavailable": "Primero define el dominio principal de la plataforma: los visitantes son enviados al panel para iniciar sesión.",
+    "allowLabel": "Personas permitidas",
+    "allowHelp": "Usuarios por correo, equipos por nombre o roles por nombre.",
+    "allowEmpty": "Nadie puede entrar hasta que agregues al menos un usuario, equipo o rol.",
+    "allowKindLabel": "Tipo de regla",
+    "allowKind": {
+      "user": "Usuario",
+      "team": "Equipo",
+      "role": "Rol"
+    },
+    "allowPlaceholder": {
+      "user": "person@example.com",
+      "team": "Nombre del equipo",
+      "role": "Nombre del rol"
+    },
+    "allowAdd": "Agregar",
+    "allowRemove": "Quitar {{label}}",
+    "liveSessions_one": "{{count}} visitante con sesión iniciada",
+    "liveSessions_other": "{{count}} visitantes con sesión iniciada",
+    "revokeSessions": "Cerrar la sesión de todos los visitantes",
+    "revoking": "Cerrando sesiones...",
+    "revoked": "Se cerró la sesión de {{count}} visitantes.",
+    "extraHeadersLabel": "Encabezados adicionales que se pasan a la aplicación",
+    "accessLog": {
+      "title": "Registro de acceso",
+      "show": "Mostrar registro de acceso",
+      "hide": "Ocultar registro de acceso",
+      "rangeLabel": "Intervalo de tiempo",
+      "range": {
+        "1h": "Última hora",
+        "24h": "Últimas 24 horas",
+        "7d": "Últimos 7 días"
+      },
+      "empty": "No hay actividad de inicio de sesión en este intervalo.",
+      "loadError": "No se pudo cargar el registro de acceso.",
+      "anonymous": "Sin sesión iniciada",
+      "columns": {
+        "time": "Hora",
+        "user": "Usuario",
+        "decision": "Decisión",
+        "reason": "Motivo",
+        "ip": "IP",
+        "count": "Solicitudes"
+      },
+      "decision": {
+        "allowed": "Permitido",
+        "denied": "Denegado",
+        "login_redirect": "Enviado a iniciar sesión",
+        "token_issued": "Enlace de inicio de sesión emitido",
+        "token_exchange": "Sesión iniciada",
+        "session_revoked": "Sesión terminada"
+      }
+    }
+  },
+  "wizard": {
+    "open": "Configuración guiada",
+    "close": "Cerrar guía",
+    "title": "Agregar un dominio, paso a paso",
+    "description": "Apunta un dominio a esta aplicación y obtén un certificado de confianza. Cada paso comprueba el estado real y no se guarda nada hasta el último.",
+    "step": {
+      "domain": "Dominio",
+      "dns": "Registro DNS",
+      "port": "Puerto del contenedor",
+      "certificate": "Certificado"
+    },
+    "domain": {
+      "label": "Dominio",
+      "placeholder": "app.example.com",
+      "invalid": "Escribe un dominio válido, por ejemplo app.example.com.",
+      "environmentLabel": "Entorno",
+      "environmentDefault": "Predeterminado (todos los entornos sin uno propio)",
+      "wwwPreset": "Enrutar también {{www}} y redirigirlo a {{apex}}",
+      "apexPreset": "Enrutar también {{apex}} y redirigirlo a {{www}}"
+    },
+    "dns": {
+      "propagation": "Los cambios de DNS suelen verse en minutos, pero pueden tardar hasta unas horas según el TTL del registro. Esta página vuelve a comprobar sola, así que puedes dejarla abierta.",
+      "needDomain": "Escribe un dominio arriba para ver el registro exacto que debes agregar."
+    }
+  },
+  "port": {
+    "description": "El ingress reenvía las solicitudes al puerto {{port}} dentro del contenedor.",
+    "listening": "Verificado: el contenedor escucha en el puerto {{port}}.",
+    "otherPort": "El contenedor escucha en {{ports}}, no en el puerto {{port}}. Las solicitudes fallarán hasta que el puerto coincida.",
+    "useListening": "Usar el puerto {{port}}",
+    "notListening": "Nada escucha todavía en el puerto {{port}} dentro del contenedor en ejecución. Comprueba que la aplicación inicie y se enlace a 0.0.0.0, no a 127.0.0.1.",
+    "unknown": "Sin verificar: la aplicación aún no se está ejecutando, o el acceso exec está desactivado. El puerto configurado es el {{port}}.",
+    "execDisabled": "Activa el acceso exec de esta aplicación para que el panel pueda verificar su puerto de escucha.",
+    "notRunning": "La aplicación no se está ejecutando, así que todavía no se puede verificar su puerto.",
+    "recheck": "Comprobar de nuevo",
+    "saved": "Puerto actualizado."
+  },
+  "certificate": {
+    "http01": "HTTP-01: el certificado se solicita automáticamente cuando el dominio resuelve aquí. Los puertos 80 y 443 deben llegar a este servidor desde internet.",
+    "dns01Private": "HTTP-01 no puede funcionar: la dirección de este servidor ({{host}}) es privada, así que ninguna autoridad certificadora puede llegar al puerto 80. Usa DNS-01 con un dominio comodín como *.example.com.",
+    "dns01Wildcard": "Los dominios comodín se validan con DNS-01, que necesita un proveedor de DNS conectado.",
+    "upstreamProxy": "El reverse proxy delante de este servidor obtiene y renueva el certificado. Apunta el dominio a este servidor; el proxy debe enrutarlo aquí.",
+    "providerActive": "Proveedor DNS-01: {{provider}}. Los certificados de dominios comodín se emiten a través de él.",
+    "providerNone": "Todavía no hay un proveedor DNS-01 conectado.",
+    "setupStep": "Siguiente paso: conecta Cloudflare, Route53 o Google Cloud DNS en la página Dominios y luego agrega un dominio comodín para tu zona.",
+    "openDomains": "Abrir ajustes de Dominios",
+    "connectivity": "Accesibilidad desde este servidor",
+    "portOpen": "El puerto {{port}} responde",
+    "portClosed": "El puerto {{port}} no responde",
+    "connectivityNote": "Esto prueba la dirección desde el plano de control. No puede demostrar que el puerto esté abierto a todo internet, pero un puerto cerrado aquí casi siempre está cerrado allá también.",
+    "stagingNote": "Los certificados de staging son de toda la plataforma, no por aplicación. Para probar sin límites de frecuencia, primero activa el staging de Let's Encrypt en los ajustes de Dominios."
+  },
+  "save": {
+    "submit": "Agregar dominio",
+    "submitting": "Agregando...",
+    "done": "Se agregó {{domain}}.",
+    "redirectDone": "{{from}} ahora redirige a {{to}}.",
+    "failed": "No se pudo agregar el dominio."
+  },
+  "googleCloudDns": {
+    "title": "Google Cloud DNS",
+    "description": "Administra registros y emite certificados comodín (DNS-01) a través de Cloud DNS. Pega una clave JSON de cuenta de servicio con el rol de administrador de DNS. Si Cloudflare o Route53 también están activados, tienen prioridad. Solo se probó contra una simulación local de la API.",
+    "enabledHint": "Usar Cloud DNS para los registros DNS y los certificados comodín.",
+    "enabledLabel": "Google Cloud DNS activado",
+    "project": "Proyecto",
+    "clientEmail": "Cuenta de servicio",
+    "keyLabel": "Clave JSON de la cuenta de servicio",
+    "keyPlaceholder": "Pega el contenido del archivo de clave JSON",
+    "keyPlaceholderSaved": "Pega una clave nueva para reemplazar la guardada",
+    "keySaved": "Hay una clave guardada. Déjalo vacío para conservarla.",
+    "keyNone": "Aún no hay ninguna clave guardada.",
+    "keyRequired": "Se necesita una clave JSON de cuenta de servicio para activar Google Cloud DNS.",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "test": "Probar",
+    "testing": "Probando...",
+    "testOk": "Conectado. Se encontraron {{count}} zona(s) administrada(s): {{zones}}",
+    "testFailed": "No se pudieron listar las zonas: {{error}}",
+    "disconnect": "Desconectar",
+    "saved": "Ajustes de Google Cloud DNS guardados.",
+    "disconnected": "Google Cloud DNS desconectado."
+  },
+  "provider": {
+    "label": "Proveedor DNS-01",
+    "cloudflare": "Cloudflare",
+    "route53": "Route53",
+    "googleclouddns": "Google Cloud DNS",
+    "none": "Ninguno",
+    "noneHint": "Los dominios comodín y los servidores con dirección privada necesitan uno."
+  },
+  "proxyManaged": {
+    "badge": "Administrado por tu proxy",
+    "line": "Certificado administrado por tu proxy (emitido por {{issuer}}, vence el {{date}}, se renueva automáticamente)",
+    "lineNoIssuer": "Certificado administrado por tu proxy (vence el {{date}}, se renueva automáticamente)",
+    "unknown": "Certificado administrado por tu proxy. Este servidor aún no lo ha visto: verifica la ruta en la página del proxy.",
+    "link": "Abrir la página del proxy"
+  },
+  "acme": {
+    "title": "Falló la solicitud del certificado",
+    "renewalTitle": "Falló la renovación del certificado",
+    "caError": "La autoridad certificadora dijo",
+    "action": {
+      "open_port_80": "Siguiente paso: abre los puertos 80 y 443 a internet. Revisa tu firewall, el reenvío de puertos de tu router y el grupo de seguridad de tu nube, y espera al siguiente intento.",
+      "fix_dns": "Siguiente paso: apunta el registro A o AAAA del dominio a este servidor y espera a que el DNS se propague.",
+      "wait_rate_limit": "Siguiente paso: espera antes de reintentar. La autoridad certificadora está limitando la frecuencia para este nombre de host, y cada intento fallido cuenta para el límite.",
+      "fix_caa": "Siguiente paso: quita o edita el registro CAA para que permita a la autoridad certificadora.",
+      "other_proxy": "Otro servicio de este servidor responde en el puerto 80, probablemente un reverse proxy como Traefik o nginx. Deja que ese proxy emita el certificado y enrute este dominio a Levelrail (consulta Ejecutar detrás de un proxy existente), o dale a Levelrail los puertos 80 y 443.",
+      "check_logs": "Siguiente paso: lee los registros del ingress para ver la respuesta completa de la autoridad certificadora."
+    }
+  },
+  "environmentTabs": {
+    "label": "Entorno",
+    "default": "Predeterminado",
+    "defaultHint": "Lo usa cualquier entorno que no tenga un conjunto de dominios propio.",
+    "routingNow": "Enrutando ahora",
+    "active": "Activo",
+    "activeHint": "Esta aplicación está etiquetada con este entorno, así que este conjunto es el que enruta el ingress.",
+    "inactiveHint": "No se enruta por ahora. Empieza a enrutarse cuando esta aplicación se mueva a este entorno.",
+    "empty": "No hay dominios para este entorno. Allí se usa el conjunto predeterminado.",
+    "addLabel": "Agregar un dominio a este entorno",
+    "add": "Agregar",
+    "remove": "Quitar {{domain}}",
+    "saved": "Dominios del entorno guardados.",
+    "failed": "No se pudieron guardar los dominios del entorno.",
+    "loadFailed": "No se pudieron cargar los conjuntos de dominios del entorno."
+  },
+  "clone": {
+    "copyDomains": "Copiar dominios con nombres de host nuevos",
+    "copyDomainsHint": "Un nombre de host solo puede pertenecer a una aplicación, así que todos los nombres copiados se reescriben.",
+    "mode": {
+      "prefix": "Agregar un prefijo",
+      "replace": "Cambiar un dominio superior"
+    },
+    "prefix": "Prefijo",
+    "prefixPlaceholder": "uat.",
+    "find": "Reemplazar este dominio",
+    "findPlaceholder": "example.com",
+    "replace": "Por",
+    "replacePlaceholder": "uat.example.com"
+  },
+  "connectivityCard": {
+    "title": "Accesibilidad",
+    "description": "Si los puertos 80 y 443 responden en la dirección de este servidor, y qué proveedor DNS-01 está conectado.",
+    "check": "Comprobar ahora",
+    "noHost": "No se conoce ninguna dirección pública. Define APP_PUBLIC_HOST en el plano de control.",
+    "private": "Este servidor tiene una dirección privada. HTTP-01 no puede funcionar aquí, usa DNS-01 con un dominio comodín.",
+    "closed": "El puerto 80 o el 443 no responde. Ábrelos en tu firewall o reenvíalos desde tu router.",
+    "ok": "Los puertos 80 y 443 responden desde este servidor."
+  },
+  "searchVisibility": {
+    "hiddenBadge": "Oculto a los buscadores",
+    "visibleBadge": "Abierto a los buscadores",
+    "hide": "Ocultar a los buscadores",
+    "show": "Permitir la indexación",
+    "hiddenHelp": "{{domain}} envía un encabezado noindex en cada respuesta y sirve un robots.txt que lo deniega todo. Es una petición que respetan los rastreadores que se portan bien, no un control de acceso: usa autenticación básica para mantener fuera a las personas.",
+    "visibleHelp": "Los buscadores pueden indexar este dominio. Ocúltalo para mantener consolas, staging y herramientas internas fuera de los resultados."
+  },
+  "reverseProxy": {
+    "title": "Poner el panel detrás de tu proxy existente",
+    "description": "Algo más ya ocupa los puertos 80 y 443 en este servidor. Escribe el dominio que quieres para el panel y copia la configuración exacta para ese proxy.",
+    "holder": "El puerto {{port}} lo publica {{container}} ({{image}}).",
+    "none": "Nada más publica el puerto 80 ni el 443 en este servidor, así que el ingress propio de Levelrail puede servir el panel directamente.",
+    "domain": "Dominio del panel",
+    "domainPlaceholder": "console.example.com",
+    "proxy": "Proxy",
+    "build": "Mostrar configuración",
+    "verify": "Comprobar que funciona",
+    "steps": "Pasos",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "reachable": "Accesible: este dominio sirve el panel.",
+    "notReachable": "Todavía no es accesible.",
+    "error": "No se pudo generar la configuración"
+  },
+  "page": {
+    "title": "Dominios",
+    "description": "Todos los dominios enrutados a tus aplicaciones.",
+    "add": "Agregar dominio",
+    "count_one": "{{count}} dominio",
+    "count_other": "{{count}} dominios",
+    "search": "Filtrar dominios",
+    "tableLabel": "Dominios",
+    "noMatch": "Ningún dominio coincide con \"{{query}}\"",
+    "noMatchBody": "Revisa la ortografía o borra el filtro.",
+    "clearSearch": "Borrar filtro",
+    "col": {
+      "domain": "Dominio",
+      "app": "Aplicación",
+      "dns": "DNS",
+      "certificate": "Certificado",
+      "expires": "Vence",
+      "visibility": "Búsqueda"
+    },
+    "empty": {
+      "noAppsTitle": "Aún no hay aplicaciones que enrutar",
+      "noAppsBody": "Un dominio enruta el tráfico a una aplicación. Despliega primero una aplicación.",
+      "noAppsAction": "Desplegar una aplicación",
+      "title": "Aún no hay dominios",
+      "body": "Agrega uno o más dominios y apúntalos a una aplicación.",
+      "action": "Agregar dominio"
+    },
+    "error": {
+      "title": "No se pudieron cargar los dominios",
+      "retry": "Intentar de nuevo"
+    },
+    "dns": {
+      "connected": "Conectado",
+      "not_resolving": "No resuelve",
+      "resolves_elsewhere": "Apunta a otro lugar",
+      "unconfigured": "Desconocido",
+      "checking": "Comprobando",
+      "notResolvingHint": "Aún no se encontró ningún registro DNS.",
+      "elsewhereHint": "Resuelve a otro lugar: {{hosts}}.",
+      "elsewhereHintNoHosts": "Resuelve a otro lugar.",
+      "privateHint": "Este servidor tiene una dirección privada, así que solo DNS-01 puede emitir un certificado.",
+      "propagating": "Propagándose"
+    },
+    "cert": {
+      "none": "Aún no hay certificado",
+      "internal": "Interno",
+      "failed": "Falló la solicitud",
+      "renewsAuto": "Se renueva automáticamente",
+      "renewsProxy": "Se renueva automáticamente mediante tu proxy",
+      "renewsManual": "Certificado subido: renuévalo antes de que venza"
+    },
+    "visibility": {
+      "toggle": "Permitir que los buscadores indexen {{domain}}",
+      "visible": "Visible",
+      "hidden": "Oculto",
+      "failed": "No se pudo cambiar la visibilidad en buscadores de {{domain}}."
+    },
+    "row": {
+      "actions": "Acciones para {{domain}}",
+      "manage": "Administrar en la aplicación",
+      "open": "Abrir {{domain}} en una pestaña nueva",
+      "dnsRecord": "Mostrar registro DNS",
+      "diagnose": "Diagnosticar",
+      "copy": "Copiar dominio",
+      "copied": "Dominio copiado",
+      "recheck": "Volver a comprobar el DNS",
+      "automatic": "Automático",
+      "wildcard": "Comodín",
+      "wildcardHint": "Coincide con cada etiqueta individual bajo este dominio. Los dominios exactos de otras aplicaciones siguen teniendo prioridad."
+    },
+    "flag": {
+      "waf": "WAF activado",
+      "redirect": "Redirección configurada",
+      "maintenance": "Modo de mantenimiento activado",
+      "basicAuth": "Autenticación básica configurada"
+    },
+    "dnsDialog": {
+      "title": "Registro DNS de {{domain}}",
+      "close": "Cerrar"
+    },
+    "platform": {
+      "title": "Ajustes de la plataforma",
+      "summary": "Ingress, HTTPS, dirección del panel y proveedores de DNS.",
+      "httpsOff": "HTTPS no está activado",
+      "toggle": "Mostrar ajustes de la plataforma"
+    },
+    "addDialog": {
+      "title": "Agregar dominios",
+      "description": "Elige una aplicación y lista los dominios que deben enrutarse a ella.",
+      "app": "Aplicación",
+      "appPlaceholder": "Elige una aplicación",
+      "domains": "Dominios",
+      "domainsPlaceholder": "app.example.com\nwww.example.com",
+      "domainsHint": "Uno por línea, o separados por comas.",
+      "ready_one": "{{count}} dominio listo para agregar",
+      "ready_other": "{{count}} dominios listos para agregar",
+      "errors": {
+        "invalid": "No es un nombre de host válido",
+        "duplicate": "Duplicado",
+        "claimedHere": "Ya se agregó a esta aplicación",
+        "claimedOther": "Ya se enruta a {{app}}",
+        "empty": "Escribe al menos un dominio",
+        "appRequired": "Elige una aplicación"
+      },
+      "submit_one": "Agregar {{count}} dominio",
+      "submit_other": "Agregar {{count}} dominios",
+      "submitting": "Agregando...",
+      "noApps": "Aún no hay aplicaciones. Despliega una aplicación y luego agrégale dominios.",
+      "resultsTitle": "Saliendo en vivo",
+      "resultsBody": "Cada dominio de abajo muestra su progreso. Los registros se crean por ti cuando hay un proveedor de DNS conectado.",
+      "added": "Agregado",
+      "failed": "No agregado",
+      "verify": "Verificar todos",
+      "verifying": "Comprobando...",
+      "retryFailed": "Reintentar los fallidos",
+      "showRecord": "Mostrar registro",
+      "hideRecord": "Ocultar registro",
+      "done": "Listo",
+      "summary": "{{ok}} agregados, {{failed}} no agregados."
+    },
+    "fix": {
+      "useAcme": "Usar certificado automático",
+      "acmeDone": "{{domain}} ahora usa un certificado automático.",
+      "uploadAgain": "Subir de nuevo",
+      "setPassword": "Definir contraseña",
+      "connectDns": "Conectar proveedor de DNS",
+      "checkTarget": "Revisar destino",
+      "checkApp": "Abrir aplicación"
+    },
+    "issue": {
+      "custom_cert_unresolved": "El certificado subido no está en uso, se emite uno automático en su lugar. Súbelo de nuevo.",
+      "basic_auth_unresolved": "No se enruta: no se pudo leer la contraseña de la autenticación básica. Defínela de nuevo.",
+      "dns01_unavailable": "El certificado comodín necesita un proveedor de DNS. Activa uno en los ajustes de DNS.",
+      "target_unavailable": "No se enruta: su destino no está disponible."
+    }
+  },
+  "proxyPicker": {
+    "title": "Proxy",
+    "description": "Elige qué proxy responde en los puertos 80 y 443. A los proveedores administrados se les escriben y recargan los archivos de rutas por ti. Los proveedores manuales muestran la configuración que debes agregar tú.",
+    "choose": "Proveedor de proxy",
+    "loadFailed": "No se pudo leer el estado del proxy.",
+    "retry": "Comprobar de nuevo",
+    "detected": "Detectado",
+    "provider": {
+      "embedded": "Caddy integrado",
+      "traefik": "Traefik",
+      "nginx": "nginx",
+      "caddy": "Caddy (externo)",
+      "haproxy": "HAProxy"
+    },
+    "mode": {
+      "builtin": "Integrado",
+      "managed": "Administrado",
+      "manual": "Manual"
+    },
+    "embeddedBody": "El ingress propio de Levelrail sirve los puertos 80 y 443 y se encarga de los certificados. No se escribe nada en otro proxy.",
+    "useEmbedded": "Usar el ingress integrado",
+    "usingEmbedded": "Ingress integrado en uso",
+    "embeddedDone": "El enrutamiento ahora usa el ingress integrado. Se quitaron los archivos de rutas escritos en tu proxy.",
+    "embeddedFailed": "No se pudo cambiar al ingress integrado.",
+    "notDetected": "No se encontró este proxy en este servidor. Inícialo con los puertos 80 y 443 publicados y vuelve a comprobar.",
+    "manualBody": "Levelrail no modifica {{proxy}}. La simulación muestra la configuración para tus dominios, la agregas a mano y luego vuelves a comprobar.",
+    "managedBody": "Levelrail escribe un archivo de ruta por dominio en {{proxy}}, lo comprueba, recarga el proxy y verifica cada dominio por HTTPS.",
+    "dryRun": "Simulación",
+    "dryRunning": "Comprobando...",
+    "apply": "Aplicar y verificar",
+    "applying": "Aplicando...",
+    "recheck": "Volver a comprobar",
+    "applyDone": "Rutas aplicadas. Esperando a que tu proxy las tome.",
+    "applyFailed": "No se pudieron aplicar las rutas.",
+    "dryRunFailed": "La simulación encontró un problema.",
+    "manualNoApply": "Los proveedores manuales nunca se aplican automáticamente.",
+    "changes": {
+      "title": "Qué cambiaría",
+      "none": "Nada que cambiar. Las rutas ya están en su lugar.",
+      "manualTitle": "Agrega esto a tu proxy"
+    },
+    "inputs": {
+      "dir": "Directorio de rutas en este servidor",
+      "dirHint": "La carpeta de la que tu proxy lee los archivos de rutas. No se pudo detectar.",
+      "certDir": "Directorio de certificados dentro del contenedor del proxy",
+      "certDirHint": "Por ejemplo /etc/letsencrypt/live. No se pudo detectar."
+    },
+    "rejected": {
+      "title": "El proxy rechazó las rutas nuevas",
+      "body": "No se conservó nada: los archivos se revirtieron y tu proxy sigue sirviendo lo que tenía. Corrige el problema de abajo y vuelve a intentarlo."
+    },
+    "rootOnly": "Cambiar el proxy requiere una cuenta o un token root.",
+    "applyWaiting": "Aplicar y verificar se activa en cuanto se encuentre {{proxy}} en este servidor. Instálalo arriba, o vuelve a comprobar cuando esté en ejecución.",
+    "fixViaCli": "Corregir con la CLI"
+  },
+  "proxyMissing": {
+    "title": "{{proxy}} todavía no se está ejecutando en este servidor",
+    "looked": "Levelrail buscó un contenedor en ejecución que publique el puerto 80 o el 443 y use una imagen de {{proxy}}. No encontró ninguno.",
+    "foundOther": "Levelrail buscó un contenedor de {{proxy}} en los puertos 80 y 443 y encontró {{other}} en su lugar.",
+    "refusedTitle": "No se cambió nada",
+    "installed": "Proxy iniciado. Comprobando lo que detectó.",
+    "installFailed": "No se pudo iniciar el proxy.",
+    "install": {
+      "title": "Instalar e iniciar {{proxy}} por mí",
+      "body": "Levelrail inicia por ti un contenedor oficial de {{proxy}}, con los puertos 80 y 443 publicados. Primero ves el plan exacto.",
+      "unsupported": "La instalación automática solo está disponible para Traefik. {{proxy}} necesita certificados que tú proporcionas, así que inícialo tú o elige otra opción.",
+      "action": "Instalar e iniciar {{proxy}} por mí"
+    },
+    "builtin": {
+      "title": "Volver al Caddy integrado",
+      "body": "Vuelve al ingress que viene con este plano de control. Se conservan tus dominios y ajustes.",
+      "action": "Usar el Caddy integrado"
+    },
+    "elsewhere": {
+      "title": "Se ejecuta en otro lugar",
+      "body": "Tu proxy se ejecuta en otro host o con otro nombre. Escribe cómo acceder a él y vuelve a comprobar.",
+      "action": "Escribirlo a mano",
+      "hide": "Ocultar los campos"
+    },
+    "plan": {
+      "title": "Exactamente lo que va a pasar",
+      "image": "Imagen",
+      "container": "Contenedor",
+      "ports": "Puertos",
+      "restart": "Política de reinicio",
+      "mount": "Montaje",
+      "file": "Se escribe en {{path}}",
+      "safety": "Solo se crea este contenedor. Los contenedores que ya ejecutas nunca se detienen ni se eliminan, y ejecutarlo dos veces no crea un segundo contenedor.",
+      "confirm": "Confirmar e iniciar",
+      "installing": "Iniciando...",
+      "cancel": "Cancelar"
+    },
+    "manual": {
+      "body": "Estos valores predeterminados corresponden a una configuración estándar. Cambia lo que sea distinto en tu servidor.",
+      "save": "Guardar estos valores",
+      "saved": "Valores del proxy guardados. Vuelve a comprobar para buscarlo.",
+      "saveFailed": "No se pudieron guardar los valores del proxy.",
+      "fields": {
+        "container": "Nombre del contenedor",
+        "dynamic_dir": "Directorio de rutas en este servidor",
+        "entrypoint_http": "Entrypoint HTTP",
+        "entrypoint_https": "Entrypoint HTTPS",
+        "cert_resolver": "Resolver de certificados",
+        "upstream_host": "Host upstream"
+      },
+      "hints": {
+        "container": "El nombre del contenedor del proxy.",
+        "dynamic_dir": "La carpeta de la que tu proxy lee los archivos de rutas.",
+        "entrypoint_http": "El entrypoint que escucha en el puerto 80.",
+        "entrypoint_https": "El entrypoint que escucha en el puerto 443.",
+        "cert_resolver": "Déjalo vacío si el proxy no emite certificados.",
+        "upstream_host": "Cómo accede el proxy a este servidor, por ejemplo host.docker.internal."
+      },
+      "errors": {
+        "name": "Usa letras, números, puntos, guiones o guiones bajos.",
+        "absolute": "Escribe una ruta absoluta que empiece con /.",
+        "path": "Sin espacios ni .. en la ruta.",
+        "host": "Escribe un nombre de host o una dirección sin http://."
+      }
+    }
+  },
+  "proxySetup": {
+    "title": "Poner este dominio en vivo",
+    "description": "Tu proxy ya ocupa los puertos 80 y 443. Levelrail escribe las rutas que necesita y luego comprueba que lleguen el tráfico y un certificado.",
+    "unavailable": "La integración con proxy no está disponible en esta versión del servidor.",
+    "loadFailed": "No se pudo leer el estado del proxy. Se reintentará en la siguiente actualización.",
+    "steps": {
+      "detect": "Encontrar tu proxy",
+      "tls_upstream": "Dejar que el proxy se encargue de HTTPS",
+      "routes": "Escribir las rutas",
+      "dns": "Apuntar el DNS a este servidor",
+      "verify": "Comprobar el tráfico y el certificado"
+    },
+    "stepState": {
+      "done": "Listo",
+      "todo": "Pendiente",
+      "blocked": "Bloqueado",
+      "error": "Error",
+      "waiting": "En espera"
+    },
+    "waitingDetail": "esperando a que se encuentre tu proxy",
+    "setup": "Configurar el enrutamiento",
+    "settingUp": "Configurando...",
+    "setupDone": "Rutas escritas. Esperando a que tu proxy las tome.",
+    "setupFailed": "No se pudo configurar el enrutamiento.",
+    "confirm": {
+      "title": "¿Escribir las rutas en tu proxy?",
+      "directory": "Levelrail escribirá un archivo de ruta por dominio en {{dir}}. Tu proxy lee ese directorio por sí mismo, no se cambia nada más.",
+      "directoryUnknown": "No se detectó ningún directorio. Corrige primero lo que falta.",
+      "domainsLabel": "Dominios que reciben una ruta",
+      "noDomains": "Aún no hay dominios. Solo se escribe la ruta del panel cuando tiene un dominio.",
+      "submit": "Escribir rutas",
+      "cancel": "Cancelar"
+    },
+    "domains": {
+      "title": "Dominios",
+      "target": {
+        "app": "Aplicación {{app}}",
+        "dashboard": "Panel"
+      },
+      "state": {
+        "todo": "Aún sin configurar",
+        "handled": "Lo gestiona tu proxy",
+        "waiting": "Esperando el certificado",
+        "live": "En vivo",
+        "error": "Error"
+      },
+      "certificate": {
+        "issued": "{{issuer}}, válido hasta el {{date}}",
+        "expired": "{{issuer}}, venció el {{date}}",
+        "pending": "Certificado predeterminado del proxy, esperando la emisión"
+      },
+      "checked": "Comprobado {{time}}",
+      "neverChecked": "Aún no se ha comprobado",
+      "verify": "Verificar",
+      "verifying": "Verificando...",
+      "verifyLive": "{{domain}} está en vivo.",
+      "verifyNotLive": "{{domain}} todavía no está en vivo.",
+      "verifyFailed": "No se pudo verificar {{domain}}.",
+      "lastError": "Último problema: {{error}}",
+      "makeLive": "Poner este dominio en vivo"
+    },
+    "facts": {
+      "title": "Lo que Levelrail detectó",
+      "detectedBadge": "detectado",
+      "proxy": "Proxy",
+      "container": "Contenedor",
+      "image": "Imagen",
+      "ports": "Puertos publicados",
+      "directory": "Directorio de rutas",
+      "entrypointHttp": "Entrypoint HTTP",
+      "entrypointHttps": "Entrypoint HTTPS",
+      "resolver": "Resolver de certificados",
+      "upstream": "Host upstream",
+      "notFound": "no encontrado",
+      "missingTitle": "La configuración todavía no puede continuar",
+      "missingBody": "Levelrail no pudo leer esto de tu proxy. Agrégalo al proxy, o escríbelo en los ajustes del proxy, y luego actualiza.",
+      "kind": {
+        "traefik": "Traefik",
+        "nginx": "nginx",
+        "caddy": "Caddy",
+        "haproxy": "HAProxy",
+        "none": "Ninguno"
+      }
+    },
+    "none": {
+      "title": "No se detectó ningún proxy existente",
+      "body": "Si un proxy se ejecuta en un lugar que Levelrail no puede ver, configúralo a mano con la guía manual.",
+      "guide": "Abrir la guía manual"
+    },
+    "handledByProxy": "Lo gestiona tu proxy",
+    "byo": {
+      "disclosure": "Tengo mi propio certificado",
+      "hint": "Solo hace falta si compraste un certificado. De lo contrario, los certificados se emiten automáticamente.",
+      "uploaded": "Certificado propio",
+      "applied": "En uso",
+      "pending": "Pendiente",
+      "applyIssue": "El certificado subido está guardado pero no está en uso: {{issue}}",
+      "masterKeyFix": "Revisar ajustes de cifrado",
+      "expires": "vence el {{date}}",
+      "certLabel": "Certificado (PEM)",
+      "keyLabel": "Clave privada (PEM)",
+      "replaceHint": "Reemplaza por completo el certificado subido actualmente; no hay actualización parcial.",
+      "newHint": "Se usa en lugar de la emisión automática para este dominio, a partir de la siguiente pasada de reconciliación.",
+      "bothRequired": "Se necesitan tanto un certificado como una clave privada.",
+      "uploadedToast": "Certificado subido para {{domain}}.",
+      "uploadFailed": "Falló la subida del certificado.",
+      "upload": "Subir",
+      "uploading": "Subiendo...",
+      "revert": "Volver a TLS automático",
+      "revertTitle": "¿Volver {{domain}} a TLS automático?",
+      "revertBody": "El certificado subido se descarta de inmediato. Si la emisión automática no puede llegar a este dominio, HTTPS dejará de funcionar hasta que se suba o se emita un certificado nuevo.",
+      "cancel": "Cancelar",
+      "revertConfirm": "Volver",
+      "reverting": "Volviendo...",
+      "revertedToast": "{{domain}} volvió a TLS automático.",
+      "revertFailed": "No se pudo volver a TLS automático."
+    }
+  },
+  "ingressUpstream": {
+    "bannerTitle": "Tu proxy se encarga de HTTPS",
+    "bannerBody": "Esta instancia no solicita certificados. Apunta tus dominios al host del proxy, y el proxy termina TLS y reenvía a este ingress.",
+    "trustedProxiesMissing": "No hay rangos de proxy de confianza definidos (APP_INGRESS_TRUSTED_PROXIES), así que se ignoran los encabezados de protocolo y host reenviados.",
+    "switchLabel": "TLS lo termina un proxy delante",
+    "switchHelp": "Actívalo cuando Traefik, nginx o Caddy ocupe los puertos 80 y 443. Entonces esta instancia nunca ejecuta ACME y genera los enlaces con el puerto público.",
+    "acmeSkipped": "La emisión de certificados se guarda pero se omite mientras un proxy se encarga de HTTPS.",
+    "portLabel": "Puerto HTTPS público",
+    "portHelp": "Si un proxy como Traefik o nginx reenvía a este ingress, escribe el puerto que usan los clientes (normalmente 443) para que los enlaces funcionen.",
+    "portInvalid": "Escribe un puerto entre 0 y 65535, o déjalo en blanco."
+  },
+  "acmeBlocked": {
+    "title": "Desde aquí no se pueden emitir certificados reales",
+    "body": "Las autoridades certificadoras comprueban los puertos 80 y 443, y este ingress escucha en {{http}} y {{https}}. Si un proxy como Traefik o nginx ocupa esos puertos, deja que se encargue de HTTPS para este dominio y desactiva aquí los certificados reales. De lo contrario, dale a Levelrail los puertos 80 y 443, o usa un proveedor DNS-01.",
+    "turnOff": "Que mi proxy se encargue de HTTPS",
+    "turningOff": "Desactivando..."
+  },
+  "dnsCheck": {
+    "checking": "Comprobando...",
+    "checkedAt": "Comprobado a las {{time}}",
+    "noAnswer": "sin respuesta",
+    "propagatingHelp": "El DNS público ya apunta este dominio a este servidor. El resolver propio de este servidor conserva durante un tiempo una respuesta de \"no encontrado\" (a menudo hasta 30 minutos), así que se conectará solo. No hay ningún problema.",
+    "notFoundHelp": "Ningún resolver tiene este registro todavía. Revisa el registro en tu proveedor de DNS (tipo, nombre, valor) y dale un minuto. Un registro nuevo suele verse en pocos minutos."
+  },
+  "goLive": {
+    "loading": "Comprobando el progreso...",
+    "steps": {
+      "dns": "Registro DNS",
+      "counterpart": "Par www y apex",
+      "redirect": "Redirección canónica",
+      "proxy_route": "Ruta del proxy",
+      "force_https": "Forzar HTTPS",
+      "propagation": "Propagación del DNS",
+      "certificate": "Certificado",
+      "http": "El sitio responde"
+    },
+    "state": {
+      "done": "listo",
+      "pending": "ocurrirá",
+      "skipped": "omitido",
+      "failed": "falló",
+      "manual": "paso manual",
+      "conflict": "conflicto"
+    },
+    "text": {
+      "dnsDone": "Registro DNS creado en {{provider}}",
+      "propagatingSeen": "Esperando a que el DNS se propague ({{resolver}} lo ve)",
+      "propagatingWaiting": "Esperando a que el registro aparezca en el DNS",
+      "certDone": "Certificado emitido por {{issuer}}, válido hasta el {{date}}",
+      "skipped": "Omitido: {{reason}}"
+    },
+    "cloudflareBadge": "Creado en Cloudflare",
+    "proxiedWarning": "Cloudflare hace de proxy del registro. Define el modo SSL/TLS en Full (strict) o los visitantes pueden caer en bucles de redirección.",
+    "conflictHint": "Ya existe un registro distinto para este nombre y se dejó sin tocar. Quítalo, o agrega el dominio de nuevo con el reemplazo activado.",
+    "connectCloudflare": "No hay un proveedor de DNS conectado, así que agrega tú el registro.",
+    "connectCloudflareAction": "Conecta Cloudflare para hacerlo automáticamente.",
+    "openLive": "Abrir el sitio en vivo"
+  },
+  "baseDomain": {
+    "title": "Dominio base de las aplicaciones",
+    "description": "Las aplicaciones nuevas sin dominio reciben nombre-de-app.dominio-base, y su registro DNS se crea por ti.",
+    "label": "Dominio base",
+    "save": "Guardar",
+    "saved": "Dominio base de las aplicaciones guardado",
+    "invalid": "Escribe un nombre de host como apps.example.com.",
+    "zoneChecking": "Buscando la zona en tu proveedor de DNS...",
+    "zoneFound": "Zona {{zone}} encontrada en {{provider}}",
+    "zoneNotFound": "No hay una zona para este nombre en tu proveedor de DNS. Conecta primero un proveedor que la administre.",
+    "noProvider": "Todavía no hay un proveedor de DNS conectado.",
+    "noProviderAction": "Conecta Cloudflare, Route53 o Google Cloud DNS abajo.",
+    "backfillHelp": "Las aplicaciones que ya existen conservan su dirección. Da a las que no tienen dominio una dirección {{base}}:",
+    "backfillPreview": "Ver las aplicaciones existentes",
+    "backfillApply_one": "Aplicar a {{count}} aplicación",
+    "backfillApply_other": "Aplicar a {{count}} aplicaciones",
+    "backfillNone": "Todas las aplicaciones ya tienen un dominio."
+  },
+  "automation": {
+    "title": "Automatización de dominios",
+    "description": "Lo que ocurre por sí solo cuando agregas un dominio a una aplicación.",
+    "saved": "Automatización de dominios guardada",
+    "previewList": "Pasos previstos",
+    "previewLabel": "Qué pasará cuando agregue",
+    "previewRun": "Mostrar plan",
+    "previewNeedsApp": "Crea primero una aplicación para ver un plan.",
+    "previewTitle": "Agregar {{domain}} hará lo siguiente:",
+    "historyTitle": "Historial de automatización",
+    "historyEmpty": "Aún no hay ejecuciones automatizadas.",
+    "auditLink": "Abrir registro de auditoría",
+    "undo": "Deshacer",
+    "undone": "deshecho",
+    "undoDone": "Deshecho: solo se quitó lo que creó esa ejecución",
+    "toggles": {
+      "auto_dns": {
+        "label": "Crear registros DNS",
+        "help": "Necesita un proveedor de DNS conectado. Los registros existentes nunca se sobrescriben."
+      },
+      "auto_proxy_route": {
+        "label": "Crear rutas de proxy",
+        "help": "Espera a que el proxy administrado enrute el dominio cuando esa integración está activada."
+      },
+      "force_https": {
+        "label": "Forzar HTTPS",
+        "help": "Envía a los visitantes a la dirección segura cuando el certificado esté listo."
+      },
+      "attach_www_counterpart": {
+        "label": "Agregar el par www o apex",
+        "help": "Agregar example.com también agrega www.example.com, y al revés."
+      },
+      "wildcard_for_base_domain": {
+        "label": "Registro comodín para el dominio base",
+        "help": "Un solo registro cubre todas las aplicaciones bajo el dominio base."
+      },
+      "verify_after": {
+        "label": "Verificar después de agregar",
+        "help": "Comprueba el DNS, el certificado y el sitio, e informa de cada paso."
+      }
+    },
+    "www": {
+      "label": "Política de www",
+      "off": "Dejar ambas direcciones como están",
+      "redirect_to_apex": "Redirigir www al apex",
+      "redirect_to_www": "Redirigir el apex a www",
+      "help": "Necesita el host par, que se agrega por ti cuando se elige una redirección."
+    },
+    "dnsWriter": {
+      "label": "Escritor de registros DNS",
+      "builtIn": "El cliente integrado",
+      "plugin": "El plugin {{name}}",
+      "help": "Elige cuál agrega el registro DNS cuando corriges un dominio. Prueba primero un plugin en la página Plugins.",
+      "managePlugins": "Administrar plugins de DNS",
+      "saved": "Escritor de registros DNS guardado"
+    }
+  },
+  "standalone": {
+    "modeLabel": "¿Qué debe servir este dominio?",
+    "modeApp": "Enrutar a una aplicación",
+    "modeProxy": "Proxy a un puerto o URL",
+    "title": "Hacer proxy de un dominio",
+    "editTitle": "Editar {{domain}}",
+    "description": "Sirve un dominio desde cualquier puerto de este servidor, una dirección de tu red, una URL externa, el puerto de otra aplicación o un contenedor. No hace falta una aplicación.",
+    "domain": "Dominio",
+    "domainPlaceholder": "tools.example.com",
+    "target": "Destino",
+    "targetMode": {
+      "port": "Puerto en este servidor",
+      "address": "Dirección",
+      "url": "URL",
+      "app": "Puerto de una aplicación",
+      "container": "Contenedor"
+    },
+    "port": "Puerto",
+    "portPlaceholder": "3000",
+    "listening": "Escuchando en este servidor",
+    "listeningNone": "No se detectaron puertos de escucha. Escribe el puerto que usa tu servicio.",
+    "controlPort": "{{label}}",
+    "address": "Host y puerto",
+    "addressPlaceholder": "10.0.0.5:8080 o db.internal:5000",
+    "addressHint": "Una IP o un nombre de host de una red privada o de la malla, con su puerto.",
+    "url": "URL",
+    "urlPlaceholder": "https://backend.example.org",
+    "urlHint": "TLS y el encabezado Host siguen a la URL. Una ruta se convierte en prefijo.",
+    "app": "Aplicación",
+    "appPlaceholder": "Elige una aplicación",
+    "appPort": "Puerto del contenedor",
+    "appPortHint": "Si se deja vacío, usa el puerto principal de la aplicación ({{port}}).",
+    "container": "Contenedor",
+    "containerPlaceholder": "Elige un contenedor en ejecución",
+    "containerPort": "Puerto del contenedor",
+    "noContainers": "No se encontraron contenedores en ejecución.",
+    "preview": "Vista previa",
+    "previewEmpty": "Elige un destino para ver a dónde va el tráfico.",
+    "advanced": "Opciones avanzadas",
+    "upstreamTls": "Conectar al destino por TLS",
+    "verifyTls": "Verificar el certificado del destino",
+    "verifyTlsHint": "Desactívalo para un certificado autofirmado.",
+    "serverName": "Nombre de servidor TLS",
+    "serverNamePlaceholder": "backend.internal",
+    "hostHeader": "Encabezado Host",
+    "hostPreserve": "Conservar el host del visitante",
+    "hostUpstream": "Usar el host del destino",
+    "hostCustom": "Personalizado",
+    "hostCustomPlaceholder": "internal.example.com",
+    "websocket": "Permitir websockets",
+    "connectTimeout": "Tiempo de espera de conexión (segundos)",
+    "readTimeout": "Tiempo de espera de lectura (segundos)",
+    "timeoutHint": "0 conserva el valor predeterminado.",
+    "stripPrefix": "Quitar prefijo de ruta",
+    "stripPrefixPlaceholder": "/app",
+    "descriptionField": "Nota",
+    "checking": "Comprobando el destino...",
+    "confirmTitle": "Este servidor se conectará a un destino interno",
+    "confirmCheck": "Lo entiendo. Enrutar a él el tráfico público de este dominio.",
+    "submit": "Agregar dominio",
+    "save": "Guardar cambios",
+    "saving": "Guardando...",
+    "added": "{{domain}} ahora hace proxy a {{target}}",
+    "updated": "{{domain}} actualizado",
+    "removed": "{{domain}} eliminado",
+    "removeFailed": "No se pudo eliminar {{domain}}",
+    "resultTitle": "Ponlo en vivo",
+    "resultBody": "Crea el registro DNS de abajo y luego el certificado se emite automáticamente.",
+    "unlinked": "Sin vincular",
+    "unlinkedHint": "No está vinculado a ninguna aplicación. El tráfico se envía por proxy a este destino.",
+    "edit": "Editar destino",
+    "remove": "Eliminar dominio",
+    "removeTitle": "¿Eliminar {{domain}}?",
+    "removeBody": "La ruta a {{target}} se elimina en la siguiente pasada del ingress. Sus ajustes (autenticación, WAF, redirecciones) también se eliminan.",
+    "removeConfirm": "Eliminar",
+    "removing": "Eliminando...",
+    "pageDescription": "Controles de tráfico de {{domain}}, con proxy a {{target}}. Los cambios se aplican en la siguiente pasada del ingress.",
+    "proxiesTo": "Hace proxy a",
+    "doneLabel": "Listo"
+  },
+  "serverAddress": {
+    "title": "Dirección del servidor",
+    "description": "Apunta los registros DNS de tus dominios a este servidor.",
+    "ipv4": "IPv4",
+    "ipv6": "IPv6",
+    "none": "No detectada",
+    "copy": "Copiar {{value}}",
+    "copied": "Copiado",
+    "source": {
+      "override": "Definida manualmente",
+      "detected": "Detectada",
+      "env": "De la configuración",
+      "none": "Desconocida"
+    },
+    "nat": "Esta dirección no está en ninguna interfaz de red de aquí, así que el servidor está detrás de un NAT o de una asignación de direcciones de la nube. Reenvía los puertos 80 y 443 a ella.",
+    "upstream": "Un proxy delante termina TLS. Apunta el DNS a ese proxy, no a este servidor.",
+    "noneDetected": "No se detectó ninguna dirección pública. Defínela abajo para que las comprobaciones y los registros de DNS sean correctos.",
+    "override": "Definir la dirección manualmente",
+    "overrideHint": "Úsalo detrás de un balanceador de carga o cuando la detección sea incorrecta.",
+    "save": "Guardar dirección",
+    "clear": "Usar la detección",
+    "saved": "Dirección del servidor guardada",
+    "saveFailed": "No se pudo guardar la dirección",
+    "recordsTitle": "Registro DNS por crear",
+    "recordType": "Tipo",
+    "recordName": "Nombre",
+    "recordValue": "Valor",
+    "orInstead": "o en su lugar",
+    "recordsNone": "Define una dirección pública para ver el registro que debes crear.",
+    "dnsStatus": "Estado del DNS"
+  },
+  "enforcement": {
+    "savedNotEnforced": "Guardado, sin aplicar",
+    "proxy": {
+      "traefik": "Traefik",
+      "external": "tu proxy"
+    },
+    "reason": {
+      "route_unverified": "{{proxy}} enruta {{domain}}, y este servidor no ha confirmado que {{proxy}} entregue sus solicitudes al ingress integrado. El ajuste está guardado, pero es posible que los visitantes no lo reciban. Verifica la ruta para comprobar de nuevo.",
+      "proxy_unmanaged": "{{proxy}} termina TLS para {{domain}} con una configuración que este servidor no administra, así que no puede confirmar que las solicitudes lleguen al ingress integrado. El ajuste está guardado, pero no se informa como aplicado.",
+      "not_routed": "{{domain}} todavía no se enruta, así que el ajuste está guardado pero no se aplica nada."
+    },
+    "proxyPage": "Abrir la página del proxy",
+    "docs": "Qué controles funcionan detrás de un proxy",
+    "flagTitle": "{{label}} (guardado, sin aplicar)"
+  },
+  "maintenance": {
+    "on": "Modo de mantenimiento activado",
+    "off": "Sin mantenimiento",
+    "enable": "Activar modo de mantenimiento",
+    "enabling": "Activando...",
+    "end": "Terminar mantenimiento",
+    "ending": "Terminando...",
+    "activeHint": "Los visitantes de {{domain}} ven una página de mantenimiento fija. El contenedor sigue en ejecución; nada de aquí lo detiene ni lo reinicia.",
+    "options": "Página y horario",
+    "hideOptions": "Ocultar",
+    "ends": "Termina {{date}}",
+    "bypassCount_one": "{{count}} dirección omite la página",
+    "bypassCount_other": "{{count}} direcciones omiten la página",
+    "healthOpen": "Las sondas de disponibilidad en la ruta de preparación siguen llegando a la aplicación",
+    "saved": "Ajustes de mantenimiento guardados",
+    "form": {
+      "title": "Título de la página",
+      "titlePlaceholder": "En mantenimiento",
+      "message": "Mensaje",
+      "messagePlaceholder": "Este sitio no está disponible temporalmente. Vuelve a intentarlo pronto.",
+      "plainText": "Texto sin formato. Los visitantes lo ven tal como lo escribes, sin formato.",
+      "until": "Terminar automáticamente a las",
+      "untilHelp": "Opcional. Crea una entrada de mantenimiento programado que también aparece en la página de estado.",
+      "retryAfter": "Reintentar después de (minutos)",
+      "retryAfterHelp": "Se envía como Retry-After para que los clientes y los rastreadores sepan cuándo volver. Predeterminado: 5.",
+      "bypass": "Direcciones que aún llegan a la aplicación",
+      "bypassHelp": "Direcciones IP o rangos CIDR, uno por línea, hasta 32. Usa tu propia dirección para revisar el sitio mientras está caído.",
+      "healthBypass": "Dejar que las sondas de disponibilidad lleguen a la ruta de preparación",
+      "enable": "Activar el mantenimiento con estos ajustes",
+      "save": "Guardar ajustes",
+      "maxHours": "Desactivar automáticamente después de (horas)",
+      "maxHoursDefault": "Se usa cuando no hay hora de fin. Déjalo vacío para el valor predeterminado del servidor de {{hours}} horas, 0 para no tener límite.",
+      "maxHoursNone": "Red de seguridad cuando no hay hora de fin. Déjalo vacío para no tener límite, o escribe las horas.",
+      "maxHoursUntil": "No hace falta: la hora de fin de arriba ya termina el mantenimiento."
+    },
+    "autoOffAt": "Se desactiva solo el {{date}}",
+    "noAutoOff": "Sin fin automático, sigue activo hasta que lo termines"
+  },
+  "shieldRecommended": {
+    "title": "Protección contra abusos",
+    "description": "Limita cuánto puede costarle un solo visitante a esta aplicación. Los dominios que ya tienen límites nunca se modifican.",
+    "blockBots": "Rechazar también bots maliciosos conocidos y scrapers de IA",
+    "preview_button": "Vista previa",
+    "apply": "Activar los límites recomendados",
+    "preview": "Se definirían {{rate}} solicitudes por minuto y {{concurrent}} simultáneas por visitante en {{count}} dominio(s).",
+    "skipped": "{{count}} dominio(s) ya tienen límites y se quedan como están.",
+    "applied": "Límites recomendados activados en {{count}} dominio(s).",
+    "blockedProxy": "Un proxy está delante de este servidor y oculta las direcciones de los visitantes, así que un límite por visitante afectaría a todos. Primero define la lista de proxies de confianza."
+  },
+  "edge": {
+    "title": "Límites de solicitudes y proxies de confianza",
+    "description": "Topes para el tamaño de las solicitudes y los clientes lentos, y qué proxies delante de este servidor son de confianza para informar las direcciones de los visitantes.",
+    "proxy": {
+      "none": "sin proxy",
+      "cloudflare": "Cloudflare",
+      "coolify": "Coolify",
+      "traefik": "Traefik",
+      "proxy": "un reverse proxy"
+    },
+    "fix": {
+      "title": "Se detectó {{proxy}} delante de este servidor",
+      "body": "Las direcciones de los visitantes y los encabezados reenviados se ignoran hasta que el proxy sea de confianza, así que los límites por visitante afectarían a todos.",
+      "rangesRotate": "Este proxy usa direcciones públicas que cambian con el tiempo. Confía en sus rangos publicados en lugar de en una sola dirección.",
+      "manual": "Ninguna dirección es segura para confiar automáticamente. Escribe abajo las direcciones del proxy.",
+      "apply": "Confiar en {{value}}",
+      "recheck": "Volver a comprobar",
+      "done": "Proxies de confianza guardados. Los límites ahora ven las direcciones reales de los visitantes."
+    },
+    "trusted": {
+      "label": "Proxies de confianza",
+      "help": "Direcciones, rangos CIDR o private_ranges separados por comas. Déjalo vacío para no confiar en ninguno."
+    },
+    "limits": {
+      "body": "Tope del cuerpo de la solicitud",
+      "header": "Tope del encabezado de la solicitud",
+      "readHeader": "Tiempo de espera de lectura del encabezado",
+      "idle": "Tiempo de espera de conexión inactiva",
+      "help": "Déjalo en blanco para el valor predeterminado mostrado."
+    },
+    "unit": {
+      "mib": "MiB",
+      "kib": "KiB",
+      "seconds": "segundos"
+    },
+    "envLocked": "Definido por una variable de entorno en el plano de control, que tiene prioridad.",
+    "badNumber": "Escribe números simples, o deja un campo en blanco para su valor predeterminado.",
+    "save": "Guardar límites",
+    "saving": "Guardando...",
+    "saved": "Ajustes del edge guardados.",
+    "loadFailed": "No se pudieron cargar los ajustes del edge."
+  },
+  "diagnose": {
+    "title": "Diagnosticar {{domain}}",
+    "description": "Comprueba el DNS, los puertos, el certificado y el último error de certificado, y da una solución para cada problema.",
+    "running_one": "Comprobando... {{count}} resultado hasta ahora",
+    "running_other": "Comprobando... {{count}} resultados hasta ahora",
+    "status": {
+      "healthy": "Todo está en orden.",
+      "warnings": "Funciona, pero hay cosas que conviene corregir.",
+      "problems": "Algo impide que este dominio funcione."
+    },
+    "propagation": {
+      "settled": "DNS estabilizado",
+      "propagating": "DNS propagándose",
+      "waiting": "Esperando el DNS"
+    },
+    "nextCheck": "Se volverá a comprobar en unos {{seconds}}s.",
+    "recheck": "Volver a comprobar",
+    "tryAgain": "Intentar de nuevo",
+    "applying": "Aplicando...",
+    "applied": "{{label}}: listo. Comprobando de nuevo.",
+    "fixViaCli": "Corregir con la CLI",
+    "copyRecord": "Copiar el registro {{type}} de {{name}}",
+    "nothingToFix": "Nada que corregir.",
+    "showPassed": "Mostrar otras {{count}} comprobaciones",
+    "hidePassed": "Ocultar otras comprobaciones",
+    "notFound": "Este dominio todavía no está asociado a una aplicación. Agrégalo primero a una aplicación y luego diagnostícalo.",
+    "failed": "No se pudo ejecutar el diagnóstico: {{message}}"
+  },
+  "appLimits": {
+    "title": "Tope de tamaño de solicitud",
+    "description": "Limita qué tan grande puede ser el cuerpo de una solicitud que acepta esta aplicación. El tamaño del encabezado y los tiempos de espera se aplican a todo el servidor.",
+    "body": "Tope del cuerpo de la solicitud",
+    "help": "En blanco usa el valor del servidor ({{instance}} MiB).",
+    "invalid": "Escribe un tamaño mayor que cero, o déjalo en blanco.",
+    "save": "Guardar tope",
+    "reset": "Usar el valor del servidor",
+    "saved": "Tope de tamaño de solicitud guardado."
+  },
+  "banner": {
+    "description": "Apunta tu propia dirección web a una aplicación. Los certificados HTTPS se configuran por ti.",
+    "diagram": {
+      "domain": "app.example.com",
+      "certificate": "certificado",
+      "server": "servidor",
+      "browser": "navegador"
+    },
+    "noApps": "Despliega primero una aplicación y luego apunta un dominio a ella.",
+    "noAppsAction": "Nueva aplicación"
+  },
+  "editor": {
+    "title": "Dominios",
+    "description": "Dominios enrutados a esta aplicación a través de la capa de ingress. Los ajustes de ACME de toda la plataforma y del dominio principal están en <link>Dominios</link>.",
+    "dnsHintLink": "Tipos de registros DNS explicados",
+    "dnsHint": "Apunta un registro A a la dirección IP de este servidor (o un CNAME a su nombre de host) y, cuando resuelva, se emitirá un certificado TLS automáticamente.",
+    "empty": "No hay dominios configurados.",
+    "inputLabel": "Dominio",
+    "inputPlaceholder": "app.example.com",
+    "remove": "Quitar dominio",
+    "tlsLabel": "Certificado TLS:",
+    "provisioning": "Aprovisionando",
+    "add": "Agregar dominio",
+    "save": "Guardar dominios",
+    "saving": "Guardando...",
+    "saved": "Dominios guardados.",
+    "errors": {
+      "required": "El dominio es obligatorio",
+      "invalid": "Escribe un dominio válido, p. ej. app.example.com"
+    }
+  },
+  "stepper": {
+    "title": "Pasos de configuración del dominio",
+    "step": {
+      "domain": "Dominio",
+      "records": "Registros DNS",
+      "check": "Comprobación en vivo",
+      "port": "Puerto del contenedor",
+      "certificate": "Certificado"
+    },
+    "port": {
+      "next": "El puerto es correcto, continuar"
+    },
+    "domain": {
+      "label": "Dominio",
+      "placeholder": "app.example.com",
+      "add": "Agregar y continuar",
+      "invalid": "Escribe un dominio válido, p. ej. app.example.com",
+      "offerPair": "¿Quieres también {{other}}? Puede redirigir aquí más adelante.",
+      "useOther": "Usar {{other}}",
+      "wildcard": "Los dominios comodín necesitan un proveedor de DNS conectado, porque el certificado se demuestra mediante DNS."
+    },
+    "records": {
+      "providerLabel": "¿Dónde está alojado tu DNS?",
+      "next": "Ya agregué los registros"
+    },
+    "provider": {
+      "cloudflare": "Cloudflare",
+      "route53": "Route 53",
+      "namecheap": "Namecheap",
+      "other": "Otro"
+    },
+    "hint": {
+      "cloudflare": "En Cloudflare, abre DNS y luego Registros. Pon el proxy en solo DNS (nube gris) hasta que se emita el certificado.",
+      "route53": "En Route 53, abre la zona alojada y crea el registro con un TTL de 300 o menos.",
+      "namecheap": "En Namecheap, abre Advanced DNS y agrega el registro. Host es solo el subdominio.",
+      "namecheapApex": "Usa @ como host para el dominio apex.",
+      "other": "Agrega el registro donde se administra el DNS de este dominio, normalmente tu registrador. Los nombres se muestran completos."
+    },
+    "check": {
+      "expected": "Esperado",
+      "resolved": "Resuelto",
+      "none": "nada todavía",
+      "recheck": "Volver a comprobar",
+      "next": "Continuar",
+      "propagation": "Los registros nuevos suelen verse en minutos, pero pueden tardar hasta unas horas. Esto vuelve a comprobar solo.",
+      "capped": "La comprobación automática se detuvo. Pulsa Volver a comprobar cuando tu cambio de DNS haya tenido tiempo de propagarse."
+    },
+    "cert": {
+      "pending": "Esperando el certificado",
+      "issued": "Certificado emitido",
+      "failed": "Falló el certificado",
+      "off": "Los certificados están desactivados para este dominio",
+      "reason": "Motivo",
+      "logs": "Abrir registros"
+    }
+  }
+}
