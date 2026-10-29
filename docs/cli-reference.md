@@ -216,8 +216,8 @@ levelrail-cli apps deploy <name> --image IMAGE [flags]
 levelrail-cli apps deploy-compose <name> --file compose.yaml [flags]
 levelrail-cli apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]
 levelrail-cli apps builds trigger <name> --repo URL --ref REF [flags]
-levelrail-cli apps rollback <name> [--image IMAGE] [flags]
-levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]
+levelrail-cli apps rollback <name> [--image IMAGE | --release RELEASE_ID] [flags]
+levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--release RELEASE_ID] [--preview] [flags]
 levelrail-cli apps wait <name> [--attempt-id ID] [--timeout 5m] [--poll-interval 3s] [flags]
 levelrail-cli apps restart <name> [flags]
 levelrail-cli apps apply <name> [flags]
@@ -239,7 +239,8 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps wait` polls until a deploy attempt converges and exits 0 on success, 5 if it converged as a failure, 6 on timeout. On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `restarted`; `--json` carries the same as `outcome`.
 - `apps deploy-spec` fans an app.yaml's `services:` map out into independent builds under one app; `apps group` shows a service's siblings under the same multi-service app.
 - `apps builds trigger` builds an image from a git source and deploys it to an existing app.
-- `apps promote` promotes the app's image onto a sibling app in another environment.
+- `apps promote` promotes the app's image onto a sibling app in another environment. `--release` promotes a specific release id from `releases list` instead of the one the app is bound to.
+- `apps rollback --release ID` redeploys that release by its digest pinned ref and retargets the binding. Both `--release` flags need `APP_RELEASE_BINDINGS=on` on the server and answer 404 for a release that does not belong to the app.
 - `apps apply` restarts an app so saved env, secret and config changes reach the running container; it does nothing when nothing is pending.
 - `apps scale` changes the replica count and/or the deploy strategy.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.

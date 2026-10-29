@@ -355,6 +355,8 @@ type DeployTriggerRequest struct {
 	OverrideReason string `json:"override_reason,omitempty"`
 	// QueueWhileOffline records the change as pending when the app's node is offline.
 	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
+	// ReleaseID deploys that release of the app (see "releases list").
+	ReleaseID string `json:"release_id,omitempty"`
 }
 
 // DeployTriggerResult mirrors internal/api's deployTriggerResult
@@ -1322,6 +1324,8 @@ type PromoteAppRequest struct {
 	Confirm    bool   `json:"confirm,omitempty"`
 	IncludeEnv bool   `json:"include_env,omitempty"`
 	Force      bool   `json:"force,omitempty"`
+	// ReleaseID promotes that release of the source app instead of its bound one.
+	ReleaseID string `json:"release_id,omitempty"`
 	// OverrideFreeze and OverrideReason bypass an active deploy freeze window.
 	OverrideFreeze bool   `json:"override_freeze,omitempty"`
 	OverrideReason string `json:"override_reason,omitempty"`

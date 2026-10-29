@@ -44,13 +44,15 @@ type deployTriggerRequest struct {
 	Rollback bool `json:"rollback,omitempty"`
 	// RerunOf is the deploy attempt of this app that this deploy retries.
 	RerunOf string `json:"rerun_of,omitempty"`
+	// ReleaseID deploys this release of the app, by its digest pinned ref.
+	ReleaseID string `json:"release_id,omitempty"`
 	// QueueWhileOffline accepts the change for an offline node as a pending
 	// attempt instead of refusing it.
 	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 	freezeOverride
 	policyOverride
-	// releaseID is set by a rollback while bindings are authoritative; it is
-	// never read from the request body.
+	// releaseID is set by a rollback while bindings are authoritative, after
+	// the ownership check on ReleaseID; it is never read from the body.
 	releaseID string
 }
 
@@ -103,6 +105,13 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	var req deployTriggerRequest
 	if !decodeReq(w, r, &req) {
 		return
+	}
+	if req.ReleaseID != "" {
+		rel, ok := rt.requestedRelease(w, r, name, req.ReleaseID)
+		if !ok {
+			return
+		}
+		req.Image, req.releaseID, req.Rollback = rel.ImageRef, rel.ID, false
 	}
 	if req.Image == "" {
 		writeError(w, http.StatusBadRequest, "image is required")
