@@ -81,8 +81,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploying and managing apps](/deploying-apps): Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
 - [Deploy from your computer](/deploy-from-cli): Deploy the current directory with one command, no git remote and no registry needed.
 - [Drop deploy for static sites](/drop-deploy): Drag a folder or a .zip onto a static site and it goes live, with no git and no build.
-- [UDP published ports](/udp-ports): Publish a UDP port from a compose service directly on the host, with the accepted syntax, safety rules, errors and what is not supported yet.
 - [Compose apps](/compose-apps): Run a Docker Compose file as one app with per-service status, start order, rollback to an earlier compose file, teardown, and installable templates.
+- [UDP published ports](/udp-ports): Publish a UDP port from a compose service directly on the host, with the accepted syntax, safety rules, errors and what is not supported yet.
 - [New app wizard](/new-app-wizard): How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
 - [Importing apps](/importing-apps): Import an app from a repo URL, a docker run command, an image, a compose file or a Dockerfile, review the deployment plan, then deploy it.
 - [Static pages](/pages): Deploy static HTML sites directly from git with no container, served by the embedded ingress with full TLS and domain routing.
@@ -119,6 +119,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Dashboard screenshots](/screenshots): Regenerate real dashboard screenshots from a live control plane with metrics and logs.
 - [Running Levelrail in Docker](/docker): Run Levelrail control plane and node agent as Docker containers.
 - [Zero-downtime deploys with Docker: readiness-gated cutover and rollback](/zero-downtime-deploys): How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images.
+- [Rollout control](/rollout-control): Tune rolling deploys with max_surge and max_unavailable, and protect running replicas with a min_available disruption budget.
 - [Preview environments per pull request on your own servers](/preview-environments): Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes.
 - [Deploy contexts: env and build settings per kind of deploy](/deploy-contexts): Set env vars and static build settings separately for pull request previews, branch deploys and specific branches, and see the effective config for any deploy.
 
@@ -149,11 +150,14 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Databases and storage
 
 - [Managing databases](/managing-databases): Create and manage databases with backups, point-in-time restore, and lifecycle management.
+- [postgres-pooler](/postgres-pooler)
 - [Database upgrades](/database-upgrades): Schedule automatic database upgrades with security checks and automatic rollback on failure.
 - [Database version catalog](/database-version-catalog): Where the database versions, release channels and end-of-life dates offered at create and upgrade time come from: a published, signed catalog file.
 - [External databases](/external-databases): Connect a database that already runs somewhere else, or adopt a running container, without moving or changing any data, and point apps at it.
 - [Connecting apps to databases](/connecting-apps-to-databases): Connect apps to multiple databases and view reachability badges.
 - [Backup targets, registry credentials, and app volume backups](/backups-and-storage): Configure backup targets, registry credentials, and automated backup schedules with retention policies.
+- [Backup copies](/backup-copies): Copy every new backup to a second destination after it lands in the first, track how far behind the copy is, and get alerted when it falls behind.
+- [Volume files](/volume-files): List, download, upload and delete single files in an app's named volume, and restore one file from a backup, without SSH.
 - [Prove your backups work](/prove-your-backups-work): Run restore drills to verify backups work before you need them.
 - [Object storage](/object-storage): Connect S3-compatible buckets for log archive, build cache, and backups.
 - [Network shares](/network-shares): Register and test network shares (NFS and CIFS) with the control plane.
@@ -168,6 +172,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Traffic export](/traffic-export): Stream one record per finished edge request to PostHog, an OpenTelemetry collector or your own webhook, without visitor identity by default and without ever slowing a request.
 - [Audit event schema](/audit-event-schema): The fields of an exported audit event and how Splunk, syslog and OpenTelemetry sinks map them.
 - [Control plane backup and restore](/control-plane-backup): Back up and restore the control plane's database with automatic snapshots and offline restore.
+- [Whole-server recovery](/whole-server-recovery): After restoring the control plane, pull every app volume and database back from its latest backup, with a dry-run plan and a per-resource report.
 - [Archives](/archives): Move cold audit events, deploy attempts and pipeline runs into compressed bundles instead of deleting them.
 - [Disaster recovery](/disaster-recovery): Encrypted off-box backups of the control plane database, master key escrow, offline restore and scheduled restore drills, with the threat model.
 - [Upgrade safely](/upgrade-safely): Upgrade the control plane safely with pre-flight checks and automatic rollback.
@@ -224,6 +229,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Integrations](/integrations): Attach curated third-party tools (PostHog, Sentry, Datadog, and more) to an app, injecting their env vars automatically at deploy time.
 - [Cloud integrations](/cloud-integrations): What works today with AWS, Google Cloud, Azure, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
 - [Rolling back the control plane](/rollback): How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server.
+- [Pre-deploy database snapshots](/predeploy-snapshot): Snapshot an app's linked databases before each deploy and roll back the code together with the data.
 - [Resilience: what survives a control plane crash](/resilience): What survives when the control plane process crashes, what does not, and why, measured with a real SIGKILL against a real control plane, not assumed.
 - [Resilience, in short](/resilience-summary): A short answer to what survives a control plane crash, with a link to the full measured page.
 - [Chaos test coverage](/chaos-coverage): Which failure scenarios have a test, what each test asserts, and whether it runs under -short with a fake Docker client or live against a real daemon.
@@ -271,14 +277,14 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [AI assistant integration: levelrail-mcp](/ai-assistant): Run levelrail-mcp over stdio for a local client or over the network for a remote MCP assistant, and how to scope the API token it uses.
 - [MCP tools, token budget and write mode](/mcp): The levelrail-mcp tool listing, token budget, read-only diagnostic tools, confirm-gated write tools behind --allow-write, and the prompt injection threat model.
-- [MCP recipes](/mcp-recipes): Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
+- [MCP recipes](/mcp-recipes): Real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
 - [In-app AI assistant chat](/ai-assistant-chat): The in-app AI assistant chat with your own key for Anthropic, OpenAI compatible, Gemini or self-hosted models, how to enable it behind the ai-chat experimental flag, and the confirmation gate that bounds what it can do.
 - [AI models](/ai-models): Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes, or small GGUF models on CPU with hard limits, as a first-class resource with an OpenAI-compatible endpoint protected by an API key.
 - [Load balancing across replicas](/load-balancing): Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status and config export.
 - [Platform as code](/platform-as-code): Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
 - [Stacks and GitOps](/stacks): Keep apps, databases and domains in git as a stack, review each change as a plan in the pull request, apply on merge, and roll back to any earlier revision.
 - [Resource advisor (beta)](/resource-advisor): The beta resource advisor suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes database settings from local telemetry.
-- [CLI console (beta)](/cli-console): The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a command allowlist, an audit row per line and no shell.
+- [CLI console (beta)](/cli-console): The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a reviewed command allowlist, an audit row per line and no shell.
 - [Feature flags](/feature-flags): Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 - [Log archive](/log-archive): Ship container logs to storage as compressed NDJSON on a schedule.
 - [Automatic cleanup](/janitor): Reclaim disk on the control plane node on a schedule, with preview and quarantine before anything is deleted.
@@ -292,6 +298,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [app.yaml reference](/app-spec-reference): Complete reference for app.yaml - the declarative app spec for Levelrail
 - [Feature catalog](/feature-catalog): Inventory of Levelrail's dashboard pages by area, with pointers to the generated API and CLI references.
 - [Levelrail CLI Reference](/cli-reference): Complete reference of all Levelrail CLI commands, organized by group with examples and typical use cases.
+- [kubectl style CLI verbs](/cli-kubectl-parity): Generic get, describe, delete, edit, port-forward and cp verbs, and how each maps onto the existing commands.
 - [Terminal UI](/cli-tui): Run Levelrail from the terminal with a live, keyboard-driven UI for apps, databases, deploys, nodes, domains, alerts and backups.
 - [Environment variables](/environment-variables): Reference for operator-facing APP_ environment variables not covered on feature pages, with defaults, units, and which component reads each one.
 - [Environment variables and secrets](/environment-and-secrets): Masking, reveal policies, and protection for app environment variables and secrets.

@@ -254,6 +254,17 @@ func registerExpansionReadTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	addTool(server, &mcp.Tool{
+		Name:        "get_template_upgrade_plan",
+		Description: "Risk, blockers and per-service changes if an app from a catalog template moved to the current template. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.TemplateUpgradePlan, error) {
+		r, err := client.GetTemplateUpgradePlan(ctx, in.Name)
+		if err != nil {
+			return nil, apiclient.TemplateUpgradePlan{}, fmt.Errorf("get template upgrade plan: %w", err)
+		}
+		return nil, r, nil
+	})
+
+	addTool(server, &mcp.Tool{
 		Name:        "list_node_moves",
 		Description: "Status of app and database moves between nodes: phase, status, error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in nodeMovesInput) (*mcp.CallToolResult, nodeMovesOutput, error) {

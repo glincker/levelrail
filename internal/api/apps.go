@@ -1182,6 +1182,8 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
 		return
+	} else if writeDisruption(w, rt.checkDisruption(r, *svc, disruptionRestart)) {
+		return
 	}
 
 	if err := rt.apps.RestartService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
@@ -1213,8 +1215,10 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil && rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
-		return
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) || writeDisruption(w, rt.checkDisruption(r, *svc, disruptionStop)) {
+			return
+		}
 	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, true); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

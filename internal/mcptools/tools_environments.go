@@ -11,7 +11,7 @@ import (
 func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_environments",
-		Description: "List a project's staging/production-style environment labels: name and whether it's protected (deploying into a protected environment requires the caller to pass confirm=true to deploy_app/rollback_app).",
+		Description: "List a project's environments: name and whether protected (deploying into one needs confirm=true on deploy_app or rollback_app).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in projectIDInput) (*mcp.CallToolResult, []apiclient.EnvironmentResource, error) {
 		environments, err := client.ListEnvironments(ctx, in.ProjectID)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "clone_environment",
-		Description: "Clone an environment into the same project, with a deployed copy of every app in it. Domains and host ports are not copied; secrets are declared empty unless copy_secret_values is true. Asynchronous: watch each app with get_app_status.",
+		Description: "Clone an environment into the same project with a deployed copy of every app. Domains and host ports are not copied; secrets stay empty unless copy_secret_values is true. Asynchronous.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentInput) (*mcp.CallToolResult, apiclient.EnvironmentCloneResultResource, error) {
 		result, err := client.CloneEnvironment(ctx, in.EnvironmentID, apiclient.EnvironmentCloneRequest{
 			NewEnvironmentName: in.NewEnvironmentName,

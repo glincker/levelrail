@@ -36,7 +36,7 @@ Commands:
   rollback           roll the binary back to the previous release
   self-upgrade       upgrade this binary in place
   restore-point      restore a pre-upgrade restore point (binary, unit file, database if needed)
-  upgrade-note       show release notes for the pending upgrade
+  upgrade-note       record a manual binary swap in upgrade history
   retain             manage retained releases
   migrate-check      check pending schema migrations
 

@@ -48,6 +48,9 @@ func (db *DB) UpsertConditions(ctx context.Context, controllerName string, condi
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
+	if err := recordAppStatusChange(ctx, tx, controllerName, string(data)); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO reconcile_status (controller_name, condition_type, status, reason, message, updated_at)
 		SELECT ?, json_extract(value, '$.t'), json_extract(value, '$.s'), json_extract(value, '$.r'), json_extract(value, '$.m'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')

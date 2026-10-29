@@ -147,3 +147,23 @@ func TestRun_AppsDomainsAddAndConflict(t *testing.T) {
 		t.Errorf("conflict: code=%d stderr=%q", code, errOut.String())
 	}
 }
+
+func TestRun_AppsStatusFallsBackWhenStatusRouteFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/status"):
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error":"boom"}`))
+		case strings.HasSuffix(r.URL.Path, "/deploys"):
+			_, _ = w.Write([]byte(`[{"Type":"Ready","Status":"True","Reason":"Running"}]`))
+		default:
+			_, _ = w.Write([]byte(`{"name":"web"}`))
+		}
+	}))
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "status", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "Running") {
+		t.Errorf("stdout = %s", stdout)
+	}
+}

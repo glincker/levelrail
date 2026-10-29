@@ -372,6 +372,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 ```
 
 - `apps exec` runs a command in the app's container and exits with its real exit code.
+- `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
@@ -2014,3 +2015,16 @@ The complete feature overview.
 
 </Card>
 </CardGroup>
+
+## kubectl style commands
+
+```
+levelrail-cli explain app.spec.service
+levelrail-cli api-resources
+levelrail-cli rollout status|history|undo|restart <app>
+levelrail-cli config get-contexts|current-context|use-context <name>
+levelrail-cli -n <project> apps list
+levelrail-cli -A apps list
+```
+
+`explain` documents a resource kind or field from the embedded schema and works offline; `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.

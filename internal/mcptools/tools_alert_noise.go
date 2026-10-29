@@ -59,7 +59,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "create_alert_silence",
-		Description: "Silence alerts matching every given filter for a duration. At least one filter is required. Alerts still evaluate and appear in alert history as silenced; only notifications stop. Undo with expire_alert_silence.",
+		Description: "Silence alerts matching every given filter (at least one) for a duration. Alerts still evaluate; only notifications stop. Undo with expire_alert_silence.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in createSilenceInput) (*mcp.CallToolResult, apiclient.SilenceResource, error) {
 		m := apiclient.SilenceMatchers{RuleIDs: in.RuleIDs, Apps: in.Apps, Nodes: in.Nodes, Kinds: in.Kinds, Severities: in.Severities, Labels: in.Labels}
 		out, err := client.CreateAlertSilence(ctx, apiclient.CreateSilenceRequest{Matchers: m, Duration: in.Duration, Reason: in.Reason})

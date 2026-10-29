@@ -1,0 +1,15 @@
+id: gatus
+name: Gatus
+description: "Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services."
+icon: heartbeat
+category: Monitoring
+documentation_url: https://github.com/TwiN/gatus#configuration
+recommended_memory_bytes: 67108864
+domains:
+  - service: gatus
+    port: 8080
+    description: Public address of the status page.
+healthcheck:
+  service: gatus
+  port: 8080
+  path: /health

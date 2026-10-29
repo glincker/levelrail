@@ -64,24 +64,32 @@ type databaseResource struct {
 	Suspended bool `json:"suspended,omitempty"`
 	// TLSEnabled is computed on read and not settable, since TLS activates automatically at creation.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
+	// PoolerEnabled is response-only; set it via POST and DELETE .../pooler.
+	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
+	// PoolerPoolSize and PoolerMaxClientConn are response-only per-database overrides.
+	PoolerPoolSize      int `json:"pooler_pool_size,omitempty"`
+	PoolerMaxClientConn int `json:"pooler_max_client_conn,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 	return databaseResource{
-		Name:               d.Name,
-		Engine:             d.Engine,
-		Version:            d.Version,
-		NodeID:             d.NodeID,
-		ProjectID:          d.ProjectID,
-		BackupTargetID:     d.BackupTargetID,
-		BackupSchedule:     d.BackupSchedule,
-		BackupRetain:       d.BackupRetain,
-		BackupRetainDays:   d.BackupRetainDays,
-		PubliclyAccessible: d.PubliclyAccessible,
-		PublicPort:         d.PublicPort,
-		PublicBindAddress:  d.PublicBindAddress,
-		Resources:          d.Resources,
-		Suspended:          d.Suspended,
+		Name:                d.Name,
+		Engine:              d.Engine,
+		Version:             d.Version,
+		NodeID:              d.NodeID,
+		ProjectID:           d.ProjectID,
+		BackupTargetID:      d.BackupTargetID,
+		BackupSchedule:      d.BackupSchedule,
+		BackupRetain:        d.BackupRetain,
+		BackupRetainDays:    d.BackupRetainDays,
+		PubliclyAccessible:  d.PubliclyAccessible,
+		PublicPort:          d.PublicPort,
+		PublicBindAddress:   d.PublicBindAddress,
+		Resources:           d.Resources,
+		Suspended:           d.Suspended,
+		PoolerEnabled:       d.PoolerEnabled,
+		PoolerPoolSize:      d.PoolerPoolSize,
+		PoolerMaxClientConn: d.PoolerMaxClientConn,
 	}
 }
 
@@ -192,6 +200,20 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	dbs = visibleDBs
+	match, err := rt.labelFilter(r, store.LabelKindDatabase)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if match != nil {
+		labelled := dbs[:0:0]
+		for _, d := range dbs {
+			if match(d.Name) {
+				labelled = append(labelled, d)
+			}
+		}
+		dbs = labelled
+	}
 	if project := r.URL.Query().Get("project"); project != "" {
 		inProject := dbs[:0:0]
 		for _, d := range dbs {

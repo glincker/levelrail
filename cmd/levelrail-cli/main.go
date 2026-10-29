@@ -25,13 +25,13 @@ func main() {
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	rawLookupEnv = lookupEnv
-	lookupEnv = envAliasLookup(lookupEnv)
+	lookupEnv = currentContextLookup(prog, envAliasLookup(lookupEnv))
 	ciMode = forceCI || ciEnv(rawLookupEnv)
 	if colorDisabled(rawLookupEnv, ciMode) {
 		_ = os.Setenv(envNoColor, "1")
 	}
 	args, debug := extractDebugFlag(args)
-	args, scopeFlags = extractScopeFlags(args)
+	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
 	if debug {
@@ -86,6 +86,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAliasedDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAliasedRollback(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restart":
+		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "databases", "db":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "functions":
@@ -118,6 +120,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runArchive(prog, args[1:], stdout, stderr, lookupEnv)
 	case "control-plane-backups":
 		return runControlPlaneBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "control-plane":
+		return runControlPlane(prog, args[1:], stdout, stderr, lookupEnv)
 	case "app-volume-backups":
 		return runAppVolumeBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cloudflare-tunnel":
@@ -252,6 +256,28 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runProxy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-engine":
 		return runAuthEngine(prog, args[1:], stdout, stderr, lookupEnv)
+	case "explain":
+		return runExplain(prog, args[1:], stdout, stderr, lookupEnv)
+	case "api-resources":
+		return runAPIResources(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollout":
+		return runRollout(prog, args[1:], stdout, stderr, lookupEnv)
+	case "get":
+		return runGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "label":
+		return runLabel(prog, args[1:], stdout, stderr, lookupEnv)
+	case "describe":
+		return runDescribe(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "edit":
+		return runEdit(prog, args[1:], stdout, stderr, lookupEnv)
+	case "port-forward":
+		return runPortForward(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cp":
+		return runCp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "config":
+		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":
@@ -368,6 +394,7 @@ Usage:
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s deploy <name> [flags]        convenience alias for apps deploy
   %[1]s rollback <name> [flags]      convenience alias for apps rollback
+  %[1]s restart <name> [--wait]      convenience alias for apps restart
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
@@ -467,11 +494,22 @@ Usage:
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|install|status|apply|verify|disable [flags] let this server manage its routes in that proxy (Traefik)
+  %[1]s explain <kind[.field]>                                 document a resource kind or field from the embedded schema
+  %[1]s api-resources                                         list resource kinds
+  %[1]s rollout status|history|undo|restart <app>             kubectl style aliases over deploy commands
+  %[1]s config get-contexts|current-context|use-context       switch between saved profiles
+  %[1]s get <kind> [name] [-o wide|json|yaml|name] [-l SEL]   list or show apps, databases and nodes
+  %[1]s describe <kind> <name>                                 one resource with conditions and recent events
+  %[1]s delete <kind> <name> [--yes]                           delete an app or a database
+  %[1]s edit app <name> [--yes]                                edit the app document in $EDITOR and apply it
+  %[1]s port-forward <app|db/name> [LOCAL:]REMOTE              friendly alias over the app and database tunnels
+  %[1]s cp <app/volume:path> <local>                           copy a file to or from an app volume
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s archive ls|create|restore|verify|download|delete|policy [flags]   archive cold audit, deploy and pipeline rows into bundles and bring them back
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
+  %[1]s control-plane rehydrate plan|run|status [flags]   whole-server recovery: restore data for every app, database and volume
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts

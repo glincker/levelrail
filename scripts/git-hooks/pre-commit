@@ -65,10 +65,36 @@ fi
 if [ -z "$go_pkg_dirs" ]; then
 	echo "no staged Go files, lint skipped"
 elif command -v golangci-lint >/dev/null; then
-	# shellcheck disable=SC2086
-	if ! GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run --new-from-rev=HEAD $go_pkg_dirs; then
+	# Parallel runners are allowed so agents never queue behind each other; the
+	# cache is shared across worktrees (its writes are atomic). If an older
+	# binary still reports the single-run lock, wait a bounded time and retry,
+	# then fail loudly: lint is never skipped silently.
+	lint_cache="${LEVELRAIL_LINT_CACHE:-$(git rev-parse --path-format=absolute --git-common-dir)/golangci-lint-cache}"
+	lint_wait="${APP_LINT_LOCK_WAIT_SECONDS:-300}"
+	lint_log="$(mktemp)"
+	lint_start="$(date +%s)"
+	while :; do
+		# shellcheck disable=SC2086
+		GOLANGCI_LINT_CACHE="$lint_cache" golangci-lint run --allow-parallel-runners --new-from-rev=HEAD $go_pkg_dirs >"$lint_log" 2>&1
+		lint_rc=$?
+		cat "$lint_log"
+		if [ "$lint_rc" -eq 0 ]; then
+			break
+		fi
+		if grep -q "parallel golangci-lint is running" "$lint_log"; then
+			if [ $(($(date +%s) - lint_start)) -ge "$lint_wait" ]; then
+				echo "golangci-lint lock still held after ${lint_wait}s (APP_LINT_LOCK_WAIT_SECONDS), lint NOT run, commit aborted."
+				fail=1
+				break
+			fi
+			echo "golangci-lint lock held by another run, retrying in 5s (limit ${lint_wait}s)"
+			sleep 5
+			continue
+		fi
 		fail=1
-	fi
+		break
+	done
+	rm -f "$lint_log"
 else
 	echo "golangci-lint not installed, skipping (CI still enforces this)"
 fi

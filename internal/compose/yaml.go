@@ -7,6 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -23,8 +24,8 @@ type rawFile struct {
 	// just their keys (same reasoning as Networks): File.HasSecrets/
 	// HasConfigs only need to know either block was declared at all, not
 	// its shape.
-	Secrets map[string]struct{} `yaml:"secrets"`
-	Configs map[string]struct{} `yaml:"configs"`
+	Secrets map[string]struct{}  `yaml:"secrets"`
+	Configs map[string]rawConfig `yaml:"configs"`
 }
 
 type rawService struct {
@@ -44,6 +45,7 @@ type rawService struct {
 	Deploy      *Deploy           `yaml:"deploy"`
 	Secrets     []any             `yaml:"secrets"`
 	Configs     []any             `yaml:"configs"`
+	Files       []spec.File       `yaml:"-"`
 	Profiles    []string          `yaml:"profiles"`
 	MemLimit    yamlScalarString  `yaml:"mem_limit"`
 	CPUs        yamlScalarString  `yaml:"cpus"`
@@ -52,6 +54,8 @@ type rawService struct {
 	Strategy    string            `yaml:"x-levelrail-strategy"`
 	// StrategyReason is shown next to the strategy so an operator knows why a template pinned it.
 	StrategyReason string `yaml:"x-levelrail-strategy-reason"`
+	// PlatformProbe replaces healthcheck: with a probe run from outside the container.
+	PlatformProbe *spec.PlatformProbe `yaml:"x-levelrail-healthcheck"`
 	// DependsOnHealthy is filled by Parse from depends_on's long form.
 	DependsOnHealthy []string `yaml:"-"`
 	// DependsOnCompleted is filled by Parse from depends_on's long form.

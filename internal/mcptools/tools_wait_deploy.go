@@ -73,7 +73,7 @@ func waitDeploy(ctx context.Context, client *apiclient.Client, name, deployID st
 func registerWaitDeployTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "wait_for_deploy",
-		Description: "Wait for a deploy to finish: returns healthy, failed, canceled, superseded or blocked (with the failure). Blocks about 55 seconds; if still running returns in_progress with poll_again and deploy_id, so call again.",
+		Description: "Wait for a deploy to finish: healthy, failed, canceled, superseded or blocked (with the failure). Blocks about 55 seconds; returns in_progress if still running, call again.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in waitForDeployInput) (*mcp.CallToolResult, waitForDeployOutput, error) {
 		out, err := waitDeploy(ctx, client, in.Name, in.DeployID, in.MaxWaitSeconds)
 		if err != nil {

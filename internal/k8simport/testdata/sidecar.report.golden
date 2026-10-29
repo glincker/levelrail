@@ -1,0 +1,3 @@
+changes-behavior Deployment/api spec.template.spec.containers[1]: sidecar "proxy" is not imported: containers of a pod share localhost, which services here do not; run it as its own app
+changes-behavior Deployment/api spec.template.spec.initContainers[0]: init container "wait" does not run: move its work into the image or a pre-deploy hook
+changes-behavior HorizontalPodAutoscaler/api : kind is not supported by the importer and was skipped

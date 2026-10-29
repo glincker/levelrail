@@ -140,6 +140,10 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRead, rt.handleGetBackupTargetEncryption))
 	mux.HandleFunc("PUT /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRoot, rt.handleSetBackupTargetEncryption))
 	mux.HandleFunc("POST /api/v1/backup-targets/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBackupTarget))
+	// Second-destination copies: choosing where backups are mirrored is a sensitive write, listing is a read.
+	mux.HandleFunc("GET /api/v1/backups/copy-settings", rt.requireAbility(AbilityRead, rt.handleGetBackupCopySettings))
+	mux.HandleFunc("PUT /api/v1/backups/copy-settings", rt.requireAbility(AbilityWriteSensitive, rt.handleSetBackupCopySettings))
+	mux.HandleFunc("GET /api/v1/backups/copies", rt.requireAbility(AbilityRead, rt.handleListBackupCopies))
 
 	// Registry credentials (registry_credentials.go): same ability tiers
 	// as backup targets just above, same reasoning (POST/PUT/DELETE

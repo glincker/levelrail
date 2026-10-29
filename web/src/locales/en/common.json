@@ -40,7 +40,8 @@
     "rerunOf": "Retry of {{id}}",
     "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran",
     "current": "Current",
-    "rollbackBadge": "Rollback"
+    "rollbackBadge": "Rollback",
+    "outcomeFailed": "Not serving"
   },
   "actions": {
     "copy": "Copy",
@@ -795,6 +796,7 @@
       "safety": "Sets how long a new release must stay healthy before the old one is retired.",
       "watch": "Keeps watching a release after it goes live and rolls back if it degrades.",
       "autoRollback": "Redeploys the last working image when a crashloop alert fires.",
+      "predeploySnapshot": "Backs up linked databases before each deploy so a rollback can restore the data too.",
       "sloBurn": "Rolls back automatically when the error budget burns too fast after a deploy.",
       "canary": "Sends a small share of traffic to a new image before everyone gets it.",
       "freeze": "Blocks automatic deploys during windows you choose, such as a holiday.",
@@ -964,5 +966,24 @@
     "stillStoppingToast": "\"{{name}}\" is still stopping",
     "viewLogs": "View logs",
     "starting": "Starting \"{{name}}\"."
+  },
+  "resourceLabels": {
+    "title": "Labels",
+    "description": "Free-form key and value pairs for grouping and filtering. They do not change how the resource runs.",
+    "empty": "No labels yet.",
+    "edit": "Edit labels",
+    "save": "Save labels",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "saved": "Labels saved",
+    "keyPlaceholder": "key",
+    "valuePlaceholder": "value",
+    "add": "Add label",
+    "remove": "Remove label {{key}}",
+    "duplicate": "Each key can be used once.",
+    "incomplete": "Fill in both the key and the value, or remove the row.",
+    "filterLabel": "Filter by label",
+    "filterPlaceholder": "env=prod,tier!=db",
+    "filterInvalid": "That selector could not be read."
   }
 }

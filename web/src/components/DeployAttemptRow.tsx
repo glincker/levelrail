@@ -13,6 +13,7 @@ import {
   ArrowSquareOutIcon,
   LockSimpleIcon,
   WarningCircleIcon,
+  DatabaseIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
@@ -29,6 +30,7 @@ import {
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
 import { CancelDeployDialog } from './CancelDeployDialog'
+import { RollbackWithDataDialog } from './RollbackWithDataDialog'
 import { DeployFailureActions } from './DeployFailureActions'
 import { DeployFailureDetails } from './DeployFailureDetails'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
@@ -98,6 +100,7 @@ export function DeployAttemptRow({
   const rollbackTo = useRollbackToDeploy(appName)
   const { publish, rollbackAndLock } = usePublishLockActions(appName)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [dataDialogOpen, setDataDialogOpen] = useState(false)
   const isCancelable =
     attempt.status === 'queued' ||
     attempt.status === 'running' ||
@@ -223,6 +226,19 @@ export function DeployAttemptRow({
           },
         ]
       : []),
+    ...(attempt.status === 'succeeded'
+      ? [
+          {
+            id: 'rollback-with-data',
+            label: t('rollbackWithData.menuLabel', { ns: 'deploys' }),
+            description: t('rollbackWithData.menuHint', { ns: 'deploys' }),
+            icon: <DatabaseIcon className="size-4" />,
+            onSelect: () => {
+              setDataDialogOpen(true)
+            },
+          },
+        ]
+      : []),
     ...(isCancelable
       ? [
           {
@@ -317,6 +333,15 @@ export function DeployAttemptRow({
           {attempt.trigger === 'rollback' ? (
             <Badge variant="muted" className="shrink-0">
               {t('deployHistory.rollbackBadge')}
+            </Badge>
+          ) : null}
+          {attempt.outcome === 'failed' && attempt.status !== 'failed' ? (
+            <Badge
+              variant="destructive"
+              className="shrink-0"
+              title={attempt.outcome_reason}
+            >
+              {t('deployHistory.outcomeFailed')}
             </Badge>
           ) : null}
           {stageLabel ? (
@@ -517,6 +542,15 @@ export function DeployAttemptRow({
           running={attempt.status === 'running'}
           open={cancelDialogOpen}
           onOpenChange={setCancelDialogOpen}
+        />
+      ) : null}
+      {attempt.status === 'succeeded' && dataDialogOpen ? (
+        <RollbackWithDataDialog
+          appName={appName}
+          deployId={attempt.id}
+          protectedEnv={protectedEnv?.protected === true}
+          open={dataDialogOpen}
+          onOpenChange={setDataDialogOpen}
         />
       ) : null}
     </li>

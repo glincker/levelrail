@@ -1,0 +1,27 @@
+{
+  "changes": [
+    {
+      "kind": "Database",
+      "name": "main-db",
+      "action": "update",
+      "fields": [
+        {
+          "path": "pooler.enabled",
+          "op": "change",
+          "old": "false",
+          "new": "true"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 1,
+    "delete": 0,
+    "noop": 0,
+    "error": 0
+  },
+  "hash": "c41ed6498dae64be"
+}

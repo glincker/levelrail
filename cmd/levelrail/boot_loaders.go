@@ -216,6 +216,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithSpendCapStore(db),
 		deploy.WithAutoscaleStore(db, autoscale.CeilingFromEnv(autoscale.OSEnv)),
 		deploy.WithCanaryPolicyStore(db),
+		deploy.WithRolloutPolicyStore(db),
 		deploy.WithJobStore(db),
 		deploy.WithOrderedStore(db),
 		deploy.WithAttemptRecorder(db),

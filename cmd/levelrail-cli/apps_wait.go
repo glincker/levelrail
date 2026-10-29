@@ -21,6 +21,8 @@ type rolloutOutcome struct {
 	// result says what a succeeded rollout actually did: rolloutRolledOut,
 	// rolloutUpToDate or rolloutRestarted. Empty unless state is "succeeded".
 	result string
+	// reason is the server's one-line why, set only when it supplied an outcome.
+	reason string
 }
 
 // What a succeeded rollout did, reported instead of the raw Ready reason
@@ -111,6 +113,28 @@ var rolloutDoneReasons = map[string]bool{
 
 // Pure: a failure reason at or after FinishedAt beats a done reason; no FinishedAt means pending.
 func computeRolloutOutcome(attempt deployAttemptResource, conditions []conditionResource) rolloutOutcome {
+	if o, ok := serverRolloutOutcome(attempt); ok {
+		return o
+	}
+	return localRolloutOutcome(attempt, conditions)
+}
+
+// serverRolloutOutcome trusts the outcome the server computed; ok is false
+// for an older server that sends none.
+func serverRolloutOutcome(attempt deployAttemptResource) (rolloutOutcome, bool) {
+	switch attempt.Outcome {
+	case apiclient.DeployOutcomeHealthy:
+		return rolloutOutcome{state: "succeeded", reason: attempt.OutcomeReason}, true
+	case apiclient.DeployOutcomeInProgress:
+		return rolloutOutcome{state: "pending", reason: attempt.OutcomeReason}, true
+	case "failed", "canceled", "superseded", "blocked":
+		return rolloutOutcome{state: "failed", reason: attempt.OutcomeReason}, true
+	}
+	return rolloutOutcome{}, false
+}
+
+// localRolloutOutcome is the older-server fallback.
+func localRolloutOutcome(attempt deployAttemptResource, conditions []conditionResource) rolloutOutcome {
 	if attempt.Status == "failed" || attempt.Status == "canceled" || attempt.Status == "superseded" {
 		return rolloutOutcome{state: "failed"}
 	}
@@ -293,6 +317,8 @@ func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	result := waitResult{App: name, Status: outcome.state, Outcome: outcome.result, Detail: outcome.condition}
 	if outcome.condition != nil {
 		result.Reason = outcome.condition.Reason
+	} else if outcome.state == "failed" {
+		result.Reason = outcome.reason
 	}
 	_ = renderResult(stdout, of.Format, of.Query, result, func() {
 		if outcome.state == "succeeded" {
@@ -301,6 +327,8 @@ func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			_, _ = fmt.Fprintf(stdout, "%q failed to converge (%s)\n", name, result.Reason)
 			if outcome.condition != nil && outcome.condition.Message != "" {
 				_, _ = fmt.Fprintf(stdout, "reason: %s\n", outcome.condition.Message)
+			} else if outcome.condition == nil && outcome.reason != "" {
+				_, _ = fmt.Fprintf(stdout, "reason: %s\n", outcome.reason)
 			}
 		}
 	})

@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 )
 
@@ -31,6 +32,33 @@ func crashLoopLine(conditions []conditionResource, forCrash bool) string {
 	return ""
 }
 
+// fetchAppStatus prefers the status route and falls back to the bare
+// conditions list when it fails or reports nothing, so older servers keep working.
+func fetchAppStatus(ctx context.Context, client *Client, name string) (apiclient.AppStatus, error) {
+	st, err := client.GetAppStatus(ctx, name)
+	if err == nil && (len(st.Conditions) > 0 || st.Outcome != "") {
+		return st, nil
+	}
+	conds, cerr := client.GetDeployStatus(ctx, name)
+	if cerr != nil {
+		return st, err
+	}
+	st.Conditions = conds
+	return st, nil
+}
+
+// statusOutcomeLine prints the server's reason when it sent an outcome and
+// only then falls back to the local crash-loop wording.
+func statusOutcomeLine(st apiclient.AppStatus, conditions []conditionResource) string {
+	if st.Outcome == "" {
+		return crashLoopLine(conditions, false)
+	}
+	if st.Outcome == apiclient.DeployOutcomeHealthy || st.OutcomeReason == "" {
+		return ""
+	}
+	return fmt.Sprintf("latest deploy %s: %s", st.Outcome, st.OutcomeReason)
+}
+
 // Separate from apps get: its --json shape is a stable script contract that must not gain conditions.
 func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps status", "print conditions as a JSON array to stdout and nothing else", stderr)
@@ -44,14 +72,15 @@ func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return exitCode
 	}
 
-	conditions, err := client.GetDeployStatus(context.Background(), name)
+	status, err := fetchAppStatus(context.Background(), client, name)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get status for app %q: %w", name, err))
 	}
+	conditions := status.Conditions
 
 	return writeScheduledTaskResult(stdout, stderr, of, conditions, func() {
 		printConditionsHuman(stdout, conditions)
-		if line := crashLoopLine(conditions, false); line != "" {
+		if line := statusOutcomeLine(status, conditions); line != "" {
 			_, _ = fmt.Fprintf(stdout, "\n%s\n", line)
 		}
 		printStatusExtras(context.Background(), client, prog, name, stdout, conditions)

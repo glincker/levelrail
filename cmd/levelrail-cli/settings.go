@@ -30,6 +30,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsAIAssistant(prog, args[1:], stdout, stderr, lookupEnv)
 	case "updates":
 		return runSettingsUpdates(prog, args[1:], stdout, stderr, lookupEnv)
+	case "heartbeat":
+		return runSettingsHeartbeat(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-freeze":
 		return runSettingsDeployFreeze(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domain-automation":
@@ -67,6 +69,7 @@ func settingsUsage(prog string) string {
   %[1]s settings domain-automation get|set [flags]        the add-a-domain-and-go-live policy
   %[1]s settings beta-features list|set <feature> on|off   gated features, switch one (saved at once)
   %[1]s settings profile get|set minimal|standard|suite   the server profile: which optional subsystems start
+  %[1]s settings heartbeat show|set|clear [flags]        dead-man ping to an external monitor
   %[1]s settings deploy-freeze show [flags]             show the fleet-wide deploy freeze windows
   %[1]s settings deploy-freeze set --cron EXPR --duration D [flags]   replace them with one window
   %[1]s settings deploy-freeze clear [flags]              clear the fleet-wide freeze windows

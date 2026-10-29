@@ -122,12 +122,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/heartbeat"
 	"github.com/GLINCKER/levelrail/internal/imagelife"
 	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/plugin"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
+	"github.com/GLINCKER/levelrail/internal/rehydrate"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/upgradesched"
 	"github.com/GLINCKER/levelrail/kit/dockerhub"
@@ -544,6 +546,7 @@ type Router struct {
 	backupHistory                BackupHistoryStore                                                                  // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                 BackupRunner                                                                        // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader             BackupDownloader                                                                    // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
+	predeploySnapshots           PredeploySnapshotStore                                                              // nil is valid: the snapshot routes return 501 and deploys skip the snapshot step
 	backupDeleter                BackupDeleter                                                                       // nil is valid: DELETE .../backups/{historyId} returns 501, same shape as backupDownloader above
 	backupVerifications          BackupVerificationStore                                                             // always set, same "core Store interface" shape as backupHistory above: listing verification attempts needs no runner configuration, only triggering a new one does
 	backupVerifier               BackupVerifier                                                                      // nil is valid: POST .../backups/{historyId}/verify returns 501, same shape as backupRunner above
@@ -573,6 +576,7 @@ type Router struct {
 	deployAttempts               DeployAttemptStore                                                                  // always set, same "core Store interface" shape as certs/staticSites above
 	probeAttempts                ProbeAttemptStore                                                                   // always set, same "core Store interface" shape as deployAttempts above
 	buildStartMu                 sync.Mutex                                                                          // serializes the running-attempt check and row insert in handleTriggerBuild
+	templateUpgrades             templateUpgradeRuns                                                                 // zero value is ready: in-flight and last template upgrade per app
 	cancels                      *deploy.CancelRegistry                                                              // always set by NewRouter: in-flight deploys an operator can cancel
 	startingDeploys              map[string]int                                                                      // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
 	deployMaxConcurrent          int                                                                                 // 0 means unlimited, set via WithDeployMaxConcurrent
@@ -741,6 +745,7 @@ type Router struct {
 	doctorHTTPPort               int                      // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
 	doctorHTTPSPort              int                      // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookBodies                webhookBodySeen          // recent signed webhook bodies, replay guard
+	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
@@ -854,8 +859,12 @@ type Router struct {
 	archiveSettings     ArchiveSettingsStore
 	archiveWake         chan struct{}
 	archiveWakeOnce     sync.Once
-	cpBackupScheduleOff bool           // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
-	cpDR                ControlPlaneDR // nil is valid: /system/control-plane-dr routes return 501
+	cpBackupScheduleOff bool               // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
+	cpDR                ControlPlaneDR     // nil is valid: /system/control-plane-dr routes return 501
+	rehydrateStore      rehydrate.RunStore // nil keeps whole-server recovery reports in memory
+	rehydrateOnce       sync.Once
+	rehydrateSvc        *rehydrate.Service
+	rehydrateErr        error
 
 	authEngine   *authengine.Engine // set by WithAuthEngine, or built by NewRouter when absent
 	libSessions  *authengine.Sessions
@@ -879,6 +888,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
+		predeploySnapshots:          predeployStoreOf(s),
 		logger:                      logger,
 		cancels:                     deploy.NewCancelRegistry(),
 		startingDeploys:             map[string]int{},

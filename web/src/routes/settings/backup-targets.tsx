@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { backupTargetListQueryOptions } from '../../queries/backupTargets'
 import { BackupTargetTable } from '../../components/BackupTargetTable'
+import { BackupCopiesSection } from '../../components/BackupCopiesSection'
 import { CreateBackupTargetDialog } from '../../components/CreateBackupTargetDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
@@ -56,6 +57,7 @@ function BackupTargetsPage() {
         targets={targets}
         action={<CreateBackupTargetDialog />}
       />
+      {targets.length > 1 ? <BackupCopiesSection targets={targets} /> : null}
     </PageTemplate>
   )
 }

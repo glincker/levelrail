@@ -94,6 +94,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleTriggerDeploy)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/from-cache", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeployFromCache))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/status", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppStatus))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackToDeploy)))
@@ -195,6 +196,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// WebSocket rather than SSE, which that file's own doc comment
 	// argues for at length.
 	mux.HandleFunc("GET /api/v1/apps/{name}/terminal", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleAppTerminal))
+	mux.HandleFunc("GET /api/v1/apps/{name}/tunnel", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleAppTunnel))
 
 	// Exec access opt-out: a second gate checked by exec and terminal on top of AbilityRoot.
 	// GET is AbilityRead; PUT is AbilityRoot, since re-enabling hands back a root capability.

@@ -1,0 +1,26 @@
+version: 1
+kind: Project
+metadata:
+  name: kubernetes
+spec: {}
+---
+version: 1
+kind: Environment
+metadata:
+  name: default
+spec:
+  project: kubernetes
+---
+version: 1
+kind: App
+metadata:
+  name: api
+spec:
+  project: kubernetes
+  environment: default
+  service:
+    build:
+      type: image
+      image: example/api:3
+    port: 8080
+    replicas: 1

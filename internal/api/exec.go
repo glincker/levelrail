@@ -8,6 +8,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +17,22 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// Exec waits this long for a restarting app to come back before answering 409.
+const (
+	envExecWaitForRunning  = "APP_EXEC_WAIT_FOR_RUNNING_SECONDS"
+	defaultExecWaitSeconds = 30
+	execRetryAfterSeconds  = 5
+	execWaitPollInterval   = time.Second
+)
+
+// execWaitForRunning reads the wait from env; 0 turns waiting off.
+func execWaitForRunning() time.Duration {
+	if n, err := strconv.Atoi(os.Getenv(envExecWaitForRunning)); err == nil && n >= 0 {
+		return time.Duration(n) * time.Second
+	}
+	return defaultExecWaitSeconds * time.Second
+}
 
 // This file implements POST /api/v1/apps/{name}/exec: a non-interactive,
 // run-and-return-output exec into an app's currently running container.
@@ -333,20 +351,33 @@ func (rt *Router) resolveExecContainer(w http.ResponseWriter, r *http.Request, s
 	}
 
 	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
-	inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
-	state, err := nodeRuntime.InspectByName(inspectCtx, target)
-	cancel()
-	if err != nil {
-		rt.logger.Error("api: exec app: inspect container failed",
-			slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("container", target))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return nil, nil, false
+	deadline := time.Now().Add(execWaitForRunning())
+	for {
+		inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
+		state, err := nodeRuntime.InspectByName(inspectCtx, target)
+		cancel()
+		if err != nil {
+			rt.logger.Error("api: exec app: inspect container failed",
+				slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("container", target))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return nil, nil, false
+		}
+		if state != nil && state.Running {
+			return nodeRuntime, state, true
+		}
+		// A restart or rollout leaves a short gap with no running container.
+		if !time.Now().Before(deadline) {
+			w.Header().Set("Retry-After", strconv.Itoa(execRetryAfterSeconds))
+			writeError(w, http.StatusConflict, "app has no running container (it may be restarting, retry shortly)")
+			return nil, nil, false
+		}
+		select {
+		case <-r.Context().Done():
+			writeError(w, http.StatusConflict, "request canceled while waiting for the app to run")
+			return nil, nil, false
+		case <-time.After(execWaitPollInterval):
+		}
 	}
-	if state == nil || !state.Running {
-		writeError(w, http.StatusConflict, "app has no running container")
-		return nil, nil, false
-	}
-	return nodeRuntime, state, true
 }
 
 // writeExecOutcome turns the result of draining Exec's stream into

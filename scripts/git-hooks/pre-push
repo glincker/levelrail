@@ -20,6 +20,11 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# git exports these to hooks; tests that spawn their own git repos inherit
+# them and act on this checkout instead (TestCheckPushed fails in foreground).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY \
+	GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE GIT_QUARANTINE_PATH
+
 # Opt-in: detach the checks and return at once, but never for pushes to main or master.
 if [ "${LEVELRAIL_PUSH_BACKGROUND:-off}" = on ] && [ -z "${LEVELRAIL_PUSH_DETACHED:-}" ]; then
 	to_main=0
@@ -67,6 +72,17 @@ web_tests_on="${LEVELRAIL_PUSH_WEB_TESTS:-off}"
 echo "pre-push: migration version collisions"
 if ! scripts/check-migration-versions.sh; then
 	fail=1
+fi
+
+# Stale generated API docs cost a CI cycle; the check only runs when a routes
+# file or the generated outputs changed in this push.
+if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet "$base_ref" >/dev/null \
+	&& git diff --name-only "$base_ref...HEAD" 2>/dev/null | grep -qE '^(internal/api/[a-z0-9_]*routes[a-z0-9_]*\.go|internal/api/openapi_gen\.go|docs/api-reference\.md|docs/public/openapi\.json)$'; then
+	echo "pre-push: API reference and OpenAPI up to date"
+	if ! go run ./scripts/gen-api-reference -check 2>&1; then
+		echo "API reference or OpenAPI is stale. Run: go run ./scripts/gen-api-reference  (then commit docs/api-reference.md, docs/public/openapi.json, internal/api/openapi_gen.go)"
+		fail=1
+	fi
 fi
 
 scope="ALL"

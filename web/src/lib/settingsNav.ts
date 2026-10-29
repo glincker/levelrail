@@ -7,6 +7,7 @@ import {
   SquaresFourIcon,
   ChartBarIcon,
   ChartLineIcon,
+  ClipboardTextIcon,
   ClockCounterClockwiseIcon,
   SlidersHorizontalIcon,
   CloudArrowUpIcon,
@@ -280,6 +281,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'control-plane-backup',
         to: '/settings/control-plane-backup',
         icon: DatabaseIcon,
+      },
+      {
+        id: 'dr-report',
+        to: '/settings/dr-report',
+        icon: ClipboardTextIcon,
       },
       {
         id: 'database-upgrades',

@@ -143,6 +143,15 @@ The archiver's other settings are on [Log archive](/log-archive). These two boun
 | `APP_LOG_ARCHIVE_MAX_WINDOWS_PER_RUN` | `24` | Maximum number of one-hour windows archived in a single scheduled run. Integer. |
 | `APP_LOG_ARCHIVE_MAX_BACKFILL` | `24h` | How far back a run may reach when it catches up on missed windows. Duration. |
 
+## Backup copies
+
+See [Backup copies](/backup-copies). Control plane.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_BACKUP_COPY_LAG_ALERT` | `1h` | Time a backup may go without a second copy before `backup_copy_behind` fires. Duration. |
+| `APP_BACKUP_COPY_CONCURRENCY` | `2` | Copies running at once. Positive integer. |
+
 ## Data export
 
 How these are used is on [Data export](/data-export). Positive values only; anything else uses the default. Control plane.
@@ -280,3 +289,12 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 ### Still stuck
 
 For help with specific variables, refer to the table for that variable's scope (Control plane, Agent, or CLI) and component. Variables are only read at startup, so restart the relevant service after making changes.
+
+## Volume files
+
+See [Volume files](/volume-files). Control plane and agent.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_VOLUME_FILE_MAX_UPLOAD_MB` | `64` | Largest file accepted by a volume file upload or single-file restore. Positive integer. |
+| `APP_VOLUME_FILE_LIST_LIMIT` | `1000` | Most entries returned for one volume directory. Positive integer. |

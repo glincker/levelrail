@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { ResourceLabelsCard } from '../../../components/ResourceLabelsCard'
 import { useApp } from '../../../queries/apps'
 import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../hooks/useDeployProgress'
@@ -8,6 +9,7 @@ import { OverviewPage } from '../../../components/overview/OverviewPage'
 import { RecommendedNextCard } from '../../../components/overview/RecommendedNextCard'
 import { ManagedByStackPanel } from '../../../components/apps/ManagedByStackPanel'
 import { PendingChangesNotice } from '../../../components/apps/PendingChangesNotice'
+import { TemplateUpgradeBadge } from '../../../components/apps/TemplateUpgradeBadge'
 import { PanelHost } from '../../../components/plugins/PanelHost'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -28,10 +30,12 @@ function OverviewSection() {
     <div className="space-y-6">
       <ManagedByStackPanel stack={app.managed_by_stack} />
       <PendingChangesNotice appName={name} />
+      <TemplateUpgradeBadge appName={name} />
       <FailureContextCard appName={name} />
       <RecommendedNextCard app={app} latest={attempts[0]} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
       <SleepHistoryCard appName={name} hideWhenOff />
+      <ResourceLabelsCard path="apps" name={name} />
       <PanelHost slot="app-detail" appId={name} />
     </div>
   )

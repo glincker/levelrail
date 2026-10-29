@@ -229,5 +229,5 @@ func (db *DB) SetAutoscaleReplicas(ctx context.Context, app string, replicas int
 		AppName: app, Kind: AppEventScale, Actor: autoscaleActor,
 		Title: fmt.Sprintf("Autoscaler scaled %d to %d replicas", max(before, 1), replicas),
 	})
-	return nil
+	return db.noteAppChange(ctx, app)
 }

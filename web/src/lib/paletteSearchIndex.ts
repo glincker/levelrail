@@ -21,7 +21,13 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-builds':
     'container image images docker build buildpack registry runtime',
   'nav-functions': 'serverless lambda function container runtime',
-  'nav-deployments': 'deploy deploys release rollout rollback logs history',
+  'nav-deployments':
+    'deploy deploys release rollout progress rollback logs history predeploy snapshot',
+  'settings-dr-report': 'recovery disaster dr report restore rto rpo',
+  'settings-heartbeat': 'heartbeat dead man ping uptime monitor notify',
+  'settings-deploy-policies': 'ci gate deploy policy checks required status',
+  'settings-cloudflare-tunnel':
+    'tunnel cloudflare cloudflared expose hostname no ports',
   'nav-deploy-timeline': 'deploy deploys history releases timeline events',
   'nav-approvals': 'approve review gate deploy approvals',
   'nav-usage': 'cost billing spend money usage price',
@@ -33,6 +39,7 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-assistant': 'ai chat llm help assistant',
   'nav-console': 'terminal shell cli ssh exec',
   'nav-help': 'docs documentation support guide',
+  'settings-stacks': 'stack gitops iac revision rollback drift plan prune',
   'settings-stack-templates': 'stack template bundle starter iac gitops',
   'settings-tokens': 'api token key secret pat access',
   'settings-security': 'secret secrets password 2fa mfa auth session',

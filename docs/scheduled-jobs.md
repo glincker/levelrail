@@ -53,6 +53,8 @@ levelrail-cli jobs logs web nightly-migrate
 levelrail-cli jobs disable web nightly-migrate
 ```
 
+Jobs belong to one service. If the name you pass is an app group (a multi-service app), the 404 lists the group's services; run the job on one of them, for example `jobs run my-app-web nightly-migrate`.
+
 `<job>` is the job's name or its ID. `jobs logs` prints the latest run's output,
 or a specific one with `--run RUN_ID`.
 

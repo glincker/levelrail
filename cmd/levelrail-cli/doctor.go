@@ -29,6 +29,10 @@ type doctorSkippedFix struct {
 
 // runDoctor runs the control plane's health checks, or local-only ones with no server configured.
 func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	diskOnly := len(args) > 0 && args[0] == "disk"
+	if diskOnly {
+		args = args[1:]
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "doctor", "print the doctor report as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, doctorUsage(prog)) }
 	fix := fs.Bool("fix", false, "apply safe automatic fixes after printing the plan")
@@ -45,7 +49,7 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if *fix {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--fix needs a control plane: sign in first, or pass --api-url and --token"))
 		}
-		report := localDoctorReport(ctx, lookupEnv)
+		report := filterDiskChecks(localDoctorReport(ctx, lookupEnv), diskOnly)
 		if of.Format == outputTable {
 			_, _ = fmt.Fprintln(stderr, "no control plane configured, running local checks only (Docker, disk, ports)")
 		}
@@ -56,6 +60,10 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	report, err := client.GetSystemDoctor(ctx)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system doctor report: %w", err))
+	}
+	if diskOnly {
+		report = filterDiskChecks(report, true)
+		return finishDoctor(stdout, stderr, of, report, report)
 	}
 	if !*fix {
 		return finishDoctor(stdout, stderr, of, report, report)
@@ -163,6 +171,7 @@ func confirmDoctorFix(stderr io.Writer, n int) error {
 func doctorUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s doctor [flags]
+  %[1]s doctor disk [flags]
 
 Runs the control plane's health checks: Docker, disk and inodes, ports,
 firewall, clock, DNS, certificates, backups and restore drills, node agents,
@@ -170,6 +179,11 @@ the WireGuard mesh, orphaned Docker data and dashboard https. The dashboard's
 Doctor page runs the same checks.
 
 With no control plane configured, only local checks run (Docker, disk, ports).
+
+"doctor disk" is read-only: it shows only the disk checks (free space on the
+data dir and Docker root, Docker image, build cache, volume and container
+sizes, the top consumers) and a suggested cleanup command it never runs.
+The warning level comes from APP_DOCTOR_DISK_WARN_FREE_PCT (percent free).
 
 Exit code is 0 if every check is ok or warn, 1 if any check fails.
 
@@ -185,4 +199,20 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// filterDiskChecks keeps only the disk checks for "doctor disk"; other reports pass through.
+func filterDiskChecks(r systemDoctorResource, diskOnly bool) systemDoctorResource {
+	if !diskOnly {
+		return r
+	}
+	var kept []doctorCheckResource
+	for _, c := range r.Checks {
+		switch c.Code {
+		case "disk_space", "docker_root_disk", "disk_hygiene", "inodes", "docker_orphans":
+			kept = append(kept, c)
+		}
+	}
+	r.Checks = kept
+	return r
 }

@@ -145,7 +145,14 @@ func (m *Manager) ListKeys(ctx context.Context, serviceName string) ([]store.Sec
 	if err != nil {
 		return nil, fmt.Errorf("secrets: list keys for %q: %w", serviceName, err)
 	}
-	return keys, nil
+	// File content slots are managed through the files API, never as env.
+	visible := keys[:0]
+	for _, k := range keys {
+		if !store.IsFileSecretKey(k.Key) {
+			visible = append(visible, k)
+		}
+	}
+	return visible, nil
 }
 
 // SetLocked toggles (serviceName, envKey)'s locked flag, reversible in

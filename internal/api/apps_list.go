@@ -104,6 +104,15 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := parseAppListFilter(r)
+	match, err := rt.labelFilter(r, store.LabelKindApp)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if match != nil {
+		prev := canRead
+		canRead, filtered = func(n string) bool { return prev(n) && match(n) }, true
+	}
 	if bucket := r.URL.Query().Get("status"); bucket != "" {
 		canRead, filtered, err = rt.restrictToStatus(r.Context(), fs, f, bucket, canRead)
 		if err != nil {

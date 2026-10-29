@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { GitSourceCard } from '../../../components/GitSourceCard'
 import { GitPushRemoteCard } from '../../../components/GitPushRemoteCard'
 import { GitDeploySettingsCard } from '../../../components/GitDeploySettingsCard'
+import { CiGateSettings } from '../../../components/apps/CiGateSettings'
 import { WebhookDeliveriesPanel } from '../../../components/WebhookDeliveriesPanel'
 
 // Former Overview-page cards, split out here since a preview environment
@@ -22,6 +23,7 @@ function SourceSection() {
       <GitSourceCard app={app} />
       <GitPushRemoteCard appName={name} />
       <GitDeploySettingsCard appName={name} />
+      <CiGateSettings appName={name} />
       <WebhookDeliveriesPanel app={app} />
     </div>
   )

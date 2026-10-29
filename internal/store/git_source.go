@@ -110,6 +110,11 @@ type GitSource struct {
 	DeployPaths       []string
 	DeployPathsIgnore []string
 	ReportStatus      bool
+	// WaitForCI holds a push deploy until the commit's CI checks pass.
+	// CIRequiredChecks names the checks to wait for; empty means all of
+	// them. Both are set only via SetGitSourceCIGate.
+	WaitForCI        bool
+	CIRequiredChecks []string
 	// ConnectionID is the git_provider_connections row the repository was
 	// picked from; empty for a pasted URL or a GitHub source. Set only via
 	// SetGitSourceConnection.
@@ -194,7 +199,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id, wait_for_ci, ci_required_checks
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -381,6 +386,30 @@ func (db *DB) SetGitSourceDeploySettings(ctx context.Context, serviceName string
 	return nil
 }
 
+// SetGitSourceCIGate replaces a connected source's CI wait flag and required
+// check names; it returns ErrGitSourceNotFound if no source is connected.
+func (db *DB) SetGitSourceCIGate(ctx context.Context, serviceName string, wait bool, checks []string) error {
+	checksJSON, err := json.Marshal(nonNilStrings(checks))
+	if err != nil {
+		return fmt.Errorf("store: set source %q ci gate: %w", serviceName, err)
+	}
+	flag := 0
+	if wait {
+		flag = 1
+	}
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_git_sources SET wait_for_ci = ?, ci_required_checks = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE service_name = ?
+	`, flag, string(checksJSON), serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set source %q ci gate: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
 // SetGitSourceConnection records which provider connection a source's
 // repository was picked from.
 func (db *DB) SetGitSourceConnection(ctx context.Context, serviceName, connectionID string) error {
@@ -481,10 +510,12 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		previewEnabled, postPRComment int
 		prCommands, prCommandsForks   int
 		reportStatus                  int
+		waitForCI                     int
+		ciChecksJSON                  string
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID, &waitForCI, &ciChecksJSON); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
@@ -492,6 +523,10 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 	g.PRCommentCommands = prCommands != 0
 	g.PRCommentCommandsForks = prCommandsForks != 0
 	g.ReportStatus = reportStatus != 0
+	g.WaitForCI = waitForCI != 0
+	if err := json.Unmarshal([]byte(ciChecksJSON), &g.CIRequiredChecks); err != nil {
+		return nil, fmt.Errorf("unmarshal ci_required_checks: %w", err)
+	}
 	if err := json.Unmarshal([]byte(pathsJSON), &g.DeployPaths); err != nil {
 		return nil, fmt.Errorf("unmarshal deploy_paths: %w", err)
 	}

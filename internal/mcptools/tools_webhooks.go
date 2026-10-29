@@ -15,7 +15,7 @@ import (
 func registerWebhookTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_webhook_deliveries",
-		Description: "List an app's recent inbound git-provider webhook requests, newest first, whether or not they verified or matched a connected git source. Useful for debugging why a push didn't trigger a deploy.",
+		Description: "List an app's recent inbound git webhook requests, newest first, verified or not. Debugs why a push did not trigger a deploy.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in webhookDeliveriesInput) (*mcp.CallToolResult, []apiclient.WebhookDeliveryResource, error) {
 		deliveries, err := client.ListWebhookDeliveries(ctx, in.Name, apiclient.ListWebhookDeliveriesOptions{
 			Limit:  in.Limit,

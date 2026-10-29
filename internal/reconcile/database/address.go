@@ -163,6 +163,9 @@ func SupportsField(engine, field string) bool {
 	case "password":
 		_, ok := PasswordSecretKey(engine)
 		return ok
+	case "direct_url":
+		// Always bypasses the pooler, for migrations and session features.
+		return engine == store.EnginePostgres
 	default:
 		return false
 	}

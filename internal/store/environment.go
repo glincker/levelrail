@@ -224,7 +224,7 @@ func (db *DB) SetServiceEnvironment(ctx context.Context, serviceName, envID stri
 	if n == 0 {
 		return ErrServiceNotFound
 	}
-	return nil
+	return db.noteAppChange(ctx, serviceName)
 }
 
 func kindOrCustom(k string) string {

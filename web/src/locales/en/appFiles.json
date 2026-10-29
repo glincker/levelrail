@@ -1,0 +1,46 @@
+{
+  "title": "Files",
+  "description": "Inline config files written into the container at start. Secret files are never shown again after saving.",
+  "empty": "No inline files yet.",
+  "add": "Add file",
+  "edit": "Edit {{path}}",
+  "delete": "Delete {{path}}",
+  "redacted": "Redacted",
+  "secretBadge": "Secret",
+  "size": "{{count}} bytes",
+  "loadError": "Could not load files.",
+  "dialog": {
+    "addTitle": "Add file",
+    "editTitle": "Edit file",
+    "description": "Saved as one file inside the app container.",
+    "path": "Path",
+    "pathPlaceholder": "/etc/app/config.yaml",
+    "mode": "Mode",
+    "modePlaceholder": "0644",
+    "content": "Content",
+    "contentRedactedHint": "This file is secret. Enter new content to replace it.",
+    "secret": "Secret file",
+    "secretHelp": "Secret content is never shown again after you save.",
+    "restart": "Restart now to apply",
+    "cancel": "Cancel",
+    "save": "Save file",
+    "saving": "Saving..."
+  },
+  "validation": {
+    "path": "Path must be absolute.",
+    "mode": "Mode must be octal, such as 0644."
+  },
+  "deleteDialog": {
+    "title": "Delete file?",
+    "description": "{{path}} will be removed from the app.",
+    "restart": "Restart now to apply",
+    "confirm": "Delete",
+    "deleting": "Deleting..."
+  },
+  "toast": {
+    "saved": "File saved.",
+    "saveFailed": "Could not save file.",
+    "deleted": "File deleted.",
+    "deleteFailed": "Could not delete file."
+  }
+}

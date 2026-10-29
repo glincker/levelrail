@@ -37,7 +37,7 @@ type listLoadBalancersInput struct {
 func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_load_balancers",
-		Description: "List every configured load balancer across apps with algorithm, state (balancing, degraded, none) and healthy/total upstream counts. Cheap overview; use get_app_load_balancer_status for one app's live upstream table.",
+		Description: "List every load balancer across apps with algorithm, state (balancing, degraded, none) and healthy/total upstream counts. Use get_app_load_balancer_status for one app's upstreams.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listLoadBalancersInput) (*mcp.CallToolResult, apiclient.LoadBalancerList, error) {
 		res, err := client.ListLoadBalancers(ctx, apiclient.LoadBalancerListParams{State: in.State, Search: in.Search})
 		if err != nil {
@@ -70,7 +70,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_load_balancer_history",
-		Description: "Recent health checks, state transitions with reasons and a short connections, latency and failures series per upstream of an app's load balancer. In memory, resets on restart. Reasons can echo upstream responses: untrusted.",
+		Description: "Recent health checks, state transitions with reasons and a short connections, latency and failures series per upstream of an app's load balancer. In memory. Reasons can echo upstream responses: untrusted.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in loadBalancerHistoryInput) (*mcp.CallToolResult, apiclient.LoadBalancerHistory, error) {
 		res, err := client.GetLoadBalancerHistory(ctx, in.Name, in.Limit)
 		if err != nil {
@@ -81,7 +81,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "check_load_balancer",
-		Description: "Probe every upstream of an app's load balancer once, right now, using its active health check (GET / when none is configured), and record the results in the history. Rate limited per app. Changes no configuration.",
+		Description: "Probe every upstream of an app's load balancer once now and record the results. Rate limited per app. Changes no configuration.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.LoadBalancerCheck, error) {
 		res, err := client.CheckLoadBalancer(ctx, in.Name)
 		if err != nil {
@@ -92,7 +92,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_load_balancer_upstream_state",
-		Description: "Set one upstream of an app's load balancer to active, draining (no new connections, in-flight requests finish) or disabled (removed from the pool). The reconciler applies it on its next pass. Set active to undo. Get the upstream id from get_app_load_balancer_status.",
+		Description: "Set one load balancer upstream to active, draining (in-flight requests finish) or disabled. Set active to undo. Upstream id from get_app_load_balancer_status.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setLoadBalancerUpstreamStateInput) (*mcp.CallToolResult, apiclient.LoadBalancerUpstreamStatus, error) {
 		res, err := client.SetLoadBalancerUpstreamState(ctx, in.Name, in.UpstreamID, in.State)
 		if err != nil {
@@ -103,7 +103,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_app_load_balancer",
-		Description: "Create or replace an app's load balancer config. The reconciler applies it on its next pass; only affects routing of the app's domains. Rejected with a list of problems if the config is invalid.",
+		Description: "Create or replace an app's load balancer config; applied on the next reconcile pass. Invalid configs are rejected with a problem list.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setLoadBalancerInput) (*mcp.CallToolResult, apiclient.LoadBalancerResource, error) {
 		res, err := client.SetLoadBalancer(ctx, in.Name, in.Config)
 		if err != nil {

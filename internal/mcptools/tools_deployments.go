@@ -61,7 +61,7 @@ func registerDeploymentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deployments_summary",
-		Description: "Summarize deployments across the apps the caller can read: counts by status in a window, in-progress and needs-attention counts, 24h failure rate, median and p95 duration, and deploys per day for 14 days.",
+		Description: "Summarize deployments across readable apps: counts by status, in-progress and needs-attention counts, 24h failure rate, median and p95 duration, deploys per day.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deploymentsSummaryInput) (*mcp.CallToolResult, apiclient.DeploymentSummary, error) {
 		s, err := client.GetDeploymentsSummary(ctx, in.Window)
 		if err != nil {

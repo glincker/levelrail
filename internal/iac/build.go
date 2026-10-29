@@ -178,6 +178,11 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 			Engine  string `yaml:"engine"`
 			Version string `yaml:"version"`
 			Project string `yaml:"project"`
+			Pooler  *struct {
+				Enabled       bool `yaml:"enabled"`
+				PoolSize      int  `yaml:"pool_size"`
+				MaxClientConn int  `yaml:"max_client_conn"`
+			} `yaml:"pooler"`
 		}
 		decodeSpec(d, &sp, s)
 		if !appNameRe.MatchString(d.Name) {
@@ -186,6 +191,21 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 		r.Fields = map[string]any{"engine": sp.Engine}
 		putIf(r.Fields, "version", sp.Version)
 		putIf(r.Fields, "project", sp.Project)
+		if sp.Pooler != nil {
+			if sp.Pooler.Enabled && sp.Engine != "postgres" {
+				s.at("spec.pooler", "the connection pooler is only supported for postgres")
+			}
+			r.Fields["pooler"] = sp.Pooler.Enabled
+			if sp.Pooler.PoolSize < 0 || sp.Pooler.MaxClientConn < 0 {
+				s.at("spec.pooler", "pool_size and max_client_conn must be positive")
+			}
+			if sp.Pooler.PoolSize > 0 {
+				r.Fields["pooler_pool_size"] = sp.Pooler.PoolSize
+			}
+			if sp.Pooler.MaxClientConn > 0 {
+				r.Fields["pooler_max_client_conn"] = sp.Pooler.MaxClientConn
+			}
+		}
 	case KindApp:
 		return buildApp(d, opts, s)
 	case KindDomain:

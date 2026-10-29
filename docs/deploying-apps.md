@@ -320,7 +320,9 @@ Two related options:
 
 A body with only `{"env": {"MODE": "dev"}}` changes the env and nothing else. A GET followed by an unchanged PUT is a no-op: the container is not recreated.
 
-A save also keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, dependencies, and the pinned image ID. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
+Field names are matched the way Go's JSON decoder matches them (case-insensitive, with Unicode case folding), so a key spelled with a different case or a look-alike letter still counts as sent and is not filled from storage.
+
+A save also keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, dependencies, the pinned image ID, and `template_id`. `template_id` is response-only: a client cannot set or change it, it is recorded when an app is deployed from a catalog template. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
 
 Fields with their own endpoints cannot be moved by an ordinary edit: `node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, and `log_drain`. An edit can never silently move an app between nodes or projects.
 
@@ -588,6 +590,7 @@ In the dashboard, each row of the Apps list has an actions menu with Restart, St
 
 - **Input:** `command` is required. `args` is optional and never shell interpreted (raw argv). `timeout_seconds` may shorten but never extend the 30 second server ceiling.
 - **Output:** `stdout`, `stderr`, and `exit_code`, capped at 1 MiB (`truncated: true` past that). A nonzero exit code still returns HTTP 200, because the exec worked and the command failed.
+- **While restarting:** if the app has no running container (a restart or rollout), the call waits up to `APP_EXEC_WAIT_FOR_RUNNING_SECONDS` (default 30, `0` turns it off) for it to come back. Past that it answers 409 with a `Retry-After` header.
 - **Permission:** the `root` ability, not `deploy`. Exec can be switched off per app (it is on by default) with `levelrail-cli apps exec-access disable NAME`, and a disabled app answers 403.
 
 <Warning>

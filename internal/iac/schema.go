@@ -41,7 +41,7 @@ var fromRefEnv = map[string]any{
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"database": map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
-			"field":    map[string]any{"enum": []any{"url", "host", "port", "username", "password", "database"}},
+			"field":    map[string]any{"enum": []any{"url", "direct_url", "host", "port", "username", "password", "database"}},
 		},
 	}},
 }

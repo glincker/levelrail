@@ -449,6 +449,16 @@ type ConditionResource struct {
 	LastTransitionTime time.Time `json:"LastTransitionTime"`
 }
 
+// AppStatus mirrors internal/api's appStatusResource. The outcome fields
+// are empty for an app with no deploys or an older server.
+type AppStatus struct {
+	Conditions               []ConditionResource `json:"conditions"`
+	DeployID                 string              `json:"deploy_id,omitempty"`
+	Outcome                  string              `json:"outcome,omitempty"`
+	OutcomeReason            string              `json:"outcome_reason,omitempty"`
+	RolloutCrashLoopRestarts int                 `json:"rollout_crash_loop_restarts,omitempty"`
+}
+
 // NetworkResource mirrors internal/api's networkResource
 // (internal/api/network.go): the live traffic path, container's declared
 // port plus whatever host port Docker currently has bound.
@@ -1620,6 +1630,8 @@ type DatabaseResource struct {
 	// database's connection string (DATABASE_URL/REDIS_URL, injected
 	// into consuming app containers) is TLS-encrypted.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
+	// PoolerEnabled mirrors databaseResource.PoolerEnabled; toggle via .../pooler.
+	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
 }
 
 // DatabaseEngineResource mirrors internal/api's databaseEngineResource
@@ -1890,6 +1902,8 @@ type GitSourceResource struct {
 	DeployPaths       []string `json:"deploy_paths"`
 	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
 	ReportStatus      bool     `json:"report_status"`
+	WaitForCI         bool     `json:"wait_for_ci"`
+	CIRequiredChecks  []string `json:"ci_required_checks"`
 	CreatedAt         string   `json:"created_at"`
 	UpdatedAt         string   `json:"updated_at"`
 }
@@ -1899,6 +1913,8 @@ type GitDeploySettings struct {
 	DeployPaths       []string `json:"deploy_paths"`
 	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
 	ReportStatus      bool     `json:"report_status"`
+	WaitForCI         bool     `json:"wait_for_ci"`
+	CIRequiredChecks  []string `json:"ci_required_checks"`
 }
 
 // SetGitDeploySettingsRequest mirrors internal/api's
@@ -1907,6 +1923,8 @@ type SetGitDeploySettingsRequest struct {
 	DeployPaths       *[]string `json:"deploy_paths,omitempty"`
 	DeployPathsIgnore *[]string `json:"deploy_paths_ignore,omitempty"`
 	ReportStatus      *bool     `json:"report_status,omitempty"`
+	WaitForCI         *bool     `json:"wait_for_ci,omitempty"`
+	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest
@@ -2329,6 +2347,8 @@ type BackupTargetResource struct {
 	CreatedAt string `json:"created_at"`
 	// EncryptDumps is true when new database dumps are age-sealed.
 	EncryptDumps bool `json:"encrypt_dumps"`
+	// LocalRoot is the control plane APP_BACKUP_LOCAL_ROOT, set for local targets only.
+	LocalRoot string `json:"local_root,omitempty"`
 }
 
 // BackupTargetEncryptionResource mirrors internal/api's backupTargetEncryptionResource.

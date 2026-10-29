@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+	"os"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/backup"
@@ -36,5 +37,5 @@ func (b backupNodeFiles) List(ctx context.Context, nodeID, prefix string) ([]bac
 
 // routedStorage sends S3 destinations to the S3 clients and agent node destinations over registry's sessions.
 func routedStorage(registry *agent.Registry) backup.Routed {
-	return backup.Routed{Files: backupNodeFiles{files: agent.NewNodeFiles(registry)}}
+	return backup.Routed{Files: backupNodeFiles{files: agent.NewNodeFiles(registry)}, LocalRoot: backup.LocalRootFromEnv(os.LookupEnv)}
 }

@@ -155,6 +155,10 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "emergency-token" {
 		if err := runEmergencyToken(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
+			if errors.Is(err, errEmergencyHelp) {
+				fmt.Println(err.Error())
+				return
+			}
 			logger.Error("emergency-token failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}

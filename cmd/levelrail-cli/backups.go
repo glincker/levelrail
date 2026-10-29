@@ -29,6 +29,8 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsProtectAll(prog, args[1:], stdout, stderr, lookupEnv)
 	case "orphans":
 		return runBackupsOrphans(prog, args[1:], stdout, stderr, lookupEnv)
+	case "targets":
+		return runBackupsTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "drill":
 		return runBackupsDrill(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes":
@@ -53,6 +55,10 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "encryption":
 		return runBackupsEncryption(prog, args[1:], stdout, stderr, lookupEnv)
+	case "destinations":
+		return runBackupsDestinations(prog, args[1:], stdout, stderr, lookupEnv)
+	case "copies":
+		return runBackupsCopies(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verify":
 		return runBackupsVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verifications":
@@ -85,6 +91,8 @@ func backupsUsage(prog string) string {
   %[1]s backups schedule set<database> --target ID --cron EXPR [flags] configure a recurring backup
   %[1]s backups schedule clear <database> [flags]                       remove a recurring backup
   %[1]s backups encryption get|set <destination> [on|off] [flags]       show or change database dump encryption for a destination
+  %[1]s backups destinations copy show|set <destination|off> [flags]   show or change the second destination backups are copied to
+  %[1]s backups copies list [--limit N] [flags]                         list each backup's copy status and lag
   %[1]s backups verify <database> --backup ID [flags]                   verify a backup is intact (no live restore)
   %[1]s backups verifications <database> --backup ID [flags]            list past verification attempts for a backup
 

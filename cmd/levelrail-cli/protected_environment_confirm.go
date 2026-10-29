@@ -14,7 +14,7 @@ import (
 // A 409 from these endpoints only ever means the protected-environment gate, so the status alone identifies it.
 func protectedEnvironmentError(err error) (*apiclient.APIError, bool) {
 	var apiErr *apiclient.APIError
-	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict {
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict && strings.Contains(apiErr.Message, "set confirm") {
 		return apiErr, true
 	}
 	return nil, false

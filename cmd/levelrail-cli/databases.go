@@ -69,6 +69,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesClearNode(prog, rest, stdout, stderr, lookupEnv)
 	case "public-access":
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
+	case "pooler":
+		return runDatabasesPooler(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
 		return runDatabasesRotatePassword(prog, rest, stdout, stderr, lookupEnv)
 	case "credentials":

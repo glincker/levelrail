@@ -88,13 +88,19 @@ func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) 
 			return outputJSON, nil
 		}
 		return outputTable, nil
-	case string(outputJSON), string(outputTable), string(outputText):
+	case string(outputJSON), string(outputTable), string(outputText), string(outputYAML), string(outputWide), string(outputName):
 		if jsonOut && outputFlag != string(outputJSON) {
 			return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
 		}
 		return outputFormat(outputFlag), nil
 	default:
-		return "", newValidationError("invalid --output %q, want json, table, or text", outputFlag)
+		if isSpecFormat(outputFormat(outputFlag)) {
+			if jsonOut {
+				return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
+			}
+			return outputFormat(outputFlag), nil
+		}
+		return "", newValidationError("invalid --output %q, want json, yaml, table, wide, text, name, custom-columns=... or jsonpath=...", outputFlag)
 	}
 }
 
@@ -145,9 +151,19 @@ func renderResult(stdout io.Writer, format outputFormat, query string, data any,
 	}
 
 	switch {
-	case format == outputTable && query == "":
+	case format == outputTable && query == "", format == outputWide && query == "":
 		renderTable()
 		return nil
+	case format == outputWide:
+		return writeQueriedTable(stdout, value)
+	case format == outputYAML:
+		return writeYAMLValue(stdout, value)
+	case format == outputName:
+		return writeNameValue(stdout, value)
+	case strings.HasPrefix(string(format), outputColumnsPrefix):
+		return writeCustomColumns(stdout, strings.TrimPrefix(string(format), outputColumnsPrefix), value)
+	case strings.HasPrefix(string(format), outputPathPrefix):
+		return writeJSONPath(stdout, strings.TrimPrefix(string(format), outputPathPrefix), value)
 	case format == outputTable:
 		return writeQueriedTable(stdout, value)
 	case format == outputText:

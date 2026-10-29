@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -52,7 +53,8 @@ type Server struct {
 	store          EnrollStore
 	registry       *Registry
 	logger         *slog.Logger
-	gpuSink        GPUSink        // nil is valid: GPU reports are ignored
+	gpuSink        GPUSink // nil is valid: GPU reports are ignored
+	silenceSrc     atomic.Pointer[SilenceSource]
 	hostSink       HostReportSink // nil is valid: host reports are ignored
 	onboardingSink OnboardingSink // nil is valid: onboarding reports are ignored
 	onSession      func(nodeID, remoteIP string)
@@ -314,6 +316,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 
 	heartbeatDone := make(chan struct{})
 	go s.heartbeatLoop(nodeID, heartbeats, heartbeatDone)
+	go s.silenceLoop(ctx, nodeID, m, silencePushEveryFromEnv(), heartbeatDone)
 
 	defer func() {
 		close(heartbeatDone)

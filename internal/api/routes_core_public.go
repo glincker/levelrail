@@ -75,6 +75,10 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/system/control-plane-dr/keys", rt.requireAbility(AbilityWriteSensitive, rt.handleGenerateControlPlaneDRKeypair))
 	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow", rt.requireAbility(AbilityRoot, rt.handleControlPlaneDREscrow))
 	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow/ack", rt.requireAbility(AbilityWriteSensitive, rt.handleAckControlPlaneDREscrow))
+	// Whole-server recovery: plan is a dry run, run pulls data back over live databases and volumes. Operator only.
+	mux.HandleFunc("POST /api/v1/control-plane/rehydrate/plan", rt.requireAbility(AbilityRoot, rt.handleRehydratePlan))
+	mux.HandleFunc("POST /api/v1/control-plane/rehydrate/run", rt.requireAbility(AbilityRoot, rt.handleRehydrateRun))
+	mux.HandleFunc("GET /api/v1/control-plane/rehydrate/report", rt.requireAbility(AbilityRoot, rt.handleRehydrateReport))
 	// Orphaned named volumes: detection is a read (AbilityRead), the
 	// cleanup that actually deletes one is the same AbilityRoot,
 	// fleet-wide, no-undo tier system/prune sits behind, not

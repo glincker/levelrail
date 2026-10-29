@@ -634,6 +634,10 @@
         "title": "Control plane backup",
         "description": "Snapshots, off-box backups, key escrow and restore drills for this instance."
       },
+      "dr-report": {
+        "title": "Recovery report",
+        "description": "Plan and run whole-server recovery, then review what was restored."
+      },
       "control-plane-health": {
         "title": "Control plane health",
         "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
@@ -1530,6 +1534,40 @@
       }
     }
   },
+  "backupCopies": {
+    "title": "Second destination",
+    "description": "Copy every new backup to another destination after it lands in its primary one. Only backups finished after you turn this on are copied.",
+    "destination": "Copy backups to",
+    "choose": "Choose a destination",
+    "enable": "Turn on copies",
+    "update": "Change destination",
+    "toggle": "Copy backups to the second destination",
+    "on": "Copying to {{name}}",
+    "saved": "Backup copy settings saved",
+    "saveFailed": "Could not save backup copy settings",
+    "manifest": "Manifest",
+    "manifestTip": "Checksum verified, manifest sidecar written next to the copy",
+    "empty": "No backups have been queued for copying yet.",
+    "status": {
+      "pending": "Waiting",
+      "copying": "Copying",
+      "succeeded": "Copied",
+      "failed": "Failed, retrying"
+    },
+    "table": {
+      "label": "Backup copies",
+      "resource": "Resource",
+      "status": "Status",
+      "lag": "Lag",
+      "finished": "Backup finished",
+      "error": "Last error"
+    }
+  },
+  "backupTargetLocal": {
+    "path": "Directory",
+    "placeholder": "nightly",
+    "hint": "Relative to the allowed root (APP_BACKUP_LOCAL_ROOT on the control plane). The server rejects paths outside it."
+  },
   "backupTargetsPage": {
     "rail": {
       "label": "Backup targets summary",
@@ -1539,7 +1577,8 @@
       "provider": {
         "aws": "AWS S3",
         "r2": "Cloudflare R2",
-        "custom": "S3-compatible"
+        "custom": "S3-compatible",
+        "local": "Local directory"
       },
       "status": "Backup status",
       "statusBody": "Runs, coverage and restore drills live on the Backups page.",
@@ -3278,6 +3317,80 @@
         "bestFor": "Any mail server or relay that speaks SMTP.",
         "credentialHint": "Use the password your mail server gives you."
       }
+    }
+  },
+  "heartbeat": {
+    "title": "Off-host heartbeat",
+    "description": "Pings a monitor you choose while this server is healthy, so you are alerted when the pings stop, even if the whole box is down.",
+    "url": "Ping URL",
+    "urlPlaceholder": "https://hc-ping.com/your-uuid",
+    "urlHint": "From Healthchecks, Uptime Kuma push or similar. Stored encrypted and never shown again.",
+    "urlSet": "Pinging {{host}}. Paste a new URL to replace it.",
+    "failUrl": "Failure URL (optional)",
+    "failUrlHint": "Called instead when the server knows it is unhealthy.",
+    "agentSilenceUrl": "Agent silence URL (optional)",
+    "agentSilenceHint": "Every node pings this failure URL when it cannot reach the control plane for a while, so a dead control plane is noticed even when the server is up. Stored encrypted.",
+    "agentSilenceSet": "Nodes ping {{host}} when they lose the control plane. Paste a new URL to replace it.",
+    "clearAgentSilence": "Remove agent URL",
+    "body": "Send status details (version, uptime)",
+    "save": "Save",
+    "clear": "Turn off",
+    "saved": "Heartbeat saved",
+    "envManaged": "Set by APP_HEARTBEAT_URL on the server. Unset it to manage the heartbeat here.",
+    "noKey": "Storing the URL needs a configured master key.",
+    "result": {
+      "none": "No ping yet",
+      "ok": "Last ping sent",
+      "fail_reported": "Failure reported",
+      "unhealthy": "Held back, unhealthy",
+      "error": "Last ping failed"
+    }
+  },
+  "rehydrate": {
+    "title": "Recovery report",
+    "description": "After the control plane is restored, pull every database and app volume back from its latest backup.",
+    "helpLabel": "Whole-server recovery guide",
+    "actionsTitle": "Recover data",
+    "actionsDescription": "Plan is a dry run. Run overwrites live databases and volumes with their latest backup.",
+    "allowStale": "Allow backups older than the age limit",
+    "plan": "Plan (dry run)",
+    "run": "Run recovery",
+    "confirmTitle": "Overwrite live data?",
+    "confirmBody": "Each database and volume with a usable backup is replaced by that backup. Review the plan first.",
+    "confirm": "Restore now",
+    "cancel": "Cancel",
+    "started": "Recovery started",
+    "empty": "No plan or run yet. Start with a dry run.",
+    "noItems": "No databases or app volumes to restore.",
+    "summary": "{{restorable}} to restore, {{succeeded}} done, {{failed}} failed, {{blocked}} blocked, {{skipped}} skipped. Data loss window: {{window}}.",
+    "backupAge": "backup {{age}} old",
+    "mode": {
+      "plan": "Plan",
+      "run": "Run"
+    },
+    "state": {
+      "planned": "Ready to run",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "partial": "Partly restored",
+      "failed": "Failed"
+    },
+    "kind": {
+      "database": "Database",
+      "volume": "App volume"
+    },
+    "itemStatus": {
+      "planned": "Planned",
+      "running": "Running",
+      "succeeded": "Restored",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "blocked": "Blocked"
+    },
+    "reason": {
+      "no_backup": "No successful backup found",
+      "backup_too_old": "Latest backup is older than the age limit",
+      "engine_keeps_no_data": "Keeps no data on disk"
     }
   }
 }

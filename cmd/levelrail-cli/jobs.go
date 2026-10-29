@@ -17,6 +17,7 @@ const jobsUsage = `Usage:
   %[1]s jobs create <app> <name> --schedule CRON [flags] -- <command> [args...]
   %[1]s jobs update <app> <job> [flags] [-- <command> [args...]]
   %[1]s jobs run <app> <job>
+  %[1]s jobs run <app> --command "CMD" [--completions N] [--parallelism P] [--backoff-limit B] [--timeout D] [--wait]
   %[1]s jobs pause <app> <job>
   %[1]s jobs resume <app> <job>
   %[1]s jobs next --schedule CRON [--timezone ZONE] [--count N]
@@ -67,7 +68,12 @@ func runJobs(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprintf(stdout, jobsUsage, prog)
 		return exitOK
-	case "list", "get", "create", "update", "run", "history", "logs", "enable", "disable", "pause", "resume", "delete", "next":
+	case "run":
+		if wantsOneShot(args[1:]) {
+			return runJobsOneShot(prog, args[1:], stdout, stderr, lookupEnv)
+		}
+		return runJobsVerb(prog, "run", args[1:], stdout, stderr, lookupEnv)
+	case "list", "get", "create", "update", "history", "logs", "enable", "disable", "pause", "resume", "delete", "next":
 		return runJobsVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown jobs subcommand %q\n\n", prog, args[0])

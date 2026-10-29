@@ -344,6 +344,23 @@
         "engine": {
           "$ref": "#/$defs/database/properties/engine"
         },
+        "pooler": {
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "max_client_conn": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "pool_size": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
         "project": {
           "minLength": 1,
           "type": "string"
@@ -476,6 +493,7 @@
                 "field": {
                   "enum": [
                     "url",
+                    "direct_url",
                     "host",
                     "port",
                     "username",
@@ -513,6 +531,30 @@
       },
       "required": [
         "project"
+      ],
+      "type": "object"
+    },
+    "file": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "mode": {
+          "pattern": "^0?[0-7]{3,4}$",
+          "type": "string"
+        },
+        "path": {
+          "pattern": "^/",
+          "type": "string"
+        },
+        "secret": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "content"
       ],
       "type": "object"
     },
@@ -986,6 +1028,33 @@
       },
       "type": "object"
     },
+    "rollout": {
+      "additionalProperties": false,
+      "properties": {
+        "max_surge": {
+          "$ref": "#/$defs/rolloutValue"
+        },
+        "max_unavailable": {
+          "$ref": "#/$defs/rolloutValue"
+        },
+        "min_available": {
+          "$ref": "#/$defs/rolloutValue"
+        }
+      },
+      "type": "object"
+    },
+    "rolloutValue": {
+      "oneOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "pattern": "^([0-9]+|[0-9]{1,2}%|100%)$",
+          "type": "string"
+        }
+      ]
+    },
     "route": {
       "additionalProperties": false,
       "properties": {
@@ -1098,6 +1167,12 @@
           },
           "type": "object"
         },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/file"
+          },
+          "type": "array"
+        },
         "headers": {
           "items": {
             "$ref": "#/$defs/headerRule"
@@ -1177,6 +1252,9 @@
         },
         "restart": {
           "type": "string"
+        },
+        "rollout": {
+          "$ref": "#/$defs/rollout"
         },
         "routes": {
           "items": {

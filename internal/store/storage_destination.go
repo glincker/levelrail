@@ -10,6 +10,9 @@ import (
 // AgentEndpointScheme marks a backup target whose data lives in an enrolled node's confined directory (endpoint "agent://<node id>", bucket = directory).
 const AgentEndpointScheme = "agent://"
 
+// LocalEndpointScheme marks a backup target stored on a directory of the control plane host (endpoint "local://", bucket = path relative to APP_BACKUP_LOCAL_ROOT).
+const LocalEndpointScheme = "local://"
+
 // StorageOptions are the per-destination settings layered on a BackupTarget.
 type StorageOptions struct {
 	TargetID  string

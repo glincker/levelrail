@@ -55,6 +55,7 @@
         "replicas": { "type": "integer", "minimum": 1 },
         "strategy": { "enum": ["rolling", "recreate", "blue-green", "canary"] },
         "canary": { "$ref": "#/$defs/canary" },
+        "rollout": { "$ref": "#/$defs/rollout" },
         "contexts": {
           "type": "object",
           "propertyNames": { "pattern": "^(deploy-preview|branch-deploy|branch:.+)$" },
@@ -78,6 +79,10 @@
           "items": { "$ref": "#/$defs/volume" }
         },
         "hooks": { "$ref": "#/$defs/hooks" },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/file" }
+        },
         "jobs": {
           "type": "array",
           "items": { "$ref": "#/$defs/job" }
@@ -157,6 +162,21 @@
         "cleanUrls": { "type": "boolean" },
         "trailingSlash": { "enum": ["off", "add", "remove"] },
         "notFound": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rolloutValue": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "string", "pattern": "^([0-9]+|[0-9]{1,2}%|100%)$" }
+      ]
+    },
+    "rollout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_surge": { "$ref": "#/$defs/rolloutValue" },
+        "max_unavailable": { "$ref": "#/$defs/rolloutValue" },
+        "min_available": { "$ref": "#/$defs/rolloutValue" }
       }
     },
     "canary": {
@@ -310,6 +330,17 @@
         "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
         "warnAfter": { "type": "string", "minLength": 2 },
         "enabled": { "type": "boolean" }
+      }
+    },
+    "file": {
+      "type": "object",
+      "required": ["path", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "content": { "type": "string" },
+        "mode": { "type": "string", "pattern": "^0?[0-7]{3,4}$" },
+        "secret": { "type": "boolean" }
       }
     },
     "hooks": {

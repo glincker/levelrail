@@ -305,6 +305,8 @@ Endpoints for:
 | POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
 | POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
 | GET | /api/v1/auth/session | Public | handleAuthSession |
+| GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
+| PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -656,6 +658,15 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/scheduled-deploys | AbilityRead | handleListScheduledDeploys |
 | GET | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityRead | handleGetScheduledDeploy |
 | DELETE | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityDeploy | handleCancelScheduledDeploy |
+| GET | /api/v1/apps/{name}/status | AbilityRead | handleAppStatus |
+| GET | /api/v1/apps/{name}/files | AbilityRead | handleListAppFiles |
+| PUT | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleSetAppFile |
+| DELETE | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleDeleteAppFile |
+| GET | /api/v1/apps/{name}/template-upgrade | AbilityRead | handleGetTemplateUpgrade |
+| GET | /api/v1/apps/{name}/tunnel | AbilityRoot | handleAppTunnel |
+| POST | /api/v1/apps/{name}/template-upgrade | AbilityDeploy | handleApplyTemplateUpgrade |
+| GET | /api/v1/apps/{name}/template-upgrade/run | AbilityRead | handleGetTemplateUpgradeRun |
+| GET | /api/v1/apps/{name}/rollout | AbilityRead | handleGetRollout |
 
 </Accordion>
 
@@ -850,6 +861,9 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/provision/discard | AbilityWrite | handleDiscardPendingDatabase |
 | PUT | /api/v1/databases/{name}/pending-settings | AbilityWrite | handleUpdatePendingDatabase |
 | POST | /api/v1/databases/{name}/credentials/reveal | AbilityRoot | handleRevealDatabaseCredentials |
+| GET | /api/v1/databases/{name}/pooler | AbilityRead | handleGetDatabasePooler |
+| POST | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleEnableDatabasePooler |
+| DELETE | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleDisableDatabasePooler |
 
 ## Projects / Organizations / Environments
 
@@ -1229,6 +1243,9 @@ Endpoints for:
 | GET | /api/v1/backups/coverage | AbilityRead | handleBackupCoverage |
 | POST | /api/v1/backups/protect-all | AbilityWriteSensitive | handleProtectAll |
 | POST | /api/v1/backups/encryption-key/ack | AbilityWriteSensitive | handleAckBackupEncryptionKey |
+| GET | /api/v1/backups/copy-settings | AbilityRead | handleGetBackupCopySettings |
+| PUT | /api/v1/backups/copy-settings | AbilityWriteSensitive | handleSetBackupCopySettings |
+| GET | /api/v1/backups/copies | AbilityRead | handleListBackupCopies |
 
 ## App Volume Backups / Restore
 
@@ -1256,6 +1273,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityRead | handleGetVolumeBackupPolicy |
 | PUT | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityWriteSensitive | handleSetVolumeBackupPolicy |
 | POST | /api/v1/apps/{name}/volumes/{volume}/restore-to | AbilityWriteSensitive | handleVolumeRestoreTo |
+| GET | /api/v1/apps/{name}/volumes/{volume}/files | AbilityReadSensitive | handleListVolumeFiles |
+| GET | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityReadSensitive | handleDownloadVolumeFile |
+| PUT | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handlePutVolumeFile |
+| DELETE | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handleDeleteVolumeFile |
+| POST | /api/v1/apps/{name}/volumes/{volume}/files/restore | AbilityWrite | handleRestoreVolumeFile |
 
 ## App Storage / Database Attach
 
@@ -1993,6 +2015,16 @@ Routes that do not fit an existing group.
 | GET | /api/v1/stack-templates | AbilityRead | handleListStackTemplates |
 | GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
 | POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
+| POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
+| POST | /api/v1/control-plane/rehydrate/plan | AbilityRoot | handleRehydratePlan |
+| POST | /api/v1/control-plane/rehydrate/run | AbilityRoot | handleRehydrateRun |
+| GET | /api/v1/control-plane/rehydrate/report | AbilityRoot | handleRehydrateReport |
+| GET | /api/v2/apps | AbilityRead | handleList |
+| GET | /api/v2/apps/{name} | AbilityRead | handleGet |
+| GET | /api/v2/databases | AbilityRead | handleList |
+| GET | /api/v2/databases/{name} | AbilityRead | handleGet |
+| GET | /api/v2/nodes | AbilityRoot | handleList |
+| GET | /api/v2/nodes/{name} | AbilityRoot | handleGet |
 
 ## See also
 

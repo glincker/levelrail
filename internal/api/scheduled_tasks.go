@@ -228,13 +228,34 @@ func (rt *Router) maxJobsPerApp() int {
 // requireJobApp writes a 404 or 500 and returns false unless the app exists.
 func (rt *Router) requireJobApp(w http.ResponseWriter, r *http.Request, name, op string) bool {
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+		writeError(w, http.StatusNotFound, rt.jobAppNotFoundMessage(r.Context(), name))
 		return false
 	} else if err != nil {
 		rt.internalError(w, "api: "+op+": load app failed", err, slog.String("name", name))
 		return false
 	}
 	return true
+}
+
+// jobAppNotFoundMessage names the member services when name is an app group,
+// since jobs belong to one service and a group id alone is a dead end.
+func (rt *Router) jobAppNotFoundMessage(ctx context.Context, name string) string {
+	if rt.appGroups == nil {
+		return "app not found"
+	}
+	group, err := rt.appGroups.GetAppByName(ctx, name)
+	if err != nil {
+		return "app not found"
+	}
+	members, err := rt.appGroups.ListServicesByApp(ctx, group.ID)
+	if err != nil || len(members) == 0 {
+		return "app not found"
+	}
+	names := make([]string, 0, len(members))
+	for i := range members {
+		names = append(names, members[i].Name)
+	}
+	return fmt.Sprintf("%q is an app group, not a service; jobs run on one of its services: %s", name, strings.Join(names, ", "))
 }
 
 // handleCreateScheduledTask handles POST /api/v1/apps/{name}/jobs and the

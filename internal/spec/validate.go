@@ -100,6 +100,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateCanary(name); err != nil {
 		return err
 	}
+	if err := svc.Rollout.Validate(name); err != nil {
+		return err
+	}
 	if svc.Resources != nil && svc.Resources.SwapMemory != "" && svc.Resources.Memory == "" {
 		return fmt.Errorf("spec: service %q: resources.swapMemory requires resources.memory to also be set", name)
 	}
@@ -107,6 +110,9 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
 	if err := svc.validateHooks(name); err != nil {
+		return err
+	}
+	if err := svc.validateFiles(name); err != nil {
 		return err
 	}
 	if err := svc.validateJobs(name); err != nil {

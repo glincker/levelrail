@@ -1,0 +1,54 @@
+version: 1
+kind: Project
+metadata:
+  name: kubernetes
+spec: {}
+---
+version: 1
+kind: Environment
+metadata:
+  name: default
+spec:
+  project: kubernetes
+---
+version: 1
+kind: App
+metadata:
+  name: migrate
+spec:
+  project: kubernetes
+  environment: default
+  service:
+    build:
+      type: image
+      image: ghcr.io/example/app:2.1
+    port: 8080
+    replicas: 1
+    command:
+      - migrate
+      - up
+    restart: "no"
+---
+version: 1
+kind: App
+metadata:
+  name: nightly-report
+spec:
+  project: kubernetes
+  environment: default
+  service:
+    build:
+      type: image
+      image: ghcr.io/example/report:2.1
+    port: 8080
+    replicas: 1
+    command:
+      - /bin/report
+      - --full
+    restart: on-failure
+    jobs:
+      - name: nightly-report
+        schedule: 0 3 * * *
+        command: [/bin/report, --full]
+        timezone: Europe/Berlin
+        concurrency: forbid

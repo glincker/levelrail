@@ -16,6 +16,7 @@ import { isFeatureVisible } from '../lib/experimental'
 import { useProjectListOptional } from '../queries/projects'
 import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
 import { useEnvironmentListOptional } from '../queries/environments'
+import { TunnelHint } from './apps/TunnelHint'
 
 // Display labels for internal/spec's three strategy constants.
 const STRATEGY_LABELS: Record<DeployStrategy, string> = {
@@ -167,6 +168,11 @@ export function AppOverview({ app }: { app: AppDetail }) {
           <ProbeSummary label="Readiness probe" probe={app.health?.readiness} />
           <ProbeSummary label="Liveness probe" probe={app.health?.liveness} />
         </div>
+        <TunnelHint
+          appName={app.name}
+          port={app.port}
+          publishedPorts={app.published_ports}
+        />
       </CardContent>
     </Card>
   )

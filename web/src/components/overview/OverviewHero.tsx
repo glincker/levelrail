@@ -24,6 +24,7 @@ export function OverviewHero({
   attempts = [],
   url,
   attentionCount = 0,
+  serverOutcome,
   onDeploy,
 }: {
   app: AppDetail
@@ -32,6 +33,7 @@ export function OverviewHero({
   attempts?: DeployAttempt[]
   url: string | null
   attentionCount?: number
+  serverOutcome?: { outcome?: string; reason?: string }
   onDeploy: (tab: DeployTab) => void
 }) {
   const runningStage = latestAttempt
@@ -46,6 +48,7 @@ export function OverviewHero({
     deploying: runningStage !== undefined,
     deployPhase: phaseWords(runningStage?.key),
     latestAttemptStatus: latestAttempt?.status,
+    serverOutcome,
   })
 
   const released =

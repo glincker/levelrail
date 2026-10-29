@@ -251,6 +251,13 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		}
 		nodes, total = all, len(all)
 	}
+	if sel, err := parseV2Selector(r.URL.Query().Get(labelQueryParam)); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if len(sel) > 0 {
+		nodes = rt.filterNodesByLabels(r.Context(), nodes, sel)
+		total = len(nodes)
+	}
 	gpus := rt.nodeGPUResources(r.Context())
 	renewal := rt.renewalStates(r.Context())
 	now := time.Now()
@@ -554,6 +561,9 @@ type drainNodeResponse struct {
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("dry_run") == "true" {
 		rt.previewNodeDrain(w, r)
+		return
+	}
+	if rt.refuseDrainBudget(w, r) {
 		return
 	}
 	if rt.multiNode != nil {

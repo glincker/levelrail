@@ -76,5 +76,12 @@
   "errors": {
     "load": "Could not load exposure settings.",
     "invalidPort": "Enter a whole number from 1 to 65535."
+  },
+  "tunnel": {
+    "title": "Reach a private port",
+    "description": "Open a local port that tunnels to this app without publishing it. Needs the CLI signed in with an operator token.",
+    "portLabel": "Container port {{port}}",
+    "copy": "Copy tunnel command for port {{port}}",
+    "copied": "Copied"
   }
 }

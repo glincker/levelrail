@@ -197,6 +197,9 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	if status, msg, handled := rt.admitGitPush(ctx, name, ev); handled {
 		return status, msg
 	}
+	if msg := rt.gateOnCI(ctx, name, gs, ev.After); msg != "" {
+		return http.StatusOK, msg
+	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
 	defer release()
 	if queued {

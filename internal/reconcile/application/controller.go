@@ -31,7 +31,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -845,78 +844,6 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 	return c.finishReconcile(ctx, targets, desired, true)
 }
 
-// reconcileRolling replaces targets one at a time: ensure the next
-// target is running and ready, then immediately retire exactly one
-// stale (old-image) container before moving to the next target, rather
-// than proving the whole new set healthy first the way
-// reconcileBlueGreen does.
-//
-// Pairing a retired container with the target that triggered its
-// retirement is by count, not identity: container names derive from
-// image plus index, so an image change renames every target at once and
-// there is no way to say which old container "belongs to" which replica.
-// The safety property rolling promises, never more than one replica
-// short of the desired count, holds regardless of which stale container
-// each step happens to remove.
-//
-// A failed per-step retirement is not fatal to the rollout: the
-// container just stays stale and is picked up again by the final
-// removeStale sweep below, the same "the important fact, a healthy set
-// is serving, is still true" tolerance reconcileBlueGreen's own cleanup
-// failure path already establishes. Only that final sweep's error (if
-// it still fails) is what gets reported, which is also why the "at most
-// one extra container" overlap bound is best-effort rather than an
-// invariant a caller may rely on.
-func (c *Controller) reconcileRolling(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
-	anyDeployed := false
-	for i, target := range targets {
-		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
-		if err != nil {
-			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
-		}
-		anyDeployed = anyDeployed || deployed.justDeployed
-
-		if deployed.justDeployed {
-			stale, err := c.staleContainers(ctx, targets)
-			if err != nil {
-				return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
-			}
-			// With a hold configured the last old container stays as the
-			// held previous release. With a drain window nothing old stops
-			// mid-pass: ingress still balances over it until this pass ends.
-			safety := c.safetyFor(ctx, desired)
-			if safety.DrainTimeout <= 0 && (len(stale) > 1 || (len(stale) == 1 && c.effectiveHold(safety) <= 0)) {
-				// Created is often tied at test/fake-clock resolution, so
-				// break ties on name to keep this deterministic rather
-				// than following ListByPrefix's map-iteration order.
-				sort.SliceStable(stale, func(i, j int) bool {
-					if !stale[i].Created.Equal(stale[j].Created) {
-						return stale[i].Created.Before(stale[j].Created)
-					}
-					return stale[i].Name < stale[j].Name
-				})
-				// An old release's replica 0 is what ingress still dials until
-				// this pass ends and the route moves, so it goes last.
-				for _, cs := range stale {
-					if releaseOf(cs.Name) != cs.Name {
-						_ = c.removeContainers(ctx, []docker.ContainerState{cs})
-						break
-					}
-				}
-			}
-		}
-	}
-
-	if err := c.retireStale(ctx, targets, desired, anyDeployed); err != nil {
-		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
-			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
-		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
-	}
-
-	return c.finishReconcile(ctx, targets, desired, anyDeployed)
-}
-
 // finishReconcile records the deploy metric (if a real cutover happened
 // this pass) and returns the final Ready condition, the shared tail
 // every strategy's reconcile* method ends with.
@@ -1404,6 +1331,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	spec.Ports = append(spec.Ports, streamPorts...)
 	spec.Env = env
+	if spec.Files, err = c.resolveFiles(ctx, desired, env); err != nil {
+		return fmt.Errorf("resolve files: %w", err)
+	}
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
@@ -1886,11 +1816,19 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 		host, port = ep.host, ep.port
 	}
 
+	// The pooler shares the database's namespace: same host, other port.
+	// Cross-node apps keep the direct route, the mesh only maps 5432.
+	pooled := database.PoolerActive(desiredDB) && !crossNode
 	switch field {
 	case "host":
 		return host, nil
 	case "port":
+		if pooled {
+			return strconv.Itoa(database.PoolerPort), nil
+		}
 		return strconv.Itoa(port), nil
+	case "direct_url":
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	case "database":
 		return dbName, nil
 	case "username":
@@ -1898,6 +1836,10 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	case "password":
 		return c.resolveDatabasePassword(ctx, dbName, desiredDB.Engine)
 	case "url":
+		if pooled {
+			// Client to pooler stays inside the namespace bridge, no TLS there.
+			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, database.PoolerPort, false)
+		}
 		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	default:
 		return "", fmt.Errorf("unsupported database field %q", field)

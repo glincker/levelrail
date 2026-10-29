@@ -89,6 +89,7 @@ var toolsetDescriptions = map[string]string{
 	"scheduled":           "Scheduled tasks.",
 	"search":              "Platform search and action search.",
 	"settings":            "Platform settings.",
+	"stacks":              "Stacks: plan and apply resource files with revision history.",
 	"storage":             "Storage buckets and volumes.",
 	"system":              "Control plane health, upgrades, DR and janitor.",
 	"teams":               "Teams and members.",

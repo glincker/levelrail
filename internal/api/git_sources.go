@@ -139,11 +139,15 @@ type gitSourceResource struct {
 	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
 	// fields of the same names, set via PUT .../git-source/deploy-settings.
-	DeployPaths       []string  `json:"deploy_paths"`
-	DeployPathsIgnore []string  `json:"deploy_paths_ignore"`
-	ReportStatus      bool      `json:"report_status"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	DeployPaths       []string `json:"deploy_paths"`
+	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
+	ReportStatus      bool     `json:"report_status"`
+	// WaitForCI and CIRequiredChecks mirror the store fields, set via
+	// PUT .../git-source/deploy-settings.
+	WaitForCI        bool      `json:"wait_for_ci"`
+	CIRequiredChecks []string  `json:"ci_required_checks"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 	// WebhookURLWarning is private_address or no_public_url when WebhookURL
 	// cannot be reached by a git host; WebhookURLSource says where it came from.
 	WebhookURLWarning string `json:"webhook_url_warning,omitempty"`
@@ -202,6 +206,8 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		DeployPaths:            nonNilPaths(g.DeployPaths),
 		DeployPathsIgnore:      nonNilPaths(g.DeployPathsIgnore),
 		ReportStatus:           g.ReportStatus,
+		WaitForCI:              g.WaitForCI,
+		CIRequiredChecks:       nonNilPaths(g.CIRequiredChecks),
 		ConnectionID:           g.ConnectionID,
 		CreatedAt:              g.CreatedAt,
 		UpdatedAt:              g.UpdatedAt,

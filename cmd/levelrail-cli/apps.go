@@ -49,6 +49,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGitHubActions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
 		return runAppsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
+	case "settings":
+		return runAppsSettings(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "autoscale":
@@ -143,6 +145,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsOverview(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "tunnel":
+		return runAppsTunnel(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec-access":
 		return runAppsExecAccess(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "log-drain":
@@ -195,6 +199,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "secrets":
 		return runAppsSecrets(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "upgrade":
+		return runAppsUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
+	case "upgrade-plan":
+		return runAppsUpgradePlan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "analyze":
 		return runAppsAnalyze(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "git-source":
@@ -239,6 +247,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsTag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "untag":
 		return runAppsUntag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "files":
+		return runAppsFiles(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "egress":
 		return runAppsEgress(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health":
@@ -295,6 +305,9 @@ func appsUsage(prog string) string {
   %[1]s apps split start|status|weights|promote|stop <name> [flags]   split testing: send a share of visitors to a branch deploy or release, sticky per visitor
   %[1]s apps build-hooks list|create|rotate|revoke <name> [flags]   secret URLs that build and deploy the app when POSTed to
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
+  %[1]s apps upgrade-plan <name> [flags]   show what a template upgrade would change (read-only)
+  %[1]s apps upgrade <name> --yes [flags]   apply a template upgrade, watch it and roll back on failure
+  %[1]s apps settings predeploy-snapshot <name> [--mode off|on|require]   snapshot linked databases before each deploy; "apps rollback <name> --with-data" restores them
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
@@ -326,6 +339,7 @@ func appsUsage(prog string) string {
   %[1]s apps resource-usage [flags]   rank every app by latest CPU/memory/network usage
   %[1]s apps overview [name ...] [flags]   CPU, memory, traffic and errors for every app in one request
   %[1]s apps exec <name> --<cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps tunnel <name> [--service s] [--port p] [--local-port n]   reach a private app port from 127.0.0.1
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
@@ -373,6 +387,7 @@ func appsUsage(prog string) string {
   %[1]s apps pr-env <verb> [flags]        declare/remove an env var override for one pull request's preview
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
+  %[1]s apps files <ls|set|rm> <name> [flags]   manage an app's inline config files
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist
   %[1]s apps health <verb> [flags]        get/set/clear an app's readiness and liveness probes
   %[1]s apps health-score <name> [flags]  pass/warn/fail readiness verdict: deploy, security, resilience, observability

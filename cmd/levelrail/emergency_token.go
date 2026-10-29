@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"os"
 	"slices"
 	"strings"
@@ -28,6 +29,8 @@ const (
 	emergencyTokenPrefix   = "emergency"
 )
 
+var errEmergencyHelp = errors.New("usage: levelrail emergency-token [--username EMAIL] [--ttl 1h]")
+
 // parseEmergencyTokenArgs validates the flags. The lifetime is capped so a
 // forgotten emergency token cannot become a permanent root credential.
 func parseEmergencyTokenArgs(args []string, lookupEnv func(string) (string, bool)) (username string, ttl time.Duration, err error) {
@@ -36,6 +39,9 @@ func parseEmergencyTokenArgs(args []string, lookupEnv func(string) (string, bool
 	fs.StringVar(&username, "username", "", "admin account that owns the token (default: the first admin)")
 	fs.DurationVar(&ttl, "ttl", defaultEmergencyTTL, "how long the token works, for example 30m or 4h")
 	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return "", 0, errEmergencyHelp
+		}
 		return "", 0, fmt.Errorf("parse emergency-token args: %w", err)
 	}
 	maxTTL := defaultEmergencyMaxTTL
@@ -80,6 +86,19 @@ func randomEmergencyID(prefix string) (string, error) {
 		return "", fmt.Errorf("generate id: %w", err)
 	}
 	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// emergencyAPIURL builds the CLI URL from the service's own listen address so the
+// printed command works on a host that binds a non-default address.
+func emergencyAPIURL(getenv func(string) string) string {
+	host, port, err := net.SplitHostPort(resolveHTTPAddr(getenv, false))
+	if err != nil {
+		return "http://localhost:8080"
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "localhost"
+	}
+	return "http://" + net.JoinHostPort(host, port)
 }
 
 // Needs the same host access as recover-admin; the secret is printed once and never stored in plaintext.
@@ -144,7 +163,7 @@ func runEmergencyToken(ctx context.Context, logger *slog.Logger, args []string, 
 	logger.Warn("emergency token minted", slog.String("owner", owner.Email), slog.String("token_id", legacyID), slog.Time("expires_at", expires))
 
 	_, _ = fmt.Fprintf(stdout, "emergency token for %q (root), valid until %s:\n\n  %s\n\n", owner.Email, expires.Format(time.RFC3339), raw)
-	_, _ = fmt.Fprintln(stdout, "shown once. Use it with the CLI: APP_API_TOKEN=<token> levelrail-cli <command>")
+	_, _ = fmt.Fprintf(stdout, "shown once. Use it with the CLI:\n  APP_API_URL=%s APP_API_TOKEN=<token> levelrail-cli <command>\n", emergencyAPIURL(os.Getenv))
 	_, _ = fmt.Fprintln(stdout, "It expires on its own; revoke it earlier under Settings, CLI Access.")
 	return nil
 }

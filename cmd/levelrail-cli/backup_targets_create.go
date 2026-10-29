@@ -11,7 +11,10 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets create", "print the created backup target as JSON to stdout and nothing else", stderr)
 	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string
 	fs.StringVar(&name, "name", "", "display name for the backup target (required)")
-	fs.StringVar(&provider, "provider", "", "provider: aws, r2, or custom (required)")
+	var targetType, localPath string
+	fs.StringVar(&provider, "provider", "", "provider: aws, r2, custom, or local (required)")
+	fs.StringVar(&targetType, "type", "", "alias of --provider")
+	fs.StringVar(&localPath, "path", "", "directory under APP_BACKUP_LOCAL_ROOT (local type only)")
 	fs.StringVar(&endpoint, "endpoint", "", "S3-compatible endpoint URL (required for r2 and custom, aws resolves its own default)")
 	fs.StringVar(&region, "region", "", "bucket region")
 	fs.StringVar(&bucket, "bucket", "", "bucket name (required)")
@@ -24,22 +27,31 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 		return exitCode
 	}
 
+	if provider == "" {
+		provider = targetType
+	}
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
+	}
+	if provider == "local" {
+		if localPath == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--path is required for the local type"))
+		}
+		bucket = localPath
 	}
 	if provider == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
 	}
-	if bucket == "" {
+	if provider != "local" && bucket == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--bucket is required"))
 	}
 	if msg := backupTargetProviderProblem(provider, endpoint, region); msg != "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("%s", msg))
 	}
-	if accessKeyID == "" {
+	if provider != "local" && accessKeyID == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--access-key-id is required"))
 	}
-	if secretAccessKey == "" {
+	if provider != "local" && secretAccessKey == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--secret-access-key is required"))
 	}
 
@@ -89,7 +101,8 @@ Connects a new backup target.
 
 Flags:
   --name string                  display name for the backup target (required)
-  --provider string               provider: aws, r2, or custom (required)
+  --provider string               provider: aws, r2, custom, or local (required; --type is an alias)
+  --path string                   directory under APP_BACKUP_LOCAL_ROOT (local type, replaces bucket and keys)
   --endpoint string               S3-compatible endpoint URL (required for r2 and custom)
   --region string                 bucket region (required for custom)
   --bucket string                 bucket name (required)

@@ -22,7 +22,7 @@ func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_hook_runs",
-		Description: "Get the most recent outcome of an app's pre-deploy and post-deploy hooks, if configured: exit code, success, and captured output for each. A hook that has never run comes back absent, not an empty result.",
+		Description: "Most recent outcome of an app's pre-deploy and post-deploy hooks: exit code, success and captured output. A hook that never ran is absent.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppHookRunsResource, error) {
 		runs, err := client.GetAppHookRuns(ctx, in.Name)
 		if err != nil {

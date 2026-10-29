@@ -125,7 +125,30 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		Devices:      s.Devices,
 		User:         s.User,
 		BindMounts:   bindMountsToPB(s.BindMounts),
+		Files:        fileMountsToPB(s.Files),
 	}
+}
+
+func fileMountsToPB(fs []docker.FileMount) []*agentpb.FileMount {
+	if len(fs) == 0 {
+		return nil
+	}
+	out := make([]*agentpb.FileMount, len(fs))
+	for i, f := range fs {
+		out[i] = &agentpb.FileMount{Path: f.Path, Mode: f.Mode, Content: f.Content}
+	}
+	return out
+}
+
+func fileMountsFromPB(fs []*agentpb.FileMount) []docker.FileMount {
+	if len(fs) == 0 {
+		return nil
+	}
+	out := make([]docker.FileMount, len(fs))
+	for i, f := range fs {
+		out[i] = docker.FileMount{Path: f.GetPath(), Mode: f.GetMode(), Content: f.GetContent()}
+	}
+	return out
 }
 
 func bindMountsToPB(bs []docker.BindMount) []*agentpb.BindMount {
@@ -211,6 +234,7 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		Devices:      s.Devices,
 		User:         s.User,
 		BindMounts:   bindMountsFromPB(s.BindMounts),
+		Files:        fileMountsFromPB(s.Files),
 	}
 }
 

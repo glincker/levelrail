@@ -286,7 +286,13 @@ type ContainerSpec struct {
 	// Devices are "host[:container[:perms]]" passthrough entries, for
 	// example /dev/fuse.
 	Devices []string
+	// Files are inline files written into the container before it starts.
+	Files []FileMount
 }
+
+// NeedsFilesCapability reports whether the spec carries files an agent that
+// predates them would silently drop, starting the app without its config.
+func (s ContainerSpec) NeedsFilesCapability() bool { return len(s.Files) > 0 }
 
 // NeedsSecurityCapability reports whether the spec sets a field an agent that
 // predates it would silently drop, weakening the container profile.

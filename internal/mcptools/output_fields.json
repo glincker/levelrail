@@ -49,6 +49,21 @@
   "results",
   "skipped"
  ],
+ "apply_stack": [
+  "applied",
+  "changes",
+  "failed",
+  "issues",
+  "noop",
+  "pending_approval",
+  "plan_hash",
+  "replayed",
+  "revision",
+  "stack",
+  "status",
+  "summary",
+  "warnings"
+ ],
  "approve_deploy_approval": [
   "app",
   "approval"
@@ -297,6 +312,15 @@
   "status",
   "swap_group",
   "updated_at"
+ ],
+ "deploy_template": [
+  "app",
+  "notices",
+  "reveal",
+  "secret_keys",
+  "services",
+  "wait",
+  "wait_note"
  ],
  "deployments_summary": [
   "counts",
@@ -1176,6 +1200,10 @@
   "tiers",
   "windows"
  ],
+ "get_stack": [
+  "last_apply",
+  "stack"
+ ],
  "get_status_page": [
   "preview",
   "settings"
@@ -1198,6 +1226,17 @@
   "id",
   "level",
   "protections"
+ ],
+ "get_template_upgrade_plan": [
+  "app_id",
+  "automatic",
+  "blockers",
+  "from_version",
+  "has_changes",
+  "risk",
+  "services",
+  "template_id",
+  "to_version"
  ],
  "get_upgrade_readiness": [
   "breaking",
@@ -1945,6 +1984,9 @@
  "list_sso_group_mappings": [
   "mappings"
  ],
+ "list_stacks": [
+  "stacks"
+ ],
  "list_status_incidents": [
   "body",
   "component_ids",
@@ -2070,6 +2112,14 @@
   "services",
   "source",
   "suggested_name",
+  "warnings"
+ ],
+ "plan_stack": [
+  "changes",
+  "issues",
+  "plan_hash",
+  "stack",
+  "summary",
   "warnings"
  ],
  "preflight_app": [

@@ -10,6 +10,9 @@ import (
 // runAppsRollback implements "apps rollback <name> --image <ref>", the
 // deploy request framed as a rollback and limited to known local tags.
 func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
+	if rest, found := takeBoolFlag(args, "--with-data"); found {
+		return runAppsRollbackWithData(prog, rest, stdout, stderr, lookupEnv)
+	}
 	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
 		cmdLabel:        "apps rollback",
 		imageHelp:       "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (default: the previous successful deploy)",
@@ -123,6 +126,7 @@ If the app is tagged with a protected environment, this fails unless
 Flags:
   --image string          older, already-built image reference to roll back to (default: the previous successful deploy)
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
+  --with-data                restore the pre-deploy database snapshot into new databases, swap the app's links and roll back the code (--deploy ID picks the deploy to undo)
   --diff                     show what this rollback would change against the last successful deploy, then exit without rolling back
   --idempotency-key string   override the derived Idempotency-Key (default: from app, image and CI run id)
   --token string          API token (default: %[2]s env var, then the credentials file)

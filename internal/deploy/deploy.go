@@ -209,8 +209,9 @@ type Pipeline struct {
 	autoscale     AutoscaleStore    // nil is valid: the autoscale: block is then ignored
 
 	autoscaleCeiling int
-	canaryPolicies   CanaryPolicyStore // nil is valid: strategy: canary and canary: are then ignored
-	jobs             JobStore          // nil is valid: the jobs: list is then ignored
+	canaryPolicies   CanaryPolicyStore  // nil is valid: strategy: canary and canary: are then ignored
+	rolloutPolicies  RolloutPolicyStore // nil is valid: rollout: is then ignored
+	jobs             JobStore           // nil is valid: the jobs: list is then ignored
 
 	buildCache BuildCacheProvider // nil is valid: builds use only the local and registry caches
 
@@ -420,7 +421,7 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 
 // saveLiveConfig writes the per-app blocks that only apply once a release is live.
 func (p *Pipeline) saveLiveConfig(ctx context.Context, req Request) error {
-	for _, save := range []func(context.Context, Request) error{p.saveLoadBalancer, p.saveSpendCap, p.saveAutoscale, p.saveCanaryPolicy, p.saveJobs} {
+	for _, save := range []func(context.Context, Request) error{p.saveLoadBalancer, p.saveSpendCap, p.saveAutoscale, p.saveCanaryPolicy, p.saveRolloutPolicy, p.saveJobs} {
 		if err := save(ctx, req); err != nil {
 			return err
 		}

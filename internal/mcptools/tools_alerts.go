@@ -11,7 +11,7 @@ import (
 func registerAlertTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_alert_rules",
-		Description: "List an app's alert rules of every kind, including disabled ones, with current firing state. A cert_expiry rule watches every certificate platform-wide.",
+		Description: "List an app's alert rules of every kind, disabled included, with firing state. cert_expiry rules watch all certificates.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.AlertRuleResource, error) {
 		rules, err := client.ListAlertRules(ctx, in.Name)
 		if err != nil {

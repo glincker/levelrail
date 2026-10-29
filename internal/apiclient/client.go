@@ -162,7 +162,7 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 		// can tell "never reached the server" apart from "the server
 		// answered with an error" via errors.As, and pick a different
 		// exit code / tool-error shape for each.
-		return nil, fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
+		return nil, fmt.Errorf("request %s %s: %w%s", method, c.baseURL+path, err, connectHint(err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
@@ -568,6 +568,35 @@ func (c *Client) ClearAppEgressPolicy(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, nil)
 }
 
+// ListAppFiles calls GET /api/v1/apps/{name}/files. Secret files come back
+// redacted: path and mode only.
+func (c *Client) ListAppFiles(ctx context.Context, name string) (AppFilesResource, error) {
+	var out AppFilesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/files", nil, &out)
+	return out, err
+}
+
+// SetAppFile calls PUT /api/v1/apps/{name}/files, adding or replacing one
+// file; apply restarts the app so the change is live now.
+func (c *Client) SetAppFile(ctx context.Context, name string, req SetAppFileRequest, apply bool) (AppFilesResource, error) {
+	var out AppFilesResource
+	suffix := ""
+	if apply {
+		suffix = "?apply=restart"
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/files"+suffix, req, &out)
+	return out, err
+}
+
+// DeleteAppFile calls DELETE /api/v1/apps/{name}/files?path=.
+func (c *Client) DeleteAppFile(ctx context.Context, name, filePath string, apply bool) error {
+	q := "?path=" + url.QueryEscape(filePath)
+	if apply {
+		q += "&apply=restart"
+	}
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/files"+q, nil, nil)
+}
+
 // SetAppVolumes calls PUT /api/v1/apps/{name}/volumes: attaches (or
 // removes) a named Docker volume outside a redeploy, replacing name's
 // whole desired volume list with req.Volumes.
@@ -799,6 +828,15 @@ func (c *Client) DeleteAppResult(ctx context.Context, name string) (DeleteAppRes
 func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]ConditionResource, error) {
 	var out []ConditionResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys", nil, &out)
+	return out, err
+}
+
+// GetAppStatus calls GET /api/v1/apps/{name}/status: the same conditions as
+// GetDeployStatus plus the server's outcome for the newest deploy. Servers
+// without the route answer 404 and callers fall back to GetDeployStatus.
+func (c *Client) GetAppStatus(ctx context.Context, name string) (AppStatus, error) {
+	var out AppStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/status", nil, &out)
 	return out, err
 }
 
