@@ -228,9 +228,11 @@ func (t *GRPCTransport) ExecTTY(ctx context.Context, containerID string, opts do
 type execAttach struct {
 	archive *agentpb.ArchiveOp
 	file    *agentpb.FileOp
-	stdin   bool
-	tty     bool
-	opts    docker.ExecTTYOptions
+	// volumeFile selects a confined volume file operation.
+	volumeFile *agentpb.VolumeFileOp
+	stdin      bool
+	tty        bool
+	opts       docker.ExecTTYOptions
 }
 
 func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd []string, stdin io.Reader, attach execAttach) (io.ReadCloser, error) {
@@ -259,6 +261,7 @@ func (t *GRPCTransport) startExecAck(ctx context.Context, containerID string, cm
 		Tty:         attach.tty,
 		Archive:     attach.archive,
 		File:        attach.file,
+		VolumeFile:  attach.volumeFile,
 	}
 	if attach.tty {
 		req.Env = attach.opts.Env

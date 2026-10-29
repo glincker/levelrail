@@ -305,6 +305,8 @@ Endpoints for:
 | POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
 | POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
 | GET | /api/v1/auth/session | Public | handleAuthSession |
+| GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
+| PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -318,8 +320,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
-| PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
 
 </Accordion>
 
@@ -1264,6 +1264,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityRead | handleGetVolumeBackupPolicy |
 | PUT | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityWriteSensitive | handleSetVolumeBackupPolicy |
 | POST | /api/v1/apps/{name}/volumes/{volume}/restore-to | AbilityWriteSensitive | handleVolumeRestoreTo |
+| GET | /api/v1/apps/{name}/volumes/{volume}/files | AbilityReadSensitive | handleListVolumeFiles |
+| GET | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityReadSensitive | handleDownloadVolumeFile |
+| PUT | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handlePutVolumeFile |
+| DELETE | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handleDeleteVolumeFile |
+| POST | /api/v1/apps/{name}/volumes/{volume}/files/restore | AbilityWrite | handleRestoreVolumeFile |
 
 ## App Storage / Database Attach
 

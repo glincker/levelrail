@@ -695,6 +695,31 @@ message ExecRequest {
   // File turns this exec into an object operation inside the agent's
   // confined storage directory (no command runs, no container involved).
   FileOp file = 8;
+  // VolumeFile browses or edits one file inside a named volume's host
+  // directory (no command runs). PUT consumes ExecInput frames, GET and
+  // LIST stream ExecOutput frames.
+  VolumeFileOp volume_file = 9;
+}
+
+// VolumeFileOp is one confined file operation inside a named volume. The
+// agent resolves path relative to the volume root and refuses traversal and
+// symlinks that leave it. LIST emits one JSON line per entry, with a final
+// {"truncated":true} line when limit cut the listing short.
+message VolumeFileOp {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_LIST = 1;
+    KIND_GET = 2;
+    KIND_PUT = 3;
+    KIND_DELETE = 4;
+  }
+  Kind kind = 1;
+  string volume = 2;
+  string path = 3;
+  // Upload cap for PUT, list cap for LIST; the agent applies the smaller of
+  // this and its own env limit, and 0 defers to the env limit alone.
+  int64 max_bytes = 4;
+  int32 limit = 5;
 }
 
 // FileOp is one object operation on a storage destination directory. The

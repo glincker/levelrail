@@ -122,7 +122,7 @@ func (r *ExecRelay) Start(ctx context.Context, execID string, req *agentpb.ExecR
 	var stdinR *io.PipeReader
 	// A PTY is inherently interactive, so it always has a stdin side
 	// whether or not the request bothered to say so.
-	if req.GetAttachStdin() || req.GetTty() || req.GetArchive().GetCopyIn() || req.GetFile().GetKind() == agentpb.FileOp_KIND_PUT {
+	if req.GetAttachStdin() || req.GetTty() || req.GetArchive().GetCopyIn() || req.GetFile().GetKind() == agentpb.FileOp_KIND_PUT || req.GetVolumeFile().GetKind() == agentpb.VolumeFileOp_KIND_PUT {
 		stdinR, ex.stdin = io.Pipe()
 	}
 
@@ -169,6 +169,9 @@ func (r *ExecRelay) run(ctx context.Context, execID string, ex *agentExec, req *
 func (r *ExecRelay) attachLocal(ctx context.Context, ex *agentExec, req *agentpb.ExecRequest, stdinR *io.PipeReader) (io.ReadCloser, error) {
 	if req.GetFile() != nil {
 		return r.attachFile(ctx, ex, req, stdinR)
+	}
+	if req.GetVolumeFile() != nil {
+		return r.attachVolumeFile(ctx, ex, req, stdinR)
 	}
 	if req.GetArchive() != nil {
 		return r.attachArchive(ctx, ex, req, stdinR)

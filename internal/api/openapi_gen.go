@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1777 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1782 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -89,6 +89,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeBackupVerifications", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleVerifyVolumeBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/clone-restores", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeCloneRestores", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/files", Ability: "AbilityReadSensitive", Group: "App Volume Backups / Restore", Handler: "handleListVolumeFiles", Description: "Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write, so an operator can fix a config file without SSH."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/volumes/{volume}/files/content", Ability: "AbilityWrite", Group: "App Volume Backups / Restore", Handler: "handleDeleteVolumeFile", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/files/content", Ability: "AbilityReadSensitive", Group: "App Volume Backups / Restore", Handler: "handleDownloadVolumeFile", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/volumes/{volume}/files/content", Ability: "AbilityWrite", Group: "App Volume Backups / Restore", Handler: "handlePutVolumeFile", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/files/restore", Ability: "AbilityWrite", Group: "App Volume Backups / Restore", Handler: "handleRestoreVolumeFile", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/restore", Ability: "AbilityRoot", Group: "App Volume Backups / Restore", Handler: "handleTriggerVolumeRestore", Description: "AbilityRoot, matching the database restore route above exactly: see handleTriggerVolumeRestore's own doc comment for why this is not a lesser risk tier just because the target is a filesystem."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/restore-as-new", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleVolumeCloneRestore", Description: "Restore as a new volume (app_volume_clone_restore.go): the non-destructive counterpart just above, the same AbilityWriteSensitive tier the database clone-restore route below uses, see handleVolumeCloneRestore's own doc comment for why."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/restore-to", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleVolumeRestoreTo", Description: ""},
