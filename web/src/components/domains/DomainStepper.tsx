@@ -33,6 +33,7 @@ import { AcmeFailureHint } from '../AcmeFailureHint'
 import { DomainDnsStatusBadge } from '../DomainDnsStatusBadge'
 import { DnsRecordsTable } from './ServerAddressCard'
 import { StepBody, StepperNav } from './DomainStepperParts'
+import { PortStep } from './DomainStepperPort'
 
 function list(values?: string[]): string {
   return values && values.length > 0 ? values.join(', ') : ''
@@ -362,6 +363,14 @@ export function DomainStepper({
         <CheckStep
           appName={appName}
           domain={domain}
+          onNext={() => {
+            go(appName === STANDALONE_SCOPE ? 'certificate' : 'port')
+          }}
+        />
+      ) : null}
+      {step === 'port' ? (
+        <PortStep
+          appName={appName}
           onNext={() => {
             go('certificate')
           }}

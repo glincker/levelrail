@@ -362,6 +362,34 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     '/settings/audit-log',
     'Settings',
   ),
+  nav(
+    'settings-dr-report',
+    'Recovery report',
+    <ShieldCheckIcon />,
+    '/settings/dr-report',
+    'Settings',
+  ),
+  nav(
+    'settings-heartbeat',
+    'Heartbeat',
+    <HeartbeatIcon />,
+    '/settings/notification-channels',
+    'Settings',
+  ),
+  nav(
+    'settings-deploy-policies',
+    'Deploy policies and CI gate',
+    <GavelIcon />,
+    '/settings/deploy-policies',
+    'Settings',
+  ),
+  nav(
+    'settings-cloudflare-tunnel',
+    'Cloudflare Tunnel',
+    <GlobeHemisphereWestIcon />,
+    '/settings/cloudflare-tunnel',
+    'Settings',
+  ),
 ]
 
 // Always-available empty-query CTAs, independent of recents/app data.

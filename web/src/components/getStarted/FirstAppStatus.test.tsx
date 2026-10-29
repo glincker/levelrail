@@ -156,8 +156,8 @@ describe('FirstAppStatus live state', () => {
       ),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: getStartedEn.first.status.goLive }),
-    ).toHaveAttribute('href', '/apps/$name/go-live')
+      screen.getByRole('button', { name: getStartedEn.first.status.goLive }),
+    ).toHaveAttribute('aria-expanded', 'false')
   })
 })
 

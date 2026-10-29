@@ -16,6 +16,13 @@ const cert = vi.hoisted(() => ({
   data: undefined as Record<string, unknown> | undefined,
 }))
 
+vi.mock('./DomainStepperPort', () => ({
+  PortStep: ({ onNext }: { onNext: () => void }) => (
+    <button type="button" onClick={onNext}>
+      Continue
+    </button>
+  ),
+}))
 vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => (
@@ -121,6 +128,7 @@ describe('DomainStepper', () => {
     await userEvent.click(
       screen.getByRole('button', { name: /added the records/i }),
     )
+    await userEvent.click(screen.getByRole('button', { name: /continue/i }))
     await userEvent.click(screen.getByRole('button', { name: /continue/i }))
     expect(screen.getByText('Certificate failed')).toBeInTheDocument()
     expect(screen.getByText('rate limited')).toBeInTheDocument()

@@ -1054,7 +1054,11 @@
       "domain": "Domain",
       "records": "DNS records",
       "check": "Live check",
+      "port": "Container port",
       "certificate": "Certificate"
+    },
+    "port": {
+      "next": "Port is right, continue"
     },
     "domain": {
       "label": "Domain",

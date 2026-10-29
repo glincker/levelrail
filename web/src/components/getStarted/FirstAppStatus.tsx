@@ -9,6 +9,7 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { DomainStepper } from '../domains/DomainStepper'
 import type { AppListEntry } from '../../types/appDetail'
 import { useAppNetwork } from '../../queries/appNetwork'
 import { useAppUrls } from '../../queries/appUrls'
@@ -66,6 +67,7 @@ export function FirstAppStatus({
   const failure = attempts?.find((a) => a.failure)?.failure
   const redeploy = useTriggerDeploy(app.name)
   const [retried, setRetried] = useState(false)
+  const [showDomain, setShowDomain] = useState(false)
   const canRetry = app.name === SAMPLE_APP.name && failure?.retryable !== false
   const { data: diagnosis, isLoading: diagnosing } = useDiagnosis(
     app.name,
@@ -100,7 +102,10 @@ export function FirstAppStatus({
           size="sm"
           className="max-sm:min-h-11"
           variant="outline"
-          render={<Link to="/apps/$name/go-live" params={{ name: app.name }} />}
+          aria-expanded={showDomain}
+          onClick={() => {
+            setShowDomain((v) => !v)
+          }}
         >
           {t('first.status.goLive')}
         </Button>
@@ -138,6 +143,7 @@ export function FirstAppStatus({
             {t('first.status.certNote')}
           </p>
         ) : null}
+        {showDomain ? <DomainStepper appName={app.name} /> : null}
         <div className="flex flex-wrap gap-2">
           {appLinks}
           {onDone && !onDashboard ? (

@@ -26,5 +26,11 @@ export function isApexName(domain: string): boolean {
   return domain.replace(/^\*\./, '').split('.').length === 2
 }
 
-export const STEP_IDS = ['domain', 'records', 'check', 'certificate'] as const
+export const STEP_IDS = [
+  'domain',
+  'records',
+  'check',
+  'port',
+  'certificate',
+] as const
 export type StepId = (typeof STEP_IDS)[number]
