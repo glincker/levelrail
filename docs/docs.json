@@ -239,6 +239,7 @@
             "group": "Databases and storage",
             "pages": [
               "managing-databases",
+              "postgres-pooler",
               "database-upgrades",
               "database-version-catalog",
               "external-databases",
