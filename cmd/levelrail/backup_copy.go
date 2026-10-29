@@ -12,13 +12,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// startBackupCopies runs the second-destination copy worker.
-func startBackupCopies(ctx context.Context, logger *slog.Logger, db *store.DB, secrets backup.SecretsResolver) {
+// startBackupCopies runs the second-destination copy worker. storage routes local and node
+// destinations, which have no S3 endpoint.
+func startBackupCopies(ctx context.Context, logger *slog.Logger, db *store.DB, secrets backup.SecretsResolver, storage backup.Routed) {
 	runner := &backup.CopyRunner{
 		Store:       db,
 		Secrets:     secrets,
-		Downloader:  backup.S3Downloader{},
-		Uploader:    backup.S3Uploader{},
+		Downloader:  storage,
+		Uploader:    storage,
 		Concurrency: backup.CopyConcurrencyFromEnv(os.LookupEnv),
 		Logger:      logger,
 	}
