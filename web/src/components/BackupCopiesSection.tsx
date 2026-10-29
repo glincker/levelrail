@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyIcon, FileTextIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -88,9 +88,21 @@ export function BackupCopiesSection({ targets }: { targets: BackupTarget[] }) {
       id: 'status',
       header: t('backupCopies.table.status'),
       cell: (row) => (
-        <Badge variant={STATUS_VARIANT[row.status]}>
-          {t(`backupCopies.status.${row.status}`)}
-        </Badge>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={STATUS_VARIANT[row.status]}>
+            {t(`backupCopies.status.${row.status}`)}
+          </Badge>
+          {row.status === 'succeeded' ? (
+            <span
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+              title={t('backupCopies.manifestTip')}
+              data-testid="copy-manifest"
+            >
+              <FileTextIcon className="size-3.5" aria-hidden="true" />
+              {t('backupCopies.manifest')}
+            </span>
+          ) : null}
+        </span>
       ),
     },
     {

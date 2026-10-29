@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -6,6 +7,7 @@ import {
   CloudArrowUpIcon,
   EyeIcon,
   EyeSlashIcon,
+  FolderIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -48,15 +50,33 @@ import type { BackupProvider } from '../types/backupTarget'
 const createBackupTargetSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
-    provider: z.enum(['aws', 'r2', 'custom']),
+    provider: z.enum(['aws', 'r2', 'custom', 'local']),
     bucket: z.string().trim().min(1, 'Bucket is required'),
     region: z.string().trim().optional(),
     endpoint: z.string().trim().optional(),
-    access_key_id: z.string().trim().min(1, 'Access key ID is required'),
-    secret_access_key: z.string().min(1, 'Secret access key is required'),
+    access_key_id: z.string().trim().optional(),
+    secret_access_key: z.string().optional(),
+  })
+  .refine((v) => v.provider === 'local' || (v.access_key_id ?? '') !== '', {
+    message: 'Access key ID is required',
+    path: ['access_key_id'],
+  })
+  .refine((v) => v.provider === 'local' || (v.secret_access_key ?? '') !== '', {
+    message: 'Secret access key is required',
+    path: ['secret_access_key'],
   })
   .refine(
-    (values) => values.provider === 'aws' || (values.endpoint ?? '').length > 0,
+    (v) => v.provider !== 'local' || !v.bucket.split('/').includes('..'),
+    {
+      message: 'Path must stay inside the allowed root',
+      path: ['bucket'],
+    },
+  )
+  .refine(
+    (values) =>
+      values.provider === 'aws' ||
+      values.provider === 'local' ||
+      (values.endpoint ?? '').length > 0,
     {
       message: 'Endpoint is required for R2 and custom providers',
       path: ['endpoint'],
@@ -79,6 +99,7 @@ const ENDPOINT_PLACEHOLDER: Record<BackupProvider, string> = {
   aws: '',
   r2: 'https://<account-id>.r2.cloudflarestorage.com',
   custom: 'https://s3.example.com',
+  local: '',
 }
 
 // Connects a new S3-compatible bucket as a backup destination. POST
@@ -90,6 +111,7 @@ const ENDPOINT_PLACEHOLDER: Record<BackupProvider, string> = {
 // dashboard's session is never scoped down, a 403 is a real, surfaced
 // error, not something the UI pre-empts by hiding buttons).
 export function CreateBackupTargetDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [revealSecret, setRevealSecret] = useState(false)
   const createBackupTarget = useCreateBackupTarget()
@@ -99,6 +121,7 @@ export function CreateBackupTargetDialog() {
       defaultValues,
     })
   const watchedProvider = watch('provider')
+  const isLocal = watchedProvider === 'local'
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -114,7 +137,7 @@ export function CreateBackupTargetDialog() {
   // switching back to aws clears whatever was typed rather than leaving
   // a stale value that onSubmit would just have to strip anyway.
   useEffect(() => {
-    if (watchedProvider === 'aws') {
+    if (watchedProvider === 'aws' || watchedProvider === 'local') {
       setValue('endpoint', '')
     }
     // Only reacting to the provider field's own value, not to setValue's
@@ -128,12 +151,16 @@ export function CreateBackupTargetDialog() {
         name: values.name.trim(),
         provider: values.provider,
         bucket: values.bucket.trim(),
-        ...(values.region?.trim() ? { region: values.region.trim() } : {}),
-        ...(values.provider !== 'aws' && values.endpoint?.trim()
+        ...(values.provider !== 'local' && values.region?.trim()
+          ? { region: values.region.trim() }
+          : {}),
+        ...(values.provider !== 'aws' &&
+        values.provider !== 'local' &&
+        values.endpoint?.trim()
           ? { endpoint: values.endpoint.trim() }
           : {}),
-        access_key_id: values.access_key_id.trim(),
-        secret_access_key: values.secret_access_key,
+        access_key_id: (values.access_key_id ?? '').trim(),
+        secret_access_key: values.secret_access_key ?? '',
       },
       {
         onSuccess: (created) => {
@@ -260,29 +287,58 @@ export function CreateBackupTargetDialog() {
                 />
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="backup-target-bucket">Bucket</FieldLabel>
-                <Input
-                  id="backup-target-bucket"
-                  placeholder="my-backups-bucket"
-                  {...register('bucket')}
-                />
-                <FieldError errors={[formState.errors.bucket]} />
-              </Field>
+              {isLocal ? (
+                <Field>
+                  <FieldLabel htmlFor="backup-target-path">
+                    <span className="flex items-center gap-2">
+                      <FolderIcon className="size-4" aria-hidden="true" />
+                      {t('backupTargetLocal.path')}
+                    </span>
+                  </FieldLabel>
+                  <Input
+                    id="backup-target-path"
+                    className="font-mono"
+                    placeholder={t('backupTargetLocal.placeholder')}
+                    aria-describedby="backup-target-path-hint"
+                    {...register('bucket')}
+                  />
+                  <p
+                    id="backup-target-path-hint"
+                    className="text-xs text-muted-foreground"
+                  >
+                    {t('backupTargetLocal.hint')}
+                  </p>
+                  <FieldError errors={[formState.errors.bucket]} />
+                </Field>
+              ) : (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor="backup-target-bucket">
+                      Bucket
+                    </FieldLabel>
+                    <Input
+                      id="backup-target-bucket"
+                      placeholder="my-backups-bucket"
+                      {...register('bucket')}
+                    />
+                    <FieldError errors={[formState.errors.bucket]} />
+                  </Field>
 
-              <Field>
-                <FieldLabel htmlFor="backup-target-region">
-                  Region{' '}
-                  <span className="text-muted-foreground">(optional)</span>
-                </FieldLabel>
-                <Input
-                  id="backup-target-region"
-                  placeholder="us-east-1"
-                  {...register('region')}
-                />
-              </Field>
+                  <Field>
+                    <FieldLabel htmlFor="backup-target-region">
+                      Region{' '}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </FieldLabel>
+                    <Input
+                      id="backup-target-region"
+                      placeholder="us-east-1"
+                      {...register('region')}
+                    />
+                  </Field>
+                </>
+              )}
 
-              {watchedProvider === 'aws' ? null : (
+              {watchedProvider === 'aws' || isLocal ? null : (
                 <Field>
                   <FieldLabel htmlFor="backup-target-endpoint">
                     <span className="flex items-center gap-2">
@@ -306,51 +362,55 @@ export function CreateBackupTargetDialog() {
                 </Field>
               )}
 
-              <Field>
-                <FieldLabel htmlFor="backup-target-access-key-id">
-                  Access key ID
-                </FieldLabel>
-                <Input
-                  id="backup-target-access-key-id"
-                  className="font-mono"
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  {...register('access_key_id')}
-                />
-                <FieldError errors={[formState.errors.access_key_id]} />
-              </Field>
+              {isLocal ? null : (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor="backup-target-access-key-id">
+                      Access key ID
+                    </FieldLabel>
+                    <Input
+                      id="backup-target-access-key-id"
+                      className="font-mono"
+                      autoComplete="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      {...register('access_key_id')}
+                    />
+                    <FieldError errors={[formState.errors.access_key_id]} />
+                  </Field>
 
-              <Field>
-                <FieldLabel htmlFor="backup-target-secret-access-key">
-                  Secret access key
-                </FieldLabel>
-                <div className="relative">
-                  <Input
-                    id="backup-target-secret-access-key"
-                    type={revealSecret ? 'text' : 'password'}
-                    className="pr-9 font-mono"
-                    autoComplete="off"
-                    {...register('secret_access_key')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRevealSecret((v) => !v)
-                    }}
-                    aria-label={revealSecret ? 'Hide value' : 'Show value'}
-                    aria-pressed={revealSecret}
-                    className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
-                  >
-                    {revealSecret ? (
-                      <EyeSlashIcon className="size-4" />
-                    ) : (
-                      <EyeIcon className="size-4" />
-                    )}
-                  </button>
-                </div>
-                <FieldError errors={[formState.errors.secret_access_key]} />
-              </Field>
+                  <Field>
+                    <FieldLabel htmlFor="backup-target-secret-access-key">
+                      Secret access key
+                    </FieldLabel>
+                    <div className="relative">
+                      <Input
+                        id="backup-target-secret-access-key"
+                        type={revealSecret ? 'text' : 'password'}
+                        className="pr-9 font-mono"
+                        autoComplete="off"
+                        {...register('secret_access_key')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRevealSecret((v) => !v)
+                        }}
+                        aria-label={revealSecret ? 'Hide value' : 'Show value'}
+                        aria-pressed={revealSecret}
+                        className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                      >
+                        {revealSecret ? (
+                          <EyeSlashIcon className="size-4" />
+                        ) : (
+                          <EyeIcon className="size-4" />
+                        )}
+                      </button>
+                    </div>
+                    <FieldError errors={[formState.errors.secret_access_key]} />
+                  </Field>
+                </>
+              )}
 
               {generalError ? (
                 <Alert variant="destructive">

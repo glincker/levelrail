@@ -1545,6 +1545,8 @@
     "on": "Copying to {{name}}",
     "saved": "Backup copy settings saved",
     "saveFailed": "Could not save backup copy settings",
+    "manifest": "Manifest",
+    "manifestTip": "Checksum verified, manifest sidecar written next to the copy",
     "empty": "No backups have been queued for copying yet.",
     "status": {
       "pending": "Waiting",
@@ -1561,6 +1563,11 @@
       "error": "Last error"
     }
   },
+  "backupTargetLocal": {
+    "path": "Directory",
+    "placeholder": "nightly",
+    "hint": "Relative to the allowed root (APP_BACKUP_LOCAL_ROOT on the control plane). The server rejects paths outside it."
+  },
   "backupTargetsPage": {
     "rail": {
       "label": "Backup targets summary",
@@ -1570,7 +1577,8 @@
       "provider": {
         "aws": "AWS S3",
         "r2": "Cloudflare R2",
-        "custom": "S3-compatible"
+        "custom": "S3-compatible",
+        "local": "Local directory"
       },
       "status": "Backup status",
       "statusBody": "Runs, coverage and restore drills live on the Backups page.",
