@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ResourceLabelsCard } from '../../../components/ResourceLabelsCard'
 import { AppResourceTree } from '../../../components/apps/AppResourceTree'
+import { AppReleases } from '../../../components/apps/AppReleases'
 import { useApp } from '../../../queries/apps'
 import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../hooks/useDeployProgress'
@@ -36,6 +37,7 @@ function OverviewSection() {
       <RecommendedNextCard app={app} latest={attempts[0]} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
       <AppResourceTree app={app} conditions={conditions} />
+      <AppReleases appName={name} />
       <SleepHistoryCard appName={name} hideWhenOff />
       <ResourceLabelsCard path="apps" name={name} />
       <PanelHost slot="app-detail" appId={name} />

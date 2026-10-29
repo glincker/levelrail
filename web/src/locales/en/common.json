@@ -145,6 +145,10 @@
       }
     }
   },
+  "appReleases": {
+    "title": "Releases",
+    "current": "Current"
+  },
   "appResourceTree": {
     "title": "Resources",
     "groups": {
