@@ -89,6 +89,7 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"node-disk-space", "Node disk space critical", KindNodeDiskSpace, SeverityCritical},
 		{"email-delivery-failing", "Outbound email is failing", KindEmailDeliveryFailing, SeverityWarning},
 		{"node-cert-expiring", "Node certificate expiring", KindNodeCertExpiring, SeverityWarning},
+		{"backup-copy-behind", "Backup copy is behind", KindBackupCopyBehind, SeverityWarning},
 		{"export-behind", "Export destination failing", KindExportBehind, SeverityWarning},
 		{"registry-refresh-failing", "Registry credential refresh failing", KindRegistryRefreshFailing, SeverityWarning},
 		{"log-archive-stale", "Log archive failing", KindLogArchiveStale, SeverityWarning},

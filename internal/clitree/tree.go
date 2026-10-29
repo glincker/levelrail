@@ -204,11 +204,13 @@ var Tree = map[string]*Node{
 	"backups": {Subs: map[string]*Node{
 		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
 		"health": nil, "protection": nil, "coverage": nil, "protect-all": nil,
-		"orphans":    {Subs: map[string]*Node{"list": nil, "reclaim": nil}},
-		"encryption": {Subs: map[string]*Node{"get": nil, "set": nil}},
-		"drill":      {Subs: map[string]*Node{"run": nil, "list": nil, "show": nil}},
-		"volumes":    {Subs: map[string]*Node{"list": nil, "policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "restore": nil}},
-		"schedule":   {Subs: map[string]*Node{"set": nil, "clear": nil}},
+		"orphans":      {Subs: map[string]*Node{"list": nil, "reclaim": nil}},
+		"encryption":   {Subs: map[string]*Node{"get": nil, "set": nil}},
+		"destinations": {Subs: map[string]*Node{"copy": {Subs: map[string]*Node{"show": nil, "set": nil}}}},
+		"copies":       {Subs: map[string]*Node{"list": nil}},
+		"drill":        {Subs: map[string]*Node{"run": nil, "list": nil, "show": nil}},
+		"volumes":      {Subs: map[string]*Node{"list": nil, "policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "restore": nil}},
+		"schedule":     {Subs: map[string]*Node{"set": nil, "clear": nil}},
 	}},
 	"pitr": {Subs: map[string]*Node{
 		"enable": nil, "disable": nil, "status": nil, "restore": nil, "restores": nil,

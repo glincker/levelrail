@@ -138,6 +138,7 @@ func (s *bootState) startAlerting() {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
+	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
@@ -235,6 +236,7 @@ func (s *bootState) startSchedulers() {
 		apiRouter.SetWALShipStatus(walShip)
 		startWhenWork(ctx, logger, "backups", hasScheduledBackups(db), func() {
 			startBackupDrills(ctx, logger, db, newBackupProtection(db, secretsManager, client, backupRunner, logger), alertingEngine)
+			startBackupCopies(ctx, logger, db, secretsManager)
 			go func() {
 				if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 					logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
