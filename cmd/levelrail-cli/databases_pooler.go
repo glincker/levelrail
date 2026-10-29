@@ -30,7 +30,7 @@ func runDatabasesPooler(prog string, args []string, stdout, stderr io.Writer, lo
 func databasesPoolerUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s databases pooler show <database> [flags]      pooler state, pooled and direct URLs
-  %[1]s databases pooler enable <database> [flags]    run a transaction pooler beside a Postgres database
+  %[1]s databases pooler enable <database> [--pool-size N] [--max-client-conn N]   run a transaction pooler beside a Postgres database
   %[1]s databases pooler disable <database> [flags]   remove the pooler, apps go back to the direct URL
 
 Linked apps get the pooled URL from the "url" field; "direct_url" always
@@ -41,6 +41,11 @@ bypasses the pooler, use it for migrations.
 func runDatabasesPoolerVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	cmd := "databases pooler " + verb
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cmd, "print the pooler state as JSON to stdout and nothing else", stderr)
+	var poolSize, maxClientConn *int
+	if verb == "enable" {
+		poolSize = fs.Int("pool-size", 0, "server connections per database (0 keeps the control plane default)")
+		maxClientConn = fs.Int("max-client-conn", 0, "client connections the pooler accepts (0 keeps the control plane default)")
+	}
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <database> [flags]\n\nFlags:\n", prog, cmd)
 		fs.PrintDefaults()
@@ -59,6 +64,8 @@ func runDatabasesPoolerVerb(prog, verb string, args []string, stdout, stderr io.
 	var err error
 	if verb == "show" {
 		res, err = client.GetDatabasePooler(context.Background(), name)
+	} else if verb == "enable" {
+		res, err = client.EnableDatabasePooler(context.Background(), name, apiclient.DatabasePoolerTuning{PoolSize: *poolSize, MaxClientConn: *maxClientConn})
 	} else {
 		res, err = client.SetDatabasePooler(context.Background(), name, verb == "enable")
 	}
@@ -83,6 +90,9 @@ func printPooler(w io.Writer, name string, res apiclient.DatabasePoolerResource)
 		}
 	}
 	_, _ = fmt.Fprintf(w, "pooler:     %s\n", state)
+	if res.PoolSize > 0 || res.MaxClientConn > 0 {
+		_, _ = fmt.Fprintf(w, "sizing:     pool-size=%d max-client-conn=%d (0 = default)\n", res.PoolSize, res.MaxClientConn)
+	}
 	if res.PooledURL != "" {
 		_, _ = fmt.Fprintf(w, "pooled url: %s\n", res.PooledURL)
 	}

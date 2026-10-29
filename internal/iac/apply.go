@@ -97,12 +97,12 @@ func (x *executor) ensureTag(ctx context.Context, name string) (string, error) {
 }
 
 // setDatabasePooler uses the same routes as the CLI and dashboard.
-func (x *executor) setDatabasePooler(ctx context.Context, db string, enabled bool) error {
-	method := http.MethodDelete
-	if enabled {
-		method = http.MethodPost
+func (x *executor) setDatabasePooler(ctx context.Context, db string, enabled bool, poolSize, maxClientConn int) error {
+	if !enabled {
+		return x.do(ctx, http.MethodDelete, "/api/v1/databases/"+esc(db)+"/pooler", nil, nil)
 	}
-	return x.do(ctx, method, "/api/v1/databases/"+esc(db)+"/pooler", nil, nil)
+	body := map[string]int{"pool_size": poolSize, "max_client_conn": maxClientConn}
+	return x.do(ctx, http.MethodPost, "/api/v1/databases/"+esc(db)+"/pooler", body, nil)
 }
 
 func (x *executor) setDatabaseProject(ctx context.Context, db, project string) error {

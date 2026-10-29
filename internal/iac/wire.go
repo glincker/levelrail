@@ -71,6 +71,8 @@ type wireDatabase struct {
 	Version   string `json:"version"`
 	ProjectID string `json:"project_id,omitempty"`
 	Pooler    bool   `json:"pooler_enabled,omitempty"`
+	PoolSize  int    `json:"pooler_pool_size,omitempty"`
+	MaxConn   int    `json:"pooler_max_client_conn,omitempty"`
 }
 
 type wireApp struct {

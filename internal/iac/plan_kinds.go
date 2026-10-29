@@ -172,6 +172,7 @@ func (p *planner) planDatabase(r *Resource) {
 		return
 	}
 	wantPooler, poolerDeclared := r.Fields["pooler"].(bool)
+	wantPool, wantMax := intField(r.Fields, "pooler_pool_size"), intField(r.Fields, "pooler_max_client_conn")
 	live, ok := p.st.databases[r.Name]
 	if !ok {
 		p.add(r, ActionCreate, addAll(r.Fields, nil), nil, func(ctx context.Context, x *executor) error {
@@ -183,7 +184,7 @@ func (p *planner) planDatabase(r *Resource) {
 				return err
 			}
 			if wantPooler {
-				return x.setDatabasePooler(ctx, r.Name, true)
+				return x.setDatabasePooler(ctx, r.Name, true, wantPool, wantMax)
 			}
 			return nil
 		})
@@ -206,6 +207,14 @@ func (p *planner) planDatabase(r *Resource) {
 	if poolerChanged {
 		ch = append(ch, FieldChange{Path: "pooler.enabled", Op: OpChange, Old: strconv.FormatBool(live.Pooler), New: strconv.FormatBool(wantPooler)})
 	}
+	if poolerDeclared && wantPooler && wantPool != live.PoolSize {
+		poolerChanged = true
+		ch = append(ch, FieldChange{Path: "pooler.pool_size", Op: OpChange, Old: strconv.Itoa(live.PoolSize), New: strconv.Itoa(wantPool)})
+	}
+	if poolerDeclared && wantPooler && wantMax != live.MaxConn {
+		poolerChanged = true
+		ch = append(ch, FieldChange{Path: "pooler.max_client_conn", Op: OpChange, Old: strconv.Itoa(live.MaxConn), New: strconv.Itoa(wantMax)})
+	}
 	if len(ch) == 0 {
 		p.add(r, ActionNoop, nil, nil, nil)
 		return
@@ -217,7 +226,7 @@ func (p *planner) planDatabase(r *Resource) {
 			}
 		}
 		if poolerChanged {
-			return x.setDatabasePooler(ctx, r.Name, wantPooler)
+			return x.setDatabasePooler(ctx, r.Name, wantPooler, wantPool, wantMax)
 		}
 		return nil
 	})

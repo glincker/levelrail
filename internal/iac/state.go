@@ -319,6 +319,11 @@ func (l loader) scopedOne(ctx context.Context, r *Resource, loadEnvs func(string
 	return nil
 }
 
+func intField(f map[string]any, k string) int {
+	n, _ := f[k].(int)
+	return n
+}
+
 func stringField(f map[string]any, k string) string {
 	s, _ := f[k].(string)
 	return s

@@ -917,6 +917,10 @@
     "remoteNote": "Apps on other nodes cannot reach the pooler and use the direct URL. Replace <password> with a credential from the Access page.",
     "imageMissing": "No pooler image is configured on the control plane. Set APP_PG_POOLER_IMAGE to enable this.",
     "toggleFailed": "Could not change the pooler.",
+    "poolSize": "Pool size",
+    "maxClientConn": "Max client connections",
+    "default": "Default",
+    "applySizing": "Apply sizing",
     "status": {
       "running": "Ready",
       "failed": "Failed",

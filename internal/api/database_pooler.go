@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -16,12 +18,21 @@ import (
 // DatabaseStore keep compiling without a pooler method.
 type databasePoolerStore interface {
 	SetDatabasePooler(ctx context.Context, name string, enabled bool) error
+	SetDatabasePoolerTuning(ctx context.Context, name string, poolSize, maxClientConn int) error
+}
+
+// databasePoolerRequest is the optional POST body; 0 or absent keeps the env default.
+type databasePoolerRequest struct {
+	PoolSize      int `json:"pool_size"`
+	MaxClientConn int `json:"max_client_conn"`
 }
 
 // databasePoolerResource is GET .../pooler's body. URLs carry a password
 // placeholder, never the real credential.
 type databasePoolerResource struct {
 	Enabled         bool   `json:"enabled"`
+	PoolSize        int    `json:"pool_size,omitempty"`
+	MaxClientConn   int    `json:"max_client_conn,omitempty"`
 	Supported       bool   `json:"supported"`
 	ImageConfigured bool   `json:"image_configured"`
 	Container       string `json:"container,omitempty"`
@@ -41,6 +52,8 @@ func poolerURL(name string, port int) string {
 func (rt *Router) poolerStatus(ctx context.Context, d *store.DesiredDatabase) databasePoolerResource {
 	res := databasePoolerResource{
 		Enabled:         d.PoolerEnabled,
+		PoolSize:        d.PoolerPoolSize,
+		MaxClientConn:   d.PoolerMaxClientConn,
 		Supported:       d.Engine == store.EnginePostgres,
 		ImageConfigured: database.PoolerImage() != "",
 	}
@@ -106,7 +119,22 @@ func (rt *Router) handleEnableDatabasePooler(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "no pooler image is configured: set "+database.EnvPoolerImage+" on the control plane to a pinned tag or digest")
 		return
 	}
-	rt.setDatabasePooler(w, r, name, true)
+	var req databasePoolerRequest
+	if r.Body != nil {
+		if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+	}
+	if req.PoolSize < 0 || req.MaxClientConn < 0 {
+		writeError(w, http.StatusBadRequest, "pool_size and max_client_conn must be positive, or 0 for the default")
+		return
+	}
+	if req.PoolSize > 0 && req.MaxClientConn > 0 && req.PoolSize > req.MaxClientConn {
+		writeError(w, http.StatusBadRequest, "pool_size cannot exceed max_client_conn")
+		return
+	}
+	rt.setDatabasePoolerTuned(w, r, name, true, &req)
 }
 
 // handleDisableDatabasePooler handles DELETE /api/v1/databases/{name}/pooler.
@@ -115,6 +143,10 @@ func (rt *Router) handleDisableDatabasePooler(w http.ResponseWriter, r *http.Req
 }
 
 func (rt *Router) setDatabasePooler(w http.ResponseWriter, r *http.Request, name string, enabled bool) {
+	rt.setDatabasePoolerTuned(w, r, name, enabled, nil)
+}
+
+func (rt *Router) setDatabasePoolerTuned(w http.ResponseWriter, r *http.Request, name string, enabled bool, tune *databasePoolerRequest) {
 	ps, ok := rt.databases.(databasePoolerStore)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "this server's store does not support the connection pooler")
@@ -126,6 +158,12 @@ func (rt *Router) setDatabasePooler(w http.ResponseWriter, r *http.Request, name
 	} else if err != nil {
 		rt.internalError(w, "api: set pooler failed", err, slog.String("name", name))
 		return
+	}
+	if tune != nil {
+		if err := ps.SetDatabasePoolerTuning(r.Context(), name, tune.PoolSize, tune.MaxClientConn); err != nil {
+			rt.internalError(w, "api: set pooler tuning failed", err, slog.String("name", name))
+			return
+		}
 	}
 	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if err != nil {

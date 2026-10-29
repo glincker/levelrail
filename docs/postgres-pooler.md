@@ -12,10 +12,13 @@ The control plane needs to know which pooler image to run. There is no built in 
 | `APP_PG_POOLER_DEFAULT_POOL_SIZE` | Optional. Server connections per user and database pair. Unset or invalid keeps the image default. |
 | `APP_PG_POOLER_MAX_CLIENT_CONN` | Optional. Maximum client connections the pooler accepts. Unset or invalid keeps the image default. |
 
+The two sizing variables are control plane defaults. A single database can override them with `--pool-size` and `--max-client-conn` (CLI), the sizing inputs on the pooler card, or `pooler.pool_size` and `pooler.max_client_conn` in a resource file. `0` or unset keeps the default. Changing them replaces the pooler container.
+
 Then turn it on per database:
 
 ```sh
 levelrail-cli databases pooler enable main
+levelrail-cli databases pooler enable main --pool-size 20 --max-client-conn 400
 levelrail-cli databases pooler show main --json
 levelrail-cli databases pooler disable main
 ```

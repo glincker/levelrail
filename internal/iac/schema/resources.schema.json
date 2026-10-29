@@ -63,7 +63,11 @@
         "pooler": {
           "type": "object",
           "additionalProperties": false,
-          "properties": { "enabled": { "type": "boolean" } }
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "pool_size": { "type": "integer", "minimum": 1 },
+            "max_client_conn": { "type": "integer", "minimum": 1 }
+          }
         }
       }
     },

@@ -66,25 +66,30 @@ type databaseResource struct {
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
 	// PoolerEnabled is response-only; set it via POST and DELETE .../pooler.
 	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
+	// PoolerPoolSize and PoolerMaxClientConn are response-only per-database overrides.
+	PoolerPoolSize      int `json:"pooler_pool_size,omitempty"`
+	PoolerMaxClientConn int `json:"pooler_max_client_conn,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 	return databaseResource{
-		Name:               d.Name,
-		Engine:             d.Engine,
-		Version:            d.Version,
-		NodeID:             d.NodeID,
-		ProjectID:          d.ProjectID,
-		BackupTargetID:     d.BackupTargetID,
-		BackupSchedule:     d.BackupSchedule,
-		BackupRetain:       d.BackupRetain,
-		BackupRetainDays:   d.BackupRetainDays,
-		PubliclyAccessible: d.PubliclyAccessible,
-		PublicPort:         d.PublicPort,
-		PublicBindAddress:  d.PublicBindAddress,
-		Resources:          d.Resources,
-		Suspended:          d.Suspended,
-		PoolerEnabled:      d.PoolerEnabled,
+		Name:                d.Name,
+		Engine:              d.Engine,
+		Version:             d.Version,
+		NodeID:              d.NodeID,
+		ProjectID:           d.ProjectID,
+		BackupTargetID:      d.BackupTargetID,
+		BackupSchedule:      d.BackupSchedule,
+		BackupRetain:        d.BackupRetain,
+		BackupRetainDays:    d.BackupRetainDays,
+		PubliclyAccessible:  d.PubliclyAccessible,
+		PublicPort:          d.PublicPort,
+		PublicBindAddress:   d.PublicBindAddress,
+		Resources:           d.Resources,
+		Suspended:           d.Suspended,
+		PoolerEnabled:       d.PoolerEnabled,
+		PoolerPoolSize:      d.PoolerPoolSize,
+		PoolerMaxClientConn: d.PoolerMaxClientConn,
 	}
 }
 

@@ -9,13 +9,26 @@ import type { DatabasePoolerResource } from '../types/databasePooler'
 export const databasePoolerKey = (name: string) =>
   ['databases', 'detail', name, 'pooler'] as const
 
+export interface PoolerChange {
+  enabled: boolean
+  poolSize?: number
+  maxClientConn?: number
+}
+
 async function poolerRequest(
   name: string,
   method: 'GET' | 'POST' | 'DELETE',
+  body?: { pool_size: number; max_client_conn: number },
 ): Promise<DatabasePoolerResource> {
   const res = await fetch(
     `/api/v1/databases/${encodeURIComponent(name)}/pooler`,
-    { method },
+    body
+      ? {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }
+      : { method },
   )
   if (!res.ok) {
     throw new ApiError(
@@ -40,8 +53,13 @@ export const databasePoolerQuery = (name: string) =>
 export function useSetDatabasePooler(name: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (enabled: boolean) =>
-      poolerRequest(name, enabled ? 'POST' : 'DELETE'),
+    mutationFn: (change: PoolerChange) =>
+      change.enabled
+        ? poolerRequest(name, 'POST', {
+            pool_size: change.poolSize ?? 0,
+            max_client_conn: change.maxClientConn ?? 0,
+          })
+        : poolerRequest(name, 'DELETE'),
     onSuccess: (result) => {
       queryClient.setQueryData(databasePoolerKey(name), result)
       void queryClient.invalidateQueries({

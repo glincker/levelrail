@@ -5,6 +5,8 @@ import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import {
   databasePoolerQuery,
@@ -50,20 +52,34 @@ export function DatabasePoolerCard({
   const { t } = useTranslation('databases')
   const { data } = useQuery(databasePoolerQuery(database.name))
   const setPooler = useSetDatabasePooler(database.name)
+  const [poolSize, setPoolSize] = useState<string | null>(null)
+  const [maxConn, setMaxConn] = useState<string | null>(null)
 
   if (!data?.supported) return null
 
   const blocked = !data.enabled && !data.image_configured
 
   function toggle(next: boolean) {
-    setPooler.mutate(next, {
-      onError: (error) =>
-        toast.add({
-          title: t('pooler.toggleFailed'),
-          description: error.message,
-          type: 'error',
-        }),
-    })
+    setPooler.mutate(
+      { enabled: next, ...tuning() },
+      {
+        onError: (error) =>
+          toast.add({
+            title: t('pooler.toggleFailed'),
+            description: error.message,
+            type: 'error',
+          }),
+      },
+    )
+  }
+
+  function tuning() {
+    const size = Number(poolSize ?? data?.pool_size ?? 0)
+    const max = Number(maxConn ?? data?.max_client_conn ?? 0)
+    return {
+      poolSize: Number.isInteger(size) && size > 0 ? size : 0,
+      maxClientConn: Number.isInteger(max) && max > 0 ? max : 0,
+    }
   }
 
   return (
@@ -107,6 +123,46 @@ export function DatabasePoolerCard({
         {data.direct_url ? (
           <CopyRow label={t('pooler.direct')} value={data.direct_url} />
         ) : null}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="pooler-pool-size">{t('pooler.poolSize')}</Label>
+            <Input
+              id="pooler-pool-size"
+              type="number"
+              min={0}
+              className="w-28"
+              placeholder={t('pooler.default')}
+              value={poolSize ?? (data.pool_size ? String(data.pool_size) : '')}
+              onChange={(e) => setPoolSize(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="pooler-max-conn">{t('pooler.maxClientConn')}</Label>
+            <Input
+              id="pooler-max-conn"
+              type="number"
+              min={0}
+              className="w-28"
+              placeholder={t('pooler.default')}
+              value={
+                maxConn ??
+                (data.max_client_conn ? String(data.max_client_conn) : '')
+              }
+              onChange={(e) => setMaxConn(e.target.value)}
+            />
+          </div>
+          {data.enabled ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={setPooler.isPending}
+              onClick={() => toggle(true)}
+            >
+              {t('pooler.applySizing')}
+            </Button>
+          ) : null}
+        </div>
         {data.enabled ? (
           <p className="text-xs text-muted-foreground">
             {t('pooler.remoteNote')}

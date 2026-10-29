@@ -60,7 +60,7 @@ func positiveEnv(key string) string {
 
 // poolerEnv configures a pgbouncer-style image through its documented env
 // contract. Transaction pooling is the whole point of the feature.
-func poolerEnv(user, password string) map[string]string {
+func poolerEnv(user, password string, poolSize, maxClientConn int) map[string]string {
 	env := map[string]string{
 		"DB_HOST":            "127.0.0.1",
 		"DB_PORT":            strconv.Itoa(postgresContainerPort),
@@ -71,10 +71,15 @@ func poolerEnv(user, password string) map[string]string {
 		"AUTH_TYPE":          "scram-sha-256",
 		"SERVER_TLS_SSLMODE": "prefer",
 	}
-	if v := positiveEnv(EnvPoolerDefaultPoolSize); v != "" {
+	// A per-database value wins over the control plane env default.
+	if poolSize > 0 {
+		env["DEFAULT_POOL_SIZE"] = strconv.Itoa(poolSize)
+	} else if v := positiveEnv(EnvPoolerDefaultPoolSize); v != "" {
 		env["DEFAULT_POOL_SIZE"] = v
 	}
-	if v := positiveEnv(EnvPoolerMaxClientConn); v != "" {
+	if maxClientConn > 0 {
+		env["MAX_CLIENT_CONN"] = strconv.Itoa(maxClientConn)
+	} else if v := positiveEnv(EnvPoolerMaxClientConn); v != "" {
 		env["MAX_CLIENT_CONN"] = v
 	}
 	return env
@@ -117,11 +122,11 @@ func (c *Controller) withPooler(ctx context.Context, desired *store.DesiredDatab
 		}
 		return res
 	}
-	res.Conditions = append(res.Conditions, c.reconcilePooler(ctx))
+	res.Conditions = append(res.Conditions, c.reconcilePooler(ctx, desired))
 	return res
 }
 
-func (c *Controller) reconcilePooler(ctx context.Context) reconcile.Condition {
+func (c *Controller) reconcilePooler(ctx context.Context, desired *store.DesiredDatabase) reconcile.Condition {
 	image := PoolerImage()
 	if image == "" {
 		return poolerCondition(reconcile.ConditionFalse, "PoolerImageNotConfigured", "set "+EnvPoolerImage+" to a pinned pooler image tag or digest")
@@ -137,7 +142,7 @@ func (c *Controller) reconcilePooler(ctx context.Context) reconcile.Condition {
 		return poolerCondition(reconcile.ConditionFalse, "DatabaseNotRunning", "the pooler starts once the database container runs")
 	}
 
-	env := poolerEnv(c.postgresCreds.Username, c.postgresCreds.Password)
+	env := poolerEnv(c.postgresCreds.Username, c.postgresCreds.Password, desired.PoolerPoolSize, desired.PoolerMaxClientConn)
 	spec := docker.ContainerSpec{
 		Name:  PoolerContainerName(c.dbName),
 		Image: image,
