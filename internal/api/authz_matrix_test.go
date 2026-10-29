@@ -99,6 +99,10 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /public/status":                             "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
 	"GET /public/status.json":                        "JSON form of the opt-in public status page, same whitelisted view",
 	"GET /public/status.rss":                         "RSS feed of operator-authored incidents on the opt-in public status page",
+	"GET /public/status.atom":                        "Atom feed of operator-authored incidents on the opt-in public status page",
+	"GET /public/status/history":                     "paginated incident and maintenance archive of the opt-in public status page, same whitelisted view",
+	"GET /public/status/incidents/{id}":              "permalink for one operator-authored incident on the opt-in public status page",
+	"GET /public/status/badge.svg":                   "status badge SVG for READMEs, serves only the public overall or per-component state",
 	"GET /api/v1/apps/{name}/badge.svg":              "opt-in per-app deploy status badge for READMEs, serves only status and timestamp, 404s like an unknown route when the app's own badge flag is off",
 }
 
@@ -108,6 +112,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/apps/{name}/abuse/dry-run":                     "replays recent in-memory access records against a draft policy and counts what it would block, persists nothing",
 	"POST /api/v1/apps/{name}/budget/dry-run":                    "previews what pausing the app would stop and save, persists nothing",
+	"POST /api/v1/app-types/{name}/check":                        "checks a draft app spec against a published app type and returns violations, persists nothing",
 	"POST /api/v1/costs/budgets/{id}/dry-run":                    "previews what pausing a budget's apps would stop and save, persists nothing",
 	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
 	"POST /api/v1/system/doctor/checks/{id}/run":                 "re-runs one read-only health check, persists nothing",
