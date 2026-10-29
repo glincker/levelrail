@@ -2015,6 +2015,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/control-plane/rehydrate/plan | AbilityRoot | handleRehydratePlan |
 | POST | /api/v1/control-plane/rehydrate/run | AbilityRoot | handleRehydrateRun |
 | GET | /api/v1/control-plane/rehydrate/report | AbilityRoot | handleRehydrateReport |
+| GET | /api/v2/apps | AbilityRead | handleList |
+| GET | /api/v2/apps/{name} | AbilityRead | handleGet |
+| GET | /api/v2/databases | AbilityRead | handleList |
+| GET | /api/v2/databases/{name} | AbilityRead | handleGet |
+| GET | /api/v2/nodes | AbilityRoot | handleList |
+| GET | /api/v2/nodes/{name} | AbilityRoot | handleGet |
 
 ## See also
 

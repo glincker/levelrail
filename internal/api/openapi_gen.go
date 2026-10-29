@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1790 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1796 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -89,7 +89,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeBackupVerifications", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleVerifyVolumeBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/clone-restores", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeCloneRestores", Description: ""},
-	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/files", Ability: "AbilityReadSensitive", Group: "App Volume Backups / Restore", Handler: "handleListVolumeFiles", Description: "Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write, so an operator can fix a config file without SSH."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/files", Ability: "AbilityReadSensitive", Group: "App Volume Backups / Restore", Handler: "handleListVolumeFiles", Description: "Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write plus read:sensitive, so an operator can fix a config file without SSH."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/volumes/{volume}/files/content", Ability: "AbilityWrite", Group: "App Volume Backups / Restore", Handler: "handleDeleteVolumeFile", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/files/content", Ability: "AbilityReadSensitive", Group: "App Volume Backups / Restore", Handler: "handleDownloadVolumeFile", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/volumes/{volume}/files/content", Ability: "AbilityWrite", Group: "App Volume Backups / Restore", Handler: "handlePutVolumeFile", Description: ""},
@@ -1577,6 +1577,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetUsageSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutUsageSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
+	{Method: "GET", Path: "/api/v2/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleList", Description: ""},
+	{Method: "GET", Path: "/api/v2/apps/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGet", Description: ""},
+	{Method: "GET", Path: "/api/v2/databases", Ability: "AbilityRead", Group: "Other", Handler: "handleList", Description: ""},
+	{Method: "GET", Path: "/api/v2/databases/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGet", Description: ""},
+	{Method: "GET", Path: "/api/v2/nodes", Ability: "AbilityRoot", Group: "Other", Handler: "handleList", Description: ""},
+	{Method: "GET", Path: "/api/v2/nodes/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGet", Description: ""},
 	{Method: "GET", Path: "/gate/login", Ability: "Public", Group: "Other", Handler: "handleGateLogin", Description: ""},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},

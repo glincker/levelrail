@@ -29,6 +29,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"appResource.SecretEnv":                             "names of secret-backed vars, never values",
 	"appResource.Secrets":                               "write-only on create, toAppResource never sets it",
 	"branchEnvOverrideResource.Secret":                  "bool flag",
+	"appFileResource.Secret":                            "bool flag marking a secret-backed file, never its content",
 	"environmentEnvEntryResource.Secret":                "bool flag",
 	"sharedEnvVarResource.Secret":                       "bool flag",
 	"prPreviewEnvResource.Secret":                       "bool flag",

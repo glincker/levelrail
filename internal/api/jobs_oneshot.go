@@ -123,6 +123,9 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "app and command are required")
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.App)) {
+		return
+	}
 	if !rt.requireJobApp(w, r, req.App, "start one-shot job") {
 		return
 	}

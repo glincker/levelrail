@@ -145,7 +145,7 @@ func (rt *Router) rehydrateService(w http.ResponseWriter) (*rehydrate.Service, b
 		rt.rehydrateSvc = svc
 	})
 	if rt.rehydrateErr != nil {
-		writeError(w, http.StatusInternalServerError, rt.rehydrateErr.Error())
+		rt.internalError(w, "api: rehydrate service unavailable", rt.rehydrateErr)
 		return nil, false
 	}
 	return rt.rehydrateSvc, true
