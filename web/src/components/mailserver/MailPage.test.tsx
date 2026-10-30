@@ -301,7 +301,7 @@ describe('MailPage', () => {
     )
     expect(applyBody).toContain('"plan_hash":"abc123def4567890"')
     expect(applyBody).toContain('"confirm":true')
-    await user.click(await screen.findByRole('button', { name: 'Check now' }))
+    await user.click(await screen.findByRole('button', { name: 'Check again' }))
     await user.click(screen.getByRole('tab', { name: 'Overview' }))
     expect(await screen.findByText('SPF ok')).toBeTruthy()
   })

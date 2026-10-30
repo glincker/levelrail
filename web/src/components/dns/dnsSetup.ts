@@ -219,3 +219,19 @@ export function splitPriority(set: MailRecordSet, v: string) {
     ? { priority: p ?? '', value: rest.join(' ') }
     : { priority: '', value: v }
 }
+
+/** The plan as JSON records, for scripts and API clients. */
+export function jsonText(plan: MailPlan): string {
+  return JSON.stringify(
+    plan.changes.flatMap((c) =>
+      c.set.values.map((v) => ({
+        type: c.set.type,
+        name: c.set.name,
+        value: v,
+        ttl: c.set.ttl,
+      })),
+    ),
+    null,
+    2,
+  )
+}

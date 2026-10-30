@@ -39,16 +39,19 @@ import { useServerAddress } from '@/queries/serverAddress'
 import { DnsConnectPopover } from './DnsConnectPopover'
 import { DnsHostTile } from './DnsHostChip'
 import { DnsPickStep, type PickCandidate } from './DnsPickStep'
-import { DnsManualRecords, DnsRecordRows, StatusIcon } from './DnsRecordRows'
+import { DnsRecordTable, StatusIcon } from './DnsRecordTable'
+import { DnsSummaryBar, type CopyFormat } from './DnsSummaryBar'
 import { useCopy } from './useCopy'
 import {
   detectState,
+  jsonText,
   liveCount,
   primaryActionOf,
   providerLabel,
   rememberDomain,
   rememberedDomain,
   rowStatus,
+  tableText,
   zoneFileText,
   type SetupStep,
 } from './dnsSetup'
@@ -81,21 +84,13 @@ export interface DomainDnsSetupProps {
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : '')
 
-function Ago({ at }: { at: number | null }) {
-  const { t } = useTranslation('dnsSetup')
+function useAgoSeconds(at: number | null): number | null {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 5000)
     return () => window.clearInterval(id)
   }, [])
-  if (!at) return null
-  return (
-    <span>
-      {t('verify.checkedAgo', {
-        seconds: Math.max(0, Math.round((now - at) / 1000)),
-      })}
-    </span>
-  )
+  return at ? Math.max(0, Math.round((now - at) / 1000)) : null
 }
 
 /** One-question DNS wizard: pick, detect, review, verify. Shared by the mail tab and the app Domains page. */
@@ -122,7 +117,7 @@ export function DomainDnsSetup({
   const [editing, setEditing] = useState(false)
   const [preset, setPreset] = useState('')
   const [showPresets, setShowPresets] = useState(false)
-  const [manual, setManual] = useState(false)
+  const [mode, setMode] = useState<'auto' | 'myself'>('auto')
   const [replaceKinds, setReplaceKinds] = useState<string[]>([])
   const [confirmReplace, setConfirmReplace] = useState(false)
   const [applied, setApplied] = useState<DnsApplyResult | null>(null)
@@ -349,6 +344,52 @@ export function DomainDnsSetup({
   }
 
   const ptr = report?.items.find((i) => i.id === 'ptr')
+  const ago = useAgoSeconds(checkedAt)
+  const hasChecks = !!liveStatus || !!overlay || step === 'verify'
+  // Add myself, or a host we cannot write to, turns the primary into Copy.
+  const myself = action === 'copy' || (mode === 'myself' && action !== 'check')
+  const copyAs = (f: CopyFormat) => {
+    if (!plan) return
+    const text =
+      f === 'zone'
+        ? zoneFileText(plan)
+        : f === 'table'
+          ? tableText(plan)
+          : jsonText(plan)
+    copy('all', text)
+  }
+  const runPrimary = () => {
+    if (myself) {
+      if (plan) copy('all', zoneFileText(plan))
+      setStep('verify')
+    } else onPrimary()
+  }
+  const primaryNode =
+    action === 'connect' && !myself ? (
+      <DnsConnectPopover provider={provider} label={label}>
+        {t('connectAction', { provider: label })}
+      </DnsConnectPopover>
+    ) : (
+      <Button
+        type="button"
+        size="sm"
+        autoFocus
+        disabled={applyMut.isPending || blocked}
+        onClick={runPrimary}
+      >
+        {applyMut.isPending
+          ? t('review.applying')
+          : myself
+            ? t('review.copy')
+            : action === 'add'
+              ? confirmReplace
+                ? t('review.confirmButton', { count: staged })
+                : diff > 0
+                  ? t('review.addDiff', { count, diff })
+                  : t('review.add', { count })
+              : t('review.check')}
+      </Button>
+    )
 
   return (
     <section
@@ -356,6 +397,17 @@ export function DomainDnsSetup({
       id="mail-dns-panel"
       aria-label={t('title')}
       onKeyDown={(e) => {
+        if (
+          e.key === 'Enter' &&
+          (e.metaKey || e.ctrlKey) &&
+          step === 'review' &&
+          plan &&
+          !(action === 'connect' && !myself)
+        ) {
+          e.preventDefault()
+          runPrimary()
+          return
+        }
         if (e.key === 'Escape' && idx > 0 && !e.defaultPrevented) {
           e.preventDefault()
           back()
@@ -505,7 +557,137 @@ export function DomainDnsSetup({
       )}
 
       {step === 'review' && (
-        <div className="space-y-3">
+        <div className="space-y-2">
+          <p
+            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            data-testid="detect-banner"
+          >
+            <DnsHostTile
+              provider={state === 'unknown' ? '' : provider}
+              size="xs"
+            />
+            <span>
+              {state === 'unknown'
+                ? t('banner.unknown')
+                : t('banner.hosted', { provider: label })}
+            </span>
+            {state !== 'unknown' && <span>{`· ${t(`banner.${state}`)}`}</span>}
+          </p>
+          {planQ.isLoading && (
+            <div
+              role="status"
+              aria-label={t('loading')}
+              className="h-24 animate-pulse rounded-md bg-muted motion-reduce:animate-none"
+            />
+          )}
+          {planQ.isError && (
+            <p role="alert" className="text-xs text-tone-danger">
+              {t('review.planFailed', { message: errText(planQ.error) })}
+            </p>
+          )}
+          {plan && plan.changes.length === 0 && (
+            <p className="text-xs text-muted-foreground">{t('review.empty')}</p>
+          )}
+          {plan && plan.changes.length > 0 && (
+            <>
+              <DnsSummaryBar
+                count={count}
+                live={live}
+                total={statuses.length}
+                checked={hasChecks}
+                primary={primaryNode}
+                onCopy={copyAs}
+              />
+              {plan.blocked && (
+                <p role="alert" className="text-xs text-tone-danger">
+                  {t('review.blocked')}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                {(action === 'add' || action === 'connect') && (
+                  <div
+                    role="group"
+                    aria-label={t('mode.label')}
+                    className="inline-flex overflow-hidden rounded-md border border-border text-xs"
+                  >
+                    {(['auto', 'myself'] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        aria-pressed={mode === m}
+                        onClick={() => setMode(m)}
+                        className={cn(
+                          'px-2.5 py-1 focus-visible:outline-2 focus-visible:outline-ring',
+                          m === 'myself' && 'border-l border-border',
+                          mode === m
+                            ? 'bg-muted font-medium'
+                            : 'hover:bg-muted',
+                        )}
+                      >
+                        {t(`mode.${m}`)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {myself ? (
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {state === 'unknown'
+                      ? t('manual.whereUnknown')
+                      : t('manual.whereKnown', { provider: label })}
+                    {det?.dashboard_url && (
+                      <a
+                        href={det.dashboard_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 underline underline-offset-2"
+                      >
+                        {t('openIn', { provider: label })}
+                        <ExternalLinkGlassIcon size="1.1em" />
+                      </a>
+                    )}
+                  </p>
+                ) : (
+                  action === 'add' && (
+                    <span className="text-xs text-muted-foreground">
+                      {t('review.nothingDeleted')}
+                    </span>
+                  )
+                )}
+                {copied === 'all' && (
+                  <span
+                    className="text-xs text-muted-foreground"
+                    aria-live="polite"
+                  >
+                    {t('copied')}
+                  </span>
+                )}
+              </div>
+              <DnsRecordTable
+                kind={kind}
+                plan={plan}
+                report={overlay}
+                status={liveStatus}
+                phase="review"
+                replaceKinds={replaceKinds}
+                onToggleReplace={toggleReplace}
+                checkedAgo={ago}
+              />
+              {state === 'unknown' && fallback}
+              {confirmReplace && (
+                <p
+                  role="alert"
+                  className="rounded-md border border-border bg-muted p-2 text-xs"
+                >
+                  {t('review.confirmReplace', { count: staged })}
+                </p>
+              )}
+              {applyError && (
+                <p role="alert" className="text-xs text-tone-danger">
+                  {applyError}
+                </p>
+              )}
+            </>
+          )}
           {kind === 'mail' && !preset && (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {editing || !ip ? (
@@ -606,124 +788,11 @@ export function DomainDnsSetup({
               )}
             </div>
           )}
-
-          {planQ.isLoading && (
-            <div
-              role="status"
-              aria-label={t('loading')}
-              className="h-24 animate-pulse rounded-md bg-muted motion-reduce:animate-none"
-            />
-          )}
-          {planQ.isError && (
-            <p role="alert" className="text-xs text-tone-danger">
-              {t('review.planFailed', { message: errText(planQ.error) })}
-            </p>
-          )}
-          {plan && plan.changes.length === 0 && (
-            <p className="text-xs text-muted-foreground">{t('review.empty')}</p>
-          )}
-          {plan && plan.changes.length > 0 && (
-            <>
-              {plan.blocked && (
-                <p role="alert" className="text-xs text-tone-danger">
-                  {t('review.blocked')}
-                </p>
-              )}
-              <DnsRecordRows
-                kind={kind}
-                plan={plan}
-                report={overlay}
-                status={liveStatus}
-                phase="review"
-                replaceKinds={replaceKinds}
-                onToggleReplace={toggleReplace}
-              />
-              <button
-                type="button"
-                className="text-xs underline underline-offset-2"
-                aria-expanded={manual}
-                onClick={() => setManual((v) => !v)}
-              >
-                {t('manual.toggle')}
-              </button>
-              {manual && (
-                <DnsManualRecords
-                  plan={plan}
-                  report={overlay}
-                  status={liveStatus}
-                  providerLabel={state === 'unknown' ? '' : label}
-                  dashboardUrl={det?.dashboard_url}
-                />
-              )}
-              {state === 'unknown' && fallback}
-              {confirmReplace && (
-                <p
-                  role="alert"
-                  className="rounded-md border border-border bg-muted p-2 text-xs"
-                >
-                  {t('review.confirmReplace', { count: staged })}
-                </p>
-              )}
-              {applyError && (
-                <p role="alert" className="text-xs text-tone-danger">
-                  {applyError}
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                {action === 'connect' ? (
-                  <DnsConnectPopover provider={provider} label={label}>
-                    {t('connectAction', { provider: label })}
-                  </DnsConnectPopover>
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    autoFocus
-                    disabled={applyMut.isPending || blocked}
-                    onClick={onPrimary}
-                  >
-                    {applyMut.isPending
-                      ? t('review.applying')
-                      : action === 'add'
-                        ? confirmReplace
-                          ? t('review.confirmButton', { count: staged })
-                          : diff > 0
-                            ? t('review.addDiff', { count, diff })
-                            : t('review.add', { count })
-                        : action === 'copy'
-                          ? t('review.copy')
-                          : t('review.check')}
-                  </Button>
-                )}
-                {det?.dashboard_url && (
-                  <a
-                    href={det.dashboard_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs underline underline-offset-2"
-                  >
-                    {t('openIn', { provider: label })}
-                    <ExternalLinkGlassIcon size="1.1em" />
-                  </a>
-                )}
-                {action === 'add' && (
-                  <span className="text-xs text-muted-foreground">
-                    {t('review.nothingDeleted')}
-                  </span>
-                )}
-                {copied === 'all' && (
-                  <span className="text-xs text-muted-foreground">
-                    {t('copied')}
-                  </span>
-                )}
-              </div>
-            </>
-          )}
         </div>
       )}
 
       {step === 'verify' && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {applied && (
             <p
               className="text-xs text-muted-foreground"
@@ -739,34 +808,28 @@ export function DomainDnsSetup({
               })}
             </p>
           )}
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span
-                className="font-medium"
-                aria-live="polite"
-                data-testid="live-count"
-              >
-                {t('verify.liveCount', { live, total: statuses.length })}
-              </span>
-              <span className="text-muted-foreground">
-                <Ago at={checkedAt} />
-              </span>
-            </div>
-            <progress
-              aria-label={t('verify.progress')}
-              value={live}
-              max={Math.max(statuses.length, 1)}
-              className="h-1.5 w-full appearance-none overflow-hidden rounded-full [&::-moz-progress-bar]:bg-tone-success [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:bg-tone-success [&::-webkit-progress-value]:transition-all motion-reduce:[&::-webkit-progress-value]:transition-none"
-            />
-          </div>
+          <DnsSummaryBar
+            count={statuses.length - live}
+            live={live}
+            total={statuses.length}
+            checked
+            primary={null}
+            onCopy={copyAs}
+            checking={checking}
+            onCheckAgain={() => {
+              recheck.restart()
+              void runCheck()
+            }}
+          />
           {plan && (
             <div className={cn(checking && 'motion-safe:animate-pulse')}>
-              <DnsRecordRows
+              <DnsRecordTable
                 kind={kind}
                 plan={plan}
                 report={overlay}
                 status={liveStatus}
                 phase="verify"
+                checkedAgo={ago}
               />
             </div>
           )}
@@ -781,27 +844,14 @@ export function DomainDnsSetup({
               <span>{ptr?.message || t('verify.ptr')}</span>
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={checking}
-              onClick={() => {
-                recheck.restart()
-                void runCheck()
-              }}
-            >
-              {checking ? t('verify.checking') : t('verify.checkNow')}
-            </Button>
-            <p className="text-xs text-muted-foreground" aria-live="polite">
-              {allLive
-                ? t('verify.allLive')
-                : recheck.exhausted
-                  ? t('verify.stillWaiting')
-                  : t('verify.waiting')}
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {allLive
+              ? t('verify.allLive')
+              : recheck.exhausted
+                ? t('verify.stillWaiting')
+                : t('verify.waiting')}
+            {ago != null && ` · ${t('verify.checkedAgo', { seconds: ago })}`}
+          </p>
         </div>
       )}
     </section>

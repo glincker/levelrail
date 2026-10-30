@@ -1,10 +1,9 @@
 // DNS onboarding wire shapes: detection (internal/api/dns_provider_detect.go),
-// mail domain candidates (mail_dns_onboard.go) and the general plan/apply pair.
-// GET /domains/dns-plan and POST /domains/dns-apply mirror the mail plan/apply
-// shapes; they are typed from the mail routes, not from a committed handler.
+// mail domain candidates (mail_dns_onboard.go) and the app plan/apply, which
+// use the committed go-live plan and run routes (go_live_handlers.go).
 
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import type { MailPlan } from './mailDns'
+import type { MailPlan, MailPlanChange } from './mailDns'
 
 export interface DnsDetection {
   domain: string
@@ -69,18 +68,77 @@ interface ServerAddressRecords {
   records?: { type: string; name: string; value: string }[]
 }
 
-// The general plan route is not deployed everywhere; without it the records
-// come from the server-address suggestions and there is nothing to apply.
+// One DNS outcome of the committed go-live routes (internal/api/go_live.go).
+interface GoLiveDns {
+  dns: string
+  planned?: string
+  message?: string
+  record?: { name: string; type: string; value: string; ttl_seconds: number }
+}
+
+interface GoLiveResult {
+  dns?: GoLiveDns[]
+}
+
+// Marker hash: go-live has no pinned plan, it recomputes add-only on apply.
+const GO_LIVE_HASH = 'go-live'
+const DEFAULT_TTL = 300
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `dns request failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as T
+}
+
+function goLivePlan(domain: string, r: GoLiveResult): MailPlan | null {
+  const changes = (r.dns ?? []).flatMap((d) => {
+    if (!d.record) return []
+    const set = {
+      name: d.record.name,
+      type: d.record.type,
+      ttl: d.record.ttl_seconds || DEFAULT_TTL,
+      values: [d.record.value],
+    }
+    const action: MailPlanChange['action'] =
+      d.dns === 'conflict'
+        ? 'refused'
+        : d.dns === 'unchanged'
+          ? 'unchanged'
+          : 'add'
+    return [{ action, kind: d.record.type, set, reason: d.message }]
+  })
+  if (changes.length === 0) return null
+  return {
+    domain,
+    hash: GO_LIVE_HASH,
+    changes,
+    summary: {},
+    blocked: false,
+  }
+}
+
+// An app plans through the committed go-live dry run; without an app, or when
+// it yields no record, the records come from the server-address suggestions.
 export async function planDomainDns(
   domain: string,
   app?: string,
 ): Promise<MailPlan> {
-  const q = new URLSearchParams({ domain })
-  if (app) q.set('app', app)
-  try {
-    return await getJson<MailPlan>(`/api/v1/domains/dns-plan?${q.toString()}`)
-  } catch (e) {
-    if (!(e instanceof ApiError) || e.status !== 404) throw e
+  if (app) {
+    const out = await postJson<{ plans?: GoLiveResult[] }>(
+      `/api/v1/apps/${encodeURIComponent(app)}/domains/go-live/plan`,
+      { domain },
+    )
+    const plan = goLivePlan(domain, out.plans?.[0] ?? {})
+    if (plan) return plan
   }
   const addr = await getJson<ServerAddressRecords>(
     `/api/v1/system/server-address?domain=${encodeURIComponent(domain)}`,
@@ -88,31 +146,48 @@ export async function planDomainDns(
   const changes = (addr.records ?? []).map((r) => ({
     action: 'add' as const,
     kind: r.type,
-    set: { name: r.name, type: r.type, ttl: 300, values: [r.value] },
+    set: { name: r.name, type: r.type, ttl: DEFAULT_TTL, values: [r.value] },
   }))
   return { domain, hash: '', changes, summary: {}, blocked: false }
 }
 
+// Add-only: replace stays false, so an existing different record is reported
+// as a conflict instead of being overwritten.
 export async function applyDomainDns(
   domain: string,
   planHash: string,
   app?: string,
 ): Promise<DnsApplyResult> {
-  const res = await fetch('/api/v1/domains/dns-apply', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      domain,
-      app,
-      confirm: true,
-      plan_hash: planHash,
-    }),
-  })
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `dns apply failed: ${res.status}`),
-    )
+  if (!app || planHash !== GO_LIVE_HASH) {
+    throw new ApiError(400, 'dns apply needs an app and a go-live plan')
   }
-  return (await res.json()) as DnsApplyResult
+  const out = await postJson<GoLiveResult>(
+    `/api/v1/apps/${encodeURIComponent(app)}/domains/${encodeURIComponent(domain)}/go-live`,
+    { dns: 'auto', replace: false },
+  )
+  const done = (out.dns ?? []).filter(
+    (d) => d.dns === 'created' || d.dns === 'updated',
+  )
+  return {
+    applied: done.length,
+    plan: goLivePlan(domain, out) ?? {
+      domain,
+      hash: '',
+      changes: [],
+      summary: {},
+      blocked: false,
+    },
+    records: (out.dns ?? []).flatMap((d) =>
+      d.record
+        ? [
+            {
+              name: d.record.name,
+              type: d.record.type,
+              action: d.dns === 'created' ? 'add' : d.dns,
+              ids: [],
+            },
+          ]
+        : [],
+    ),
+  }
 }

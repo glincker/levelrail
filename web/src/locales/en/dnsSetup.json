@@ -92,9 +92,7 @@
     "applyFailed": "The records were not added."
   },
   "manual": {
-    "toggle": "Add them yourself",
-    "title": "Records to add by hand",
-    "whereKnown": "Paste these in the {{provider}} DNS dashboard for this domain.",
+    "whereKnown": "Paste these in the {{provider}} DNS dashboard.",
     "whereUnknown": "Paste these where your domain's DNS is managed.",
     "dashboard": "DNS dashboard",
     "copyAll": "Copy all",
@@ -113,10 +111,41 @@
     "waiting": "Waiting for DNS, usually under 5 minutes.",
     "stillWaiting": "Still waiting? Check again later.",
     "allLive": "All records are live.",
-    "ptr": "Reverse DNS (PTR) is set at your hosting provider. Pending."
+    "ptr": "Reverse DNS (PTR) is set at your hosting provider. Pending.",
+    "checkAgain": "Check again"
   },
   "toast": {
     "applied_one": "Added {{count}} record",
     "applied_other": "Added {{count}} records"
+  },
+  "summary": {
+    "label": "Records summary",
+    "toAdd_one": "{{count}} record to add",
+    "toAdd_other": "{{count}} records to add",
+    "zone": "Zone file",
+    "table": "Table",
+    "json": "JSON"
+  },
+  "mode": {
+    "label": "How to add",
+    "auto": "Add automatically",
+    "myself": "Add myself"
+  },
+  "banner": {
+    "hosted": "DNS is hosted at {{provider}}",
+    "unknown": "DNS host not detected",
+    "connected": "Connected",
+    "notConnected": "Not connected"
+  },
+  "table": {
+    "label": "DNS records",
+    "status": "Status",
+    "type": "Type",
+    "name": "Name",
+    "value": "Value",
+    "ttl": "TTL",
+    "expand": "Show full value",
+    "collapse": "Hide full value",
+    "existing": "Existing record"
   }
 }
