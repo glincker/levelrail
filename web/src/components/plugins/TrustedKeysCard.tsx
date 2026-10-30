@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -42,7 +42,7 @@ export function TrustedKeysCard() {
         {keys.length === 0 ? (
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
-            icon={<KeyIcon className="size-5" />}
+            icon={<KeyGlassIcon className="size-6" />}
             title={t('keys.emptyTitle')}
             description={t('keys.emptyDescription')}
           />

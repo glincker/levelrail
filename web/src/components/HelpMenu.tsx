@@ -1,14 +1,13 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  BookOpenIcon,
-  BookmarkIcon,
-  ChatCircleTextIcon,
-  GithubLogoIcon,
-  HeartbeatIcon,
-  LifebuoyIcon,
-  QuestionIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  BookOpenGlassIcon,
+  BookmarkGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  MessageCircleGlassIcon,
+  SocialGithubGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -46,29 +45,29 @@ export function HelpMenu() {
           />
         }
       >
-        <QuestionIcon />
+        <CircleQuestionMarkGlassIcon size="1.4em" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         {contextDoc ? (
           <DropdownMenuItem
             render={<Link to="/help/$" params={{ _splat: contextDoc }} />}
           >
-            <BookOpenIcon />
+            <BookOpenGlassIcon size="1.4em" />
             {t('shell.help.forPage')}
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem render={<Link to="/help" />}>
-          <LifebuoyIcon />
+          <CircleQuestionMarkGlassIcon size="1.4em" />
           {t('shell.help.docs')}
         </DropdownMenuItem>
         <DropdownMenuItem
           render={<Link to="/help/$" params={{ _splat: 'troubleshooting' }} />}
         >
-          <QuestionIcon />
+          <CircleQuestionMarkGlassIcon size="1.4em" />
           {t('shell.help.troubleshooting')}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/settings/system-status" />}>
-          <HeartbeatIcon />
+          <ActivityGlassIcon size="1.4em" />
           {t('shell.help.systemStatus')}
         </DropdownMenuItem>
         {brand.DocsURL || brand.SupportURL || brand.DiscussionsURL ? (
@@ -80,7 +79,7 @@ export function HelpMenu() {
             target="_blank"
             rel="noreferrer"
           >
-            <BookmarkIcon />
+            <BookmarkGlassIcon size="1.4em" />
             {tHelp('nav.docsSite')}
           </DropdownMenuLinkItem>
         ) : null}
@@ -90,7 +89,7 @@ export function HelpMenu() {
             target="_blank"
             rel="noreferrer"
           >
-            <GithubLogoIcon />
+            <SocialGithubGlassIcon size="1.4em" />
             {t('shell.help.report')}
           </DropdownMenuLinkItem>
         ) : null}
@@ -100,7 +99,7 @@ export function HelpMenu() {
             target="_blank"
             rel="noreferrer"
           >
-            <ChatCircleTextIcon />
+            <MessageCircleGlassIcon size="1.4em" />
             {t('shell.help.community')}
           </DropdownMenuLinkItem>
         ) : null}

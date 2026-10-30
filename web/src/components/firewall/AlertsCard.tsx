@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { BellSimpleIcon, SirenIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellGlassIcon, SirenGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -35,9 +35,9 @@ export function AlertsCard({ status }: { status: FwStatus }) {
         {attack.active && attack.until ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-sm">
-              <SirenIcon
+              <SirenGlassIcon
                 aria-hidden="true"
-                className="size-4 text-tone-warning"
+                className="size-5 text-tone-warning"
               />
               {t('alerts.attackOn')} <RelativeTime at={attack.until} />
             </p>
@@ -55,9 +55,9 @@ export function AlertsCard({ status }: { status: FwStatus }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 space-y-0.5">
               <p className="flex items-center gap-2 text-sm font-medium">
-                <SirenIcon
+                <SirenGlassIcon
                   aria-hidden="true"
-                  className="size-4 text-tone-warning"
+                  className="size-5 text-tone-warning"
                 />
                 {t('alerts.spikeTitle')}
               </p>
@@ -86,7 +86,7 @@ export function AlertsCard({ status }: { status: FwStatus }) {
         ) : (
           <EmptyState
             compact
-            icon={<BellSimpleIcon className="size-5" />}
+            icon={<BellGlassIcon className="size-6" />}
             title={t('alerts.noneTitle')}
             description={t('alerts.noneHelp', { threshold: s.threshold })}
           />

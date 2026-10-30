@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -119,5 +120,44 @@ func TestApproveDeployKeepsPullRequirement(t *testing.T) {
 	svc, _ := db.GetDesiredService(context.Background(), "web")
 	if svc.Image != "levelrail/web:1" {
 		t.Fatalf("image changed without a fresh pull: %q", svc.Image)
+	}
+}
+
+func TestApprovePromoteDeploysRequestTimeDigest(t *testing.T) {
+	rt, db := newTestRouter(t)
+	requester := loginTestSession(t, rt, db)
+	seedPromotionFixture(t, db)
+	ctx := context.Background()
+	if err := db.SetEnvironmentProtected(ctx, "env_prod", true); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{
+		ID: "dep_src", ServiceName: "web-staging", Image: "levelrail/web:2", Source: store.DeployAttemptSourceImage,
+		Status: store.DeployAttemptStatusSucceeded, StartedAt: time.Now(), ImageDigest: "sha256:aaa", DigestReason: store.DigestReasonResolved,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rec := serve(rt, authedRequest(t, requester, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod","confirm":true}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("promote = %d %s", rec.Code, rec.Body.String())
+	}
+	approvals, _ := db.ListDeployApprovals(ctx, store.DeployApprovalStatusPending, "web-prod")
+	if len(approvals) != 1 {
+		t.Fatalf("approvals = %+v", approvals)
+	}
+	// The tag moves after the request: the source now runs other content.
+	src, _ := db.GetDesiredService(ctx, "web-staging")
+	src.Image = "levelrail/web:3"
+	if err := db.SaveDesiredService(ctx, *src); err != nil {
+		t.Fatal(err)
+	}
+	approver := storeUserWithAbilitiesForTest(t, db, "approver@example.com", []string{AbilityRead, AbilityDeploy})
+	ok := serve(rt, authedRequest(t, sessionCookieForTest(t, rt, approver.ID), http.MethodPost, "/api/v1/deploy-approvals/"+approvals[0].ID+"/approve", ""))
+	if ok.Code != http.StatusOK {
+		t.Fatalf("approve = %d %s", ok.Code, ok.Body.String())
+	}
+	target, _ := db.GetDesiredService(ctx, "web-prod")
+	if target.Image != "levelrail/web:2@sha256:aaa" {
+		t.Fatalf("target image = %q, want the request-time digest pin", target.Image)
 	}
 }

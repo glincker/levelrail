@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MagicWandIcon } from '@phosphor-icons/react/dist/ssr'
+import { WandGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -68,7 +68,7 @@ export function DockerfileLintCard() {
           </Button>
           {fixable ? (
             <Button size="sm" variant="outline" onClick={applyFix}>
-              <MagicWandIcon aria-hidden="true" />
+              <WandGlassIcon size="1.4em" aria-hidden="true" />
               {t('lint.applyFix')}
             </Button>
           ) : null}

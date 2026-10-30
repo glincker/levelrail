@@ -46,7 +46,7 @@ levelrail-cli status-page preview
 </Tab>
 </Tabs>
 
-The page is then served at `/public/status` on the control plane host, with `/public/status.json` and `/public/status.rss` next to it.
+The page is then served at `/public/status` on the control plane host, with `/public/status.json`, `/public/status.rss` and `/public/status.atom` next to it.
 
 ### Component kinds
 
@@ -74,7 +74,40 @@ levelrail-cli status-page incidents create --kind maintenance --title "Database 
 
 ## Custom domain
 
-Set a custom domain (`status-page set --domain status.example.com`) to serve the page at the root of that host. Point its DNS record at this control plane; the domain is routed and its TLS certificate issued automatically, the same as an app domain. On that host only `/`, `/status.json` and `/status.rss` (and the `/public/status*` paths) are served, and every other path, including the dashboard and the API, returns 404.
+Set a custom domain (`status-page set --domain status.example.com`) to serve the page at the root of that host. Point its DNS record at this control plane; the domain is routed and its TLS certificate issued automatically, the same as an app domain. On that host only `/`, `/status.json`, `/status.rss`, `/status.atom`, `/status/history`, `/status/badge.svg`, `/status/incidents/{id}` (and the `/public/status*` paths) are served, and every other path, including the dashboard and the API, returns 404.
+
+## Groups, branding and richer pages
+
+Components can be put into named groups (`status-page group add`, then `status-page components set <id> --group NAME --description TEXT`). The page shows each group as a collapsible section (plain `<details>`, no JavaScript) with its worst member status, and the component description under its name. Ungrouped components come first.
+
+Branding is set with `status-page set`: an accent colour (`#RRGGBB`), a logo, plain text about section, a website link, a noindex switch (off by default, so the page is indexable) and the footer credit (on by default). The logo must be an `https` URL on a public host; the page's Content Security Policy allows images from that origin only, and the logo is never fetched by the control plane. The page stays noindex after upgrade until you switch it off.
+
+A component with no probe data in the window reads "No data" rather than "Operational". Each of the 90 day bars is coloured by its weighted downtime share: one failed probe among many paints a faint amber mark, and the bar reaches solid red only at the outage share below. Uptime is time-weighted: a degraded probe counts as a fraction of a failed one.
+
+| Path | What it serves |
+| --- | --- |
+| `/public/status.atom` | Atom 1.0 feed of incidents and maintenance |
+| `/public/status/history` | The full archive, paginated, with All, Incidents and Maintenance tabs as links (`?tab=incidents&page=2`) |
+| `/public/status/incidents/{id}` | One incident with its update timeline |
+| `/public/status/badge.svg` | Shields-style badge of the overall state; `?component={id}` for one component (the ID is in the JSON) |
+
+All of them use the same cache, ETag, rate limit and Content Security Policy as the page. Incident and component text is HTML-escaped, and the badge escapes every text it draws.
+
+### Tuning
+
+Set on the control plane. Invalid values fall back to the default.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_STATUS_DEGRADED_WEIGHT` | `0.5` | Downtime weight of a degraded probe, 0 to 1 |
+| `APP_STATUS_DAY_OUTAGE_SHARE` | `0.05` | Weighted downtime share at which a day bar is fully red |
+| `APP_STATUS_ABOUT_MAX` | `1000` | Longest about text |
+| `APP_STATUS_DESCRIPTION_MAX` | `200` | Longest component description |
+| `APP_STATUS_GROUP_NAME_MAX` | `60` | Longest group name |
+| `APP_STATUS_GROUPS_MAX` | `30` | Most groups |
+| `APP_STATUS_LOGO_URL_MAX` | `512` | Longest logo and website URL |
+| `APP_STATUS_HISTORY_PAGE_SIZE` | `10` | Entries per history page |
+| `APP_STATUS_HISTORY_DAYS` | `90` | How far back the archive reaches |
 
 ## Operating it
 
@@ -88,12 +121,14 @@ Set a custom domain (`status-page set --domain status.example.com`) to serve the
 
 | Method | Path | Ability |
 | --- | --- | --- |
-| `GET` | `/public/status`, `/public/status.json`, `/public/status.rss` | none (opt-in, rate limited) |
+| `GET` | `/public/status`, `/public/status.json`, `/public/status.rss`, `/public/status.atom`, `/public/status/history`, `/public/status/incidents/{id}`, `/public/status/badge.svg` | none (opt-in, rate limited) |
 | `GET` | `/api/v1/status-page` | `read` |
 | `PUT` | `/api/v1/status-page` | `write` |
 | `GET` | `/api/v1/status-page/preview` | `read` |
 | `GET` `POST` | `/api/v1/status-page/components` | `read`, `write` |
 | `PUT` `DELETE` | `/api/v1/status-page/components/{id}` | `write` |
+| `GET` `POST` | `/api/v1/status-page/groups` | `read`, `write` |
+| `PUT` `DELETE` | `/api/v1/status-page/groups/{id}` | `write` |
 | `GET` `POST` | `/api/v1/status-page/incidents` | `read`, `write` |
 | `POST` | `/api/v1/status-page/incidents/{id}/updates` | `write` |
 | `DELETE` | `/api/v1/status-page/incidents/{id}` | `write` |

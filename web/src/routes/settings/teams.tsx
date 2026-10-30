@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { UsersThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import { UsersGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
@@ -81,7 +81,7 @@ function TeamsSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<UsersThreeIcon />}
+      icon={<UsersGlassIcon size="1.4em" />}
       eyebrow={t('page.eyebrow')}
       title={t('page.title')}
       description={t('page.description')}
@@ -103,7 +103,7 @@ function TeamsSettingsPage() {
     >
       {team === undefined ? (
         <EmptyState
-          icon={<UsersThreeIcon className="size-5" />}
+          icon={<UsersGlassIcon className="size-6" />}
           title={t('page.title')}
           description={t('page.empty')}
           className="border-0 bg-transparent py-6"

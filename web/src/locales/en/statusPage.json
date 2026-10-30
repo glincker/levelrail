@@ -1,0 +1,55 @@
+{
+  "branding": {
+    "about": "About",
+    "aboutCount": "{{count}} of {{max}}",
+    "aboutHint": "Plain text shown under the title.",
+    "accent": "Accent colour",
+    "accentError": "Use a hex colour such as #3b5bdb, or leave empty for the default.",
+    "accentPicker": "Pick an accent colour",
+    "logo": "Logo URL",
+    "logoError": "Use an https URL without credentials.",
+    "logoHint": "https only. The logo origin is added to the page CSP, so images load from that host alone.",
+    "noindex": "Hide from search engines",
+    "noindexHint": "Adds noindex. Stays on after upgrade for pages that already existed.",
+    "poweredBy": "Show Powered by Levelrail footer",
+    "title": "Branding",
+    "website": "Website",
+    "websiteError": "Use an http or https URL without credentials."
+  },
+  "component": {
+    "description": "Description",
+    "descriptionLabel": "Description for {{name}}",
+    "descriptionPlaceholder": "Shown under the name",
+    "group": "Group",
+    "groupLabel": "Group for {{name}}",
+    "noGroup": "No group"
+  },
+  "groups": {
+    "add": "Add group",
+    "confirmBody": "Its components stay on the page and move to the ungrouped list at the top.",
+    "confirmTitle": "Delete group {{name}}?",
+    "delete": "Delete",
+    "deleteLabel": "Delete group {{name}}",
+    "empty": "No groups yet. Groups show as collapsible sections on the public page.",
+    "limit": "Group limit reached.",
+    "moveDown": "Move {{name}} down",
+    "moveUp": "Move {{name}} up",
+    "name": "Group name",
+    "namePlaceholder": "Core services",
+    "rename": "Rename {{name}}",
+    "save": "Save name",
+    "title": "Groups"
+  },
+  "links": {
+    "atom": "Atom feed",
+    "badge": "Status badge",
+    "badgeFor": "Badge for",
+    "badgeOverall": "Overall status",
+    "copied": "Copied",
+    "copy": "Copy {{what}}",
+    "history": "History",
+    "markdown": "Markdown snippet",
+    "page": "Page",
+    "title": "Public links"
+  }
+}

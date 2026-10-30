@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -261,7 +261,7 @@ export function MigratePlan({ onOpenCutover }: { onOpenCutover: () => void }) {
 
       {report === null ? (
         <EmptyState
-          icon={<ArrowsLeftRightIcon className="size-5" />}
+          icon={<ArrowLeftRightGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />

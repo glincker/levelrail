@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,7 @@ export function CreateModelKeyDialog({
       }}
     >
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <PlusIcon aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         New key
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

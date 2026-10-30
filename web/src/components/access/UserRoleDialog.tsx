@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  IdentificationBadgeIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  IdCardLanyardGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -85,7 +85,7 @@ export function UserRoleDialog({ user }: { user: UserResource }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <IdentificationBadgeIcon />
+        <IdCardLanyardGlassIcon size="1.4em" />
         {t('userRole.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -134,7 +134,10 @@ export function UserRoleDialog({ user }: { user: UserResource }) {
         </div>
         {assign.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{assign.error.message}</AlertDescription>
           </Alert>
         ) : null}

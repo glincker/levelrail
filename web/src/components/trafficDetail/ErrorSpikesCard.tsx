@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { TrafficErrorSpike } from '../../types/trafficDetail'
@@ -26,8 +26,8 @@ export function ErrorSpikesCard({
                 key={s.start}
                 className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm"
               >
-                <WarningIcon
-                  className="mt-0.5 size-4 text-destructive"
+                <TriangleAlertGlassIcon
+                  className="mt-0.5 size-6 text-destructive"
                   aria-hidden
                 />
                 <div className="min-w-0 flex-1 space-y-1">

@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+func fleetDoc(typ, extra string) string {
+	return `{"version":1,"name":"a","widgets":[{"id":"w","type":"` + typ + `","size":"S"` + extra + `}]}`
+}
+
 func TestParseImportSchema(t *testing.T) {
 	tests := []struct {
 		name, doc string
@@ -21,6 +25,14 @@ func TestParseImportSchema(t *testing.T) {
 		{"bad widget id", `{"version":1,"name":"a","widgets":[{"id":"Bad Id","type":"resource_counts","size":"S"}]}`, false},
 		{"node widget on app", `{"version":1,"name":"a","widgets":[{"id":"w","type":"node_capacity","size":"S","target":{"kind":"app","name":"web"}}]}`, false},
 		{"metric chart without metric", `{"version":1,"name":"a","widgets":[{"id":"w","type":"metric_chart","size":"S","target":{"kind":"app","name":"web"}}]}`, false},
+		{"fleet_health no target", fleetDoc("fleet_health", ""), true},
+		{"fleet_traffic no target", fleetDoc("fleet_traffic", ""), true},
+		{"top_apps no target", fleetDoc("top_apps", ""), true},
+		{"deploy_activity no target", fleetDoc("deploy_activity", ""), true},
+		{"fleet_capacity no target", fleetDoc("fleet_capacity", ""), true},
+		{"attention no target", fleetDoc("attention", ""), true},
+		{"resource_counts with target", fleetDoc("resource_counts", `,"target":{"kind":"app","name":"web"}`), true},
+		{"fleet_health with target", fleetDoc("fleet_health", `,"target":{"kind":"app","name":"web"}`), true},
 		{"not json", `nope`, false},
 	}
 	for _, tt := range tests {

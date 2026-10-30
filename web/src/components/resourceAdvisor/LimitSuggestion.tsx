@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  TrendDownIcon,
-  TrendUpIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  TrendingDownGlassIcon,
+  TrendingUpGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -13,6 +13,7 @@ import {
 } from '../../queries/resourceRecommendation'
 import { formatBytes, formatNanoCpus } from '../../lib/format'
 import { ApiError } from '../../lib/apiError'
+import { formatMonthlySaving } from './recommendationFormat'
 import type { DimensionRecommendation } from '../../types/resourceRecommendation'
 
 const CONFIDENCE_VARIANT = {
@@ -34,11 +35,11 @@ function Dimension({
   const value = format(rec.suggested_limit)
   const icon =
     rec.action === 'raise' ? (
-      <TrendUpIcon className="size-4" />
+      <TrendingUpGlassIcon className="size-5" />
     ) : rec.action === 'lower' ? (
-      <TrendDownIcon className="size-4" />
+      <TrendingDownGlassIcon className="size-5" />
     ) : (
-      <CheckCircleIcon className="size-4" />
+      <CircleCheckGlassIcon className="size-5 text-tone-success" />
     )
   return (
     <div className="rounded-md border border-border p-3">
@@ -48,7 +49,11 @@ function Dimension({
           {t(`suggestion.confidence.${rec.confidence}`)}
         </Badge>
       </div>
-      {rec.action ? (
+      {!rec.data_sufficient ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t('suggestion.insufficient')}
+        </p>
+      ) : rec.action ? (
         <p className="mt-2 flex items-center gap-2 text-sm text-foreground">
           {icon}
           {rec.action === 'keep'
@@ -93,11 +98,12 @@ export function LimitSuggestion(props: Props) {
       <p className="text-sm text-muted-foreground">{t('suggestion.error')}</p>
     )
   }
+  const saving = formatMonthlySaving(data.estimated_monthly_saving_usd)
   return (
     <div className="space-y-3">
       {data.oom_detected_at ? (
         <Alert variant="destructive">
-          <WarningCircleIcon />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
           <AlertDescription>
             {t('suggestion.oom', {
               date: new Date(data.oom_detected_at).toLocaleString(),
@@ -118,6 +124,16 @@ export function LimitSuggestion(props: Props) {
           format={formatNanoCpus}
         />
       </div>
+      {saving ? (
+        <p className="text-sm text-foreground">
+          {data.saving_provider
+            ? t('suggestion.saving', {
+                amount: saving,
+                provider: data.saving_provider,
+              })
+            : t('suggestion.savingNoProvider', { amount: saving })}
+        </p>
+      ) : null}
       <p className="text-xs text-muted-foreground">
         {t('suggestion.basedOn', {
           window: data.lookback_label ?? data.lookback_window,

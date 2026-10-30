@@ -95,6 +95,7 @@ type deployApprovalOptions struct {
 	pull           bool
 	includeEnv     bool
 	promoteEnv     string
+	releaseID      string
 }
 
 // requestDeployApproval creates and saves a pending deploy_approvals row
@@ -130,7 +131,7 @@ func (rt *Router) requestDeployApproval(w http.ResponseWriter, r *http.Request, 
 		CreatedAt:      store.FormatAuditTime(now),
 		ExpiresAt:      store.FormatAuditTime(now.Add(rt.effectiveDeployApprovalTTL())),
 		FreezeOverride: opts.freezeOverride, Pull: opts.pull, IncludeEnv: opts.includeEnv,
-		PromoteEnv: opts.promoteEnv,
+		PromoteEnv: opts.promoteEnv, ReleaseID: opts.releaseID,
 	}
 	if err := rt.deployApprovals.SaveDeployApproval(r.Context(), a); err != nil {
 		rt.internalError(w, "api: request deploy approval failed", err, slog.String("service", serviceName))
@@ -444,23 +445,51 @@ func (rt *Router) applyClaimedApproval(ctx context.Context, a store.DeployApprov
 	var updated store.DesiredService
 	switch a.Action {
 	case store.DeployApprovalActionPromote:
+		if _, gateErr := rt.approvalFreezeNote(ctx, a); gateErr != nil {
+			return deployApprovalDecisionResponse{}, gateErr
+		}
+		image := a.Image
+		if a.ReleaseID != "" {
+			ref, derr := rt.applyReleaseApproval(ctx, a)
+			if derr != nil {
+				return deployApprovalDecisionResponse{}, derr
+			}
+			image = ref
+		}
+		if derr := rt.verifyPromotionDigest(ctx, image); derr != nil {
+			return deployApprovalDecisionResponse{}, derr
+		}
+		undo, rerr := rt.retargetBinding(ctx, *svc, a.ReleaseID, bindingReasonPromote, a.ApprovedByName, a.ID)
+		if rerr != nil {
+			return deployApprovalDecisionResponse{}, rerr
+		}
 		target := *svc
 		if a.IncludeEnv {
 			if err := applyPromoteEnvSnapshot(&target, a.PromoteEnv); err != nil {
+				undo()
 				return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: read env snapshot failed: %w", err)
 			}
 		}
-		updated, err = rt.setDesiredImage(ctx, target, a.Image)
+		updated, err = rt.setDesiredImage(ctx, target, image)
 		if err == nil {
-			rt.recordInstantDeployAttempt(ctx, updated, a.Image, store.DeployAttemptSourcePromote)
+			rt.recordInstantDeployAttempt(ctx, updated, image, store.DeployAttemptSourcePromote)
 			rt.nudgeReconciler()
+		} else {
+			undo()
 		}
 	default:
 		note, gateErr := rt.approvalFreezeNote(ctx, a)
 		if gateErr != nil {
 			return deployApprovalDecisionResponse{}, gateErr
 		}
+		undo, rerr := rt.retargetBinding(ctx, *svc, a.ReleaseID, bindingReasonRollback, a.ApprovedByName, a.ID)
+		if rerr != nil {
+			return deployApprovalDecisionResponse{}, rerr
+		}
 		updated, err = rt.executeConfirmedDeploy(ctx, *svc, a.Image, confirmedDeployOptions{pull: a.Pull, reason: note})
+		if err != nil {
+			undo()
+		}
 	}
 	if err != nil && a.Pull && a.Action != store.DeployApprovalActionPromote {
 		rt.logger.Error("api: approve deploy approval: fresh pull failed", slog.String("error", err.Error()), slog.String("id", a.ID))

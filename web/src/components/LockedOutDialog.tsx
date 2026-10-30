@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  KeyIcon,
-  LifebuoyIcon,
-  ShieldCheckIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  KeyGlassIcon,
+  ShieldCheckGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,7 +20,7 @@ import { useBrand } from '../hooks/useBrand'
 
 interface Route {
   id: 'password' | 'token' | 'approve'
-  icon: typeof KeyIcon
+  icon: typeof KeyGlassIcon
   command: string
 }
 
@@ -51,9 +50,9 @@ function CopyLine({ value }: { value: string }) {
         }}
       >
         {copied ? (
-          <CheckIcon aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
       </Button>
     </div>
@@ -68,17 +67,17 @@ export function LockedOutDialog() {
   const routes: Route[] = [
     {
       id: 'password',
-      icon: KeyIcon,
+      icon: KeyGlassIcon,
       command: `sudo ${bin} recover-admin --username <your username>`,
     },
     {
       id: 'token',
-      icon: ShieldCheckIcon,
+      icon: ShieldCheckGlassIcon,
       command: `sudo ${bin} emergency-token --ttl 1h`,
     },
     {
       id: 'approve',
-      icon: TerminalWindowIcon,
+      icon: TerminalGlassIcon,
       command: `sudo ${bin} approve-signin <request id> --match <number>`,
     },
   ]
@@ -93,7 +92,7 @@ export function LockedOutDialog() {
           />
         }
       >
-        <LifebuoyIcon className="size-3.5" aria-hidden="true" />
+        <KeyGlassIcon className="size-5.5" aria-hidden="true" />
         {t('lockedOut.link')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -109,7 +108,7 @@ export function LockedOutDialog() {
             >
               <div className="flex items-start gap-3">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <r.icon className="size-4" aria-hidden="true" />
+                  <r.icon className="size-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">

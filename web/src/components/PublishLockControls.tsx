@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  LockSimpleIcon,
-  LockSimpleOpenIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, LockOpenGlassIcon } from '@thesvg/ui-react'
 import {
   Alert,
   AlertAction,
@@ -41,9 +38,9 @@ export function PublishLockToggle({ appName }: { appName: string }) {
       }
     >
       {data.locked ? (
-        <LockSimpleOpenIcon className="size-3.5" data-icon="inline-start" />
+        <LockOpenGlassIcon className="size-5" data-icon="inline-start" />
       ) : (
-        <LockSimpleIcon className="size-3.5" data-icon="inline-start" />
+        <LockGlassIcon className="size-5" data-icon="inline-start" />
       )}
       {data.locked ? t('publishLock.unlock') : t('publishLock.lock')}
     </Button>
@@ -61,7 +58,7 @@ export function PublishLockBanner({ appName }: { appName: string }) {
   const held = data.held_builds.length
   return (
     <Alert>
-      <LockSimpleIcon />
+      <LockGlassIcon size="1.4em" />
       <AlertTitle>{t('publishLock.bannerTitle')}</AlertTitle>
       <AlertDescription>
         {t('publishLock.bannerBody', {

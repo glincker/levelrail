@@ -1,9 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  HardDrivesIcon,
-  KeyIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon, PlugGlassIcon, ServerGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { envKind, imagePin } from '../../lib/templateTrust'
 import type { EnvKind } from '../../lib/templateTrust'
@@ -57,7 +53,7 @@ export function TemplateServices({
                 </Badge>
                 {s.port ? (
                   <Badge variant="outline">
-                    <PlugsConnectedIcon className="size-3" aria-hidden="true" />
+                    <PlugGlassIcon className="size-4.5" aria-hidden="true" />
                     {t('detail.deployed.port', { port: s.port })}
                   </Badge>
                 ) : null}
@@ -74,8 +70,8 @@ export function TemplateServices({
               ) : null}
               {volumes.length > 0 ? (
                 <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
-                  <HardDrivesIcon
-                    className="mt-0.5 size-3.5 shrink-0"
+                  <ServerGlassIcon
+                    className="mt-0.5 size-5 shrink-0"
                     aria-label={t('install.volumes')}
                   />
                   <span className="min-w-0 font-mono break-all">
@@ -96,7 +92,10 @@ export function TemplateServices({
                         className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs ${ENV_STYLE[kind]}`}
                       >
                         {e.secret || kind !== 'optional' ? (
-                          <KeyIcon className="size-3" aria-hidden="true" />
+                          <KeyGlassIcon
+                            className="size-4.5"
+                            aria-hidden="true"
+                          />
                         ) : null}
                         <span className="font-mono">{e.key}</span>
                         <span className="text-muted-foreground">

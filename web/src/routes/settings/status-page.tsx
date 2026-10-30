@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BroadcastIcon } from '@phosphor-icons/react/dist/ssr'
+import { RadioTowerGlassIcon } from '@thesvg/ui-react'
 import { StatusComponentsPanel } from '../../components/StatusComponentsPanel'
 import { StatusIncidentsPanel } from '../../components/StatusIncidentsPanel'
 import { StatusPageSettingsPanel } from '../../components/StatusPageSettingsPanel'
@@ -17,7 +17,7 @@ function StatusPageSettingsRoute() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <BroadcastIcon className="size-4" aria-hidden="true" />
+          <RadioTowerGlassIcon className="size-5" aria-hidden="true" />
         </div>
         <PageHeader
           title="Status page"

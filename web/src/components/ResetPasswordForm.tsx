@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useResetPassword } from '../queries/passwordReset'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -54,7 +54,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
     return (
       <div className="space-y-4">
         <Alert>
-          <CheckCircleIcon />
+          <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
           <AlertTitle>Password reset</AlertTitle>
           <AlertDescription>
             Your password has been changed. Every other session was signed out.
@@ -117,7 +117,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
       {resetPassword.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{resetPassword.error.message}</AlertDescription>
         </Alert>
       ) : null}

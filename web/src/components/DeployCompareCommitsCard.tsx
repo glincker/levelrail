@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, NotePencilIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, SquarePenGlassIcon } from '@thesvg/ui-react'
 import type { DeployCompare } from '../types/deployCompare'
 import { useReleaseNotes } from '../queries/releaseNotes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -84,7 +84,7 @@ export function DeployCompareCommitsCard({
             onClick={() => setRequested(true)}
             disabled={notes.isFetching}
           >
-            <NotePencilIcon className="size-3.5" data-icon="inline-start" />
+            <SquarePenGlassIcon className="size-5" data-icon="inline-start" />
             {notes.isFetching
               ? t('releaseNotes.generating')
               : t('releaseNotes.generate')}
@@ -116,7 +116,7 @@ export function DeployCompareCommitsCard({
               size="sm"
               onClick={() => void copy(notes.data.markdown)}
             >
-              <CopyIcon className="size-3.5" data-icon="inline-start" />
+              <CopyGlassIcon className="size-5" data-icon="inline-start" />
               {t('releaseNotes.copy')}
             </Button>
           </div>

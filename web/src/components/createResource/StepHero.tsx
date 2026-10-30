@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -38,7 +38,7 @@ export function StepHero({
         className="-ml-2 w-fit text-muted-foreground"
         onClick={onBack}
       >
-        <ArrowLeftIcon aria-hidden="true" />
+        <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
         {t('wizard.back')}
       </Button>
       <div

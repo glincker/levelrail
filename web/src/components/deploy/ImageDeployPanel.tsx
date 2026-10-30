@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, GitBranchIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, GitBranchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -169,7 +169,7 @@ export function ImageDeployPanel({
         onOpenChange={setAdvancedOpen}
       >
         <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground">
-          <CaretDownIcon className="size-3.5" aria-hidden="true" />
+          <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
           {t('image.advanced')}
         </CollapsibleTrigger>
         <CollapsiblePanel>
@@ -223,7 +223,7 @@ export function ImageDeployPanel({
         className="w-full"
         onClick={onConnectRepo}
       >
-        <GitBranchIcon aria-hidden="true" />
+        <GitBranchGlassIcon size="1.4em" aria-hidden="true" />
         {t('image.connectInstead')}
       </Button>
     </form>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CoinsIcon } from '@phosphor-icons/react/dist/ssr'
+import { CoinsGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { CostSectionTabs } from '@/components/shell/SectionTabGroups'
 import { Button } from '@/components/ui/button'
@@ -137,13 +137,13 @@ function CostsPage() {
         <>
           {!data.telemetry_available ? (
             <EmptyState
-              icon={<CoinsIcon />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.noTelemetryTitle')}
               description={t('empty.noTelemetryDescription')}
             />
           ) : !data.configured ? (
             <EmptyState
-              icon={<CoinsIcon />}
+              icon={<CoinsGlassIcon size="1.4em" />}
               title={t('empty.notConfiguredTitle')}
               description={t('empty.notConfiguredDescription')}
               action={

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -77,7 +77,10 @@ export function NodeAllocationCard({ nodeId }: { nodeId: string }) {
           <Skeleton className="h-20 w-full" />
         ) : allocations.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription className="space-y-2">
               <p>
                 {t('allocation.loadFailed')} {allocations.error.message}

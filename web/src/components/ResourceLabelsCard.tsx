@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TagIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TagGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,7 +57,7 @@ export function ResourceLabelsCard({
             ) : (
               keys.map((key) => (
                 <Badge key={key} variant="muted" className="font-mono">
-                  <TagIcon aria-hidden="true" />
+                  <TagGlassIcon size="1.4em" aria-hidden="true" />
                   {key}={saved[key]}
                 </Badge>
               ))
@@ -92,7 +92,10 @@ export function ResourceLabelsCard({
             ) : null}
             {save.isError ? (
               <Alert variant="destructive">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.7em"
+                />
                 <AlertDescription>{save.error.message}</AlertDescription>
               </Alert>
             ) : null}

@@ -47,7 +47,7 @@ func registerIaCTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "apply_resources",
-		Description: "Apply resource files in dependency order with the caller's permissions. Pass expected_plan_hash from plan_apply to refuse drift. Items report applied, failed, denied or skipped. prune deletes undeclared apps.",
+		Description: "Apply resource files in dependency order with the caller's permissions. Pass expected_plan_hash from plan_apply to refuse drift. prune deletes undeclared apps.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planApplyInput) (*mcp.CallToolResult, iac.ApplyResult, error) {
 		res, err := client.ApplyIaC(ctx, in.request())
 		if err != nil {

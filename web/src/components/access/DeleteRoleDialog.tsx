@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,7 @@ export function DeleteRoleDialog({ role }: { role: RoleResource }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WarningIcon className="size-4 text-destructive" />
+            <TriangleAlertGlassIcon className="size-6 text-destructive" />
             {t('roles.deleteDialog.title', { name: role.name })}
           </DialogTitle>
           <DialogDescription>
@@ -47,7 +47,10 @@ export function DeleteRoleDialog({ role }: { role: RoleResource }) {
         </DialogHeader>
         {inUse ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>
               {t('roles.deleteDialog.inUse', { count: role.user_count })}
             </AlertDescription>
@@ -55,7 +58,10 @@ export function DeleteRoleDialog({ role }: { role: RoleResource }) {
         ) : null}
         {del.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{del.error.message}</AlertDescription>
           </Alert>
         ) : null}

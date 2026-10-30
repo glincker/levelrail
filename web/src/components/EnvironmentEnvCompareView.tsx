@@ -1,8 +1,8 @@
 import {
-  ArrowRightIcon,
-  InfoIcon,
-  LockIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  InfoGlassIcon,
+  LockGlassIcon,
+} from '@thesvg/ui-react'
 import type {
   EnvironmentCompare,
   EnvironmentEnvDiffEntry,
@@ -70,7 +70,7 @@ export function EnvironmentEnvCompareView({
       </Card>
 
       <Alert>
-        <InfoIcon className="size-4" />
+        <InfoGlassIcon className="size-5 text-tone-info" />
         <AlertDescription>{compare.note}</AlertDescription>
       </Alert>
     </div>
@@ -82,8 +82,8 @@ function EnvironmentEnvDiffRow({ entry }: { entry: EnvironmentEnvDiffEntry }) {
     <li className="flex flex-wrap items-center gap-2 text-sm">
       <span className="flex w-40 shrink-0 items-center gap-1 font-mono text-xs font-medium text-foreground">
         {entry.secret ? (
-          <LockIcon
-            className="size-3.5 shrink-0 text-muted-foreground"
+          <LockGlassIcon
+            className="size-5 shrink-0 text-muted-foreground"
             aria-label="Secret value"
           />
         ) : null}
@@ -101,8 +101,8 @@ function EnvironmentEnvDiffRow({ entry }: { entry: EnvironmentEnvDiffEntry }) {
           <span className="truncate font-mono text-xs text-muted-foreground">
             {entry.a || '(none)'}
           </span>
-          <ArrowRightIcon
-            className="size-3.5 shrink-0 text-muted-foreground"
+          <ArrowRightGlassIcon
+            className="size-5 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />
           <span className="truncate font-mono text-xs text-foreground">

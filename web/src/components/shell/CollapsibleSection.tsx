@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 
 export function NavChevron({
@@ -10,10 +10,10 @@ export function NavChevron({
   className?: string
 }) {
   return (
-    <CaretRightIcon
+    <ChevronRightGlassIcon
       aria-hidden="true"
       className={cn(
-        'size-3 transition-transform duration-200 ease-out motion-reduce:transition-none',
+        'size-4.5 transition-transform duration-200 ease-out motion-reduce:transition-none',
         open && 'rotate-90',
         className,
       )}

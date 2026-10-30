@@ -1,6 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PaperPlaneTiltIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { SendGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -64,7 +64,7 @@ function TestButton({ app, form }: { app: string; form: string }) {
       disabled={sendTest.isPending}
       onClick={send}
     >
-      <PaperPlaneTiltIcon />
+      <SendGlassIcon size="1.4em" />
       {sendTest.isPending ? t('test.sending') : t('test.button')}
     </Button>
   )
@@ -107,7 +107,7 @@ export function FormCard({
             size="sm"
             onClick={() => setConfirming(true)}
           >
-            <TrashIcon />
+            <TrashGlassIcon size="1.4em" />
             {t('delete.button')}
           </Button>
         </div>

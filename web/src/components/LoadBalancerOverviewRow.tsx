@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import {
-  CaretRightIcon,
-  CheckCircleIcon,
-  MinusCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronRightGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
   LB_STATE_LABEL,
@@ -19,20 +19,24 @@ const STATE_META = {
   balancing: {
     variant: 'success',
     label: LB_STATE_LABEL.balancing,
-    icon: CheckCircleIcon,
+    icon: CircleCheckGlassIcon,
   },
   degraded: {
     variant: 'warning',
     label: LB_STATE_LABEL.degraded,
-    icon: WarningIcon,
+    icon: TriangleAlertGlassIcon,
   },
-  none: { variant: 'muted', label: LB_STATE_LABEL.none, icon: MinusCircleIcon },
+  none: {
+    variant: 'muted',
+    label: LB_STATE_LABEL.none,
+    icon: CircleMinusGlassIcon,
+  },
 } as const satisfies Record<
   LoadBalancerOverviewState,
   {
     variant: 'success' | 'warning' | 'muted'
     label: string
-    icon: typeof CheckCircleIcon
+    icon: typeof CircleCheckGlassIcon
   }
 >
 
@@ -94,8 +98,8 @@ export function LoadBalancerOverviewRow({
       <span className="text-muted-foreground">
         {lastCheckLabel(item.last_check)}
       </span>
-      <CaretRightIcon
-        className="size-4 text-muted-foreground"
+      <ChevronRightGlassIcon
+        className="size-5 text-muted-foreground"
         aria-hidden="true"
       />
     </div>

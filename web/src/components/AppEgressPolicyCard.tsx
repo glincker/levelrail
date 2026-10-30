@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import {
-  CheckCircleIcon,
-  LockIcon,
-  LockOpenIcon,
-  PlusIcon,
-  QuestionIcon,
-  WarningCircleIcon,
-  WarningIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  LockGlassIcon,
+  LockOpenGlassIcon,
+  PlusGlassIcon,
+  TriangleAlertGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,9 +57,9 @@ const STATUS_BADGE_VARIANT: Record<
 }
 
 const STATUS_ICON = {
-  True: CheckCircleIcon,
-  False: WarningCircleIcon,
-  Unknown: QuestionIcon,
+  True: CircleCheckGlassIcon,
+  False: CircleAlertGlassIcon,
+  Unknown: CircleQuestionMarkGlassIcon,
 }
 
 function liveStatusLabel(reason: string): string {
@@ -104,7 +104,7 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LockOpenIcon className="size-4" />
+            <LockOpenGlassIcon className="size-5" />
             Outbound network
           </CardTitle>
         </CardHeader>
@@ -211,9 +211,9 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {configured ? (
-            <LockIcon className="size-4" />
+            <LockGlassIcon className="size-5" />
           ) : (
-            <LockOpenIcon className="size-4" />
+            <LockOpenGlassIcon className="size-5" />
           )}
           Outbound network
           <HelpLink
@@ -260,7 +260,10 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
                   <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-1.5 text-destructive">
-                        <WarningIcon className="size-4" aria-hidden="true" />
+                        <TriangleAlertGlassIcon
+                          className="size-6 text-tone-warning"
+                          aria-hidden="true"
+                        />
                         Remove the egress allowlist?
                       </DialogTitle>
                       <DialogDescription>
@@ -351,7 +354,7 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
                       onClick={() => removeRow(index)}
                       disabled={rows.length === 1}
                     >
-                      <XIcon />
+                      <XGlassIcon size="1.4em" />
                       <span className="sr-only">Remove rule</span>
                     </Button>
                   </div>
@@ -366,7 +369,7 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
               ))}
             </FieldGroup>
             <Button type="button" variant="outline" size="sm" onClick={addRow}>
-              <PlusIcon />
+              <PlusGlassIcon size="1.4em" />
               Add rule
             </Button>
             <p className="text-sm text-muted-foreground">
@@ -417,7 +420,7 @@ function StatusBadge({
   const Icon = STATUS_ICON[status]
   return (
     <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
-      <Icon className="size-3" />
+      <Icon className="size-3.5" />
       {liveStatusLabel(reason)}
     </Badge>
   )

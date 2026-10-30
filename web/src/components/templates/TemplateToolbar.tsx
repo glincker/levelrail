@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ListBulletsIcon,
-  MagnifyingGlassIcon,
-  SealCheckIcon,
-  SquaresFourIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BadgeCheckGlassIcon,
+  LayoutGridGlassIcon,
+  ListGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -86,8 +86,8 @@ export function TemplateToolbar({
     <div className="sticky top-0 z-10 space-y-3 bg-background pb-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-56 flex-1">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          <SearchGlassIcon
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -135,7 +135,10 @@ export function TemplateToolbar({
               : 'border-border text-foreground/70 hover:text-foreground',
           )}
         >
-          <SealCheckIcon className="size-4" aria-hidden="true" />
+          <BadgeCheckGlassIcon
+            className="size-5 text-tone-success"
+            aria-hidden="true"
+          />
           {t('verified.filter')}
         </button>
         <div
@@ -145,8 +148,8 @@ export function TemplateToolbar({
         >
           {(
             [
-              ['comfortable', SquaresFourIcon],
-              ['compact', ListBulletsIcon],
+              ['comfortable', LayoutGridGlassIcon],
+              ['compact', ListGlassIcon],
             ] as const
           ).map(([key, DensityIcon]) => (
             <button
@@ -163,7 +166,7 @@ export function TemplateToolbar({
                   : 'text-foreground/70 hover:text-foreground',
               )}
             >
-              <DensityIcon className="size-4" aria-hidden="true" />
+              <DensityIcon className="size-5" aria-hidden="true" />
               <span className="max-sm:sr-only">
                 {t(`marketplace.density.${key}`)}
               </span>

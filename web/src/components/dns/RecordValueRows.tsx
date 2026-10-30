@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -117,7 +117,7 @@ export function RecordValueRows({
               aria-label={t('record.removeValue', { n: i + 1 })}
               onClick={() => onChange(rows.filter((_, j) => j !== i))}
             >
-              <TrashIcon />
+              <TrashGlassIcon size="1.4em" />
             </Button>
           ) : null}
         </div>
@@ -133,7 +133,7 @@ export function RecordValueRows({
             ])
           }
         >
-          <PlusIcon />
+          <PlusGlassIcon size="1.4em" />
           {t('record.addValue')}
         </Button>
       )}

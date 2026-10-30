@@ -1,9 +1,9 @@
 import {
-  CheckCircleIcon,
-  CircleDashedIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import type { DeployStage } from '../lib/deployStages'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { cn } from '@/lib/utils'
@@ -20,18 +20,22 @@ function StageIcon({ stage }: { stage?: DeployStage }) {
   switch (stage?.status) {
     case 'done':
       return (
-        <CheckCircleIcon weight="fill" className={cn(cls, 'text-success')} />
+        <CircleCheckGlassIcon
+          size="1.4em"
+          className={cn(cls, 'text-success')}
+        />
       )
     case 'failed':
       return (
-        <WarningCircleIcon
-          weight="fill"
+        <CircleAlertGlassIcon
+          size="1.4em"
           className={cn(cls, 'text-tone-danger')}
         />
       )
     case 'running':
       return (
-        <SpinnerGapIcon
+        <LoaderCircleGlassIcon
+          size="1.4em"
           className={cn(
             cls,
             'animate-spin text-info motion-reduce:animate-none',
@@ -39,7 +43,12 @@ function StageIcon({ stage }: { stage?: DeployStage }) {
         />
       )
     default:
-      return <CircleDashedIcon className={cn(cls, 'text-muted-foreground')} />
+      return (
+        <CircleDashedGlassIcon
+          size="1.4em"
+          className={cn(cls, 'text-muted-foreground')}
+        />
+      )
   }
 }
 

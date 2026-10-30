@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CoinsIcon,
-  KeyIcon,
-  LightningIcon,
-  PlugsIcon,
-  WifiSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleCheckGlassIcon,
+  CoinsGlassIcon,
+  KeyGlassIcon,
+  PlugGlassIcon,
+  WifiOffGlassIcon,
+  ZapGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { BrandTile } from '../BrandLogoBadge'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Badge } from '@/components/ui/badge'
@@ -18,13 +18,13 @@ import { pillState, type PillState } from './aiProviderState'
 
 const PILL: Record<
   PillState,
-  { tone: 'neutral' | 'success' | 'danger' | 'warning'; icon: Icon }
+  { tone: 'neutral' | 'success' | 'danger' | 'warning'; icon: UiIcon }
 > = {
-  not_connected: { tone: 'neutral', icon: PlugsIcon },
-  connected: { tone: 'success', icon: CheckCircleIcon },
-  invalid_key: { tone: 'danger', icon: KeyIcon },
-  unreachable: { tone: 'warning', icon: WifiSlashIcon },
-  quota_exhausted: { tone: 'warning', icon: CoinsIcon },
+  not_connected: { tone: 'neutral', icon: PlugGlassIcon },
+  connected: { tone: 'success', icon: CircleCheckGlassIcon },
+  invalid_key: { tone: 'danger', icon: KeyGlassIcon },
+  unreachable: { tone: 'warning', icon: WifiOffGlassIcon },
+  quota_exhausted: { tone: 'warning', icon: CoinsGlassIcon },
 }
 
 export function ProviderPill({ provider }: { provider: AiProvider }) {
@@ -78,7 +78,7 @@ export function AiProviderCard({
         <ProviderPill provider={provider} />
         {active ? (
           <Badge variant="accent" className="shrink-0">
-            <LightningIcon className="size-3" aria-hidden="true" />
+            <ZapGlassIcon className="size-4.5" aria-hidden="true" />
             {t('aiAssistantPage.card.active')}
           </Badge>
         ) : null}

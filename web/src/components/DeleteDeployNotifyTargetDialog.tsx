@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -40,13 +40,16 @@ export function DeleteDeployNotifyTargetDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
+        <TrashGlassIcon className="size-5" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             Delete this deploy notify target?
           </DialogTitle>
           <DialogDescription>

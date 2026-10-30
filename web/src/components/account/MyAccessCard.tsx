@@ -1,10 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckCircleIcon,
-  MinusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, CircleMinusGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -114,16 +111,16 @@ export function MyAccessCard() {
                       <TableCell>
                         {c.allowed ? (
                           <span className="inline-flex items-center gap-1.5">
-                            <CheckCircleIcon
-                              className="size-4 shrink-0 text-emerald-600"
+                            <CircleCheckGlassIcon
+                              className="size-5 shrink-0 text-emerald-600"
                               aria-hidden="true"
                             />
                             {t('accountPage.access.allowed')}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                            <MinusCircleIcon
-                              className="size-4 shrink-0"
+                            <CircleMinusGlassIcon
+                              className="size-5 shrink-0"
                               aria-hidden="true"
                             />
                             {t('accountPage.access.missing', {

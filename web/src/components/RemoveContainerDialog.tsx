@@ -1,4 +1,4 @@
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,10 @@ export function RemoveContainerDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             Remove &ldquo;{containerName}&rdquo;?
           </DialogTitle>
           <DialogDescription>
@@ -43,7 +46,10 @@ export function RemoveContainerDialog({
         </DialogHeader>
         {removeContainer.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{removeContainer.error.message}</AlertDescription>
           </Alert>
         ) : null}
@@ -73,7 +79,7 @@ export function RemoveContainerDialog({
               })
             }}
           >
-            <TrashIcon className="size-3.5" aria-hidden="true" />
+            <TrashGlassIcon className="size-5" aria-hidden="true" />
             {removeContainer.isPending ? 'Removing...' : 'Remove container'}
           </Button>
         </DialogFooter>

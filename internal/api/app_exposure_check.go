@@ -66,15 +66,20 @@ func (rt *Router) handleCheckAppExposure(w http.ResponseWriter, r *http.Request)
 		path = svc.Health.Readiness.Path
 	}
 	local := probeTarget{Kind: "container", URL: "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(hostPort)) + path}
+	ingressOnly := running && hostPort == 0
 	switch {
-	case !running || hostPort == 0:
+	case !running:
 		local.URL = ""
 		local.Failure = probeContainerNotRunning
-	default:
+	case !ingressOnly:
 		rt.probeHTTP(ctx, &local, "127.0.0.1:"+strconv.Itoa(hostPort), probeContainerNotListen)
 	}
-	out.Targets = append(out.Targets, local)
-	if local.OK {
+	// An app served only through the ingress publishes no host port, so there is
+	// nothing to probe directly; its addresses are still checked below.
+	if !ingressOnly {
+		out.Targets = append(out.Targets, local)
+	}
+	if local.OK || ingressOnly {
 		out.Targets = append(out.Targets, rt.probeExposureURLs(ctx, plan, path)...)
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -100,10 +105,26 @@ func (rt *Router) probeExposureURLs(ctx context.Context, plan exposurePlan, path
 			}
 			t.URL = u.URL + path
 			rt.probeHTTP(ctx, &t, net.JoinHostPort("127.0.0.1", port), probeUnreachableFromHost)
+			if u.Kind == "fallback" && t.OK && rt.publicHost != "" {
+				rt.probePublicDial(ctx, &t, net.JoinHostPort(rt.publicHost, port))
+			}
 		}
 		out = append(out, t)
 	}
 	return out
+}
+
+// probePublicDial fails t when this server cannot open its own public address:
+// the ingress answers locally, but behind NAT or closed ports a browser never gets there.
+func (rt *Router) probePublicDial(ctx context.Context, t *probeTarget, addr string) {
+	dctx, cancel := context.WithTimeout(ctx, rt.doctorNetworkTimeoutOrDefault())
+	defer cancel()
+	conn, err := rt.doctorDialContextOrDefault()(dctx, "tcp", addr)
+	if err != nil {
+		t.OK, t.Failure, t.Detail = false, probeFirewallClosed, err.Error()
+		return
+	}
+	_ = conn.Close()
 }
 
 // observedHostPort is the host port Docker bound for the running container.

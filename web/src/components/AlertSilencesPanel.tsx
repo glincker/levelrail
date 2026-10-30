@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { BellSlashIcon, PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellOffGlassIcon, CirclePlusGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -103,7 +103,7 @@ function CreateSilenceDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusCircleIcon className="size-4" aria-hidden="true" />
+        <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
         {tm('silence.newSilence')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -336,7 +336,7 @@ export function AlertSilencesPanel() {
         <p className="text-sm text-destructive">{error.message}</p>
       ) : silences.length === 0 ? (
         <EmptyState
-          icon={<BellSlashIcon className="size-5" />}
+          icon={<BellOffGlassIcon className="size-6" />}
           title={tm('silence.emptyTitle')}
           description={tm('silence.emptyDescription')}
         />

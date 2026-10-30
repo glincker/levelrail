@@ -130,6 +130,7 @@ func (rt *Router) handleLeaveTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.recordTeamEvent(r, teamID, userID, "member.left", userID, "")
+	rt.recordAuthAudit(r, userID, accountEventTeamLeft, http.StatusNoContent, map[string]string{"team_id": teamID})
 	w.WriteHeader(http.StatusNoContent)
 }
 

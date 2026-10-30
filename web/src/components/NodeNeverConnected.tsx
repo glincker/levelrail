@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
-import { BroomIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,10 @@ export function NodeNeverConnectedAlert({ node }: { node: NodeResource }) {
   }
   return (
     <Alert>
-      <WarningIcon className="size-4" aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="size-6 text-tone-warning"
+        aria-hidden="true"
+      />
       <AlertTitle>{t('neverConnected.title')}</AlertTitle>
       <AlertDescription>{t('neverConnected.description')}</AlertDescription>
       <div className="mt-3 flex items-center gap-3">
@@ -53,7 +56,7 @@ export function NodeNeverConnectedAlert({ node }: { node: NodeResource }) {
             })
           }}
         >
-          <BroomIcon className="size-3.5" aria-hidden="true" />
+          <BroomGlassIcon className="size-5" aria-hidden="true" />
           {deleteNode.isPending
             ? t('neverConnected.cleaningUp')
             : t('neverConnected.cleanUp')}

@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FieldMessage, NativeSelect } from './PolicyShared'
@@ -97,7 +97,7 @@ export function HeaderRulesEditor({
                   disabled={i === 0}
                   onClick={() => onChange(moveItem(rules, i, i - 1))}
                 >
-                  <ArrowUpIcon />
+                  <ArrowUpGlassIcon size="1.4em" />
                 </Button>
                 <Button
                   type="button"
@@ -107,7 +107,7 @@ export function HeaderRulesEditor({
                   disabled={i === rules.length - 1}
                   onClick={() => onChange(moveItem(rules, i, i + 1))}
                 >
-                  <ArrowDownIcon />
+                  <ArrowDownGlassIcon size="1.4em" />
                 </Button>
                 <Button
                   type="button"
@@ -116,7 +116,7 @@ export function HeaderRulesEditor({
                   aria-label={t('common.remove')}
                   onClick={() => onChange(rules.filter((_, j) => j !== i))}
                 >
-                  <TrashIcon />
+                  <TrashGlassIcon size="1.4em" />
                 </Button>
               </div>
             </div>
@@ -140,7 +140,7 @@ export function HeaderRulesEditor({
           ])
         }
       >
-        <PlusIcon />
+        <PlusGlassIcon size="1.4em" />
         {t('headers.add')}
       </Button>
     </div>

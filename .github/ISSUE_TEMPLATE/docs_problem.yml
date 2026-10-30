@@ -1,0 +1,47 @@
+name: Docs problem
+description: Something in the documentation is wrong, unclear or missing
+title: "docs: "
+labels: ["type/docs", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Small fixes (typos, broken links, one unclear sentence) do not need an issue. You can open a pull request for those directly.
+
+  - type: input
+    id: page
+    attributes:
+      label: Page URL or file path
+      placeholder: "https://docs.levelrail.com/... or docs/installing.md"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it?
+      options:
+        - Wrong or outdated
+        - Unclear
+        - Missing
+        - Broken link or example
+        - Typo
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+      description: Quote the sentence or step if you can.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested fix
+      description: What the page should say or show. Optional.
+    validations:
+      required: false

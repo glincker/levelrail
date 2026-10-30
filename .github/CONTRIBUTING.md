@@ -14,6 +14,19 @@ that aren't always obvious from the code alone.
 For quick questions before opening an issue, ask in the `#levelrail`
 forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
 
+## Before you open a PR
+
+- Features and larger changes start with an issue. Agree on the approach
+  there before you write code.
+- Bug fixes include a test that fails without the change.
+- PR titles and commits use `<type>: <description>`, for example
+  `fix: keep rollback targets out of image gc`.
+- Small docs fixes (typos, broken links, one unclear sentence) need no
+  issue. Open the PR directly.
+- New to the codebase? Look for issues labeled
+  [`good first issue`](https://github.com/glincker/levelrail/labels/good%20first%20issue)
+  or [`help wanted`](https://github.com/glincker/levelrail/labels/help%20wanted).
+
 ## Branches and commits
 
 - Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
@@ -42,8 +55,10 @@ Iterate on the smallest thing that proves the change, and let CI be the
 backstop instead of running it all by hand.
 
 1. **While coding**: test only what you touched, not the whole tree.
-   `scripts/affected-tests.sh` runs the changed packages plus their
-   dependents; for a single package use `go test -short ./internal/foo`.
+   `scripts/test-slice.sh` is the default: it runs only the tests in changed
+   test files and the test file matching each changed source file
+   (`--list` shows the plan). `scripts/affected-tests.sh` is the wider option:
+   changed packages plus their dependents.
    Web: `cd web && npx tsc -b && npx vitest run --changed`.
 2. **Prove it works for real**: unit tests can pass on a feature that does
    not work. Boot the actual control plane from your tree and drive it with
@@ -192,6 +207,9 @@ it separately if you think the set should change.
 - On the frontend: no data fetching inside component bodies, route
   loaders prime the query cache and components read from it. Any list
   that can exceed 50 items is virtualized.
+- Icons: frontend code uses `@thesvg/ui-react`, in the glass look (the
+  `*GlassIcon` exports). `scripts/check-icon-rules.sh` and pre-commit reject
+  imports from any other icon library (ADR 053).
 
 ## Adding a service template
 
@@ -283,6 +301,9 @@ supersedes.
 
 Use the issue templates. For security issues, see
 [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+Questions and help belong in [GitHub Discussions](https://github.com/glincker/levelrail/discussions)
+or the [docs](https://docs.levelrail.com).
 
 ## Labels
 

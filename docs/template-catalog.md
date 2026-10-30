@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (368 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (369 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -41,7 +41,7 @@ Generated from `internal/catalog.Templates` (368 entries as of this build). Run 
 | [Infrastructure](#infrastructure) | 15 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 28 |
-| [Monitoring](#monitoring) | 24 |
+| [Monitoring](#monitoring) | 25 |
 | [Productivity](#productivity) | 74 |
 | [Security](#security) | 18 |
 | [Starter Kits](#starter-kits) | 7 |
@@ -348,6 +348,7 @@ Generated from `internal/catalog.Templates` (368 entries as of this build). Run 
 | [Changedetection.io](https://github.com/dgtlmoon/changedetection.io/wiki) | Monitor any webpage for changes and get notified the moment content updates. | `changedetection` |  |
 | [Checkmate](https://docs.checkmate.so) | An open-source uptime and server monitoring app with incident history and status pages. | `checkmate` |  |
 | [Diun](https://crazymax.dev/diun/) | Watches your running containers and notifies you the moment a new image tag is published. | `diun` |  |
+| [Gatus](https://github.com/TwiN/gatus#configuration) | Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services. | `gatus` |  |
 | [Glances](https://nicolargo.github.io/glances/) | A cross-platform system monitor showing CPU, memory, disk, and network at a glance. | `glances` |  |
 | [GlitchTip](https://glitchtip.com/documentation) | A lightweight, self-hosted error tracking service compatible with the Sentry SDK. | `glitchtip` |  |
 | [Grafana](https://grafana.com/docs/grafana/latest/) | Dashboards and exploration for metrics, logs, and traces from any data source. | `grafana` |  |

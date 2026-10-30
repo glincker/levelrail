@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  FlaskIcon,
-  PushPinIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FlaskConicalGlassIcon,
+  PinGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
@@ -44,7 +44,10 @@ export function TrialAppBanner({ app }: { app: TrialApp }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-tone-accent-border bg-tone-accent-soft p-3 text-tone-accent sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2">
-        <FlaskIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <FlaskConicalGlassIcon
+          className="mt-0.5 size-5 shrink-0"
+          aria-hidden="true"
+        />
         <div className="text-sm">
           <p className="font-medium">{t('banner.title')}</p>
           <p className="text-foreground/80">{t('banner.body')}</p>
@@ -60,7 +63,7 @@ export function TrialAppBanner({ app }: { app: TrialApp }) {
             setKeepOpen(true)
           }}
         >
-          <PushPinIcon className="size-3.5" aria-hidden="true" />
+          <PinGlassIcon className="size-5" aria-hidden="true" />
           {t('banner.keep')}
         </Button>
         <Button
@@ -69,7 +72,7 @@ export function TrialAppBanner({ app }: { app: TrialApp }) {
           variant="destructive"
           onClick={() => setDeleteOpen(true)}
         >
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('banner.delete')}
         </Button>
       </div>

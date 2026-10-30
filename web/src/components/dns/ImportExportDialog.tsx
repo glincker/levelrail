@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -171,7 +171,7 @@ export function ImportExportDialog({
                 render={<a href={exportDnsZoneUrl(zone, 'bind')} download />}
                 nativeButton={false}
               >
-                <DownloadSimpleIcon />
+                <DownloadGlassIcon size="1.4em" />
                 {t('import.exportBind')}
               </Button>
               <Button
@@ -179,7 +179,7 @@ export function ImportExportDialog({
                 render={<a href={exportDnsZoneUrl(zone, 'json')} download />}
                 nativeButton={false}
               >
-                <DownloadSimpleIcon />
+                <DownloadGlassIcon size="1.4em" />
                 {t('import.exportJson')}
               </Button>
             </div>

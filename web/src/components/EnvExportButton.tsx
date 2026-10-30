@@ -1,4 +1,4 @@
-import { DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon } from '@thesvg/ui-react'
 import { formatEnvExport } from '../lib/envParse'
 import { Button } from '@/components/ui/button'
 
@@ -29,7 +29,7 @@ export function EnvExportButton({
 
   return (
     <Button type="button" variant="outline" size="sm" onClick={handleClick}>
-      <DownloadSimpleIcon />
+      <DownloadGlassIcon size="1.4em" />
       Export .env
     </Button>
   )

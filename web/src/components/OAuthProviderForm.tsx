@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon } from '@thesvg/ui-react'
 import type { OAuthProviderSettings } from '../queries/oauth'
 import { useUpdateOAuthProviderSettings } from '../queries/oauth'
 import { callbackUrl } from '../lib/oauthProviders'
@@ -221,7 +221,7 @@ export function OAuthProviderForm({
                 aria-label={t('oauthPage.copyCallback')}
                 onClick={copyCallback}
               >
-                <CopyIcon aria-hidden="true" />
+                <CopyGlassIcon size="1.4em" aria-hidden="true" />
               </Button>
             </div>
           </Field>

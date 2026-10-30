@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PlusIcon,
-  XIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlusGlassIcon,
+  ShieldCheckGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -84,7 +84,7 @@ function CiGateForm({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckIcon className="size-4 text-muted-foreground" />
+          <ShieldCheckGlassIcon className="size-5 text-muted-foreground" />
           {t('title')}
         </CardTitle>
         <CardDescription>{t('description')}</CardDescription>
@@ -112,7 +112,7 @@ function CiGateForm({
                     aria-label={t('remove', { name })}
                     className="rounded-sm hover:text-foreground"
                   >
-                    <XIcon />
+                    <XGlassIcon size="1.4em" />
                   </button>
                 </Badge>
               ))}
@@ -138,7 +138,7 @@ function CiGateForm({
                 onClick={add}
                 disabled={draft.trim() === ''}
               >
-                <PlusIcon />
+                <PlusGlassIcon size="1.4em" />
                 {t('add')}
               </Button>
             </div>

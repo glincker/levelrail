@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { GlobeIcon, LayoutIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon, LayoutTemplateGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { useStaticSites } from '../queries/staticSites'
 
@@ -27,8 +27,8 @@ export function StaticSitesCard() {
   return (
     <div className="rounded-lg border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
-        <LayoutIcon
-          className="size-4 text-muted-foreground"
+        <LayoutTemplateGlassIcon
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
@@ -59,7 +59,7 @@ export function StaticSitesCard() {
                     variant="outline"
                     className="gap-1 font-mono text-[11px] text-muted-foreground"
                   >
-                    <GlobeIcon className="size-3" aria-hidden="true" />
+                    <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
                     {domain}
                   </Badge>
                 ))

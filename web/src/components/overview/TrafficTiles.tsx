@@ -1,10 +1,10 @@
 import {
-  CheckIcon,
-  CopyIcon,
-  PulseIcon,
-  TimerIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  ClockGlassIcon,
+  CopyGlassIcon,
+} from '@thesvg/ui-react'
 import { MetricTile, SkeletonTile } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
@@ -40,7 +40,7 @@ export function TrafficTilesView({ stats }: { stats: TrafficStats }) {
     <>
       <MetricTile
         label="Requests"
-        icon={<PulseIcon className="size-3.5" />}
+        icon={<ActivityGlassIcon className="size-5" />}
         value={formatRate(current.ratePerSec)}
         unit="req/s"
         delta={delta(current.ratePerSec, previous.ratePerSec, 'up')}
@@ -50,7 +50,7 @@ export function TrafficTilesView({ stats }: { stats: TrafficStats }) {
       />
       <MetricTile
         label="Errors"
-        icon={<WarningCircleIcon className="size-3.5" />}
+        icon={<CircleAlertGlassIcon className="size-5 text-tone-danger" />}
         value={(current.errorRate * 100).toFixed(1)}
         unit="%"
         delta={delta(current.errorRate, previous.errorRate, 'down')}
@@ -60,7 +60,7 @@ export function TrafficTilesView({ stats }: { stats: TrafficStats }) {
       />
       <MetricTile
         label="p95 latency"
-        icon={<TimerIcon className="size-3.5" />}
+        icon={<ClockGlassIcon className="size-5" />}
         value={Math.round(current.p95Ms)}
         unit="ms"
         delta={delta(current.p95Ms, previous.p95Ms, 'down')}
@@ -105,16 +105,16 @@ export function TrafficTiles({
     return (
       <div className="col-span-full flex items-center justify-between gap-3 rounded-xl border border-dashed border-border px-4 py-2 text-sm text-muted-foreground">
         <span className="flex items-center gap-2">
-          <PulseIcon className="size-4 shrink-0" aria-hidden="true" />
+          <ActivityGlassIcon className="size-5 shrink-0" aria-hidden="true" />
           <span className="font-medium text-foreground">No traffic yet</span>
           <span>Send a request to see live numbers.</span>
         </span>
         {url ? (
           <Button size="sm" variant="ghost" onClick={() => copy(url)}>
             {copied ? (
-              <CheckIcon aria-hidden="true" />
+              <CheckGlassIcon size="1.4em" aria-hidden="true" />
             ) : (
-              <CopyIcon aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
             )}
             {copied ? 'Copied' : 'Copy app URL'}
           </Button>

@@ -203,6 +203,8 @@ levelrail-cli apps delete <name> [flags]
 
 - `apps create` registers an existing image or triggers a real build from a git repository; `--file` reads an [app spec](/app-spec-reference), `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting. Flags-only creates can set health with `--readiness-path|exec|preset|interval|timeout|expected-status`, the same `--liveness-*` set plus `--liveness-failures`, and `--ready-timeout`; they follow the same rules as `apps health set`.
 - `apps status` shows an app's current reconcile conditions; `apps overview` shows CPU, memory, traffic and errors for every app (or the names given) in one request; `apps network` shows the live traffic path (container port, host port, running).
+
+`apps tree <name>` prints what an app consists of: current deployment and last deploy (image tag, short digest, status), replicas with their reconcile conditions, domains, volumes, linked databases and the env key count (never values). `--watch` redraws every `--interval` (default 5s, or `LEVELRAIL_TREE_INTERVAL`) until Ctrl+C; `--json` prints the nested structure. Per-container rows are not shown because there is no per-app container endpoint.
 - `apps create --file` sends a service's `published_ports` (container_port, host_port, protocol tcp or udp). `apps get`, `apps list` and `apps deploy-compose` show them as `53/udp`, and `--json` carries `published_ports`. Refusals print the server message plus a hint.
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
@@ -214,8 +216,8 @@ levelrail-cli apps deploy <name> --image IMAGE [flags]
 levelrail-cli apps deploy-compose <name> --file compose.yaml [flags]
 levelrail-cli apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]
 levelrail-cli apps builds trigger <name> --repo URL --ref REF [flags]
-levelrail-cli apps rollback <name> [--image IMAGE] [flags]
-levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]
+levelrail-cli apps rollback <name> [--image IMAGE | --release RELEASE_ID] [flags]
+levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--release RELEASE_ID] [--preview] [flags]
 levelrail-cli apps wait <name> [--attempt-id ID] [--timeout 5m] [--poll-interval 3s] [flags]
 levelrail-cli apps restart <name> [flags]
 levelrail-cli apps apply <name> [flags]
@@ -237,7 +239,8 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps wait` polls until a deploy attempt converges and exits 0 on success, 5 if it converged as a failure, 6 on timeout. On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `restarted`; `--json` carries the same as `outcome`.
 - `apps deploy-spec` fans an app.yaml's `services:` map out into independent builds under one app; `apps group` shows a service's siblings under the same multi-service app.
 - `apps builds trigger` builds an image from a git source and deploys it to an existing app.
-- `apps promote` promotes the app's image onto a sibling app in another environment.
+- `apps promote` promotes the app's image onto a sibling app in another environment. `--release` promotes a specific release id from `releases list` instead of the one the app is bound to.
+- `apps rollback --release ID` redeploys that release by its digest pinned ref and retargets the binding. Both `--release` flags need `APP_RELEASE_BINDINGS=on` on the server and answer 404 for a release that does not belong to the app.
 - `apps apply` restarts an app so saved env, secret and config changes reach the running container; it does nothing when nothing is pending.
 - `apps scale` changes the replica count and/or the deploy strategy.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.
@@ -359,6 +362,7 @@ levelrail-cli apps requests <name> [flags]
 levelrail-cli apps resource-usage [flags]
 levelrail-cli apps resource-recommendation <name> [flags]
 levelrail-cli apps cost <name> [flags]
+levelrail-cli releases list <app> [flags]
 levelrail-cli apps health-score <name> [flags]
 levelrail-cli apps log-drain get <name> [flags]
 levelrail-cli apps log-drain set <name> --type TYPE --target TARGET [flags]
@@ -375,6 +379,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
+- `releases list APP` shows the app's release snapshots, newest first, with image digest, creation time, source reason and the current release marked. The list stays empty unless `APP_RELEASE_BINDINGS` is `shadow` or `on`; `--json` prints the raw response.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
 - `costs explore|budgets list|create|set|delete` is the cost explorer with forecast and top movers, and named budgets with alert thresholds and an optional pause or throttle at 100 percent, see [cost explorer](/cost-explorer).
 - `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget set|delete project|team ID` is an alias for `usage budgets`. `budget show|set|clear APP` manages a per-app egress and cost cap, see [spend caps](/spend-caps).
@@ -1010,17 +1015,45 @@ levelrail-cli alerts silence web <rule-id> --for 4h --reason "planned migration"
 levelrail-cli alerts history --app web --outcome failed --limit 20
 ```
 
+## Monitors
+
+Experimental uptime monitors. The server must set `APP_MONITORS_ENABLED=true`, otherwise these commands get a 404. See [Monitors](/monitors).
+
+```
+levelrail-cli monitors create --name NAME --kind http --url URL [--method GET] [--header NAME=VALUE]... [--expect 200-299,301] [--contains TEXT] [--follow-redirects] [--interval 60s] [--timeout 5s]
+levelrail-cli monitors create --name NAME --kind tcp --host HOST --port PORT [--interval 60s] [--timeout 5s]
+levelrail-cli monitors list
+levelrail-cli monitors results <id> [--window 24h] [--limit N]
+levelrail-cli monitors delete <id>
+```
+
+- `--header` values are stored encrypted and never returned; only header names are listed.
+- `--expect` takes comma separated codes or ranges and defaults to `200-399`. Redirects are not followed unless `--follow-redirects` is set.
+- Interval floors, the timeout cap and the monitor count limit come from the control plane `APP_MONITOR_*` settings, and an error names the setting.
+- Targets on private or loopback addresses are refused unless the control plane allows private outbound targets.
+
+```
+levelrail-cli monitors create --name "Site" --kind http --url https://example.com/health --contains ok
+levelrail-cli monitors results mon_1a2b3c4d5e6f7a8b --window 6h
+```
+
 ## Status page
 
 The opt-in public status page. It stays off until `set --enable`. Only public component names, statuses and operator written announcements are published; targets (app names, hostnames, check URLs) stay private. See [Status page](/status-page).
 
 ```
 levelrail-cli status-page get
-levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST]
+levelrail-cli status-page set [--enable|--disable] [--title T] [--description D] [--domain HOST] [--accent #RRGGBB] [--logo-url URL] [--about TEXT] [--website URL] [--noindex[=false]] [--powered-by[=false]]
 levelrail-cli status-page preview
 levelrail-cli status-page components list
 levelrail-cli status-page components add --kind app|domain|check --target T --name PUBLIC_NAME
+levelrail-cli status-page components set <id> [--group GROUP_ID_OR_NAME] [--description TEXT] [--name PUBLIC_NAME]
 levelrail-cli status-page components delete <id>
+levelrail-cli status-page group add --name NAME [--position N]
+levelrail-cli status-page group list
+levelrail-cli status-page group rename <id> --name NAME
+levelrail-cli status-page group move <id> --position N
+levelrail-cli status-page group delete <id>
 levelrail-cli status-page incidents list
 levelrail-cli status-page incidents create --title T [--kind incident|maintenance] [--impact none|minor|major|critical] [--body TEXT] [--component ID]... [--starts TIME --ends TIME]
 levelrail-cli status-page incidents update <id> --status S --body TEXT
@@ -1028,6 +1061,8 @@ levelrail-cli status-page incidents delete <id>
 ```
 
 - `--enable` and `--disable` are mutually exclusive. `--domain` serves the page on a hostname that the ingress must route to the control plane.
+- Branding: `--accent` takes `#RRGGBB`, `--logo-url` an https URL (its origin is the only image source the page allows), `--about` plain text. `--noindex` adds a robots noindex tag (off by default); `--powered-by=false` hides the footer credit. Pass an empty value to clear a text field.
+- `components set --group` takes a group ID or its exact name; an empty value ungroups. `component` is an alias of `components`. Deleting a group ungroups its components.
 - `incidents create`: `--kind` defaults to `incident`, `--impact` to `none`. A `maintenance` kind requires `--starts` and `--ends` (RFC 3339). `--body` is markdown-lite.
 - `incidents update --status` takes `investigating`, `identified`, `monitoring` or `resolved` for an incident, and `scheduled`, `in_progress` or `completed` for maintenance.
 
@@ -1316,6 +1351,11 @@ levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NA
 Validates resource files, prints the plan, and applies it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). <span v-pre>`${{ env.NAME }}`</span> placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly). An unresolved placeholder fails before anything is sent.
 
 ```
+levelrail-cli validate [FILE|DIR|-] [--var NAME=VALUE] [--var-file PATH] [--json]
+```
+Runs the same parse, schema and semantic checks as `apply`, locally: no login, no network. Problems print as `file:line: message (path)`. Exit 0 when valid, 1 on any problem. Placeholders with no `--var` or `--var-file` value are checked with a stand-in value. `--json` prints `{valid, resources, issues}`.
+
+```
 levelrail-cli diff -f dir [flags]
 ```
 Drift between the files and live state; exits 2 when they differ.
@@ -1486,11 +1526,14 @@ Detects the project's stack (Dockerfile, compose file, package.json, go.mod, Pyt
 - Existing files are never overwritten unless `--force` is given. A diff of what would change is shown either way.
 - Without `--yes`, a terminal is asked to confirm; a script must pass `--yes` or `--dry-run`.
 - `--mode` selects the tool exposure written to `.mcp.json`: `agent-core` (the default, a small profile for deploy and debug work), `read-only` (every read tool, no mutations), `standard` (read and mutating tools, no destructive ones) or `full`.
+- `--commented` puts a one line comment from the app schema above each `app.yaml` field, adds a `# default:` note where the schema has one, and lists `port`, `env`, `health`, `domains`, `replicas` and `resources` as commented-out lines. The output still validates.
+- `--out FILE` writes only `app.yaml` to `FILE` and skips `AGENTS.md` and `.mcp.json`; `--out -` prints it to stdout and nothing else. An existing `FILE` needs `--force`.
 - `--api-url` or the active profile is written into `AGENTS.md` and `.mcp.json` when known. `--mcp-binary` overrides the MCP server binary name.
 
 ```
 levelrail-cli init --dry-run
 levelrail-cli init --mode read-only --yes
+levelrail-cli init --commented --out -
 ```
 
 See [Agents](/agents).
@@ -1505,6 +1548,16 @@ Prints every HTTP route registered on the control plane: method, path, required 
 ```
 levelrail-cli api-docs --query "routes[?method=='GET'].path"
 ```
+
+## App types
+
+```
+levelrail-cli app-types list
+levelrail-cli app-types apply -f FILE [--publish]
+levelrail-cli app-types check NAME -f SPEC_FILE [--version N] [--fail]
+```
+
+App types let an admin define a governed shape for apps (workload, typed parameters, allowed build methods and add-ons, fixed values, per-environment-kind rules). The feature is off until the control plane runs with `LEVELRAIL_APPTYPE_ENABLED=on`; limits come from `LEVELRAIL_APPTYPE_MAX_PARAMS`, `LEVELRAIL_APPTYPE_MAX_SCHEMA_BYTES`, `LEVELRAIL_APPTYPE_MAX_PATTERN_LEN` and `LEVELRAIL_APPTYPE_MAX_VERSIONS`. `apply` saves a draft from a YAML or JSON file, and `--publish` freezes it as the next immutable version (root only). `check` is a dry run of an app spec against a published version and prints each violation with a readable message and a next step; nothing is enforced at deploy yet.
 
 ## Deploy link
 
@@ -2027,4 +2080,15 @@ levelrail-cli -n <project> apps list
 levelrail-cli -A apps list
 ```
 
-`explain` documents a resource kind or field from the embedded schema and works offline; `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.
+`explain` documents a resource kind or field from the embedded schema and works offline. It also accepts an app.yaml path (`explain services.web.health.readiness`, or a bare service field such as `explain replicas`) and prints the description, type, allowed values and default; `explain appspec` lists the top level fields, an unknown path suggests the closest match, and `--json` prints the result as JSON. `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.
+
+## Analysis reports
+
+With `APP_ANALYSIS_ENABLED=on`, a firing alert or spend alert writes a deterministic report for the affected app: a summary, a timeline, ranked suspected causes with evidence ids, and recommendations. No model is called. Reports are read only.
+
+```
+levelrail-cli analysis list <app> [--json]
+levelrail-cli analysis show <id> [--json]
+```
+
+Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`.

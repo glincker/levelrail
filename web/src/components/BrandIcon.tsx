@@ -7,7 +7,7 @@ import {
 } from 'react'
 
 // Brand/service marks sourced from @thesvg/react, each its own lazy chunk so
-// a page only downloads the marks it renders. Distinct from @phosphor-icons
+// a page only downloads the marks it renders. Distinct from the UI icons in @thesvg/ui-react
 // (ADR 014): brand marks identify a third-party technology, UI chrome icons
 // don't.
 export type BrandIconName =

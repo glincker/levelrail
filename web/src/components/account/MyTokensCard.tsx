@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -41,7 +41,7 @@ export function MyTokensCard() {
         {data && active.length === 0 ? (
           <EmptyState
             compact
-            icon={<KeyIcon className="size-5" />}
+            icon={<KeyGlassIcon className="size-6" />}
             title={t('accountPage.tokens.emptyTitle')}
             description={t('accountPage.tokens.emptyBody')}
             action={<CreateTokenDialog />}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,7 +113,7 @@ export function TargetSetupForm({
               label={t(`target.preset.${p.id}.name`)}
             >
               {p.id === 'local' ? (
-                <HardDrivesIcon aria-hidden="true" className="size-5" />
+                <ServerGlassIcon aria-hidden="true" className="size-6" />
               ) : undefined}
             </BrandTile>
             <span className="min-w-0">
@@ -130,7 +130,11 @@ export function TargetSetupForm({
 
       {preset.sameMachine ? (
         <Alert variant="destructive">
-          <WarningIcon aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="text-tone-warning"
+            size="1.7em"
+            aria-hidden="true"
+          />
           <AlertDescription>{t('target.localWarning')}</AlertDescription>
         </Alert>
       ) : null}

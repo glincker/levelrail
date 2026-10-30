@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CheckCircleIcon,
-  CircleIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import { OverviewSuggestions } from './OverviewSuggestions'
@@ -44,8 +44,8 @@ export function RecommendedSetup({
         <span className="font-medium">{t('setup.title')}</span>
         <span className="flex items-center gap-2 text-muted-foreground">
           {t('setup.progress', { done, total: items.length })}
-          <CaretDownIcon
-            className="size-4 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+          <ChevronDownGlassIcon
+            className="size-5 transition-transform group-open:rotate-180 motion-reduce:transition-none"
             aria-hidden="true"
           />
         </span>
@@ -56,8 +56,8 @@ export function RecommendedSetup({
             <li key={i.id}>
               {i.done ? (
                 <span className="flex items-center gap-2 py-1 text-muted-foreground line-through">
-                  <CheckCircleIcon
-                    className="size-4 text-tone-success"
+                  <CircleCheckGlassIcon
+                    className="size-5 text-tone-success"
                     aria-hidden="true"
                   />
                   {i.label}
@@ -68,7 +68,7 @@ export function RecommendedSetup({
                   params={{ name: app.name }}
                   className="flex items-center gap-2 rounded-md py-1 hover:bg-muted"
                 >
-                  <CircleIcon className="size-4" aria-hidden="true" />
+                  <CircleGlassIcon className="size-5" aria-hidden="true" />
                   {i.label}
                 </Link>
               )}
@@ -86,7 +86,7 @@ export function RecommendedSetup({
           onClick={onHide}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <XIcon className="size-3" aria-hidden="true" />
+          <XGlassIcon className="size-4.5" aria-hidden="true" />
           {t('setup.hide')}
         </button>
       </div>

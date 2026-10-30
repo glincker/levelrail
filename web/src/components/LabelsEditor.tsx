@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { PlusIcon, TagIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, TagGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -105,7 +105,7 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TagIcon className="size-4" />
+          <TagGlassIcon className="size-5" />
           Custom labels
         </CardTitle>
         <CardDescription>
@@ -161,7 +161,7 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
                         remove(index)
                       }}
                     >
-                      <XIcon />
+                      <XGlassIcon size="1.4em" />
                       <span className="sr-only">Remove label</span>
                     </Button>
                   </div>
@@ -178,7 +178,7 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
                 append({ key: '', value: '' })
               }}
             >
-              <PlusIcon />
+              <PlusGlassIcon size="1.4em" />
               Add label
             </Button>
             <Button type="submit" size="sm" disabled={updateApp.isPending}>

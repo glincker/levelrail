@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
+import { UniversityGlassIcon } from '@thesvg/ui-react'
 import type { SSORoute } from '../queries/ssoOidc'
 import { emailDomain, fetchSSORoute } from '../queries/ssoOidc'
 import { Button } from './ui/button'
@@ -47,7 +47,7 @@ export function SSOEmailRoute() {
         onClick={() => setOpen(true)}
       >
         <span className="flex size-6 items-center justify-center rounded bg-muted text-muted-foreground">
-          <BuildingsIcon aria-hidden="true" />
+          <UniversityGlassIcon size="1.4em" aria-hidden="true" />
         </span>
         {t('foundation.signIn.ssoContinue')}
       </Button>

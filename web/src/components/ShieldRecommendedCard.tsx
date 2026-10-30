@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -47,7 +47,10 @@ export function ShieldRecommendedCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckIcon className="size-4" aria-hidden="true" />
+          <ShieldCheckGlassIcon
+            className="size-5 text-tone-success"
+            aria-hidden="true"
+          />
           {t('shieldRecommended.title')}
         </CardTitle>
         <CardDescription>{t('shieldRecommended.description')}</CardDescription>

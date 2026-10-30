@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -128,8 +128,8 @@ export function CreateStorageDestinationDialog() {
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CloudArrowUpIcon
-              className="size-4 text-muted-foreground"
+            <UploadGlassIcon
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Add storage destination

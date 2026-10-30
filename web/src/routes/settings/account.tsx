@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { UserIcon } from '@phosphor-icons/react/dist/ssr'
+import { UserGlassIcon } from '@thesvg/ui-react'
 import { sessionQueryOptions } from '../../queries/security'
 import { twoFactorStatusQueryOptions } from '../../queries/twoFactor'
 import { passkeysQueryOptions } from '../../queries/passkeys'
@@ -60,7 +60,7 @@ function AccountSettingsPage() {
   const { t } = useTranslation('settings')
   return (
     <PageTemplate
-      icon={<UserIcon />}
+      icon={<UserGlassIcon size="1.4em" />}
       title={t('accountPage.title')}
       description={t('accountPage.description')}
     >

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 
@@ -36,7 +36,11 @@ export function CommandBlock({
           {value}
         </code>
         <Button type="button" size="sm" variant="outline" onClick={copy}>
-          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? (
+            <CheckGlassIcon size="1.4em" />
+          ) : (
+            <CopyGlassIcon size="1.4em" />
+          )}
           {copied ? t('join.copied') : t('join.copy')}
         </Button>
       </div>

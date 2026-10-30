@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
@@ -103,7 +103,7 @@ export function MoveToThisServerButton({
         )
       }}
     >
-      <HardDrivesIcon aria-hidden="true" />
+      <ServerGlassIcon size="1.4em" aria-hidden="true" />
       {t('placement.moveHere')}
     </Button>
   )

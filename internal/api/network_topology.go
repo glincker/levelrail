@@ -202,7 +202,7 @@ func (rt *Router) handleGetNetworkTopology(w http.ResponseWriter, r *http.Reques
 	})
 	res.Groups = groupTopology(topologyGroupInput{
 		nodes: nodes, apps: res.Apps, databases: res.Databases, localNodeID: rt.localNodeID,
-		hostname: localHostname(), address: localAddress(rt.advertiseHost()),
+		hostname: rt.hostname(), address: localAddress(rt.advertiseHost()),
 	})
 
 	writeJSON(w, http.StatusOK, res)

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { IdentificationBadgeIcon } from '@phosphor-icons/react/dist/ssr'
+import { IdCardLanyardGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
@@ -31,7 +31,7 @@ function RolesSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<IdentificationBadgeIcon />}
+      icon={<IdCardLanyardGlassIcon size="1.4em" />}
       title={t('roles.title')}
       description={t('roles.description')}
       actions={

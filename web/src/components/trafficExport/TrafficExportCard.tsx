@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, Share2GlassIcon } from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -42,7 +42,7 @@ export function TrafficExportCard() {
             setSheet({ open: true })
           }}
         >
-          <PlusIcon className="size-3.5" aria-hidden="true" />
+          <PlusGlassIcon className="size-5" aria-hidden="true" />
           {t('add')}
         </Button>
       </header>
@@ -69,7 +69,7 @@ export function TrafficExportCard() {
         ) : null}
         {sinks.data && sinks.data.sinks.length === 0 ? (
           <EmptyState
-            icon={<ShareNetworkIcon className="size-5" />}
+            icon={<Share2GlassIcon className="size-6" />}
             title={t('empty.title')}
             description={t('empty.description')}
             className="border-0 bg-transparent py-6"

@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CloudArrowDownIcon,
-  GaugeIcon,
-  HardDrivesIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  DownloadGlassIcon,
+  GaugeGlassIcon,
+  RefreshCwGlassIcon,
+  ServerGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,7 +61,7 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         unit={t('tiles.perSecond', { rate: formatRate(data.rate_per_sec) })}
         series={data.series.map((p) => p.requests)}
         tone="accent"
-        icon={<GaugeIcon aria-hidden="true" />}
+        icon={<GaugeGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.requestsInfo')}
       />
       <MetricTile
@@ -69,7 +69,13 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         value={formatHitRate(data.error_rate_5xx)}
         series={data.series.map((p) => p.errors_5xx)}
         tone={data.error_rate_5xx > 0 ? 'danger' : 'success'}
-        icon={<WarningCircleIcon aria-hidden="true" />}
+        icon={
+          <CircleAlertGlassIcon
+            className="text-tone-danger"
+            size="1.4em"
+            aria-hidden="true"
+          />
+        }
         info={t('tiles.errorsInfo')}
       />
       <MetricTile
@@ -81,7 +87,7 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         }
         series={hitRateSeries(data)}
         tone="success"
-        icon={<ArrowsClockwiseIcon aria-hidden="true" />}
+        icon={<RefreshCwGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.hitRateInfo', { minutes: data.cache.covered_minutes })}
       />
       <MetricTile
@@ -89,7 +95,7 @@ function Tiles({ data }: Readonly<{ data: CdnOverview }>) {
         value={formatSize(data.cache.hit_bytes)}
         series={data.cache.series.map((b) => b.hit_bytes)}
         tone="info"
-        icon={<CloudArrowDownIcon aria-hidden="true" />}
+        icon={<DownloadGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.savedInfo', { minutes: data.cache.covered_minutes })}
       />
     </div>
@@ -108,7 +114,7 @@ function ServedFromCard({ data }: Readonly<{ data: CdnOverview }>) {
         {data.nodes.length === 0 ? (
           <EmptyState
             compact
-            icon={<HardDrivesIcon className="size-4" />}
+            icon={<ServerGlassIcon className="size-5" />}
             title={t('nodes.emptyTitle')}
             description={t('nodes.emptyBody')}
             action={

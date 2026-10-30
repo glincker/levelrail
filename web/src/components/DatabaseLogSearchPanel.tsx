@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { useDatabaseLogSearch } from '../queries/databaseLogs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Input } from './ui/input'
@@ -78,8 +78,8 @@ export function DatabaseLogSearchPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <MagnifyingGlassIcon
-              className="size-4 text-muted-foreground"
+            <SearchGlassIcon
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Log search
@@ -99,8 +99,8 @@ export function DatabaseLogSearchPanel({
       </div>
 
       <div className="relative mt-3">
-        <MagnifyingGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+        <SearchGlassIcon
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -121,7 +121,7 @@ export function DatabaseLogSearchPanel({
             aria-label="Clear search"
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <XIcon className="size-3.5" aria-hidden="true" />
+            <XGlassIcon className="size-5" aria-hidden="true" />
           </button>
         ) : null}
       </div>

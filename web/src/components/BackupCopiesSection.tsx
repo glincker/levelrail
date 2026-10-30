@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, FileTextIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, FileTextGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -98,7 +98,7 @@ export function BackupCopiesSection({ targets }: { targets: BackupTarget[] }) {
               title={t('backupCopies.manifestTip')}
               data-testid="copy-manifest"
             >
-              <FileTextIcon className="size-3.5" aria-hidden="true" />
+              <FileTextGlassIcon className="size-5" aria-hidden="true" />
               {t('backupCopies.manifest')}
             </span>
           ) : null}
@@ -144,7 +144,10 @@ export function BackupCopiesSection({ targets }: { targets: BackupTarget[] }) {
       data-testid="backup-copies"
     >
       <div className="flex items-center gap-2">
-        <CopyIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+        <CopyGlassIcon
+          className="size-5 text-muted-foreground"
+          aria-hidden="true"
+        />
         <h2 className="text-base font-semibold">{t('backupCopies.title')}</h2>
       </div>
       <p className="text-sm text-muted-foreground">

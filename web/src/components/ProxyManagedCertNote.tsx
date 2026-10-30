@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { certExpiryDate } from '../lib/certStatus'
 import type { ProxyCertificate } from '../queries/domainCheck'
 
@@ -26,7 +26,10 @@ export function ProxyManagedCertNote({
       role="status"
       className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground"
     >
-      <ShieldCheckIcon className="size-3.5 shrink-0" aria-hidden="true" />
+      <ShieldCheckGlassIcon
+        className="size-5 shrink-0 text-tone-success"
+        aria-hidden="true"
+      />
       <span>{text}</span>
       {compact ? null : (
         <Link to="/network/proxy" className="underline">

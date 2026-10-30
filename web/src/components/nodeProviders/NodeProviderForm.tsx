@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  PlugsConnectedIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  PlugGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Field,
   FieldDescription,
@@ -435,13 +435,20 @@ export function NodeProviderForm({
 
       {result ? (
         <Alert variant={result.ok ? 'default' : 'destructive'}>
-          {result.ok ? <CheckCircleIcon /> : <WarningIcon />}
+          {result.ok ? (
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
+          ) : (
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
+          )}
           <AlertDescription>{result.message}</AlertDescription>
         </Alert>
       ) : null}
       {error ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
@@ -461,7 +468,7 @@ export function NodeProviderForm({
             disabled={!canSubmit || test.isPending}
             onClick={runTest}
           >
-            <PlugsConnectedIcon aria-hidden="true" />
+            <PlugGlassIcon size="1.4em" aria-hidden="true" />
             {test.isPending
               ? t('nodeProviders.testing')
               : t('nodeProviders.testConnection')}

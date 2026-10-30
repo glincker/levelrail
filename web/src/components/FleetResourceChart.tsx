@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { appResourceUsageQueryOptions } from '../queries/appResourceUsage'
 import type { AppResourceUsage } from '../types/appResourceUsage'
@@ -102,8 +102,8 @@ export function FleetResourceChart() {
     <Card size="sm">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
-          <GaugeIcon
-            className="size-4 text-muted-foreground"
+          <GaugeGlassIcon
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           Fleet resource usage

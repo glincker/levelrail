@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  EyeIcon,
-  LockSimpleIcon,
-  TrashIcon,
-  WarningCircleIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  ExternalLinkGlassIcon,
+  EyeGlassIcon,
+  LockGlassIcon,
+  TrashGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -248,7 +248,7 @@ export function CleanupTargetRow({
                       aria-label={t('target.destructive')}
                       className="inline-flex size-5 items-center justify-center rounded text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <TrashIcon className="size-3.5" aria-hidden="true" />
+                      <TrashGlassIcon className="size-5" aria-hidden="true" />
                     </span>
                   }
                 />
@@ -318,7 +318,7 @@ export function CleanupTargetRow({
               render={<Link to="/settings/cleanup" search={{ tab: 'disk' }} />}
             >
               {t('target.readThroughAction')}
-              <ArrowSquareOutIcon aria-hidden="true" />
+              <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           </div>
         ) : (
@@ -346,8 +346,8 @@ export function CleanupTargetRow({
                           aria-label={t('target.floor', { days: target.floor })}
                           className="inline-flex h-6 items-center gap-1 rounded text-xs text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <LockSimpleIcon
-                            className="size-3"
+                          <LockGlassIcon
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                           {target.floor}
@@ -379,7 +379,7 @@ export function CleanupTargetRow({
                   fetchPreview()
                 }}
               >
-                <EyeIcon aria-hidden="true" />
+                <EyeGlassIcon size="1.4em" aria-hidden="true" />
                 {preview.isPending
                   ? t('target.previewing')
                   : t('target.preview')}
@@ -393,7 +393,7 @@ export function CleanupTargetRow({
                 }
                 onClick={startClean}
               >
-                <TrashIcon aria-hidden="true" />
+                <TrashGlassIcon size="1.4em" aria-hidden="true" />
                 {t('target.cleanNow')}
               </Button>
             </div>
@@ -440,13 +440,16 @@ export function CleanupTargetRow({
                 setImpact(null)
               }}
             >
-              <XIcon aria-hidden="true" />
+              <XGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           </div>
         ) : null}
         {previewError ? (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
-            <WarningCircleIcon className="size-4" aria-hidden="true" />
+            <CircleAlertGlassIcon
+              className="size-5 text-tone-danger"
+              aria-hidden="true"
+            />
             {t('impact.error', { message: previewError })}
           </p>
         ) : null}
@@ -461,13 +464,13 @@ export function CleanupTargetRow({
           >
             <p className="flex items-start gap-1.5 text-sm text-foreground">
               {result.error ? (
-                <WarningCircleIcon
-                  className="mt-0.5 size-4 shrink-0 text-tone-danger"
+                <CircleAlertGlassIcon
+                  className="mt-0.5 size-5 shrink-0 text-tone-danger"
                   aria-hidden="true"
                 />
               ) : (
-                <CheckCircleIcon
-                  className="mt-0.5 size-4 shrink-0 text-tone-success"
+                <CircleCheckGlassIcon
+                  className="mt-0.5 size-5 shrink-0 text-tone-success"
                   aria-hidden="true"
                 />
               )}

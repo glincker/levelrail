@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusIcon, StackSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -54,12 +54,12 @@ export function CreateEnvironmentDialog({ projectId }: { projectId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <PlusIcon />
+        <PlusGlassIcon size="1.4em" />
         New environment
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <CreateFlowShell
-          icon={<StackSimpleIcon className="size-4 text-muted-foreground" />}
+          icon={<LayersGlassIcon className="size-5 text-muted-foreground" />}
           title="New environment"
           description={
             <>

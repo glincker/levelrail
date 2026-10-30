@@ -51,7 +51,7 @@ function Row({ item, last }: { item: TimelineItem; last: boolean }) {
       )}
       <span
         className={cn(
-          'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border [&_svg]:size-4',
+          'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border [&_svg]:size-5',
           t.soft,
           t.border,
           t.text,

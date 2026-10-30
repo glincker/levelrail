@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
+import { FlaskConicalGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -175,7 +175,7 @@ export function SplitTestingPanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FlaskIcon className="size-4 text-muted-foreground" />
+          <FlaskConicalGlassIcon className="size-5 text-muted-foreground" />
           {t('title')}
           <InfoTip label={t('title')}>{t('description')}</InfoTip>
         </CardTitle>

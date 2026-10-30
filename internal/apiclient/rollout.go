@@ -42,6 +42,18 @@ type RolloutResource struct {
 	Progress *RolloutProgress `json:"progress"`
 }
 
+// PutRolloutRequest is the PUT /api/v1/apps/{name}/rollout body.
+type PutRolloutRequest struct {
+	MaxSurge       string `json:"max_surge,omitempty"`
+	MaxUnavailable string `json:"max_unavailable,omitempty"`
+	MinAvailable   string `json:"min_available,omitempty"`
+}
+
+// PutRollout calls PUT /api/v1/apps/{name}/rollout.
+func (c *Client) PutRollout(ctx context.Context, appName string, req PutRolloutRequest) error {
+	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/rollout", req, nil)
+}
+
 // GetRollout calls GET /api/v1/apps/{name}/rollout.
 func (c *Client) GetRollout(ctx context.Context, appName string) (RolloutResource, error) {
 	var out RolloutResource

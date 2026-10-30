@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { InfoIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon } from '@thesvg/ui-react'
 import { useFirewallTraffic, type FwTopTable } from '../../queries/firewallEdge'
 import { LoadError } from './LoadError'
 import { TopList, TopListSkeleton } from './TopList'
@@ -50,7 +50,10 @@ export function TrafficView({
   return (
     <div className="space-y-(--glinr-page-gap)">
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
-        <InfoIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <InfoGlassIcon
+          aria-hidden="true"
+          className="mt-0.5 size-5 shrink-0 text-tone-info"
+        />
         {t('traffic.note', { minutes: data?.window_minutes ?? 60 })}
       </p>
       <div className="grid gap-(--glinr-page-gap) md:grid-cols-2 xl:grid-cols-6">

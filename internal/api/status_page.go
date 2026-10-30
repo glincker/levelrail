@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (
@@ -31,6 +32,10 @@ type StatusPageStore interface {
 	GetStatusComponent(ctx context.Context, id string) (store.StatusComponent, error)
 	SaveStatusComponent(ctx context.Context, c store.StatusComponent) error
 	DeleteStatusComponent(ctx context.Context, id string) error
+	ListStatusGroups(ctx context.Context) ([]store.StatusGroup, error)
+	GetStatusGroup(ctx context.Context, id string) (store.StatusGroup, error)
+	SaveStatusGroup(ctx context.Context, g store.StatusGroup) error
+	DeleteStatusGroup(ctx context.Context, id string) error
 	SaveStatusIncident(ctx context.Context, i store.StatusIncident) error
 	GetStatusIncident(ctx context.Context, id string) (store.StatusIncident, error)
 	ListStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
@@ -43,6 +48,7 @@ type StatusPageStore interface {
 type StatusPageViewer interface {
 	View(ctx context.Context) (statuspage.View, error)
 	PreviewView(ctx context.Context) (statuspage.View, error)
+	History(ctx context.Context) (statuspage.View, error)
 	Enabled(ctx context.Context) (bool, error)
 	Invalidate()
 }
@@ -105,7 +111,61 @@ type statusSettingsResource struct {
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	CustomDomain string `json:"custom_domain"`
+	Accent       string `json:"accent"`
+	LogoURL      string `json:"logo_url"`
+	About        string `json:"about"`
+	Website      string `json:"website"`
+	NoIndex      bool   `json:"noindex"`
+	PoweredBy    bool   `json:"powered_by"`
 	PublicPath   string `json:"public_path"`
+}
+
+// statusSettingsRequest uses pointers for the branding fields so a client
+// that predates them leaves the stored values alone.
+type statusSettingsRequest struct {
+	Enabled      bool    `json:"enabled"`
+	Title        string  `json:"title"`
+	Description  string  `json:"description"`
+	CustomDomain string  `json:"custom_domain"`
+	Accent       *string `json:"accent"`
+	LogoURL      *string `json:"logo_url"`
+	About        *string `json:"about"`
+	Website      *string `json:"website"`
+	NoIndex      *bool   `json:"noindex"`
+	PoweredBy    *bool   `json:"powered_by"`
+}
+
+var statusAccentRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+// validateStatusBranding trims and checks the branding fields in place and
+// returns a message for the first problem.
+func validateStatusBranding(ctx context.Context, s *store.StatusPageSettings, t statuspage.Tuning) string {
+	s.Accent, s.LogoURL = strings.TrimSpace(s.Accent), strings.TrimSpace(s.LogoURL)
+	s.About, s.Website = strings.TrimSpace(s.About), strings.TrimSpace(s.Website)
+	switch {
+	case s.Accent != "" && !statusAccentRe.MatchString(s.Accent):
+		return "accent must be a hex colour such as #3b5bdb"
+	case len(s.About) > t.AboutMax:
+		return "about is too long"
+	case len(s.LogoURL) > t.LogoURLMax || len(s.Website) > t.LogoURLMax:
+		return "logo_url and website are too long"
+	}
+	if s.LogoURL != "" {
+		u, err := url.Parse(s.LogoURL)
+		if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
+			return "logo_url must be an https URL without credentials"
+		}
+		if err := netguard.ValidateURL(ctx, s.LogoURL); err != nil {
+			return "logo_url must point to a public host"
+		}
+	}
+	if s.Website != "" {
+		u, err := url.Parse(s.Website)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil {
+			return "website must be an http or https URL without credentials"
+		}
+	}
+	return ""
 }
 
 func (rt *Router) handleGetStatusPage(w http.ResponseWriter, r *http.Request) {
@@ -118,14 +178,15 @@ func (rt *Router) handleGetStatusPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, statusSettingsResource{Enabled: s.Enabled, Title: s.Title, Description: s.Description,
-		CustomDomain: s.CustomDomain, PublicPath: statuspage.PagePath})
+		CustomDomain: s.CustomDomain, Accent: s.Accent, LogoURL: s.LogoURL, About: s.About, Website: s.Website,
+		NoIndex: s.NoIndex, PoweredBy: s.PoweredBy, PublicPath: statuspage.PagePath})
 }
 
 func (rt *Router) handlePutStatusPage(w http.ResponseWriter, r *http.Request) {
 	if !rt.statusPageReady(w) {
 		return
 	}
-	var req statusSettingsResource
+	var req statusSettingsRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -143,9 +204,23 @@ func (rt *Router) handlePutStatusPage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "custom_domain must be a plain hostname such as status.example.com")
 		return
 	}
-	err := rt.statusPage.SaveStatusPageSettings(r.Context(), store.StatusPageSettings{Enabled: req.Enabled, Title: req.Title,
-		Description: req.Description, CustomDomain: req.CustomDomain})
+	next, err := rt.statusPage.GetStatusPageSettings(r.Context())
 	if err != nil {
+		rt.internalError(w, "api: save status page settings: load failed", err)
+		return
+	}
+	next.Enabled, next.Title, next.Description, next.CustomDomain = req.Enabled, req.Title, req.Description, req.CustomDomain
+	setIf(&next.Accent, req.Accent)
+	setIf(&next.LogoURL, req.LogoURL)
+	setIf(&next.About, req.About)
+	setIf(&next.Website, req.Website)
+	setIf(&next.NoIndex, req.NoIndex)
+	setIf(&next.PoweredBy, req.PoweredBy)
+	if msg := validateStatusBranding(r.Context(), &next, statuspage.TuningFromEnv()); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if err = rt.statusPage.SaveStatusPageSettings(r.Context(), next); err != nil {
 		rt.internalError(w, "api: save status page settings failed", err)
 		return
 	}
@@ -172,16 +247,30 @@ type statusComponentResource struct {
 	Target      string `json:"target"`
 	DisplayName string `json:"display_name"`
 	Position    int    `json:"position"`
+	GroupID     string `json:"group_id"`
+	Description string `json:"description"`
 }
 
 func toStatusComponentResource(c store.StatusComponent) statusComponentResource {
-	return statusComponentResource{ID: c.ID, Kind: c.Kind, Target: c.Target, DisplayName: c.DisplayName, Position: c.Position}
+	return statusComponentResource{ID: c.ID, Kind: c.Kind, Target: c.Target, DisplayName: c.DisplayName, Position: c.Position,
+		GroupID: c.GroupID, Description: c.Description}
 }
 
 func (rt *Router) validateStatusComponent(ctx context.Context, req *statusComponentResource) string {
 	req.DisplayName, req.Target = strings.TrimSpace(req.DisplayName), strings.TrimSpace(req.Target)
 	if req.DisplayName == "" || len(req.DisplayName) > maxDisplayName {
 		return "display_name is required (at most 80 characters): it is the only name shown publicly"
+	}
+	req.Description, req.GroupID = strings.TrimSpace(req.Description), strings.TrimSpace(req.GroupID)
+	if len(req.Description) > statuspage.TuningFromEnv().DescriptionMax {
+		return "description is too long"
+	}
+	if req.GroupID != "" {
+		if _, err := rt.statusPage.GetStatusGroup(ctx, req.GroupID); errors.Is(err, store.ErrStatusGroupNotFound) {
+			return "unknown group_id"
+		} else if err != nil {
+			return "could not verify the group"
+		}
 	}
 	switch req.Kind {
 	case statuspage.KindApp:
@@ -232,7 +321,8 @@ func (rt *Router) saveStatusComponent(w http.ResponseWriter, r *http.Request, id
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
-	c := store.StatusComponent{ID: id, Kind: req.Kind, Target: req.Target, DisplayName: req.DisplayName, Position: req.Position}
+	c := store.StatusComponent{ID: id, Kind: req.Kind, Target: req.Target, DisplayName: req.DisplayName, Position: req.Position,
+		GroupID: req.GroupID, Description: req.Description}
 	if err := rt.statusPage.SaveStatusComponent(r.Context(), c); err != nil {
 		rt.internalError(w, "api: save status component failed", err)
 		return

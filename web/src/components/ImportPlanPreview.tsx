@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -118,7 +118,11 @@ export function ImportPlanPreview({
 
       {plan.warnings.length > 0 ? (
         <Alert>
-          <WarningIcon aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="text-tone-warning"
+            size="1.7em"
+            aria-hidden="true"
+          />
           <AlertTitle>{t('importPlan.readFirst')}</AlertTitle>
           <AlertDescription>
             <ul className="list-disc space-y-1 pl-4">

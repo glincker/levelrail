@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -48,9 +48,9 @@ function AbilityRow({ a }: { a: EffectiveAbility }) {
           </span>
         ) : null}
         {names.length > 0 ? (
-          <CaretDownIcon
+          <ChevronDownGlassIcon
             className={cn(
-              'size-3.5 text-muted-foreground transition-transform motion-reduce:transition-none',
+              'size-5 text-muted-foreground transition-transform motion-reduce:transition-none',
               open && 'rotate-180',
             )}
             aria-hidden="true"

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  MinusCircleIcon,
-  ShieldCheckIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,23 +22,23 @@ import type { NodeResource } from '../../types/nodeDetail'
 function StepIcon({ status }: { status: CertDrillStep['status'] }) {
   if (status === 'pass') {
     return (
-      <CheckCircleIcon
-        className="size-4 shrink-0 text-green-600"
+      <CircleCheckGlassIcon
+        className="size-5 shrink-0 text-green-600"
         aria-hidden="true"
       />
     )
   }
   if (status === 'fail') {
     return (
-      <XCircleIcon
-        className="size-4 shrink-0 text-destructive"
+      <CircleXGlassIcon
+        className="size-5 shrink-0 text-destructive"
         aria-hidden="true"
       />
     )
   }
   return (
-    <MinusCircleIcon
-      className="size-4 shrink-0 text-muted-foreground"
+    <CircleMinusGlassIcon
+      className="size-5 shrink-0 text-muted-foreground"
       aria-hidden="true"
     />
   )
@@ -61,7 +61,10 @@ export function CertDrillDialog({ node }: { node: NodeResource }) {
           setOpen(true)
         }}
       >
-        <ShieldCheckIcon className="size-3.5" aria-hidden="true" />
+        <ShieldCheckGlassIcon
+          className="size-5 text-tone-success"
+          aria-hidden="true"
+        />
         {t('trust.drill.button')}
       </Button>
       <Dialog

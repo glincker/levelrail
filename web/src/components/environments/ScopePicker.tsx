@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CheckIcon,
-  FolderSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  ChevronDownGlassIcon,
+  FolderGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -46,7 +46,7 @@ function Row({
       )}
     >
       <span className="truncate">{children}</span>
-      {active ? <CheckIcon aria-hidden="true" className="size-3.5" /> : null}
+      {active ? <CheckGlassIcon aria-hidden="true" className="size-5" /> : null}
     </button>
   )
 }
@@ -102,9 +102,9 @@ export function ScopePicker() {
           />
         }
       >
-        <FolderSimpleIcon aria-hidden="true" />
+        <FolderGlassIcon size="1.4em" aria-hidden="true" />
         <span className="max-w-48 truncate">{label}</span>
-        <CaretDownIcon aria-hidden="true" className="ml-auto size-3" />
+        <ChevronDownGlassIcon aria-hidden="true" className="ml-auto size-4.5" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(32rem,90vw)] p-2">
         <div className={cn('grid gap-2', showEnvs && 'sm:grid-cols-2')}>

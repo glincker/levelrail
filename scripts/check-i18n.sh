@@ -18,7 +18,7 @@ text_between_tags='>[[:space:]]*[A-Z][A-Za-z0-9 ,.'"'"'!?:()-]{3,}[[:space:]]*</
 literal_attr='(title|placeholder|aria-label|alt|label|description)="[A-Za-z][A-Za-z0-9 ,.'"'"'!?:()-]{3,}"'
 
 fail=0
-for f in "${files[@]}"; do
+for f in ${files[@]+"${files[@]}"}; do
 	case "$f" in web/src/*.tsx) ;; *) continue ;; esac
 	case "$f" in *.test.tsx | web/src/routeTree.gen.ts | web/src/components/ui/*) continue ;; esac
 	[ -f "$f" ] || continue

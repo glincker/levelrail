@@ -206,6 +206,13 @@ func TestDetectDocker(t *testing.T) {
 			t.Fatalf("got %q, %v", got, err)
 		}
 	})
+	t.Run("orbstack socket is found and ranks before the system default", func(t *testing.T) {
+		sock := home + "/.orbstack/run/docker.sock"
+		got, err := DetectDocker(sockets(sock, "/var/run/docker.sock"))
+		if err != nil || got != sock {
+			t.Fatalf("got %q, %v", got, err)
+		}
+	})
 	t.Run("falls back to the system socket", func(t *testing.T) {
 		got, err := DetectDocker(sockets("/var/run/docker.sock"))
 		if err != nil || got != "/var/run/docker.sock" {

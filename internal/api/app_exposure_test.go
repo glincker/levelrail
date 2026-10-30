@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -201,5 +203,23 @@ func TestAppExposure_PutReportsOutcome(t *testing.T) {
 		if res.Outcome != c.want {
 			t.Fatalf("outcome = %q, want %q", res.Outcome, c.want)
 		}
+	}
+}
+
+func TestProbePublicDial(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.doctorDialContext = func(context.Context, string, string) (net.Conn, error) { return nil, errors.New("i/o timeout") }
+	blocked := probeTarget{Kind: "fallback", OK: true}
+	rt.probePublicDial(context.Background(), &blocked, "203.0.113.9:443")
+	if blocked.OK || blocked.Failure != probeFirewallClosed || blocked.Detail == "" {
+		t.Fatalf("blocked: %+v", blocked)
+	}
+	server, client := net.Pipe()
+	defer func() { _ = server.Close() }()
+	rt.doctorDialContext = func(context.Context, string, string) (net.Conn, error) { return client, nil }
+	open := probeTarget{Kind: "fallback", OK: true}
+	rt.probePublicDial(context.Background(), &open, "203.0.113.9:443")
+	if !open.OK || open.Failure != "" {
+		t.Fatalf("open: %+v", open)
 	}
 }

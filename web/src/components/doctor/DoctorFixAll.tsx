@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FixCli } from '@/components/fixit/FixCli'
@@ -58,7 +58,7 @@ export function DoctorFixAll({ onDone }: { onDone: () => void }) {
             setOpen(true)
           }}
         >
-          <WrenchIcon />
+          <WrenchGlassIcon size="1.4em" />
           {t('doctorPage.fixAll', { count: safe.length })}
         </Button>
       ) : null}

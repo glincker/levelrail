@@ -2,13 +2,13 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  ArchiveIcon,
-  ArrowCounterClockwiseIcon,
-  DownloadSimpleIcon,
-  ListMagnifyingGlassIcon,
-  SealCheckIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArchiveGlassIcon,
+  BadgeCheckGlassIcon,
+  DownloadGlassIcon,
+  FileSearchGlassIcon,
+  RotateCcwGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -93,7 +93,7 @@ function BundleRow({
             onBrowse(bundle)
           }}
         >
-          <ListMagnifyingGlassIcon className="size-3.5" aria-hidden="true" />
+          <FileSearchGlassIcon className="size-5" aria-hidden="true" />
           {t('browse')}
         </Button>
         <Button
@@ -118,7 +118,10 @@ function BundleRow({
             })
           }}
         >
-          <SealCheckIcon className="size-3.5" aria-hidden="true" />
+          <BadgeCheckGlassIcon
+            className="size-5 text-tone-success"
+            aria-hidden="true"
+          />
           {verify.isPending ? t('verifying') : t('verify')}
         </Button>
         <Button
@@ -128,7 +131,7 @@ function BundleRow({
             onRestore(bundle)
           }}
         >
-          <ArrowCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
+          <RotateCcwGlassIcon className="size-5" aria-hidden="true" />
           {t('restore')}
         </Button>
         <Button
@@ -137,7 +140,7 @@ function BundleRow({
           nativeButton={false}
           render={<a href={archiveDownloadUrl(bundle.id)} download />}
         >
-          <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+          <DownloadGlassIcon className="size-5" aria-hidden="true" />
           {t('download')}
         </Button>
         <Button
@@ -147,7 +150,7 @@ function BundleRow({
             onDelete(bundle)
           }}
         >
-          <TrashIcon className="size-3.5" aria-hidden="true" />
+          <TrashGlassIcon className="size-5" aria-hidden="true" />
           {t('delete')}
         </Button>
       </div>
@@ -220,7 +223,7 @@ export function ArchivesCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <ArchiveIcon className="size-4" />
+              <ArchiveGlassIcon className="size-5" />
             </div>
             <div>
               <CardTitle>{t('title')}</CardTitle>
@@ -287,7 +290,7 @@ export function ArchivesCard() {
             {data.bundles.length === 0 ? (
               <EmptyState
                 compact
-                icon={<ArchiveIcon className="size-5" />}
+                icon={<ArchiveGlassIcon className="size-6" />}
                 title={t('emptyTitle')}
                 description={t('empty')}
               />

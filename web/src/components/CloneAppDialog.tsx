@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
-import { CopyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -168,7 +168,7 @@ export function CloneAppDialog({
         <DialogTrigger
           render={<Button type="button" variant="outline" size="sm" />}
         >
-          <CopyIcon className="size-3.5" aria-hidden="true" />
+          <CopyGlassIcon className="size-5" aria-hidden="true" />
           Clone
         </DialogTrigger>
       )}
@@ -207,8 +207,8 @@ export function CloneAppDialog({
 
           {cloneApp.isError ? (
             <p className="flex items-start gap-1.5 text-sm text-destructive">
-              <WarningIcon
-                className="mt-0.5 size-4 shrink-0"
+              <TriangleAlertGlassIcon
+                className="mt-0.5 size-6 shrink-0 text-tone-warning"
                 aria-hidden="true"
               />
               {cloneApp.error.message}

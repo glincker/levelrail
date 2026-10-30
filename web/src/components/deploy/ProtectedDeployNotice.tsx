@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
@@ -25,8 +25,8 @@ export function ProtectedDeployNotice({
       )}
     >
       <div className="flex items-start gap-2">
-        <ShieldWarningIcon
-          className={cn('mt-0.5 size-4 shrink-0', TONE.warning.text)}
+        <ShieldAlertGlassIcon
+          className={cn('mt-0.5 size-5 shrink-0', TONE.warning.text)}
           aria-hidden="true"
         />
         <p>{t('approval.protected', { environment: environmentName })}</p>

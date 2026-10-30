@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowSquareOutIcon,
-  RocketLaunchIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ExternalLinkGlassIcon,
+  RocketGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { useRedeployApp } from '../../hooks/useRedeployApp'
 import type { AppListEntry } from '../../types/appDetail'
@@ -23,7 +23,7 @@ export function AppQuickActions({ app }: { app: AppListEntry }) {
           }
           nativeButton={false}
         >
-          <ArrowSquareOutIcon />
+          <ExternalLinkGlassIcon size="1.4em" />
         </Button>
       ) : null}
       <Button
@@ -33,7 +33,7 @@ export function AppQuickActions({ app }: { app: AppListEntry }) {
         disabled={isPending}
         onClick={redeploy}
       >
-        <RocketLaunchIcon />
+        <RocketGlassIcon size="1.4em" />
       </Button>
       <Button
         size="icon-sm"
@@ -42,7 +42,7 @@ export function AppQuickActions({ app }: { app: AppListEntry }) {
         render={<Link to="/apps/$name/logs" params={{ name: app.name }} />}
         nativeButton={false}
       >
-        <TerminalWindowIcon />
+        <TerminalGlassIcon size="1.4em" />
       </Button>
     </span>
   )

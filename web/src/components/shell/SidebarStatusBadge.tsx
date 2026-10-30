@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowUpIcon,
-  CheckIcon,
-  ExclamationMarkIcon,
-  MinusIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowUpGlassIcon,
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  MinusGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { TONE, type Tone } from '@/components/kit/tone'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { cn } from '@/lib/utils'
@@ -26,15 +26,15 @@ function StatusGlyph({ status }: { status: ShellStatus }) {
   const cls = 'size-2'
   switch (status) {
     case 'healthy':
-      return <CheckIcon className={cls} weight="bold" aria-hidden />
+      return <CheckGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'update':
-      return <ArrowUpIcon className={cls} weight="bold" aria-hidden />
+      return <ArrowUpGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'degraded':
-      return <ExclamationMarkIcon className={cls} weight="bold" aria-hidden />
+      return <CircleAlertGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'incident':
-      return <XIcon className={cls} weight="bold" aria-hidden />
+      return <XGlassIcon size="1.4em" className={cls} aria-hidden />
     case 'unknown':
-      return <MinusIcon className={cls} weight="bold" aria-hidden />
+      return <MinusGlassIcon size="1.4em" className={cls} aria-hidden />
     default:
       return null
   }

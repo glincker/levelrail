@@ -91,6 +91,8 @@ func (p *controlPlaneProvider) Resources(context.Context) []func() resource.Reso
 		NewDomainResource,
 		NewDatabaseResource,
 		NewEnvVarsResource,
+		NewStatusPageResource,
+		NewStatusComponentResource,
 	}
 }
 

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { LockKeyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useDashboardUrl, useUpdateDashboardUrl } from '../queries/dashboardUrl'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,7 @@ export function DashboardUrlCard() {
     <Card id={DASHBOARD_URL_ANCHOR} className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockKeyIcon className="size-4" />
+          <LockGlassIcon className="size-5" />
           Dashboard URL
         </CardTitle>
         <CardDescription>
@@ -79,7 +79,10 @@ export function DashboardUrlCard() {
           </FieldGroup>
           {update.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{update.error.message}</AlertDescription>
             </Alert>
           ) : null}

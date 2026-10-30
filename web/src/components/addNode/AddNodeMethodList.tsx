@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  HardDrivesIcon,
-  TerminalIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  ServerGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { BrandTile } from '../BrandLogoBadge'
@@ -130,9 +130,9 @@ export function AddNodeMethodList({
                     <Badge variant="success">
                       {t('nodeProviders.connected')}
                     </Badge>
-                    <ArrowRightIcon
+                    <ArrowRightGlassIcon
                       aria-hidden="true"
-                      className="size-4 text-muted-foreground"
+                      className="size-5 text-muted-foreground"
                     />
                   </span>
                 }
@@ -177,32 +177,32 @@ export function AddNodeMethodList({
         <Row
           mark={
             <span className="flex size-(--glinr-tile-size) shrink-0 items-center justify-center rounded-lg border border-border bg-background">
-              <TerminalIcon aria-hidden="true" className="size-5" />
+              <TerminalGlassIcon aria-hidden="true" className="size-6" />
             </span>
           }
           title={t('nodeProviders.addNodeDialog.sshTitle')}
           hint={t('nodeProviders.addNodeDialog.sshHint')}
           onClick={onSSH}
           trailing={
-            <ArrowRightIcon
+            <ArrowRightGlassIcon
               aria-hidden="true"
-              className="size-4 shrink-0 text-muted-foreground"
+              className="size-5 shrink-0 text-muted-foreground"
             />
           }
         />
         <Row
           mark={
             <span className="flex size-(--glinr-tile-size) shrink-0 items-center justify-center rounded-lg border border-border bg-background">
-              <HardDrivesIcon aria-hidden="true" className="size-5" />
+              <ServerGlassIcon aria-hidden="true" className="size-6" />
             </span>
           }
           title={t('nodeProviders.addNodeDialog.manualTitle')}
           hint={t('nodeProviders.addNodeDialog.manualHint')}
           onClick={onManual}
           trailing={
-            <ArrowRightIcon
+            <ArrowRightGlassIcon
               aria-hidden="true"
-              className="size-4 shrink-0 text-muted-foreground"
+              className="size-5 shrink-0 text-muted-foreground"
             />
           }
         />

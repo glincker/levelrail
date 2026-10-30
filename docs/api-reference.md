@@ -667,6 +667,10 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/template-upgrade | AbilityDeploy | handleApplyTemplateUpgrade |
 | GET | /api/v1/apps/{name}/template-upgrade/run | AbilityRead | handleGetTemplateUpgradeRun |
 | GET | /api/v1/apps/{name}/rollout | AbilityRead | handleGetRollout |
+| PUT | /api/v1/apps/{name}/rollout | AbilityDeploy | handlePutRollout |
+| DELETE | /api/v1/apps/{name}/rollout | AbilityDeploy | handleDeleteRollout |
+| GET | /api/v1/apps/{name}/releases | AbilityRead | handleListAppReleases |
+| GET | /api/v1/apps/{name}/analysis/reports | AbilityRead | handleListAnalysisReports |
 
 </Accordion>
 
@@ -2025,6 +2029,26 @@ Routes that do not fit an existing group.
 | GET | /api/v2/databases/{name} | AbilityRead | handleGet |
 | GET | /api/v2/nodes | AbilityRoot | handleList |
 | GET | /api/v2/nodes/{name} | AbilityRoot | handleGet |
+| PATCH | /api/v2/apps/{name} | AbilityWrite | handleApply |
+| PATCH | /api/v2/databases/{name} | AbilityWrite | handleApply |
+| PATCH | /api/v2/{kind}/{name} | AbilityWrite | handleApplyUnsupported |
+| GET | /api/v1/analysis/reports/{id} | AbilityRead | handleGetAnalysisReport |
+| GET | /api/v1/app-types | AbilityRead | handleListAppTypes |
+| POST | /api/v1/app-types | AbilityRoot | handleSaveAppType |
+| POST | /api/v1/app-types/{name}/publish | AbilityRoot | handlePublishAppType |
+| POST | /api/v1/app-types/{name}/check | AbilityRead | handleCheckAppType |
+| GET | /public/status.atom | Public | handlePublicStatusAtom |
+| GET | /public/status/history | Public | handlePublicStatusHistory |
+| GET | /public/status/incidents/{id} | Public | handlePublicStatusIncident |
+| GET | /public/status/badge.svg | Public | handlePublicStatusBadge |
+| GET | /api/v1/status-page/groups | AbilityRead | handleListStatusGroups |
+| POST | /api/v1/status-page/groups | AbilityWrite | handleCreateStatusGroup |
+| PUT | /api/v1/status-page/groups/{id} | AbilityWrite | handleUpdateStatusGroup |
+| DELETE | /api/v1/status-page/groups/{id} | AbilityWrite | handleDeleteStatusGroup |
+| GET | /api/v1/monitors | AbilityRead | handleListMonitors |
+| POST | /api/v1/monitors | AbilityWrite | handleCreateMonitor |
+| DELETE | /api/v1/monitors/{id} | AbilityWrite | handleDeleteMonitor |
+| GET | /api/v1/monitors/{id}/results | AbilityRead | handleMonitorResults |
 
 ## See also
 

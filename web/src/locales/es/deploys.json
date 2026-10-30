@@ -1,0 +1,478 @@
+{
+  "table": {
+    "label": "Despliegues",
+    "deploy": "Despliegue",
+    "status": "Estado",
+    "app": "Aplicación",
+    "environment": "Entorno",
+    "commit": "Commit",
+    "branch": "Rama",
+    "started": "Inicio",
+    "by": "Por"
+  },
+  "autoRollback": {
+    "title": "Reversión automática ante crashloop",
+    "infoTipLabel": "Acerca de la reversión automática ante crashloop",
+    "helpLabel": "Guía de reversión automática",
+    "enabledLabel": "Volver a desplegar automáticamente la última imagen que funcionaba",
+    "description": "Cuando salta una alerta de crashloop para esta aplicación, se vuelve a desplegar automáticamente la imagen exitosa más reciente anterior a la que está en crashloop. Se activa como máximo una vez por episodio; si no hay una imagen anterior a la que volver, la aplicación queda solo con la alerta.",
+    "switchAriaLabel": "Reversión automática ante crashloop activada",
+    "toast": {
+      "enabled": "Reversión automática ante crashloop activada.",
+      "disabled": "Reversión automática ante crashloop desactivada.",
+      "errorTitle": "No se pudo actualizar la reversión automática."
+    }
+  },
+  "predeploySnapshot": {
+    "title": "Snapshot de base de datos antes del despliegue",
+    "infoTipLabel": "Acerca de los snapshots previos al despliegue",
+    "helpLabel": "Guía de snapshots previos al despliegue",
+    "modeAriaLabel": "Modo de snapshot",
+    "targetAriaLabel": "Destino de respaldo para snapshots",
+    "targetAuto": "Destino de respaldo predeterminado",
+    "unavailable": "Los snapshots previos al despliegue no están disponibles en este plano de control.",
+    "modes": {
+      "off": "Desactivado",
+      "on": "Activado",
+      "require": "Obligatorio"
+    },
+    "modeHints": {
+      "off": "No se toma ningún snapshot antes de un despliegue.",
+      "on": "Primero se toma un snapshot de las bases de datos vinculadas. Si falla, se registra y el despliegue continúa.",
+      "require": "Primero se toma un snapshot de las bases de datos vinculadas. Si falla, se bloquea el despliegue."
+    },
+    "toast": {
+      "saved": "Se guardó el ajuste de snapshot previo al despliegue.",
+      "errorTitle": "No se pudo guardar el ajuste de snapshot."
+    }
+  },
+  "rollbackWithData": {
+    "title": "Revertir con datos",
+    "description": "Vuelve a desplegar la versión anterior a este despliegue y restaura las bases de datos desde el snapshot tomado justo antes.",
+    "snapshotsLabel": "Snapshots tomados antes de este despliegue",
+    "takenAt": "Tomado",
+    "warning": "Cada base de datos vinculada se restaura en una base de datos nueva y los enlaces de la aplicación se cambian a las copias. Las bases de datos originales no se modifican, pero las escrituras hechas desde este despliegue se quedan en ellas.",
+    "loading": "Buscando snapshots...",
+    "reasonNoSnapshot": "No se tomó ningún snapshot utilizable antes de este despliegue.",
+    "reasonProtected": "Esta aplicación está en un entorno protegido. Usa la reversión simple y restaura los datos a mano.",
+    "reasonLoadFailed": "No se pudieron cargar los snapshots de esta aplicación.",
+    "cancel": "Cancelar",
+    "confirm": "Revertir con datos",
+    "working": "Revirtiendo...",
+    "started": "Revirtiendo con datos.",
+    "menuLabel": "Revertir con datos",
+    "menuHint": "Deshace este despliegue y restaura su snapshot previo"
+  },
+  "autoRollbackSloBurn": {
+    "title": "Reversión automática por consumo de SLO",
+    "infoTipLabel": "Acerca de la reversión automática por consumo de SLO",
+    "helpLabel": "Guía de reversión automática",
+    "modeLabel": "Modo",
+    "modeAriaLabel": "Modo de reversión automática por consumo de SLO",
+    "defaultDescription": "Elige cómo reacciona esta aplicación cuando salta una alerta de tasa de consumo de SLO.",
+    "modes": {
+      "off": {
+        "label": "Desactivado",
+        "description": "Solo alertar; nunca actuar automáticamente."
+      },
+      "auto": {
+        "label": "Reversión automática",
+        "description": "Revertir de inmediato a la imagen exitosa más reciente anterior a la que consume el presupuesto de errores."
+      },
+      "dry_run": {
+        "label": "Simulación",
+        "description": "Registrar qué se habría revertido, sin desplegar nunca."
+      },
+      "pause_for_human": {
+        "label": "Pausar para una persona",
+        "description": "Abrir una aprobación de despliegue pendiente para la reversión en lugar de desplegar directamente; un compañero la aprueba o la rechaza."
+      }
+    },
+    "toast": {
+      "modeSet": "Reversión automática por consumo de SLO definida en: {{mode}}.",
+      "errorTitle": "No se pudo actualizar la reversión automática por consumo de SLO."
+    }
+  },
+  "badgeSettings": {
+    "title": "Insignia de estado de despliegue",
+    "infoTipLabel": "Acerca de la insignia de estado de despliegue",
+    "enabledLabel": "Insignia pública para el README",
+    "description": "Sirve un pequeño SVG público con el estado del último despliegue de esta aplicación y cuándo ocurrió, sin necesidad de autenticación. Déjala desactivada si el estado de despliegue de la aplicación no debe ser público.",
+    "switchAriaLabel": "Insignia de estado de despliegue activada",
+    "embedLabel": "Insertar en tu README",
+    "toast": {
+      "enabled": "Insignia de estado de despliegue activada.",
+      "disabled": "Insignia de estado de despliegue desactivada.",
+      "errorTitle": "No se pudo actualizar la insignia de estado de despliegue."
+    }
+  },
+  "releaseLine": {
+    "deployed": "desplegado",
+    "from": "desde",
+    "source": {
+      "webhook": "un push de git",
+      "manual": "el panel",
+      "image": "un despliegue de imagen",
+      "compose": "un template o un archivo compose",
+      "promote": "una promoción",
+      "clone": "un clon",
+      "schedule": "un horario",
+      "auto_rollback": "una reversión automática",
+      "git_push": "un push de git al servidor",
+      "poll": "una consulta periódica, porque se perdió un webhook",
+      "upload": "un directorio subido desde la CLI",
+      "restart": "un reinicio",
+      "start": "iniciar una aplicación detenida",
+      "stop": "detener la aplicación",
+      "pr_comment": "un comentario de pull request"
+    }
+  },
+  "imageAutoUpdate": {
+    "title": "Actualizar cuando cambie la imagen",
+    "infoTipLabel": "Acerca de la actualización automática de imagen",
+    "description": "Compara periódicamente la etiqueta de imagen de esta aplicación con su registro y vuelve a desplegar cuando la etiqueta apunta a un digest nuevo. Se omiten las aplicaciones compiladas desde código fuente, las detenidas, las que están en una congelación de despliegues y las de un entorno protegido.",
+    "enabledLabel": "Volver a desplegar automáticamente cuando la etiqueta cambie",
+    "switchAriaLabel": "Actualización automática de imagen activada",
+    "checkNow": "Comprobar ahora",
+    "checking": "Comprobando...",
+    "lastCheck": "Última comprobación ({{when}}): {{result}}",
+    "neverChecked": "Aún no se ha comprobado.",
+    "status": {
+      "updateAvailable": "Hay una imagen más reciente para esta etiqueta.",
+      "upToDate": "La imagen está actualizada.",
+      "updateNow": "Actualizar ahora",
+      "archMismatch": "Esta imagen está compilada para {{image}} pero el nodo ejecuta {{node}}. Puede que no arranque."
+    },
+    "toast": {
+      "enabled": "Actualización automática de imagen activada.",
+      "disabled": "Actualización automática de imagen desactivada.",
+      "errorTitle": "No se pudo actualizar la actualización automática de imagen.",
+      "checkFailed": "Falló la comprobación de la imagen."
+    },
+    "webhookHelp": "Webhook de push del registro: actualiza al recibir un push en lugar de esperar al siguiente intervalo.",
+    "webhookSet": "Hay un webhook de push del registro configurado. Crear uno nuevo lo reemplaza.",
+    "webhookCreate": "Crear URL de webhook",
+    "webhookRotate": "Reemplazar URL de webhook",
+    "webhookUrlLabel": "URL del webhook del registro",
+    "webhookShownOnce": "Cópiala ahora, no se vuelve a mostrar. Pégala como webhook (POST) en tu registro; la propia URL es el secreto."
+  },
+  "canary": {
+    "title": "Release canary",
+    "infoTipLabel": "Acerca de los releases canary",
+    "description": "Ejecuta una imagen nueva junto a la versión actual y envíale una parte de las solicitudes. Promuévela cuando se vea en buen estado, o aborta y todo el tráfico se queda en la versión actual. Un canary que no está listo no recibe tráfico. Requiere una aplicación de imagen con una sola réplica.",
+    "imageLabel": "Imagen canary",
+    "imagePlaceholder": "registry/app:next",
+    "weightLabel": "% de tráfico",
+    "start": "Iniciar canary",
+    "running": "El canary {{image}} está recibiendo el {{weight}}% de las solicitudes.",
+    "setWeight": "Definir porcentaje",
+    "promote": "Promover",
+    "promoteNow": "Promover ahora",
+    "abort": "Abortar",
+    "stagesLabel": "Etapas % (opcional)",
+    "stagesPlaceholder": "10,25,50,100",
+    "intervalLabel": "Por etapa",
+    "maxErrorLabel": "Aumento máximo de errores (puntos)",
+    "maxP95Label": "Proporción máxima de p95",
+    "stageLabel": "Etapa {{stage}} de {{count}}",
+    "stageWeights": "{{stages}} %",
+    "compareLabel": "Canary frente a la versión estable",
+    "canaryColumn": "Canary",
+    "stableColumn": "Estable",
+    "requests": "Solicitudes en esta etapa",
+    "errorRate": "Tasa de errores (5xx)",
+    "p95": "Latencia p95",
+    "next": "{{reason}} ({{elapsed}}s de {{interval}}s). Se revierte automáticamente si los errores o la latencia suben frente a la versión estable.",
+    "breaching": "Umbral superado: {{reason}}. Revirtiendo.",
+    "waitingForTraffic": "Esperando a que el canary reciba tráfico antes de evaluar esta etapa.",
+    "outcome": {
+      "promoted": "El último canary se promovió",
+      "aborted": "El último canary se abortó",
+      "rolled_back": "El último canary se revirtió automáticamente"
+    },
+    "outcomeDetail": "{{image}} {{reason}}",
+    "toast": {
+      "started": "Canary iniciado.",
+      "weightSet": "Porcentaje de tráfico actualizado.",
+      "promoted": "Canary promovido, desplegando.",
+      "aborted": "Canary eliminado.",
+      "errorTitle": "Falló la acción del canary"
+    }
+  },
+  "templateUpgrade": {
+    "badge": "Hay una actualización del template",
+    "blocked": "requiere pasos manuales",
+    "apply": "Actualizar",
+    "applying": "Iniciando",
+    "confirmTitle": "¿Actualizar al template actual?",
+    "confirmBody": "Riesgo: {{risk}}. Se requiere un respaldo reciente del volumen. Se vigila el release y se revierte automáticamente si entra en crashloop o falla.",
+    "envCount_one": "{{count}} cambio de entorno",
+    "envCount_other": "{{count}} cambios de entorno",
+    "volumeCount_one": "{{count}} volumen",
+    "volumeCount_other": "{{count}} volúmenes",
+    "status": {
+      "unchanged": "sin cambios",
+      "changed": "cambiado",
+      "added": "servicio nuevo",
+      "removed": "eliminado"
+    },
+    "run": {
+      "watching": "Actualizando, vigilando el release nuevo",
+      "succeeded": "La actualización terminó y la aplicación está en buen estado",
+      "rolled_back": "La actualización falló y se revirtió",
+      "rollback_failed": "La actualización falló y se rechazó la reversión",
+      "refused": "Se rechazó la actualización, no cambió nada"
+    },
+    "risk": {
+      "none": "Sin cambios",
+      "low": "Riesgo bajo",
+      "medium": "Riesgo medio",
+      "high": "Riesgo alto"
+    }
+  },
+  "pendingChanges": {
+    "title": "Cambios a la espera de un reinicio",
+    "detail": "{{count}} sin aplicar todavía",
+    "restart": "Reiniciar para aplicar",
+    "redeploy": "Volver a desplegar para aplicar",
+    "applying": "Aplicando",
+    "failed": "No se pudieron aplicar los cambios"
+  },
+  "envCompare": {
+    "title": "Comparar variables de entorno con otra aplicación",
+    "pick": "Comparar con",
+    "none": "Elige una aplicación",
+    "onlyIn": "Solo en {{app}}:",
+    "differs": "Difiere:",
+    "secret": "(secreto)",
+    "secretOneSide": "(secreto solo en un lado)",
+    "summary": "{{count}} claves idénticas. Los valores secretos nunca se leen, los secretos solo se comparan por clave.",
+    "tableLabel": "Diferencias de entorno",
+    "colKey": "Clave",
+    "colStatus": "Estado",
+    "added": "Solo aquí",
+    "removed": "Solo allá",
+    "changed": "Cambiada",
+    "missing": "sin definir",
+    "secretMasked": "Valor secreto, oculto"
+  },
+  "appSleep": {
+    "title": "Suspender por inactividad",
+    "infoTipLabel": "Acerca de las aplicaciones suspendidas",
+    "description": "Detiene esta aplicación cuando pasa un tiempo sin solicitudes, para que no use memoria ni CPU. La siguiente solicitud a su dominio la inicia y muestra una breve página de reactivación que reintenta sola, así que el primer visitante espera el arranque en frío.",
+    "enabledLabel": "Suspender por inactividad",
+    "switchAriaLabel": "Suspensión por inactividad activada",
+    "minutesLabel": "Minutos personalizados ({{min}} a {{max}})",
+    "save": "Guardar",
+    "asleep": "Esta aplicación está suspendida.",
+    "wakeNow": "Reactivar ahora",
+    "toast": {
+      "enabled": "Suspensión por inactividad activada.",
+      "disabled": "Suspensión por inactividad desactivada.",
+      "updated": "Tiempo de inactividad actualizado.",
+      "errorTitle": "Falló el ajuste de suspensión",
+      "holdUpdated": "Modo función actualizado.",
+      "portWakeUpdated": "Reactivación por puerto actualizada.",
+      "ignoreUpdated": "Rutas ignoradas actualizadas."
+    },
+    "holdLabel": "Retener solicitudes mientras se reactiva (modo función)",
+    "holdHelp": "Una solicitud que llega mientras la aplicación está suspendida espera a que arranque y luego se reproduce, en lugar de mostrar una página de reactivación. Útil para llamadas de API.",
+    "holdAriaLabel": "Retener solicitudes mientras se reactiva",
+    "badgeAsleep": "Suspendida",
+    "fleetTitle": "Aplicaciones suspendidas",
+    "fleetSummary": "{{sleeping}} de {{enabled}} aplicaciones suspendidas",
+    "fleetEmpty": "Ninguna aplicación se suspende por inactividad todavía. Actívalo desde la pestaña Despliegues de una aplicación para liberar su memoria mientras nadie la visita.",
+    "sleepNow": "Suspender ahora",
+    "sleepNowHelp": "Detiene la aplicación ahora en lugar de esperar al tiempo de inactividad. La siguiente solicitud la inicia.",
+    "fleetEmptyShort": "Nada se suspende todavía",
+    "fleetReclaimedLabel": "memoria sin uso",
+    "fleetBrowseApps": "Elegir aplicaciones",
+    "fleetAllAwake": "Todas las aplicaciones con suspensión activada están despiertas ahora.",
+    "fleetMore": "y {{count}} más suspendidas",
+    "fleetNoLimits": "Estas aplicaciones no tienen límite de memoria, así que no se puede estimar la memoria que liberan. Define un límite en cada aplicación para verlo aquí.",
+    "status": {
+      "ready": "Lista para activar",
+      "blocked": "Bloqueada",
+      "awake": "Activada, despierta",
+      "sleeping": "Suspendida ahora",
+      "waking": "Reactivándose"
+    },
+    "explain": {
+      "generic": "Cuando nadie usa esta aplicación durante un tiempo, se detiene para liberar memoria y CPU. El siguiente visitante la inicia de nuevo y espera un arranque en frío."
+    },
+    "wakeTiming": {
+      "none": "Aún no se han medido reactivaciones, así que no hay una estimación de cuánto tarda una.",
+      "typical": "Normalmente se reactiva en unos {{typical}}.",
+      "typicalWithP95": "Normalmente se reactiva en unos {{typical}} (p95 {{p95}}).",
+      "noneShort": "Aún no hay datos de reactivación",
+      "short": "Se reactiva en unos {{typical}}",
+      "shortWithP95": "Se reactiva en unos {{typical}} (p95 {{p95}})"
+    },
+    "frees": "Libera unos {{size}} mientras está suspendida",
+    "checklistLabel": "Requisitos para suspender",
+    "blockedPrefix": "Impide la suspensión: ",
+    "warnPrefix": "Advertencia: ",
+    "whatThisMeans": "Qué significa:",
+    "allClear": "Nada impide suspender esta aplicación.",
+    "turnOn": "Activar suspensión por inactividad",
+    "turnOff": "Desactivar suspensión por inactividad",
+    "turnOnHint": "Se suspende tras {{minutes}} minutos sin uso. Puedes cambiarlo después.",
+    "turnOnBlocked": "Arregla esto primero: {{titles}}",
+    "idleTitle": "Suspender tras inactividad de",
+    "presetMinutes_one": "{{count}} minuto",
+    "presetMinutes_other": "{{count}} minutos",
+    "activity": {
+      "lastRequest": "Última solicitud",
+      "lastNetwork": "Última actividad de red",
+      "connections": "Conexiones abiertas",
+      "sleepsIn": "Se suspende en",
+      "notScheduled": "Sin programar",
+      "none": "Ninguna todavía"
+    },
+    "countdown": {
+      "minutes_one": "{{count}} min",
+      "minutes_other": "{{count}} min",
+      "seconds_one": "{{count}} s",
+      "seconds_other": "{{count}} s"
+    },
+    "portWake": {
+      "title": "Reactivar con tráfico a puertos publicados",
+      "help": "Una conexión al puerto {{ports}} reactiva la aplicación, así que puede suspenderse incluso con un puerto de host fijo.",
+      "aria": "Reactivar con tráfico a puertos publicados"
+    },
+    "ignore": {
+      "title": "Rutas ignoradas",
+      "help": "Las solicitudes a estas rutas nunca mantienen despierta la aplicación: comprobaciones de salud y monitores de disponibilidad.",
+      "remove": "Quitar {{path}}",
+      "addLabel": "Ruta a ignorar",
+      "add": "Agregar"
+    }
+  },
+  "releaseNotes": {
+    "title": "Commits y notas de la versión",
+    "digest": "Digest de la imagen",
+    "digestSame": "El mismo digest de imagen en ambos lados.",
+    "noCommits": "No hay commits entre estos dos despliegues.",
+    "commitsCount_one": "{{count}} commit entre estos despliegues",
+    "commitsCount_other": "{{count}} commits entre estos despliegues",
+    "generate": "Generar notas de la versión",
+    "generating": "Generando...",
+    "copy": "Copiar markdown",
+    "copied": "Notas de la versión copiadas.",
+    "copyFailed": "No se pudo copiar al portapapeles.",
+    "loadFailed": "No se pudieron generar las notas de la versión.",
+    "needsDeploy": "Elige dos despliegues que hayan registrado un commit de git para generar las notas de la versión."
+  },
+  "githubActions": {
+    "title": "Reporte de GitHub Actions",
+    "infoTipLabel": "Acerca del reporte de GitHub Actions",
+    "description": "Cuando la action de despliegue de Levelrail se ejecuta en tu workflow, registra un despliegue de GitHub y un check run en el commit para que el resultado aparezca en el pull request. Un reporte fallido nunca hace fallar el despliegue.",
+    "environmentLabel": "Nombre del entorno de GitHub",
+    "deploymentsLabel": "Registrar despliegues de GitHub",
+    "checksLabel": "Publicar un check run",
+    "snippetHint": "Usa glincker/levelrail/integrations/github-action en tu workflow, o ejecuta levelrail-cli apps github-actions get {{app}}.",
+    "save": "Guardar",
+    "toast": {
+      "saved": "Reporte de GitHub Actions guardado.",
+      "errorTitle": "No se pudo guardar el reporte de GitHub Actions."
+    }
+  },
+  "ciDeploy": {
+    "title": "Desplegar desde CI",
+    "infoTipLabel": "Acerca de desplegar desde CI",
+    "description": "Confía en un pipeline y una ref, y luego pega la configuración para tu CI. El trabajo cambia su identidad (GitHub, GitLab o CircleCI) por un token de 15 minutos que solo puede desplegar esta aplicación, así que no se guarda ningún secreto de larga duración. Un commit con [skip ci] no despliega.",
+    "noTrusts": "Ningún pipeline tiene aún confianza para desplegar esta aplicación. Agrega uno abajo.",
+    "repositoryLabel": {
+      "github": "Repositorio de GitHub",
+      "gitlab": "Ruta del proyecto de GitLab",
+      "circleci": "ID del proyecto de CircleCI"
+    },
+    "repositoryPlaceholder": {
+      "github": "owner/name",
+      "gitlab": "group/project",
+      "circleci": "Project Settings > Overview"
+    },
+    "refLabel": "Ref permitida",
+    "environmentLabel": {
+      "github": "Entorno",
+      "gitlab": "Entorno",
+      "circleci": "ID del contexto"
+    },
+    "environmentPlaceholder": {
+      "github": "Cualquier entorno",
+      "gitlab": "Cualquier entorno protegido",
+      "circleci": "Cualquier contexto"
+    },
+    "trust": "Confiar",
+    "removeTrust": "Dejar de confiar en {{repository}}",
+    "workflowTitle": "Workflow generado",
+    "copy": "Copiar workflow",
+    "needsAddress": "Los tokens de CI se emiten para la dirección del panel, y todavía no hay ninguna definida.",
+    "useThisAddress": "Usar {{origin}}",
+    "cliToggle": "Corregir con la CLI",
+    "toast": {
+      "trusted": "Repositorio de confianza.",
+      "trustError": "No se pudo agregar la confianza.",
+      "removeError": "No se pudo quitar la confianza.",
+      "addressError": "No se pudo guardar la dirección del panel.",
+      "copied": "Workflow copiado.",
+      "copyFailed": "No se pudo copiar al portapapeles.",
+      "trustedLoose": "De confianza, con una regla más laxa."
+    },
+    "providerLabel": "Proveedor de CI",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI"
+    },
+    "orgIdLabel": "ID de la organización de CircleCI",
+    "orgIdPlaceholder": "Organization Settings > Overview",
+    "issuerLabel": "Emisor autoadministrado",
+    "issuerPlaceholder": "https://gitlab.com",
+    "issuerNote": "Deja el emisor vacío para gitlab.com. Un emisor de GitLab autoadministrado solo puede ser de confianza para un usuario root, porque quien lo ejecuta puede emitir tokens.",
+    "issuerShown": "Emisor {{issuer}}",
+    "protectedOnly": "Solo ramas y etiquetas protegidas",
+    "unprotectedWarning": "Esta confianza acepta pipelines en ramas y etiquetas sin protección: cualquier desarrollador que pueda hacer push de una ref coincidente puede desplegar.",
+    "snippetTitle": {
+      "github": "Pasos del job",
+      "gitlab": "Job de GitLab CI",
+      "circleci": "Pasos del job de CircleCI"
+    },
+    "snippetNote": "Define LEVELRAIL_API_URL con la dirección del panel. Es pública, no es un secreto."
+  },
+  "buildHooks": {
+    "title": "Build hooks",
+    "infoTipLabel": "Acerca de los build hooks",
+    "description": "Un build hook es una URL secreta. Haz POST a ella (desde un CMS headless o un cron) para compilar y desplegar el código git de esta aplicación. Un cuerpo JSON opcional con title y body llega a la compilación como los build args TRIGGER_TITLE y TRIGGER_BODY.",
+    "empty": "Aún no hay build hooks. Crea uno para disparar compilaciones desde fuera.",
+    "defaultBranch": "rama de la aplicación",
+    "neverTriggered": "Nunca se ha disparado",
+    "lastTriggered": "Último disparo {{when}} ({{count}} en total). Resultado: {{result}}",
+    "nameLabel": "Nombre del hook",
+    "namePlaceholder": "Por ejemplo: cms publish",
+    "branchLabel": "Rama (opcional)",
+    "branchPlaceholder": "Por defecto, la rama de la aplicación",
+    "create": "Crear hook",
+    "rotate": "Rotar",
+    "revoke": "Revocar",
+    "confirmRevoke": "Confirmar revocación",
+    "copy": "Copiar URL",
+    "urlLabel": "URL del build hook",
+    "shownOnce": "URL de {{name}}. Cópiala ahora, no se vuelve a mostrar.",
+    "toast": {
+      "errorTitle": "Falló la solicitud del build hook",
+      "copied": "URL copiada.",
+      "copyFailed": "No se pudo copiar al portapapeles."
+    }
+  },
+  "banner": {
+    "title": "Despliegues",
+    "description": "Cada release de tus aplicaciones, en vivo mientras se compila, con rollback en un clic. Despliega una aplicación y aparecerá aquí.",
+    "compactDescription": "Releases de todas las aplicaciones, con rollback.",
+    "diagram": {
+      "image": "imagen",
+      "server": "servidor",
+      "rollback": "rollback"
+    }
+  }
+}

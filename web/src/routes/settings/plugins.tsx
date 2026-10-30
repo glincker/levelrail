@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -48,13 +48,13 @@ function PluginsPage() {
 
   return (
     <PageTemplate
-      icon={<PlugsConnectedIcon />}
+      icon={<PlugGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       helpPath="/plugins"
       actions={
         <Button type="button" onClick={() => setInstalling(true)}>
-          <PlusIcon aria-hidden="true" />
+          <PlusGlassIcon size="1.4em" aria-hidden="true" />
           {t('install')}
         </Button>
       }
@@ -77,7 +77,7 @@ function PluginsPage() {
           ) : plugins.length === 0 ? (
             <EmptyState
               className="gap-2 border-0 bg-transparent py-4"
-              icon={<PlugsConnectedIcon className="size-5" />}
+              icon={<PlugGlassIcon className="size-6" />}
               title={t('empty.title')}
               description={t('empty.description')}
               action={

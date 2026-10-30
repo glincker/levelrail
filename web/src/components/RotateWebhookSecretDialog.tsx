@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import {
-  ArrowsClockwiseIcon,
-  CheckIcon,
-  CopyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  RefreshCwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -51,7 +51,7 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         Rotate secret
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -59,8 +59,8 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
-                <CheckIcon
-                  className="size-4 text-emerald-600"
+                <CheckGlassIcon
+                  className="size-5 text-emerald-600"
                   aria-hidden="true"
                 />
                 New webhook secret
@@ -81,7 +81,11 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
                 variant="outline"
                 onClick={copySecret}
               >
-                {copied ? <CheckIcon /> : <CopyIcon />}
+                {copied ? (
+                  <CheckGlassIcon size="1.4em" />
+                ) : (
+                  <CopyGlassIcon size="1.4em" />
+                )}
                 {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>
@@ -100,8 +104,8 @@ export function RotateWebhookSecretDialog({ appName }: { appName: string }) {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
-                <WarningIcon
-                  className="size-4 text-amber-600"
+                <TriangleAlertGlassIcon
+                  className="size-6 text-amber-600"
                   aria-hidden="true"
                 />
                 Rotate webhook secret?

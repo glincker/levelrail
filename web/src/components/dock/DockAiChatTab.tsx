@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { GearIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
+import { BotGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import { AiChatPanel } from '../AiChatPanel'
 import { noteDockReply } from './dockStore'
 import { useAiAssistantSettings } from '../../queries/aiAssistantSettings'
@@ -17,12 +17,12 @@ function Body() {
     return <AiChatPanel onAssistantReply={noteDockReply} />
   return (
     <EmptyState
-      icon={<RobotIcon className="size-5" />}
+      icon={<BotGlassIcon className="size-6" />}
       title={t('dock.ai.notConfiguredTitle')}
       description={t('dock.ai.notConfiguredDescription')}
       action={
         <Button size="sm" render={<Link to="/settings/ai-assistant" />}>
-          <GearIcon />
+          <SettingsGlassIcon size="1.4em" />
           {t('dock.ai.configure')}
         </Button>
       }
@@ -38,12 +38,12 @@ export function DockAiChatTab() {
     return (
       <div className="flex h-full min-h-0 flex-col p-3">
         <EmptyState
-          icon={<RobotIcon className="size-5" />}
+          icon={<BotGlassIcon className="size-6" />}
           title={t('dock.ai.experimentalOffTitle')}
           description={t('dock.ai.experimentalOffDescription')}
           action={
             <Button size="sm" render={<Link to="/settings/beta-features" />}>
-              <GearIcon />
+              <SettingsGlassIcon size="1.4em" />
               {t('dock.ai.enableInSettings')}
             </Button>
           }

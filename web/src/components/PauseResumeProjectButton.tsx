@@ -1,4 +1,4 @@
-import { PauseIcon, PlayIcon } from '@phosphor-icons/react/dist/ssr'
+import { PauseGlassIcon, PlayGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useStartProject, useStopProject } from '../queries/projects'
@@ -42,7 +42,7 @@ export function PauseResumeProjectButton({
           })
         }}
       >
-        <PauseIcon className="size-3.5" aria-hidden="true" />
+        <PauseGlassIcon className="size-5" aria-hidden="true" />
         {stopProject.isPending ? 'Stopping...' : 'Stop project'}
       </Button>
       <Button
@@ -63,7 +63,7 @@ export function PauseResumeProjectButton({
           })
         }}
       >
-        <PlayIcon className="size-3.5" aria-hidden="true" />
+        <PlayGlassIcon className="size-5" aria-hidden="true" />
         {startProject.isPending ? 'Starting...' : 'Start project'}
       </Button>
     </div>

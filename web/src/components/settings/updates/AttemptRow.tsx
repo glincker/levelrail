@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowRightIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { StatusPill, type Tone } from '@/components/kit'
 import { cn } from '@/lib/utils'
 import { attemptDurationMs } from '@/lib/upgradeAttempts'
@@ -39,9 +39,9 @@ export function AttemptRow({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-3 py-2 text-left hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring"
       >
-        <CaretRightIcon
+        <ChevronRightGlassIcon
           className={cn(
-            'size-3.5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none',
+            'size-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none',
             open && 'rotate-90',
           )}
           aria-hidden="true"
@@ -54,8 +54,8 @@ export function AttemptRow({
         />
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           <VersionLabel value={attempt.from_version} />
-          <ArrowRightIcon
-            className="size-3.5 shrink-0 text-muted-foreground"
+          <ArrowRightGlassIcon
+            className="size-5 shrink-0 text-muted-foreground"
             aria-label={t('selfUpgrade.to')}
           />
           <VersionLabel value={attempt.to_version} />

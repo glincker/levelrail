@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CpuIcon,
-  DatabaseIcon,
-  GlobeIcon,
-  HardDrivesIcon,
-  PlugsConnectedIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CpuGlassIcon,
+  DatabaseGlassIcon,
+  GlobeGlassIcon,
+  PlugGlassIcon,
+  ServerGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import { formatBytes } from '../../lib/format'
 import type { TemplateSummary } from '../../lib/templateSummary'
 
@@ -24,7 +24,7 @@ function Item({
     <div className="flex min-w-0 items-start gap-3">
       <span
         aria-hidden="true"
-        className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:size-4"
+        className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:size-5"
       >
         {icon}
       </span>
@@ -59,12 +59,12 @@ export function TemplateWhatYouGet({
         {t('what.description', { count: summary.serviceCount })}
       </p>
       <dl className="grid gap-4 sm:grid-cols-2">
-        <Item icon={<GlobeIcon />} label={t('what.url')}>
+        <Item icon={<GlobeGlassIcon size="1.4em" />} label={t('what.url')}>
           <span className="font-mono text-xs">
             {t('what.urlValue', { slug })}
           </span>
         </Item>
-        <Item icon={<PlugsConnectedIcon />} label={t('what.ports')}>
+        <Item icon={<PlugGlassIcon size="1.4em" />} label={t('what.ports')}>
           {summary.ports.length > 0 ? (
             <span className="font-mono text-xs">
               {summary.ports.join(', ')}
@@ -73,7 +73,7 @@ export function TemplateWhatYouGet({
             t('what.portsNone')
           )}
         </Item>
-        <Item icon={<CpuIcon />} label={t('what.resources')}>
+        <Item icon={<CpuGlassIcon size="1.4em" />} label={t('what.resources')}>
           {summary.memoryBytes
             ? t('what.memory', { size: formatBytes(summary.memoryBytes) })
             : t('what.memoryNone')}
@@ -82,7 +82,7 @@ export function TemplateWhatYouGet({
             ? t('what.cpu', { count: summary.cpus })
             : t('what.cpuShared')}
         </Item>
-        <Item icon={<HardDrivesIcon />} label={t('what.volumes')}>
+        <Item icon={<ServerGlassIcon size="1.4em" />} label={t('what.volumes')}>
           {summary.volumes.length > 0 ? (
             <ul className="space-y-0.5">
               {summary.volumes.map((v) => (
@@ -95,14 +95,22 @@ export function TemplateWhatYouGet({
             t('what.volumesNone')
           )}
         </Item>
-        <Item icon={<DatabaseIcon />} label={t('what.dependencies')}>
+        <Item
+          icon={<DatabaseGlassIcon size="1.4em" />}
+          label={t('what.dependencies')}
+        >
           {summary.databases.length > 0
             ? t('what.databaseCreated', {
                 engines: summary.databases.join(', '),
               })
             : t('what.dependenciesNone')}
         </Item>
-        <Item icon={<ShieldCheckIcon />} label={t('what.backups')}>
+        <Item
+          icon={
+            <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
+          }
+          label={t('what.backups')}
+        >
           {summary.hasBackups
             ? t('what.backupsVolumes')
             : t('what.backupsNone')}

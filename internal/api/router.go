@@ -501,6 +501,7 @@ type Router struct {
 	// /api/v1/apps/{name}/resource-recommendation's usage-history window.
 	// 0 means "use the default", set via WithResourceRecommendationLookback.
 	resourceRecommendationLookback time.Duration
+	analysisReports                AnalysisReportStore // nil is valid: report routes return 501
 	// capacityForecastLookback overrides defaultCapacityForecastLookback
 	// for GET /api/v1/nodes/{id}/capacity-forecast's usage-history
 	// window. 0 means "use the default", set via
@@ -746,6 +747,7 @@ type Router struct {
 	doctorHTTPSPort              int                      // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookBodies                webhookBodySeen          // recent signed webhook bodies, replay guard
 	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
+	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result

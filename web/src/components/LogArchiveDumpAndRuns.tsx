@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -78,7 +78,7 @@ export function LogArchiveDumpAndRuns({
         id={`archive-dump-${appName}`}
         className="flex items-center gap-2 text-sm font-semibold text-foreground"
       >
-        <ClockCounterClockwiseIcon className="size-4" aria-hidden="true" />
+        <RestoreGlassIcon className="size-5" aria-hidden="true" />
         Dump a time range now
       </h2>
       <form

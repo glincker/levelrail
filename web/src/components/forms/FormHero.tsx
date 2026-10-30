@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  TrayIcon,
-  PencilSimpleLineIcon,
-  ClipboardTextIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ClipboardListGlassIcon,
+  InboxGlassIcon,
+  PencilLineGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { usePlayback } from './usePlayback'
 import './formHero.css'
 
 const STEPS = [
-  { key: 'design', Icon: PencilSimpleLineIcon },
-  { key: 'embed', Icon: ClipboardTextIcon },
-  { key: 'read', Icon: TrayIcon },
+  { key: 'design', Icon: PencilLineGlassIcon },
+  { key: 'embed', Icon: ClipboardListGlassIcon },
+  { key: 'read', Icon: InboxGlassIcon },
 ] as const
 
 function HeroSvg() {
@@ -161,7 +161,7 @@ export function FormSteps() {
           className="flex items-start gap-3 rounded-lg border border-border bg-card p-3"
         >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-            <Icon className="size-4" />
+            <Icon className="size-5" />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-medium">
@@ -209,8 +209,8 @@ export function FormHero({ compact }: { compact: boolean }) {
         className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-sm font-medium"
       >
         {t('howItWorks')}
-        <CaretDownIcon
-          className={cn('size-4 transition-transform', open && 'rotate-180')}
+        <ChevronDownGlassIcon
+          className={cn('size-5 transition-transform', open && 'rotate-180')}
         />
       </button>
       {open && (

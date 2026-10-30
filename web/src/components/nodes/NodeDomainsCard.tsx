@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { InfoIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -54,11 +54,11 @@ function Capacity({ group }: { group: DomainGroup }) {
 }
 
 function RiskRow({ risk }: { risk: DomainRisk }) {
-  const Icon = risk.level === 'warn' ? WarningIcon : InfoIcon
+  const Icon = risk.level === 'warn' ? TriangleAlertGlassIcon : InfoGlassIcon
   return (
     <li className="flex items-start gap-2 text-xs">
       <Icon
-        className={`mt-0.5 size-3.5 shrink-0 ${risk.level === 'warn' ? 'text-tone-warning' : 'text-muted-foreground'}`}
+        className={`mt-0.5 size-4.5 shrink-0 ${risk.level === 'warn' ? 'text-tone-warning' : 'text-muted-foreground'}`}
       />
       <span className="text-foreground">{risk.message}</span>
     </li>
@@ -78,7 +78,7 @@ export default function NodeDomainsCard() {
   if (domains.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription className="space-y-2">
           <p>
             {t('domains.loadFailed')} {domains.error.message}
@@ -119,7 +119,7 @@ export default function NodeDomainsCard() {
       <CardContent className="space-y-4">
         {tabs.length === 0 ? (
           <Alert>
-            <InfoIcon />
+            <InfoGlassIcon className="text-tone-info" size="1.4em" />
             <AlertDescription>{t('domains.noLabels')}</AlertDescription>
           </Alert>
         ) : (

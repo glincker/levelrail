@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { GearIcon, MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import {
   filterSettingsNav,
   mergeSettingsHits,
@@ -31,7 +31,7 @@ function HubCardLink({ item }: { item: LabelledSettingsItem }) {
     <Card className="h-full rounded-[var(--glinui-radius-lg)] transition-colors hover:ring-foreground/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <item.icon className="size-4" />
+          <item.icon className="size-5" />
           {item.title}
           {item.locked ? (
             <Badge variant="muted">{t('shell.locked.badge')}</Badge>
@@ -82,14 +82,14 @@ function SettingsHubPage() {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
-        icon={<GearIcon />}
+        icon={<SettingsGlassIcon size="1.4em" />}
         titleKey="settings:nav.title"
         descriptionKey="settings:nav.description"
         size="compact"
         action={
           <div className="relative w-full sm:w-64">
-            <MagnifyingGlassIcon
-              className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            <SearchGlassIcon
+              className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
@@ -121,7 +121,7 @@ function SettingsHubPage() {
 
       {visible.length === 0 ? (
         <EmptyState
-          icon={<MagnifyingGlassIcon className="size-5" />}
+          icon={<SearchGlassIcon className="size-6" />}
           title={t('nav.noMatchTitle', { query: query.trim() })}
           description={t('nav.noMatchDescription')}
         />

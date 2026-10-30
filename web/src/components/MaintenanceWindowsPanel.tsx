@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CalendarBlankIcon,
-  PlusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CalendarGlassIcon, CirclePlusGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -320,7 +317,7 @@ export function MaintenanceWindowsPanel() {
   const { t } = useTranslation('common')
   const createLabel = (
     <>
-      <PlusCircleIcon className="size-4" aria-hidden="true" />
+      <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
       New window
     </>
   )
@@ -339,7 +336,7 @@ export function MaintenanceWindowsPanel() {
         <p className="text-sm text-destructive">{error.message}</p>
       ) : windows.length === 0 ? (
         <EmptyState
-          icon={<CalendarBlankIcon className="size-5" />}
+          icon={<CalendarGlassIcon className="size-6" />}
           title="No maintenance windows"
           description="Schedule a recurring window so planned work does not page anyone."
         />

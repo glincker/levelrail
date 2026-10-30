@@ -19,7 +19,10 @@ Recommended memory: about 128 MiB.
 
 ## Environment variables
 
-This template sets no environment variables.
+| Service | Variable | Value |
+| --- | --- | --- |
+| `mosquitto` | `MQTT_PASSWORD` | Generated at deploy |
+| `mosquitto` | `MQTT_USER` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -30,11 +33,13 @@ Level: **Standard**.
 What this template needs:
 
 - Publishes ports directly on the host (`mosquitto`): 1883:1883.
+- Passwords and keys are generated at deploy time (`mosquitto`): MQTT_PASSWORD, MQTT_USER.
 - Stores data in named volumes (`mosquitto`): mosquitto_data.
 
 What Levelrail adds around it:
 
 - Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
 - Named volumes can be backed up and restored.
 - Deploys are gated on the health check before traffic switches.
 - One-step rollback to the previous revision.

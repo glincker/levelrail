@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
-import { LinkSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LinkGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -25,7 +25,7 @@ export function DeployLinkNotice({ prefill }: { prefill: DeployLinkPrefill }) {
     <div className="space-y-3">
       <Banner
         variant="info"
-        icon={<LinkSimpleIcon />}
+        icon={<LinkGlassIcon size="1.4em" />}
         title={t('deployLink.title')}
       >
         {prefill.sourceHost

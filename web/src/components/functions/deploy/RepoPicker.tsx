@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, LockGlassIcon } from '@thesvg/ui-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -75,11 +75,13 @@ export function RepoPicker({
                 <span className="flex shrink-0 items-center gap-1.5">
                   {repo.private ? (
                     <Badge variant="outline">
-                      <LockSimpleIcon aria-hidden="true" />
+                      <LockGlassIcon size="1.4em" aria-hidden="true" />
                       {t('deploy.source.private')}
                     </Badge>
                   ) : null}
-                  {selected ? <CheckIcon aria-hidden="true" /> : null}
+                  {selected ? (
+                    <CheckGlassIcon size="1.4em" aria-hidden="true" />
+                  ) : null}
                 </span>
               </button>
             </li>

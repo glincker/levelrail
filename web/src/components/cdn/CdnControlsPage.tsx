@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -97,7 +97,7 @@ export function CdnControlsPage({ kind }: Readonly<{ kind: Kind }>) {
       ) : null}
       {data && rows.length === 0 ? (
         <EmptyState
-          icon={<GlobeIcon className="size-5" />}
+          icon={<GlobeGlassIcon className="size-6" />}
           title={t('controls.emptyTitle')}
           description={t('controls.emptyBody')}
           action={

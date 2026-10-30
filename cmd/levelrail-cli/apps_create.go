@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -74,6 +75,8 @@ type createPlan struct {
 	DeploySpec *deploySpecCreatePlan
 	// Volumes are sent with a follow-up PUT after create, since POST /apps never accepts them.
 	Volumes []spec.Volume
+	// Rollout is the spec's rollout: block, saved with a follow-up PUT since POST /apps never accepts it.
+	Rollout *spec.Rollout
 }
 
 // deploySpecCreatePlan is a single-service POST /apps/{name}/deploy-spec request, used for static sites.
@@ -301,6 +304,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			Build:     buildInput,
 		},
 		Volumes: svc.Volumes,
+		Rollout: svc.Rollout,
 	}, nil
 }
 
@@ -365,6 +369,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			PublishedPorts: toPublishedPorts(svc.PublishedPorts),
 		},
 		Volumes: svc.Volumes,
+		Rollout: svc.Rollout,
 	}, nil
 }
 
@@ -761,6 +766,12 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if len(plan.Volumes) > 0 {
 		if volErr := attachPlanVolumes(ctx, client, created.Name, plan.Volumes, stderr, f.jsonOut); volErr != nil {
 			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but attaching its volumes failed: %w", created.Name, volErr))
+		}
+	}
+
+	if r := plan.Rollout; r != nil {
+		if rolloutErr := client.PutRollout(ctx, created.Name, apiclient.PutRolloutRequest{MaxSurge: r.MaxSurge, MaxUnavailable: r.MaxUnavailable, MinAvailable: r.MinAvailable}); rolloutErr != nil {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but saving its rollout policy failed: %w", created.Name, rolloutErr))
 		}
 	}
 

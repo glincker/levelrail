@@ -3,12 +3,12 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/rollbackref"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -28,32 +28,8 @@ func (rt *Router) rollbackPin(ctx context.Context, target store.DeployAttempt) *
 // rollbackImageRef returns the image reference that redeploys exactly the
 // content target recorded, or an HTTP status and message when it cannot.
 func (rt *Router) rollbackImageRef(ctx context.Context, target store.DeployAttempt, pin *store.RollbackPin) (ref string, status int, msg string) {
-	if target.Status != store.DeployAttemptStatusSucceeded || target.Image == "" {
-		return "", http.StatusConflict, "only a succeeded deploy can be rolled back to"
-	}
-	if ref, safe := deploy.RollbackRef(target, pin); safe {
-		return ref, 0, ""
-	}
-	digest := target.ImageDigest
-	if digest == "" {
-		return "", http.StatusConflict, "this deploy has no recorded image digest; roll back by image tag with POST /api/v1/apps/{name}/deploys instead"
-	}
-	inspector, ok := rt.imageResolver.(docker.ImageInspector)
-	if !ok {
-		return "", http.StatusNotImplemented, "cannot verify the local image on this control plane"
-	}
-	id, err := inspector.InspectImageID(ctx, target.Image)
-	if err != nil {
-		rt.logger.Error("api: rollback: inspect image failed", slog.String("error", err.Error()), slog.String("image", target.Image))
-		return "", http.StatusBadGateway, "could not inspect the image on the node"
-	}
-	if id == "" {
-		return "", http.StatusGone, fmt.Sprintf("image %s was garbage collected and can no longer be rolled back to; redeploy from source instead", target.Image)
-	}
-	if id != digest {
-		return "", http.StatusConflict, fmt.Sprintf("tag %s now points at different content than this deploy recorded; redeploy from source instead", target.Image)
-	}
-	return target.Image, 0, ""
+	inspector, _ := rt.imageResolver.(docker.ImageInspector)
+	return rollbackref.Resolve(ctx, inspector, rt.logger, target, pin)
 }
 
 // handleRollbackToDeploy handles POST /api/v1/apps/{name}/deploys/{deployId}/rollback:
@@ -96,6 +72,7 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	req.Image = ref
+	req.releaseID = rt.rollbackReleaseID(r.Context(), *target)
 	restored := *existing
 	if r.URL.Query().Get("config") != "false" {
 		restored = deploy.RestoreSnapshot(*existing, target.Snapshot)

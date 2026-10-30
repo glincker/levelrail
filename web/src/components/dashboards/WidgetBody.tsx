@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricChartCard } from '@/components/MetricChartCard'
-import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { isDashboardMetric, isHttpUrl } from '@/lib/dashboardGrid'
 import { chartPalette } from '@/lib/chartPalette'
 import { formatMoney } from '@/lib/usageFormat'
@@ -24,6 +24,12 @@ import { useNodeMetricSeries } from '@/queries/nodeMetrics'
 import { useNodeCapacityForecast, useNodeListOptional } from '@/queries/nodes'
 import { useResourceList } from '@/queries/resources'
 import { useUsageReport } from '@/queries/usage'
+import { AttentionWidget } from './widgets/AttentionWidget'
+import { DeployActivityWidget } from './widgets/DeployActivityWidget'
+import { FleetCapacityWidget } from './widgets/FleetCapacityWidget'
+import { FleetHealthWidget } from './widgets/FleetHealthWidget'
+import { FleetTrafficWidget } from './widgets/FleetTrafficWidget'
+import { TopAppsWidget } from './widgets/TopAppsWidget'
 import type { DashboardWidget } from '@/types/dashboards'
 import type { MetricName } from '@/types/metrics'
 import type { NodeMetricName } from '@/types/nodeMetrics'
@@ -321,7 +327,7 @@ function LinkWidget({ w }: { w: DashboardWidget }) {
           {new URL(url).host}
         </span>
       </span>
-      <ArrowSquareOutIcon aria-hidden="true" className="size-4 shrink-0" />
+      <ExternalLinkGlassIcon aria-hidden="true" className="size-5 shrink-0" />
     </a>
   )
 }
@@ -356,5 +362,17 @@ export function WidgetBody({
       return <CapacityWidget node={target} />
     case 'link':
       return <LinkWidget w={w} />
+    case 'fleet_health':
+      return <FleetHealthWidget />
+    case 'fleet_traffic':
+      return <FleetTrafficWidget />
+    case 'top_apps':
+      return <TopAppsWidget />
+    case 'deploy_activity':
+      return <DeployActivityWidget />
+    case 'fleet_capacity':
+      return <FleetCapacityWidget />
+    case 'attention':
+      return <AttentionWidget />
   }
 }

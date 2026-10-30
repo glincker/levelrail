@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, XCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, CircleXGlassIcon } from '@thesvg/ui-react'
 import { StatusPill, type Tone } from '@/components/kit'
 import { Button } from '../ui/button'
 import { doctorQueryOptions, type DoctorCheck } from '../../queries/releases'
@@ -46,9 +46,9 @@ export function PostUpgradeVerify() {
             }
           >
             {data.ok ? (
-              <CheckCircleIcon className="size-4" />
+              <CircleCheckGlassIcon className="size-5 text-tone-success" />
             ) : (
-              <XCircleIcon className="size-4" />
+              <CircleXGlassIcon className="size-5 text-tone-danger" />
             )}
             {data.ok
               ? warned.length > 0

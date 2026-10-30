@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { DesktopIcon, SignOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { LogOutGlassIcon, MonitorGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -68,7 +68,7 @@ export function AccountSessionsCard() {
             {data.sessions.length === 0 ? (
               <EmptyState
                 compact
-                icon={<DesktopIcon className="size-5" />}
+                icon={<MonitorGlassIcon className="size-6" />}
                 title={t('accountPage.sessions.empty')}
                 description={t('accountPage.sessions.emptyBody')}
               />
@@ -108,7 +108,7 @@ export function AccountSessionsCard() {
                   disabled={revokeOthers.isPending || data.sessions.length < 2}
                   onClick={open}
                 >
-                  <SignOutIcon aria-hidden="true" />
+                  <LogOutGlassIcon size="1.4em" aria-hidden="true" />
                   {t('accountPage.sessions.revokeOthers')}
                 </Button>
               )}

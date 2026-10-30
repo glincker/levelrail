@@ -1,7 +1,4 @@
-import {
-  ArrowsClockwiseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -50,7 +47,10 @@ export function GitSourceReliability({
       {source.connection &&
       !['ok', 'rate_limited'].includes(source.connection.state) ? (
         <Alert variant="destructive">
-          <WarningIcon className="size-4" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="size-6 text-tone-warning"
+            aria-hidden="true"
+          />
           <AlertDescription className="space-y-2">
             <p>
               {t(`reliability.connection.${source.connection.state}`, {
@@ -79,7 +79,10 @@ export function GitSourceReliability({
       ) : null}
       {source.webhook_url_warning ? (
         <Alert variant="destructive">
-          <WarningIcon className="size-4" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="size-6 text-tone-warning"
+            aria-hidden="true"
+          />
           <AlertDescription className="space-y-2">
             <p>{t(`reliability.urlWarning.${source.webhook_url_warning}`)}</p>
             {urlFix && isRoot ? (
@@ -92,7 +95,10 @@ export function GitSourceReliability({
       ) : null}
       {reg?.state === 'failed' ? (
         <Alert variant="destructive">
-          <WarningIcon className="size-4" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="size-6 text-tone-warning"
+            aria-hidden="true"
+          />
           <AlertDescription className="space-y-2">
             <p>
               {t('reliability.registration.failed', { error: reg.error ?? '' })}
@@ -121,7 +127,7 @@ export function GitSourceReliability({
                 })
               }}
             >
-              <ArrowsClockwiseIcon className="size-4" aria-hidden="true" />
+              <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
               {register.isPending
                 ? t('reliability.registration.registering')
                 : t('reliability.registration.registerAgain')}

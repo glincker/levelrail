@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import {
-  GithubLogoIcon,
-  GitlabLogoIcon,
-  GitBranchIcon,
-  LinkIcon,
-  TeaBagIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CoffeeGlassIcon,
+  GitBranchGlassIcon,
+  LinkGlassIcon,
+  SocialGithubGlassIcon,
+  SocialGitlabGlassIcon,
+} from '@thesvg/ui-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGitProviders } from '../queries/gitProviders'
 import { useGitSourceSummariesOptional } from '../queries/gitSources'
@@ -105,31 +105,31 @@ export function GitRepoSourcePicker({
     {
       key: 'github',
       label: 'GitHub',
-      icon: <GithubLogoIcon className="size-4" aria-hidden="true" />,
+      icon: <SocialGithubGlassIcon className="size-5" aria-hidden="true" />,
       connected: github.connected,
     },
     {
       key: 'gitlab',
       label: 'GitLab',
-      icon: <GitlabLogoIcon className="size-4" aria-hidden="true" />,
+      icon: <SocialGitlabGlassIcon className="size-5" aria-hidden="true" />,
       connected: gitlab.connected,
     },
     {
       key: 'bitbucket',
       label: 'Bitbucket',
-      icon: <GitBranchIcon className="size-4" aria-hidden="true" />,
+      icon: <GitBranchGlassIcon className="size-5" aria-hidden="true" />,
       connected: bitbucket.connected,
     },
     {
       key: 'gitea',
       label: 'Gitea',
-      icon: <TeaBagIcon className="size-4" aria-hidden="true" />,
+      icon: <CoffeeGlassIcon className="size-5" aria-hidden="true" />,
       connected: gitea.connected,
     },
     {
       key: 'manual',
       label: 'URL',
-      icon: <LinkIcon className="size-4" aria-hidden="true" />,
+      icon: <LinkGlassIcon className="size-5" aria-hidden="true" />,
       connected: true,
     },
   ]

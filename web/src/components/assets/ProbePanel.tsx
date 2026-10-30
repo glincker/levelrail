@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { CodeBlock } from '@/components/ui/code-block'
 import { useProbeAssetBucket } from '../../queries/assets'
@@ -49,14 +49,14 @@ export function ProbePanel({ bucketId }: Readonly<{ bucketId: string }>) {
         <div className="space-y-2 text-sm" aria-live="polite">
           <p className="flex items-center gap-1.5">
             {result.ok ? (
-              <CheckCircleIcon
+              <CircleCheckGlassIcon
                 aria-hidden="true"
-                className="size-4 text-tone-success"
+                className="size-5 text-tone-success"
               />
             ) : (
-              <XCircleIcon
+              <CircleXGlassIcon
                 aria-hidden="true"
-                className="size-4 text-destructive"
+                className="size-5 text-destructive"
               />
             )}
             {result.ok ? t('probe.ok') : (result.message ?? t('probe.failed'))}
@@ -79,9 +79,9 @@ export function ProbePanel({ bucketId }: Readonly<{ bucketId: string }>) {
               key={w.code}
               className="flex items-start gap-2 rounded-md border border-tone-warning-border bg-tone-warning-soft p-2 text-xs"
             >
-              <WarningIcon
+              <TriangleAlertGlassIcon
                 aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-tone-warning"
+                className="mt-0.5 size-6 shrink-0 text-tone-warning"
               />
               <p className="min-w-0 flex-1">{w.message}</p>
               {w.fix === 'fix_cors' ? (

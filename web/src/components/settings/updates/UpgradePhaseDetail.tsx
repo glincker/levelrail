@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  MinusCircleIcon,
-  SpinnerGapIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { SelfUpgradeLogLine } from '../../../queries/selfUpgrade'
 import type { PhaseView, StepView } from '../../../lib/upgradePhases'
@@ -22,24 +22,44 @@ function StepIcon({
   const cls = 'size-4 shrink-0'
   if (state === 'running') {
     return (
-      <SpinnerGapIcon
+      <LoaderCircleGlassIcon
+        size="1.4em"
         className={cn(cls, 'text-primary', motion && 'animate-spin')}
         aria-hidden
       />
     )
   }
   if (state === 'ok')
-    return <CheckCircleIcon className={cn(cls, 'text-success')} aria-hidden />
+    return (
+      <CircleCheckGlassIcon
+        size="1.4em"
+        className={cn(cls, 'text-success')}
+        aria-hidden
+      />
+    )
   if (state === 'failed')
-    return <XCircleIcon className={cn(cls, 'text-destructive')} aria-hidden />
+    return (
+      <CircleXGlassIcon
+        size="1.4em"
+        className={cn(cls, 'text-destructive')}
+        aria-hidden
+      />
+    )
   if (state === 'skipped')
     return (
-      <MinusCircleIcon
+      <CircleMinusGlassIcon
+        size="1.4em"
         className={cn(cls, 'text-muted-foreground')}
         aria-hidden
       />
     )
-  return <CircleIcon className={cn(cls, 'text-muted-foreground')} aria-hidden />
+  return (
+    <CircleGlassIcon
+      size="1.4em"
+      className={cn(cls, 'text-muted-foreground')}
+      aria-hidden
+    />
+  )
 }
 
 interface Props {

@@ -1,11 +1,7 @@
 import { useContext, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  FloppyDiskIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, SaveGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -251,7 +247,7 @@ export function EmailBrandingCard() {
                         })
                       }
                     >
-                      <TrashIcon className="size-3.5" aria-hidden="true" />
+                      <TrashGlassIcon className="size-5" aria-hidden="true" />
                     </Button>
                   </div>
                 ))}
@@ -272,7 +268,7 @@ export function EmailBrandingCard() {
                     })
                   }
                 >
-                  <PlusIcon className="size-3.5" aria-hidden="true" />
+                  <PlusGlassIcon className="size-5" aria-hidden="true" />
                   {t('emailBranding.addLink')}
                 </Button>
               </div>
@@ -306,7 +302,7 @@ export function EmailBrandingCard() {
                 })
               }
             >
-              <FloppyDiskIcon className="size-3.5" aria-hidden="true" />
+              <SaveGlassIcon className="size-5" aria-hidden="true" />
               {save.isPending
                 ? t('emailBranding.saving')
                 : t('emailBranding.save')}

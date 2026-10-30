@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
-import { ClockIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { ClockGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -173,7 +173,7 @@ export function BackupScheduleFormView({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <ClockIcon className="size-4" aria-hidden="true" />
+            <ClockGlassIcon className="size-5" aria-hidden="true" />
             Scheduled backups
           </h3>
           <p className="text-sm text-muted-foreground">{summary}</p>
@@ -186,7 +186,7 @@ export function BackupScheduleFormView({
             onClick={onClear}
             disabled={clearPending}
           >
-            <TrashIcon className="size-3.5" aria-hidden="true" />
+            <TrashGlassIcon className="size-5" aria-hidden="true" />
             {clearPending ? 'Removing...' : 'Remove schedule'}
           </Button>
         ) : null}

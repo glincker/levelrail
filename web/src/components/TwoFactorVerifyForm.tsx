@@ -5,10 +5,10 @@ import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeftIcon,
-  ClockIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  ClockGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { RateLimitError, useVerifyTwoFactor } from '../queries/auth'
 import { loginOptionsQueryOptions } from '../queries/signIn'
 import { Button } from './ui/button'
@@ -129,14 +129,14 @@ export function TwoFactorVerifyForm({
 
       {isRateLimited ? (
         <Alert variant="destructive">
-          <ClockIcon />
+          <ClockGlassIcon size="1.4em" />
           <AlertDescription>
             {t('twoFactor.rateLimited', { seconds: secondsRemaining })}
           </AlertDescription>
         </Alert>
       ) : verify.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{verify.error.message}</AlertDescription>
         </Alert>
       ) : null}
@@ -155,7 +155,7 @@ export function TwoFactorVerifyForm({
           onClick={onBack}
           className="flex items-center gap-1 rounded py-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <ArrowLeftIcon className="size-3" />
+          <ArrowLeftGlassIcon className="size-4.5" />
           {t('twoFactor.back')}
         </button>
         <button

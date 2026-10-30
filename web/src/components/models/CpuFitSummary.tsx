@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { StatusPill } from '@/components/kit'
 import { Button } from '@/components/ui/button'
@@ -46,8 +46,8 @@ export function CpuFitSummary({
       ) : null}
       {fit.warnings.map((w) => (
         <p key={w} className="flex gap-1.5 text-xs text-tone-warning">
-          <WarningIcon
-            className="mt-0.5 size-3.5 shrink-0"
+          <TriangleAlertGlassIcon
+            className="mt-0.5 size-6 shrink-0 text-tone-warning"
             aria-hidden="true"
           />
           {w}

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ClockIcon, WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, ClockGlassIcon } from '@thesvg/ui-react'
 import type { TimelineEvent } from '../../queries/goLiveChecklist'
 
 export function Timeline({ events }: { events: TimelineEvent[] }) {
@@ -14,13 +14,13 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
           {events.map((e) => (
             <li key={e.id} className="flex items-start gap-2 text-sm">
               {e.failed ? (
-                <WarningCircleIcon
-                  className="mt-0.5 size-4 shrink-0 text-tone-danger"
+                <CircleAlertGlassIcon
+                  className="mt-0.5 size-5 shrink-0 text-tone-danger"
                   aria-hidden="true"
                 />
               ) : (
-                <ClockIcon
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                <ClockGlassIcon
+                  className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                   aria-hidden="true"
                 />
               )}

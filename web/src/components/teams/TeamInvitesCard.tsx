@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -184,7 +184,7 @@ export function TeamInvitesCard({
                   )
               }}
             >
-              <CopyIcon aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
               {t('invites.copy')}
             </Button>
           </div>

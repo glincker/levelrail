@@ -28,6 +28,7 @@ Recommended memory: about 256 MiB.
 | `wakapi` | `WAKAPI_DB_HOST` | Preset in the template |
 | `wakapi` | `WAKAPI_DB_NAME` | Preset in the template |
 | `wakapi` | `WAKAPI_DB_PASSWORD` | Generated at deploy |
+| `wakapi` | `WAKAPI_DB_PORT` | Preset in the template |
 | `wakapi` | `WAKAPI_DB_TYPE` | Preset in the template |
 | `wakapi` | `WAKAPI_DB_USER` | Generated at deploy |
 | `wakapi` | `WAKAPI_SECURITY_PASSWORD_SALT` | Generated at deploy |
@@ -42,7 +43,6 @@ What this template needs:
 
 - Publishes ports directly on the host (`wakapi`): 3000:3000.
 - Passwords and keys are generated at deploy time (`db`, `wakapi`): POSTGRES_PASSWORD, POSTGRES_USER, WAKAPI_DB_PASSWORD, WAKAPI_DB_USER, WAKAPI_SECURITY_PASSWORD_SALT.
-- No health check, so a deploy is judged by the process starting (`db`).
 - Stores data in named volumes (`db`, `wakapi`): wakapi_data, wakapi_db_data.
 
 What Levelrail adds around it:

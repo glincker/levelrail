@@ -4,12 +4,13 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-359 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+369 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
 - [AnythingLLM](/self-host/anythingllm): A private chat workspace over your documents, with built-in RAG and support for local or hosted models.
 - [ComfyUI](/self-host/comfyui): A node-graph editor for building and running Stable Diffusion and other image generation pipelines.
+- [Crawl4AI](/self-host/crawl4ai): An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header.
 - [Flowise](/self-host/flowise): Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow.
 - [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres): Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows.
 - [Jupyter GPU Notebook](/self-host/jupyter-gpu): JupyterLab with a CUDA-ready data science stack for training and experimenting with models.
@@ -32,6 +33,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Ollama: Mistral 7B](/self-host/ollama-mistral): Mistral's 7B instruct model, served locally through Ollama's HTTP API.
 - [Ollama: Phi-3 Mini](/self-host/ollama-phi): Microsoft's Phi-3 Mini (3.8B), the smallest model in this catalog, good for constrained nodes.
 - [Ollama: Qwen 2.5 7B](/self-host/ollama-qwen): Alibaba's Qwen 2.5 7B model, served locally through Ollama's HTTP API.
+- [Open Notebook](/self-host/open-notebook): An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
 - [Open WebUI](/self-host/open-webui): A self-hosted chat interface for running local large language models through Ollama.
 - [OpenClaw](/self-host/openclaw): A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose.
 - [Speaches](/self-host/speaches): An OpenAI-compatible speech server: Whisper transcription and text-to-speech behind one API.
@@ -85,6 +87,10 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Temporal](/self-host/temporal): Durable workflow execution: write long-running business logic as code and let Temporal survive failures.
 - [Windmill](/self-host/windmill): Turn scripts in Python, TypeScript, Go, and SQL into webhooks, workflows, and internal UIs.
 
+## Backups
+
+- [Backrest](/self-host/backrest): A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly.
+
 ## Communication
 
 - [Apache Answer](/self-host/answer): A Q&A platform for building a community knowledge base, in the style of a self-hosted Stack Overflow.
@@ -122,14 +128,14 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Adminer](/self-host/adminer): A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more.
 - [Baserow](/self-host/baserow): A no-code database and spreadsheet hybrid you can build internal tools and apps on top of.
 - [Bytebase](/self-host/bytebase): A database schema change and migration tool with review workflows built in.
-- [Chroma](/self-host/chroma): A developer-friendly embedding database for AI applications, served over a simple HTTP API.
+- [Chroma](/self-host/chroma): A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host.
 - [ClickHouse](/self-host/clickhouse): A columnar database built for fast analytical queries over large datasets.
 - [CloudBeaver](/self-host/cloudbeaver): A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more.
 - [CouchDB](/self-host/couchdb): A document database with an HTTP API, built-in replication and the Fauxton admin console.
-- [Elasticsearch + Kibana](/self-host/elasticsearch-kibana): Elasticsearch paired with Kibana for log and document search with a visual dashboard.
+- [Elasticsearch + Kibana](/self-host/elasticsearch-kibana): Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host.
 - [InfluxDB](/self-host/influxdb): An open-source time-series database for metrics, events, and IoT analytics.
 - [Memcached](/self-host/memcached): A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached.
-- [Milvus](/self-host/milvus): A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node.
+- [Milvus](/self-host/milvus): A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host.
 - [Mongo Express](/self-host/mongo-express): A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth.
 - [Neo4j](/self-host/neo4j): A graph database with the Cypher query language, Community Edition, including the browser console.
 - [NocoDB](/self-host/nocodb): Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.
@@ -220,14 +226,16 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [AdGuard Home](/self-host/adguard-home): Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard.
 - [Cloudflare DDNS](/self-host/cloudflare-ddns): Keeps Cloudflare DNS records pointed at your current public IP address.
 - [Consul](/self-host/consul): HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.
-- [Elasticsearch](/self-host/elasticsearch): A distributed, RESTful search and analytics engine for full-text search and log analytics.
+- [Elasticsearch](/self-host/elasticsearch): A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.
 - [etcd](/self-host/etcd): A distributed key-value store for configuration and coordination, running as a single member.
+- [Headscale](/self-host/headscale): Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create).
 - [NATS](/self-host/nats): A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.
 - [NetBox](/self-host/netbox): Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling.
 - [Nginx Proxy Manager](/self-host/nginx-proxy-manager): A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.
 - [Pi-hole](/self-host/pi-hole): Network-wide ad blocking that works as a DNS sinkhole for your whole network.
 - [Portainer](/self-host/portainer): A web UI for managing containers, images, volumes, and networks.
 - [RabbitMQ](/self-host/rabbitmq): A widely used open-source message broker supporting AMQP, MQTT, and STOMP.
+- [RustDesk Server](/self-host/rustdesk-server): Self-hosted RustDesk ID and relay servers (AGPL-3.0).
 - [Snipe-IT](/self-host/snipe-it): IT asset management for tracking hardware, licenses, and accessories, and who currently has what.
 - [Technitium DNS Server](/self-host/technitium-dns): A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console.
 
@@ -276,6 +284,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Changedetection.io](/self-host/changedetection): Monitor any webpage for changes and get notified the moment content updates.
 - [Checkmate](/self-host/checkmate): An open-source uptime and server monitoring app with incident history and status pages.
 - [Diun](/self-host/diun): Watches your running containers and notifies you the moment a new image tag is published.
+- [Gatus](/self-host/gatus): Developer-oriented status page and health dashboard. Ships with an example endpoint; edit the config file under the app's Files to monitor your own services.
 - [Glances](/self-host/glances): A cross-platform system monitor showing CPU, memory, disk, and network at a glance.
 - [GlitchTip](/self-host/glitchtip): A lightweight, self-hosted error tracking service compatible with the Sentry SDK.
 - [Grafana](/self-host/grafana): Dashboards and exploration for metrics, logs, and traces from any data source.
@@ -292,13 +301,14 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Tautulli](/self-host/tautulli): Monitors your Plex server and shows who watched what, with history, stats, and notifications.
 - [Uptime Kuma](/self-host/uptime-kuma): A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks.
 - [Uptime Kuma (MariaDB)](/self-host/uptime-kuma-mariadb): Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file.
-- [VictoriaMetrics](/self-host/victoriametrics): A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs.
+- [VictoriaMetrics](/self-host/victoriametrics): A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.
 - [Zabbix](/self-host/zabbix): Enterprise-grade network, server, and application monitoring with alerting and trend graphs.
 
 ## Productivity
 
 - [AFFiNE](/self-host/affine): A block-based workspace combining docs, whiteboards, and databases in one self-hosted app.
 - [AppFlowy](/self-host/appflowy): A self-hosted, open-source workspace for notes and collaborative knowledge, an alternative to Notion.
+- [ArchiveBox](/self-host/archivebox): A self-hosted web archiver that saves pages as HTML, PDF, screenshots, WARC and media so links never rot. Creates the admin account on first start.
 - [Baby Buddy](/self-host/babybuddy): Track sleep, feeding, diaper changes, and growth for a baby or toddler, with charts and timers.
 - [BentoPDF](/self-host/bentopdf): A privacy-first PDF toolkit that merges, splits, converts and edits files entirely in the browser, with no uploads.
 - [BookStack](/self-host/bookstack): A simple, self-hosted platform for organizing documentation into books, chapters, and pages.
@@ -347,9 +357,11 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Penpot](/self-host/penpot): An open-source design and prototyping platform, a self-hosted alternative to Figma.
 - [Plane](/self-host/plane): An open-source project management tool for tracking issues and cycles, an alternative to Linear and Jira.
 - [Planka](/self-host/planka): A Trello-style kanban board for visualizing and tracking work across a team.
+- [Radicale](/self-host/radicale): Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file.
 - [Rallly](/self-host/rallly): Find a time that works for everyone with polls for scheduling meetings and events.
 - [Readeck](/self-host/readeck): Save the readable content of web pages you want to keep, free of ads and clutter.
 - [Redmine](/self-host/redmine): A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres.
+- [RSSHub](/self-host/rsshub): Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access.
 - [Ryot](/self-host/ryot): A self-hosted tracker for media, fitness, and other parts of life.
 - [Shiori](/self-host/shiori): A simple bookmark manager with offline archiving, built as a single Go binary.
 - [SilverBullet](/self-host/silverbullet): A programmable, Markdown-based notes app you can extend with your own scripts and queries.
@@ -372,6 +384,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 ## Security
 
 - [2FAuth](/self-host/2fauth): A web app to manage your two-factor authentication accounts and generate one-time codes.
+- [Authelia](/self-host/authelia): Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt.
 - [authentik](/self-host/authentik): An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth.
 - [Cap](/self-host/cap-captcha): A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha.
 - [Cryptgeon](/self-host/cryptgeon): A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption.

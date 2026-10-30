@@ -1,0 +1,63 @@
+{
+  "banner": {
+    "label": "Demo de solo lectura con datos de ejemplo",
+    "resets": "Se restablece {{time}}",
+    "install": "Instalar",
+    "copyInstall": "Copiar el comando de instalación",
+    "copied": "Copiado",
+    "github": "GitHub",
+    "docs": "Docs",
+    "tour": "Hacer el recorrido"
+  },
+  "readOnly": {
+    "tooltip": "Solo lectura en la demo. Instala {{brand}} para probarlo de verdad.",
+    "toastTitle": "Demo de solo lectura",
+    "toastBody": "Esta acción no está disponible en la demo. Instala {{brand}} para probarla de verdad."
+  },
+  "login": {
+    "title": "Explora la demo",
+    "description": "Inicia sesión como visitante de solo lectura para explorar una instancia con datos de ejemplo. Nada de lo que hagas se guarda.",
+    "button": "Explorar la demo",
+    "pending": "Iniciando la demo",
+    "humanCheckFailed": "Falló la verificación humana. Recarga la página e inténtalo de nuevo.",
+    "rateLimited": "Hay demasiadas sesiones de demo desde tu red. Espera un minuto e inténtalo de nuevo.",
+    "failed": "No se pudo iniciar la demo. Inténtalo de nuevo en un momento.",
+    "credentials": "O inicia sesión con {{username}} y {{password}}."
+  },
+  "unavailable": {
+    "title": "No disponible en la demo",
+    "terminal": "La terminal y la ejecución de comandos corren comandos en un host real, por eso están desactivadas en la demo.",
+    "database": "El explorador de bases de datos y la consola SQL se conectan a una base de datos real, por eso están desactivados en la demo.",
+    "generic": "Esta función necesita un host real, por eso está desactivada en la demo.",
+    "installHint": "Instala {{brand}} en tu propio servidor para usarla.",
+    "install": "Ver cómo instalar"
+  },
+  "empty": {
+    "title": "Aquí no hay nada en la demo",
+    "description": "Esta zona está vacía a propósito en los datos de la demo. En una instancia real se va llenando a medida que usas {{brand}}."
+  },
+  "tour": {
+    "step": "Paso {{current}} de {{total}}",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "done": "Listo",
+    "skip": "Omitir el recorrido",
+    "open": "Abrir esta página",
+    "apps": {
+      "title": "Tus aplicaciones",
+      "body": "Todas las aplicaciones, su estado y su último despliegue en una sola lista. Abre una para ver sus registros, dominios y ajustes."
+    },
+    "deploys": {
+      "title": "Historial de despliegues y rollback",
+      "body": "Cada despliegue queda registrado con su origen y resultado. Puedes volver a cualquier versión anterior con un clic."
+    },
+    "metrics": {
+      "title": "Métricas con marcadores de despliegue",
+      "body": "Abre una aplicación y elige Métricas. Los despliegues se dibujan en las gráficas, así ves qué versión cambió los números."
+    },
+    "nodes": {
+      "title": "Nodos",
+      "body": "Mira todos los servidores de tu flota, su capacidad y lo que corre en cada uno."
+    }
+  }
+}

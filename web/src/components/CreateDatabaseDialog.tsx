@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearch } from '@tanstack/react-router'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { PageSpinner } from '@/components/ui/page-spinner'
@@ -20,7 +20,7 @@ export function CreateDatabaseDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button type="button" />}>
-        <PlusIcon aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {t('list.new')}
       </DialogTrigger>
       <DialogContent className="flex max-h-[90dvh] min-w-0 flex-col overflow-hidden sm:max-h-[90dvh] sm:max-w-2xl">

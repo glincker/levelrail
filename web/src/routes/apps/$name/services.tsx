@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { StackIcon, RocketIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon, RocketGlassIcon } from '@thesvg/ui-react'
 import { appGroupQueryOptions, useAppGroup } from '../../../queries/appGroup'
 import { AppServicesPanel } from '../../../components/AppServicesPanel'
 import { ComposeStackPanel } from '../../../components/ComposeStackPanel'
@@ -37,7 +37,7 @@ function ServicesSectionSkeleton() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <StackIcon className="size-4" />
+            <LayersGlassIcon className="size-5" />
             Services
           </CardTitle>
           <Skeleton className="h-4 w-64" />
@@ -51,7 +51,7 @@ function ServicesSectionSkeleton() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <RocketIcon className="size-4" />
+            <RocketGlassIcon className="size-5" />
             Deploy multiple services
           </CardTitle>
           <Skeleton className="h-4 w-72" />

@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -77,7 +74,11 @@ export function ResilienceReportCard() {
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
-              <ShieldCheckIcon aria-hidden="true" />
+              <ShieldCheckGlassIcon
+                className="text-tone-success"
+                size="1.4em"
+                aria-hidden="true"
+              />
               {t('title')}
             </CardTitle>
             <CardDescription>{t('description')}</CardDescription>
@@ -88,7 +89,7 @@ export function ResilienceReportCard() {
             onClick={() => void refetch()}
             disabled={isFetching}
           >
-            <ArrowsClockwiseIcon aria-hidden="true" />
+            <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
             {t('retry')}
           </Button>
         </div>

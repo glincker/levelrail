@@ -1,0 +1,60 @@
+---
+title: "Self-host Backrest with Docker"
+sidebarTitle: "Backrest"
+description: "A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly."
+"og:url": "https://docs.levelrail.com/self-host/backrest"
+---
+
+A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly.
+
+This page describes the Levelrail template for Backrest (Backups). It deploys the services below as one Docker Compose app on your own server. Project site: https://garethgeorge.github.io/backrest/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `backrest` | `garethgeorge/backrest:v1.14.1` | 9898 | `data -&#62; /data`<br />`config -&#62; /config`<br />`cache -&#62; /cache` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `backrest` | `BACKREST_CONFIG` | Preset in the template |
+| `backrest` | `BACKREST_DATA` | Preset in the template |
+| `backrest` | `TMPDIR` | Preset in the template |
+| `backrest` | `XDG_CACHE_HOME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`backrest`): cache, config, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Backrest with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Backrest. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy backrest --name my-backrest
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { UploadGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -101,9 +101,9 @@ export function UploadZone({ bucketId }: Readonly<{ bucketId: string }>) {
           dragging && 'border-ring bg-muted/60',
         )}
       >
-        <UploadSimpleIcon
+        <UploadGlassIcon
           aria-hidden="true"
-          className="size-5 text-muted-foreground"
+          className="size-6 text-muted-foreground"
         />
         <span className="text-muted-foreground">
           {dragging ? t('upload.dropActive') : t('upload.drop')}

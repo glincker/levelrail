@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  DatabaseIcon,
-  HardDrivesIcon,
-  RocketLaunchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  RocketGlassIcon,
+  ServerGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -75,7 +75,7 @@ function DeployButton({
         onDeployNow(template)
       }}
     >
-      <RocketLaunchIcon aria-hidden="true" />
+      <RocketGlassIcon size="1.4em" aria-hidden="true" />
       {deploying
         ? t('marketplace.card.deploying')
         : template.requires_configuration
@@ -101,13 +101,13 @@ function Chips({ template }: { template: ServiceTemplateListItem }) {
       )}
       {template.needs_database && (
         <Badge variant="muted" className="gap-1 text-xs">
-          <DatabaseIcon className="size-3" aria-hidden="true" />
+          <DatabaseGlassIcon className="size-4.5" aria-hidden="true" />
           {t('marketplace.card.database')}
         </Badge>
       )}
       {template.has_volume && (
         <Badge variant="muted" className="gap-1 text-xs">
-          <HardDrivesIcon className="size-3" aria-hidden="true" />
+          <ServerGlassIcon className="size-4.5" aria-hidden="true" />
           {t('marketplace.card.volume')}
         </Badge>
       )}
@@ -150,7 +150,7 @@ export function TemplateCard(props: TemplateCardProps & { compact?: boolean }) {
             category.toneClass,
           )}
         >
-          <CategoryIcon className="size-3.5" aria-hidden="true" />
+          <CategoryIcon className="size-4.5" aria-hidden="true" />
           {template.category}
         </span>
       </span>

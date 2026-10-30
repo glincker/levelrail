@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { MagicWandIcon } from '@phosphor-icons/react/dist/ssr'
+import { WandGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import {
@@ -80,7 +80,7 @@ export function TemplateStart({
       className="space-y-3 rounded-xl border border-border bg-muted/30 p-4"
     >
       <h3 className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <MagicWandIcon className="size-4 text-muted-foreground" />
+        <WandGlassIcon className="size-5 text-muted-foreground" />
         {t('builder.template.title')}
       </h3>
       <Field>

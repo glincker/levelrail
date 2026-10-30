@@ -1,4 +1,4 @@
-import { CopyIcon, KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, KeyGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ export function ModelKeyRevealDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <KeyIcon className="size-4" aria-hidden="true" />
+            <KeyGlassIcon className="size-5" aria-hidden="true" />
             API key for &ldquo;{modelName}&rdquo;
           </DialogTitle>
           <DialogDescription>
@@ -65,7 +65,7 @@ export function ModelKeyRevealDialog({
                 copy(apiKey, 'API key')
               }}
             >
-              <CopyIcon aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
               Copy
             </Button>
           </div>

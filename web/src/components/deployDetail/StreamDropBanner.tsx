@@ -1,8 +1,8 @@
 import {
-  ArrowClockwiseIcon,
-  DownloadSimpleIcon,
-  WifiSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DownloadGlassIcon,
+  RotateCwGlassIcon,
+  WifiOffGlassIcon,
+} from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useNowTick } from '../../hooks/useNowTick'
 import type {
@@ -38,7 +38,7 @@ export function StreamDropBanner({
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft px-3 py-2 text-sm">
-      <WifiSlashIcon className="size-4 shrink-0" aria-hidden="true" />
+      <WifiOffGlassIcon className="size-5 shrink-0" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         {/* Only the static text is live; the per-second countdown would be re-announced every tick. */}
         <div role="status">
@@ -55,7 +55,7 @@ export function StreamDropBanner({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" onClick={onRetry}>
-          <ArrowClockwiseIcon className="size-3.5" aria-hidden="true" />
+          <RotateCwGlassIcon className="size-5" aria-hidden="true" />
           {t('stream.retryNow')}
         </Button>
         <Button variant="outline" size="sm" onClick={onSwitchToPolling}>
@@ -66,7 +66,7 @@ export function StreamDropBanner({
           download
           className={buttonVariants({ variant: 'outline', size: 'sm' })}
         >
-          <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+          <DownloadGlassIcon className="size-5" aria-hidden="true" />
           {t('stream.download')}
         </a>
       </div>

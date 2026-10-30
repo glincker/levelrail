@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { TimerIcon } from '@phosphor-icons/react/dist/ssr'
+import { ClockGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
@@ -244,7 +244,7 @@ function BuildPerformancePage() {
   const { data, isPending, error } = useBuildLimits()
   return (
     <PageTemplate
-      icon={<TimerIcon />}
+      icon={<ClockGlassIcon size="1.4em" />}
       title={t('settings.title')}
       description={t('settings.description')}
     >

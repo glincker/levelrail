@@ -1,15 +1,15 @@
 import {
-  ArrowUUpLeftIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  GavelIcon,
-  ProhibitIcon,
-  PauseCircleIcon,
-  SkipForwardIcon,
-  SpinnerGapIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  CirclePauseGlassIcon,
+  CircleXGlassIcon,
+  ClockGlassIcon,
+  GavelGlassIcon,
+  LoaderCircleGlassIcon,
+  SkipForwardGlassIcon,
+  UndoGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { Tone } from '@/components/kit'
 import type { Deployment, DeploymentStatus } from '../types/deployment'
 import { formatRelative } from '@/components/kit/formatRelative'
@@ -18,7 +18,7 @@ import { formatDurationMs } from './deployDuration'
 export interface StatusView {
   label: string
   tone: Tone
-  icon: Icon
+  icon: UiIcon
   spin?: boolean
 }
 
@@ -26,25 +26,29 @@ export const STATUS_VIEW: Record<DeploymentStatus, StatusView> = {
   building: {
     label: 'Building',
     tone: 'info',
-    icon: SpinnerGapIcon,
+    icon: LoaderCircleGlassIcon,
     spin: true,
   },
-  queued: { label: 'Queued', tone: 'neutral', icon: ClockIcon },
-  ready: { label: 'Ready', tone: 'success', icon: CheckCircleIcon },
-  failed: { label: 'Failed', tone: 'danger', icon: XCircleIcon },
-  canceled: { label: 'Canceled', tone: 'neutral', icon: ProhibitIcon },
-  held: { label: 'Held', tone: 'warning', icon: PauseCircleIcon },
+  queued: { label: 'Queued', tone: 'neutral', icon: ClockGlassIcon },
+  ready: { label: 'Ready', tone: 'success', icon: CircleCheckGlassIcon },
+  failed: { label: 'Failed', tone: 'danger', icon: CircleXGlassIcon },
+  canceled: { label: 'Canceled', tone: 'neutral', icon: BanGlassIcon },
+  held: { label: 'Held', tone: 'warning', icon: CirclePauseGlassIcon },
   awaiting_approval: {
     label: 'Awaiting approval',
     tone: 'warning',
-    icon: GavelIcon,
+    icon: GavelGlassIcon,
   },
   rolled_back: {
     label: 'Rolled back',
     tone: 'neutral',
-    icon: ArrowUUpLeftIcon,
+    icon: UndoGlassIcon,
   },
-  superseded: { label: 'Superseded', tone: 'neutral', icon: SkipForwardIcon },
+  superseded: {
+    label: 'Superseded',
+    tone: 'neutral',
+    icon: SkipForwardGlassIcon,
+  },
 }
 
 export function statusView(status: string): StatusView {
@@ -52,7 +56,7 @@ export function statusView(status: string): StatusView {
     STATUS_VIEW[status as DeploymentStatus] ?? {
       label: status,
       tone: 'neutral',
-      icon: ClockIcon,
+      icon: ClockGlassIcon,
     }
   )
 }

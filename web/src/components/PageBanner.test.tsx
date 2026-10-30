@@ -16,19 +16,19 @@ function renderBanner(size: PageBannerSize) {
 }
 
 describe('PageBanner', () => {
-  it('renders the hero size with heading, action and illustration', () => {
+  it('renders the hero size with heading and action, without the retired illustration', () => {
     renderBanner('hero')
     expect(screen.getByTestId('page-banner-full')).toBeTruthy()
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'act' })).toBeTruthy()
-    expect(screen.getByTestId('art')).toBeTruthy()
+    expect(screen.queryByTestId('art')).toBeNull()
   })
 
-  it('renders the compact size as one row that keeps heading, action and art', () => {
+  it('renders the compact size as one row that keeps heading and action', () => {
     renderBanner('compact')
     expect(screen.getByTestId('page-banner-compact')).toBeTruthy()
     expect(screen.queryByTestId('page-banner-full')).toBeNull()
     expect(screen.getByRole('button', { name: 'act' })).toBeTruthy()
-    expect(screen.getByTestId('art')).toBeTruthy()
+    expect(screen.queryByTestId('art')).toBeNull()
   })
 })

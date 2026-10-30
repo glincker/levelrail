@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CloudArrowDownIcon,
-  DatabaseIcon,
-  PackageIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  DownloadGlassIcon,
+  PackageGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -51,7 +51,7 @@ function Tiles({ data }: Readonly<{ data: SystemCache }>) {
           b.hits + b.misses > 0 ? (b.hits / (b.hits + b.misses)) * 100 : 0,
         )}
         tone="success"
-        icon={<ArrowsClockwiseIcon aria-hidden="true" />}
+        icon={<RefreshCwGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.hitRateSince')}
       />
       <MetricTile
@@ -59,19 +59,19 @@ function Tiles({ data }: Readonly<{ data: SystemCache }>) {
         value={formatSize(totals.hit_bytes)}
         series={data.series.map((b) => b.hit_bytes)}
         tone="info"
-        icon={<CloudArrowDownIcon aria-hidden="true" />}
+        icon={<DownloadGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.savedSince')}
       />
       <MetricTile
         label={t('tiles.entries')}
         value={formatCount(totals.entries)}
-        icon={<PackageIcon aria-hidden="true" />}
+        icon={<PackageGlassIcon size="1.4em" aria-hidden="true" />}
       />
       <MetricTile
         label={t('tiles.memory')}
         value={`${formatSize(limits.used_bytes)} / ${formatSize(limits.max_bytes)}`}
         unit={`${(used * 100).toFixed(0)}%`}
-        icon={<DatabaseIcon aria-hidden="true" />}
+        icon={<DatabaseGlassIcon size="1.4em" aria-hidden="true" />}
         info={t('tiles.memoryInfo')}
       />
     </div>
@@ -84,7 +84,7 @@ function AppsTable({ apps }: Readonly<{ apps: SystemCacheApp[] }>) {
     return (
       <EmptyState
         compact
-        icon={<PackageIcon className="size-4" />}
+        icon={<PackageGlassIcon className="size-5" />}
         title={t('apps.emptyTitle')}
         description={t('apps.emptyBody')}
         action={

@@ -25,6 +25,9 @@ const (
 // doesn't match any row.
 var ErrBackupHistoryNotFound = errors.New("store: backup history record not found")
 
+// ErrBackupInUse is returned when a restore or clone still references the backup; the restore audit trail is kept.
+var ErrBackupInUse = errors.New("store: backup is referenced by restore history")
+
 // Backup resource kinds migrations/0075_service_volume_backups.sql's own
 // CHECK constraint accepts: which of the two things a backup_history row
 // describes. BackupResourceKindDatabase is the zero value's effective
@@ -148,7 +151,26 @@ func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, e
 // object first (internal/backup.DeleteRunner does this); this only ever
 // touches the store row.
 func (db *DB) DeleteBackupHistory(ctx context.Context, id string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM backup_history WHERE id = ?`, id)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete backup history %q: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Restores are audit history and block the delete; verification runs only describe this backup, so they go with it.
+	for _, table := range []string{"restore_history", "volume_clone_restores", "clone_restores"} {
+		var n int
+		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM `+table+` WHERE backup_history_id = ?`, id).Scan(&n); err != nil {
+			return fmt.Errorf("store: delete backup history %q: count %s: %w", id, table, err)
+		}
+		if n > 0 {
+			return fmt.Errorf("%w: %d row(s) in %s", ErrBackupInUse, n, table)
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM backup_verification WHERE backup_history_id = ?`, id); err != nil {
+		return fmt.Errorf("store: delete backup history %q: delete verifications: %w", id, err)
+	}
+	res, err := tx.ExecContext(ctx, `DELETE FROM backup_history WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("store: delete backup history %q: %w", id, err)
 	}
@@ -158,6 +180,9 @@ func (db *DB) DeleteBackupHistory(ctx context.Context, id string) error {
 	}
 	if n == 0 {
 		return ErrBackupHistoryNotFound
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: delete backup history %q: %w", id, err)
 	}
 	return nil
 }

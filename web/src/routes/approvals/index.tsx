@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useState } from 'react'
+import { digestOfImage, unpinnedImage } from '../../lib/imageDigest'
+import { PinnedDigestBadge } from '../../components/PinnedDigestBadge'
 import { useTranslation } from 'react-i18next'
-import { GavelIcon } from '@phosphor-icons/react/dist/ssr'
+import { GavelGlassIcon } from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -92,7 +94,17 @@ const COLUMNS: ResponsiveColumn<DeployApprovalResource>[] = [
     id: 'image',
     header: 'Image',
     priority: 2,
-    cell: (a) => <span className="font-mono text-xs break-all">{a.image}</span>,
+    cell: (a) => (
+      <span className="font-mono text-xs break-all">
+        {unpinnedImage(a.image)}
+        {digestOfImage(a.image) ? (
+          <PinnedDigestBadge
+            digest={digestOfImage(a.image)}
+            className="ml-1.5"
+          />
+        ) : null}
+      </span>
+    ),
   },
   {
     id: 'status',
@@ -175,7 +187,7 @@ function DeployApprovalsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <GavelIcon className="size-4" aria-hidden="true" />
+            <GavelGlassIcon className="size-5" aria-hidden="true" />
           </div>
           <PageHeader
             title="Deploy approvals"
@@ -199,13 +211,13 @@ function DeployApprovalsPage() {
       {approvals.length === 0 ? (
         status === 'pending' ? (
           <EmptyState
-            icon={<GavelIcon className="size-5" />}
+            icon={<GavelGlassIcon className="size-6" />}
             title="Nothing pending"
             description="No deploy or promote is waiting on approval right now."
           />
         ) : (
           <EmptyState
-            icon={<GavelIcon className="size-5" />}
+            icon={<GavelGlassIcon className="size-6" />}
             title="No approvals match this filter"
             description={`No ${status} approvals to show.`}
             action={

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LightbulbIcon } from '@phosphor-icons/react/dist/ssr'
+import { LightbulbGlassIcon } from '@thesvg/ui-react'
 import type { LogLine } from '../hooks/useLogStream'
 import {
   buildLogHintMatches,
@@ -44,7 +44,7 @@ export function BuildLogHints({ lines }: { lines: LogLine[] }) {
     <div className="space-y-2">
       {matches.map((m) => (
         <Alert key={m.id}>
-          <LightbulbIcon />
+          <LightbulbGlassIcon size="1.4em" />
           <AlertTitle>{m.title}</AlertTitle>
           <AlertDescription>{m.hint}</AlertDescription>
         </Alert>

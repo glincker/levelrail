@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import { useQuery } from '@tanstack/react-query'
 import { Suggestion } from '@/components/kit'
 import { nodeDetailQueryOptions } from '../queries/nodes'
@@ -56,7 +56,7 @@ export function BuildStrainSuggestion({ nodes }: { nodes: NodeResource[] }) {
     <div>
       <Suggestion
         tone="warning"
-        icon={<GaugeIcon />}
+        icon={<GaugeGlassIcon size="1.4em" />}
         title="This node is under sustained load"
         detail="Builds and apps both run on this one node, so a heavy build competes with whatever else is serving traffic. Add a second node to spread that load, then route builds to it from that node's detail page."
         actions={

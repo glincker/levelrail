@@ -1,4 +1,4 @@
-import { ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import { Switch } from '@/components/ui/switch'
 import { useSetEnvironmentProtected } from '../queries/environments'
 import { toast } from '@/components/ui/toast'
@@ -24,8 +24,8 @@ export function ProtectedEnvironmentToggle({
 
   return (
     <label className="flex items-center gap-2 text-sm text-muted-foreground">
-      <ShieldWarningIcon
-        className={protectedFlag ? 'size-4 text-destructive' : 'size-4'}
+      <ShieldAlertGlassIcon
+        className={protectedFlag ? 'size-5 text-destructive' : 'size-5'}
         aria-hidden="true"
       />
       Protected

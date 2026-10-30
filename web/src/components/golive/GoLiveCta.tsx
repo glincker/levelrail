@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { RocketGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 
 /** GoLiveCta is the primary next step once an app runs: put it on a domain with https. */
@@ -10,7 +10,7 @@ export function GoLiveCta({ app }: { app: string }) {
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-tone-accent-border bg-tone-accent-soft p-4">
       <div className="min-w-0 space-y-1">
         <p className="flex items-center gap-2 text-sm font-semibold">
-          <RocketLaunchIcon className="size-4" aria-hidden="true" />
+          <RocketGlassIcon className="size-5" aria-hidden="true" />
           {t('cta.title')}
         </p>
         <p className="text-xs text-muted-foreground">{t('cta.body')}</p>

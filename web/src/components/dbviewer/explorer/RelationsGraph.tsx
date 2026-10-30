@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  LinkSimpleIcon,
-  TableIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  LinkGlassIcon,
+  SpreadsheetGlassIcon,
+} from '@thesvg/ui-react'
 import type { DbForeignKey } from '../../../types/databaseViewer'
 
 function TableNode({
@@ -26,7 +26,7 @@ function TableNode({
       className="flex w-full min-w-0 flex-col rounded-lg border border-border bg-card px-3 py-2 text-left text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none"
     >
       <span className="flex items-center gap-1.5 font-medium">
-        <TableIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        <SpreadsheetGlassIcon className="size-5 shrink-0" aria-hidden="true" />
         <span className="truncate">
           {schema}.{table}
         </span>
@@ -85,18 +85,18 @@ export function RelationsGraph({
           ))
         )}
       </ul>
-      <ArrowRightIcon
-        className="hidden size-4 text-muted-foreground md:block"
+      <ArrowRightGlassIcon
+        className="hidden size-5 text-muted-foreground md:block"
         aria-hidden="true"
       />
       <div className="flex items-center gap-1.5 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-3 text-sm font-semibold">
-        <LinkSimpleIcon className="size-4 shrink-0" aria-hidden="true" />
+        <LinkGlassIcon className="size-5 shrink-0" aria-hidden="true" />
         <span className="truncate">
           {schema}.{table}
         </span>
       </div>
-      <ArrowRightIcon
-        className="hidden size-4 text-muted-foreground md:block"
+      <ArrowRightGlassIcon
+        className="hidden size-5 text-muted-foreground md:block"
         aria-hidden="true"
       />
       <ul className="space-y-2">

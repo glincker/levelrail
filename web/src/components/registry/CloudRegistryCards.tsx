@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -72,7 +72,7 @@ function ConnectedRow({ credential }: { credential: RegistryCredential }) {
           disabled={refresh.isPending}
           onClick={() => refresh.mutate(credential.id)}
         >
-          <ArrowsClockwiseIcon aria-hidden="true" className="size-4" />
+          <RefreshCwGlassIcon aria-hidden="true" className="size-5" />
           {t('registryPage.cloud.refreshNow')}
         </Button>
       </div>

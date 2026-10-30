@@ -1,4 +1,4 @@
-import { PauseIcon, PlayIcon } from '@phosphor-icons/react/dist/ssr'
+import { PauseGlassIcon, PlayGlassIcon } from '@thesvg/ui-react'
 import { InfoTip, useReducedMotion } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -65,9 +65,9 @@ export function LbTopology({
           onClick={() => onPausedChange(!paused)}
         >
           {animate ? (
-            <PauseIcon data-icon="inline-start" />
+            <PauseGlassIcon size="1.4em" data-icon="inline-start" />
           ) : (
-            <PlayIcon data-icon="inline-start" />
+            <PlayGlassIcon size="1.4em" data-icon="inline-start" />
           )}
           {reduced ? 'Motion off' : animate ? 'Pause' : 'Play'}
         </Button>

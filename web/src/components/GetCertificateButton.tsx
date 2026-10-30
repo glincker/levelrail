@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
-  CheckCircleIcon,
-  LockKeyIcon,
-  MinusCircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  LoaderCircleGlassIcon,
+  LockGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -39,26 +39,31 @@ function ItemIcon({ state }: { state: PreflightItem['state'] }) {
   const cls = 'mt-0.5 size-4 shrink-0'
   if (state === 'pass')
     return (
-      <CheckCircleIcon
+      <CircleCheckGlassIcon
+        size="1.4em"
         className={`${cls} text-tone-success`}
-        weight="fill"
         aria-hidden="true"
       />
     )
   if (state === 'fail')
     return (
-      <WarningCircleIcon
+      <CircleAlertGlassIcon
+        size="1.4em"
         className={`${cls} text-tone-danger`}
-        weight="fill"
         aria-hidden="true"
       />
     )
   if (state === 'warn')
     return (
-      <WarningIcon className={`${cls} text-tone-warning`} aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        size="1.7em"
+        className={`${cls} text-tone-warning`}
+        aria-hidden="true"
+      />
     )
   return (
-    <MinusCircleIcon
+    <CircleMinusGlassIcon
+      size="1.4em"
       className={`${cls} text-muted-foreground`}
       aria-hidden="true"
     />
@@ -108,7 +113,7 @@ function Progress({
     return (
       <div className="space-y-3" role="status">
         <p className="flex items-center gap-2 text-sm font-medium">
-          <CheckCircleIcon className="size-4 text-tone-success" weight="fill" />
+          <CircleCheckGlassIcon className="size-5 text-tone-success" />
           {t('domainCert.progress.issuedTitle')}
         </p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
@@ -136,7 +141,10 @@ function Progress({
         </dl>
         {status.staging ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>
               {t('domainCert.progress.stagingIssued')}
             </AlertDescription>
@@ -154,7 +162,7 @@ function Progress({
     return (
       <div className="space-y-3">
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertTitle>{t('domainCert.progress.failedTitle')}</AlertTitle>
           <AlertDescription>
             <p>{status.explanation}</p>
@@ -187,7 +195,10 @@ function Progress({
   return (
     <div className="space-y-2" role="status">
       <p className="flex items-center gap-2 text-sm font-medium">
-        <SpinnerGapIcon className="size-4 animate-spin" aria-hidden="true" />
+        <LoaderCircleGlassIcon
+          className="size-5 animate-spin"
+          aria-hidden="true"
+        />
         {t('domainCert.progress.pendingTitle')}
       </p>
       <p className="text-sm text-muted-foreground">
@@ -237,7 +248,7 @@ function Review({
       </p>
       {pre.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>
             {t('domainCert.checkFailed')} {pre.error.message}
           </AlertDescription>
@@ -246,7 +257,10 @@ function Review({
         <PreflightList items={data.items} />
       ) : (
         <p className="flex items-center gap-2 text-sm" role="status">
-          <SpinnerGapIcon className="size-4 animate-spin" aria-hidden="true" />
+          <LoaderCircleGlassIcon
+            className="size-5 animate-spin"
+            aria-hidden="true"
+          />
           {t('domainCert.checking')}
         </p>
       )}
@@ -288,7 +302,7 @@ function Review({
       </div>
       {staging ? (
         <Alert>
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{t('domainCert.stagingWarning')}</AlertDescription>
         </Alert>
       ) : null}
@@ -363,7 +377,7 @@ export function GetCertificateButton({
         variant={variant}
         onClick={() => setOpen(true)}
       >
-        <LockKeyIcon className="size-3.5" aria-hidden="true" />
+        <LockGlassIcon className="size-5" aria-hidden="true" />
         {t('domainCert.action')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

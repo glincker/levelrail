@@ -1,0 +1,66 @@
+---
+title: "Self-host Crawl4AI with Docker"
+sidebarTitle: "Crawl4AI"
+description: "An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header."
+"og:url": "https://docs.levelrail.com/self-host/crawl4ai"
+---
+
+An open source web crawler API that turns pages into clean Markdown and structured data for LLM pipelines, with a built-in playground and MCP endpoint. API calls need the generated token as a Bearer header.
+
+This page describes the Levelrail template for Crawl4AI (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.crawl4ai.com/core/docker-deployment/.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `crawl4ai` | `unclecode/crawl4ai:0.9.5` | 11235 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `crawl4ai` | `CRAWL4AI_API_TOKEN` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Elevated access**.
+
+What this template needs:
+
+- Changes container security options (`crawl4ai`): no-new-privileges:true.
+- Passwords and keys are generated at deploy time (`crawl4ai`): CRAWL4AI_API_TOKEN.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Crawl4AI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Crawl4AI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy crawl4ai --name my-crawl4ai
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

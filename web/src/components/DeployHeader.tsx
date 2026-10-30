@@ -3,19 +3,19 @@ import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  ArrowLeftIcon,
-  ArrowSquareOutIcon,
-  CheckIcon,
-  ClockIcon,
-  CopyIcon,
-  GitBranchIcon,
-  GitCommitIcon,
-  GitDiffIcon,
-  LightningIcon,
-  ProhibitIcon,
-  UserIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  BanGlassIcon,
+  CheckGlassIcon,
+  ClockGlassIcon,
+  CommitGraphGlassIcon,
+  CopyGlassIcon,
+  ExternalLinkGlassIcon,
+  GitBranchGlassIcon,
+  GitCompareGlassIcon,
+  RotateCcwGlassIcon,
+  UserGlassIcon,
+  ZapGlassIcon,
+} from '@thesvg/ui-react'
 import type { DeployAttempt } from '../types/deployAttempt'
 import {
   DEPLOY_ATTEMPT_SOURCE_LABEL,
@@ -122,7 +122,7 @@ export function DeployHeader({
         params={{ name: appName }}
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeftIcon className="size-3.5" aria-hidden="true" />
+        <ArrowLeftGlassIcon className="size-5" aria-hidden="true" />
         All deploys
       </Link>
 
@@ -155,7 +155,7 @@ export function DeployHeader({
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
             {branchName ? (
-              <Meta icon={<GitBranchIcon className="size-4" />}>
+              <Meta icon={<GitBranchGlassIcon className="size-5" />}>
                 <span className="break-all font-mono text-foreground">
                   {branchName}
                 </span>
@@ -163,7 +163,7 @@ export function DeployHeader({
             ) : null}
             {attempt.commit_sha ? (
               <Meta
-                icon={<GitCommitIcon className="size-4" />}
+                icon={<CommitGraphGlassIcon className="size-5" />}
                 title={attempt.commit_sha}
               >
                 <span className="break-all font-mono text-foreground">
@@ -172,16 +172,16 @@ export function DeployHeader({
               </Meta>
             ) : null}
             {attempt.author ? (
-              <Meta icon={<UserIcon className="size-4" />}>
+              <Meta icon={<UserGlassIcon className="size-5" />}>
                 {attempt.author}
               </Meta>
             ) : null}
             {attempt.source ? (
-              <Meta icon={<LightningIcon className="size-4" />}>
+              <Meta icon={<ZapGlassIcon className="size-5" />}>
                 {DEPLOY_ATTEMPT_SOURCE_LABEL[attempt.source]}
               </Meta>
             ) : null}
-            <Meta icon={<ClockIcon className="size-4" />}>
+            <Meta icon={<ClockGlassIcon className="size-5" />}>
               <RelativeTime at={attempt.started_at} live />
               <span aria-hidden="true">·</span>
               {formatDeployDuration(attempt.started_at, attempt.finished_at)}
@@ -199,7 +199,7 @@ export function DeployHeader({
                 setCancelOpen(true)
               }}
             >
-              <ProhibitIcon className="size-3.5" data-icon="inline-start" />
+              <BanGlassIcon className="size-5" data-icon="inline-start" />
               Cancel deploy
             </Button>
           ) : null}
@@ -211,10 +211,7 @@ export function DeployHeader({
               disabled={rollback.isPending}
               onClick={doRollback}
             >
-              <ArrowCounterClockwiseIcon
-                className="size-3.5"
-                data-icon="inline-start"
-              />
+              <RotateCcwGlassIcon className="size-5" data-icon="inline-start" />
               Roll back to this
             </Button>
           ) : null}
@@ -230,14 +227,14 @@ export function DeployHeader({
               />
             }
           >
-            <GitDiffIcon className="size-3.5" data-icon="inline-start" />
+            <GitCompareGlassIcon className="size-5" data-icon="inline-start" />
             Compare
           </Button>
           <Button variant="outline" size="sm" onClick={copyId}>
             {copied ? (
-              <CheckIcon className="size-3.5" data-icon="inline-start" />
+              <CheckGlassIcon className="size-5" data-icon="inline-start" />
             ) : (
-              <CopyIcon className="size-3.5" data-icon="inline-start" />
+              <CopyGlassIcon className="size-5" data-icon="inline-start" />
             )}
             {copied ? 'Copied' : 'Copy ID'}
           </Button>
@@ -253,8 +250,8 @@ export function DeployHeader({
                 />
               }
             >
-              <ArrowSquareOutIcon
-                className="size-3.5"
+              <ExternalLinkGlassIcon
+                className="size-5"
                 data-icon="inline-start"
               />
               Visit

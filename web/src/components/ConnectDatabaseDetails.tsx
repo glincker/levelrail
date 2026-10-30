@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,8 +53,8 @@ export function ConnectDatabaseDetails({
     <div className="space-y-3">
       {adopting ? (
         <p className="flex items-start gap-2 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
-          <ShieldCheckIcon
-            className="mt-0.5 size-4 shrink-0"
+          <ShieldCheckGlassIcon
+            className="mt-0.5 size-5 shrink-0 text-tone-success"
             aria-hidden="true"
           />
           {t('external.connect.adoptSafe')}
@@ -227,13 +227,13 @@ export function ConnectDatabaseDetails({
           <div className="space-y-1 text-sm">
             <p className="flex items-start gap-1.5 text-muted-foreground">
               {probe.status === 'reachable' ? (
-                <CheckCircleIcon
-                  className="mt-0.5 size-4 shrink-0 text-success"
+                <CircleCheckGlassIcon
+                  className="mt-0.5 size-5 shrink-0 text-success"
                   aria-hidden="true"
                 />
               ) : (
-                <WarningIcon
-                  className="mt-0.5 size-4 shrink-0"
+                <TriangleAlertGlassIcon
+                  className="mt-0.5 size-6 shrink-0 text-tone-warning"
                   aria-hidden="true"
                 />
               )}

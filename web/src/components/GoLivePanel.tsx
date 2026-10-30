@@ -2,14 +2,14 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  CloudIcon,
-  HandPointingIcon,
-  MinusCircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CloudGlassIcon,
+  ExternalLinkGlassIcon,
+  LoaderCircleGlassIcon,
+  PointerGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -24,14 +24,16 @@ function StepIcon({ state }: { state: GoLiveStep['state'] }) {
   switch (state) {
     case 'done':
       return (
-        <CheckCircleIcon
+        <CircleCheckGlassIcon
+          size="1.4em"
           className={`${cls} text-emerald-600`}
           aria-hidden="true"
         />
       )
     case 'pending':
       return (
-        <SpinnerGapIcon
+        <LoaderCircleGlassIcon
+          size="1.4em"
           className={`${cls} text-muted-foreground motion-safe:animate-spin`}
           aria-hidden="true"
         />
@@ -39,21 +41,24 @@ function StepIcon({ state }: { state: GoLiveStep['state'] }) {
     case 'failed':
     case 'conflict':
       return (
-        <WarningCircleIcon
+        <CircleAlertGlassIcon
+          size="1.4em"
           className={`${cls} text-destructive`}
           aria-hidden="true"
         />
       )
     case 'manual':
       return (
-        <HandPointingIcon
+        <PointerGlassIcon
+          size="1.4em"
           className={`${cls} text-amber-600`}
           aria-hidden="true"
         />
       )
     default:
       return (
-        <MinusCircleIcon
+        <CircleMinusGlassIcon
+          size="1.4em"
           className={`${cls} text-muted-foreground`}
           aria-hidden="true"
         />
@@ -94,7 +99,7 @@ function ConnectProviderPrompt() {
   const { t } = useTranslation('domains')
   return (
     <p className="text-xs text-muted-foreground">
-      <CloudIcon className="mr-1 inline size-3.5" aria-hidden="true" />
+      <CloudGlassIcon className="mr-1 inline size-5" aria-hidden="true" />
       {t('goLive.connectCloudflare')}{' '}
       <Link to="/domains" className="underline">
         {t('goLive.connectCloudflareAction')}
@@ -156,7 +161,7 @@ export function GoLiveSteps({
           rel="noopener noreferrer"
           className={buttonVariants({ size: 'sm', variant: 'outline' })}
         >
-          <ArrowSquareOutIcon />
+          <ExternalLinkGlassIcon size="1.4em" />
           {t('goLive.openLive')}
         </a>
       ) : null}

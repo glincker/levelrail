@@ -1,17 +1,17 @@
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsInLineHorizontalIcon,
-  CalendarXIcon,
-  CheckCircleIcon,
-  CircleDashedIcon,
-  CircleNotchIcon,
-  ClockIcon,
-  HourglassIcon,
-  PauseCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CalendarXGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CirclePauseGlassIcon,
+  ClockGlassIcon,
+  CountdownGlassIcon,
+  FoldHorizontalGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -21,16 +21,16 @@ import {
   type DomainStatusReason,
 } from '@/lib/trafficStatus'
 
-const STATUS_ICON: Record<DomainStatus, Icon> = {
-  live: CheckCircleIcon,
-  going_live: CircleNotchIcon,
-  propagating: ClockIcon,
-  waiting_for_dns: HourglassIcon,
-  handled_by_proxy: ArrowsInLineHorizontalIcon,
-  needs_attention: WarningIcon,
-  expiring_soon: CalendarXIcon,
-  paused: PauseCircleIcon,
-  not_set_up: CircleDashedIcon,
+const STATUS_ICON: Record<DomainStatus, UiIcon> = {
+  live: CircleCheckGlassIcon,
+  going_live: LoaderCircleGlassIcon,
+  propagating: ClockGlassIcon,
+  waiting_for_dns: CountdownGlassIcon,
+  handled_by_proxy: FoldHorizontalGlassIcon,
+  needs_attention: TriangleAlertGlassIcon,
+  expiring_soon: CalendarXGlassIcon,
+  paused: CirclePauseGlassIcon,
+  not_set_up: CircleDashedGlassIcon,
 }
 
 export interface DomainStatusBadgeProps {
@@ -72,6 +72,7 @@ export function DomainStatusBadge({
         className={cn(size === 'sm' && 'px-1.5 text-[11px]', className)}
       >
         <StatusIcon
+          size="1.4em"
           aria-hidden="true"
           className={cn(
             status === 'going_live' &&

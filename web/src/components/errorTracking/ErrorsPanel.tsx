@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BugIcon } from '@phosphor-icons/react/dist/ssr'
+import { BugGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -124,7 +124,7 @@ export function ErrorsPanel({ app }: { app: string }) {
           {list.data && list.data.length === 0 ? (
             <EmptyState
               compact
-              icon={<BugIcon className="size-4" />}
+              icon={<BugGlassIcon className="size-5" />}
               title={t('list.emptyTitle')}
               description={trackingOff ? t('list.emptyOff') : t('list.empty')}
               action={

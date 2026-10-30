@@ -2,10 +2,7 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import {
-  PencilSimpleIcon,
-  PlusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CirclePlusGlassIcon, PencilGlassIcon } from '@thesvg/ui-react'
 import {
   Sheet,
   SheetContent,
@@ -140,12 +137,12 @@ export function JobDialog({
         render={
           isEdit ? (
             <Button variant="outline" size="sm" disabled={specManaged}>
-              <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
+              <PencilGlassIcon className="size-5" aria-hidden="true" />
               {t('dialog.edit')}
             </Button>
           ) : (
             <Button size="sm">
-              <PlusCircleIcon className="size-3.5" aria-hidden="true" />
+              <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
               {t('dialog.createTrigger')}
             </Button>
           )

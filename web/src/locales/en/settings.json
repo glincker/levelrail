@@ -1947,6 +1947,9 @@
       "enable": "Enable two-factor authentication",
       "setupTitle": "Set up two-factor authentication",
       "setupBody": "Add this to an authenticator app (1Password, Google Authenticator, Authy), then enter the 6-digit code it shows to confirm.",
+      "qrFallback": "Can't scan? Enter this key",
+      "qrLabel": "QR code for your authenticator app",
+      "qrLoading": "Loading QR code",
       "setupKey": "Setup key",
       "setupLink": "Or use this link",
       "codeLabel": "Code from your authenticator app",
@@ -3392,5 +3395,9 @@
       "backup_too_old": "Latest backup is older than the age limit",
       "engine_keeps_no_data": "Keeps no data on disk"
     }
+  },
+  "iacHelp": {
+    "hint": "Click a key to see what it does.",
+    "default": "Default: {{value}}."
   }
 }

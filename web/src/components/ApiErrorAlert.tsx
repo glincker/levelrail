@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { CopyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '../lib/apiError'
@@ -51,7 +51,11 @@ export function ApiErrorAlert({
 
   return (
     <Alert variant="destructive" data-testid="api-error-alert">
-      <WarningIcon aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.7em"
+        aria-hidden="true"
+      />
       <AlertDescription className="space-y-2">
         <p>{message}</p>
         <div className="flex flex-wrap items-center gap-2">
@@ -83,7 +87,7 @@ export function ApiErrorAlert({
                 copyId(api.requestId ?? '')
               }}
             >
-              <CopyIcon aria-hidden="true" />
+              <CopyGlassIcon size="1.4em" aria-hidden="true" />
               {copied
                 ? t('apiError.copied')
                 : t('apiError.requestId', { id: api.requestId })}

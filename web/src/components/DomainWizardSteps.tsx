@@ -1,10 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { certificatePath, suggestPort } from '../lib/domainWizard'
@@ -87,7 +84,10 @@ export function PortStepBody({
         }
       >
         {ok ? (
-          <CheckCircleIcon className="size-4 shrink-0" aria-hidden="true" />
+          <CircleCheckGlassIcon
+            className="size-5 shrink-0 text-tone-success"
+            aria-hidden="true"
+          />
         ) : null}
         {message}
       </p>
@@ -146,7 +146,11 @@ export function CertificateStepBody({
         </p>
       ) : (
         <Alert variant="destructive">
-          <WarningCircleIcon aria-hidden="true" />
+          <CircleAlertGlassIcon
+            className="text-tone-danger"
+            size="1.4em"
+            aria-hidden="true"
+          />
           <AlertDescription>
             {path === 'dns-01-private'
               ? t('certificate.dns01Private', { host })

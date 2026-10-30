@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { describe, expect, it } from 'vitest'
 import { StatusBadge } from './status-badge'
 import { Badge } from './badge'
@@ -29,7 +29,7 @@ describe('status vocabulary', () => {
   it('StatusBadge and StatusPill share the same tone classes', () => {
     render(
       <>
-        <StatusBadge tone="success" label="Live" icon={CheckCircleIcon} />
+        <StatusBadge tone="success" label="Live" icon={CircleCheckGlassIcon} />
         <StatusPill tone="success" label="Running" />
       </>,
     )

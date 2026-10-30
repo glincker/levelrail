@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
@@ -33,7 +33,7 @@ export function StacksPage({
 
   return (
     <PageTemplate
-      icon={<StackIcon />}
+      icon={<LayersGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
     >
@@ -65,7 +65,7 @@ export function StacksPage({
       ) : stacks.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<StackIcon className="size-5" />}
+          icon={<LayersGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
         />

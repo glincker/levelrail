@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -151,7 +151,7 @@ export function TemplateList({
                 variant="outline"
                 onClick={() => onEdit(tpl.key)}
               >
-                <PencilSimpleIcon data-icon="inline-start" />
+                <PencilGlassIcon size="1.4em" data-icon="inline-start" />
                 {t('templates.edit')}
               </Button>
             </li>

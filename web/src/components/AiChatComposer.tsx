@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
-import { PaperPlaneRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { SendGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -48,7 +48,7 @@ export function AiChatComposer({
         aria-label="Message"
       />
       <Button type="submit" size="icon" disabled={disabled || !value.trim()}>
-        <PaperPlaneRightIcon />
+        <SendGlassIcon size="1.4em" />
         <span className="sr-only">Send</span>
       </Button>
     </form>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CirclePlusGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -69,8 +69,8 @@ export function CreateDeployNotifyTargetDialog({
           <>
             <CreateFlowHeader
               icon={
-                <PlusCircleIcon
-                  className="size-4 text-muted-foreground"
+                <CirclePlusGlassIcon
+                  className="size-5 text-muted-foreground"
                   aria-hidden="true"
                 />
               }
@@ -96,8 +96,8 @@ export function CreateDeployNotifyTargetDialog({
         ) : (
           <CreateFlowShell
             icon={
-              <PlusCircleIcon
-                className="size-4 text-muted-foreground"
+              <CirclePlusGlassIcon
+                className="size-5 text-muted-foreground"
                 aria-hidden="true"
               />
             }

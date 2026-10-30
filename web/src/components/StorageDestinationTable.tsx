@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import {
-  CloudArrowUpIcon,
-  HardDrivesIcon,
-  PlugsConnectedIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlugGlassIcon,
+  ServerGlassIcon,
+  TrashGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -76,7 +76,7 @@ function TestButton({ dest }: { dest: StorageDestination }) {
           })
         }}
       >
-        <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
+        <PlugGlassIcon className="size-5" aria-hidden="true" />
         {test.isPending ? 'Testing...' : 'Test'}
       </Button>
       {failed ? (
@@ -117,7 +117,7 @@ function DeleteButton({ dest }: { dest: StorageDestination }) {
       }}
     >
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
+        <TrashGlassIcon className="size-5" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
@@ -179,7 +179,7 @@ export function StorageDestinationTable({
     return (
       <EmptyState
         className="py-12"
-        icon={<CloudArrowUpIcon className="size-5" />}
+        icon={<UploadGlassIcon className="size-6" />}
         title={t('storageDestinations.empty.title')}
         description={t('storageDestinations.empty.description')}
         action={action}
@@ -202,7 +202,7 @@ export function StorageDestinationTable({
       cell: (d) =>
         d.preset === 'agent' ? (
           <Badge variant="outline" className="gap-1.5">
-            <HardDrivesIcon className="size-3.5" aria-hidden="true" />
+            <ServerGlassIcon className="size-5" aria-hidden="true" />
             {t('storageDestinations.kind.agent')}
           </Badge>
         ) : (

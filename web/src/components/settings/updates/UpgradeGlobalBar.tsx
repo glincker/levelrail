@@ -3,10 +3,10 @@ import { useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  RefreshCwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { toast } from '../../ui/toast'
 import { useUpgradeStatus } from '../../../hooks/useUpgradeStatus'
@@ -77,13 +77,16 @@ export function UpgradeGlobalBar() {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {finished ? (
           ok ? (
-            <CheckCircleIcon className="size-4 text-success" aria-hidden />
+            <CircleCheckGlassIcon className="size-5 text-success" aria-hidden />
           ) : (
-            <WarningIcon className="size-4" aria-hidden />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden
+            />
           )
         ) : (
-          <ArrowsClockwiseIcon
-            className={cn('size-4 text-primary', motion && 'animate-spin')}
+          <RefreshCwGlassIcon
+            className={cn('size-5 text-primary', motion && 'animate-spin')}
             aria-hidden
           />
         )}

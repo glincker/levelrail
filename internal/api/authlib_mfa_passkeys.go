@@ -68,6 +68,7 @@ func (l *authLibMFA) beginRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	preferResidentKey(options)
+	l.rt.recordAuthAudit(r, user.ID, accountEventPasskeyRegBegun, http.StatusOK, nil)
 	writeJSON(w, http.StatusOK, passkeyRegistrationBeginResponse{SessionID: challenge, Options: options})
 }
 

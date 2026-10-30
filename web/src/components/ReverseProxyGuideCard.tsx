@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CodeBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
-import { PlugsIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,7 +33,7 @@ export function ReverseProxyGuideCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugsIcon className="size-4" />
+          <PlugGlassIcon className="size-5" />
           {t('reverseProxy.title')}
         </CardTitle>
         <CardDescription>{t('reverseProxy.description')}</CardDescription>

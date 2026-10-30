@@ -11,15 +11,24 @@ export const VIRTUALIZE_ABOVE = 50
 const ROW_HEIGHT = 32
 const LIST_HEIGHT = 320
 
-function Header({ label }: { label: string }) {
+const GROUP_SHORTCUTS = 4
+
+function Header({ label, shortcut }: { label: string; shortcut?: number }) {
   return (
     <p
       aria-hidden="true"
-      className="px-2.5 py-1 text-xs font-medium text-muted-foreground"
+      className="flex items-center justify-between px-3 pt-2 pb-1 text-xs font-medium tracking-wide text-muted-foreground"
     >
       {label}
+      {shortcut && shortcut <= GROUP_SHORTCUTS ? (
+        <span className="font-mono text-[11px] opacity-70">⌥{shortcut}</span>
+      ) : null}
     </p>
   )
+}
+
+function headerOrdinal(entries: readonly PaletteEntry[], at: number): number {
+  return entries.slice(0, at + 1).filter((e) => e.type === 'header').length
 }
 
 function VirtualEntries({
@@ -56,7 +65,10 @@ function VirtualEntries({
             style={{ transform: `translateY(${row.start}px)` }}
           >
             {entry.type === 'header' ? (
-              <Header label={entry.label} />
+              <Header
+                label={entry.label}
+                shortcut={headerOrdinal(entries, row.index)}
+              />
             ) : (
               <ResultRow
                 item={entry.item}
@@ -94,14 +106,18 @@ export function PaletteList({
       ref={scrollRef}
       role="listbox"
       aria-label={label}
-      className="max-h-80 overflow-y-auto p-2"
+      className="max-h-[28rem] overflow-y-auto p-2.5"
     >
       {itemCount > VIRTUALIZE_ABOVE ? (
         <VirtualEntries entries={entries} scrollRef={scrollRef} {...props} />
       ) : (
         entries.map((entry) =>
           entry.type === 'header' ? (
-            <Header key={entry.key} label={entry.label} />
+            <Header
+              key={entry.key}
+              label={entry.label}
+              shortcut={headerOrdinal(entries, entries.indexOf(entry))}
+            />
           ) : (
             <ResultRow
               key={entry.key}

@@ -1,9 +1,5 @@
 import { useState } from 'react'
-import {
-  CheckIcon,
-  CopyIcon,
-  EnvelopeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon, MailGlassIcon } from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -30,7 +26,11 @@ function CopyLinkButton({ link }: { link: string }) {
         })
       }}
     >
-      {copied ? <CheckIcon /> : <CopyIcon />}
+      {copied ? (
+        <CheckGlassIcon size="1.4em" />
+      ) : (
+        <CopyGlassIcon size="1.4em" />
+      )}
       {copied ? 'Copied' : 'Copy link'}
     </Button>
   )
@@ -69,7 +69,7 @@ export function InvitesTable({
     return (
       <div className="flex items-center gap-3 py-4">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <EnvelopeIcon className="size-4" />
+          <MailGlassIcon className="size-5" />
         </div>
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-foreground">
@@ -155,7 +155,7 @@ export function InvitesTable({
                 disabled
                 title="The invite link was only shown when this invite was created. Revoke and send a new one if it's needed again."
               >
-                <CopyIcon />
+                <CopyGlassIcon size="1.4em" />
                 Copy link
               </Button>
             )}

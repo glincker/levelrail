@@ -37,6 +37,7 @@ type v2Metadata struct {
 	Annotations       map[string]string `json:"annotations,omitempty"`
 	ResourceVersion   string            `json:"resourceVersion,omitempty"`
 	CreationTimestamp string            `json:"creationTimestamp,omitempty"`
+	ManagedFields     []v2ManagedField  `json:"managedFields,omitempty"`
 }
 
 type v2ListMeta struct {

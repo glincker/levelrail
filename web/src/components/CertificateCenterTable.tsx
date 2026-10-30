@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
@@ -109,7 +109,7 @@ export function CertificateCenterTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<ShieldCheckIcon className="size-5" />}
+        icon={<ShieldCheckGlassIcon className="size-6 text-tone-success" />}
         title={t('certificatesPage.empty.title')}
         description={t('certificatesPage.empty.body')}
       />

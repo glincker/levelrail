@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { GlobeHemisphereWestIcon } from '@phosphor-icons/react/dist/ssr'
+import { ListGlassIcon } from '@thesvg/ui-react'
 import { HelpLink } from '@/components/HelpLink'
 import { PageBanner } from '../PageBanner'
 import { LazyDnsDiagram } from '../banners/LazyPass3Diagrams'
@@ -13,7 +13,7 @@ export function ZonesBanner({
   const size = empty ? 'hero' : 'compact'
   return (
     <PageBanner
-      icon={<GlobeHemisphereWestIcon />}
+      icon={<ListGlassIcon size="1.4em" />}
       titleKey="dns:page.title"
       descriptionKey={empty ? 'dns:banner.description' : 'dns:page.description'}
       action={

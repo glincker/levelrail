@@ -1,7 +1,7 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
+import { ActivityGlassIcon } from '@thesvg/ui-react'
 import { deployAttemptsQueryOptions } from '../queries/deployAttempts'
 import { useMetricSeries } from '../queries/metrics'
 import { resolveTimeRange, type TimeRangeKey } from '../lib/timeRange'
@@ -260,8 +260,8 @@ export function AppHealthTimeline({ appName }: { appName: string }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-          <HeartbeatIcon
-            className="size-4 text-muted-foreground"
+          <ActivityGlassIcon
+            className="size-5 text-muted-foreground"
             aria-hidden="true"
           />
           Health timeline

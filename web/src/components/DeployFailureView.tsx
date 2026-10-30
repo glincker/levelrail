@@ -1,10 +1,10 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretRightIcon,
-  LightbulbIcon,
-  ArrowsClockwiseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronRightGlassIcon,
+  LightbulbGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import type { DeployFailure } from '../types/deployFailure'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DeployFailureActions } from './DeployFailureActions'
@@ -66,12 +66,15 @@ export function DeployFailureView({
         ) : null}
       </p>
       <p className="flex items-start gap-1.5 text-foreground">
-        <LightbulbIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <LightbulbGlassIcon
+          aria-hidden="true"
+          className="mt-0.5 size-5 shrink-0"
+        />
         <span>{failure.suggested_fix}</span>
       </p>
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <ArrowsClockwiseIcon aria-hidden="true" className="size-3.5" />
+          <RefreshCwGlassIcon aria-hidden="true" className="size-5" />
           {failure.retryable
             ? 'Retrying may succeed.'
             : 'Retrying will not help until this is fixed.'}
@@ -108,9 +111,9 @@ export function DeployFailureView({
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <CaretRightIcon
+            <ChevronRightGlassIcon
               aria-hidden="true"
-              className={`size-3 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
+              className={`size-4.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-90' : ''}`}
             />
             Log excerpt
           </button>

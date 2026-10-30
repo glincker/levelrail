@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  DownloadSimpleIcon,
-  KeyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  DownloadGlassIcon,
+  KeyGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -96,7 +96,11 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
 
       {issues.length > 0 ? (
         <Alert variant="destructive">
-          <WarningIcon aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="text-tone-warning"
+            size="1.7em"
+            aria-hidden="true"
+          />
           <AlertDescription>
             <p className="font-medium">{t('templates.issues')}</p>
             <ul className="list-disc pl-4">
@@ -126,9 +130,9 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
               }}
             >
               {copied ? (
-                <CheckIcon aria-hidden="true" />
+                <CheckGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <CopyIcon aria-hidden="true" />
+                <CopyGlassIcon size="1.4em" aria-hidden="true" />
               )}
               {copied ? t('templates.copied') : t('templates.copyAll')}
             </Button>
@@ -140,7 +144,7 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
                 downloadStackTemplateFiles(files)
               }}
             >
-              <DownloadSimpleIcon aria-hidden="true" />
+              <DownloadGlassIcon size="1.4em" aria-hidden="true" />
               {t('templates.downloadAll')}
             </Button>
           </div>
@@ -186,7 +190,7 @@ function DrawerBody({ template }: Readonly<{ template: StackTemplateDetail }>) {
               {template.secret_names.map((n) => (
                 <li key={n}>
                   <Badge variant="warning" className="font-mono">
-                    <KeyIcon aria-hidden="true" />
+                    <KeyGlassIcon size="1.4em" aria-hidden="true" />
                     {n}
                   </Badge>
                 </li>

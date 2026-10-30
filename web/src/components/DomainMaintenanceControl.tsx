@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon, WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon, WrenchGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,13 +95,13 @@ export function DomainMaintenanceControl({
         {enabled ? (
           <EnforcedBadge domain={domain} control="maintenance">
             <Badge variant="warning" className="shrink-0">
-              <WrenchIcon className="size-3" />
+              <WrenchGlassIcon className="size-4.5" />
               {t('maintenance.on')}
             </Badge>
           </EnforcedBadge>
         ) : (
           <Badge variant="muted" className="shrink-0">
-            <WrenchIcon className="size-3" />
+            <WrenchGlassIcon className="size-4.5" />
             {t('maintenance.off')}
           </Badge>
         )}
@@ -196,7 +196,7 @@ export function DomainMaintenanceControl({
       />
       {error && confirming === null ? (
         <Alert variant="destructive" className="mt-2">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

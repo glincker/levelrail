@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ZonesBanner } from './ZonesBanner'
@@ -55,7 +55,7 @@ export function ZonesPage() {
   const empty = !connected || data.zones.length === 0
   const addZone = (
     <Button size="sm" onClick={() => setWizard(true)}>
-      <PlusIcon />
+      <PlusGlassIcon size="1.4em" />
       {t('page.addZone')}
     </Button>
   )

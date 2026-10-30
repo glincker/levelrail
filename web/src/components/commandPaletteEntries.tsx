@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockSimpleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { fuzzyMatchIndices } from '@/lib/fuzzy'
 import { spanIndices } from '@/lib/paletteGroups'
@@ -79,30 +79,42 @@ export function ResultRow({
       tabIndex={-1}
       onClick={onSelect}
       className={cn(
-        'flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm outline-none',
+        'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] outline-none',
         active
-          ? 'bg-muted text-foreground'
-          : 'text-foreground/90 hover:bg-muted/60',
+          ? 'bg-foreground/10 text-foreground'
+          : 'text-foreground/90 hover:bg-foreground/5',
       )}
     >
-      <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-4">
+      <span className="flex size-6 shrink-0 items-center justify-center text-foreground/85 [&_svg]:size-6">
         {item.icon}
       </span>
-      <span className="min-w-0 truncate">
-        <Highlighted
-          text={item.label}
-          query={query}
-          spans={item.highlightSpans}
-        />
+      <span
+        className={cn(
+          'min-w-0',
+          item.stacked ? 'flex flex-1 flex-col' : 'truncate',
+        )}
+      >
+        <span className="truncate">
+          <Highlighted
+            text={item.label}
+            query={query}
+            spans={item.highlightSpans}
+          />
+        </span>
         {item.subtitle ? (
-          <span className="ml-2 text-xs text-muted-foreground">
+          <span
+            className={cn(
+              'truncate text-xs text-muted-foreground',
+              item.stacked ? '' : 'ml-2',
+            )}
+          >
             {item.subtitle}
           </span>
         ) : null}
       </span>
       {item.locked ? (
-        <LockSimpleIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
+        <LockGlassIcon
+          className="size-5 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
       ) : null}
@@ -123,7 +135,7 @@ export function ResultRow({
             item.badge ? '' : 'ml-auto',
           )}
         >
-          <XIcon className="size-3.5" aria-hidden="true" />
+          <XGlassIcon className="size-5" aria-hidden="true" />
         </button>
       ) : null}
       {active ? (
@@ -176,7 +188,7 @@ export function ChipBar({
             className="flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-foreground hover:bg-muted/60"
           >
             {chipLabel(chip)}
-            <XIcon className="size-3" aria-hidden="true" />
+            <XGlassIcon className="size-4.5" aria-hidden="true" />
           </button>
         </li>
       ))}

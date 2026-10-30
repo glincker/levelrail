@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
+import { BellRingGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { AlertDefaultsPanel } from '../components/AlertDefaultsPanel'
 import { AlertInboxPanel } from '../components/AlertInboxPanel'
@@ -22,7 +22,7 @@ function AlertsPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <BellRingingIcon className="size-4" aria-hidden="true" />
+          <BellRingGlassIcon className="size-5" aria-hidden="true" />
         </div>
         <PageHeader
           title="Alerts"

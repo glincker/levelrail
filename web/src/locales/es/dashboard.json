@@ -1,0 +1,336 @@
+{
+  "needsAttention": {
+    "askAi": "Preguntar a la IA",
+    "review": "Revisar",
+    "retryCopy": "Reintentar la copia",
+    "openDatabase": "Abrir la base de datos"
+  },
+  "fleet": {
+    "reserved": {
+      "title": "Reservado frente a usado",
+      "subtitle": "Límites configurados de {{active}} aplicaciones y bases de datos en ejecución, réplicas incluidas. Las {{suspended}} detenidas no se cuentan.",
+      "cpu": "CPU",
+      "memory": "Memoria",
+      "cores_one": "núcleo",
+      "cores_other": "núcleos",
+      "reserved": "Reservado",
+      "used": "Usado ahora",
+      "capacity": "Capacidad",
+      "unknown": "Sin datos",
+      "cpuCapacityScope": "La capacidad de CPU son los núcleos del nodo del control plane.",
+      "capacityPartial": "Capacidad informada por {{known}} de {{total}} nodos.",
+      "reservedBar": "{{resource}} reservado",
+      "usedBar": "{{resource}} usado",
+      "verdict": {
+        "overCommitted": "Sobrecomprometido por {{amount}}",
+        "idle": "Reservado pero inactivo",
+        "headroom": "Margen saludable",
+        "noLimits": "Sin límites definidos",
+        "unknownCapacity": "Capacidad no informada por completo"
+      },
+      "noLimit": {
+        "cpu_one": "{{count}} contenedor no tiene límite de CPU y no se cuenta.",
+        "cpu_other": "{{count}} contenedores no tienen límite de CPU y no se cuentan.",
+        "memory_one": "{{count}} contenedor no tiene límite de memoria y no se cuenta.",
+        "memory_other": "{{count}} contenedores no tienen límite de memoria y no se cuentan."
+      },
+      "breakdown": "Reservado por grupo",
+      "groupBy": "Agrupar por",
+      "by": {
+        "project": "Proyecto",
+        "environment": "Entorno"
+      },
+      "colReserved": "Reservado",
+      "colUsed": "Usado",
+      "pairHint": "Núcleos de CPU / memoria.",
+      "unsetInGroup_one": "{{count}} sin límite",
+      "unsetInGroup_other": "{{count}} sin límites",
+      "noProject": "Sin proyecto",
+      "noEnvironment": "Sin entorno",
+      "topReservers": "Recursos que más reservan",
+      "noReservers": "Ningún recurso tiene un límite definido todavía.",
+      "kind": {
+        "app": "Aplicación",
+        "database": "Base de datos"
+      }
+    },
+    "storage": {
+      "title": "Almacenamiento",
+      "scope": "Los tamaños de volumen corresponden al nodo del control plane. Los tamaños de backup abarcan todos los nodos.",
+      "databaseVolumes": "Volúmenes de bases de datos",
+      "appVolumes": "Volúmenes de aplicaciones",
+      "unknownSizes_one": "{{count}} volumen de tamaño desconocido",
+      "unknownSizes_other": "{{count}} volúmenes de tamaño desconocido",
+      "backups": "Backups almacenados",
+      "backupCount_one": "{{count}} backup",
+      "backupCount_other": "{{count}} backups",
+      "total": "Total",
+      "totalHint": "Volúmenes más backups.",
+      "largestVolumes": "Volúmenes más grandes",
+      "largestBackups": "Conjuntos de backups más grandes",
+      "noVolumes": "No se informaron tamaños de volumen.",
+      "notReported": "Tamaño no informado.",
+      "noBackups": "Aún no hay backups exitosos."
+    }
+  },
+  "status": {
+    "ok": "Todos los sistemas funcionan con normalidad",
+    "incidents_one": "{{count}} incidente",
+    "incidents_other": "{{count}} incidentes"
+  },
+  "tiles": {
+    "appsRunning": "Aplicaciones en ejecución",
+    "requests": "Solicitudes",
+    "errorRate": "Tasa de errores",
+    "noTraffic": "Sin tráfico",
+    "deploys24h": "Despliegues 24 h",
+    "nodesOnline": "Nodos en línea",
+    "lastHour": "Última hora, todas las aplicaciones.",
+    "addDomain": "Agregar un dominio",
+    "deployApp": "Desplegar una aplicación",
+    "idle": "Inactivo"
+  },
+  "resources": {
+    "title": "Recursos",
+    "controlPlane": "Control plane",
+    "cpu": "CPU",
+    "memory": "Memoria",
+    "disk": "Disco",
+    "cpuOfCores": "{{percent}}% de {{cores}} núcleos",
+    "cpuContainers": "{{percent}}% entre contenedores",
+    "noReadings": "Aún no hay lecturas del host de este nodo.",
+    "memoryBreakdown": "Desglose de memoria",
+    "segment": {
+      "levelrail": "{{brand}}",
+      "apps": "Aplicaciones",
+      "databases": "Bases de datos",
+      "other": "Otros contenedores",
+      "system": "Sistema",
+      "free": "Libre"
+    },
+    "segmentHelp": {
+      "levelrail": "El control plane y el agente del nodo",
+      "apps": "Contenedores de tus aplicaciones desplegadas",
+      "databases": "Contenedores de tus bases de datos administradas",
+      "other": "Se ejecutan en este servidor pero no los administra {{brand}}",
+      "system": "Kernel, caché de páginas y otros procesos",
+      "free": "Memoria todavía disponible"
+    },
+    "notManaged": "No administrado por {{brand}}",
+    "topConsumers": "Mayores consumidores",
+    "sortBy": "Ordenar por",
+    "sort": {
+      "memory": "Memoria",
+      "cpu": "CPU"
+    },
+    "kind": {
+      "app": "Aplicación",
+      "database": "Base de datos",
+      "other": "Contenedor"
+    },
+    "requestTrend": "Tendencia de solicitudes de {{name}}",
+    "viewAll_one": "Ver {{count}}",
+    "viewAll_other": "Ver las {{count}}",
+    "showLess": "Mostrar menos",
+    "databasesLine_one": "{{count}} base de datos",
+    "databasesLine_other": "{{count}} bases de datos"
+  },
+  "recommendations": {
+    "line_one": "{{count}} recomendación",
+    "line_other": "{{count}} recomendaciones"
+  },
+  "usageDetails": {
+    "title": "Detalles de uso"
+  },
+  "hero": {
+    "greeting_morning": "Buenos días",
+    "greeting_afternoon": "Buenas tardes",
+    "greeting_evening": "Buenas noches",
+    "greeting_night": "Trabajando hasta tarde",
+    "greetingNamed_morning": "Buenos días, {{name}}",
+    "greetingNamed_afternoon": "Buenas tardes, {{name}}",
+    "greetingNamed_evening": "Buenas noches, {{name}}",
+    "greetingNamed_night": "Trabajando hasta tarde, {{name}}"
+  },
+  "banners": {
+    "httpsTitle": "Este panel usa HTTP sin cifrar",
+    "httpsDetail": "Las contraseñas y las sesiones viajan sin cifrar. Activa HTTPS con un clic, sin necesidad de DNS.",
+    "httpsAction": "Activar HTTPS",
+    "doctorTitle_one": "Doctor encontró {{count}} problema",
+    "doctorTitle_other": "Doctor encontró {{count}} problemas",
+    "doctorDetail": "Cada uno tiene una solución o un siguiente paso.",
+    "doctorAction": "Abrir Doctor",
+    "nodesTitle_one": "{{count}} nodo está sin conexión",
+    "nodesTitle_other": "{{count}} nodos están sin conexión",
+    "nodesDetail": "Las aplicaciones de un nodo sin conexión siguen funcionando pero no se pueden modificar, y su ingreso por la malla está caído.",
+    "nodesAction": "Ver nodos"
+  },
+  "nextSteps": {
+    "title": "Próximos pasos recomendados",
+    "seeAll": "Página de estado",
+    "continue": "Continuar",
+    "setupProgress": "Configuración al {{percent}}%",
+    "quiet": "Nada requiere tu atención. {{running}} de {{total}} aplicaciones en ejecución, {{deploys}} despliegues en las últimas 24 horas.",
+    "group": {
+      "copy_one": "Falló la copia de datos en {{count}} base de datos",
+      "copy_other": "Falló la copia de datos en {{count}} bases de datos",
+      "show_one": "Mostrar {{count}}",
+      "show_other": "Mostrar las {{count}}",
+      "hide": "Ocultar"
+    },
+    "review": "Revisar"
+  },
+  "deploys": {
+    "title": "Despliegues recientes",
+    "empty": "Aún no hay despliegues. Haz push a un repositorio conectado para verlos aquí.",
+    "emptyScoped": "Aún no hay despliegues de las aplicaciones de este ámbito.",
+    "status": {
+      "succeeded": "Desplegado",
+      "failed": "Fallido",
+      "running": "Desplegando",
+      "held": "En espera",
+      "superseded": "Reemplazado",
+      "queued": "En cola",
+      "canceled": "Cancelado",
+      "pending": "En cola hasta que el nodo vuelva"
+    }
+  },
+  "strip": {
+    "nodeOffline_one": "El nodo {{names}} está sin conexión",
+    "nodeOffline_other": "{{count}} nodos sin conexión: {{names}}",
+    "nodeOfflineSince": "desde",
+    "nodeOfflineView": "Ver nodo",
+    "ok_one": "{{count}} aplicación en buen estado",
+    "ok_other": "Las {{count}} aplicaciones en buen estado",
+    "issues_one": "{{count}} cosa requiere atención",
+    "issues_other": "{{count}} cosas requieren atención",
+    "causes_one": "{{count}} problema por {{causes}} causa",
+    "causes_other": "{{count}} problemas por {{causes}} causas raíz",
+    "details": "Detalles",
+    "notices_one": "{{count}} aviso",
+    "notices_other": "{{count}} avisos",
+    "showSnoozed_one": "Mostrar {{count}} pospuesto",
+    "showSnoozed_other": "Mostrar {{count}} pospuestos"
+  },
+  "scope": {
+    "label": "Mostrando {{name}}",
+    "clear": "Quitar el ámbito y mostrar todos los proyectos",
+    "allProjects": "Todos los proyectos",
+    "instanceWide": "Todos los proyectos",
+    "instanceWideHint": "A nivel de instancia: no se filtra por el proyecto o entorno que elegiste."
+  },
+  "apps": {
+    "title": "Aplicaciones",
+    "search": "Buscar aplicaciones",
+    "none": "Ninguna aplicación coincide.",
+    "emptyScopedTitle": "Aún no hay aplicaciones en {{scope}}",
+    "emptyScopedBody": "Despliega una aquí y quedará en este ámbito, o cambia a todos los proyectos para verlo todo.",
+    "emptyScopedClear": "Mostrar todos los proyectos",
+    "viewAll": "Ver las {{count}}",
+    "view": {
+      "grid": "Vista de cuadrícula",
+      "list": "Vista de lista"
+    }
+  },
+  "widgets": {
+    "attention": "Te necesita",
+    "apps": "Aplicaciones",
+    "activity": "Despliegues recientes",
+    "fleet": "Flota",
+    "resources": "Recursos",
+    "advisor": "Asesor de recursos",
+    "alerts": "Alertas recientes",
+    "usage": "Detalles de uso"
+  },
+  "customize": {
+    "edit": "Personalizar",
+    "done": "Listo",
+    "reset": "Restablecer el diseño",
+    "show": "Mostrar {{name}}",
+    "moveUp": "Subir {{name}}",
+    "moveDown": "Bajar {{name}}",
+    "hide": "Ocultar {{name}}"
+  },
+  "newApp": {
+    "label": "Nueva aplicación",
+    "more": "Más formas de desplegar",
+    "items": {
+      "git": {
+        "title": "Desde un repositorio Git",
+        "hint": "Compila y despliega en cada push"
+      },
+      "image": {
+        "title": "Desde una imagen Docker",
+        "hint": "Descarga una imagen ya compilada"
+      },
+      "template": {
+        "title": "Desde un template",
+        "hint": "n8n, Uptime Kuma, MinIO y más"
+      },
+      "compose": {
+        "title": "Desde Docker Compose",
+        "hint": "Despliega todos los servicios de un archivo"
+      },
+      "database": {
+        "title": "Una base de datos",
+        "hint": "Postgres, MySQL, Redis y más"
+      }
+    }
+  },
+  "copyRetry": {
+    "title": "Reintentar la copia en {{name}}",
+    "description": "Se rellenó el origen anterior. Ingresa la contraseña de nuevo, nunca se guarda. Si el origen exige cifrado, la copia se reintenta con TLS por sí sola.",
+    "loading": "Cargando el intento anterior...",
+    "missing": "Esta base de datos no tiene una copia que reintentar."
+  },
+  "snooze": {
+    "label": "Posponer un día",
+    "done_one": "Pospuesto por un día.",
+    "done_other": "Se pospusieron {{count}} elementos por un día.",
+    "undo": "Deshacer"
+  },
+  "tabs": {
+    "label": "Vistas del panel",
+    "start": "Inicio",
+    "metrics": "Métricas",
+    "more": "Más vistas",
+    "hiddenSuffix": "{{name}} (oculto)",
+    "addTitle": "Panel nuevo",
+    "addDescription": "Empieza desde un panel ya preparado, o con uno vacío.",
+    "empty": "Panel vacío",
+    "metricsNote": "Totales de toda la flota. Personalízalo para crear tu propia copia.",
+    "customize": "Personalizar",
+    "emptyName": "Panel sin título",
+    "metricsEmptyTitle": "Aún no hay métricas",
+    "metricsEmptyBody": "Las métricas aparecen cuando tu primera aplicación está en ejecución. Despliega una para ver aquí CPU, memoria y tráfico.",
+    "metricsEmptyAction": "Despliega tu primera aplicación"
+  },
+  "manage": {
+    "label": "Administrar",
+    "new": "Tablero nuevo",
+    "starter": "Nuevo desde una plantilla inicial",
+    "import": "Importar JSON",
+    "importFile": "Archivo JSON del panel",
+    "edit": "Editar tablero",
+    "doneEditing": "Dejar de editar",
+    "rename": "Renombrar",
+    "renameTitle": "Renombrar tablero",
+    "name": "Nombre",
+    "export": "Exportar JSON",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteBody": "El tablero se elimina para todos los que pueden verlo. Los archivos JSON exportados no se ven afectados.",
+    "cancel": "Cancelar",
+    "save": "Guardar"
+  },
+  "updateStrip": {
+    "label": "Actualización disponible",
+    "to": "a",
+    "behind_one": "{{count}} versión de retraso",
+    "behind_other": "{{count}} versiones de retraso",
+    "security": "Incluye una corrección de seguridad",
+    "whatsNew": "Novedades",
+    "update": "Actualizar",
+    "dismiss": "Ocultar {{version}} hasta la próxima versión"
+  }
+}

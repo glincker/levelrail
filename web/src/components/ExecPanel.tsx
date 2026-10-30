@@ -2,10 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  LockKeyIcon,
-  TerminalIcon,
-  PlayIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  LockGlassIcon,
+  PlayGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { useExecApp, type ExecAppResult } from '../queries/exec'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -106,7 +106,7 @@ export function ExecPanel({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TerminalIcon className="size-4" />
+            <TerminalGlassIcon className="size-5" />
             Run a one-off command
           </CardTitle>
           <CardDescription>
@@ -117,7 +117,7 @@ export function ExecPanel({
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            <LockKeyIcon className="size-5 shrink-0" />
+            <LockGlassIcon className="size-6 shrink-0" />
             <p>
               Shell/exec access is disabled for this app. Use the
               &quot;Shell/exec access&quot; card above to turn it back on before
@@ -133,7 +133,7 @@ export function ExecPanel({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TerminalIcon className="size-4" />
+          <TerminalGlassIcon className="size-5" />
           Run a one-off command
         </CardTitle>
         <CardDescription>
@@ -197,7 +197,7 @@ export function ExecPanel({
             disabled={execApp.isPending}
             className="sm:self-end"
           >
-            <PlayIcon className="size-3.5" data-icon="inline-start" />
+            <PlayGlassIcon className="size-5" data-icon="inline-start" />
             {execApp.isPending ? 'Running...' : 'Run'}
           </Button>
         </form>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDatabaseTablePage } from '../../queries/databaseViewer'
@@ -172,7 +172,7 @@ export function TableDataView({
                 copyAs(f)
               }}
             >
-              <CopyIcon className="size-3.5" aria-hidden="true" />
+              <CopyGlassIcon className="size-5" aria-hidden="true" />
               {t(`viewer.data.format.${f}`)}
             </Button>
           ))}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -90,7 +90,11 @@ export function CopyField({
         aria-label={t('copy.copyLabel', { label })}
         onClick={() => void copy()}
       >
-        {state === 'copied' ? <CheckIcon /> : <CopyIcon />}
+        {state === 'copied' ? (
+          <CheckGlassIcon size="1.4em" />
+        ) : (
+          <CopyGlassIcon size="1.4em" />
+        )}
         {state === 'copied' ? t('copy.copied') : t('copy.copy')}
       </Button>
     </div>

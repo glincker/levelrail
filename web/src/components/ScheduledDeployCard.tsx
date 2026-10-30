@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ClockCountdownIcon } from '@phosphor-icons/react/dist/ssr'
+import { CountdownGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
@@ -185,7 +185,7 @@ export function ScheduledDeployCard({ appName }: { appName: string }) {
     <Card className="shadow-card ring-1 ring-foreground/10 rounded-xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ClockCountdownIcon className="size-4 text-muted-foreground" />
+          <CountdownGlassIcon className="size-5 text-muted-foreground" />
           {t('title')}
           <InfoTip label={t('cronTipLabel')}>{t('cronTip')}</InfoTip>
           {current ? (

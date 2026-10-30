@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -75,7 +75,7 @@ function IgnorePaths({
               className="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => onChange(paths.filter((x) => x !== p))}
             >
-              <XIcon aria-hidden="true" className="size-3" />
+              <XGlassIcon aria-hidden="true" className="size-4.5" />
             </button>
           </li>
         ))}
@@ -101,7 +101,7 @@ function IgnorePaths({
           disabled={disabled || !draft.trim()}
           onClick={add}
         >
-          <PlusIcon aria-hidden="true" className="size-3.5" />
+          <PlusGlassIcon aria-hidden="true" className="size-5" />
           {t('appSleep.ignore.add')}
         </Button>
       </div>

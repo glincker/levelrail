@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  CircleNotchIcon,
-  MinusCircleIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,11 +30,11 @@ const STEP_LABEL = {
   preflight: 'onboarding.steps.preflight',
 } as const
 
-const STATUS_ICON: Record<PreflightStatus, typeof CheckCircleIcon> = {
-  pass: CheckCircleIcon,
-  warn: WarningIcon,
-  fail: XCircleIcon,
-  unknown: MinusCircleIcon,
+const STATUS_ICON: Record<PreflightStatus, typeof CircleCheckGlassIcon> = {
+  pass: CircleCheckGlassIcon,
+  warn: TriangleAlertGlassIcon,
+  fail: CircleXGlassIcon,
+  unknown: CircleMinusGlassIcon,
 }
 
 const STATUS_TONE: Record<PreflightStatus, string> = {
@@ -56,17 +56,17 @@ const STATUS_BADGE: Record<
 
 function StepIcon({ state }: { state: StepState }) {
   if (state === 'done') {
-    return <CheckCircleIcon className="size-4 text-tone-success" />
+    return <CircleCheckGlassIcon className="size-5 text-tone-success" />
   }
   if (state === 'active') {
     return (
-      <CircleNotchIcon className="size-4 animate-spin text-muted-foreground motion-reduce:animate-none" />
+      <LoaderCircleGlassIcon className="size-5 animate-spin text-muted-foreground motion-reduce:animate-none" />
     )
   }
   if (state === 'attention') {
-    return <WarningIcon className="size-4 text-tone-warning" />
+    return <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
   }
-  return <CircleIcon className="size-4 text-muted-foreground" />
+  return <CircleGlassIcon className="size-5 text-muted-foreground" />
 }
 
 // Live progress for a node that was just given a join command: contacted,
@@ -222,7 +222,7 @@ function CheckRow({ check }: { check: PreflightCheck }) {
   return (
     <li className="space-y-1.5 rounded-lg border border-border p-2.5">
       <div className="flex items-center gap-2">
-        <Icon className={`size-4 shrink-0 ${STATUS_TONE[check.status]}`} />
+        <Icon className={`size-5 shrink-0 ${STATUS_TONE[check.status]}`} />
         <span className="text-sm font-medium text-foreground">
           {t(`onboarding.checks.${check.id}`, { defaultValue: check.id })}
         </span>

@@ -63,6 +63,12 @@ type View struct {
 	Status      string          `json:"status"`
 	StatusText  string          `json:"status_text"`
 	GeneratedAt time.Time       `json:"generated_at"`
+	Accent      string          `json:"accent,omitempty"`
+	LogoURL     string          `json:"logo_url,omitempty"`
+	About       string          `json:"about,omitempty"`
+	Website     string          `json:"website,omitempty"`
+	NoIndex     bool            `json:"noindex,omitempty"`
+	PoweredBy   bool            `json:"powered_by"`
 	Components  []ComponentView `json:"components"`
 	Incidents   []IncidentView  `json:"incidents"`
 	Maintenance []IncidentView  `json:"maintenance"`
@@ -70,10 +76,13 @@ type View struct {
 
 // ComponentView is one component as the public sees it.
 type ComponentView struct {
-	Name     string    `json:"name"`
-	Status   string    `json:"status"`
-	Uptime90 *float64  `json:"uptime_90d"`
-	Days     []DayView `json:"days"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Group       string    `json:"group,omitempty"`
+	Status      string    `json:"status"`
+	Uptime90    *float64  `json:"uptime_90d"`
+	Days        []DayView `json:"days"`
 }
 
 // DayView is one uptime bar.
@@ -81,6 +90,8 @@ type DayView struct {
 	Date   string   `json:"date"`
 	Status string   `json:"status"`
 	Uptime *float64 `json:"uptime,omitempty"`
+	// Level scales the bar colour 1..4 by the day's weighted downtime share.
+	Level int `json:"level,omitempty"`
 }
 
 // IncidentView is an incident or maintenance announcement.
@@ -122,7 +133,7 @@ func severity(s string) int {
 func OverallStatus(statuses []string) string {
 	worst, anyKnown := Operational, false
 	for _, s := range statuses {
-		if s != Unknown {
+		if s != Unknown && s != NoData {
 			anyKnown = true
 		}
 		if severity(s) > severity(worst) {
@@ -162,34 +173,53 @@ func impactStatus(impact string) string {
 	}
 }
 
-// dayOutageShare is the share of failed probes at which a day's bar turns red.
-const dayOutageShare = 0.05
-
-func uptimeFraction(ok, degraded, down int) (float64, bool) {
+// downShare is the weighted downtime share of a set of probe counts:
+// failed probes count fully, degraded ones by the configured weight.
+func downShare(ok, degraded, down int, t Tuning) (float64, bool) {
 	total := ok + degraded + down
 	if total == 0 {
 		return 0, false
 	}
-	return 1 - float64(down)/float64(total), true
+	return (float64(down) + t.DegradedWeight*float64(degraded)) / float64(total), true
 }
 
-func dayStatus(d store.StatusDaily) string {
-	total := d.OK + d.Degraded + d.Down
+// uptimeFraction is the time-weighted availability of a set of probe counts.
+func uptimeFraction(ok, degraded, down int, t Tuning) (float64, bool) {
+	share, has := downShare(ok, degraded, down, t)
+	return 1 - share, has
+}
+
+// dayLevel maps a downtime share to a 0..4 colour intensity so one failed
+// probe in a day shows as a faint mark instead of a solid bar.
+func dayLevel(share float64, t Tuning) int {
+	if share <= 0 {
+		return 0
+	}
+	l := int(share/t.DayOutageShare*4) + 1
+	if l > 4 {
+		return 4
+	}
+	return l
+}
+
+func dayStatus(d store.StatusDaily, t Tuning) (string, int) {
+	share, has := downShare(d.OK, d.Degraded, d.Down, t)
 	switch {
-	case total == 0:
-		return NoData
-	case float64(d.Down)/float64(total) >= dayOutageShare:
-		return Outage
+	case !has:
+		return NoData, 0
+	case share >= t.DayOutageShare:
+		return Outage, 4
 	case d.Down > 0 || d.Degraded > 0:
-		return Degraded
+		return Degraded, dayLevel(share, t)
 	default:
-		return Operational
+		return Operational, 0
 	}
 }
 
 // buildBars returns UptimeDays bars ending at today (UTC) plus the
 // overall uptime across days that have data.
 func buildBars(daily []store.StatusDaily, today time.Time) ([]DayView, *float64) {
+	t := TuningFromEnv()
 	byDay := make(map[string]store.StatusDaily, len(daily))
 	var ok, deg, down int
 	for _, d := range daily {
@@ -202,15 +232,15 @@ func buildBars(daily []store.StatusDaily, today time.Time) ([]DayView, *float64)
 		d, found := byDay[date]
 		view := DayView{Date: date, Status: NoData}
 		if found {
-			view.Status = dayStatus(d)
-			if u, has := uptimeFraction(d.OK, d.Degraded, d.Down); has {
+			view.Status, view.Level = dayStatus(d, t)
+			if u, has := uptimeFraction(d.OK, d.Degraded, d.Down, t); has {
 				pct := roundPct(u)
 				view.Uptime = &pct
 			}
 		}
 		days = append(days, view)
 	}
-	total, has := uptimeFraction(ok, deg, down)
+	total, has := uptimeFraction(ok, deg, down, t)
 	if !has {
 		return days, nil
 	}

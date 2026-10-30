@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from './ui/alert'
 
 // Short codes from internal/api/oauth.go and sso_saml_flow.go; others fall back to generic.
@@ -40,7 +40,7 @@ export function OAuthErrorBanner() {
   }
   return (
     <Alert variant="destructive" className="w-full max-w-sm">
-      <WarningIcon />
+      <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
       <AlertDescription>
         {isKnownCode(code)
           ? t(`foundation.signIn.errors.${code}`)

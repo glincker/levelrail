@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  DeviceMobileIcon,
-  MonitorIcon,
-  MoonIcon,
-  SunIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  MonitorGlassIcon,
+  MoonGlassIcon,
+  SmartphoneGlassIcon,
+  SunGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { CodeBlock } from '@/components/ui/code-block'
@@ -59,7 +59,7 @@ export function TemplatePreview({
             aria-pressed={!mobile}
             onClick={() => setMobile(false)}
           >
-            <MonitorIcon data-icon="inline-start" />
+            <MonitorGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.desktop')}
           </Button>
           <Button
@@ -69,7 +69,7 @@ export function TemplatePreview({
             aria-pressed={mobile}
             onClick={() => setMobile(true)}
           >
-            <DeviceMobileIcon data-icon="inline-start" />
+            <SmartphoneGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.mobile')}
           </Button>
           <Button
@@ -79,7 +79,7 @@ export function TemplatePreview({
             aria-pressed={!dark}
             onClick={() => setDark(false)}
           >
-            <SunIcon data-icon="inline-start" />
+            <SunGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.light')}
           </Button>
           <Button
@@ -89,7 +89,7 @@ export function TemplatePreview({
             aria-pressed={dark}
             onClick={() => setDark(true)}
           >
-            <MoonIcon data-icon="inline-start" />
+            <MoonGlassIcon size="1.4em" data-icon="inline-start" />
             {t('templates.preview.dark')}
           </Button>
         </div>

@@ -2,10 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import type { UseMutationResult } from '@tanstack/react-query'
-import {
-  CloudArrowUpIcon,
-  DownloadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -88,8 +85,8 @@ import type { DatabaseResource } from '../types/databaseDetail'
 export function NoTargetsConfigured() {
   return (
     <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
-      <CloudArrowUpIcon
-        className="size-5 text-muted-foreground"
+      <UploadGlassIcon
+        className="size-6 text-muted-foreground"
         aria-hidden="true"
       />
       <p className="text-sm text-muted-foreground">
@@ -184,7 +181,7 @@ export function TriggerBackupRowView({
           onClick={handleTrigger}
           disabled={!targetId || trigger.isPending}
         >
-          <CloudArrowUpIcon aria-hidden="true" />
+          <UploadGlassIcon size="1.4em" aria-hidden="true" />
           {trigger.isPending ? 'Starting...' : 'Back up now'}
         </Button>
       </div>
@@ -223,7 +220,7 @@ export function DownloadBackupLinkView({ href }: { href: string }) {
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
-      <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+      <DownloadGlassIcon className="size-5" aria-hidden="true" />
       Download
     </a>
   )

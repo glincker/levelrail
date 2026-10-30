@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  ProhibitIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { BanGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -187,7 +184,7 @@ export function ModelKeysPanel({
                       setConfirm({ action: 'rotate', key: k })
                     }}
                   >
-                    <ArrowsClockwiseIcon aria-hidden="true" />
+                    <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
                   </Button>
                 )}
                 {k.status === 'revoked' ? null : (
@@ -200,7 +197,7 @@ export function ModelKeysPanel({
                       setConfirm({ action: 'revoke', key: k })
                     }}
                   >
-                    <ProhibitIcon aria-hidden="true" />
+                    <BanGlassIcon size="1.4em" aria-hidden="true" />
                   </Button>
                 )}
               </span>

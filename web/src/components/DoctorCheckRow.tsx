@@ -1,10 +1,10 @@
 import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-  XCircleIcon,
-  MinusCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { DoctorCheck, DoctorCheckStatus } from '../queries/systemDoctor'
@@ -17,13 +17,17 @@ const STATUS_META: Record<
   {
     label: string
     variant: VariantProps<typeof badgeVariants>['variant']
-    icon: Icon
+    icon: UiIcon
   }
 > = {
-  ok: { label: 'OK', variant: 'success', icon: CheckCircleIcon },
-  warn: { label: 'Warning', variant: 'warning', icon: WarningCircleIcon },
-  fail: { label: 'Failed', variant: 'destructive', icon: XCircleIcon },
-  unknown: { label: 'Not checked', variant: 'muted', icon: MinusCircleIcon },
+  ok: { label: 'OK', variant: 'success', icon: CircleCheckGlassIcon },
+  warn: { label: 'Warning', variant: 'warning', icon: CircleAlertGlassIcon },
+  fail: { label: 'Failed', variant: 'destructive', icon: CircleXGlassIcon },
+  unknown: {
+    label: 'Not checked',
+    variant: 'muted',
+    icon: CircleMinusGlassIcon,
+  },
 }
 
 /** DoctorCheckRow is the full-detail rendering of one check: used on the system status page, where showing everything at once is the point. */
@@ -62,7 +66,7 @@ export function DoctorCheckRow({
             />
           ) : null}
           <Badge variant={silenced ? 'muted' : meta.variant}>
-            <StatusIcon />
+            <StatusIcon size="1.4em" />
             {meta.label}
           </Badge>
         </div>

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from './empty-state'
 import type { Brand } from '../../types/brand'
 
@@ -28,7 +28,7 @@ describe('EmptyState', () => {
     vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
       <EmptyState
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5" />}
         title="No apps yet"
         description="Deploy your first app to get started."
       />,
@@ -44,7 +44,7 @@ describe('EmptyState', () => {
     vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
       <EmptyState
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5" />}
         title="No apps yet"
         description="Deploy your first app to get started."
         action={<button type="button">New app</button>}
@@ -61,7 +61,7 @@ describe('EmptyState', () => {
     vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
       <EmptyState
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5" />}
         title="No backup target connected"
         description="Backups need somewhere to store to."
         hint="Requires a backup target before backups can run."
@@ -76,7 +76,7 @@ describe('EmptyState', () => {
     vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
       <EmptyState
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5" />}
         title="No apps yet"
         description="Deploy your first app."
         helpPath="/apps"
@@ -91,7 +91,7 @@ describe('EmptyState', () => {
     vi.mocked(useBrand).mockReturnValue({ ...baseBrand, DocsURL: '' })
     render(
       <EmptyState
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5" />}
         title="No apps yet"
         description="Deploy your first app."
         helpPath="/apps"
@@ -104,7 +104,7 @@ describe('EmptyState', () => {
     vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
       <EmptyState
-        icon={<PackageIcon className="size-5" />}
+        icon={<PackageGlassIcon className="size-5" />}
         illustration="rocket"
         title="Nothing yet"
         description="Deploy one."

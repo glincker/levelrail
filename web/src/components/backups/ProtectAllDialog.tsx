@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -113,7 +113,10 @@ export function ProtectAllDialog({
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldCheckIcon className="size-4" aria-hidden="true" />
+            <ShieldCheckGlassIcon
+              className="size-5 text-tone-success"
+              aria-hidden="true"
+            />
             {t('protectAll.title')}
           </DialogTitle>
           <DialogDescription>{t('protectAll.description')}</DialogDescription>

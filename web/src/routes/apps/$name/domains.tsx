@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { useApp } from '../../../queries/apps'
 import { certificatesQueryOptions } from '../../../queries/certificates'
 import { AppMaintenanceToggle } from '../../../components/maintenance/AppMaintenanceToggle'
@@ -42,7 +42,7 @@ function DomainsSectionSkeleton() {
     <Card aria-hidden="true">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeIcon className="size-4" />
+          <GlobeGlassIcon className="size-5" />
           {t('editor.title')}
         </CardTitle>
         <Skeleton className="h-4 w-72" />

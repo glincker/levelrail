@@ -1,0 +1,72 @@
+---
+title: "Self-host Authelia with Docker"
+sidebarTitle: "Authelia"
+description: "Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt."
+"og:url": "https://docs.levelrail.com/self-host/authelia"
+---
+
+Single sign-on and two-factor portal. The admin user is created at first boot from a generated password (visible in the service environment settings, never on a process command line); more users go in /data/users.yml. Sessions are scoped to this portal's own host, so widen the cookie domain in /config/configuration.yml before protecting other apps. One-time codes are written to /data/notification.txt.
+
+This page describes the Levelrail template for Authelia (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.authelia.com/configuration/prologue/introduction/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `authelia` | `authelia/authelia:4.39.28` | 9091 | `data -&#62; /data`<br />`config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `authelia` | `ADMIN_PASSWORD` | Generated at deploy |
+| `authelia` | `AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET` | Generated at deploy |
+| `authelia` | `AUTHELIA_SESSION_SECRET` | Generated at deploy |
+| `authelia` | `AUTHELIA_STORAGE_ENCRYPTION_KEY` | Generated at deploy |
+| `authelia` | `PORTAL_URL` | Preset in the template |
+| `authelia` | `X_AUTHELIA_CONFIG_FILTERS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`authelia`): ADMIN_PASSWORD, AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET, AUTHELIA_SESSION_SECRET, AUTHELIA_STORAGE_ENCRYPTION_KEY.
+- Stores data in named volumes (`authelia`): config, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Authelia with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Authelia. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy authelia --name my-authelia
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Infisical](/self-host/infisical)
+
+All templates are listed in the [self-host gallery](/self-host).

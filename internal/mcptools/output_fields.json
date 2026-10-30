@@ -1129,6 +1129,7 @@
  ],
  "get_resource_recommendation": [
   "cpu",
+  "estimated_monthly_saving_usd",
   "lookback_label",
   "lookback_window",
   "memory",

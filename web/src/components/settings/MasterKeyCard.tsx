@@ -1,4 +1,4 @@
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardHeader,
@@ -21,7 +21,7 @@ export function MasterKeyCard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <KeyIcon className="size-4" />
+              <KeyGlassIcon className="size-5" />
             </div>
             <div>
               <CardTitle className="flex items-center gap-1.5">

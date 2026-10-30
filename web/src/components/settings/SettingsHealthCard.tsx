@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
+import { ActivityGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -23,7 +23,7 @@ export function SettingsHealthCard() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <HeartbeatIcon className="size-4" aria-hidden="true" />
+            <ActivityGlassIcon className="size-5" aria-hidden="true" />
           </div>
           <div>
             <CardTitle>{t('settingsHealth.title')}</CardTitle>
@@ -54,8 +54,8 @@ export function SettingsHealthCard() {
                 key={f.id}
                 className="flex items-start gap-2 text-sm text-muted-foreground"
               >
-                <CheckCircleIcon
-                  className="mt-0.5 size-4 shrink-0 text-green-700 dark:text-green-400"
+                <CircleCheckGlassIcon
+                  className="mt-0.5 size-5 shrink-0 text-green-700 dark:text-green-400"
                   aria-hidden="true"
                 />
                 <span>{f.detail || f.title}</span>

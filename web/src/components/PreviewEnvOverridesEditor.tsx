@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { TrashIcon, GitBranchIcon } from '@phosphor-icons/react/dist/ssr'
+import { GitBranchGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -72,7 +72,7 @@ export function PreviewEnvOverridesEditor({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitBranchIcon className="size-4" />
+          <GitBranchGlassIcon className="size-5" />
           Preview env overrides
         </CardTitle>
         <CardDescription>
@@ -103,7 +103,7 @@ export function PreviewEnvOverridesEditor({
                   }}
                   aria-label={`Remove ${key}`}
                 >
-                  <TrashIcon className="size-4 text-muted-foreground" />
+                  <TrashGlassIcon className="size-5 text-muted-foreground" />
                 </Button>
               </li>
             ))}

@@ -424,6 +424,10 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	if f.Environment != "" && f.Project == "" {
 		s.at("spec.environment", "an environment needs a project")
 	}
+	f.Rollout = rolloutFromSpec(svc.Rollout)
+	if len(svc.Files) > 0 {
+		f.Files = filesFromSpec(svc.Files)
+	}
 	f.Jobs = jobsFromSpec(svc.Jobs, s)
 	for _, v := range svc.Volumes {
 		if v.Name != "" {
@@ -459,6 +463,11 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	for i, v := range svc.Volumes {
 		if v.Name == "" {
 			s.at(fmt.Sprintf("%svolumes[%d]", p, i), "apply supports named volumes only; host paths are never declared in the files")
+		}
+	}
+	for i, f := range svc.Files {
+		if f.Secret {
+			s.at(fmt.Sprintf("%sfiles[%d].secret", p, i), "secret files would hold their content in the document; set them from the dashboard or CLI instead")
 		}
 	}
 	if svc.Egress != nil {

@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCircleUpIcon,
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  InfoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowUpGlassIcon,
+  CircleCheckGlassIcon,
+  ExternalLinkGlassIcon,
+  InfoGlassIcon,
+} from '@thesvg/ui-react'
 import { preflightQueryOptions, type UpdateStatus } from '../../queries/updates'
 
 export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
@@ -17,7 +17,7 @@ export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
   if (hostBinaryEdge) {
     return (
       <div className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-        <InfoIcon className="size-4" />
+        <InfoGlassIcon className="size-5 text-tone-info" />
         {t('version.edgeHostBinary')}
       </div>
     )
@@ -30,7 +30,7 @@ export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
   if (!status.update_available) {
     return (
       <div className="inline-flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
-        <CheckCircleIcon className="size-4" />
+        <CircleCheckGlassIcon className="size-5 text-tone-success" />
         {edge ? t('version.upToDateEdge') : t('version.upToDate')}
       </div>
     )
@@ -39,7 +39,7 @@ export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
   return (
     <div className="space-y-2">
       <div className="inline-flex items-center gap-1.5 text-sm text-foreground">
-        <ArrowCircleUpIcon className="size-4" />
+        <ArrowUpGlassIcon className="size-5" />
         {t(edge ? 'version.latestEdge' : 'version.latest', {
           version: status.latest_version,
         })}
@@ -52,7 +52,7 @@ export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
           className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
         >
           {t('version.viewRelease')}
-          <ArrowSquareOutIcon className="size-3.5" />
+          <ExternalLinkGlassIcon className="size-5" />
         </a>
       )}
     </div>

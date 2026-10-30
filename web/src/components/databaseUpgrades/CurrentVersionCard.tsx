@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { InfoIcon, ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon, ShieldAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -58,7 +58,10 @@ export function CurrentVersionCard({ data }: { data: DatabaseUpgrades }) {
         {advisories.length > 0 ? (
           <div className="space-y-1.5">
             <p className="flex items-center gap-1.5 text-sm font-medium">
-              <ShieldWarningIcon className="size-4" aria-hidden="true" />
+              <ShieldAlertGlassIcon
+                className="size-5 text-tone-warning"
+                aria-hidden="true"
+              />
               {t('current.advisories')}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -73,7 +76,11 @@ export function CurrentVersionCard({ data }: { data: DatabaseUpgrades }) {
 
         {advice.manual_reason ? (
           <Alert>
-            <InfoIcon aria-hidden="true" />
+            <InfoGlassIcon
+              className="text-tone-info"
+              size="1.4em"
+              aria-hidden="true"
+            />
             <AlertTitle>{t('current.manualReason')}</AlertTitle>
             <AlertDescription>{advice.manual_reason}</AlertDescription>
           </Alert>

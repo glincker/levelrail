@@ -2,11 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useFieldArray, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
-import {
-  PlusIcon,
-  BracketsCurlyIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { BracesGlassIcon, PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { useAppForm } from '../hooks/useAppForm'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { EnvExportButton } from './EnvExportButton'
@@ -243,7 +239,7 @@ export function EnvVarsForm({
       {unsavedGuard}
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BracketsCurlyIcon className="size-4" />
+          <BracesGlassIcon className="size-5" />
           {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -301,7 +297,7 @@ export function EnvVarsForm({
                         remove(index)
                       }}
                     >
-                      <XIcon />
+                      <XGlassIcon size="1.4em" />
                       <span className="sr-only">Remove variable</span>
                     </Button>
                   </div>
@@ -341,7 +337,7 @@ export function EnvVarsForm({
                 append({ key: '', value: '' })
               }}
             >
-              <PlusIcon />
+              <PlusGlassIcon size="1.4em" />
               Add variable
             </Button>
             {availableSharedVars && availableSharedVars.length > 0 ? (

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TrendUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrendingUpGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDeltaPct, formatMoney } from '../../lib/usageFormat'
 import type { CostExploration } from '../../types/costExplorer'
@@ -76,7 +76,7 @@ export function CostMovers({ data }: { data: CostExploration }) {
           <ul className="space-y-1.5">
             {data.movers.map((m) => (
               <li key={m.key} className="flex items-center gap-2 text-sm">
-                <TrendUpIcon className="size-4 shrink-0 text-destructive" />
+                <TrendingUpGlassIcon className="size-5 shrink-0 text-destructive" />
                 <span className="min-w-0 truncate">
                   {t('movers.up', {
                     name: seriesLabel(data, m, t),

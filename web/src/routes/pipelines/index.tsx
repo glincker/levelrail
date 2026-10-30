@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { TreeStructureIcon } from '@phosphor-icons/react/dist/ssr'
+import { BinaryTreeGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PipelineAttentionStrip } from '../../components/PipelineAttentionStrip'
@@ -30,7 +30,7 @@ function PipelinesPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <TreeStructureIcon className="size-4" aria-hidden="true" />
+          <BinaryTreeGlassIcon className="size-5" aria-hidden="true" />
         </div>
         <PageHeader
           title="Pipelines"

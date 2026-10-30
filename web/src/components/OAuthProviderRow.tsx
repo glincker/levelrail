@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, GearSixIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
 import type { OAuthProviderSettings } from '../queries/oauth'
 import {
   brandKeyFor,
@@ -69,7 +69,7 @@ export function OAuthProviderRow({
           aria-label={t('oauthPage.copyCallbackFor', { provider: label })}
           onClick={copyCallback}
         >
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       </div>
       <Button
@@ -78,7 +78,7 @@ export function OAuthProviderRow({
         size="sm"
         onClick={() => setOpen(true)}
       >
-        <GearSixIcon aria-hidden="true" />
+        <SettingsGlassIcon size="1.4em" aria-hidden="true" />
         {t('oauthPage.configure')}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>

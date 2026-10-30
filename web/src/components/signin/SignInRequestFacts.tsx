@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ClockCountdownIcon,
-  DesktopIcon,
-  GlobeIcon,
-  MapPinIcon,
-  PlugsIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CountdownGlassIcon,
+  GlobeGlassIcon,
+  LocateGlassIcon,
+  MonitorGlassIcon,
+  PlugGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { formatAbsoluteTime, formatRelativeTime } from '../../lib/relativeTime'
@@ -22,11 +22,11 @@ import type { SignInApprovalRequest } from '../../queries/signIn'
 import { deviceTitle } from './signInRequestHooks'
 
 const DEVICE_ICONS = {
-  browser: GlobeIcon,
-  cli: TerminalWindowIcon,
-  mcp: PlugsIcon,
-  unknown: DesktopIcon,
-} satisfies Record<DeviceKind, typeof GlobeIcon>
+  browser: GlobeGlassIcon,
+  cli: TerminalGlassIcon,
+  mcp: PlugGlassIcon,
+  unknown: MonitorGlassIcon,
+} satisfies Record<DeviceKind, typeof GlobeGlassIcon>
 
 function Fact({
   icon,
@@ -85,14 +85,14 @@ export function SignInRequestFacts({
     >
       <Fact
         inline={compact}
-        icon={<DeviceIcon className="size-4" />}
+        icon={<DeviceIcon className="size-5" />}
         label={t('request.factDevice')}
       >
         {deviceTitle(request.user_agent, t)}
       </Fact>
       <Fact
         inline={compact}
-        icon={<MapPinIcon className="size-4" />}
+        icon={<LocateGlassIcon className="size-5" />}
         label={t('request.factWhere')}
       >
         <span className="font-mono">{request.requester_ip}</span>
@@ -102,7 +102,7 @@ export function SignInRequestFacts({
       </Fact>
       <Fact
         inline={compact}
-        icon={<ClockCountdownIcon className="size-4" />}
+        icon={<CountdownGlassIcon className="size-5" />}
         label={t('request.factWhen')}
       >
         <time
@@ -115,7 +115,7 @@ export function SignInRequestFacts({
       {compact ? null : (
         <Fact
           inline={compact}
-          icon={<ClockCountdownIcon className="size-4" />}
+          icon={<CountdownGlassIcon className="size-5" />}
           label={t('request.factExpires')}
         >
           <span className="tabular-nums" aria-hidden="true">

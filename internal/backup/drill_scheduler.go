@@ -58,6 +58,26 @@ type DrillScheduler struct {
 	Now        func() time.Time
 
 	lastProtection time.Time
+	skipLogged     map[string]bool
+}
+
+// DrillNotApplicable is the status text for backups on local or node-directory targets, which drills cannot read back through S3.
+const DrillNotApplicable = "not applicable to local targets"
+
+// drillApplicable reports whether h's target can be drilled, logging a skip once at debug.
+func (s *DrillScheduler) drillApplicable(ctx context.Context, h store.BackupHistory) bool {
+	t, err := s.Store.GetBackupTarget(ctx, h.TargetID)
+	if err != nil || (!strings.HasPrefix(t.Endpoint, LocalEndpointScheme) && !strings.HasPrefix(t.Endpoint, AgentEndpointScheme)) {
+		return true
+	}
+	if !s.skipLogged[h.TargetID] {
+		if s.skipLogged == nil {
+			s.skipLogged = map[string]bool{}
+		}
+		s.skipLogged[h.TargetID] = true
+		s.log().Debug("backup: restore drills skipped, "+DrillNotApplicable, slog.String("target_id", h.TargetID))
+	}
+	return false
 }
 
 // DrillIntervalFromEnv parses APP_BACKUP_DRILL_INTERVAL_HOURS: unset means
@@ -178,6 +198,9 @@ func (s *DrillScheduler) drillDue(ctx context.Context) error {
 		if ctx.Err() != nil {
 			break
 		}
+		if !s.drillApplicable(ctx, h) {
+			continue
+		}
 		var drills []store.BackupDrill
 		var lerr error
 		if k.kind == store.BackupResourceKindVolume {
@@ -294,7 +317,9 @@ func RecordProtection(ctx context.Context, st ProtectionRecorder, secrets Secret
 		p, err = prober.Probe(ctx, dest)
 		rec.ObjectLock, rec.LockMode, rec.Versioning, rec.CanDelete = p.ObjectLock, p.LockMode, p.Versioning, p.CanDelete
 	}
-	if err != nil {
+	if errors.Is(err, ErrAgentDestinationUnsupported) {
+		rec.ProbeError = DrillNotApplicable
+	} else if err != nil {
 		rec.ProbeError = err.Error()
 	}
 	if serr := st.SetBackupTargetProtection(ctx, rec); serr != nil {

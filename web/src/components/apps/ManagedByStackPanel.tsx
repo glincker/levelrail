@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  BookOpenIcon,
-  LockKeyIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BookOpenGlassIcon,
+  LayersGlassIcon,
+  LockGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useExperimentalFeatures } from '../../hooks/useExperimental'
@@ -17,8 +17,8 @@ function Panel({ stack }: Readonly<{ stack: string }>) {
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 text-sm">
-        <StackIcon
-          className="size-4 text-muted-foreground"
+        <LayersGlassIcon
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="font-medium text-foreground">
@@ -39,7 +39,7 @@ function Panel({ stack }: Readonly<{ stack: string }>) {
         ) : null}
         {data?.drift_policy === 'lock' ? (
           <Badge variant="warning">
-            <LockKeyIcon aria-hidden="true" />
+            <LockGlassIcon size="1.4em" aria-hidden="true" />
             {t('appPanel.lock')}
           </Badge>
         ) : null}
@@ -50,7 +50,7 @@ function Panel({ stack }: Readonly<{ stack: string }>) {
             params={{ _splat: 'stacks' }}
             className="inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline"
           >
-            <BookOpenIcon className="size-3.5" aria-hidden="true" />
+            <BookOpenGlassIcon className="size-5" aria-hidden="true" />
             {t('appPanel.docs')}
           </Link>
         </span>

@@ -1,20 +1,23 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  ClockIcon,
-  ProhibitIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleXGlassIcon,
+  ClockGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { ProxyStep, ProxyStepState } from '../../queries/proxyIntegration'
 
 const ICONS = {
-  done: { Icon: CheckCircleIcon, tone: 'text-green-600 dark:text-green-400' },
-  todo: { Icon: CircleIcon, tone: 'text-muted-foreground' },
-  blocked: { Icon: ProhibitIcon, tone: 'text-amber-600 dark:text-amber-400' },
-  error: { Icon: XCircleIcon, tone: 'text-destructive' },
-  waiting: { Icon: ClockIcon, tone: 'text-muted-foreground' },
+  done: {
+    Icon: CircleCheckGlassIcon,
+    tone: 'text-green-600 dark:text-green-400',
+  },
+  todo: { Icon: CircleGlassIcon, tone: 'text-muted-foreground' },
+  blocked: { Icon: BanGlassIcon, tone: 'text-amber-600 dark:text-amber-400' },
+  error: { Icon: CircleXGlassIcon, tone: 'text-destructive' },
+  waiting: { Icon: ClockGlassIcon, tone: 'text-muted-foreground' },
 } as const satisfies Record<
   ProxyStepState | 'waiting',
   { Icon: unknown; tone: string }
@@ -50,8 +53,7 @@ export function ProxySteps({ steps }: { steps: ProxyStep[] }) {
               />
             )}
             <Icon
-              weight="fill"
-              className={cn('relative size-5.5 shrink-0 bg-card', tone)}
+              className={cn('relative size-6 shrink-0 bg-card', tone)}
               aria-hidden="true"
             />
             <div className="min-w-0">

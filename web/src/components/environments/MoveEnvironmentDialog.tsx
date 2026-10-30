@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsLeftRightIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftRightGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -96,7 +96,7 @@ export function MoveEnvironmentDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ArrowsLeftRightIcon className="size-3.5" aria-hidden="true" />
+        <ArrowLeftRightGlassIcon className="size-5" aria-hidden="true" />
         {t('move.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
@@ -139,8 +139,8 @@ export function MoveEnvironmentDialog({
         {gate && !noop ? (
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <p className="flex items-start gap-2 text-foreground">
-              <WarningIcon
-                className="mt-0.5 size-4 shrink-0 text-amber-600"
+              <TriangleAlertGlassIcon
+                className="mt-0.5 size-6 shrink-0 text-amber-600"
                 aria-hidden="true"
               />
               {t('move.protectedNotice', { environment: gate.name })}

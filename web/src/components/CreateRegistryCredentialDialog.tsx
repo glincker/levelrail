@@ -3,11 +3,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  EyeIcon,
-  EyeSlashIcon,
-  PackageIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  PackageGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -186,7 +186,7 @@ export function CreateRegistryCredentialDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <PackageIcon className="size-4 text-muted-foreground" />
+                <PackageGlassIcon className="size-5 text-muted-foreground" />
                 Add credential
               </DialogTitle>
             </DialogHeader>
@@ -215,7 +215,7 @@ export function CreateRegistryCredentialDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <PackageIcon className="size-4 text-muted-foreground" />
+                <PackageGlassIcon className="size-5 text-muted-foreground" />
                 Add credential
               </DialogTitle>
               <DialogDescription>
@@ -363,9 +363,9 @@ export function CreateRegistryCredentialDialog() {
                     className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                   >
                     {revealPassword ? (
-                      <EyeSlashIcon className="size-4" />
+                      <EyeOffGlassIcon className="size-5" />
                     ) : (
-                      <EyeIcon className="size-4" />
+                      <EyeGlassIcon className="size-5" />
                     )}
                   </button>
                 </div>
@@ -392,7 +392,10 @@ export function CreateRegistryCredentialDialog() {
 
               {generalError ? (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.7em"
+                  />
                   <AlertDescription>{generalError}</AlertDescription>
                 </Alert>
               ) : null}

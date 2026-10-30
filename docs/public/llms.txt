@@ -121,6 +121,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Data export](https://docs.levelrail.com/data-export): send logs, audit events and metrics to Loki, syslog, a webhook, a bucket, Prometheus or OTLP.
 - [Traffic export](https://docs.levelrail.com/traffic-export): stream request records to PostHog, OTLP or a webhook, with no visitor identity unless a destination opts in.
 - [Public status page](https://docs.levelrail.com/status-page): an opt-in public status page with uptime bars, incidents, and an RSS feed.
+- [Monitors](https://docs.levelrail.com/monitors): experimental http and tcp uptime monitors with hourly rollups.
 - [AI models](https://docs.levelrail.com/ai-models): run Ollama, vLLM, or llama.cpp models on GPU nodes as a first-class resource.
 - [AI assistant integration: levelrail-mcp](https://docs.levelrail.com/ai-assistant): run the MCP server over stdio or the network for an AI assistant, and scope its API token.
 - [Working with AI agents](https://docs.levelrail.com/agents): connect an AI coding agent to your instance and scope its token safely.

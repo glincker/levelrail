@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, ChevronUpGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -93,12 +93,15 @@ export function ResultGrid({
                       <span className="truncate">{column}</span>
                       {active ? (
                         sortDesc ? (
-                          <CaretDownIcon
-                            className="size-3"
+                          <ChevronDownGlassIcon
+                            className="size-4.5"
                             aria-hidden="true"
                           />
                         ) : (
-                          <CaretUpIcon className="size-3" aria-hidden="true" />
+                          <ChevronUpGlassIcon
+                            className="size-4.5"
+                            aria-hidden="true"
+                          />
                         )
                       ) : null}
                     </button>

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import { tokenListQueryOptions } from '../../queries/tokens'
 import { TokenTable } from '../../components/TokenTable'
 import { CreateTokenDialog } from '../../components/CreateTokenDialog'
@@ -40,7 +40,7 @@ function TokensPage() {
 
   return (
     <PageTemplate
-      icon={<KeyIcon />}
+      icon={<KeyGlassIcon size="1.4em" />}
       eyebrow={t('tokensPage.eyebrow')}
       title={t('tokensPage.title')}
       description={t('tokensPage.description')}

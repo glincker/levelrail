@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import type { StaticRouteProblem } from '../../queries/staticRoutes'
 
 export function ProblemList({
@@ -13,8 +13,8 @@ export function ProblemList({
           key={`${p.source}:${p.line ?? 0}:${p.message}`}
           className="flex items-start gap-2"
         >
-          <WarningIcon
-            className="mt-0.5 size-4 shrink-0 text-tone-warning"
+          <TriangleAlertGlassIcon
+            className="mt-0.5 size-6 shrink-0 text-tone-warning"
             aria-hidden="true"
           />
           <span>

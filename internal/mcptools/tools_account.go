@@ -46,7 +46,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_my_tokens",
-		Description: "List this account's active API tokens: name, abilities, expiry and last use. A token's secret is never returned. Needs a token that holds read:sensitive and belongs to a user.",
+		Description: "List this account's active API tokens: name, abilities, expiry, last use. Secrets are never returned. Needs read:sensitive and a user token.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.SessionToken, error) {
 		creds, err := client.MyCredentials(ctx)
 		if err != nil {

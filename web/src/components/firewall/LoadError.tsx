@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ApiError } from '@/lib/apiError'
@@ -19,7 +19,7 @@ export function LoadError({
   return (
     <EmptyState
       compact={compact}
-      icon={<WarningCircleIcon className="size-5" />}
+      icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
       title={forbidden ? t('error.forbiddenTitle') : t('error.loadFailed')}
       description={forbidden ? t('error.forbiddenHelp') : error.message}
       action={

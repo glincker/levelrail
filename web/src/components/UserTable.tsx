@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { UserIcon } from '@phosphor-icons/react/dist/ssr'
+import { UserGlassIcon } from '@thesvg/ui-react'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { EmptyState } from './ui/empty-state'
@@ -29,7 +29,7 @@ export function UserTable({ users }: { users: UserResource[] }) {
   if (users.length === 0) {
     return (
       <EmptyState
-        icon={<UserIcon className="size-5" />}
+        icon={<UserGlassIcon className="size-6" />}
         title={t('usersPage.empty.title')}
         description={t('usersPage.empty.body')}
       />

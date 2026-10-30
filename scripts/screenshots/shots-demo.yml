@@ -4,7 +4,9 @@
 # paths use the same names as shots.yml so the demo run is a drop-in refresh;
 # __OUT_DIR__ is replaced with OUT_DIR. Only pages that render cleanly in demo
 # mode are listed. Rejected: databases-list (renders the empty
-# state), backups (never leaves its loading skeleton), status-page (a wall of warnings).
+# state), backups (never leaves its loading skeleton), status-page (a wall of warnings),
+# /public/status (every component reads Unknown without a reconciler) and
+# settings/account (access denied in the demo).
 
 - output: __OUT_DIR__/dashboard-home.png
   url: __BASE_URL__/?board=start
@@ -60,4 +62,31 @@
   width: 1280
   height: 800
   wait: 2500
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/app-releases.png
+  url: __BASE_URL__/apps/marketing-site/overview
+  width: 1280
+  height: 900
+  wait: 4500
+  javascript: "__CHROME_JS__; new Promise((done) => { let n = 0; const tick = () => { const h = [...document.querySelectorAll('h2,h3')].find(e => /^releases$/i.test((e.textContent || '').trim())); if (h) { h.scrollIntoView({block: 'center'}); setTimeout(done, 800); } else if (n++ < 40) { setTimeout(tick, 250); } else { done(); } }; tick(); })"
+
+- output: __OUT_DIR__/app-analysis.png
+  url: __BASE_URL__/apps/marketing-site/overview
+  width: 1280
+  height: 900
+  wait: 4500
+  javascript: "__CHROME_JS__; new Promise((done) => { let n = 0; const tick = () => { const h = [...document.querySelectorAll('h2,h3')].find(e => /analysis/i.test((e.textContent || '').trim()) && (e.textContent || '').length < 40); if (h) { h.scrollIntoView({block: 'start'}); window.scrollBy(0, -60); setTimeout(done, 800); } else if (n++ < 40) { setTimeout(tick, 250); } else { done(); } }; tick(); })"
+
+- output: __OUT_DIR__/status-page-public.png
+  url: __BASE_URL__/public/status
+  width: 1100
+  height: 1100
+  wait: 2500
+
+- output: __OUT_DIR__/status-page-admin.png
+  url: __BASE_URL__/settings/status-page
+  width: 1280
+  height: 1000
+  wait: 3500
   javascript: "__CHROME_JS__"

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretRightIcon,
-  CheckIcon,
-  CopyIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  ChevronRightGlassIcon,
+  CopyGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 
 export interface CliStep {
@@ -35,7 +35,11 @@ function CliLine({ step }: { step: CliStep }) {
             })
           }}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? (
+            <CheckGlassIcon size="1.4em" />
+          ) : (
+            <CopyGlassIcon size="1.4em" />
+          )}
           {copied ? t('copied') : t('copy')}
         </Button>
       </div>
@@ -50,8 +54,8 @@ export function FixCli({ steps }: { steps: CliStep[] }) {
   return (
     <details className="group rounded-md border border-border/60">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground select-none">
-        <CaretRightIcon
-          className="size-3 transition-transform group-open:rotate-90"
+        <ChevronRightGlassIcon
+          className="size-4.5 transition-transform group-open:rotate-90"
           aria-hidden="true"
         />
         {t('cli.summary')}

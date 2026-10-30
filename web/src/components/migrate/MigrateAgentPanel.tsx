@@ -1,10 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckIcon,
-  CopyIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon, PlugGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -56,9 +52,9 @@ function InstallCommand({ created }: { created: AgentCreated }) {
               onClick={() => copy(created.command ?? '')}
             >
               {copied ? (
-                <CheckIcon aria-hidden="true" />
+                <CheckGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <CopyIcon aria-hidden="true" />
+                <CopyGlassIcon size="1.4em" aria-hidden="true" />
               )}
             </Button>
           </div>
@@ -266,7 +262,7 @@ export function MigrateAgentPanel() {
           ['pending', 'connected', 'lost'].includes(s.state),
         ) ? (
         <EmptyState
-          icon={<PlugsConnectedIcon className="size-5" />}
+          icon={<PlugGlassIcon className="size-6" />}
           title={t('agent.empty')}
           description={t('agent.emptyHint')}
         />

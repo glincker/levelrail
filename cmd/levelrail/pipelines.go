@@ -28,6 +28,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/oidc"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/release"
+	"github.com/GLINCKER/levelrail/internal/rollbackref"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -229,6 +231,24 @@ func (a *pipelineActions) protectedCheck(ctx context.Context, svc *store.Desired
 	return nil
 }
 
+// gated runs the protected-environment and freeze checks push repeats and
+// reports a freeze, so a binding is never retargeted for a deploy that is
+// refused or held.
+func (a *pipelineActions) gated(ctx context.Context, service string) (bool, error) {
+	svc, err := a.db.GetDesiredService(ctx, service)
+	if err != nil {
+		return false, fmt.Errorf("load service %q: %w", service, err)
+	}
+	if err := a.protectedCheck(ctx, svc); err != nil {
+		return false, err
+	}
+	status, err := deploy.CheckFreeze(ctx, a.db, service, time.Now())
+	if err != nil {
+		return false, err
+	}
+	return status.Frozen, nil
+}
+
 func (a *pipelineActions) push(ctx context.Context, service, image, strategy string, log func(string)) (store.DesiredService, error) {
 	svc, err := a.db.GetDesiredService(ctx, service)
 	if err != nil {
@@ -315,10 +335,46 @@ func (a *pipelineActions) Promote(ctx context.Context, from, to string, log func
 	if err != nil {
 		return "", fmt.Errorf("load source service %q: %w", from, err)
 	}
-	if _, err := a.push(ctx, to, src.Image, "", log); err != nil {
+	image, undo, err := a.bindingPromote(ctx, src, to)
+	if err != nil {
 		return "", err
 	}
-	return src.Image, nil
+	if _, err := a.push(ctx, to, image, "", log); err != nil {
+		undo()
+		return "", err
+	}
+	return image, nil
+}
+
+// bindingPromote swaps the tag for the source's digest pinned release ref and
+// retargets the target binding, only when bindings are authoritative; off and
+// shadow return src.Image untouched.
+func (a *pipelineActions) bindingPromote(ctx context.Context, src *store.DesiredService, to string) (string, func(), error) {
+	noop := func() {}
+	if !release.ModeFromEnv().Authoritative() {
+		return src.Image, noop, nil
+	}
+	rel := release.PromotionRelease(ctx, a.db, src.Name, a.logger)
+	if rel == nil {
+		return src.Image, noop, nil
+	}
+	frozen, err := a.gated(ctx, to)
+	if err != nil {
+		return "", noop, err
+	}
+	if frozen {
+		// A held deploy keeps the tag; the binding moves only for a deploy that runs.
+		return src.Image, noop, nil
+	}
+	target, err := a.db.GetDesiredService(ctx, to)
+	if err != nil {
+		return "", noop, fmt.Errorf("load service %q: %w", to, err)
+	}
+	undo, err := release.Retarget(ctx, a.db, release.AuditorFor(a.db, a.logger), a.logger, *target, rel.ID, release.ReasonPromote, "pipeline", "")
+	if err != nil {
+		return "", noop, err
+	}
+	return rel.ImageRef, undo, nil
 }
 
 func (a *pipelineActions) Rollback(ctx context.Context, service string, log func(string)) (string, error) {
@@ -334,7 +390,38 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 	if !ok {
 		return "", fmt.Errorf("no previous successful deploy of %q to roll back to", service)
 	}
+	var attempt store.DeployAttempt
+	// Verify the digest like the API rollback does, so a moved or collected tag fails here.
+	for _, t := range attempts {
+		if t.Status != store.DeployAttemptStatusSucceeded || t.Image != image {
+			continue
+		}
+		pin, _ := a.db.GetRollbackPin(ctx, service, t.ID)
+		inspector, _ := a.resolver.(docker.ImageInspector)
+		ref, status, msg := rollbackref.Resolve(ctx, inspector, a.logger, t, pin)
+		if status != 0 {
+			return "", fmt.Errorf("rollback %s: %s", service, msg)
+		}
+		image = ref
+		attempt = t
+		break
+	}
+	undo := func() {}
+	if release.ModeFromEnv().Authoritative() {
+		id := release.RollbackReleaseID(ctx, a.db, attempt)
+		frozen, gerr := a.gated(ctx, service)
+		if gerr != nil {
+			return "", gerr
+		}
+		if id != "" && !frozen {
+			var err error
+			if undo, err = release.Retarget(ctx, a.db, release.AuditorFor(a.db, a.logger), a.logger, *svc, id, release.ReasonRollback, "pipeline", ""); err != nil {
+				return "", err
+			}
+		}
+	}
 	if _, err := a.push(ctx, service, image, "", log); err != nil {
+		undo()
 		return "", err
 	}
 	return image, nil

@@ -3,10 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  FlaskIcon,
-  SignOutIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FlaskConicalGlassIcon,
+  LogOutGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { devModeQueryOptions } from '../queries/devMode'
 import { useBrand } from '../hooks/useBrand'
 import {
@@ -116,7 +116,10 @@ export function LoginScreen({
             {consumeSessionLink.isError ? (
               <>
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <TriangleAlertGlassIcon
+                    className="text-tone-warning"
+                    size="1.7em"
+                  />
                   <AlertDescription>
                     {t('sessionLink.invalid')}
                   </AlertDescription>
@@ -162,7 +165,7 @@ export function LoginScreen({
           <OAuthErrorBanner />
           {sessionEnded ? (
             <Alert role="status">
-              <SignOutIcon />
+              <LogOutGlassIcon size="1.4em" />
               <AlertDescription>{t('sessionEnded.notice')}</AlertDescription>
             </Alert>
           ) : null}
@@ -228,7 +231,7 @@ export function LoginScreen({
                   })
                 }}
               >
-                <FlaskIcon />
+                <FlaskConicalGlassIcon size="1.4em" />
                 {quickLogin.isPending
                   ? 'Signing in...'
                   : `Quick dev login (${DEV_MODE_USERNAME}/${DEV_MODE_PASSWORD})`}

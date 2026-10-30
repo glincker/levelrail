@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SignpostIcon } from '@phosphor-icons/react/dist/ssr'
+import { SignpostGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -188,7 +188,7 @@ export function StaticRoutesPanel({ app }: Readonly<{ app: string }>) {
     const notStatic = q.error instanceof ApiError && q.error.status === 404
     return notStatic ? (
       <EmptyState
-        icon={<SignpostIcon className="size-5" />}
+        icon={<SignpostGlassIcon className="size-6" />}
         title={t('notStatic.title')}
         description={t('notStatic.description')}
       />
@@ -235,7 +235,7 @@ export function StaticRoutesPanel({ app }: Readonly<{ app: string }>) {
           {d.rules.length === 0 ? (
             <EmptyState
               compact
-              icon={<SignpostIcon className="size-5" />}
+              icon={<SignpostGlassIcon className="size-6" />}
               title={t('rules.empty.title')}
               description={t('rules.empty.description')}
             />
@@ -252,7 +252,7 @@ export function StaticRoutesPanel({ app }: Readonly<{ app: string }>) {
           {d.headers.length === 0 ? (
             <EmptyState
               compact
-              icon={<SignpostIcon className="size-5" />}
+              icon={<SignpostGlassIcon className="size-6" />}
               title={t('headers.empty.title')}
               description={t('headers.empty.description')}
             />

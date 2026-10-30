@@ -1,13 +1,14 @@
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  CircleDashedIcon,
-  CopyIcon,
-  SpinnerGapIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CircleCheckGlassIcon,
+  CircleDashedGlassIcon,
+  CopyGlassIcon,
+  ExternalLinkGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import type { ProbeTarget } from '../../queries/appExposure'
@@ -20,16 +21,17 @@ type HeroStatus = 'live' | 'down' | 'unchecked' | 'checking' | 'stopped'
 function StatusPill({ status }: { status: HeroStatus }) {
   const { t } = useTranslation('appAccess')
   const map = {
-    live: { variant: 'success', Icon: CheckCircleIcon },
-    down: { variant: 'warning', Icon: WarningIcon },
-    unchecked: { variant: 'muted', Icon: CircleDashedIcon },
-    checking: { variant: 'muted', Icon: SpinnerGapIcon },
-    stopped: { variant: 'muted', Icon: CircleDashedIcon },
+    live: { variant: 'success', Icon: CircleCheckGlassIcon },
+    down: { variant: 'warning', Icon: TriangleAlertGlassIcon },
+    unchecked: { variant: 'muted', Icon: CircleDashedGlassIcon },
+    checking: { variant: 'muted', Icon: LoaderCircleGlassIcon },
+    stopped: { variant: 'muted', Icon: CircleDashedGlassIcon },
   } as const
   const { variant, Icon } = map[status]
   return (
     <Badge variant={variant} role="status">
       <Icon
+        size="1.4em"
         aria-hidden="true"
         className={
           status === 'checking' ? 'animate-spin motion-reduce:animate-none' : ''
@@ -42,19 +44,23 @@ function StatusPill({ status }: { status: HeroStatus }) {
 
 interface ReachHeroProps {
   addr: ReachAddress
+  appName: string
   running: boolean
   probe?: ProbeTarget
   checking: boolean
   onRecheck: () => void
+  onAllow: () => void
 }
 
 /** The best address to open, with its live status and TLS state. */
 export function ReachHero({
   addr,
+  appName,
   running,
   probe,
   checking,
   onRecheck,
+  onAllow,
 }: ReachHeroProps) {
   const { t } = useTranslation('appAccess')
   const { copied, copy } = useCopyAddress()
@@ -84,6 +90,24 @@ export function ReachHero({
         <ScopeChip scope={addr.scope} />
       </div>
       {probe && !checking ? <ProbeNote probe={probe} /> : null}
+      {status === 'down' ? (
+        <div className="space-y-2 rounded-md border border-border bg-background/60 p-3">
+          <p className="text-sm">{t('hero.fixTitle')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={onAllow}>
+              {t('actions.openOnNetwork')}
+            </Button>
+            <Link
+              to="/apps/$name/network"
+              params={{ name: appName }}
+              className={buttonVariants({ size: 'sm', variant: 'outline' })}
+            >
+              {t('actions.addDomain')}
+            </Link>
+          </div>
+          <p className="text-xs text-muted-foreground">{t('hero.fixHint')}</p>
+        </div>
+      ) : null}
       {!running ? (
         <p className="text-xs text-muted-foreground">{t('hero.stopped')}</p>
       ) : null}
@@ -94,14 +118,14 @@ export function ReachHero({
           rel="noreferrer noopener"
           className={buttonVariants({ variant: 'default' })}
         >
-          <ArrowSquareOutIcon className="size-4" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
           {t('actions.openApp')}
         </a>
         <Button variant="outline" onClick={() => copy(addr.value)}>
           {copied ? (
-            <CheckIcon className="size-4" aria-hidden="true" />
+            <CheckGlassIcon className="size-5" aria-hidden="true" />
           ) : (
-            <CopyIcon className="size-4" aria-hidden="true" />
+            <CopyGlassIcon className="size-5" aria-hidden="true" />
           )}
           {copied ? t('actions.copied') : t('actions.copyUrl')}
         </Button>

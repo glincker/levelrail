@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  DatabaseIcon,
-  HardDrivesIcon,
-  StackIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CopyGlassIcon,
+  DatabaseGlassIcon,
+  LayersGlassIcon,
+  ServerGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type {
@@ -43,9 +43,9 @@ function CopyAddress({ value }: { value: string }) {
       title={copied ? t('resource.copied') : t('resource.copy')}
     >
       {copied ? (
-        <CheckIcon className="size-3.5" aria-hidden="true" />
+        <CheckGlassIcon className="size-5" aria-hidden="true" />
       ) : (
-        <CopyIcon className="size-3.5" aria-hidden="true" />
+        <CopyGlassIcon className="size-5" aria-hidden="true" />
       )}
     </Button>
   )
@@ -73,7 +73,7 @@ function ResourceRow({
   detail,
 }: ResourceRowProps) {
   const { t } = useTranslation('network')
-  const Icon = kind === 'app' ? StackIcon : DatabaseIcon
+  const Icon = kind === 'app' ? LayersGlassIcon : DatabaseGlassIcon
   const address = dnsName ? (port ? `${dnsName}:${port}` : dnsName) : ''
   const label = kind === 'app' ? t('resource.app') : t('resource.database')
   const missingMesh = meshEnabled && !meshAddress
@@ -101,7 +101,7 @@ function ResourceRow({
     <li className="flex flex-col gap-1 rounded-lg border border-border bg-card px-3 py-2 text-sm">
       <div className="flex min-w-0 items-center gap-1.5">
         <Icon
-          className="size-3.5 shrink-0 text-muted-foreground"
+          className="size-4.5 shrink-0 text-muted-foreground"
           aria-label={label}
         />
         {title}
@@ -112,7 +112,10 @@ function ResourceRow({
         ) : null}
         {missingMesh ? (
           <Badge variant="warning" className="ml-auto shrink-0">
-            <WarningCircleIcon className="size-3" aria-hidden="true" />
+            <CircleAlertGlassIcon
+              className="size-4.5 text-tone-danger"
+              aria-hidden="true"
+            />
             {t('resource.noMeshAddress')}
           </Badge>
         ) : (
@@ -166,8 +169,8 @@ export function NodeGroupCard({
 
   const heading = (
     <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
-      <HardDrivesIcon
-        className="size-4 shrink-0 text-muted-foreground"
+      <ServerGlassIcon
+        className="size-5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
       <span className="truncate">{title}</span>

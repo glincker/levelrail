@@ -82,6 +82,12 @@ func (rt *Router) computePendingChanges(ctx context.Context, svc store.DesiredSe
 		}
 	}
 
+	// Changes the hashes cannot see (a database pooler toggle alters resolved
+	// link values) latch env_dirty, so honor it when no key already drifted.
+	if applied != nil && svc.EnvDirty && len(envKeys) == 0 && len(secretKeys) == 0 {
+		res.Changes = append(res.Changes, pendingChange{Kind: pendingKindEnv, Since: rt.pendingSince(ctx, events, svc.Name, applied, store.AppEventEnvChange)})
+	}
+
 	add := func(kind string, keys []string, eventKind string) {
 		if len(keys) == 0 {
 			return

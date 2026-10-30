@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ProhibitIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { SleepFix, SleepIssue } from '../../queries/appSleep'
 
@@ -21,13 +21,13 @@ function Row({
   onFix: (fix: SleepFix) => void
 }) {
   const { t } = useTranslation('deploys')
-  const Icon = kind === 'blocker' ? ProhibitIcon : WarningIcon
+  const Icon = kind === 'blocker' ? BanGlassIcon : TriangleAlertGlassIcon
   const { title, detail } = issue
   return (
     <li className="flex flex-wrap items-start gap-3 py-2">
       <Icon
         aria-hidden="true"
-        className={`mt-0.5 size-4 shrink-0 ${kind === 'blocker' ? 'text-tone-danger' : 'text-tone-warning'}`}
+        className={`mt-0.5 size-5 shrink-0 ${kind === 'blocker' ? 'text-tone-danger' : 'text-tone-warning'}`}
       />
       <div className="min-w-0 flex-1 space-y-0.5">
         <p className="text-sm font-medium text-foreground">
@@ -104,9 +104,9 @@ export function SleepEligibilityList({
       ))}
       {blockers.length === 0 ? (
         <li className="flex items-center gap-3 py-2">
-          <CheckCircleIcon
+          <CircleCheckGlassIcon
             aria-hidden="true"
-            className="size-4 shrink-0 text-tone-success"
+            className="size-5 shrink-0 text-tone-success"
           />
           <p className="text-sm text-foreground">{t('appSleep.allClear')}</p>
         </li>

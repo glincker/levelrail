@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -232,7 +232,7 @@ export function RuntimeSettingRow({
                 })
               }}
             >
-              <ArrowCounterClockwiseIcon aria-hidden="true" />
+              <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
               {reset.isPending ? t('row.resetting') : t('row.reset')}
             </Button>
           ) : null}

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { BookmarkSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { BookmarkGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
@@ -14,7 +14,7 @@ export function SaveSearchButton({ onToggle }: { onToggle: () => void }) {
       onClick={onToggle}
       className="flex items-center gap-1 rounded px-1 text-xs text-muted-foreground hover:text-foreground"
     >
-      <BookmarkSimpleIcon className="size-3.5" aria-hidden="true" />
+      <BookmarkGlassIcon className="size-5" aria-hidden="true" />
       {t('save.button')}
     </button>
   )

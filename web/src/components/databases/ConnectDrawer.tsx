@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -27,7 +27,7 @@ export function ConnectDrawer({ database }: { database: DatabaseResource }) {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
       >
-        <PlugsConnectedIcon aria-hidden="true" />
+        <PlugGlassIcon size="1.4em" aria-hidden="true" />
         {t('connectDrawer.trigger')}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>

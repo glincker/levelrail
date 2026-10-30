@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
+import { CloudGlassIcon } from '@thesvg/ui-react'
 import {
   useDisconnectGoogleCloudDns,
   useGoogleCloudDnsSettings,
@@ -76,7 +76,7 @@ export function GoogleCloudDnsCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CloudIcon className="size-4" />
+          <CloudGlassIcon className="size-5" />
           {t('googleCloudDns.title')}
         </CardTitle>
         <CardDescription>{t('googleCloudDns.description')}</CardDescription>

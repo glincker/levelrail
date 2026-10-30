@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CodeBlock } from '@/components/ui/code-block'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { PlusIcon, TreeStructureIcon } from '@phosphor-icons/react/dist/ssr'
+import { BinaryTreeGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -89,12 +89,12 @@ export function PipelinesEmptyState() {
   return (
     <>
       <EmptyState
-        icon={<TreeStructureIcon className="size-5" />}
+        icon={<BinaryTreeGlassIcon className="size-6" />}
         title="No pipeline runs yet"
         description="A pipeline is a YAML file that runs tests, builds an image, waits for an approval, and deploys when code changes. Each pipeline belongs to one app and runs on your own nodes."
         action={
           <Button onClick={() => setPicking(true)}>
-            <PlusIcon aria-hidden="true" />
+            <PlusGlassIcon size="1.4em" aria-hidden="true" />
             Create a pipeline
           </Button>
         }

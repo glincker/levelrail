@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { InfoIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { InfoGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -26,7 +26,7 @@ function Why({ title, lines }: { title: string; lines: string[] }) {
         className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2"
         aria-label={t('detection.whyFor', { field: title })}
       >
-        <InfoIcon className="size-3.5" aria-hidden="true" />
+        <InfoGlassIcon className="size-5 text-tone-info" aria-hidden="true" />
         {t('detection.why')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80">
@@ -153,7 +153,11 @@ export function DetectionSummary({
         .filter((w) => !hideWarnings.includes(w.code))
         .map((w) => (
           <Alert key={w.code}>
-            <WarningIcon aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+              aria-hidden="true"
+            />
             <AlertDescription>
               {t(`detection.warnings.${w.code}.text`, {
                 defaultValue: w.message,

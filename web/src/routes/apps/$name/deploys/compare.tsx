@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { GitDiffIcon } from '@phosphor-icons/react/dist/ssr'
-import { deployCompareQueryOptions, useDeployCompare } from '../../../../queries/deployCompare'
+import { GitCompareGlassIcon } from '@thesvg/ui-react'
+import {
+  deployCompareQueryOptions,
+  useDeployCompare,
+} from '../../../../queries/deployCompare'
 import { DeployCompareView } from '../../../../components/DeployCompareView'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -33,9 +36,15 @@ function validateDeployCompareSearch(
 export const Route = createFileRoute('/apps/$name/deploys/compare')({
   validateSearch: validateDeployCompareSearch,
   loaderDeps: ({ search }) => ({ from: search.from, to: search.to }),
-  loader: ({ context: { queryClient }, params: { name }, deps: { from, to } }) => {
+  loader: ({
+    context: { queryClient },
+    params: { name },
+    deps: { from, to },
+  }) => {
     if (!from) return undefined
-    return queryClient.ensureQueryData(deployCompareQueryOptions(name, from, to))
+    return queryClient.ensureQueryData(
+      deployCompareQueryOptions(name, from, to),
+    )
   },
   component: DeployComparePage,
   pendingComponent: DeployComparePagePending,
@@ -50,16 +59,14 @@ function DeployComparePage() {
       <Card>
         <CardContent className="pt-6">
           <EmptyState
-            icon={<GitDiffIcon className="size-5" />}
+            icon={<GitCompareGlassIcon className="size-6" />}
             title="Nothing selected to compare"
             description="Pick two deploys (or one deploy and “compare to current”) from the deploy history list."
             action={
               <Button
                 size="sm"
                 nativeButton={false}
-                render={
-                  <Link to="/apps/$name/deploys" params={{ name }} />
-                }
+                render={<Link to="/apps/$name/deploys" params={{ name }} />}
               >
                 Back to deploy history
               </Button>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import {
   Collapsible,
   CollapsiblePanel,
@@ -67,7 +67,7 @@ export function StandaloneAdvancedOptions({
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <CaretDownIcon className="size-3.5" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
         {t('standalone.advanced')}
       </CollapsibleTrigger>
       <CollapsiblePanel className="space-y-3 pt-3">

@@ -26,6 +26,21 @@ vi.mock('../hooks/useBrand', () => ({
 import { useBrand } from '../hooks/useBrand'
 
 describe('HelpLink', () => {
+  it('joins the docs URL and a path with one slash, with or without a leading slash', () => {
+    vi.mocked(useBrand).mockReturnValue({
+      ...baseBrand,
+      DocsURL: 'https://test.example/docs/',
+    })
+    const { rerender } = render(<HelpLink path="not-bundled-page" label="A" />)
+    expect(screen.getByRole('link', { name: 'A' }).getAttribute('href')).toBe(
+      'https://test.example/docs/not-bundled-page',
+    )
+    rerender(<HelpLink path="/not-bundled-page" label="B" />)
+    expect(screen.getByRole('link', { name: 'B' }).getAttribute('href')).toBe(
+      'https://test.example/docs/not-bundled-page',
+    )
+  })
+
   it('renders nothing when the path is neither bundled nor backed by a docs URL', () => {
     vi.mocked(useBrand).mockReturnValue({ ...baseBrand, DocsURL: '' })
     const { container } = render(

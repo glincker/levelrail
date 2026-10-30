@@ -1,8 +1,8 @@
 import {
-  FingerprintIcon,
-  CheckCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  FingerprintPatternGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { DeployAttempt } from '../types/deployAttempt'
 import { shortDigest } from '../lib/imageDigest'
@@ -39,9 +39,9 @@ export function DigestChip({
       title={hint}
     >
       {degraded ? (
-        <WarningIcon className="size-3" />
+        <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
       ) : (
-        <FingerprintIcon className="size-3" />
+        <FingerprintPatternGlassIcon className="size-4.5" />
       )}
       {digest ? shortDigest(digest) : 'no digest'}
       {degraded ? (
@@ -62,7 +62,7 @@ export function RolloutChip({ attempt }: { attempt: DeployAttempt }) {
         className="shrink-0"
         title={attempt.running_image_id}
       >
-        <CheckCircleIcon className="size-3" />
+        <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
         Serving
       </Badge>
     )
@@ -74,7 +74,7 @@ export function RolloutChip({ attempt }: { attempt: DeployAttempt }) {
         className="shrink-0"
         title={`Running ${attempt.running_image_id ?? 'unknown'} instead of the deployed image`}
       >
-        <WarningIcon className="size-3" />
+        <TriangleAlertGlassIcon className="size-6 text-tone-warning" />
         Image mismatch
       </Badge>
     )

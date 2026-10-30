@@ -26,6 +26,7 @@ apps_deploy.go runAppsDeployOrRollback --from-cache
 apps_deploy.go runAppsDeployOrRollback --idempotency-key
 apps_deploy.go runAppsDeployOrRollback --image
 apps_deploy.go runAppsDeployOrRollback --latest
+apps_deploy.go runAppsDeployOrRollback --release
 apps_deploy_source.go runAppsGitSourceCommits --branch
 apps_deploy_source.go runAppsGitSourceCommits --refresh
 apps_domains.go runAppsDomainsChange --dns

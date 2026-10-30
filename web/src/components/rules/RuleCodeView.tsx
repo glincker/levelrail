@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 
 /** RuleCodeView shows the rule exactly as it is stored, read only, with copy as a secondary action. */
@@ -28,7 +28,11 @@ export function RuleCodeView({ code }: { code: string }) {
           size="xs"
           onClick={() => void copy()}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? (
+            <CheckGlassIcon size="1.4em" />
+          ) : (
+            <CopyGlassIcon size="1.4em" />
+          )}
           {copied ? t('builder.copied') : t('builder.copy')}
         </Button>
       </div>

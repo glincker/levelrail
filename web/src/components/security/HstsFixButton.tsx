@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -63,13 +60,13 @@ export function HstsFixButton() {
                 {status.hosts.map((h) => (
                   <li key={h.host} className="flex items-start gap-2">
                     {h.verified ? (
-                      <CheckCircleIcon
-                        className="mt-0.5 size-4 shrink-0 text-green-600"
+                      <CircleCheckGlassIcon
+                        className="mt-0.5 size-5 shrink-0 text-green-600"
                         aria-hidden="true"
                       />
                     ) : (
-                      <WarningCircleIcon
-                        className="mt-0.5 size-4 shrink-0 text-destructive"
+                      <CircleAlertGlassIcon
+                        className="mt-0.5 size-5 shrink-0 text-destructive"
                         aria-hidden="true"
                       />
                     )}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -65,7 +65,7 @@ export function PipelineTemplatesDialog({ appName }: { appName: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <SquaresFourIcon aria-hidden="true" />
+        <LayoutGridGlassIcon size="1.4em" aria-hidden="true" />
         {t('templates.open')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
