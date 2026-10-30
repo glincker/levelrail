@@ -1,0 +1,77 @@
+---
+title: "Self-host Mail server (mox, experimental) with Docker"
+sidebarTitle: "Mail server (mox, experimental)"
+description: "Experimental self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT)."
+"og:url": "https://docs.levelrail.com/self-host/mail-mox"
+---
+
+Experimental self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).
+
+This page describes the Levelrail template for Mail server (mox, experimental) (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.xmox.nl/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `mox` | `r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e` | 80, 8010, 25, 465, 587, 993 | `mail_config -&#62; /mox/config`<br />`mail_data -&#62; /mox/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `mox` | `MAIL_ADMIN_EMAIL` | Preset in the template |
+| `mox` | `MAIL_ADMIN_PASSWORD` | Generated at deploy |
+| `mox` | `MAIL_FIRST_DOMAIN` | Preset in the template |
+| `mox` | `MAIL_HOSTNAME` | Preset in the template |
+| `mox` | `MAIL_SMARTHOST_HOST` | Preset in the template |
+| `mox` | `MAIL_SMARTHOST_PASSWORD` | Preset in the template |
+| `mox` | `MAIL_SMARTHOST_PORT` | Preset in the template |
+| `mox` | `MAIL_SMARTHOST_USER` | Preset in the template |
+| `mox` | `MAIL_TLS_CERT_FILE` | Preset in the template |
+| `mox` | `MAIL_TLS_KEY_FILE` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`mox`): 25:25, 465:465, 587:587, 8010:8010, 8025:80, 993:993.
+- Passwords and keys are generated at deploy time (`mox`): MAIL_ADMIN_PASSWORD.
+- Stores data in named volumes (`mox`): mail_config, mail_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Mail server (mox, experimental) with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Mail server (mox, experimental). Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy mail-mox --name my-mail-mox
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [FreeScout](/self-host/freescout)
+
+All templates are listed in the [self-host gallery](/self-host).

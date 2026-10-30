@@ -19764,6 +19764,147 @@
   }
  },
  {
+  "id": "mail-mox",
+  "name": "Mail server (mox, experimental)",
+  "slogan": "Experimental self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).",
+  "category": "Communication",
+  "docUrl": "https://www.xmox.nl/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mox",
+    "image": "r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e",
+    "ports": [
+     80,
+     8010,
+     25,
+     465,
+     587,
+     993
+    ],
+    "volumes": [
+     "mail_config -> /mox/config",
+     "mail_data -> /mox/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mox",
+    "name": "MAIL_ADMIN_EMAIL",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_FIRST_DOMAIN",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_HOSTNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_PASSWORD",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_TLS_CERT_FILE",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_TLS_KEY_FILE",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "published_ports",
+     "severity": "info",
+     "services": [
+      "mox"
+     ],
+     "detail": "25:25, 465:465, 587:587, 8010:8010, 8025:80, 993:993",
+     "message": "Publishes ports directly on the host"
+    },
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "mox"
+     ],
+     "detail": "MAIL_ADMIN_PASSWORD",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "mox"
+     ],
+     "detail": "mail_config, mail_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "mailhog",
   "name": "MailHog",
   "slogan": "An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox.",

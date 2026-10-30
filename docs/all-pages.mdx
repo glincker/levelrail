@@ -128,6 +128,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Domains and ingress](/domains-and-ingress): Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 - [Standalone domains](/standalone-domains): Proxy a domain to a port on this server, a network address, an external URL, another app's port or a container, with no app needed, and find the DNS target.
 - [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
+- [Mail DNS](/mail-dns): Build, review, apply and check the DNS records a domain needs for email, for your own mail server or an external provider. Add-only by default.
+- [Mail server template](/mail-template): Install the mox mail server as a one-click template, with private admin ports, your own certificate, optional relay mode and backup notes.
 - [Diagnose a domain](/domain-diagnosis): Find out why a domain is not working, see the exact DNS record to create, and fix it from the dashboard, the CLI or the API.
 - [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects and raw ports, from the UI, CLI or API.
 - [Ingress abuse defense](/abuse-defense): Per-app rate limit by client address, address and User-Agent deny lists, and a log only mode with a replay of recent traffic before you enforce, from the dashboard, CLI or API.
@@ -237,6 +239,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Observability: metrics, logs, and alerts](/observability): Node-local metrics, logs, and alerts with federated queries, no central ingestion.
 - [Traffic observability: rate, errors and duration](/traffic-observability): Per app and per replica request rate, error rate and p50/p95/p99 latency measured at the ingress, with slow request samples and SLO error-budget burn.
 - [Public status page](/status-page): An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
+- [Monitors](/monitors): Experimental http and tcp uptime monitors with a bounded result history and hourly rollups, off unless APP_MONITORS_ENABLED is set.
 - [Scheduled maintenance](/scheduled-maintenance): Announce planned downtime ahead of time with a dashboard banner, a status page entry and a channel notice, and optionally hold automatic deploys for the window.
 - [Deploy policies](/deploy-policies): Guardrails checked before every deploy at organization, project and environment scope, with warn or enforce modes and an audited override.
 - [What's new panel](/whats-new-panel): The dashboard's "What's new" panel shows recent release notes after an upgrade, sourced from the control plane's own CHANGELOG.md.
@@ -367,6 +370,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Engineering notes
 
 - [CI](/ci): How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+- [Which guard catches what](/contributing-guards): For contributors. The repo-wide guard tests and scripts, what each one fails on, which command runs it, and how to fix the failure.
 - [First-hour smoke test](/first-hour-smoke-test): Run the install-to-rollback journey in a Docker container to prove the first hour works, and wire it into a nightly job.
 - [VPS smoke test](/vps-smoke): scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
 - [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.
