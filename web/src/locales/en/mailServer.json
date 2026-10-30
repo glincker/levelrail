@@ -215,6 +215,10 @@
     "claim": "Claim domain",
     "claimed": "Claimed"
   },
+  "hold": {
+    "title": "Restore in progress, mail is held",
+    "body": "A mail restore holds this app stopped. The platform will not start or change it until the restore finishes or rolls back. Follow the job in the Backup panel."
+  },
   "demo": {
     "badge": "DEMO DATA",
     "hint": "Local demo mode: nothing here is real and nothing reaches a DNS provider or mail server.",

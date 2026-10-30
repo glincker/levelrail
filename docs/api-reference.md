@@ -2090,7 +2090,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
 | POST | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
 | GET | /api/v1/mail/backups | AbilityRead | handleListMailBackups |
-| POST | /api/v1/mail/backups | AbilityWriteSensitive | handleRunMailBackup |
+| POST | /api/v1/mail/backups | AbilityRoot | handleRunMailBackup |
 | POST | /api/v1/mail/backups/{id}/restore | AbilityRoot | handleRestoreMailBackup |
 | GET | /api/v1/mail/storage | AbilityRead | handleGetMailStorage |
 | PUT | /api/v1/mail/storage | AbilityRoot | handlePutMailStorage |

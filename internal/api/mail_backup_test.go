@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/mailbackup"
 )
 
@@ -64,5 +67,39 @@ func TestMailBackupsListAndStorage(t *testing.T) {
 	rec = mailBackupCall(t, rt, cookie, http.MethodGet, "/api/v1/mail/storage", "")
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"kind":"local"`) || strings.Contains(rec.Body.String(), "secret") {
 		t.Fatalf("storage: %d %s", rec.Code, rec.Body)
+	}
+}
+
+func TestMailBackupRunNeedsRoot(t *testing.T) {
+	rt, db := newTestRouter(t)
+	saveMailApp(t, db, "")
+	WithMailBackup(t.TempDir(), nil, nil, nil)(rt)
+	tok := seedMatrixToken(t, db, "mail-ws", []string{AbilityRead, AbilityWrite, AbilityWriteSensitive})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/mail/backups", strings.NewReader(`{}`))
+	req.Header.Set("Authorization", "Bearer "+tok)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("a write-sensitive token must not run mail backups: %d %s", rec.Code, rec.Body)
+	}
+	t.Logf("non-root answer: %s", rec.Body)
+}
+
+func TestRecoverMailHoldsAtStartup(t *testing.T) {
+	rt, db := newTestRouter(t)
+	saveMailApp(t, db, "")
+	WithMailBackup(t.TempDir(), nil, nil, nil)(rt)
+	rt.execRuntime = func(string) (docker.Runtime, error) { return nil, errors.New("node offline") }
+	rt.RecoverMailHolds(context.Background())
+	if j := rt.mail.backup.current("mail"); j != nil {
+		t.Fatalf("no hold must start nothing, got %+v", j)
+	}
+	if err := db.UpdateServiceMaintenanceHold(context.Background(), "mail", mailRestoreHoldPrefix+"20261030T120000Z"); err != nil {
+		t.Fatal(err)
+	}
+	rt.RecoverMailHolds(context.Background())
+	j := rt.mail.backup.current("mail")
+	if j == nil || j.Kind != "recover" {
+		t.Fatalf("a held app must start one recovery job, got %+v", j)
 	}
 }

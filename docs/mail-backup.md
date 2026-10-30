@@ -10,6 +10,8 @@ Back up, verify and restore the mox mail server from the dashboard (Mail page, B
 4. The staging directory is copied out over the Docker API, streamed as tar, then zstd, then age, and stored with a manifest (mox version, time, file count, bytes, sha256 of the archive).
 5. Staging is removed on every path, inside the container and on the control plane.
 
+Running a backup needs the root ability, because each run can prune older backups. A token with only write or write-sensitive gets 403 `token lacks the required ability (needs root)`.
+
 The mail container is found only from platform identity: its exact name from desired state and this instance's reserved label. A run answers at once with a job; poll `GET /api/v1/mail/backups` (the CLI does this with `--wait`). One backup or restore runs at a time per mail app. Jobs are kept in memory and do not survive a control plane restart.
 
 ## Encryption
@@ -35,7 +37,11 @@ A real restore needs `--confirm <id>`, the root ability and a fresh password ste
 5. A helper container (the mail image, no network, only the mail volumes) moves the live entries to `.levelrail/pre-restore-<time>-<id>` and the staged entries into place, writing a journal (`.levelrail/swap`) before each step. The container must still be stopped before and after every step.
 6. Starts mail and waits until the admin API answers (`APP_MAIL_RESTORE_WAIT_MINUTES`, default 3), then closes the journal and releases the hold.
 
-Any failure rolls the swap back from the pre-restore copy and starts mail on the previous data; the job reports `rollback: rolled_back`, or `rollback_failed`, in which case the app stays held and the previous data stays in `.levelrail/` on its volumes. If the control plane stops mid-restore, the next mail backup call finds the hold and finishes the restore (the data journal is closed) or rolls it back (it is not).
+Any failure rolls the swap back from the pre-restore copy and starts mail on the previous data; the job reports `rollback: rolled_back`, or `rollback_failed`, in which case the app stays held and the previous data stays in `.levelrail/` on its volumes. If the control plane stops mid-restore, it finds the hold when it starts again and runs the recovery once in the background (logged, bounded by `APP_MAIL_RESTORE_TIMEOUT_MINUTES`): it finishes the restore when the data journal is closed and rolls it back otherwise. With no hold this is one read of the app list. If the mail node is not reachable yet at start up, the next mail backup call runs the same recovery.
+
+The swap script runs under the mail image's BusyBox `sh` (mox v0.0.17 is Alpine with BusyBox 1.37). `TestLiveRestoreSwap` (set `MOXRUN_LIVE_SWAP_IMAGE` to the pinned image) proves it there on real volumes with file names holding spaces, dotfiles, a leading dash, nested dirs, symlinks and an existing `.levelrail` dir: the success path, a second restore with the same id, a failure and a kill at every external command of the swap and of the rollback, and a `docker kill` of the helper mid-swap. Each failure case ends with the original tree restored, compared by a hash of every path, mode, file sha256 and link target. A rollback interrupted part way is safe to run again. The live `tmp` dir stays in place and a staged `tmp` is never moved in.
+
+`mox serve` does not clear `data/tmp` on start up (checked on v0.0.17: files in `data/tmp` survive a start; mox only fixes their permissions), so leftover restore staging there is removed by the sweep below, not by mox.
 
 Backups include `/mox/config` (DKIM private keys, certificates, `mox.conf`, `domains.conf`) next to `/mox/data`, and a restore swaps both under the same hold and rollback. Backups made before this change carry only the data directory, and restoring one leaves the config volume as it is. The archive is encrypted with the instance backup key, so keep that key off the machine.
 

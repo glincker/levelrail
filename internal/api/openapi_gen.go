@@ -1259,7 +1259,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/mail/audience-options", Ability: "AbilityRoot", Group: "Other", Handler: "handleMailAudienceOptions", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/audience/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewMailAudience", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/backups", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailBackups", Description: ""},
-	{Method: "POST", Path: "/api/v1/mail/backups", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRunMailBackup", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/backups", Ability: "AbilityRoot", Group: "Other", Handler: "handleRunMailBackup", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/backups/{id}/restore", Ability: "AbilityRoot", Group: "Other", Handler: "handleRestoreMailBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/broadcasts", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailBroadcasts", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/broadcasts", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMailBroadcast", Description: ""},

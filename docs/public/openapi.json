@@ -87027,7 +87027,7 @@
         "x-required-ability": "read"
       },
       "post": {
-        "description": "Requires the `write:sensitive` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleRunMailBackup",
         "requestBody": {
           "content": {
@@ -87093,7 +87093,7 @@
         "security": [
           {
             "bearerAuth": [
-              "write:sensitive"
+              "root"
             ]
           }
         ],
@@ -87101,7 +87101,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "write:sensitive"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/mail/backups/{id}/restore": {

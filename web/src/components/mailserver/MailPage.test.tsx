@@ -86,6 +86,25 @@ describe('MailPage status', () => {
     expect(screen.getByRole('link', { name: 'Install' })).toBeTruthy()
   })
 
+  it('shows the restore hold banner while a restore holds mail', async () => {
+    vi.stubGlobal(
+      'fetch',
+      statusFetch({
+        installed: true,
+        container_state: 'stopped',
+        admin_reachable: false,
+        tls: 'self-signed',
+        next_step: 'A mail restore holds this app.',
+        maintenance_hold: 'mail-restore:20261030T120000Z',
+      }),
+    )
+    renderPage()
+    expect(
+      await screen.findByText('Restore in progress, mail is held'),
+    ).toBeTruthy()
+    expect(screen.getByText('mail-restore:20261030T120000Z')).toBeTruthy()
+  })
+
   it('warns with the server text when installed but stopped', async () => {
     vi.stubGlobal(
       'fetch',

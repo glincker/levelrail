@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import type { MailCheckReport } from '@/queries/mailDns'
 import { useMailStatus } from '@/queries/mailStatus'
 import { MailDemoBadge } from './MailDemoBadge'
+import { MailHoldBanner } from './MailHoldBanner'
 import { MailNextStep } from './MailNextStep'
 import { MailChecklist } from './MailChecklist'
 import { MailDnsPanel } from './MailDnsPanel'
@@ -43,6 +44,9 @@ export function MailPage() {
     >
       <div className="space-y-3">
         {status?.demo ? <MailDemoBadge /> : null}
+        {status?.maintenance_hold ? (
+          <MailHoldBanner hold={status.maintenance_hold} />
+        ) : null}
         <MailNextStep
           status={status}
           report={report}
