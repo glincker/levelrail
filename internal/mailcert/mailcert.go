@@ -6,6 +6,10 @@ package mailcert
 import (
 	"bytes"
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
@@ -15,6 +19,8 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -26,7 +32,33 @@ const (
 	KeyPath      = "certs/managed.key"
 	PrevCertPath = "certs/managed.prev.pem"
 	PrevKeyPath  = "certs/managed.prev.key"
+	NewCertPath  = "certs/managed.new.pem"
+	NewKeyPath   = "certs/managed.new.key"
+	JournalPath  = "certs/managed.journal"
 )
+
+// TemplateID and ConfigVolume name the mail template and the volume holding the managed pair.
+const (
+	TemplateID   = "mail-mox"
+	ConfigVolume = "mail_config"
+)
+
+// IsProtectedPath reports whether rel, a cleaned volume path, is a managed
+// pair file, its rollback, staging or journal, or an upload temp file beside
+// them. Case is folded so a case-insensitive file system cannot bypass it.
+func IsProtectedPath(rel string) bool {
+	dir, base := path.Split(strings.ToLower(rel))
+	return dir == "certs/" && (strings.HasPrefix(base, "managed.") || strings.HasPrefix(base, ".upload-"))
+}
+
+// BackupExcludes returns the tar patterns a generic backup of this volume
+// must leave out: the managed keys and any temp file that may hold one.
+func BackupExcludes(templateID, volumeName string) []string {
+	if templateID != TemplateID || volumeName != ConfigVolume {
+		return nil
+	}
+	return []string{"certs/managed*.key", "certs/.upload-*"}
+}
 
 // SubmissionTLSPort is the implicit TLS submission port probed for the served certificate.
 const SubmissionTLSPort = 465
@@ -37,6 +69,8 @@ const (
 	envVerifySeconds = "APP_MAIL_CERT_VERIFY_SECONDS"
 	envPollSeconds   = "APP_MAIL_CERT_POLL_SECONDS"
 	envMaxPEMKB      = "APP_MAIL_CERT_MAX_PEM_KB"
+	envRollbackSecs  = "APP_MAIL_CERT_ROLLBACK_SECONDS"
+	envLeaseSecs     = "APP_MAIL_CERT_INSTALL_LEASE_SECONDS"
 )
 
 // ErrACMENotImplemented is the seam for issuing through the ingress ACME (ADR 062, option A).
@@ -44,6 +78,9 @@ var ErrACMENotImplemented = errors.New("mail cert: obtaining a certificate throu
 
 // ErrNotPrivateTarget means the probe address is not a private or loopback address.
 var ErrNotPrivateTarget = errors.New("mail cert: the probe target is not a private address")
+
+// ErrPEMTooLarge means one uploaded PEM field is over the configured size.
+var ErrPEMTooLarge = errors.New("mail cert: the certificate chain or the key is larger than " + envMaxPEMKB + " allows")
 
 // ErrKeyModeTooWide means the node wrote the key wider than 0600, usually an agent without the private write option.
 var ErrKeyModeTooWide = errors.New("mail cert: the node did not write the key with mode 0600, upgrade the node agent")
@@ -55,11 +92,23 @@ type Config struct {
 	VerifyTimeout time.Duration
 	PollInterval  time.Duration
 	MaxPEMBytes   int64
+	// RollbackTimeout bounds a rollback on its own context, detached from the request.
+	RollbackTimeout time.Duration
+	// InstallLease is how long a journal blocks other installs before it counts as interrupted.
+	InstallLease time.Duration
+}
+
+// CheckSize rejects a chain or key over MaxPEMBytes before anything is parsed or sealed.
+func (c Config) CheckSize(certPEM, keyPEM []byte) error {
+	if int64(len(certPEM)) > c.MaxPEMBytes || int64(len(keyPEM)) > c.MaxPEMBytes {
+		return ErrPEMTooLarge
+	}
+	return nil
 }
 
 // ConfigFromEnv reads Config through lookup, keeping the defaults for unset or invalid values.
 func ConfigFromEnv(lookup func(string) (string, bool)) (Config, error) {
-	c := Config{ProbeTimeout: 5 * time.Second, VerifyTimeout: 90 * time.Second, PollInterval: 3 * time.Second, MaxPEMBytes: 64 << 10}
+	c := Config{ProbeTimeout: 5 * time.Second, VerifyTimeout: 90 * time.Second, PollInterval: 3 * time.Second, MaxPEMBytes: 64 << 10, RollbackTimeout: 2 * time.Minute}
 	secs := func(key string, dst *time.Duration) {
 		if v, ok := lookup(key); ok {
 			if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
@@ -70,6 +119,11 @@ func ConfigFromEnv(lookup func(string) (string, bool)) (Config, error) {
 	secs(envProbeTimeout, &c.ProbeTimeout)
 	secs(envVerifySeconds, &c.VerifyTimeout)
 	secs(envPollSeconds, &c.PollInterval)
+	secs(envRollbackSecs, &c.RollbackTimeout)
+	secs(envLeaseSecs, &c.InstallLease)
+	if c.InstallLease == 0 {
+		c.InstallLease = 3*c.VerifyTimeout + c.RollbackTimeout + time.Minute
+	}
 	if v, ok := lookup(envMaxPEMKB); ok {
 		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
 			c.MaxPEMBytes = int64(n) << 10
@@ -182,6 +236,17 @@ func Validate(certPEM, keyPEM []byte, host string, now time.Time) (Info, error) 
 	case now.Before(leaf.NotBefore):
 		return Info{}, fmt.Errorf("the certificate is not valid before %s", leaf.NotBefore.UTC().Format(time.DateOnly))
 	}
+	if err := checkChain(pair.Certificate); err != nil {
+		return Info{}, err
+	}
+	if err := checkKeyStrength(leaf.PublicKey); err != nil {
+		return Info{}, err
+	}
+	if len(leaf.ExtKeyUsage) > 0 && !slices.ContainsFunc(leaf.ExtKeyUsage, func(u x509.ExtKeyUsage) bool {
+		return u == x509.ExtKeyUsageServerAuth || u == x509.ExtKeyUsageAny
+	}) {
+		return Info{}, errors.New("the certificate's extended key usage does not allow server authentication")
+	}
 	if host == "" {
 		return Info{}, errors.New("the mail host name is not set (MAIL_HOSTNAME)")
 	}
@@ -189,6 +254,42 @@ func Validate(certPEM, keyPEM []byte, host string, now time.Time) (Info, error) 
 		return Info{}, fmt.Errorf("the certificate does not cover the mail host %s", host)
 	}
 	return describe(leaf), nil
+}
+
+// checkChain requires each certificate to be signed by the one after it, so the leaf comes first.
+func checkChain(ders [][]byte) error {
+	certs := make([]*x509.Certificate, 0, len(ders))
+	for i, d := range ders {
+		c, err := x509.ParseCertificate(d)
+		if err != nil {
+			return fmt.Errorf("certificate %d in the chain could not be parsed", i+1)
+		}
+		certs = append(certs, c)
+	}
+	for i := 0; i+1 < len(certs); i++ {
+		if err := certs[i].CheckSignatureFrom(certs[i+1]); err != nil {
+			return fmt.Errorf("the chain is out of order: certificate %d is not signed by certificate %d, put the leaf first and each issuer after what it signed", i+1, i+2)
+		}
+	}
+	return nil
+}
+
+// checkKeyStrength accepts RSA of 2048 bits or more, ECDSA on P-256 or larger, and Ed25519.
+func checkKeyStrength(pub crypto.PublicKey) error {
+	switch k := pub.(type) {
+	case *rsa.PublicKey:
+		if k.N.BitLen() < 2048 {
+			return fmt.Errorf("the RSA key has %d bits, at least 2048 are required", k.N.BitLen())
+		}
+	case *ecdsa.PublicKey:
+		if k.Curve.Params().BitSize < 256 {
+			return fmt.Errorf("the ECDSA key uses %s, P-256 or larger is required", k.Curve.Params().Name)
+		}
+	case ed25519.PublicKey:
+	default:
+		return errors.New("the key type is not supported, use RSA 2048 or larger, ECDSA P-256 or larger, or Ed25519")
+	}
+	return nil
 }
 
 func onlyBlocks(data []byte, want string) error {

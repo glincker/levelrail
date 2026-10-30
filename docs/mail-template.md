@@ -78,14 +78,25 @@ Check the state with `levelrail-cli mail status` (installed, container, admin AP
 ### Check and upload a certificate
 
 - `levelrail-cli mail cert status` connects to the mail server's private submission port (465) and shows the served certificate: subject, issuer, expiry, days left, and whether it is self-signed. It sends no credentials and only probes the container's private address.
-- `levelrail-cli mail cert upload --cert chain.pem --key key.pem` installs your own certificate. The chain must start with the leaf, cover the mail host name and be valid now; the key must match and must not be encrypted. It asks for your password.
-- The key is sealed at rest in the control plane and is never shown again, logged or written to audit. In the config volume the pair lands as `certs/managed.pem` and `certs/managed.key` (mode `0600`); the previous managed pair is kept as `certs/managed.prev.pem` and `.prev.key`.
-- mox is then restarted through the normal restart path and probed until it serves the new serial. If it does not come back, or still serves the old certificate after `APP_MAIL_CERT_VERIFY_SECONDS` (default 90), the previous files and settings are restored and mox restarts again.
+- `levelrail-cli mail cert upload --cert chain.pem --key key.pem` installs your own certificate. The chain must start with the leaf and list each issuer after the certificate it signed, cover the mail host name and be valid now. The leaf key must be RSA 2048 or larger, ECDSA P-256 or larger, or Ed25519, and if the leaf lists extended key usages, server authentication must be one of them. The key must match and must not be encrypted. Each of the two fields is capped by `APP_MAIL_CERT_MAX_PEM_KB` (default 64). It asks for your password.
+
+Where the key lives and what can read it:
+
+- Sealed in the control plane secrets store (`mail-tls-cert/<app>`), encrypted with the master key. It is never shown again, logged or written to audit. The sealed copy is deleted when the mail app is deleted.
+- In plaintext in the mail config volume as `certs/managed.key` (mode `0600`), next to `certs/managed.pem`. The previous managed pair is kept as `certs/managed.prev.pem` and `certs/managed.prev.key`. mox reads these files, so anything that can read that volume can read the key: the mox container itself, root on the node, and a user with exec into the mail container.
+- The volume files API and dashboard file browser refuse to read, overwrite, delete or restore any `certs/managed.*` file of the mail config volume (403), including through a symbolic link, a different letter case or extra slashes. Listing still shows the file names and sizes, never the contents.
+- Generic volume backups of the mail config volume leave out `certs/managed*.key` and upload temp files. After restoring such a backup, run `mail cert upload` again, because mox points at a key that is no longer there. Mail backups made with `mail backup` are age-encrypted streams of mox's own backup.
+
+Install steps:
+
+- The new pair is first written under temporary names (`certs/managed.new.*`) and read back, so an agent that cannot write `0600` fails before the live files change. Then the live pair is replaced back to back, mox is restarted through the normal restart path and probed until the served leaf has the new SHA-256 fingerprint. If it does not, within `APP_MAIL_CERT_VERIFY_SECONDS` (default 90), the previous files and settings are restored on a fresh deadline (`APP_MAIL_CERT_ROLLBACK_SECONDS`, default 120) and mox restarts again.
+- One install runs at a time per mail app. A journal (`certs/managed.journal`) marks the install; a second upload gets 409 until it ends or its lease runs out (`APP_MAIL_CERT_INSTALL_LEASE_SECONDS`, default three verify periods plus the rollback period plus a minute). If the control plane stopped mid install, the next upload first finishes the old one: a pair already served is kept, anything else goes back to the previous pair.
+- If restoring the previous pair also fails, the outcome is `rollback_failed` in the API, the audit log and the CLI. The mail server may then serve a missing or mismatched pair; the next upload retries the rollback first.
 - With `APP_MAIL_RESTART_WINDOW` set (for example `02:00-05:00`, UTC), uploads outside the window are refused unless you pass `--restart-now`.
 - If `MAIL_TLS_CERT_FILE` points at your own files, upload refuses and never touches them. Clear both inputs first.
 - `mail cert obtain` (a certificate through the platform's ACME) is not yet implemented and says so.
 
-The node agent must be current: an older agent cannot write the key with mode `0600`, and the upload then stops and removes the key.
+The node agent must be current: an older agent cannot write the key with mode `0600`. The upload then stops before the live files change and deletes the staged key; if that delete fails, it says the key may be readable and must be deleted by hand.
 
 ## Relay mode
 

@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/mailcert"
@@ -23,7 +24,7 @@ import (
 
 const (
 	mailCertStepUpApp     = "mail-cert"
-	mailConfigVolume      = "mail_config"
+	mailConfigVolume      = mailcert.ConfigVolume
 	mailCertPEMEnvKey     = "MAIL_TLS_CERT_PEM"
 	mailCertKeyPEMEnvKey  = "MAIL_TLS_KEY_PEM"
 	mailCertSelfSignedTag = "certs/.selfsigned"
@@ -69,6 +70,10 @@ type mailCertUploadResponse struct {
 	NotAfter     string `json:"not_after"`
 	DaysLeft     int    `json:"days_left"`
 	PreviousKept bool   `json:"previous_kept"`
+	// Recovered is set when an earlier interrupted install was finished first.
+	Recovered string `json:"recovered,omitempty"`
+	// Error repeats Message on failure so clients that read the error field show it.
+	Error string `json:"error,omitempty"`
 }
 
 func mailCertSource(env map[string]string) string {
@@ -145,6 +150,10 @@ func (rt *Router) handleMailCertUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	certPEM, keyPEM := []byte(strings.TrimSpace(req.Cert)+"\n"), []byte(strings.TrimSpace(req.Key)+"\n")
 	req.Key = ""
+	if err := cfg.CheckSize(certPEM, keyPEM); err != nil {
+		writeError(w, http.StatusRequestEntityTooLarge, err.Error())
+		return
+	}
 	svc, found, err := rt.pickMailApp(r, req.App)
 	if err != nil {
 		rt.internalError(w, "api: mail cert upload: list services failed", err)
@@ -180,7 +189,24 @@ func (rt *Router) handleMailCertUpload(w http.ResponseWriter, r *http.Request) {
 	if _, ok := rt.stepUpOwner(w, r, req.StepUp, mailCertStepUpApp+":"+svc.Name, "upload a mail certificate", "uploading a mail certificate"); !ok {
 		return
 	}
+	unlock, ok := rt.lockMailCert(svc.Name)
+	if !ok {
+		writeError(w, http.StatusConflict, mailcert.ErrInstallInProgress.Error())
+		return
+	}
+	defer unlock()
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 3*cfg.VerifyTimeout)
+	defer cancel()
 	detail := map[string]any{"app": svc.Name, "host": host, "serial": info.Serial, "sha256": info.SHA256, "not_after": info.NotAfter.Format(time.RFC3339)}
+	out := mailCertUploadResponse{
+		App: svc.Name, Serial: info.Serial, SHA256: info.SHA256,
+		NotAfter: info.NotAfter.Format(time.RFC3339), DaysLeft: info.DaysLeft(now),
+	}
+	recovered, ok := rt.recoverMailCert(ctx, w, r, svc, cfg, vol, detail, out)
+	if !ok {
+		return
+	}
+	out.Recovered = recovered
 	for _, kv := range [][2]string{{mailCertPEMEnvKey, string(certPEM)}, {mailCertKeyPEMEnvKey, string(keyPEM)}} {
 		if err := rt.domainTLSCertSecrets.SetValue(r.Context(), mailCertSecretsKey(svc.Name), kv[0], kv[1]); err != nil {
 			rt.internalError(w, "api: mail cert upload: seal failed", err, slog.String("name", svc.Name))
@@ -189,35 +215,100 @@ func (rt *Router) handleMailCertUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.auditMailCert(r, "mail.cert.uploaded", detail)
 
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 3*cfg.VerifyTimeout)
-	defer cancel()
-	sw := &mailCertSwitch{rt: rt, name: svc.Name, orig: maps.Clone(svc.Env), cfg: cfg}
-	res, err := mailcert.Install(ctx, cfg, vol, sw, certPEM, keyPEM, info)
-	out := mailCertUploadResponse{
-		App: svc.Name, Outcome: res.Outcome, Reason: res.Reason, Serial: info.Serial, SHA256: info.SHA256,
-		NotAfter: info.NotAfter.Format(time.RFC3339), DaysLeft: info.DaysLeft(now), PreviousKept: res.HadPrev,
-	}
+	orig := mailCertOrigin(svc.Env)
+	sw := &mailCertSwitch{rt: rt, name: svc.Name, orig: orig, cfg: cfg}
+	res, err := mailcert.Install(ctx, cfg, vol, sw, certPEM, keyPEM, info, orig)
+	out.Outcome, out.Reason, out.PreviousKept = res.Outcome, res.Reason, res.HadPrev
 	detail["reason"] = res.Reason
-	switch res.Outcome {
-	case mailcert.OutcomeInstalled:
+	status := http.StatusBadGateway
+	switch {
+	case res.Outcome == mailcert.OutcomeInstalled:
 		_ = vol.Remove(ctx, mailCertSelfSignedTag)
 		rt.auditMailCert(r, "mail.cert.delivered", detail)
 		rt.recordAppEvent(r, store.AppEvent{AppName: svc.Name, Kind: store.AppEventConfigChange, Title: "Mail certificate installed", Detail: "serial " + info.Serial})
 		out.Message = "The mail server restarted and now serves the uploaded certificate."
 		writeJSON(w, http.StatusOK, out)
 		return
-	case mailcert.OutcomeRolledBack:
+	case errors.Is(err, mailcert.ErrInstallInProgress):
+		status = http.StatusConflict
+		out.Message = mailcert.ErrInstallInProgress.Error()
+	case res.Outcome == mailcert.OutcomeRolledBack:
 		rt.auditMailCert(r, "mail.cert.rolled_back", detail)
 		out.Message = "The mail server did not come back serving the new certificate, so the previous one was restored. The upload stays stored."
+	case res.Outcome == mailcert.OutcomeRollbackFailed:
+		rt.auditMailCert(r, "mail.cert.rollback_failed", detail)
+		out.Message = msgMailCertRollbackFailed
 	default:
 		rt.auditMailCert(r, "mail.cert.failed", detail)
 		out.Message = "Installing the certificate failed. Check the mail app and the node, then retry."
-		if errors.Is(err, mailcert.ErrKeyModeTooWide) {
+		if errors.Is(err, mailcert.ErrKeyModeTooWide) || errors.Is(err, mailcert.ErrKeyRemoveFailed) {
 			out.Message = mailcert.ErrKeyModeTooWide.Error()
+			if errors.Is(err, mailcert.ErrKeyRemoveFailed) {
+				out.Message = mailcert.ErrKeyRemoveFailed.Error()
+			}
 		}
 	}
-	rt.logger.Error("api: mail cert install failed", slog.String("name", svc.Name), slog.String("reason", res.Reason), slog.String("error", errString(err)))
-	writeJSON(w, http.StatusBadGateway, out)
+	out.Error = out.Outcome + ": " + out.Message
+	rt.logger.Error("api: mail cert install failed", slog.String("name", svc.Name), slog.String("outcome", res.Outcome), slog.String("reason", res.Reason), slog.String("error", errString(err)))
+	writeJSON(w, status, out)
+}
+
+const msgMailCertRollbackFailed = "Installing failed and restoring the previous certificate also failed, so the mail server may serve a missing or mismatched pair. Run mail cert status; the next upload retries the rollback first."
+
+// dropMailCertSecret deletes the sealed uploaded pair of a mail app that is being removed.
+func (rt *Router) dropMailCertSecret(ctx context.Context, svc store.DesiredService) {
+	if svc.TemplateID != mailcert.TemplateID || rt.domainTLSCertSecrets == nil {
+		return
+	}
+	if err := rt.domainTLSCertSecrets.DeleteAll(ctx, mailCertSecretsKey(svc.Name)); err != nil {
+		rt.logger.Warn("api: delete app: drop sealed mail certificate failed", slog.String("name", svc.Name), slog.String("error", err.Error()))
+	}
+}
+
+func mailCertOrigin(env map[string]string) mailcert.Origin {
+	cert, set := env["MAIL_TLS_CERT_FILE"]
+	return mailcert.Origin{CertFile: cert, KeyFile: env["MAIL_TLS_KEY_FILE"], Set: set}
+}
+
+// lockMailCert serializes installs per mail app inside this process; the journal covers other processes and crashes.
+func (rt *Router) lockMailCert(name string) (func(), bool) {
+	v, _ := rt.mailCertLocks.LoadOrStore(name, &sync.Mutex{})
+	mu, _ := v.(*sync.Mutex)
+	if !mu.TryLock() {
+		return nil, false
+	}
+	return mu.Unlock, true
+}
+
+// recoverMailCert answers 409 while another install's journal is inside its
+// lease, and rolls back a stale one before a new install starts.
+func (rt *Router) recoverMailCert(ctx context.Context, w http.ResponseWriter, r *http.Request, svc store.DesiredService, cfg mailcert.Config, vol mailcert.Volume, detail map[string]any, out mailCertUploadResponse) (string, bool) {
+	j, found, err := mailcert.ReadJournal(ctx, vol)
+	if err != nil {
+		rt.logger.Error("api: mail cert: read install journal failed", slog.String("name", svc.Name), slog.String("error", err.Error()))
+		writeError(w, http.StatusBadGateway, "the install journal on the mail volume could not be read, check the node and retry")
+		return "", false
+	}
+	if !found {
+		return "", true
+	}
+	if !j.Stale(cfg, time.Now()) {
+		writeError(w, http.StatusConflict, mailcert.ErrInstallInProgress.Error())
+		return "", false
+	}
+	res, err := mailcert.Recover(ctx, cfg, vol, &mailCertSwitch{rt: rt, name: svc.Name, orig: j.Origin, cfg: cfg}, j)
+	rec := maps.Clone(detail)
+	rec["reason"], rec["outcome"] = res.Reason, res.Outcome
+	if err != nil {
+		rt.auditMailCert(r, "mail.cert.rollback_failed", rec)
+		rt.logger.Error("api: mail cert: recover interrupted install failed", slog.String("name", svc.Name), slog.String("error", err.Error()))
+		out.Outcome, out.Reason, out.Message = mailcert.OutcomeRollbackFailed, res.Reason, msgMailCertRollbackFailed
+		out.Error = out.Outcome + ": " + out.Message
+		writeJSON(w, http.StatusBadGateway, out)
+		return "", false
+	}
+	rt.auditMailCert(r, "mail.cert.recovered", rec)
+	return res.Outcome, true
 }
 
 // privateVolumeWriter is the node surface that creates a file 0600.
@@ -299,7 +390,10 @@ func (v *mailCertVolume) Mode(ctx context.Context, p string) (fs.FileMode, error
 }
 
 func (v *mailCertVolume) Remove(ctx context.Context, p string) error {
-	return v.node.VolumeRemove(ctx, v.volume, p)
+	if err := v.node.VolumeRemove(ctx, v.volume, p); err != nil && !errors.Is(volumefiles.Classify(err), volumefiles.ErrNotFound) {
+		return err
+	}
+	return nil
 }
 
 // parsePermString reads fs.FileMode.Perm().String() output such as "-rw-------".
@@ -320,7 +414,7 @@ func parsePermString(s string) (fs.FileMode, error) {
 type mailCertSwitch struct {
 	rt   *Router
 	name string
-	orig map[string]string
+	orig mailcert.Origin
 	cfg  mailcert.Config
 }
 
@@ -357,8 +451,7 @@ func (s *mailCertSwitch) Activate(ctx context.Context) error {
 }
 
 func (s *mailCertSwitch) Revert(ctx context.Context) error {
-	cert, ok := s.orig["MAIL_TLS_CERT_FILE"]
-	return s.apply(ctx, cert, s.orig["MAIL_TLS_KEY_FILE"], ok)
+	return s.apply(ctx, s.orig.CertFile, s.orig.KeyFile, s.orig.Set)
 }
 
 func (s *mailCertSwitch) Served(ctx context.Context) (mailcert.Info, error) {

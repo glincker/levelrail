@@ -287,6 +287,7 @@ type Router struct {
 	domainMaintenance      DomainMaintenanceStore      // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
 	domainTLSCert          DomainTLSCertStore          // always set, same "core Store interface" shape as domainBasicAuth above
 	domainTLSCertSecrets   DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
+	mailCertLocks          sync.Map                    // app name to *sync.Mutex: one mail certificate install at a time per app
 	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainAuthGate         DomainAuthGateStore         // always set, core Store; the auth URL is not secret
 	gate                   GateStore                   // nil when the store lacks it: built-in gate requests fail closed

@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/mailcert"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/volumefiles"
 )
@@ -71,6 +72,87 @@ func (rt *Router) volumeFileTarget(w http.ResponseWriter, r *http.Request) (Volu
 		return nil, "", false
 	}
 	return node, dockerVolume, true
+}
+
+const (
+	msgVolumePathProtected = "this file holds the managed mail certificate or key and is not available through volume files, use mail cert status and mail cert upload instead"
+	msgVolumePathSymlink   = "this path goes through a symbolic link in the mail config volume, which volume files do not follow there"
+)
+
+// volumeProtectedPaths returns the matcher for dockerVolume's protected files,
+// or nil. Any mail template app counts, a superset of the instance mail app,
+// so an ownership lookup error can never unprotect the key.
+func (rt *Router) volumeProtectedPaths(ctx context.Context, dockerVolume string) (func(string) bool, error) {
+	svcs, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range svcs {
+		if s.TemplateID != mailcert.TemplateID {
+			continue
+		}
+		if dv, ok := store.ServiceVolumeDockerName(s, mailcert.ConfigVolume); ok && dv == dockerVolume {
+			return mailcert.IsProtectedPath, nil
+		}
+	}
+	return nil, nil
+}
+
+// guardVolumePath writes a 403 and returns false when p is a protected file of
+// the volume, or reaches anything through a symlink in a protected volume:
+// reads and writes follow symlinks, so a link could point at the key.
+func (rt *Router) guardVolumePath(w http.ResponseWriter, r *http.Request, node VolumeFileNode, dockerVolume, p string) bool {
+	match, err := rt.volumeProtectedPaths(r.Context(), dockerVolume)
+	if err != nil {
+		rt.internalError(w, "api: volume files: protected path check failed", err, slog.String("name", r.PathValue("name")))
+		return false
+	}
+	if match == nil {
+		return true
+	}
+	rel, err := volumefiles.Clean(p)
+	if err != nil || rel == "." {
+		return true
+	}
+	if match(rel) {
+		writeError(w, http.StatusForbidden, msgVolumePathProtected)
+		return false
+	}
+	dir := "."
+	for _, part := range strings.Split(rel, "/") {
+		child := part
+		if dir != "." {
+			child = dir + "/" + part
+		}
+		entries, truncated, err := node.VolumeList(r.Context(), dockerVolume, dir, 0)
+		if errors.Is(volumefiles.Classify(err), volumefiles.ErrNotFound) {
+			return true
+		}
+		if err != nil {
+			rt.writeVolumeFileError(w, "api: volume files: protected path check failed", err, slog.String("name", r.PathValue("name")))
+			return false
+		}
+		found := false
+		for _, e := range entries {
+			if e.Path != child && e.Name != part {
+				continue
+			}
+			if e.Type == "symlink" {
+				writeError(w, http.StatusForbidden, msgVolumePathSymlink)
+				return false
+			}
+			found = true
+		}
+		if !found {
+			if truncated {
+				writeError(w, http.StatusForbidden, msgVolumePathSymlink)
+				return false
+			}
+			return true
+		}
+		dir = child
+	}
+	return true
 }
 
 // writeVolumeFileError writes the mapped error and returns the status it wrote.
@@ -183,6 +265,9 @@ func (rt *Router) handleDownloadVolumeFile(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "path is required")
 		return
 	}
+	if !rt.guardVolumePath(w, r, node, dockerVolume, p) {
+		return
+	}
 	rc, err := node.VolumeRead(r.Context(), dockerVolume, p)
 	if err != nil {
 		st := rt.writeVolumeFileError(w, "api: download volume file failed", err, slog.String("name", r.PathValue("name")))
@@ -211,6 +296,9 @@ func (rt *Router) handlePutVolumeFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "path is required")
 		return
 	}
+	if !rt.guardVolumePath(w, r, node, dockerVolume, p) {
+		return
+	}
 	limit := volumefiles.MaxUploadBytes()
 	if r.ContentLength > limit {
 		writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("file exceeds the %d MB upload limit", limit>>20))
@@ -235,6 +323,9 @@ func (rt *Router) handleDeleteVolumeFile(w http.ResponseWriter, r *http.Request)
 	p := r.URL.Query().Get("path")
 	if p == "" {
 		writeError(w, http.StatusBadRequest, "path is required")
+		return
+	}
+	if !rt.guardVolumePath(w, r, node, dockerVolume, p) {
 		return
 	}
 	if err := node.VolumeRemove(r.Context(), dockerVolume, p); err != nil {
@@ -276,6 +367,9 @@ func (rt *Router) handleRestoreVolumeFile(w http.ResponseWriter, r *http.Request
 	rel, err := volumefiles.Clean(req.Path)
 	if err != nil || rel == "." {
 		writeError(w, http.StatusBadRequest, "path is outside the volume")
+		return
+	}
+	if !rt.guardVolumePath(w, r, node, dockerVolume, rel) {
 		return
 	}
 	stream, err := rt.backupDownloader.Download(r.Context(), req.BackupID)

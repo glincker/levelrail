@@ -1331,6 +1331,7 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
+	rt.dropMailCertSecret(ctx, *existing)
 	if err := rt.removeStaticSite(ctx, name); err != nil {
 		rt.logger.Warn("api: delete app: remove static site failed", slog.String("error", err.Error()), slog.String("name", name))
 	}

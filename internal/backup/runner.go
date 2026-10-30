@@ -49,6 +49,9 @@ type Runner struct {
 	// calls RunVolumeBackup, the same "optional capability" shape this
 	// codebase already uses for Scheduler.Deleter/Verifier.
 	VolumeArchiver VolumeArchiver
+	// ArchiveExcludes names tar patterns a volume backup must leave out, such
+	// as a managed private key; nil excludes nothing.
+	ArchiveExcludes func(ctx context.Context, serviceName, volumeName string) ([]string, error)
 	// SqliteSnapshotter backs RunVolumeBackup when a volume's sqlite_path
 	// is set; nil is valid the same way VolumeArchiver's nil is.
 	SqliteSnapshotter SqliteSnapshotter
@@ -239,7 +242,7 @@ func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, vo
 	case sqlitePath != "":
 		size, checksum, runErr = r.runSqliteSnapshotAndUpload(ctx, dockerVolumeName, sqlitePath, targetID, objectKey)
 	default:
-		size, checksum, runErr = r.runArchiveAndUpload(ctx, dockerVolumeName, targetID, objectKey)
+		size, checksum, runErr = r.runArchiveAndUpload(ctx, serviceName, volumeName, dockerVolumeName, targetID, objectKey)
 	}
 
 	if sealed.codec != "" && runErr == nil {
@@ -264,13 +267,13 @@ func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, vo
 // runArchiveAndUpload is RunVolumeBackup's actual work, the volume
 // counterpart of runDumpAndUpload: identical shape, VolumeArchiver.
 // Archive standing in for Dumper.Dump.
-func (r *Runner) runArchiveAndUpload(ctx context.Context, dockerVolumeName, targetID, objectKey string) (size int64, checksum string, err error) {
+func (r *Runner) runArchiveAndUpload(ctx context.Context, serviceName, volumeName, dockerVolumeName, targetID, objectKey string) (size int64, checksum string, err error) {
 	dest, err := r.ResolveDestination(ctx, targetID)
 	if err != nil {
 		return 0, "", err
 	}
 
-	archive, err := r.VolumeArchiver.Archive(ctx, dockerVolumeName)
+	archive, err := r.archiveVolume(ctx, serviceName, volumeName, dockerVolumeName)
 	if err != nil {
 		return 0, "", fmt.Errorf("archive volume %q: %w", dockerVolumeName, err)
 	}
