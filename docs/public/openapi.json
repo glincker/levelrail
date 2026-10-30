@@ -90103,7 +90103,7 @@
     },
     "/api/v1/mail/system-email": {
       "get": {
-        "description": "System email changes the instance email provider, so it needs root like PUT /api/v1/settings/email.\n\nRequires the `read` ability.",
+        "description": "System email is an instance setting: every route, the read included, needs root like /api/v1/settings/email.\n\nRequires the `root` ability.",
         "operationId": "handleGetSystemEmail",
         "responses": {
           "200": {
@@ -90158,15 +90158,15 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "root"
             ]
           }
         ],
-        "summary": "System email changes the instance email provider, so it needs root like PUT /api/v1/settings/email.",
+        "summary": "System email is an instance setting: every route, the read included, needs root like /api/v1/settings/email.",
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/mail/system-email/disable": {

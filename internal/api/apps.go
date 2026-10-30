@@ -442,6 +442,9 @@ func validateAppResourceWith(a appResource, storedPortless bool) error {
 	if a.Name == standalone.Scope {
 		return errors.New("name " + standalone.Scope + " is reserved for standalone domains")
 	}
+	if reservedSecretNamespace(a.Name) {
+		return errors.New("name " + a.Name + " is reserved for control plane settings")
+	}
 	if a.Image == "" {
 		return errors.New("image is required")
 	}
@@ -1450,4 +1453,16 @@ func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
 		return false
 	}
 	return true
+}
+
+// reservedSecretNamespace reports names the control plane seals its own settings under; an app with
+// one would share that secret namespace.
+func reservedSecretNamespace(name string) bool {
+	switch name {
+	case store.EmailSettingsSecretsKey(), sysEmailSecretsNS, store.VaultSecretsKey(), store.AIAssistantSecretsKey(),
+		store.CloudflareTunnelSecretsKey(), store.CloudflareDNSSecretsKey(), store.GoogleCloudDNSSecretsKey(),
+		store.RegistrySettingsSecretsKey(), store.Route53DNSSecretsKey():
+		return true
+	}
+	return false
 }

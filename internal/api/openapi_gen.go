@@ -1299,7 +1299,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailSuppressions", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddMailSuppression", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/mail/suppressions/{email}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemoveMailSuppression", Description: ""},
-	{Method: "GET", Path: "/api/v1/mail/system-email", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSystemEmail", Description: "System email changes the instance email provider, so it needs root like PUT /api/v1/settings/email."},
+	{Method: "GET", Path: "/api/v1/mail/system-email", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSystemEmail", Description: "System email is an instance setting: every route, the read included, needs root like /api/v1/settings/email."},
 	{Method: "POST", Path: "/api/v1/mail/system-email/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisableSystemEmail", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/system-email/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnableSystemEmail", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/system-email/rotate", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotateSystemEmail", Description: ""},

@@ -44,6 +44,7 @@ type MailboxStore interface {
 	ListMailboxesLinkedTo(ctx context.Context, teamID, userID string) ([]store.Mailbox, error)
 	SetMailboxSuspended(ctx context.Context, address string, suspended bool) error
 	SetMailboxSuspendPending(ctx context.Context, address string) error
+	SetMailboxSystem(ctx context.Context, address string, system bool) error
 	ListMailboxesSuspendPending(ctx context.Context) ([]store.Mailbox, error)
 	DeleteMailbox(ctx context.Context, address string) error
 }
@@ -334,6 +335,9 @@ func (rt *Router) handleListMailboxes(w http.ResponseWriter, r *http.Request) {
 	scope, _ := callerTeamScope(r.Context())
 	out := []mailboxResource{}
 	for _, m := range list {
+		if m.System {
+			continue
+		}
 		if mailDecide(scope, abilities, policies, m.TeamID, AbilityRead, mailboxResources(m)...) == 0 {
 			out = append(out, mailboxResource{m})
 		}
@@ -356,8 +360,27 @@ func (rt *Router) loadMailbox(w http.ResponseWriter, r *http.Request, ability st
 		rt.internalError(w, "api: get mailbox", err)
 		return nil, m, false
 	}
-	_, ok = rt.mailAuthorize(w, r, m.TeamID, ability, mailboxResources(m)...)
-	return db, m, ok
+	if _, ok = rt.mailAuthorize(w, r, m.TeamID, ability, mailboxResources(m)...); !ok {
+		return nil, m, false
+	}
+	if m.System {
+		writeSystemMailboxRefusal(w)
+		return nil, m, false
+	}
+	return db, m, true
+}
+
+// sysMailboxRefusal points a caller at the only routes allowed to touch the system email account.
+const sysMailboxRefusal = "this is the instance system email account; only root can manage it, with levelrail-cli mail system-email (or Mail server > System email)"
+
+func writeSystemMailboxRefusal(w http.ResponseWriter) {
+	writeCodedError(w, http.StatusConflict, "system_mailbox", sysMailboxRefusal)
+}
+
+// isSystemMailbox reports whether address is the system email account; lookup errors count as not system.
+func (rt *Router) isSystemMailbox(r *http.Request, address string) bool {
+	m, err := rt.mail.boxes.GetMailbox(r.Context(), address)
+	return err == nil && m.System
 }
 
 // handleCreateMailbox handles POST /api/v1/mail/mailboxes. The domain's team
@@ -594,9 +617,17 @@ func (rt *Router) handleAddMailAlias(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if rt.isSystemMailbox(r, addr) {
+		writeSystemMailboxRefusal(w)
+		return
+	}
 	for i, t := range req.Targets {
 		req.Targets[i] = mail.AccountNameFor(t)
 		tm, err := rt.mail.boxes.GetMailbox(r.Context(), req.Targets[i])
+		if err == nil && tm.System {
+			writeSystemMailboxRefusal(w)
+			return
+		}
 		if err != nil || tm.TeamID != d.TeamID {
 			writeError(w, http.StatusBadRequest, "every target must be a mailbox your team owns")
 			return
@@ -623,6 +654,10 @@ func (rt *Router) handleRemoveMailAlias(w http.ResponseWriter, r *http.Request) 
 	addr := mail.AccountNameFor(r.PathValue("address"))
 	d, ok := rt.mailDomainFor(w, r, domain, AbilityWriteSensitive, mailResMailbox+addr)
 	if !ok {
+		return
+	}
+	if rt.isSystemMailbox(r, addr) {
+		writeSystemMailboxRefusal(w)
 		return
 	}
 	e, _, ok := rt.mailEngineFor(w, r, d.Service)

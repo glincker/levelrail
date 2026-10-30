@@ -35,10 +35,12 @@ type Mailbox struct {
 	LinkedUserID string `json:"linked_user_id,omitempty"`
 	Suspended    bool   `json:"suspended"`
 	// SuspendPending marks an offboarding suspend the engine has not applied yet.
-	SuspendPending bool   `json:"suspend_pending"`
-	CreatedBy      string `json:"created_by"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
+	SuspendPending bool `json:"suspend_pending"`
+	// System marks the instance's system email account; only root system email routes manage it.
+	System    bool   `json:"system,omitempty"`
+	CreatedBy string `json:"created_by"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 func isUniqueErr(err error) bool {
@@ -88,13 +90,13 @@ func (db *DB) ListMailDomains(ctx context.Context) ([]MailDomain, error) {
 	return out, rows.Err()
 }
 
-const mailboxCols = `address, domain, localpart, service, team_id, linked_user_id, suspended, created_by, created_at, updated_at, suspend_pending`
+const mailboxCols = `address, domain, localpart, service, team_id, linked_user_id, suspended, created_by, created_at, updated_at, suspend_pending, system`
 
 func scanMailbox(sc interface{ Scan(...any) error }) (Mailbox, error) {
 	var m Mailbox
-	var susp, pending int
-	err := sc.Scan(&m.Address, &m.Domain, &m.Localpart, &m.Service, &m.TeamID, &m.LinkedUserID, &susp, &m.CreatedBy, &m.CreatedAt, &m.UpdatedAt, &pending)
-	m.Suspended, m.SuspendPending = susp != 0, pending != 0
+	var susp, pending, system int
+	err := sc.Scan(&m.Address, &m.Domain, &m.Localpart, &m.Service, &m.TeamID, &m.LinkedUserID, &susp, &m.CreatedBy, &m.CreatedAt, &m.UpdatedAt, &pending, &system)
+	m.Suspended, m.SuspendPending, m.System = susp != 0, pending != 0, system != 0
 	return m, err
 }
 
@@ -102,8 +104,8 @@ func scanMailbox(sc interface{ Scan(...any) error }) (Mailbox, error) {
 func (db *DB) CreateMailbox(ctx context.Context, m Mailbox) error {
 	now := mailNow()
 	m.Address, m.Domain = strings.ToLower(m.Address), strings.ToLower(m.Domain)
-	_, err := db.ExecContext(ctx, `INSERT INTO mail_mailboxes (`+mailboxCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		m.Address, m.Domain, m.Localpart, m.Service, m.TeamID, m.LinkedUserID, boolInt(m.Suspended), m.CreatedBy, now, now, boolInt(m.SuspendPending))
+	_, err := db.ExecContext(ctx, `INSERT INTO mail_mailboxes (`+mailboxCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		m.Address, m.Domain, m.Localpart, m.Service, m.TeamID, m.LinkedUserID, boolInt(m.Suspended), m.CreatedBy, now, now, boolInt(m.SuspendPending), boolInt(m.System))
 	if isUniqueErr(err) {
 		return ErrMailboxExists
 	}
@@ -158,6 +160,18 @@ func (db *DB) ListMailboxesSuspendPending(ctx context.Context) ([]Mailbox, error
 // SetMailboxSuspendPending records that an offboarding suspend is owed.
 func (db *DB) SetMailboxSuspendPending(ctx context.Context, address string) error {
 	res, err := db.ExecContext(ctx, `UPDATE mail_mailboxes SET suspend_pending = 1, updated_at = ? WHERE address = ?`, mailNow(), strings.ToLower(address))
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrMailboxNotFound
+	}
+	return nil
+}
+
+// SetMailboxSystem marks or clears the system email flag on a mailbox.
+func (db *DB) SetMailboxSystem(ctx context.Context, address string, system bool) error {
+	res, err := db.ExecContext(ctx, `UPDATE mail_mailboxes SET system = ?, updated_at = ? WHERE address = ?`, boolInt(system), mailNow(), strings.ToLower(address))
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,18 @@ func (f *sysEmailBoxes) CreateMailbox(_ context.Context, m store.Mailbox) error 
 	return nil
 }
 
+func (f *sysEmailBoxes) SetMailboxSystem(_ context.Context, address string, system bool) error {
+	m := f.boxes[address]
+	m.System = system
+	f.boxes[address] = m
+	return nil
+}
+
+func (f *sysEmailBoxes) DeleteMailbox(_ context.Context, address string) error {
+	delete(f.boxes, address)
+	return nil
+}
+
 func (f *sysEmailBoxes) ListMailDomains(context.Context) ([]store.MailDomain, error) {
 	return f.domains, nil
 }
@@ -45,8 +57,9 @@ func TestSystemEmailNoreplyMailboxIsCreatedThenReused(t *testing.T) {
 	d := store.MailDomain{Domain: "example.test", Service: demo.AppName, TeamID: "team_1"}
 	r := httptest.NewRequest("POST", "/api/v1/mail/system-email/enable", nil)
 
-	addr, first, err := rt.ensureNoreplyMailbox(r, e, d, "usr_1")
-	if err != nil || addr != "noreply@example.test" || first == "" {
+	nb, err := rt.ensureNoreplyMailbox(r, e, d, "usr_1", "")
+	addr, first := nb.address, nb.password
+	if err != nil || addr != "noreply@example.test" || first == "" || !boxes.boxes[addr].System {
 		t.Fatalf("create: addr=%q err=%v", addr, err)
 	}
 	if err := rt.sysEmailSuspend(r, demo.AppName, addr); err == nil && !boxes.boxes[addr].Suspended {
@@ -55,7 +68,8 @@ func TestSystemEmailNoreplyMailboxIsCreatedThenReused(t *testing.T) {
 	m := boxes.boxes[addr]
 	m.Suspended = true
 	boxes.boxes[addr] = m
-	_, second, err := rt.ensureNoreplyMailbox(r, e, d, "usr_1")
+	nb2, err := rt.ensureNoreplyMailbox(r, e, d, "usr_1", "")
+	second := nb2.password
 	if err != nil || second == "" || second == first {
 		t.Fatalf("reuse must set a fresh password: err=%v", err)
 	}

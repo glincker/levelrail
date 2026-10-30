@@ -2103,7 +2103,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/status-page/webhooks/{id}/resume | AbilityWrite | handleResumeStatusWebhook |
 | POST | /api/v1/status-page/webhooks/{id}/test | AbilityWrite | handleTestStatusWebhook |
 | GET | /api/v1/status-page/webhooks/{id}/deliveries | AbilityRead | handleListStatusWebhookDeliveries |
-| GET | /api/v1/mail/system-email | AbilityRead | handleGetSystemEmail |
+| GET | /api/v1/mail/system-email | AbilityRoot | handleGetSystemEmail |
 | POST | /api/v1/mail/system-email/enable | AbilityRoot | handleEnableSystemEmail |
 | POST | /api/v1/mail/system-email/disable | AbilityRoot | handleDisableSystemEmail |
 | POST | /api/v1/mail/system-email/rotate | AbilityRoot | handleRotateSystemEmail |

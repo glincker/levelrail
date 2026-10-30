@@ -35,6 +35,8 @@ export interface SystemEmailState {
   warning?: string
   demo?: boolean
   domains: string[]
+  pin_mismatch?: boolean
+  error?: string
 }
 
 export interface SystemEmailStep {

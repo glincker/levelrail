@@ -75,7 +75,9 @@ func runMailSystemEmail(prog string, args []string, stdout, stderr io.Writer, lo
 		if !ok {
 			return code
 		}
-		res, err := c.client.SystemEmailAction(ctx, "test", to, nil)
+		res, err := withStepUp(stderr, func(p *apiclient.StepUpProof) (apiclient.SystemEmailResult, error) {
+			return c.client.SystemEmailAction(ctx, "test", to, p)
+		})
 		if err != nil {
 			return c.fail(fmt.Errorf("%s: %w", label, err))
 		}
@@ -95,6 +97,12 @@ func printSystemEmailState(out io.Writer, st apiclient.SystemEmailState) {
 	}
 	if st.DNS != nil {
 		_, _ = fmt.Fprintf(out, "dns: spf=%s dkim=%s dmarc=%s\n", st.DNS.SPF, st.DNS.DKIM, st.DNS.DMARC)
+	}
+	if st.PinMismatch {
+		_, _ = fmt.Fprintln(out, "pin: mismatch, re-run enable to re-pin the mail server")
+	}
+	if st.Error != "" {
+		_, _ = fmt.Fprintf(out, "error: %s\n", st.Error)
 	}
 	if st.Warning != "" {
 		_, _ = fmt.Fprintf(out, "warning: %s\n", st.Warning)

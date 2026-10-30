@@ -257,10 +257,10 @@ func redact(s string, secrets []string) string {
 	return s
 }
 
-// notFoundMessage matches only a whole "<thing> does not exist" or "<thing> not
-// found" clause, so an unrelated failure that mentions "unknown" is never read
-// as a missing account (a delete would then drop the record of a live mailbox).
-var notFoundMessage = regexp.MustCompile(`(?:^|: )(?:account|domain|alias|address|destination|message|mailbox)s? (?:does not exist|not found)$`)
+// notFoundMessage matches only the final clause mox v0.0.17 really returns for a missing object
+// ("no such account", "unknown domain", "alias does not exist"), so any other failure is never
+// read as a missing account (a delete would then drop the record of a live mailbox).
+var notFoundMessage = regexp.MustCompile(`(?:^|: )(?:(?:account|domain|alias|address|destination|message|mailbox)s? (?:does not exist|not found)|no such (?:account|domain|alias|address)|unknown domain)$`)
 
 func mapError(e rpcError, secrets []string) error {
 	msg := redact(e.Message, secrets)

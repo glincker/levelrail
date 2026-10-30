@@ -38,6 +38,8 @@ type SystemEmailState struct {
 	Warning     string           `json:"warning,omitempty"`
 	Demo        bool             `json:"demo,omitempty"`
 	Domains     []string         `json:"domains"`
+	PinMismatch bool             `json:"pin_mismatch"`
+	Error       string           `json:"error,omitempty"`
 }
 
 // SystemEmailStep is one step of a system email action.

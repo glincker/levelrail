@@ -25,8 +25,8 @@ import { FIELD_CLASS, PanelCard, Reason } from './mailPanelUi'
 /** MailSystemEmailCard sends invites, resets and alerts as noreply@ a claimed domain through this mail server. */
 export function MailSystemEmailCard({ domains }: { domains: MailDomain[] }) {
   const { t } = useTranslation('mailServer')
-  const state = useSystemEmail().data
   const isRoot = useIsRoot()
+  const state = useSystemEmail(isRoot).data
   const invalidate = useInvalidateMail()
   const [domain, setDomain] = useState('')
   const [replace, setReplace] = useState(false)
