@@ -66,7 +66,7 @@ func runIncidentsList(prog string, args []string, stdout, stderr io.Writer, look
 	fs, t, a, p, j, o, q := apiFlagSet(prog, "incidents list", "print the incidents as JSON to stdout and nothing else", stderr)
 	state := fs.String("state", "", "only incidents in this internal state: triggered, acknowledged or resolved")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents list [flags]\n\nLists internal incidents, newest first. Needs read:sensitive.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents list [--state <triggered|acknowledged|resolved>] [flags]\n\nLists internal incidents, newest first. Needs read:sensitive.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, jsonOut, of, exitCode, ok := parseListClient(fs, args, apiFlagPtrs{t, a, p, j, o, q}, prog, stderr, lookupEnv)
@@ -135,7 +135,7 @@ func runIncidentsPromote(prog string, args []string, stdout, stderr io.Writer, l
 	fs, t, a, p, j, o, q := apiFlagSet(prog, "incidents promote", "print the result as JSON to stdout and nothing else", stderr)
 	title := fs.String("title", "", "incident title (default \"Alert: <rule name>\")")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents promote <alert-rule-id> [flags]\n\nOpens an unpublished internal incident from a firing alert rule.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents promote <alert-rule-id> [--title <text>] [flags]\n\nOpens an unpublished internal incident from a firing alert rule.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, rule, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{t, a, p, j, o, q}, stderr, singleArgCmd{prog, "incidents promote", "alert rule id"}, lookupEnv)
@@ -157,7 +157,7 @@ func runIncidentsDraft(prog string, args []string, stdout, stderr io.Writer, loo
 	impact := fs.String("impact", "", "none, minor, major or critical (default: keep)")
 	components := fs.String("components", "", "comma separated status page component ids (default: keep; empty value clears)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents draft <id> --title <text> --body <text> [flags]\n\nSaves the public text. Nothing is public until `incidents publish`.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents draft <id> --title <text> --body <text> [--status <s>] [--impact <i>] [--components <ids>] [flags]\n\nSaves the public text. Nothing is public until `incidents publish`.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, id, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{t, a, p, j, o, q}, stderr, singleArgCmd{prog, "incidents draft", "incident id"}, lookupEnv)
@@ -188,7 +188,7 @@ func runIncidentsPublish(prog string, args []string, stdout, stderr io.Writer, l
 	fs, t, a, p, j, o, q := apiFlagSet(prog, "incidents publish", "print the result as JSON to stdout and nothing else", stderr)
 	reviewed := fs.String("updated-at", "", "updated_at you reviewed; publishing is refused if the incident changed since (default: the value just fetched)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents publish <id> [flags]\n\nPublishes the saved draft to the public status page. This cannot be undone.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s incidents publish <id> [--updated-at <ts>] [flags]\n\nPublishes the saved draft to the public status page. This cannot be undone.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	client, id, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{t, a, p, j, o, q}, stderr, singleArgCmd{prog, "incidents publish", "incident id"}, lookupEnv)
