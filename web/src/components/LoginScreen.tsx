@@ -171,11 +171,9 @@ export function LoginScreen({
           ) : null}
 
           <div className="space-y-2">
-            <Eyebrow>
-              {isRegister
-                ? t('foundation.signIn.eyebrowSetup')
-                : t('foundation.signIn.eyebrowSignIn')}
-            </Eyebrow>
+            {isRegister ? (
+              <Eyebrow>{t('foundation.signIn.eyebrowSetup')}</Eyebrow>
+            ) : null}
             <Display as="h1" size="greeting">
               {isRegister
                 ? t('foundation.signIn.titleSetup')
@@ -217,7 +215,7 @@ export function LoginScreen({
           </div>
 
           {devMode.data?.enabled ? (
-            <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+            <div className="space-y-2 rounded-lg border border-border/60 p-2">
               <Button
                 type="button"
                 variant="outline"
@@ -247,11 +245,6 @@ export function LoginScreen({
               >
                 Fill username only (test the sign-in flow above)
               </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                To test the passkey branch: register one for {DEV_MODE_USERNAME}{' '}
-                in Settings, then use Chrome DevTools &rsaquo; More tools
-                &rsaquo; WebAuthn to add a virtual authenticator.
-              </p>
             </div>
           ) : null}
         </main>
