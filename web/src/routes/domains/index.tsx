@@ -30,6 +30,7 @@ import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { proxyCertStatus } from '../../lib/certStatus'
 import { PlatformStatusStrip } from '../../components/platform/PlatformStatusStrip'
 import { DASHBOARD_URL_ANCHOR } from '../../components/DashboardUrlCard'
+import { HelpLink } from '../../components/HelpLink'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyDomainsDiagram } from '../../components/banners/LazyDiagrams'
 import { PageTemplate } from '../../components/shell/PageTemplate'
@@ -125,6 +126,10 @@ function DomainsPage() {
           action={
             noDomains && apps.length === 0 ? (
               <>
+                <HelpLink
+                  path="/domains-and-ingress"
+                  label={t('page.helpLabel')}
+                />
                 <p className="w-full text-sm text-foreground">
                   {t('banner.noApps')}
                 </p>
@@ -139,17 +144,20 @@ function DomainsPage() {
                 {addButton}
               </>
             ) : (
-              addButton
+              <>
+                <HelpLink
+                  path="/domains-and-ingress"
+                  label={t('page.helpLabel')}
+                />
+                {addButton}
+              </>
             )
           }
           illustration={<LazyDomainsDiagram size={bannerSize} />}
           size={bannerSize}
         />
       }
-      helpPath="/domains-and-ingress"
-      helpLabel="Domains and ingress guide"
       banners={<SetupStepHint step="app_domain" />}
-      actions={addButton}
     >
       <PlatformStatusStrip />
 

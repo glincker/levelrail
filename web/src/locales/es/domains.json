@@ -257,6 +257,7 @@
   "page": {
     "title": "Dominios",
     "description": "Todos los dominios enrutados a tus aplicaciones.",
+    "helpLabel": "Guía de dominios e ingress",
     "add": "Agregar dominio",
     "count_one": "{{count}} dominio",
     "count_other": "{{count}} dominios",
