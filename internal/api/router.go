@@ -216,6 +216,8 @@ type Router struct {
 	incidentBodyMax        int
 	statusSampler          *statuspage.Service
 	statusLimiter          *apiRateLimiter
+	heartbeatMu            sync.Mutex
+	heartbeatLimiter       *apiRateLimiter
 	statusHost             statusHostCache
 	sessions               *sessionStore
 	mfaPending             *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has

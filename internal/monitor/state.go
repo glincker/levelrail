@@ -20,10 +20,15 @@ type Transition struct {
 // Notifier receives confirmed transitions. It must not block the probe worker.
 type Notifier func(Transition)
 
+// StateDegraded is reported for a passing monitor that is near failing, such as a certificate
+// inside its warning window. Confirmed tracking itself stays up while degraded.
+const StateDegraded = "degraded"
+
 type track struct {
-	state string
-	fails int
-	oks   int
+	degraded bool
+	state    string
+	fails    int
+	oks      int
 }
 
 // Tracker turns raw probe results into confirmed states so one bad sample
@@ -50,6 +55,7 @@ func (t *Tracker) Observe(m Monitor, r Result) string {
 		t.byID[m.ID] = tr
 	}
 	var fire *Transition
+	tr.degraded = r.OK && r.Degraded
 	if r.OK {
 		tr.fails = 0
 		switch tr.state {
@@ -94,6 +100,45 @@ func (t *Tracker) Observe(m Monitor, r Result) string {
 		n(*fire)
 	}
 	return state
+}
+
+// Force sets a monitor up or down at once, for kinds whose own timing already confirms
+// the change. It notifies on a real transition and returns the state afterwards.
+func (t *Tracker) Force(m Monitor, down bool, reason string, degraded bool) string {
+	t.mu.Lock()
+	tr, ok := t.byID[m.ID]
+	if !ok {
+		tr = &track{state: StateUp}
+		t.byID[m.ID] = tr
+	}
+	var fire *Transition
+	tr.degraded = !down && degraded
+	switch {
+	case down && tr.state != StateDown:
+		if tr.state != StateRecovering {
+			fire = &Transition{Monitor: m, State: StateDown, Reason: reason}
+		}
+		tr.state, tr.fails, tr.oks = StateDown, t.confirm, 0
+	case !down && (tr.state == StateDown || tr.state == StateRecovering):
+		tr.state, tr.fails, tr.oks = StateUp, 0, 0
+		fire = &Transition{Monitor: m, State: StateUp}
+	case !down:
+		tr.state, tr.fails, tr.oks = StateUp, 0, 0
+	}
+	state, n := tr.state, t.notifier
+	t.mu.Unlock()
+	if fire != nil && n != nil {
+		n(*fire)
+	}
+	return state
+}
+
+// Degraded reports whether the last passing result was flagged degraded.
+func (t *Tracker) Degraded(id string) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	tr, ok := t.byID[id]
+	return ok && tr.degraded && tr.state == StateUp
 }
 
 // State returns the current state, or "" for a monitor not probed yet.

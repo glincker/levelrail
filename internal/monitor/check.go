@@ -2,6 +2,8 @@ package monitor
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -26,7 +28,20 @@ const (
 	ReasonRedirects     = "redirect_limit"
 	ReasonBadRequest    = "bad_request"
 	ReasonSecretMissing = "secret_unavailable"
+	ReasonCertInvalid   = "cert_invalid"
+	ReasonCertExpired   = "cert_expired"
+	ReasonCertWarn      = "cert_expiring"
+	ReasonCertCritical  = "cert_expiring_critical"
 )
+
+// certVerdict reports whether a reason is a settled certificate finding rather than a flaky sample.
+func certVerdict(reason string) bool {
+	switch reason {
+	case "", ReasonCertInvalid, ReasonCertExpired, ReasonCertWarn, ReasonCertCritical:
+		return true
+	}
+	return false
+}
 
 var errTooManyRedirects = errors.New("monitor: too many redirects")
 
@@ -37,6 +52,7 @@ type Checker struct {
 	noFollow *http.Client
 	dialer   *net.Dialer
 	now      func() time.Time
+	roots    *x509.CertPool
 }
 
 // NewChecker builds a Checker whose connections refuse internal addresses
@@ -76,9 +92,12 @@ func (c *Checker) Check(ctx context.Context, m Monitor, headers map[string]strin
 	defer cancel()
 	start := c.now()
 	res := Result{MonitorID: m.ID, At: start.Unix()}
-	if m.Kind == KindTCP {
+	switch m.Kind {
+	case KindTCP:
 		c.checkTCP(ctx, m, &res)
-	} else {
+	case KindTLS:
+		c.checkTLS(ctx, m, &res)
+	default:
 		c.checkHTTP(ctx, m, headers, &res)
 	}
 	res.LatencyMS = int(c.now().Sub(start) / time.Millisecond)
@@ -93,6 +112,58 @@ func (c *Checker) checkTCP(ctx context.Context, m Monitor, res *Result) {
 	}
 	_ = conn.Close()
 	res.OK = true
+}
+
+// checkTLS verifies the chain normally, then reports days left. An invalid chain is a failure,
+// never a skipped check. Code carries the whole days remaining.
+func (c *Checker) checkTLS(ctx context.Context, m Monitor, res *Result) {
+	conn, err := c.dialer.DialContext(ctx, "tcp", net.JoinHostPort(m.Spec.Host, strconv.Itoa(m.Spec.Port)))
+	if err != nil {
+		res.Reason = classify(err)
+		return
+	}
+	defer func() { _ = conn.Close() }()
+	tc := tls.Client(conn, &tls.Config{ServerName: m.Spec.Host, MinVersion: tls.VersionTLS12, RootCAs: c.roots})
+	if err := tc.HandshakeContext(ctx); err != nil {
+		res.Reason = classifyTLS(err)
+		return
+	}
+	certs := tc.ConnectionState().PeerCertificates
+	if len(certs) == 0 {
+		res.Reason = ReasonCertInvalid
+		return
+	}
+	days := int(certs[0].NotAfter.Sub(c.now()) / (24 * time.Hour))
+	res.Code = days
+	warn, crit := c.cfg.TLSWarnDays, c.cfg.TLSCritDays
+	if m.Spec.WarnDays > 0 {
+		warn = m.Spec.WarnDays
+	}
+	if m.Spec.CritDays > 0 {
+		crit = m.Spec.CritDays
+	}
+	switch {
+	case days < crit:
+		res.Reason = ReasonCertCritical
+	case days < warn:
+		res.OK, res.Degraded, res.Reason = true, true, ReasonCertWarn
+	default:
+		res.OK = true
+	}
+}
+
+func classifyTLS(err error) string {
+	var inv x509.CertificateInvalidError
+	if errors.As(err, &inv) && inv.Reason == x509.Expired {
+		return ReasonCertExpired
+	}
+	var ua x509.UnknownAuthorityError
+	var host x509.HostnameError
+	var ci x509.CertificateInvalidError
+	if errors.As(err, &ua) || errors.As(err, &host) || errors.As(err, &ci) {
+		return ReasonCertInvalid
+	}
+	return classify(err)
 }
 
 func (c *Checker) checkHTTP(ctx context.Context, m Monitor, headers map[string]string, res *Result) {
@@ -168,6 +239,7 @@ func ValidateTarget(ctx context.Context, m Monitor) error {
 		return nil
 	}
 	h := strings.ToLower(m.Spec.Host)
+	// KindTLS shares the host check with tcp.
 	if addr, err := netip.ParseAddr(h); err == nil && netguard.IsBlocked(addr) || h == "localhost" {
 		return fmt.Errorf("%w: host is an internal address", ErrInvalid)
 	}

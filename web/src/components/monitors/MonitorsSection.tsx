@@ -29,6 +29,7 @@ const STATE_VARIANT: Record<
   suspect: 'warning',
   down: 'destructive',
   recovering: 'warning',
+  degraded: 'warning',
   paused: 'muted',
   unknown: 'muted',
 }

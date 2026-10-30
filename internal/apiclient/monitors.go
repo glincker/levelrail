@@ -34,6 +34,10 @@ type Monitor struct {
 	StatusLink          bool              `json:"status_link,omitempty"`
 	LinkConfirmFailures int               `json:"link_confirm_failures,omitempty"`
 	LinkRecoverySeconds int               `json:"link_recovery_seconds,omitempty"`
+	GraceSeconds        int               `json:"grace_seconds,omitempty"`
+	WarnDays            int               `json:"warn_days,omitempty"`
+	CritDays            int               `json:"crit_days,omitempty"`
+	PingPath            string            `json:"ping_path,omitempty"`
 	CreatedAt           time.Time         `json:"created_at,omitempty"`
 }
 
@@ -87,6 +91,13 @@ type MonitorLink struct {
 func (c *Client) UpdateMonitorLink(ctx context.Context, id string, l MonitorLink) (Monitor, error) {
 	var out Monitor
 	err := c.do(ctx, http.MethodPatch, "/api/v1/monitors/"+PathEscape(id), l, &out)
+	return out, err
+}
+
+// RotateMonitorToken calls POST /api/v1/monitors/{id}/rotate-token and returns the new ping path once.
+func (c *Client) RotateMonitorToken(ctx context.Context, id string) (Monitor, error) {
+	var out Monitor
+	err := c.do(ctx, http.MethodPost, "/api/v1/monitors/"+PathEscape(id)+"/rotate-token", nil, &out)
 	return out, err
 }
 

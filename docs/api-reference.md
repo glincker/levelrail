@@ -2084,6 +2084,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mail/cert | AbilityRead | handleMailCertStatus |
 | PUT | /api/v1/mail/cert | AbilityWriteSensitive | handleMailCertUpload |
 | POST | /api/v1/mail/cert/obtain | AbilityWriteSensitive | handleMailCertObtain |
+| POST | /api/v1/monitors/{id}/rotate-token | AbilityWrite | handleRotateHeartbeat |
+| GET | /api/v1/heartbeat/{token} | Public | handleHeartbeatPing |
+| POST | /api/v1/heartbeat/{token} | Public | handleHeartbeatPing |
+| GET | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
+| POST | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
 | POST | /mcp | Public |  |
 
 ## See also

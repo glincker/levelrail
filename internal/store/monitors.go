@@ -107,7 +107,7 @@ func (db *DB) DeleteMonitor(ctx context.Context, id string) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return monitor.ErrNotFound
 	}
-	for _, q := range []string{`DELETE FROM monitor_results WHERE monitor_id = ?`, `DELETE FROM monitor_rollup_1h WHERE monitor_id = ?`} {
+	for _, q := range []string{`DELETE FROM monitor_results WHERE monitor_id = ?`, `DELETE FROM monitor_rollup_1h WHERE monitor_id = ?`, `DELETE FROM monitor_heartbeats WHERE monitor_id = ?`} {
 		if _, err := tx.ExecContext(ctx, q, id); err != nil {
 			return fmt.Errorf("store: delete monitor %q history: %w", id, err)
 		}

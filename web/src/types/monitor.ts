@@ -3,10 +3,12 @@ export interface MonitorStatusRange {
   max: number
 }
 
+export type MonitorKind = 'http' | 'tcp' | 'heartbeat' | 'tls'
+
 export interface Monitor {
   id: string
   name: string
-  kind: 'http' | 'tcp'
+  kind: MonitorKind
   interval_seconds: number
   timeout_ms: number
   enabled: boolean
@@ -18,8 +20,13 @@ export interface Monitor {
   follow_redirects?: boolean
   host?: string
   port?: number
+  grace_seconds?: number
+  warn_days?: number
+  crit_days?: number
+  // Secret ping path, returned once by create.
+  ping_path?: string
   created_at: string
-  state?: 'up' | 'suspect' | 'down' | 'recovering'
+  state?: 'up' | 'suspect' | 'down' | 'recovering' | 'degraded'
   consecutive_failures?: number
   consecutive_successes?: number
 }
@@ -48,9 +55,12 @@ export interface MonitorResults {
 
 export interface CreateMonitorInput {
   name: string
-  kind: 'http' | 'tcp'
+  kind: MonitorKind
   interval_seconds: number
   timeout_ms: number
+  grace_seconds?: number
+  warn_days?: number
+  crit_days?: number
   url?: string
   host?: string
   port?: number

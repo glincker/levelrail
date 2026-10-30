@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1860 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1865 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1191,6 +1191,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/gitea-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "GET", Path: "/api/v1/go-live/status", Ability: "AbilityRead", Group: "Other", Handler: "handleLiveBadges", Description: ""},
+	{Method: "GET", Path: "/api/v1/heartbeat/{token}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat ping for a cron monitor, authenticated only by the secret token in the path. Answers 204 or a uniform 404."},
+	{Method: "POST", Path: "/api/v1/heartbeat/{token}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat ping for a cron monitor, authenticated only by the secret token in the path. Answers 204 or a uniform 404."},
+	{Method: "GET", Path: "/api/v1/heartbeat/{token}/{signal}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat start or fail signal; a fail marks the monitor down at once."},
+	{Method: "POST", Path: "/api/v1/heartbeat/{token}/{signal}", Ability: "Public", Group: "Other", Handler: "handleHeartbeatPing", Description: "Heartbeat start or fail signal; a fail marks the monitor down at once."},
 	{Method: "POST", Path: "/api/v1/hooks/deploy/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handleBuildHookTrigger", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
@@ -1389,6 +1393,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/monitors/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteMonitor", Description: "Delete a monitor with its results and rollups."},
 	{Method: "PATCH", Path: "/api/v1/monitors/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateMonitorLink", Description: "Change a monitor's status page link: open and resolve an incident on its component when it fails."},
 	{Method: "GET", Path: "/api/v1/monitors/{id}/results", Ability: "AbilityRead", Group: "Other", Handler: "handleMonitorResults", Description: "Recent raw results and hourly rollups for a monitor (window and limit query parameters)."},
+	{Method: "POST", Path: "/api/v1/monitors/{id}/rotate-token", Ability: "AbilityWrite", Group: "Other", Handler: "handleRotateHeartbeat", Description: "Replace a heartbeat monitor's secret ping URL; the old one stops working at once and the new one is shown once."},
 	{Method: "GET", Path: "/api/v1/network-shares", Ability: "AbilityRead", Group: "Other", Handler: "handleListNetworkShares", Description: "Network shares (network_shares.go): an NFS/CIFS export mountable as a Docker local-driver volume. Same ability tiers as registry credentials just above: POST/PUT/DELETE handle a live CIFS password, test is a read-only reachability dial."},
 	{Method: "POST", Path: "/api/v1/network-shares", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateNetworkShare", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/network-shares/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteNetworkShare", Description: ""},

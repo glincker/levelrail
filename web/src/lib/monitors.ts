@@ -1,7 +1,7 @@
 import type { Monitor, MonitorResults } from '../types/monitor'
 
 export type MonitorState =
-  'up' | 'suspect' | 'down' | 'recovering' | 'paused' | 'unknown'
+  'up' | 'suspect' | 'down' | 'recovering' | 'degraded' | 'paused' | 'unknown'
 
 // The pill prefers the confirmed state from the API and falls back to the
 // newest probe outcome when it is absent (older servers, no probe yet).
@@ -32,7 +32,9 @@ export function uptimePercent(results?: MonitorResults): number | undefined {
 }
 
 export function monitorTarget(m: Monitor): string {
-  if (m.kind === 'tcp') return `${m.host ?? ''}:${m.port ?? ''}`
+  if (m.kind === 'heartbeat') return ''
+  if (m.kind === 'tcp' || m.kind === 'tls')
+    return `${m.host ?? ''}:${m.port ?? ''}`
   return m.url ?? ''
 }
 

@@ -16,7 +16,7 @@ import (
 // runMonitors dispatches "monitors <verb>": experimental uptime checks, off unless the server sets APP_MONITORS_ENABLED.
 func runMonitors(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	subs := map[string]apiCmd{"create": monitorsCreateCommand(), "list": monitorsListCommand(), "results": monitorsResultsCommand(), "update": monitorsUpdateCommand(),
-		"delete": monitorsDeleteCommand()}
+		"delete": monitorsDeleteCommand(), "rotate-token": monitorsRotateCommand()}
 	return dispatchSub(prog, "monitors", monitorsUsage, subs, args, stdout, stderr, lookupEnv)
 }
 
@@ -24,6 +24,9 @@ func monitorsUsage(prog string) string {
 	return fmt.Sprintf(`Usage (experimental, needs APP_MONITORS_ENABLED=true on the control plane):
   %[1]s monitors create --name N --kind http --url URL [--method GET] [--header NAME=VALUE]... [--expect 200-299,301] [--contains TEXT] [--follow-redirects] [--interval 60s] [--timeout 5s] [--status-link] [--link-confirm N] [--link-recovery 2m]
   %[1]s monitors create --name N --kind tcp --host HOST --port PORT [--interval 60s] [--timeout 5s] [--status-link]
+  %[1]s monitors create --name N --kind heartbeat --interval 1h [--grace 10m] [--status-link]
+  %[1]s monitors create --name N --kind tls --host HOST [--port 443] [--interval 24h] [--warn-days 21] [--crit-days 7] [--status-link]
+  %[1]s monitors rotate-token <id>
   %[1]s monitors update <id> [--status-link=true|false] [--link-confirm N] [--link-recovery 2m]
   %[1]s monitors list
   %[1]s monitors results <id> [--window 24h] [--limit N]
@@ -32,6 +35,13 @@ func monitorsUsage(prog string) string {
 --status-link opens a status page incident on the monitor's component while it is confirmed
 down and resolves it after recovery. It is off by default; --link-confirm and --link-recovery
 override the APP_MONITOR_LINK_* defaults for this monitor.
+
+A heartbeat monitor prints a secret ping path once, at create and at rotate-token. A cron job
+calls it with curl: success is the plain URL, then /start before and /fail on error. The monitor
+goes down when no ping arrives within --interval plus --grace (default from APP_MONITOR_HEARTBEAT_GRACE)
+and up on the next ping. A tls monitor reports days left on the certificate: degraded under
+--warn-days and down under --crit-days (defaults APP_MONITOR_TLS_WARN_DAYS and APP_MONITOR_TLS_CRIT_DAYS);
+an invalid chain is reported as a failure. rotate-token replaces the heartbeat URL at once.
 
 Header values are stored encrypted and are never shown again. Interval floors
 and limits come from the APP_MONITOR_* settings on the control plane.
@@ -70,27 +80,30 @@ func monitorsCreateCommand() apiCmd {
 	var name, kind, urlStr, method, expect, contains, host string
 	var port int
 	var follow, statusLink bool
-	var linkConfirm int
-	var linkRecovery time.Duration
+	var linkConfirm, warnDays, critDays int
+	var linkRecovery, grace time.Duration
 	var headers headerFlags
 	interval, timeout := 60*time.Second, 5*time.Second
 	return apiCmd{label: "monitors create", usage: monitorsUsage,
 		setup: func(fs *flag.FlagSet) {
 			fs.StringVar(&name, "name", "", "monitor name (required)")
-			fs.StringVar(&kind, "kind", "http", "http or tcp")
+			fs.StringVar(&kind, "kind", "http", "http, tcp, heartbeat or tls")
 			fs.StringVar(&urlStr, "url", "", "http(s) URL to check (http kind)")
 			fs.StringVar(&method, "method", "", "GET, HEAD, POST or PUT (default GET)")
 			fs.Var(&headers, "header", "request header NAME=VALUE, repeatable; the value is stored encrypted")
 			fs.StringVar(&expect, "expect", "", "accepted status codes or ranges, e.g. 200-299,301 (default 200-399)")
 			fs.StringVar(&contains, "contains", "", "text that must appear in the start of the response body")
 			fs.BoolVar(&follow, "follow-redirects", false, "follow redirects up to the server limit")
-			fs.StringVar(&host, "host", "", "host to connect to (tcp kind)")
-			fs.IntVar(&port, "port", 0, "port to connect to (tcp kind)")
+			fs.StringVar(&host, "host", "", "host to connect to (tcp and tls kinds)")
+			fs.IntVar(&port, "port", 0, "port to connect to (tcp kind; tls defaults to 443)")
 			fs.DurationVar(&interval, "interval", interval, "time between checks")
 			fs.DurationVar(&timeout, "timeout", timeout, "per check timeout")
 			fs.BoolVar(&statusLink, "status-link", false, "open and resolve a status page incident for this monitor")
 			fs.IntVar(&linkConfirm, "link-confirm", 0, "failed checks before the incident opens (0 uses the server default)")
 			fs.DurationVar(&linkRecovery, "link-recovery", 0, "time the monitor must stay up before the incident resolves (0 uses the server default)")
+			fs.DurationVar(&grace, "grace", 0, "heartbeat kind: extra wait after the interval before down (0 uses the server default)")
+			fs.IntVar(&warnDays, "warn-days", 0, "tls kind: degraded under this many days left (0 uses the server default)")
+			fs.IntVar(&critDays, "crit-days", 0, "tls kind: down under this many days left (0 uses the server default)")
 		},
 		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
 			if name == "" {
@@ -110,16 +123,39 @@ func monitorsCreateCommand() apiCmd {
 			}
 			m := apiclient.Monitor{Name: name, Kind: kind, IntervalSeconds: int(interval / time.Second), TimeoutMS: int(timeout / time.Millisecond),
 				URL: urlStr, Method: method, Headers: hdr, Expect: ranges, Contains: contains, FollowRedirects: follow, Host: host, Port: port,
-				StatusLink: statusLink, LinkConfirmFailures: linkConfirm, LinkRecoverySeconds: int(linkRecovery / time.Second)}
+				StatusLink: statusLink, LinkConfirmFailures: linkConfirm, LinkRecoverySeconds: int(linkRecovery / time.Second),
+				GraceSeconds: int(grace / time.Second), WarnDays: warnDays, CritDays: critDays}
 			created, err := c.CreateMonitor(ctx, m)
 			return created, func(w io.Writer) {
 				_, _ = fmt.Fprintf(w, "monitor %s created: %s (%s every %ds)\n", created.ID, created.Name, created.Kind, created.IntervalSeconds)
+				printPingLine(w, c, created)
+			}, err
+		}}
+}
+
+func printPingLine(w io.Writer, c *Client, m apiclient.Monitor) {
+	if m.PingPath == "" {
+		return
+	}
+	_, _ = fmt.Fprintf(w, "ping (shown once): curl -fsS -m 10 --retry 3 %s%s\n", strings.TrimRight(c.BaseURL(), "/"), m.PingPath)
+}
+
+func monitorsRotateCommand() apiCmd {
+	return apiCmd{label: "monitors rotate-token", usage: monitorsUsage, args: 1,
+		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
+			m, err := c.RotateMonitorToken(ctx, pos[0])
+			return m, func(w io.Writer) {
+				_, _ = fmt.Fprintf(w, "monitor %s token rotated, the old URL no longer works\n", m.ID)
+				printPingLine(w, c, m)
 			}, err
 		}}
 }
 
 func monitorTarget(m apiclient.Monitor) string {
-	if m.Kind == "tcp" {
+	if m.Kind == "heartbeat" {
+		return "inbound ping"
+	}
+	if m.Kind == "tcp" || m.Kind == "tls" {
 		return fmt.Sprintf("%s:%d", m.Host, m.Port)
 	}
 	return m.URL

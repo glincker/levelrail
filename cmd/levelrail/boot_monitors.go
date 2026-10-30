@@ -30,7 +30,7 @@ func (s *bootState) startMonitors() {
 	}
 	opener := s.newIncidentOpener()
 	linker := s.newMonitorLinker()
-	opts := monitor.Options{Config: cfg, Store: s.db, Logger: s.logger, OnDelete: downs.Forget, Notify: func(t monitor.Transition) {
+	opts := monitor.Options{Config: cfg, Store: s.db, Heartbeats: s.db, Logger: s.logger, OnDelete: downs.Forget, Notify: func(t monitor.Transition) {
 		downs.Record(t.Monitor.ID, t.Monitor.Name, t.Reason, t.State == monitor.StateDown, time.Now())
 		if opener != nil {
 			opener.Notify(t)

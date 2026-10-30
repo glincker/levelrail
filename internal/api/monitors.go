@@ -55,6 +55,10 @@ type monitorRequest struct {
 	StatusLink          bool `json:"status_link"`
 	LinkConfirmFailures int  `json:"link_confirm_failures"`
 	LinkRecoverySeconds int  `json:"link_recovery_seconds"`
+	// GraceSeconds is the heartbeat grace period; WarnDays and CritDays override the TLS thresholds.
+	GraceSeconds int `json:"grace_seconds"`
+	WarnDays     int `json:"warn_days"`
+	CritDays     int `json:"crit_days"`
 }
 
 // monitorLinkRequest changes only the status page link settings.
@@ -83,7 +87,12 @@ type monitorResource struct {
 	StatusLink          bool                  `json:"status_link,omitempty"`
 	LinkConfirmFailures int                   `json:"link_confirm_failures,omitempty"`
 	LinkRecoverySeconds int                   `json:"link_recovery_seconds,omitempty"`
-	CreatedAt           time.Time             `json:"created_at"`
+	GraceSeconds        int                   `json:"grace_seconds,omitempty"`
+	WarnDays            int                   `json:"warn_days,omitempty"`
+	CritDays            int                   `json:"crit_days,omitempty"`
+	// PingPath is the public heartbeat path including its secret; only create and rotate return it, once.
+	PingPath  string    `json:"ping_path,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 	// State fields are empty before the first probe and always absent for create responses.
 	State         string `json:"state,omitempty"`
 	FailStreak    int    `json:"consecutive_failures,omitempty"`
@@ -95,7 +104,15 @@ func toMonitorResource(m monitor.Monitor) monitorResource {
 		TimeoutMS: int(m.Timeout / time.Millisecond), Enabled: m.Enabled, URL: m.Spec.URL, Method: m.Spec.Method,
 		HeaderNames: m.Spec.HeaderNames, Expect: m.Spec.Expect, Contains: m.Spec.Contains,
 		FollowRedirects: m.Spec.FollowRedirects, Host: m.Spec.Host, Port: m.Spec.Port, StatusLink: m.Spec.StatusLink,
-		LinkConfirmFailures: m.Spec.LinkConfirmFailures, LinkRecoverySeconds: m.Spec.LinkRecoverySeconds, CreatedAt: m.CreatedAt}
+		LinkConfirmFailures: m.Spec.LinkConfirmFailures, LinkRecoverySeconds: m.Spec.LinkRecoverySeconds, GraceSeconds: m.Spec.GraceSeconds,
+		WarnDays: m.Spec.WarnDays, CritDays: m.Spec.CritDays, PingPath: pingPath(m), CreatedAt: m.CreatedAt}
+}
+
+func pingPath(m monitor.Monitor) string {
+	if m.PingToken == "" {
+		return ""
+	}
+	return monitor.PingPath(m.PingToken)
 }
 
 type monitorResultResource struct {
@@ -166,7 +183,8 @@ func (rt *Router) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 		Interval: time.Duration(req.IntervalSeconds) * time.Second, Timeout: time.Duration(req.TimeoutMS) * time.Millisecond,
 		Spec: monitor.Spec{URL: req.URL, Method: req.Method, Expect: req.Expect, Contains: req.Contains,
 			FollowRedirects: req.FollowRedirects, Host: req.Host, Port: req.Port,
-			StatusLink: req.StatusLink, LinkConfirmFailures: req.LinkConfirmFailures, LinkRecoverySeconds: req.LinkRecoverySeconds}}
+			StatusLink: req.StatusLink, LinkConfirmFailures: req.LinkConfirmFailures, LinkRecoverySeconds: req.LinkRecoverySeconds,
+			GraceSeconds: req.GraceSeconds, WarnDays: req.WarnDays, CritDays: req.CritDays}}
 	created, err := rt.monitors.Create(r.Context(), monitor.CreateInput{Monitor: m, Headers: req.Headers})
 	if err != nil {
 		rt.monitorError(w, "create monitor", err)

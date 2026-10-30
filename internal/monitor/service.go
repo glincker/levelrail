@@ -46,6 +46,8 @@ type Service struct {
 	logger  *slog.Logger
 	now     func() time.Time
 	onDel   func(id string)
+	hb      HeartbeatStore
+	started time.Time
 }
 
 // Options configures a Service. Secrets may be nil, which rejects monitors that carry headers.
@@ -58,6 +60,8 @@ type Options struct {
 	Notify Notifier
 	// OnDelete runs after a monitor is removed so alert state tied to it can clear.
 	OnDelete func(id string)
+	// Heartbeats stores heartbeat tokens and pings; nil rejects heartbeat monitors.
+	Heartbeats HeartbeatStore
 }
 
 // New builds a Service.
@@ -66,13 +70,18 @@ func New(o Options) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Service{onDel: o.OnDelete, cfg: o.Config, store: o.Store, secrets: o.Secrets, logger: logger, now: time.Now,
+	return &Service{onDel: o.OnDelete, hb: o.Heartbeats, started: time.Now(), cfg: o.Config, store: o.Store, secrets: o.Secrets, logger: logger, now: time.Now,
 		checker: NewChecker(o.Config), sched: NewScheduler(o.Config, nil), batcher: NewBatcher(o.Store, o.Config.BufferMax),
 		tracker: NewTracker(o.Config.ConfirmFailures, o.Config.RecoveryOKs, o.Notify)}
 }
 
 // State returns the confirmed state of a monitor, or "" before its first probe.
-func (s *Service) State(id string) string { return s.tracker.State(id) }
+func (s *Service) State(id string) string {
+	if s.tracker.Degraded(id) {
+		return StateDegraded
+	}
+	return s.tracker.State(id)
+}
 
 // Status returns the confirmed state with its consecutive failure and success counts.
 func (s *Service) Status(id string) Status { return s.tracker.Status(id) }
@@ -137,6 +146,10 @@ loop:
 
 func (s *Service) probe(ctx context.Context, m Monitor) {
 	defer s.sched.Done(m.ID)
+	if m.Kind == KindHeartbeat {
+		s.probeHeartbeat(ctx, m)
+		return
+	}
 	headers, err := s.resolveHeaders(ctx, m)
 	if err != nil {
 		r := Result{MonitorID: m.ID, At: s.now().Unix(), Reason: ReasonSecretMissing}
@@ -146,6 +159,11 @@ func (s *Service) probe(ctx context.Context, m Monitor) {
 	}
 	r := s.checker.Check(ctx, m, headers)
 	s.batcher.Add(r)
+	if m.Kind == KindTLS && certVerdict(r.Reason) {
+		// A certificate verdict is already a settled fact, so it skips sample confirmation.
+		s.tracker.Force(m, !r.OK, r.Reason, r.Degraded)
+		return
+	}
 	s.tracker.Observe(m, r)
 }
 
@@ -256,6 +274,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Monitor, error) {
 	if err := ValidateTarget(ctx, m); err != nil {
 		return Monitor{}, err
 	}
+	if m.Kind == KindHeartbeat && s.hb == nil {
+		return Monitor{}, fmt.Errorf("%w: heartbeat monitors are not available on this server", ErrInvalid)
+	}
 	if len(headers) > 0 && s.secrets == nil {
 		return Monitor{}, fmt.Errorf("%w: the secrets store is not available, headers cannot be stored", ErrInvalid)
 	}
@@ -282,6 +303,17 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Monitor, error) {
 			_ = s.secrets.DeleteAll(ctx, secretService(id))
 		}
 		return Monitor{}, err
+	}
+	if m.Kind == KindHeartbeat {
+		token, err := newPingToken()
+		if err == nil {
+			err = s.hb.SaveHeartbeatToken(ctx, id, HashPingToken(token), s.now().Unix())
+		}
+		if err != nil {
+			_ = s.store.DeleteMonitor(ctx, id)
+			return Monitor{}, err
+		}
+		m.PingToken = token
 	}
 	s.sched.Add(m, s.now())
 	return m, nil
