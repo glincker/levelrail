@@ -68,6 +68,7 @@
             "log_archive_stale",
             "log_level_rate",
             "log_pattern",
+            "monitor_down",
             "node_cert_expiring",
             "node_disk_space",
             "node_host_guardrail",

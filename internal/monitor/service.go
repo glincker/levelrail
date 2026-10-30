@@ -45,6 +45,7 @@ type Service struct {
 	tracker *Tracker
 	logger  *slog.Logger
 	now     func() time.Time
+	onDel   func(id string)
 }
 
 // Options configures a Service. Secrets may be nil, which rejects monitors that carry headers.
@@ -55,6 +56,8 @@ type Options struct {
 	Logger  *slog.Logger
 	// Notify receives confirmed down and recovered transitions; nil drops them.
 	Notify Notifier
+	// OnDelete runs after a monitor is removed so alert state tied to it can clear.
+	OnDelete func(id string)
 }
 
 // New builds a Service.
@@ -63,7 +66,7 @@ func New(o Options) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Service{cfg: o.Config, store: o.Store, secrets: o.Secrets, logger: logger, now: time.Now,
+	return &Service{onDel: o.OnDelete, cfg: o.Config, store: o.Store, secrets: o.Secrets, logger: logger, now: time.Now,
 		checker: NewChecker(o.Config), sched: NewScheduler(o.Config, nil), batcher: NewBatcher(o.Store, o.Config.BufferMax),
 		tracker: NewTracker(o.Config.ConfirmFailures, o.Config.RecoveryOKs, o.Notify)}
 }
@@ -307,6 +310,9 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	}
 	s.sched.Remove(id)
 	s.tracker.Forget(id)
+	if s.onDel != nil {
+		s.onDel(id)
+	}
 	if s.secrets != nil {
 		if err := s.secrets.DeleteAll(ctx, secretService(id)); err != nil {
 			s.logger.Warn("monitors: delete header secrets failed", slog.String("monitor", id), slog.String("error", err.Error()))

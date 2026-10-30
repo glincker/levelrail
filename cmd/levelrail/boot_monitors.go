@@ -3,7 +3,9 @@ package main
 import (
 	"log/slog"
 	"os"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/monitor"
 )
 
@@ -18,7 +20,12 @@ func (s *bootState) startMonitors() {
 		return
 	}
 	cfg.UserAgent = s.b.BinaryName + "-monitor"
-	opts := monitor.Options{Config: cfg, Store: s.db, Logger: s.logger, Notify: func(t monitor.Transition) {
+	downs := alerting.NewMonitorDownTracker()
+	if s.alertingEngine != nil {
+		s.alertingEngine.SetMonitorDowns(downs)
+	}
+	opts := monitor.Options{Config: cfg, Store: s.db, Logger: s.logger, OnDelete: downs.Forget, Notify: func(t monitor.Transition) {
+		downs.Record(t.Monitor.ID, t.Monitor.Name, t.Reason, t.State == monitor.StateDown, time.Now())
 		s.logger.Warn("monitor state changed", slog.String("monitor", t.Monitor.ID), slog.String("state", t.State), slog.String("reason", t.Reason))
 	}}
 	if s.secretsManager != nil {

@@ -13,6 +13,11 @@ export const ALERT_KIND_COPY = {
     description: 'alertKinds.deploy_failed.description',
     action: 'alertKinds.deploy_failed.action',
   },
+  monitor_down: {
+    label: 'alertKinds.monitor_down.label',
+    description: 'alertKinds.monitor_down.description',
+    action: 'alertKinds.monitor_down.action',
+  },
   database_down: {
     label: 'alertKinds.database_down.label',
     description: 'alertKinds.database_down.description',
