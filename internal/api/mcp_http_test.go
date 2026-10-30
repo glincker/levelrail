@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -162,5 +163,36 @@ func TestMCPHTTP_Origin(t *testing.T) {
 		if rec := mcpPost(rt, h, tok, mcpListBody, map[string]string{"Origin": good}); rec.Code != http.StatusOK {
 			t.Fatalf("origin %q = %d, want 200", good, rec.Code)
 		}
+	}
+}
+
+func TestMCPHTTP_WriteTokenCannotCallWriteTool(t *testing.T) {
+	mcpEnabled(t)
+	rt, _ := newTestRouter(t)
+	tok := mintAgent(t, rt, "w", []string{AbilityRead, AbilityWrite, AbilityDeploy}, agentIdentity{})
+	rec := mcpPost(rt, rt.Handler(), tok, mcpMutateBody, nil)
+	body := rec.Body.String()
+	// The tool is not registered remotely, so the call must fail as a JSON-RPC error, never succeed.
+	if !strings.Contains(body, `"error"`) || strings.Contains(body, `"result"`) {
+		t.Fatalf("write tool call was not rejected: %d %s", rec.Code, body)
+	}
+}
+
+func TestMCPHTTP_RevokedTokenIsRejectedOnNextCall(t *testing.T) {
+	mcpEnabled(t)
+	rt, _ := newTestRouter(t)
+	h := rt.Handler()
+	plain, rec, err := MintAgentAPIToken(context.Background(), rt.tokens, "r", []string{AbilityRead}, nil, agentIdentity{}, "")
+	if err != nil {
+		t.Fatalf("mint: %v", err)
+	}
+	if got := mcpPost(rt, h, plain, mcpListBody, nil); got.Code != http.StatusOK {
+		t.Fatalf("before revoke = %d", got.Code)
+	}
+	if err := rt.tokens.RevokeAPIToken(context.Background(), rec.ID); err != nil {
+		t.Fatalf("revoke: %v", err)
+	}
+	if got := mcpPost(rt, h, plain, mcpListBody, nil); got.Code != http.StatusUnauthorized {
+		t.Fatalf("after revoke = %d, want 401", got.Code)
 	}
 }
