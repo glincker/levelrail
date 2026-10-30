@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -29,7 +29,7 @@ import {
   useMailQueue,
 } from '../../queries/mailMailboxes'
 import { teamListQueryOptions } from '../../queries/teams'
-import { MailBackupPanel } from './MailBackupPanel'
+import { MailBackupLine } from './MailBackupLine'
 import { MailDemoBadge } from './MailDemoBadge'
 import { MailDnsPanel } from './MailDnsPanel'
 import { MailDomainClaim } from './MailDomainClaim'
@@ -51,10 +51,13 @@ interface Props {
   tab?: MailTab
   onTab?: (tab: MailTab) => void
   add?: boolean
+  queue?: boolean
+  /** Called once the add or queue deep link has been acted on, so it can repeat. */
+  onHandled?: () => void
 }
 
 /** MailPage is the mail hub: a slim status header, four sections and sheets for the rest. */
-export function MailPage({ tab, onTab, add }: Props = {}) {
+export function MailPage({ tab, onTab, add, queue, onHandled }: Props = {}) {
   const { t } = useTranslation('mailServer')
   const [report, setReport] = useState<MailCheckReport | undefined>()
   const [domain, setDomain] = useState('')
@@ -64,7 +67,7 @@ export function MailPage({ tab, onTab, add }: Props = {}) {
   )
   const [adding, setAdding] = useState(!!add)
   const [settings, setSettings] = useState(false)
-  const [queueOpen, setQueueOpen] = useState(false)
+  const [queueOpen, setQueueOpen] = useState(!!queue)
   const statusQ = useMailStatus()
   const status = statusQ.data
   const up = isMailUp(status)
@@ -78,6 +81,16 @@ export function MailPage({ tab, onTab, add }: Props = {}) {
       ? 0
       : (queueQ.data?.queued ?? 0)
   const active = tab ?? local
+  // Palette deep links (?add, ?queue) act once, then clear so they can fire again.
+  const [seen, setSeen] = useState({ add: !!add, queue: !!queue })
+  if (!!add !== seen.add || !!queue !== seen.queue) {
+    setSeen({ add: !!add, queue: !!queue })
+    if (add) setAdding(true)
+    if (queue) setQueueOpen(true)
+  }
+  useEffect(() => {
+    if (add || queue) onHandled?.()
+  }, [add, queue, onHandled])
   const setTab = useCallback(
     (next: MailTab) => {
       setLocal(next)
@@ -109,7 +122,7 @@ export function MailPage({ tab, onTab, add }: Props = {}) {
       description={t('description')}
       actions={
         status?.installed ? (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
             <MailWebmailButton app={status.app} />
             {up ? (
               <span title={canWrite ? undefined : t('mailboxes.needsWrite')}>
@@ -206,6 +219,7 @@ export function MailPage({ tab, onTab, add }: Props = {}) {
             status={status}
             report={report}
             domain={domain}
+            onReport={setReport}
             onPreview={() => {
               setPreviewToken((n) => n + 1)
               setTab('domains')
@@ -263,16 +277,10 @@ export function MailPage({ tab, onTab, add }: Props = {}) {
         ) : null}
         {active === 'backups' ? (
           up && status?.app ? (
-            <div className="space-y-3">
-              <MailBackupPanel app={status.app} />
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => setSettings(true)}
-              >
-                {t('mbx.storage')}
-              </Button>
-            </div>
+            <MailBackupLine
+              app={status.app}
+              onStorage={() => setSettings(true)}
+            />
           ) : (
             <p className="text-sm text-muted-foreground">{t('mbx.notUp')}</p>
           )

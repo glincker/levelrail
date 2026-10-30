@@ -5,7 +5,7 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import en from '../../locales/en/mailServer.json'
-import { MailBackupPanel } from './MailBackupPanel'
+import { MailBackupLine } from './MailBackupLine'
 import { MailStoragePanel } from './MailStoragePanel'
 
 vi.mock('../env/StepUpDialog', () => ({ StepUpDialog: () => null }))
@@ -93,12 +93,19 @@ function wrap(ui: React.ReactNode) {
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe('MailBackupPanel', () => {
-  it('lists a verified backup and posts on back up now', async () => {
-    mockApi()
-    wrap(<MailBackupPanel app="mail" />)
-    expect(await screen.findByText('b1')).toBeInTheDocument()
-    expect(screen.getAllByText('Verified').length).toBeGreaterThan(0)
+describe('MailBackupLine', () => {
+  it('shows one status line, posts on back up now and opens storage from the chip', async () => {
+    mockApi({ kind: 'local' })
+    const onStorage = vi.fn()
+    wrap(<MailBackupLine app="mail" onStorage={onStorage} />)
+    expect(
+      await screen.findByText(/Last backup .*, verified$/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('b1')).not.toBeInTheDocument()
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Local folder, .* cap/ }),
+    )
+    expect(onStorage).toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Back up now' }))
     await waitFor(() =>
       expect(
@@ -109,11 +116,18 @@ describe('MailBackupPanel', () => {
     )
   })
 
-  it('dry-runs before restore and needs the typed id', async () => {
+  it('lists history in a sheet and dry-runs from the row menu before restore', async () => {
     mockApi()
-    wrap(<MailBackupPanel app="mail" />)
+    wrap(<MailBackupLine app="mail" onStorage={vi.fn()} />)
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Restore backup b1' }),
+      await screen.findByRole('button', { name: 'History' }),
+    )
+    expect(await screen.findByText('b1')).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Actions for backup b1' }),
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Restore backup b1' }),
     )
     expect(await screen.findByText(/12 files/)).toBeInTheDocument()
     const dry = calls.find((c) => c.url.includes('/restore'))

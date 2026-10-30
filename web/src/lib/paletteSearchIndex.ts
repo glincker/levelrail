@@ -18,6 +18,10 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-loadbalancers': 'load balancer lb traffic proxy ingress',
   'nav-mail':
     'mail email smtp imap mx spf dkim dmarc dns postfix mailbox webmail backup queue add mailbox',
+  'action-mail-add': 'mail email new add create mailbox address inbox',
+  'action-mail-backup': 'mail email backup now snapshot run',
+  'action-mail-webmail': 'mail email webmail open inbox read',
+  'action-mail-queue': 'mail email queue outbox held delivery retry',
   'settings-registry-credentials':
     'container registry docker image images ghcr hub pull credentials runtime',
   'nav-builds':

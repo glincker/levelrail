@@ -20,6 +20,8 @@ export interface Mailbox {
   linked_user_id?: string
   suspended: boolean
   suspend_pending: boolean
+  // True for the instance system email account.
+  system?: boolean
   created_at: string
 }
 

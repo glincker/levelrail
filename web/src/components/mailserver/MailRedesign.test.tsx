@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import en from '../../locales/en/mailServer.json'
+import { avatarTone } from './mailAvatar'
 import { MailPage } from './MailPage'
 import { MailWebmailButton } from './MailWebmailButton'
 
@@ -53,7 +54,9 @@ const box = (localpart: string, over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
-function mockApi(opts: { urls?: unknown } = {}) {
+function mockApi(
+  opts: { urls?: unknown; backups?: boolean; listStatus?: number } = {},
+) {
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit) => {
@@ -80,6 +83,29 @@ function mockApi(opts: { urls?: unknown } = {}) {
             created_at: '',
           },
         ])
+      if (url.includes('/mail/dns/check')) return json({ items: [] })
+      if (url.includes('/mail/backups'))
+        return json({
+          app: 'mail',
+          encrypted: true,
+          folder: '',
+          cap_bytes: 1000,
+          used_bytes: 0,
+          backups: opts.backups
+            ? [
+                {
+                  id: 'b1',
+                  created_at: new Date().toISOString(),
+                  stored_bytes: 2048,
+                  data_bytes: 1,
+                  files: 1,
+                  mox_version: 'v1',
+                  verified: true,
+                  where: 'local',
+                },
+              ]
+            : [],
+        })
       if (url.includes('/mail/aliases')) return json([])
       if (url.includes('/mail/queue'))
         return json({ app: 'mail', queued: 0, entries: [] })
@@ -88,6 +114,11 @@ function mockApi(opts: { urls?: unknown } = {}) {
       if (url.includes('/api/v1/users')) return json([])
       if (url.includes('/password') && init?.method === 'POST')
         return json({ mailbox: box('jo'), password: 'NewPw123', notice: '' })
+      if (url.endsWith('/mail/mailboxes') && opts.listStatus)
+        return json(
+          { error: 'your team role does not allow this' },
+          opts.listStatus,
+        )
       if (url.endsWith('/mail/mailboxes'))
         return json([box('jo'), box('ann', { suspended: true })])
       return json({})
@@ -216,5 +247,77 @@ describe('Open webmail', () => {
     expect(
       screen.getByRole('link', { name: 'App domain settings' }),
     ).toBeTruthy()
+  })
+})
+
+describe('Overview all set', () => {
+  it('settles without a DNS report once everything exists, with DNS as its own chip', async () => {
+    mockApi({ backups: true })
+    renderPage({ tab: 'overview' })
+    expect(await screen.findByText('All set')).toBeTruthy()
+    expect(screen.getByText('DNS: Not checked yet')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Check DNS' }))
+    await waitFor(() =>
+      expect(
+        vi
+          .mocked(fetch)
+          .mock.calls.some((c) =>
+            String(c[0] as string).startsWith(
+              '/api/v1/mail/dns/check?domain=example.com',
+            ),
+          ),
+      ).toBe(true),
+    )
+  })
+
+  it('keeps asking for the next step while no backup exists', async () => {
+    mockApi()
+    renderPage({ tab: 'overview' })
+    expect(await screen.findByText('DNS: Not checked yet')).toBeTruthy()
+    expect(screen.queryByText('All set')).toBeNull()
+  })
+})
+
+describe('Mailbox avatars and chips', () => {
+  it('shows initials in a stable tone and a chip only for non-default states', async () => {
+    mockApi()
+    renderPage({ tab: 'mailboxes' })
+    await screen.findByText('jo@example.com')
+    const avatars = screen.getAllByTestId('mailbox-avatar')
+    const first = avatars[0]
+    expect(first?.textContent).toBe('JO')
+    for (const cls of avatarTone('jo@example.com').split(' '))
+      expect(first?.className).toContain(cls)
+    const list = within(screen.getByRole('list', { name: en.mbx.list }))
+    expect(list.getByText('Suspended')).toBeTruthy()
+    expect(list.queryByText('Active')).toBeNull()
+  })
+})
+
+describe('Mailbox add row and errors', () => {
+  it('keeps the add row hidden until asked, then closes on Escape', async () => {
+    mockApi()
+    renderPage({ tab: 'mailboxes' })
+    await screen.findByText('jo@example.com')
+    expect(screen.queryByLabelText('Name')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Add mailbox' }))
+    const name = await screen.findByLabelText('Name')
+    expect(screen.queryByLabelText(en.mbx.add.user)).toBeNull()
+    await userEvent.type(name, '{Escape}')
+    await waitFor(() => expect(screen.queryByLabelText('Name')).toBeNull())
+  })
+
+  it('shows a calm view-only notice, not an error, when the list is forbidden', async () => {
+    mockApi({ listStatus: 403 })
+    renderPage({ tab: 'mailboxes' })
+    expect(await screen.findByText(en.mbx.viewOnly)).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('lets the header actions wrap instead of clipping', async () => {
+    mockApi()
+    renderPage()
+    const btn = await screen.findByRole('button', { name: 'Open webmail' })
+    expect(btn.closest('div')?.className).toContain('flex-wrap')
   })
 })

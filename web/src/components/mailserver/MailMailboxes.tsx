@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ApiError } from '@/lib/apiError'
 import { useCanWriteSensitive } from '../../hooks/useCanWriteSensitive'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useStepUpGate } from '../../hooks/useStepUpGate'
@@ -41,6 +42,7 @@ import { userListQueryOptions } from '../../queries/users'
 import { StepUpDialog } from '../env/StepUpDialog'
 import { MailMailboxSheet } from './MailMailboxSheet'
 import { MailSecretReveal } from './MailSecretReveal'
+import { avatarInitials, avatarTone } from './mailAvatar'
 import { FIELD_CLASS } from './mailPanelUi'
 
 type Filter = 'all' | 'active' | 'suspended'
@@ -78,7 +80,13 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
   const [error, setError] = useState<string | null>(null)
   const onError = useCallback(
     (e: unknown) =>
-      setError(e instanceof Error ? e.message : t('mailboxes.failed')),
+      setError(
+        e instanceof ApiError && e.status === 403
+          ? t('mbx.actionForbidden')
+          : e instanceof Error
+            ? e.message
+            : t('mailboxes.failed'),
+      ),
     [t],
   )
   const gate = useStepUpGate(onError)
@@ -95,6 +103,9 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
   const teamName = (id: string) => teams?.find((x) => x.id === id)?.name ?? id
   const userName = (id?: string) =>
     id ? (users?.find((u) => u.id === id)?.email ?? id) : t('mailboxes.noUser')
+  const listForbidden =
+    boxesQ.error instanceof ApiError && boxesQ.error.status === 403
+  const manyUsers = (users?.length ?? 0) > 1
   const writeWhy = canWrite ? undefined : t('mailboxes.needsWrite')
 
   const shown = useMemo(() => {
@@ -152,14 +163,18 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
     setBusy(false)
   }
 
-  const chip = (m: Mailbox) =>
-    m.suspend_pending ? (
-      <Badge variant="warning">{t('mailboxes.status.pending')}</Badge>
-    ) : m.suspended ? (
-      <Badge variant="warning">{t('mailboxes.status.suspended')}</Badge>
-    ) : (
-      <Badge variant="success">{t('mailboxes.status.active')}</Badge>
-    )
+  const chips = (m: Mailbox) => (
+    <>
+      {m.system || sysFrom === m.address ? (
+        <Badge variant="muted">{t('mbx.system')}</Badge>
+      ) : null}
+      {m.suspend_pending ? (
+        <Badge variant="warning">{t('mailboxes.status.pending')}</Badge>
+      ) : m.suspended ? (
+        <Badge variant="warning">{t('mailboxes.status.suspended')}</Badge>
+      ) : null}
+    </>
+  )
 
   return (
     <section aria-label={t('mailboxes.title')} className="space-y-3">
@@ -178,6 +193,11 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
       {adding ? (
         <form
           onSubmit={(e) => void submit(e)}
+          onBlur={(e) => {
+            // Leaving the row with nothing typed closes it again.
+            if (!e.currentTarget.contains(e.relatedTarget) && !name.trim())
+              onAdding(false)
+          }}
           aria-label={t('shell.addMailbox')}
           className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2"
         >
@@ -215,7 +235,7 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
               @{chosen}
             </Badge>
           )}
-          {(users?.length ?? 0) > 0 ? (
+          {manyUsers ? (
             <select
               aria-label={t('mbx.add.user')}
               className={`${FIELD_CLASS} w-40`}
@@ -250,7 +270,14 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
           </span>
         </form>
       ) : null}
-      {boxesQ.isLoading ? (
+      {listForbidden ? (
+        <p
+          title={t('mbx.viewOnlyReason')}
+          className="rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground"
+        >
+          {t('mbx.viewOnly')}
+        </p>
+      ) : boxesQ.isLoading ? (
         <div aria-label={t('mbx.loading')} className="space-y-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -320,9 +347,10 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
                   >
                     <span
                       aria-hidden="true"
-                      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary uppercase"
+                      data-testid="mailbox-avatar"
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${avatarTone(m.address)}`}
                     >
-                      {m.localpart.slice(0, 1)}
+                      {avatarInitials(m.localpart)}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-mono text-sm">
@@ -335,10 +363,7 @@ export function MailMailboxes({ domains, adding, onAdding }: Props) {
                           : ''}
                       </span>
                     </span>
-                    {sysFrom === m.address ? (
-                      <Badge variant="muted">{t('mbx.system')}</Badge>
-                    ) : null}
-                    {chip(m)}
+                    {chips(m)}
                   </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger

@@ -159,7 +159,11 @@ func (rt *Router) mailAuthorize(w http.ResponseWriter, r *http.Request, teamID, 
 		}
 	}
 	scope, _ := callerTeamScope(r.Context())
-	switch mailDecide(scope, abilities, policies, teamID, ability, resources...) {
+	decision := mailDecide(scope, abilities, policies, teamID, ability, resources...)
+	if decision == http.StatusForbidden && rt.mailDemoRootClaim(scope, abilities, ability) {
+		decision = 0
+	}
+	switch decision {
 	case http.StatusNotFound:
 		writeError(w, http.StatusNotFound, "mail resource not found")
 		return "", false

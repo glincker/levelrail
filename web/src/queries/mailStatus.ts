@@ -39,11 +39,16 @@ export async function fetchMailStatus(): Promise<MailStatus> {
 export const isMailUp = (s: MailStatus | undefined): boolean =>
   !!s && s.installed && s.container_state === 'running' && s.admin_reachable
 
-export function useMailStatus() {
+// The palette reads status without polling so a closed mail area costs nothing.
+export function useMailStatus(
+  opts: { enabled?: boolean; poll?: boolean } = {},
+) {
+  const { enabled = true, poll = true } = opts
   return useQuery({
     queryKey: ['mail', 'status'],
     queryFn: fetchMailStatus,
+    enabled,
     refetchInterval: (q) =>
-      isMailUp(q.state.data) ? false : MAIL_STATUS_POLL_MS,
+      poll && !isMailUp(q.state.data) ? MAIL_STATUS_POLL_MS : false,
   })
 }

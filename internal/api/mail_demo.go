@@ -163,3 +163,10 @@ func (rt *Router) handleMailDemoReset(w http.ResponseWriter, r *http.Request) {
 	rt.logger.Info("mail demo state reset", slog.String("by", "api"))
 	writeJSON(w, http.StatusOK, map[string]bool{"reset": true})
 }
+
+// mailDemoRootClaim lets the instance root claim a domain in demo mode. The
+// team cap drops the root ability for every team, so the claim is otherwise
+// refused even for the dev owner. Team members never match: scope is nil only for root.
+func (rt *Router) mailDemoRootClaim(scope *teamScope, abilities []string, ability string) bool {
+	return rt.mail.demo != nil && scope == nil && ability == AbilityRoot && hasAbilityExactRoot(abilities)
+}

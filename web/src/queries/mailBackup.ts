@@ -1,8 +1,9 @@
 // Mail backup and storage APIs (internal/api/mail_backup.go). The S3 secret is write-only.
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { EnvApiError } from './envProtection'
+import { useInvalidateMail } from './mailMailboxes'
 
 export interface MailBackupJob {
   id: string
@@ -184,3 +185,12 @@ export const saveMailStorage = (input: MailStorageInput) =>
 
 export const testMailStorage = (app: string) =>
   send<MailStorage>('POST', '/api/v1/mail/storage/test', { app })
+
+/** Starts a backup and refreshes mail data; the line and the palette share it. */
+export function useRunMailBackup(app: string | undefined) {
+  const invalidate = useInvalidateMail()
+  return useMutation({
+    mutationFn: () => runMailBackup(app ?? ''),
+    onSuccess: () => invalidate(),
+  })
+}
