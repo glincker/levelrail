@@ -474,5 +474,20 @@
       "server": "server",
       "rollback": "rollback"
     }
+  },
+  "rolloutPolicy": {
+    "title": "Rolling update budget",
+    "infoLabel": "About the rolling update budget",
+    "infoBody": "Values are a count or a percentage, such as 1 or 25%. Leave a field empty to use the server default.",
+    "hint": "How many replicas may be added or unavailable while a new release rolls out. Same block as rollout in app.yaml.",
+    "max_surge": "Max surge",
+    "max_unavailable": "Max unavailable",
+    "min_available": "Min available",
+    "default": "default",
+    "save": "Save",
+    "reset": "Use defaults",
+    "saved": "Rollout policy saved.",
+    "resetDone": "Rollout policy reset to defaults.",
+    "saveFailed": "Could not update the rollout policy."
   }
 }

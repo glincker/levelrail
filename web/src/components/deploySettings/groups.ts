@@ -21,6 +21,7 @@ export type SettingsCardKey =
   | 'secretScan'
   | 'port'
   | 'strategy'
+  | 'rolloutPolicy'
   | 'hooks'
   | 'safety'
   | 'watch'

@@ -474,5 +474,20 @@
       "server": "servidor",
       "rollback": "rollback"
     }
+  },
+  "rolloutPolicy": {
+    "title": "Presupuesto de actualización progresiva",
+    "infoLabel": "Acerca del presupuesto de actualización progresiva",
+    "infoBody": "Los valores son un número o un porcentaje, como 1 o 25%. Deja un campo vacío para usar el valor del servidor.",
+    "hint": "Cuántas réplicas pueden añadirse o no estar disponibles mientras se despliega una versión nueva. Mismo bloque que rollout en app.yaml.",
+    "max_surge": "Máx. extra",
+    "max_unavailable": "Máx. no disponibles",
+    "min_available": "Mín. disponibles",
+    "default": "predeterminado",
+    "save": "Guardar",
+    "reset": "Usar predeterminados",
+    "saved": "Política de despliegue guardada.",
+    "resetDone": "Política de despliegue restablecida.",
+    "saveFailed": "No se pudo actualizar la política de despliegue."
   }
 }
