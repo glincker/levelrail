@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CopyGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { COPY_FEEDBACK_MS } from '@/lib/copyFeedback'
 import type { MailCheckReport } from '@/queries/mailDns'
@@ -26,10 +27,12 @@ export function MailNextStep({
   status,
   report,
   domain,
+  onPreview,
 }: {
   status: MailStatus | undefined
   report: MailCheckReport | undefined
   domain: string
+  onPreview?: () => void
 }) {
   const { t } = useTranslation('mailServer')
   const [copied, setCopied] = useState(false)
@@ -93,23 +96,29 @@ export function MailNextStep({
           </button>
         </div>
       )}
+      {step === 'dns' && onPreview && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Button type="button" size="sm" onClick={onPreview}>
+            {t('next.cta')}
+          </Button>
+          <p className="text-xs text-muted-foreground">{t('next.ctaBody')}</p>
+        </div>
+      )}
       {done.length > 0 && (
-        <details className="mt-2 text-xs">
-          <summary className="cursor-pointer text-muted-foreground">
-            {t('next.done', { count: done.length })}
-          </summary>
-          <ul className="mt-1 space-y-0.5">
-            {done.map((k) => (
-              <li key={k} className="flex items-center gap-1.5">
-                <CircleCheckGlassIcon
-                  className="text-tone-success"
-                  size="1.2em"
-                />
-                {t(`next.doneItem.${k}`)}
-              </li>
-            ))}
-          </ul>
-        </details>
+        <ul
+          aria-label={t('next.doneLabel')}
+          className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs"
+        >
+          {done.map((k) => (
+            <li key={k} className="flex items-center gap-1.5">
+              <CircleCheckGlassIcon
+                className="text-tone-success"
+                size="1.2em"
+              />
+              {t(`next.doneItem.${k}`)}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   )

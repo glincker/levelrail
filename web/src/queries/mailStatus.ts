@@ -13,6 +13,9 @@ export interface MailStatus {
   admin_reachable: boolean
   tls: string
   next_step: string
+  // From the install env; used to prefill the DNS form.
+  domain?: string
+  hostname?: string
 }
 
 export async function fetchMailStatus(): Promise<MailStatus> {

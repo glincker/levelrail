@@ -53,3 +53,17 @@ func TestMailStatusUnknownApp(t *testing.T) {
 		t.Fatalf("unexpected %v %+v", err, got)
 	}
 }
+
+func TestMailNames(t *testing.T) {
+	d, h := mailNames(map[string]string{"MAIL_FIRST_DOMAIN": "Example.Test"})
+	if d != "example.test" || h != "mail.example.test" {
+		t.Fatalf("got %q %q", d, h)
+	}
+	d, h = mailNames(map[string]string{"MAIL_FIRST_DOMAIN": "example.test", "MAIL_HOSTNAME": "smtp.example.test"})
+	if d != "example.test" || h != "smtp.example.test" {
+		t.Fatalf("got %q %q", d, h)
+	}
+	if d, h = mailNames(map[string]string{"MAIL_FIRST_DOMAIN": "${MAIL_FIRST_DOMAIN}"}); d != "" || h != "" {
+		t.Fatalf("placeholder leaked: %q %q", d, h)
+	}
+}

@@ -140,6 +140,72 @@ describe('MailPage status', () => {
   })
 })
 
+describe('MailPage guided setup', () => {
+  const up = {
+    installed: true,
+    container_state: 'running',
+    admin_reachable: true,
+    tls: 'self-signed',
+    next_step: 'Mail is up.',
+    domain: 'example.test',
+    hostname: 'smtp.example.test',
+  }
+
+  it('prefills the form, hides install and runs the plan from the CTA', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        urls.push(url)
+        if (url.endsWith('/mail/status')) return jsonRes(up)
+        if (url.endsWith('/plan'))
+          return jsonRes({
+            domain: 'example.test',
+            hash: 'h',
+            blocked: false,
+            summary: {},
+            changes: [],
+          })
+        return jsonRes([])
+      }),
+    )
+    const user = userEvent.setup()
+    renderPage()
+    const domain = await screen.findByLabelText<HTMLInputElement>('Domain')
+    await vi.waitFor(() => expect(domain.value).toBe('example.test'))
+    expect(screen.getByLabelText<HTMLInputElement>('Mail host').value).toBe(
+      'smtp.example.test',
+    )
+    expect(
+      screen.queryByRole('link', { name: /Install mail server/ }),
+    ).toBeNull()
+    expect(screen.getByText('Mail app installed')).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Preview records' }),
+    ).toHaveProperty('disabled', false)
+    await user.click(
+      screen.getByRole('button', { name: 'Preview DNS records' }),
+    )
+    await vi.waitFor(() =>
+      expect(urls.some((u) => u.endsWith('/plan'))).toBe(true),
+    )
+    expect(document.activeElement).toBe(domain)
+  })
+
+  it('lets a typed domain win over the prefill', async () => {
+    vi.stubGlobal('fetch', statusFetch(up))
+    const user = userEvent.setup()
+    renderPage()
+    const domain = await screen.findByLabelText<HTMLInputElement>('Domain')
+    await vi.waitFor(() => expect(domain.value).toBe('example.test'))
+    await user.clear(domain)
+    await user.type(domain, 'other.test')
+    expect(screen.getByLabelText<HTMLInputElement>('Mail host').value).toBe(
+      'mail.other.test',
+    )
+  })
+})
+
 describe('MailPage', () => {
   it('shows every unchecked step as not checked and lists the coming panels', async () => {
     vi.stubGlobal(

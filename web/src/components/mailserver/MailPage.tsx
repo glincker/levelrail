@@ -17,6 +17,7 @@ export function MailPage() {
   const { t } = useTranslation('mailServer')
   const [report, setReport] = useState<MailCheckReport | undefined>()
   const [domain, setDomain] = useState('')
+  const [previewToken, setPreviewToken] = useState(0)
   const status = useMailStatus().data
   return (
     <PageTemplate
@@ -25,24 +26,33 @@ export function MailPage() {
       title={t('title')}
       description={t('description')}
       actions={
-        <Link
-          to="/templates"
-          search={{ deploy: 'mail-mox' }}
-          className={cn(buttonVariants({ variant: 'outline' }), 'gap-1.5')}
-          title={t('install.body')}
-        >
-          <RocketGlassIcon size="1.2em" />
-          {t('install.action')}
-        </Link>
+        status?.installed ? undefined : (
+          <Link
+            to="/templates"
+            search={{ deploy: 'mail-mox' }}
+            className={cn(buttonVariants({ variant: 'outline' }), 'gap-1.5')}
+            title={t('install.body')}
+          >
+            <RocketGlassIcon size="1.2em" />
+            {t('install.action')}
+          </Link>
+        )
       }
     >
       <div className="space-y-3">
-        <MailNextStep status={status} report={report} domain={domain} />
+        <MailNextStep
+          status={status}
+          report={report}
+          domain={domain}
+          onPreview={() => setPreviewToken((n) => n + 1)}
+        />
         <MailChecklist report={report} status={status} />
         <MailDnsPanel
           report={report}
           onReport={setReport}
           onDomain={setDomain}
+          defaults={status}
+          previewToken={previewToken}
         />
         <MailSoonPanels />
       </div>

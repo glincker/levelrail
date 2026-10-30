@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,7 @@ import {
   type MailPlan,
   type MailPlanAction,
 } from '@/queries/mailDns'
+import type { MailStatus } from '@/queries/mailStatus'
 import { StatusGlyph } from './MailChecklist'
 
 const SELF = 'self'
@@ -65,10 +66,14 @@ export function MailDnsPanel({
   report,
   onReport,
   onDomain,
+  defaults,
+  previewToken = 0,
 }: {
   report: MailCheckReport | undefined
   onReport: (r: MailCheckReport) => void
   onDomain?: (domain: string) => void
+  defaults?: Pick<MailStatus, 'domain' | 'hostname'>
+  previewToken?: number
 }) {
   const { t } = useTranslation('mailServer')
   const domains = useQuery(domainsQueryOptions())
@@ -83,11 +88,19 @@ export function MailDnsPanel({
   const [ip, setIp] = useState('')
   const [plan, setPlan] = useState<MailPlan | null>(null)
 
-  const effective = (domain ?? known[0] ?? '').trim().toLowerCase()
+  const effective = (domain ?? defaults?.domain ?? known[0] ?? '')
+    .trim()
+    .toLowerCase()
   useEffect(() => {
     onDomain?.(effective)
   }, [effective, onDomain])
-  const mailHost = host ?? (effective ? `mail.${effective}` : '')
+  const hostDefault =
+    defaults?.hostname && effective === defaults.domain
+      ? defaults.hostname
+      : effective
+        ? `mail.${effective}`
+        : ''
+  const mailHost = host ?? hostDefault
   const spec: MailDnsSpec =
     preset === SELF
       ? { domain: effective, mail_host: mailHost, ipv4: ip.trim() || undefined }
@@ -127,6 +140,26 @@ export function MailDnsPanel({
       }),
   })
 
+  const sectionRef = useRef<HTMLElement>(null)
+  const domainRef = useRef<HTMLInputElement>(null)
+  const runPlan = useRef<() => void>(() => undefined)
+  useEffect(() => {
+    runPlan.current = () => {
+      if (effective) planMut.mutate(spec)
+    }
+  })
+  // The next-step button bumps previewToken: bring the form into view, then plan.
+  useEffect(() => {
+    if (previewToken === 0) return
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    sectionRef.current?.scrollIntoView?.({
+      block: 'start',
+      behavior: calm ? 'auto' : 'smooth',
+    })
+    domainRef.current?.focus({ preventScroll: true })
+    runPlan.current()
+  }, [previewToken])
+
   const touch = () => setPlan(null)
   const pending =
     plan?.changes.filter((c) => c.action === 'add' || c.action === 'replace') ??
@@ -139,104 +172,114 @@ export function MailDnsPanel({
 
   return (
     <section
+      ref={sectionRef}
+      id="mail-dns-panel"
       aria-label={t('dns.title')}
       className="space-y-3 rounded-lg border border-border bg-card p-3"
     >
       <h2 className="text-sm font-medium">{t('dns.title')}</h2>
       <form
-        className="flex flex-wrap items-end gap-3"
+        className="space-y-3"
         onSubmit={(e) => {
           e.preventDefault()
           if (effective) planMut.mutate(spec)
         }}
       >
-        <div className="space-y-1">
-          <Label htmlFor="mail-domain">{t('dns.domain')}</Label>
-          <Input
-            id="mail-domain"
-            list="mail-known-domains"
-            className="w-52"
-            value={domain ?? effective}
-            placeholder={t('dns.domainPlaceholder')}
-            onChange={(e) => {
-              setDomain(e.target.value)
-              setHost(null)
-              touch()
-            }}
-          />
-          <datalist id="mail-known-domains" aria-label={t('dns.knownDomains')}>
-            {known.map((d) => (
-              <option key={d} value={d} />
-            ))}
-          </datalist>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="mail-preset">{t('dns.preset')}</Label>
-          <Select
-            value={preset}
-            onValueChange={(v) => {
-              if (v) setPreset(v)
-              touch()
-            }}
-          >
-            <SelectTrigger id="mail-preset" className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={SELF}>{t('dns.selfHosted')}</SelectItem>
-              {PRESETS.map(([id, name]) => (
-                <SelectItem key={id} value={id}>
-                  {name}
-                </SelectItem>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] items-start gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="mail-domain">{t('dns.domain')}</Label>
+            <Input
+              id="mail-domain"
+              ref={domainRef}
+              list="mail-known-domains"
+              className="w-full"
+              value={domain ?? effective}
+              placeholder={t('dns.domainPlaceholder')}
+              onChange={(e) => {
+                setDomain(e.target.value)
+                setHost(null)
+                touch()
+              }}
+            />
+            <datalist
+              id="mail-known-domains"
+              aria-label={t('dns.knownDomains')}
+            >
+              {known.map((d) => (
+                <option key={d} value={d} />
               ))}
-            </SelectContent>
-          </Select>
+            </datalist>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="mail-preset">{t('dns.preset')}</Label>
+            <Select
+              value={preset}
+              onValueChange={(v) => {
+                if (v) setPreset(v)
+                touch()
+              }}
+            >
+              <SelectTrigger id="mail-preset" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SELF}>{t('dns.selfHosted')}</SelectItem>
+                {PRESETS.map(([id, name]) => (
+                  <SelectItem key={id} value={id}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {preset === SELF && (
+            <>
+              <div className="space-y-1">
+                <Label htmlFor="mail-host">{t('dns.mailHost')}</Label>
+                <Input
+                  id="mail-host"
+                  className="w-full"
+                  value={mailHost}
+                  onChange={(e) => {
+                    setHost(e.target.value)
+                    touch()
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="mail-ip">{t('dns.ipv4')}</Label>
+                <Input
+                  id="mail-ip"
+                  className="w-full"
+                  inputMode="decimal"
+                  value={ip}
+                  placeholder={t('dns.ipv4Placeholder')}
+                  onChange={(e) => {
+                    setIp(e.target.value)
+                    touch()
+                  }}
+                />
+              </div>
+            </>
+          )}
         </div>
-        {preset === SELF && (
-          <>
-            <div className="space-y-1">
-              <Label htmlFor="mail-host">{t('dns.mailHost')}</Label>
-              <Input
-                id="mail-host"
-                className="w-48"
-                value={mailHost}
-                onChange={(e) => {
-                  setHost(e.target.value)
-                  touch()
-                }}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="mail-ip">{t('dns.ipv4')}</Label>
-              <Input
-                id="mail-ip"
-                className="w-40"
-                inputMode="decimal"
-                value={ip}
-                placeholder={t('dns.ipv4Placeholder')}
-                onChange={(e) => {
-                  setIp(e.target.value)
-                  touch()
-                }}
-              />
-            </div>
-          </>
-        )}
-        <Button
-          type="submit"
-          variant="outline"
-          disabled={!effective || planMut.isPending}
-        >
-          {t('dns.plan')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={!effective || checkMut.isPending}
-          onClick={() => checkMut.mutate(spec)}
-        >
-          {checkMut.isPending ? t('dns.checking') : t('dns.check')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={!effective || planMut.isPending}
+          >
+            {t('dns.plan')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!effective || checkMut.isPending}
+            onClick={() => checkMut.mutate(spec)}
+          >
+            {checkMut.isPending ? t('dns.checking') : t('dns.check')}
+          </Button>
+        </div>
       </form>
 
       {plan && (

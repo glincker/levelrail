@@ -72,6 +72,8 @@ type MailStatus struct {
 	AdminReachable bool   `json:"admin_reachable"`
 	TLS            string `json:"tls"`
 	NextStep       string `json:"next_step"`
+	Domain         string `json:"domain,omitempty"`
+	Hostname       string `json:"hostname,omitempty"`
 }
 
 // MailStatus calls GET /api/v1/mail/status; app picks one install when several exist.

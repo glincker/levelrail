@@ -21,6 +21,28 @@ type mailStatusResponse struct {
 	AdminReachable bool   `json:"admin_reachable"`
 	TLS            string `json:"tls"`
 	NextStep       string `json:"next_step"`
+	// Domain and Hostname come from the install env so the DNS form can prefill.
+	Domain   string `json:"domain,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
+}
+
+// mailEnvValue returns an env value, or "" when it is unset or still a template placeholder.
+func mailEnvValue(env map[string]string, key string) string {
+	v := strings.TrimSpace(env[key])
+	if strings.HasPrefix(v, "${") {
+		return ""
+	}
+	return v
+}
+
+// mailNames derives the domain and mail host from the install env.
+func mailNames(env map[string]string) (domain, host string) {
+	domain = strings.ToLower(mailEnvValue(env, "MAIL_FIRST_DOMAIN"))
+	host = strings.ToLower(mailEnvValue(env, "MAIL_HOSTNAME"))
+	if host == "" && domain != "" {
+		host = "mail." + domain
+	}
+	return domain, host
 }
 
 // mailTLSKind reads the kind from the install env: an empty value or the
@@ -47,6 +69,7 @@ func mailRank(s mailStatusResponse) int {
 // mailProbe fills the container state and admin reachability for one mail app.
 func (rt *Router) mailProbe(ctx context.Context, name string, env map[string]string) mailStatusResponse {
 	out := mailStatusResponse{App: name, Installed: true, ContainerState: "unknown", TLS: mailTLSKind(env)}
+	out.Domain, out.Hostname = mailNames(env)
 	ip := ""
 	if rt.containers != nil {
 		list, lerr := rt.containers.ListByPrefix(ctx, name)
