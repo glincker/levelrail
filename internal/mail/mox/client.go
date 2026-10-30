@@ -265,9 +265,9 @@ func mapError(e rpcError, secrets []string) error {
 		return errNoAuth
 	case e.Code == "sherpa:badParams":
 		kind = mail.ErrInvalid
-	case strings.Contains(low, "already exists") || strings.Contains(low, "already in use"):
+	case strings.Contains(low, "already exists") || strings.Contains(low, "already in use") || strings.Contains(low, "already configured") || strings.Contains(low, "already present"):
 		kind = mail.ErrExists
-	case strings.Contains(low, "does not exist") || strings.Contains(low, "not found") || strings.Contains(low, "unknown"):
+	case strings.Contains(low, "does not exist") || strings.Contains(low, "no such") || strings.Contains(low, "not found") || strings.Contains(low, "unknown"):
 		kind = mail.ErrNotFound
 	case e.Code == "user:error":
 		kind = mail.ErrInvalid

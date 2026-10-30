@@ -4,6 +4,95 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="0.8.8" description="2026-10-30">
+**Features**
+
+* add a sync workflow for translated READMEs
+* add app type model, parameter schema subset and Check (ADR 052 slice 1)
+* add app types store and API behind LEVELRAIL_APPTYPE_ENABLED
+* add apps tree command
+* add explain command for config fields
+* add field descriptions and defaults to the config schema
+* add fleet-wide widget types to dashboards
+* add levelrail-cli app-types apply, list and check
+* add offline validate command for resource files
+* add status page and status component terraform resources
+* analysis report API, CLI and MCP read tool
+* apply --server-side and edit as a compare-and-swap
+* apply and export inline app files
+* assistant write, loop, empty-result and error-scrub guards
+* detect the OrbStack socket for local development
+* deterministic incident and cost analysis reports, off by default
+* estimate monthly saving in the app resource recommendation
+* explicit release id on apps promote and rollback
+* grouped, branded status page with atom feed, history pages and badges
+* init --commented and --out render a schema-commented app.yaml
+* Levelrail v0.8.11
+* list an app's releases in the API and CLI
+* list an app's releases on the overview
+* make release bindings authoritative for promote and rollback when on
+* manage status page groups, branding and public links in the dashboard
+* monitors CLI commands and experimental monitors docs
+* monitors REST API behind APP_MONITORS_ENABLED with boot wiring
+* pipeline promote and rollback steps retarget release bindings
+* server-side apply on the v2 app and database API
+* shadow-write release snapshots and environment bindings behind APP_RELEASE_BINDINGS
+* show a QR code on the two factor setup dialog
+* show analysis reports on the app overview
+* show binding history in releases API and CLI
+* show schema field help in the config editor
+* show the pinned image digest on promotion approvals
+* show the resource tree on the app overview
+* show the right-sizing saving on the app page
+* status page groups, branding and new public routes in the API
+* status-page group and branding CLI commands, docs
+* store for analysis reports
+* store release id on approvals and add binding retarget
+* translate new app, deploys and domains into Spanish (part 2)
+* translate the first-run dashboard flow into Spanish (part 1)
+* uptime monitor engine with http and tcp checks, batched results and hourly rollups
+* **web:** fleet overview widgets for the Metrics tab
+* **web:** offer an IP and port or a domain when the app address does not answer
+* **web:** one-row app navigation with thesvg glass icons
+* **web:** palette colour grade with a dark gradient field over a lighter glass panel
+* **web:** search across registries and docs, command pills, recent bubbles with local history
+* **web:** thesvg glass icons everywhere, new banner, one-row app nav and command search
+
+
+**Bug Fixes**
+
+* add fan-in budgets for deploy and kit/upgrade
+* allow existing nolint directives and re-balance the fan-in budget
+* apps create --file saves the spec rollout policy
+* audit invite and device paths even when a later step fails
+* check apps served only through the ingress and flag an unreachable public address
+* clear the CI failures on the release PR
+* correct alert rule schema descriptions
+* deleting a verified backup works and a restored one returns 409
+* flag apps linked to a database as pending after pooler changes
+* gate before binding retarget, release rollback marking, authz before release lookup
+* give the pre-commit tsc stage a larger node heap
+* guard empty file list in check-i18n
+* keep existing status pages noindex after the v2 upgrade
+* keep translated READMEs out of the docs search index and give the CLI reference room
+* lazy-load the app overview sections to stay within the bundle budget
+* make binding undo conditional, uncancelled and audited
+* match the brew test to the current help output
+* pin promotions to the source image digest
+* register the apps tree subcommand in the command tree
+* restore drills skip local targets quietly and report them as not applicable
+* run the locale parity test under the shared vitest setup
+* save and export app rollout policy through apply
+* serve app routes on plain http when systemd holds port 80
+* testing a local backup target checks the directory instead of asking for keys
+* undo binding on failed apply, verify release digest, audit retargets
+* verify pinned digest at promotion approval and pipeline rollback
+* **web:** hide the stray scrollbar on the dashboard tab strip
+* **web:** lead with an address that answers when the free test domain does not
+* wire the assistant write guard to the AI control mode
+* write audit rows for the remaining mutating auth routes
+</Update>
+
 <Update label="0.8.7" description="2026-10-29">
 **Features**
 

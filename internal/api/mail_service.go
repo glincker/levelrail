@@ -58,9 +58,15 @@ type MailStore interface {
 type mailState struct {
 	db     MailStore
 	runner *mailcast.Runner
+	// boxes holds mailbox ownership; engine is nil in production (the default factory is used).
+	boxes  MailboxStore
+	engine mailEngineFactory
 }
 
 func (rt *Router) attachMail(s any) {
+	if mb, ok := s.(MailboxStore); ok {
+		rt.mail.boxes = mb
+	}
 	ms, ok := s.(MailStore)
 	if !ok {
 		return

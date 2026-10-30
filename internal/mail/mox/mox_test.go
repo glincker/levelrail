@@ -107,12 +107,12 @@ func TestEngineMethods(t *testing.T) {
 				"example.test. 300 IN MX 10 mail.example.test.",
 				`2026a._domainkey.example.test. IN TXT "v=DKIM1;h=sha256;k=rsa;" "p=AB CD"`,
 			}, nil
-		case "AccountNames":
-			return []string{"admin", "alice"}, nil
+		case "Accounts":
+			return [][]string{{"admin", "alice"}, {"alice"}}, nil
 		case "QueueSize":
 			return 2, nil
 		case "QueueList":
-			return []map[string]any{{"Attempts": 1, "LastError": "dns"}, {"Attempts": 0, "LastError": ""}}, nil
+			return []map[string]any{{"Attempts": 1, "Results": []map[string]any{{"Success": false, "Error": "dns"}}}, {"Attempts": 0}}, nil
 		case "AliasAdd":
 			var local, dom string
 			_ = json.Unmarshal(p[0], &local)
@@ -138,7 +138,7 @@ func TestEngineMethods(t *testing.T) {
 	if err != nil || len(keys) != 1 || keys[0].Selector != "2026a" || keys[0].PublicKey != "ABCD" {
 		t.Fatalf("keys %+v %v", keys, err)
 	}
-	if a, err := c.Accounts(ctx); err != nil || len(a) != 2 {
+	if a, err := c.Accounts(ctx); err != nil || len(a) != 2 || a[0].Disabled || !a[1].Disabled {
 		t.Fatalf("accounts %v %v", a, err)
 	}
 	st, err := c.QueueStats(ctx)

@@ -108,6 +108,7 @@ func (rt *Router) handleRemoveTeamMember(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	rt.recordTeamEvent(r, teamID, caller.userID, "member.removed", userID, current)
+	rt.offboardMailboxes(r.Context(), teamID, userID)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -130,6 +131,7 @@ func (rt *Router) handleLeaveTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.recordTeamEvent(r, teamID, userID, "member.left", userID, "")
+	rt.offboardMailboxes(r.Context(), teamID, userID)
 	rt.recordAuthAudit(r, userID, accountEventTeamLeft, http.StatusNoContent, map[string]string{"team_id": teamID})
 	w.WriteHeader(http.StatusNoContent)
 }

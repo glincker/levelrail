@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1842 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1856 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1249,6 +1249,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
 	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
 	{Method: "GET", Path: "/api/v1/logs/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleLogUsage", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/aliases", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailAliases", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/aliases", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAddMailAlias", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/mail/aliases/{address}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRemoveMailAlias", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/audience-options", Ability: "AbilityRoot", Group: "Other", Handler: "handleMailAudienceOptions", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/audience/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewMailAudience", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/broadcasts", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailBroadcasts", Description: ""},
@@ -1259,14 +1262,25 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/mail/dns/apply", Ability: "AbilityRoot", Group: "Other", Handler: "handleMailDNSApply", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/dns/check", Ability: "AbilityRead", Group: "Other", Handler: "handleMailDNSCheck", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/dns/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleMailDNSPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/domains", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailDomains", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/domains", Ability: "AbilityRoot", Group: "Other", Handler: "handleClaimMailDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/groups", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailGroups", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/groups", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMailGroup", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteMailGroup", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMailGroup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateMailGroup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/mail/layout", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetMailLayout", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/mailboxes", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailboxes", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/mailboxes", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateMailbox", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/mail/mailboxes/{address}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteMailbox", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/mailboxes/{address}/password", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMailboxPassword", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/mailboxes/{address}/resume", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSuspendMailbox", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/mailboxes/{address}/suspend", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSuspendMailbox", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/ports", Ability: "AbilityRead", Group: "Other", Handler: "handleMailPorts", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/ports/open", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMailPortsOpen", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/queue", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleMailQueue", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/queue/hold", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMailQueueHold", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/queue/release", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMailQueueHold", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/status", Ability: "AbilityRead", Group: "Other", Handler: "handleMailStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailSuppressions", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddMailSuppression", Description: ""},

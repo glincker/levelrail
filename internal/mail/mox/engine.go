@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/mail"
 )
@@ -66,21 +68,27 @@ func (c *Client) DKIMKeys(ctx context.Context, domain string) ([]mail.DKIMKey, e
 	return ExtractDKIM(recs), nil
 }
 
-// Accounts lists account names; this call is not covered by the verified
-// protocol notes and is decoded defensively.
+// Accounts lists accounts. mox returns two lists: every account, then the
+// ones with login disabled (verified against v0.0.17).
 func (c *Client) Accounts(ctx context.Context) ([]mail.Account, error) {
-	var names []string
-	if err := c.call(ctx, "AccountNames", nil, &names); err != nil {
+	var res [2][]string
+	if err := c.call(ctx, "Accounts", nil, &res); err != nil {
 		return nil, err
 	}
-	out := make([]mail.Account, 0, len(names))
-	for _, n := range names {
-		out = append(out, mail.Account{Name: n})
+	disabled := make(map[string]bool, len(res[1]))
+	for _, n := range res[1] {
+		disabled[n] = true
+	}
+	out := make([]mail.Account, 0, len(res[0]))
+	for _, n := range res[0] {
+		out = append(out, mail.Account{Name: n, Disabled: disabled[n]})
 	}
 	return out, nil
 }
 
-// AddAccount creates the account and, when a password is given, sets it.
+// AddAccount creates the account, turns off self-chosen passwords so only
+// generated ones are used (ADR 059 section 2.4), and sets the password. A
+// failure after the add removes the half-made account again.
 func (c *Client) AddAccount(ctx context.Context, a mail.AccountSpec) error {
 	if a.Name == "" || a.Address == "" {
 		return fmt.Errorf("%w: account name and address are required", mail.ErrInvalid)
@@ -88,10 +96,49 @@ func (c *Client) AddAccount(ctx context.Context, a mail.AccountSpec) error {
 	if err := c.call(ctx, "AccountAdd", []any{a.Name, a.Address}, nil); err != nil {
 		return err
 	}
-	if a.Password == "" {
-		return nil
+	err := c.call(ctx, "AccountSettingsSave", []any{a.Name, 0, 0, 0, true, true}, nil)
+	if err == nil && a.Password != "" {
+		err = c.SetPassword(ctx, a.Name, a.Password)
 	}
-	return c.SetPassword(ctx, a.Name, a.Password)
+	if err != nil {
+		_ = c.call(ctx, "AccountRemove", []any{a.Name}, nil)
+		return err
+	}
+	return nil
+}
+
+// AccountDetail reads the account config and its disk usage; mox returns both
+// as a two element result.
+func (c *Client) AccountDetail(ctx context.Context, name string) (mail.AccountDetail, error) {
+	var res []json.RawMessage
+	if err := c.call(ctx, "Account", []any{name}, &res); err != nil {
+		return mail.AccountDetail{}, err
+	}
+	if len(res) != 2 {
+		return mail.AccountDetail{}, fmt.Errorf("mail: unexpected Account result")
+	}
+	var acc struct {
+		LoginDisabled string
+		Destinations  map[string]json.RawMessage
+	}
+	var usage int64
+	if err := json.Unmarshal(res[0], &acc); err != nil {
+		return mail.AccountDetail{}, fmt.Errorf("mail: decode Account result: %w", err)
+	}
+	if err := json.Unmarshal(res[1], &usage); err != nil {
+		return mail.AccountDetail{}, fmt.Errorf("mail: decode Account usage: %w", err)
+	}
+	out := mail.AccountDetail{Name: name, LoginDisabled: acc.LoginDisabled != "", DiskUsageBytes: usage, Addresses: make([]string, 0, len(acc.Destinations))}
+	for addr := range acc.Destinations {
+		out.Addresses = append(out.Addresses, addr)
+	}
+	sort.Strings(out.Addresses)
+	return out, nil
+}
+
+// SetLoginDisabled saves the account's LoginDisabled message; "" re-enables.
+func (c *Client) SetLoginDisabled(ctx context.Context, account, message string) error {
+	return c.call(ctx, "AccountLoginDisabledSave", []any{account, message}, nil)
 }
 
 // RemoveAccount deletes the account by name.
@@ -144,7 +191,62 @@ func (c *Client) RemoveAlias(ctx context.Context, address string) error {
 	return c.call(ctx, "AliasRemove", []any{local, domain}, nil)
 }
 
-// QueueStats counts queued messages and those that already failed an attempt.
+// queueMsg decodes only delivery metadata from a mox queue message; Subject,
+// MessageID and MsgPrefix are never read.
+type queueMsg struct {
+	ID                 int64
+	Queued             time.Time
+	Hold               bool
+	SenderAccount      string
+	RecipientDomainStr string
+	Attempts           int
+	NextAttempt        time.Time
+	Results            []struct {
+		Success bool
+		Error   string
+	}
+}
+
+func (m queueMsg) lastError() string {
+	if n := len(m.Results); n > 0 && !m.Results[n-1].Success {
+		return m.Results[n-1].Error
+	}
+	return ""
+}
+
+func (c *Client) queueMsgs(ctx context.Context, limit int) ([]queueMsg, error) {
+	var items []queueMsg
+	filter := map[string]any{}
+	if limit > 0 {
+		filter["Max"] = limit
+	}
+	err := c.call(ctx, "QueueList", []any{filter, map[string]any{"Field": "Queued", "Asc": true}}, &items)
+	return items, err
+}
+
+// Aliases lists a domain's aliases from DomainLocalparts, whose second
+// result maps alias localparts to their config.
+func (c *Client) Aliases(ctx context.Context, domain string) ([]mail.Alias, error) {
+	var res []json.RawMessage
+	if err := c.call(ctx, "DomainLocalparts", []any{domain}, &res); err != nil {
+		return nil, err
+	}
+	if len(res) != 2 {
+		return nil, fmt.Errorf("mail: unexpected DomainLocalparts result")
+	}
+	var raw map[string]struct{ Addresses []string }
+	if err := json.Unmarshal(res[1], &raw); err != nil {
+		return nil, fmt.Errorf("mail: decode aliases: %w", err)
+	}
+	out := make([]mail.Alias, 0, len(raw))
+	for lp, a := range raw {
+		out = append(out, mail.Alias{Address: lp + "@" + domain, Targets: a.Addresses})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Address < out[j].Address })
+	return out, nil
+}
+
+// QueueStats counts queued messages and those whose last attempt failed.
 func (c *Client) QueueStats(ctx context.Context) (mail.QueueStats, error) {
 	var st mail.QueueStats
 	if err := c.call(ctx, "QueueSize", nil, &st.Queued); err != nil {
@@ -153,19 +255,41 @@ func (c *Client) QueueStats(ctx context.Context) (mail.QueueStats, error) {
 	if st.Queued == 0 {
 		return st, nil
 	}
-	var items []struct {
-		Attempts  int
-		LastError string
-	}
-	if err := c.call(ctx, "QueueList", []any{map[string]any{}, map[string]any{}}, &items); err != nil {
+	items, err := c.queueMsgs(ctx, 0)
+	if err != nil {
 		return st, err
 	}
 	for _, it := range items {
-		if it.Attempts > 0 && it.LastError != "" {
+		if it.Attempts > 0 && it.lastError() != "" {
 			st.Failing++
 		}
 	}
 	return st, nil
+}
+
+// QueueList lists up to limit queued messages, oldest first.
+func (c *Client) QueueList(ctx context.Context, limit int) ([]mail.QueueEntry, error) {
+	items, err := c.queueMsgs(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]mail.QueueEntry, 0, len(items))
+	for _, it := range items {
+		out = append(out, mail.QueueEntry{ID: it.ID, Queued: it.Queued, Hold: it.Hold, SenderAccount: it.SenderAccount,
+			RecipientDomain: it.RecipientDomainStr, Attempts: it.Attempts, NextAttempt: it.NextAttempt, LastError: it.lastError()})
+	}
+	return out, nil
+}
+
+// HoldMessages sets hold on the listed ids only. An empty list is refused
+// because an empty mox filter matches the whole queue.
+func (c *Client) HoldMessages(ctx context.Context, ids []int64, hold bool) (int, error) {
+	if len(ids) == 0 {
+		return 0, fmt.Errorf("%w: list at least one queue id", mail.ErrInvalid)
+	}
+	var n int
+	err := c.call(ctx, "QueueHoldSet", []any{map[string]any{"IDs": ids}, hold}, &n)
+	return n, err
 }
 
 // HoldQueue pauses delivery of every queued message (mox QueueHoldSet).

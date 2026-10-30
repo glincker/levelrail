@@ -2066,6 +2066,20 @@ Routes that do not fit an existing group.
 | PATCH | /api/v1/monitors/{id} | AbilityWrite | handleUpdateMonitorLink |
 | GET | /api/v1/mail/ports | AbilityRead | handleMailPorts |
 | POST | /api/v1/mail/ports/open | AbilityWriteSensitive | handleMailPortsOpen |
+| GET | /api/v1/mail/domains | AbilityRead | handleListMailDomains |
+| POST | /api/v1/mail/domains | AbilityRoot | handleClaimMailDomain |
+| GET | /api/v1/mail/mailboxes | AbilityRead | handleListMailboxes |
+| POST | /api/v1/mail/mailboxes | AbilityWriteSensitive | handleCreateMailbox |
+| POST | /api/v1/mail/mailboxes/{address}/suspend | AbilityWriteSensitive | handleSuspendMailbox |
+| POST | /api/v1/mail/mailboxes/{address}/resume | AbilityWriteSensitive | handleSuspendMailbox |
+| POST | /api/v1/mail/mailboxes/{address}/password | AbilityWriteSensitive | handleMailboxPassword |
+| DELETE | /api/v1/mail/mailboxes/{address} | AbilityRoot | handleDeleteMailbox |
+| GET | /api/v1/mail/aliases | AbilityRead | handleListMailAliases |
+| POST | /api/v1/mail/aliases | AbilityWriteSensitive | handleAddMailAlias |
+| DELETE | /api/v1/mail/aliases/{address} | AbilityWriteSensitive | handleRemoveMailAlias |
+| GET | /api/v1/mail/queue | AbilityReadSensitive | handleMailQueue |
+| POST | /api/v1/mail/queue/hold | AbilityWriteSensitive | handleMailQueueHold |
+| POST | /api/v1/mail/queue/release | AbilityWriteSensitive | handleMailQueueHold |
 | POST | /mcp | Public |  |
 
 ## See also

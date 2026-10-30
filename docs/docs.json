@@ -217,6 +217,7 @@
               "dns",
               "mail-dns",
               "mail-template",
+              "mail-mailboxes",
               "domain-diagnosis",
               "domain-traffic-controls",
               "abuse-defense",
