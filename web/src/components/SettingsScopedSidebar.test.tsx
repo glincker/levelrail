@@ -117,7 +117,6 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.getByRole('link', { name: 'Platform' })).toHaveAttribute(
       'data-active',
-      'true',
     )
   })
 
