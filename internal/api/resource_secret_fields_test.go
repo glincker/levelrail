@@ -25,6 +25,9 @@ var responseStructName = regexp.MustCompile(`(Resource|Response)$`)
 // value at creation, a name or flag rather than a value).
 var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names and reasons, not credentials
 	"statusWebhookSecretResource.SigningSecret":         "show-once signing secret returned at create and rotate, never listed",
+	"mcpTokenResponse.AccessToken":                      "OAuth token endpoint response per RFC 6749, issued once, no-store, short lived",
+	"mcpTokenResponse.RefreshToken":                     "OAuth token endpoint response per RFC 6749, rotates on every use, only its hash is stored",
+	"mcpTokenResponse.TokenType":                        "constant string Bearer, not a credential",
 	"createMigrationAgentResponse.Token":                "show-once agent token returned at creation, never listed",
 	"databaseRevealResponse.Password":                   "owner-only reveal behind step-up, audited, no-store",
 	"appResource.SecretEnv":                             "names of secret-backed vars, never values",
