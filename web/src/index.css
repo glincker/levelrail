@@ -197,6 +197,13 @@ body {
   --sidebar-ring: var(--brand-accent-dark);
 }
 
+/* Brand banner is a fixed dark panel in both themes. */
+:root {
+  --banner-bg: oklch(0 0 0);
+  --banner-fg: oklch(0.85 0.004 285);
+  --banner-strong: oklch(1 0 0);
+}
+
 /* Kit tokens. Tones: success, warning, danger, info, accent, neutral, each with
    fg (text/icon), soft (tinted surface), border, solid (dots, bars).
    Spacing: 8px scale (gap-2/4/6). Radii: rounded-xl (12) and rounded-2xl (16). */
@@ -285,6 +292,9 @@ body {
   --color-tone-info-soft: var(--tone-info-soft);
   --color-tone-info-border: var(--tone-info-border);
   --color-tone-info-solid: var(--tone-info-solid);
+  --color-banner: var(--banner-bg);
+  --color-banner-fg: var(--banner-fg);
+  --color-banner-strong: var(--banner-strong);
   --color-tone-accent: var(--tone-accent-fg);
   --color-tone-accent-soft: var(--tone-accent-soft);
   --color-tone-accent-border: var(--tone-accent-border);

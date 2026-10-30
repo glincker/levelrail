@@ -219,7 +219,7 @@ export function InfrastructurePage() {
               {t('iacPage.prune')}
             </label>
             {pruneNeedsSource ? (
-              <p className="text-xs text-amber-700 dark:text-amber-400">
+              <p className="text-xs text-tone-warning">
                 {t('iacPage.pruneNeedsSource')}
               </p>
             ) : null}
@@ -258,7 +258,7 @@ export function InfrastructurePage() {
             </DialogDescription>
           </DialogHeader>
           {reviewed && reviewed.summary.delete > 0 ? (
-            <p className="text-sm text-red-700 dark:text-red-400">
+            <p className="text-sm text-tone-danger">
               {t('iacPage.confirmDeletes', { count: reviewed.summary.delete })}
             </p>
           ) : null}
@@ -293,7 +293,7 @@ function PlanCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {error instanceof IacIssuesError ? (
-          <ul className="space-y-1 font-mono text-sm text-red-700 dark:text-red-400">
+          <ul className="space-y-1 font-mono text-sm text-tone-danger">
             {error.issues.map((i) => (
               <li key={`${i.file}:${i.line}:${i.message}`}>
                 {i.file}:{i.line}: {i.message}
@@ -302,9 +302,7 @@ function PlanCard({
             ))}
           </ul>
         ) : error ? (
-          <p className="text-sm text-red-700 dark:text-red-400">
-            {error.message}
-          </p>
+          <p className="text-sm text-tone-danger">{error.message}</p>
         ) : reviewed ? (
           <IacPlanView plan={reviewed} />
         ) : null}
@@ -341,9 +339,7 @@ function ResultCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {error ? (
-          <p className="text-sm text-red-700 dark:text-red-400">
-            {error.message}
-          </p>
+          <p className="text-sm text-tone-danger">{error.message}</p>
         ) : null}
         {error ? (
           <div className="flex flex-wrap items-center gap-3">

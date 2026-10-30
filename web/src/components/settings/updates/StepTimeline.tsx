@@ -41,7 +41,7 @@ function StepIcon({ status }: { status: Row['status'] }) {
   }
   return (
     <CircleCheckGlassIcon
-      className="size-5 text-emerald-600 dark:text-emerald-400"
+      className="size-5 text-tone-success"
       aria-hidden="true"
     />
   )

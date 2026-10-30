@@ -167,7 +167,7 @@ export function UpgradePipeline({
           className={cn(
             'flex items-start gap-2 rounded-md border p-3 text-sm',
             outcome === 'rolled_back'
-              ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200'
+              ? 'border-tone-warning-border bg-tone-warning-soft text-tone-warning'
               : 'border-destructive/40 bg-destructive/10 text-destructive',
           )}
         >

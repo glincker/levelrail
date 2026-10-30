@@ -31,11 +31,11 @@ export function UpdateBrandBanner({
   return (
     <div
       data-testid="update-brand-banner"
-      className="relative flex flex-wrap items-center gap-x-4 gap-y-3 overflow-hidden rounded-xl bg-black p-4 text-[#cfcfd3] ring-1 ring-white/10"
+      className="relative flex flex-wrap items-center gap-x-4 gap-y-3 overflow-hidden rounded-xl bg-banner p-4 text-banner-fg ring-1 ring-banner-strong/10"
     >
       <BrandGlow />
       <div className="relative flex min-w-0 items-center gap-3">
-        <span className="relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-lg font-semibold text-white ring-1 ring-white/15">
+        <span className="relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-banner-strong/10 text-lg font-semibold text-banner-strong ring-1 ring-banner-strong/15">
           {logoSvg ? (
             <span
               className="flex size-7 items-center justify-center [&_svg]:size-full"
@@ -47,7 +47,7 @@ export function UpdateBrandBanner({
           <span
             data-testid="update-state-icon"
             className={cn(
-              'absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full ring-2 ring-black [&_svg]:size-4.5',
+              'absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full ring-2 ring-banner [&_svg]:size-4.5',
               stateClassName,
             )}
           >
@@ -57,7 +57,7 @@ export function UpdateBrandBanner({
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span title={t('status.runningVersion')}>
             <span className="sr-only">{t('status.runningVersion')}</span>
-            <code className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white ring-1 ring-white/15">
+            <code className="rounded-md bg-banner-strong/10 px-2 py-1 font-mono text-sm text-banner-strong ring-1 ring-banner-strong/15">
               {version}
             </code>
           </span>
@@ -73,7 +73,7 @@ export function UpdateBrandBanner({
           title={t('status.githubRepo')}
           className={cn(
             buttonVariants({ variant: 'outline', size: 'icon-sm' }),
-            'relative ml-auto border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white',
+            'relative ml-auto border-banner-strong/15 bg-banner-strong/5 text-banner-strong hover:bg-banner-strong/10 hover:text-banner-strong',
           )}
         >
           <SocialGithubGlassIcon size="1.4em" />

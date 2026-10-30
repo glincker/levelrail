@@ -29,7 +29,7 @@ export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
 
   if (!status.update_available) {
     return (
-      <div className="inline-flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
+      <div className="inline-flex items-center gap-1.5 text-sm text-tone-success">
         <CircleCheckGlassIcon className="size-5 text-tone-success" />
         {edge ? t('version.upToDateEdge') : t('version.upToDate')}
       </div>

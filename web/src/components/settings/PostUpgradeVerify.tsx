@@ -41,7 +41,7 @@ export function PostUpgradeVerify() {
           <p
             className={
               data.ok
-                ? 'inline-flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400'
+                ? 'inline-flex items-center gap-1.5 text-sm text-tone-success'
                 : 'inline-flex items-center gap-1.5 text-sm text-destructive'
             }
           >

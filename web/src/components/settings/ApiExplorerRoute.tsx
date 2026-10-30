@@ -202,7 +202,7 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
             </code>
           </div>
           {isMutating && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">
+            <p className="text-xs text-tone-warning">
               This sends a real {route.method} request to this instance, not a
               simulation.
             </p>
