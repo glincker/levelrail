@@ -1,0 +1,69 @@
+{
+  "roles": {
+    "title": "Roles",
+    "description": "Conjuntos de permisos con nombre que puedes asignar a las personas. Los roles integrados son fijos; crea los tuyos para todo lo intermedio.",
+    "create": "Crear rol",
+    "empty": {
+      "title": "No se encontraron roles",
+      "description": "Crea un rol para dar a las personas un conjunto de permisos con nombre."
+    },
+    "table": {
+      "label": "Roles",
+      "name": "Nombre",
+      "abilities": "Permisos",
+      "visibility": "Ve",
+      "users": "Usuarios",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "badge": {
+      "builtin": "Integrado",
+      "visibilityAll": "Todo",
+      "visibilityGranted": "Solo los entornos concedidos"
+    },
+    "form": {
+      "createTitle": "Crear rol",
+      "editTitle": "Editar {{name}}",
+      "description": "Elige los permisos que incluye este rol y lo que pueden ver quienes lo tengan.",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. revisor-qa",
+      "nameRequired": "El nombre es obligatorio",
+      "descriptionLabel": "Descripción",
+      "visibility": "Visibilidad",
+      "visibilityAll": "Todo lo que permitan los permisos",
+      "visibilityGranted": "Solo los entornos concedidos a cada persona",
+      "visibilityGrantedHint": "Un rol limitado a los entornos concedidos solo puede tener el permiso de lectura.",
+      "abilitiesRequired": "Elige al menos un permiso",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saving": "Guardando..."
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar {{name}}?",
+      "description": "Ya no se podrá asignar este rol a nadie. No se puede eliminar un rol que aún tiene personas asignadas.",
+      "inUse": "{{count}} personas tienen este rol. Reasígnalas primero.",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar",
+      "deleting": "Eliminando..."
+    },
+    "toast": {
+      "created": "Rol {{name}} creado.",
+      "updated": "Rol {{name}} actualizado.",
+      "deleted": "Rol {{name}} eliminado."
+    }
+  },
+  "userRole": {
+    "trigger": "Cambiar rol",
+    "title": "Rol de {{email}}",
+    "description": "Al elegir un rol, los permisos de esta persona se reemplazan por los del rol.",
+    "label": "Rol",
+    "grantsTitle": "Entornos que esta persona puede ver",
+    "grantsHint": "Las personas con un rol de visibilidad concedida solo ven estos entornos.",
+    "grantsEmpty": "Aún no existen entornos.",
+    "grantsLoading": "Cargando entornos...",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "cancel": "Cancelar",
+    "toast": "{{email}} ahora es {{role}}."
+  }
+}

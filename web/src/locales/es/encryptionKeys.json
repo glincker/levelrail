@@ -1,0 +1,68 @@
+{
+  "master": {
+    "title": "Clave maestra",
+    "age_one": "{{count}} día de antigüedad",
+    "age_other": "{{count}} días de antigüedad",
+    "never": "Nunca rotada"
+  },
+  "apps": {
+    "title": "Claves de datos de las apps",
+    "empty": "Ninguna app ha guardado un secreto todavía, así que no hay claves de datos que rotar.",
+    "age_one": "{{count}} día",
+    "age_other": "{{count}} días",
+    "values_one": "{{count}} secreto",
+    "values_other": "{{count}} secretos",
+    "overdue": "Fuera de plazo",
+    "current": "Vigente",
+    "rotate": "Rotar clave",
+    "rotateAll": "Rotar todas las claves",
+    "neverRotated": "Creada el {{date}}",
+    "rotatedOn": "Rotada el {{date}}"
+  },
+  "lastRun": {
+    "title": "Última ejecución de rotar todas",
+    "progress": "{{done}} de {{total}} apps, {{failed}} con error",
+    "finished": "Finalizada el {{date}}",
+    "interrupted": "Interrumpida. Vuelve a rotar todas las claves para continuar donde se detuvo."
+  },
+  "policy": {
+    "title": "Antigüedad máxima de las claves",
+    "description": "Envía un recordatorio por tus canales de notificación cuando una clave supere esta antigüedad. 0 desactiva los recordatorios.",
+    "maxAge": "Antigüedad máxima en días",
+    "remindEvery": "Repetir el recordatorio cada (días)",
+    "save": "Guardar política",
+    "saving": "Guardando",
+    "saved": "Política de antigüedad de claves guardada"
+  },
+  "hint": {
+    "fixMaster": "Rotar ahora",
+    "fixApp": "Rotar esta clave",
+    "fixAll": "Rotar todas las claves",
+    "fixPolicy": "Recordármelo cada 90 días"
+  },
+  "confirm": {
+    "titleOne": "¿Rotar la clave de datos de {{app}}?",
+    "titleAll": "¿Rotar todas las claves de datos de las apps?",
+    "descriptionOne": "Se genera una clave nueva y todos los secretos de esta app se vuelven a cifrar en un solo paso. Si algo falla, no cambia nada.",
+    "descriptionAll": "Cada app se rota en su propio paso. Si una ejecución se detiene a la mitad, continúa donde se quedó.",
+    "consequenceReadable": "Todos los secretos siguen siendo legibles y no hace falta reiniciar.",
+    "consequenceAudit": "La rotación queda registrada en el registro de auditoría.",
+    "action": "Rotar",
+    "pending": "Rotando",
+    "typed": "ROTATE"
+  },
+  "result": {
+    "single_one": "Se rotó la clave de {{app}} y se volvió a cifrar {{count}} secreto",
+    "single_other": "Se rotó la clave de {{app}} y se volvieron a cifrar {{count}} secretos",
+    "all": "Se rotaron {{rotated}} claves, {{skipped}} ya estaban vigentes",
+    "allFailed": "No se pudieron rotar {{failed}} claves y quedaron sin cambios: {{names}}",
+    "partial": "La ejecución se interrumpió. Vuelve a rotar todas las claves para continuar."
+  },
+  "errors": {
+    "load": "No se pudo cargar el estado de las claves de cifrado",
+    "rotate": "Falló la rotación"
+  },
+  "title": "Claves de cifrado",
+  "description": "Cada secreto se cifra con una clave de datos de su app, y esas claves están protegidas por la clave maestra. Rótalas para limitar durante cuánto tiempo se usa cada clave.",
+  "guide": "Guía de rotación de claves"
+}
