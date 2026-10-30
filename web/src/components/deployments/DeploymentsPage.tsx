@@ -2,6 +2,8 @@ import { PageTemplate } from '../shell/PageTemplate'
 import { PageBanner } from '../PageBanner'
 import { LazyDeploymentsDiagram } from '../banners/LazyDiagrams'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { getProjectScope } from '../../lib/projectScope'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
@@ -82,6 +84,7 @@ export function DeploymentsPage({
   onOpenDetails,
   tabs,
 }: DeploymentsPageProps) {
+  const { t } = useTranslation('deploys')
   const filters = filtersOf(search)
   const openId = search.d
   useEnvironmentScope()
@@ -221,10 +224,10 @@ export function DeploymentsPage({
   const filtered = activeFilterCount(filters) > 0
   const streamView =
     stream.state === 'live'
-      ? { tone: 'success' as const, label: 'Live' }
+      ? { tone: 'success' as const, label: t('page.live') }
       : stream.state === 'reconnecting'
-        ? { tone: 'warning' as const, label: 'Reconnecting' }
-        : { tone: 'neutral' as const, label: 'Connecting' }
+        ? { tone: 'warning' as const, label: t('page.reconnecting') }
+        : { tone: 'neutral' as const, label: t('page.connecting') }
 
   const isEmpty =
     !listQuery.isPending &&
@@ -236,7 +239,7 @@ export function DeploymentsPage({
 
   return (
     <PageTemplate
-      title="Deployments"
+      title={t('page.title')}
       width="wide"
       banner={
         <PageBanner
@@ -269,14 +272,16 @@ export function DeploymentsPage({
     >
       {tabs}
       <div ref={topRef} className="hidden" />
-      <DeploymentsSummary
-        summary={summary.data}
-        loading={summary.isPending}
-        failed={summary.isError}
-        onNeedsAttention={() => {
-          setFilters({ ...filters, status: ['held'] })
-        }}
-      />
+      {!isEmpty && (
+        <DeploymentsSummary
+          summary={summary.data}
+          loading={summary.isPending}
+          failed={summary.isError}
+          onNeedsAttention={() => {
+            setFilters({ ...filters, status: ['held'] })
+          }}
+        />
+      )}
 
       <BuildingNowLane
         rows={laneRows}
@@ -287,29 +292,31 @@ export function DeploymentsPage({
         }}
       />
 
-      <DeploymentsFilterBar
-        filters={filters}
-        facets={facetsFrom(all)}
-        addOpen={addOpen}
-        onAddOpenChange={setAddOpen}
-        onSearch={(q) => {
-          setFilters({ ...filters, q })
-        }}
-        onToggle={toggle}
-        onRemove={(key, value) => {
-          setFilters(removeFilter(filters, key, value))
-        }}
-        onClear={() => {
-          setFilters(EMPTY_FILTERS)
-        }}
-      />
+      {!isEmpty && (
+        <DeploymentsFilterBar
+          filters={filters}
+          facets={facetsFrom(all)}
+          addOpen={addOpen}
+          onAddOpenChange={setAddOpen}
+          onSearch={(q) => {
+            setFilters({ ...filters, q })
+          }}
+          onToggle={toggle}
+          onRemove={(key, value) => {
+            setFilters(removeFilter(filters, key, value))
+          }}
+          onClear={() => {
+            setFilters(EMPTY_FILTERS)
+          }}
+        />
+      )}
 
       <div aria-live="polite" className="min-h-0">
         {stream.pending.length > 0 && (
           <div className="sticky top-2 z-10 flex justify-center pb-2">
             <Button size="sm" onClick={showNew}>
               <ArrowUpGlassIcon size="1.4em" aria-hidden="true" />
-              {stream.pending.length} new
+              {t('page.newCount', { count: stream.pending.length })}
             </Button>
           </div>
         )}
@@ -322,7 +329,7 @@ export function DeploymentsPage({
           icon={
             <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
           }
-          title="Deployments could not be loaded"
+          title={t('page.loadFailed')}
           description={listQuery.error.message}
           action={
             <Button
@@ -332,7 +339,7 @@ export function DeploymentsPage({
                 void listQuery.refetch()
               }}
             >
-              Retry
+              {t('page.retry')}
             </Button>
           }
         />
@@ -340,8 +347,8 @@ export function DeploymentsPage({
         filtered ? (
           <EmptyState
             icon={<RocketGlassIcon size="1.4em" />}
-            title="No deployments match"
-            description="Try removing a filter or widening your search."
+            title={t('page.noMatch')}
+            description={t('page.noMatchHint')}
             action={
               <Button
                 variant="outline"
@@ -350,11 +357,26 @@ export function DeploymentsPage({
                   setFilters(EMPTY_FILTERS)
                 }}
               >
-                Clear filters
+                {t('page.clearFilters')}
               </Button>
             }
           />
-        ) : null
+        ) : (
+          <EmptyState
+            icon={<RocketGlassIcon size="1.4em" />}
+            title={t('page.emptyTitle')}
+            description={t('page.emptyDescription')}
+            action={
+              <Button
+                size="sm"
+                render={<Link to="/apps/new" />}
+                nativeButton={false}
+              >
+                {t('page.emptyAction')}
+              </Button>
+            }
+          />
+        )
       ) : (
         <div>
           <DeploymentList

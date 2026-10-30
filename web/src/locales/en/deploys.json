@@ -489,5 +489,82 @@
     "saved": "Rollout policy saved.",
     "resetDone": "Rollout policy reset to defaults.",
     "saveFailed": "Could not update the rollout policy."
+  },
+  "appOverview": {
+    "title": "Overview",
+    "image": "Image",
+    "port": "Port",
+    "memoryLimit": "Memory limit",
+    "cpuLimit": "CPU limit",
+    "swapLimit": "Swap limit",
+    "cpuPinning": "CPU pinning",
+    "notSet": "not set",
+    "deployStrategy": "Deploy strategy",
+    "replicas": "Replicas",
+    "node": "Node",
+    "project": "Project",
+    "environment": "Environment",
+    "noProject": "no project",
+    "noEnvironment": "no environment",
+    "readinessProbe": "Readiness probe",
+    "livenessProbe": "Liveness probe",
+    "path": "Path:",
+    "interval": "Interval:",
+    "timeout": "Timeout:",
+    "failureThreshold": "Failure threshold:",
+    "notConfigured": "not configured",
+    "strategy": {
+      "recreate": "Recreate",
+      "blueGreen": "Blue-green",
+      "rolling": "Rolling"
+    }
+  },
+  "page": {
+    "title": "Deployments",
+    "live": "Live",
+    "reconnecting": "Reconnecting",
+    "connecting": "Connecting",
+    "newCount": "{{count}} new",
+    "loadFailed": "Deployments could not be loaded",
+    "retry": "Retry",
+    "noMatch": "No deployments match",
+    "noMatchHint": "Try removing a filter or widening your search.",
+    "clearFilters": "Clear filters",
+    "emptyTitle": "No deployments yet",
+    "emptyDescription": "Deploys show up here as soon as an app is built and released.",
+    "emptyAction": "Deploy an app"
+  },
+  "summary": {
+    "label": "Deployment summary",
+    "unavailableTip": "The summary could not be loaded. The list below still works.",
+    "na": "n/a",
+    "inProgress": "In progress",
+    "inProgressTip": "Deploys building right now. {{queued}} queued.",
+    "failureRate": "Failure rate (24h)",
+    "failureRateTip": "Failed deploys as a share of deploys that finished in the last 24 hours.",
+    "medianDuration": "Median duration",
+    "medianDurationTip": "Median time of deploys that finished in the last 24 hours.",
+    "needsAttention": "Needs attention",
+    "needsAttentionTip": "Held deploys, and live images that differ from what is running. Select to show held deploys.",
+    "deploys14": "Deploys (14 days)",
+    "deploys14Tip": "Deploys started per day over the last 14 days."
+  },
+  "filterBar": {
+    "searchPlaceholder": "Search commit, sha or app",
+    "searchLabel": "Search deployments",
+    "activeFilters": "Active filters",
+    "removeFilter": "Remove filter {{text}}",
+    "clearAll": "Clear all"
+  },
+  "supersededPopover": {
+    "queue": "Queue",
+    "autoCancelLabel": "Auto-cancel superseded",
+    "switchLabel": "Auto-cancel superseded deploys for {{app}}",
+    "updateFailed": "Could not update the setting.",
+    "openSettings": "Open deploy settings",
+    "title": "Auto-cancel superseded deploys",
+    "description": "A newer queued deploy of a branch replaces older queued ones. Builds already running are never canceled. Set per app.",
+    "noApps": "No apps loaded yet.",
+    "appLabel": "App"
   }
 }

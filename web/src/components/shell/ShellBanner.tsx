@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   CircleAlertGlassIcon,
@@ -30,6 +31,7 @@ function Bar({
   action?: React.ReactNode
   onDismiss: () => void
 }) {
+  const { t } = useTranslation('common', { useSuspense: false })
   return (
     <div
       role="alert"
@@ -44,8 +46,8 @@ function Bar({
         type="button"
         variant="ghost"
         size="icon-sm"
-        aria-label="Dismiss"
-        title="Dismiss"
+        aria-label={t('shell.banner.dismiss')}
+        title={t('shell.banner.dismiss')}
         onClick={onDismiss}
       >
         <XGlassIcon size="1.4em" />
@@ -55,6 +57,7 @@ function Bar({
 }
 
 export function ShellBanner() {
+  const { t } = useTranslation('common', { useSuspense: false })
   const conn = useSyncExternalStore(
     subscribeConnection,
     getConnectionSnapshot,
@@ -88,11 +91,11 @@ export function ShellBanner() {
             disabled={conn.probing}
             onClick={() => void retryNow()}
           >
-            Retry now
+            {t('shell.banner.retryNow')}
           </Button>
         }
       >
-        Can&apos;t reach the control plane. Live updates are paused.
+        {t('shell.banner.offline')}
       </Bar>
     )
   }
@@ -108,11 +111,11 @@ export function ShellBanner() {
         onDismiss={() => snoozeNow('banner:docker-down', '1h')}
         action={
           <Button size="sm" variant="outline" render={<Link to="/nodes" />}>
-            View node
+            {t('shell.banner.viewNode')}
           </Button>
         }
       >
-        Docker is unreachable. Deploys and restarts will fail.
+        {t('shell.banner.dockerDown')}
       </Bar>
     )
   }
@@ -127,7 +130,9 @@ export function ShellBanner() {
         onDismiss={() => snoozeNow('banner:disk', '1d')}
         action={<CleanUpDockerDialog />}
       >
-        Disk almost full{detail ? `, ${detail}` : ''}.
+        {detail
+          ? t('shell.banner.diskFullDetail', { detail })
+          : t('shell.banner.diskFull')}
       </Bar>
     )
   }

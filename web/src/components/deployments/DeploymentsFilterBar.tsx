@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,7 @@ export function DeploymentsFilterBar({
   onRemove,
   onClear,
 }: DeploymentsFilterBarProps) {
+  const { t } = useTranslation('deploys')
   const [text, setText] = useState(filters.q)
   const debounced = useDebouncedValue(text, SEARCH_DEBOUNCE_MS)
   const [urlQ, setUrlQ] = useState(filters.q)
@@ -64,8 +66,8 @@ export function DeploymentsFilterBar({
             type="search"
             data-shortcut-search
             value={text}
-            placeholder="Search commit, sha or app"
-            aria-label="Search deployments"
+            placeholder={t('filterBar.searchPlaceholder')}
+            aria-label={t('filterBar.searchLabel')}
             className="pl-8"
             onChange={(e) => {
               setText(e.target.value)
@@ -82,7 +84,7 @@ export function DeploymentsFilterBar({
       </div>
       {(pills.length > 0 || filters.q) && (
         <ul
-          aria-label="Active filters"
+          aria-label={t('filterBar.activeFilters')}
           className="flex flex-wrap items-center gap-1.5"
         >
           {pills.map((p) => (
@@ -91,7 +93,7 @@ export function DeploymentsFilterBar({
                 {p.text}
                 <button
                   type="button"
-                  aria-label={`Remove filter ${p.text}`}
+                  aria-label={t('filterBar.removeFilter', { text: p.text })}
                   onClick={() => {
                     onRemove(p.key, p.value)
                   }}
@@ -105,7 +107,7 @@ export function DeploymentsFilterBar({
           {count > 0 && (
             <li>
               <Button variant="ghost" size="xs" onClick={onClear}>
-                Clear all
+                {t('filterBar.clearAll')}
               </Button>
             </li>
           )}

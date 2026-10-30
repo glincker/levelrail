@@ -364,6 +364,26 @@
       "comfortable": "Ancho cómodo",
       "wide": "Ancho",
       "full": "Ancho completo"
+    },
+    "banner": {
+      "dismiss": "Descartar",
+      "retryNow": "Reintentar ahora",
+      "offline": "No se puede alcanzar el plano de control. Las actualizaciones en vivo están en pausa.",
+      "dockerDown": "Docker no responde. Los despliegues y reinicios fallarán.",
+      "viewNode": "Ver nodo",
+      "diskFull": "Disco casi lleno.",
+      "diskFullDetail": "Disco casi lleno, {{detail}}."
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "unread": "Notificaciones: {{count}} sin leer",
+      "allRead": "Notificaciones: todas leídas"
+    },
+    "whatsNew": {
+      "title": "Novedades",
+      "unread": "Novedades: {{count}} sin leer",
+      "allCaughtUp": "Novedades: todo al día",
+      "empty": "Aún no hay notas de versión disponibles."
     }
   },
   "login": {

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   ActivityGlassIcon,
   ChartColumnGlassIcon,
@@ -17,14 +18,15 @@ export interface DeploymentsSummaryProps {
   onNeedsAttention: () => void
 }
 
-const NA_TIP = 'The summary could not be loaded. The list below still works.'
-
 export function DeploymentsSummary({
   summary,
   loading,
   failed,
   onNeedsAttention,
 }: DeploymentsSummaryProps) {
+  const { t } = useTranslation('deploys')
+  const na = t('summary.na')
+  const naTip = t('summary.unavailableTip')
   const unavailable = failed && !summary
   const s = summary
   const median = s?.duration.median_ms ?? null
@@ -35,78 +37,56 @@ export function DeploymentsSummary({
 
   return (
     <section
-      aria-label="Deployment summary"
+      aria-label={t('summary.label')}
       className="grid grid-cols-2 gap-3 lg:grid-cols-5"
     >
       <MetricTile
-        label="In progress"
+        label={t('summary.inProgress')}
         loading={loading}
         icon={<ActivityGlassIcon size="1.4em" />}
-        value={unavailable ? 'n/a' : (s?.in_progress ?? 0)}
+        value={unavailable ? na : (s?.in_progress ?? 0)}
         tone={s && s.in_progress > 0 ? 'info' : 'neutral'}
-        info={
-          unavailable
-            ? NA_TIP
-            : `Deploys building right now. ${String(queued)} queued.`
-        }
+        info={unavailable ? naTip : t('summary.inProgressTip', { queued })}
       />
       <MetricTile
-        label="Failure rate (24h)"
+        label={t('summary.failureRate')}
         loading={loading}
         icon={
           <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         }
         value={
-          unavailable ? 'n/a' : formatFailureRate(s?.failure_rate_24h ?? null)
+          unavailable ? na : formatFailureRate(s?.failure_rate_24h ?? null)
         }
-        info={
-          unavailable
-            ? NA_TIP
-            : 'Failed deploys as a share of deploys that finished in the last 24 hours.'
-        }
+        info={unavailable ? naTip : t('summary.failureRateTip')}
       />
       <MetricTile
-        label="Median duration"
+        label={t('summary.medianDuration')}
         loading={loading}
         icon={<ClockGlassIcon size="1.4em" />}
         value={
-          unavailable || median === null
-            ? 'n/a'
-            : (formatDurationMs(median) ?? 'n/a')
+          unavailable || median === null ? na : (formatDurationMs(median) ?? na)
         }
-        info={
-          unavailable
-            ? NA_TIP
-            : 'Median time of deploys that finished in the last 24 hours.'
-        }
+        info={unavailable ? naTip : t('summary.medianDurationTip')}
       />
       <MetricTile
-        label="Needs attention"
+        label={t('summary.needsAttention')}
         loading={loading}
         icon={
           <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
         }
-        value={unavailable ? 'n/a' : attention}
+        value={unavailable ? na : attention}
         tone={attention > 0 ? 'warning' : 'neutral'}
         onClick={attention > 0 ? onNeedsAttention : undefined}
-        info={
-          unavailable
-            ? NA_TIP
-            : 'Held deploys, and live images that differ from what is running. Select to show held deploys.'
-        }
+        info={unavailable ? naTip : t('summary.needsAttentionTip')}
       />
       <div className="col-span-2 lg:col-span-1">
         <MetricTile
-          label="Deploys (14 days)"
+          label={t('summary.deploys14')}
           loading={loading}
           icon={<ChartColumnGlassIcon size="1.4em" />}
-          value={unavailable ? 'n/a' : total14}
+          value={unavailable ? na : total14}
           series={unavailable ? undefined : series}
-          info={
-            unavailable
-              ? NA_TIP
-              : 'Deploys started per day over the last 14 days.'
-          }
+          info={unavailable ? naTip : t('summary.deploys14Tip')}
         />
       </div>
     </section>

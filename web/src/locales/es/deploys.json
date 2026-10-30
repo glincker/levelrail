@@ -489,5 +489,82 @@
     "saved": "Política de despliegue guardada.",
     "resetDone": "Política de despliegue restablecida.",
     "saveFailed": "No se pudo actualizar la política de despliegue."
+  },
+  "appOverview": {
+    "title": "Resumen",
+    "image": "Imagen",
+    "port": "Puerto",
+    "memoryLimit": "Límite de memoria",
+    "cpuLimit": "Límite de CPU",
+    "swapLimit": "Límite de swap",
+    "cpuPinning": "Anclaje de CPU",
+    "notSet": "sin definir",
+    "deployStrategy": "Estrategia de despliegue",
+    "replicas": "Réplicas",
+    "node": "Nodo",
+    "project": "Proyecto",
+    "environment": "Entorno",
+    "noProject": "sin proyecto",
+    "noEnvironment": "sin entorno",
+    "readinessProbe": "Sonda de disponibilidad",
+    "livenessProbe": "Sonda de actividad",
+    "path": "Ruta:",
+    "interval": "Intervalo:",
+    "timeout": "Tiempo de espera:",
+    "failureThreshold": "Umbral de fallos:",
+    "notConfigured": "sin configurar",
+    "strategy": {
+      "recreate": "Recrear",
+      "blueGreen": "Blue-green",
+      "rolling": "Gradual"
+    }
+  },
+  "page": {
+    "title": "Despliegues",
+    "live": "En vivo",
+    "reconnecting": "Reconectando",
+    "connecting": "Conectando",
+    "newCount": "{{count}} nuevos",
+    "loadFailed": "No se pudieron cargar los despliegues",
+    "retry": "Reintentar",
+    "noMatch": "Ningún despliegue coincide",
+    "noMatchHint": "Prueba a quitar un filtro o ampliar la búsqueda.",
+    "clearFilters": "Borrar filtros",
+    "emptyTitle": "Aún no hay despliegues",
+    "emptyDescription": "Los despliegues aparecen aquí en cuanto se compila y publica una aplicación.",
+    "emptyAction": "Desplegar una aplicación"
+  },
+  "summary": {
+    "label": "Resumen de despliegues",
+    "unavailableTip": "No se pudo cargar el resumen. La lista de abajo sigue funcionando.",
+    "na": "n/d",
+    "inProgress": "En curso",
+    "inProgressTip": "Despliegues compilándose ahora mismo. {{queued}} en cola.",
+    "failureRate": "Tasa de fallos (24 h)",
+    "failureRateTip": "Despliegues fallidos como proporción de los que terminaron en las últimas 24 horas.",
+    "medianDuration": "Duración mediana",
+    "medianDurationTip": "Tiempo mediano de los despliegues que terminaron en las últimas 24 horas.",
+    "needsAttention": "Requiere atención",
+    "needsAttentionTip": "Despliegues retenidos e imágenes en vivo que difieren de lo que se ejecuta. Selecciona para ver los retenidos.",
+    "deploys14": "Despliegues (14 días)",
+    "deploys14Tip": "Despliegues iniciados por día en los últimos 14 días."
+  },
+  "filterBar": {
+    "searchPlaceholder": "Buscar commit, sha o aplicación",
+    "searchLabel": "Buscar despliegues",
+    "activeFilters": "Filtros activos",
+    "removeFilter": "Quitar filtro {{text}}",
+    "clearAll": "Borrar todo"
+  },
+  "supersededPopover": {
+    "queue": "Cola",
+    "autoCancelLabel": "Cancelar automáticamente los reemplazados",
+    "switchLabel": "Cancelar automáticamente los despliegues reemplazados de {{app}}",
+    "updateFailed": "No se pudo actualizar el ajuste.",
+    "openSettings": "Abrir ajustes de despliegue",
+    "title": "Cancelar automáticamente despliegues reemplazados",
+    "description": "Un despliegue en cola más reciente de una rama reemplaza a los anteriores en cola. Las compilaciones en curso nunca se cancelan. Se define por aplicación.",
+    "noApps": "Aún no hay aplicaciones cargadas.",
+    "appLabel": "Aplicación"
   }
 }
