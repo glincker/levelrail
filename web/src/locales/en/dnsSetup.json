@@ -1,0 +1,122 @@
+{
+  "title": "DNS setup",
+  "back": "Back",
+  "continue": "Continue",
+  "loading": "Loading",
+  "copied": "Copied",
+  "progress": "Step {{current}} of {{total}}",
+  "step": {
+    "pick": "Pick a domain",
+    "detect": "Finding your DNS host",
+    "review": "Review records",
+    "verify": "Check records"
+  },
+  "connectAction": "Connect {{provider}}",
+  "openIn": "Open in {{provider}}",
+  "foundValue": "Found: {{value}}",
+  "expectedValue": "Expected: {{value}}",
+  "keepMine": "Keep mine",
+  "replace": "Replace",
+  "group": {
+    "receive": "Receive mail",
+    "trust": "Trust",
+    "optional": "Optional",
+    "records": "Records"
+  },
+  "status": {
+    "live": "Live",
+    "waiting": "Waiting",
+    "willAdd": "Will add",
+    "different": "Different",
+    "conflict": "Conflict",
+    "unknown": "Unknown",
+    "found": "Found"
+  },
+  "pick": {
+    "listLabel": "Domains in this system",
+    "source": {
+      "install": "Mail install",
+      "mail": "Mail domain",
+      "app": "App",
+      "zone": "DNS zone"
+    },
+    "addAnother": "Add another domain",
+    "addLabel": "Domain",
+    "placeholder": "example.com",
+    "use": "Use",
+    "invalid": "Enter a domain like example.com.",
+    "apexOffer": "Use {{apex}} for addresses and {{host}} as the server",
+    "loadFailed": "Could not load your domains."
+  },
+  "detect": {
+    "detecting": "Detecting DNS host",
+    "connected": "DNS is hosted at {{provider}}. Connected.",
+    "notConnected": "DNS is hosted at {{provider}}. Not connected.",
+    "unknown": "We could not detect your DNS host. You can copy the records instead.",
+    "failed": "Detection failed. You can still copy the records.",
+    "domainConnect": "One-click approval available at {{host}}",
+    "without": "Continue without connecting"
+  },
+  "connect": {
+    "permissions": "Create a token with Zone DNS Edit on this zone and Zone Read. Nothing else is needed.",
+    "tokenLabel": "{{provider}} API token",
+    "save": "Save token",
+    "saving": "Saving",
+    "failed": "The token was not accepted. Check its permissions and try again.",
+    "useSettings": "Add the {{provider}} credentials in settings, or copy the records instead."
+  },
+  "review": {
+    "host": "Mail host",
+    "ip": "Server IPv4",
+    "ipPlaceholder": "203.0.113.7",
+    "edit": "Edit mail host and server",
+    "done": "Done",
+    "otherProvider": "Using another mail provider?",
+    "presetLabel": "Mail provider",
+    "selfHosted": "This server",
+    "planFailed": "Could not read the records. {{message}}",
+    "empty": "Nothing to add for this domain.",
+    "blocked": "A record on this zone would hide the mail host. Fix it first.",
+    "add_one": "Add {{count}} record",
+    "add_other": "Add {{count}} records",
+    "addDiff_one": "Add {{count}}, review {{diff}} different",
+    "addDiff_other": "Add {{count}}, review {{diff}} different",
+    "applying": "Adding records",
+    "copy": "Copy records",
+    "check": "Check records",
+    "nothingDeleted": "Nothing is deleted.",
+    "confirmReplace_one": "This overwrites {{count}} existing record. Confirm to continue.",
+    "confirmReplace_other": "This overwrites {{count}} existing records. Confirm to continue.",
+    "confirmButton_one": "Yes, replace {{count}} and add",
+    "confirmButton_other": "Yes, replace {{count}} and add",
+    "applyFailed": "The records were not added."
+  },
+  "manual": {
+    "toggle": "Add them yourself",
+    "title": "Records to add by hand",
+    "whereKnown": "Paste these in the {{provider}} DNS dashboard for this domain.",
+    "whereUnknown": "Paste these where your domain's DNS is managed.",
+    "dashboard": "DNS dashboard",
+    "copyAll": "Copy all",
+    "copyTable": "Copy as table",
+    "copyValue": "Copy value of {{name}}",
+    "ttl": "TTL {{ttl}}",
+    "priority": "priority {{priority}}"
+  },
+  "verify": {
+    "summary": "Added {{added}}, already there {{same}}.",
+    "liveCount": "{{live}} of {{total}} live",
+    "progress": "Records live",
+    "checkedAgo": "checked {{seconds}}s ago",
+    "checkNow": "Check now",
+    "checking": "Checking",
+    "waiting": "Waiting for DNS, usually under 5 minutes.",
+    "stillWaiting": "Still waiting? Check again later.",
+    "allLive": "All records are live.",
+    "ptr": "Reverse DNS (PTR) is set at your hosting provider. Pending."
+  },
+  "toast": {
+    "applied_one": "Added {{count}} record",
+    "applied_other": "Added {{count}} records"
+  }
+}

@@ -17,6 +17,8 @@ export interface MailPlanChange {
   action: MailPlanAction
   kind: string
   set: MailRecordSet
+  // The record set found in the zone when it differs or already exists.
+  before?: MailRecordSet
   reason?: string
 }
 
@@ -39,6 +41,7 @@ export interface MailPlan {
 export interface MailApplyResult {
   applied: number
   plan: MailPlan
+  records?: { name: string; type: string; action: string; ids: string[] }[]
 }
 
 export interface MailCheckItem {
@@ -58,6 +61,7 @@ export interface MailDnsSpec {
   preset?: string
   mail_host?: string
   ipv4?: string
+  replace_existing?: string[]
 }
 
 async function send<T>(path: string, init?: RequestInit): Promise<T> {

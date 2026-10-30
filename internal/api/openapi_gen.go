@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1889 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1900 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -926,6 +926,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/nodes/{id}/uncordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleUncordonNode", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/workloads", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeWorkloads", Description: ""},
 	{Method: "GET", Path: "/.well-known/jwks.json", Ability: "Public", Group: "Other", Handler: "handleOIDCJWKS", Description: ""},
+	{Method: "GET", Path: "/.well-known/oauth-authorization-server", Ability: "Public", Group: "Other", Handler: "handleMCPAuthServerMetadata", Description: ""},
+	{Method: "GET", Path: "/.well-known/oauth-protected-resource", Ability: "Public", Group: "Other", Handler: "handleMCPProtectedResource", Description: ""},
+	{Method: "GET", Path: "/.well-known/oauth-protected-resource/mcp", Ability: "Public", Group: "Other", Handler: "handleMCPProtectedResource", Description: ""},
 	{Method: "GET", Path: "/api/v1/ai/sessions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAIChatSessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/ai/sessions", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAIChatSession", Description: "AI assistant chat sessions (ai_chat.go): AbilityRoot throughout, not a lower tier, because a confirmed message can execute any mutating tool the platform exposes (deploy, rollback, restart, and so on) once a human approves it, the same blast radius as the scoped token itself would need to reach those actions directly."},
 	{Method: "DELETE", Path: "/api/v1/ai/sessions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteAIChatSession", Description: ""},
@@ -1319,6 +1322,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/mail/tokens", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/maintenance/domains", Ability: "AbilityRead", Group: "Other", Handler: "handleListFleetMaintenance", Description: ""},
 	{Method: "POST", Path: "/api/v1/maintenance/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewMaintenance", Description: ""},
+	{Method: "GET", Path: "/api/v1/mcp/oauth/clients", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMCPClients", Description: ""},
+	{Method: "POST", Path: "/api/v1/mcp/oauth/clients", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMCPClient", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/mcp/oauth/clients/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteMCPClient", Description: ""},
+	{Method: "GET", Path: "/api/v1/mcp/oauth/consent/{id}", Ability: "Session", Group: "Other", Handler: "handleMCPConsentGet", Description: ""},
+	{Method: "POST", Path: "/api/v1/mcp/oauth/consent/{id}/approve", Ability: "Session", Group: "Other", Handler: "handleMCPConsentApprove", Description: ""},
+	{Method: "POST", Path: "/api/v1/mcp/oauth/consent/{id}/deny", Ability: "Session", Group: "Other", Handler: "handleMCPConsentDeny", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
@@ -1673,6 +1682,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/gate/login", Ability: "Public", Group: "Other", Handler: "handleGateLogin", Description: ""},
 	{Method: "POST", Path: "/mcp", Ability: "Public", Group: "Other", Handler: "", Description: "Unauthenticated at the mux: serve checks the bearer token itself, plus flag, Origin and limits."},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
+	{Method: "GET", Path: "/oauth/authorize", Ability: "Public", Group: "Other", Handler: "handleMCPAuthorize", Description: ""},
+	{Method: "POST", Path: "/oauth/token", Ability: "Public", Group: "Other", Handler: "handleMCPToken", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
 	{Method: "GET", Path: "/public/status.atom", Ability: "Public", Group: "Other", Handler: "handlePublicStatusAtom", Description: ""},
 	{Method: "GET", Path: "/public/status.json", Ability: "Public", Group: "Other", Handler: "handlePublicStatusJSON", Description: ""},

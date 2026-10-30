@@ -66,6 +66,11 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
 	"POST /api/v1/auth/cli-pairing/redeem":           "CLI pairing, authenticated by the single-use code a signed-in browser issued, rate limited per IP and code",
+	"GET /.well-known/oauth-protected-resource":      "RFC 9728 discovery document, public by design, 404 unless mcp-http is on",
+	"GET /.well-known/oauth-protected-resource/mcp":  "RFC 9728 discovery document, public by design, 404 unless mcp-http is on",
+	"GET /.well-known/oauth-authorization-server":    "RFC 8414 discovery document, public by design, 404 unless mcp-http is on",
+	"GET /oauth/authorize":                           "OAuth authorize step, validates client and PKCE then parks a request for the signed-in consent page",
+	"POST /oauth/token":                              "OAuth token endpoint, authenticated by single-use code plus PKCE verifier or rotating refresh token, rate limited per client",
 	"POST /mcp":                                      "read-only remote MCP, authenticated inside the handler by a bearer API token with read, rate limited per token, every tool call re-authorized by the REST gates and audited",
 	"POST /api/v1/mobile/pair":                       "phone pairing, authenticated by the one-time pairing code, rate limited per IP and code",
 	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
@@ -115,6 +120,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
+	"POST /oauth/token":                                          "public OAuth token endpoint, needs a valid code or refresh token, not a token-gated mutation",
 	"POST /api/v1/apps/{name}/abuse/dry-run":                     "replays recent in-memory access records against a draft policy and counts what it would block, persists nothing",
 	"POST /api/v1/apps/{name}/budget/dry-run":                    "previews what pausing the app would stop and save, persists nothing",
 	"POST /api/v1/app-types/{name}/check":                        "checks a draft app spec against a published app type and returns violations, persists nothing",

@@ -101,6 +101,9 @@ func otherTeamPath(pattern string) string {
 // tenantSessionOnly are routes outside the team gate (requireAuth or public)
 // a tenant may reach; each must only touch the caller's own records.
 var tenantSessionOnly = map[string]string{
+	"GET /api/v1/mcp/oauth/consent/{id}":                       "shows the caller's own pending OAuth request, capped at the caller's own abilities",
+	"POST /api/v1/mcp/oauth/consent/{id}/approve":              "approves only for the caller's own abilities",
+	"POST /api/v1/mcp/oauth/consent/{id}/deny":                 "denies a pending request, grants nothing",
 	"GET /api/v1/settings/push-subscriptions":                  "lists only the caller's own subscriptions",
 	"GET /api/v1/settings/push-subscriptions/vapid-public-key": "public key, no data",
 	"DELETE /api/v1/settings/push-subscriptions/{id}":          "deletes only the caller's own subscription",
