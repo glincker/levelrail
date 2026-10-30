@@ -1,8 +1,46 @@
 # ADR 055: Remote MCP endpoint on the control plane, with OAuth 2.1
 
-Status: Proposed
+Status: Proposed (slice 1 shipped, see below)
 
 Date: 2026-10-29
+
+## Status: slice 1 shipped
+
+Slice 1 landed on `release/v0.8.12` before this ADR was edited, and the code
+differs from the slice 1 text above. The code is the source of truth:
+
+- Path is `POST /mcp`, not `/api/mcp`. The feature key is `mcp-http`, not
+  `remote-mcp`. Env vars are `APP_MCP_HTTP_RPM`, `APP_MCP_HTTP_MAX_BODY_BYTES`,
+  `APP_MCP_HTTP_MAX_RESPONSE_BYTES`, `APP_MCP_HTTP_CALL_TIMEOUT_SECONDS` and
+  `APP_MCP_HTTP_ALLOWED_ORIGINS`, not `APP_MCP_REMOTE_*`.
+- The code lives in `internal/api` (`mcp_http.go`, `routes_mcp_http.go`), not
+  in `internal/mcpremote`. It reuses `mcptools.NewServerWithOptions` in
+  `read-only` mode and an in process round tripper that keeps the caller's
+  address.
+- Any token holding `read` is accepted, agent named or not. There is no
+  `agent-core` profile, no server cache and no `APP_MCP_REMOTE_AUDIT_READS`
+  switch yet. Responses use `JSONResponse`.
+- The `mcp.tool_call` audit row records the tool name, token id, outcome,
+  duration and argument names, never argument values. There is no argument
+  hash.
+- The `Cookie` header is stripped before the request reaches the handler and
+  the inner REST calls, so a session cookie never authenticates here.
+- A write capable token still sees only read tools, and a call to a write
+  tool fails. A revoked token gets 401 on its next call. Both are covered by
+  tests in `internal/api/mcp_http_test.go`.
+
+Threat gaps not yet closed:
+
+- **SSRF through tools.** A read tool that makes the control plane fetch a
+  URL the caller controls (for example a webhook or health probe test) runs
+  from the control plane's network position, which a remote caller can reach
+  without a local client. Before widening the toolset, list every read tool
+  that dials a caller supplied address and either drop it from the remote set
+  or apply the existing outbound address checks to it.
+- **Passkey wording.** The step-up text in section 4 says "MFA when the
+  account has it". Accounts that sign in with a passkey must be covered too,
+  so the consent screen and docs should say "passkey or MFA", and the step-up
+  check must accept either as a fresh sign in.
 
 ## Context
 
