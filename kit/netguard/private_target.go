@@ -37,10 +37,29 @@ func IsPrivateTargetAllowed(addr netip.Addr) bool {
 	return !IsBlocked(addr)
 }
 
+// IsPrivateNetworkAllowed is IsPrivateTargetAllowed without loopback: public
+// and private-range addresses pass, loopback, link-local and metadata do not.
+func IsPrivateNetworkAllowed(addr netip.Addr) bool {
+	if addr.Unmap().IsLoopback() {
+		return false
+	}
+	return IsPrivateTargetAllowed(addr)
+}
+
 // NewClientPrivateTarget is NewClient for a single configured internal
 // service. It allows private and loopback dials but never link-local or
 // metadata addresses, and it does not change the guard for other callers.
 func NewClientPrivateTarget() *http.Client {
+	return newClientWithPolicy(IsPrivateTargetAllowed)
+}
+
+// NewClientPrivateNetworks allows private-range dials (LAN services) but
+// still refuses loopback, link-local and metadata addresses.
+func NewClientPrivateNetworks() *http.Client {
+	return newClientWithPolicy(IsPrivateNetworkAllowed)
+}
+
+func newClientWithPolicy(allowed func(netip.Addr) bool) *http.Client {
 	dialer := &net.Dialer{
 		Timeout:   10 * time.Second,
 		KeepAlive: 30 * time.Second,
@@ -53,7 +72,7 @@ func NewClientPrivateTarget() *http.Client {
 			if err != nil {
 				return fmt.Errorf("netguard: parse dial address %q: %w", address, err)
 			}
-			if !IsPrivateTargetAllowed(ip) {
+			if !allowed(ip) {
 				return fmt.Errorf("%w: %s", ErrBlockedAddress, ip)
 			}
 			return nil

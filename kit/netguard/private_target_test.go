@@ -36,3 +36,22 @@ func TestIsBlockedUnchangedForLoopback(t *testing.T) {
 		t.Fatal("general guard must still block loopback")
 	}
 }
+
+func TestIsPrivateNetworkAllowed(t *testing.T) {
+	tests := map[string]bool{
+		"10.0.0.5":         true,
+		"192.168.1.10":     true,
+		"fd12:3456::1":     true,
+		"8.8.8.8":          true,
+		"127.0.0.1":        false,
+		"::1":              false,
+		"::ffff:127.0.0.1": false,
+		"169.254.169.254":  false,
+		"100.100.100.200":  false,
+	}
+	for in, want := range tests {
+		if got := IsPrivateNetworkAllowed(netip.MustParseAddr(in)); got != want {
+			t.Errorf("IsPrivateNetworkAllowed(%s) = %v, want %v", in, got, want)
+		}
+	}
+}

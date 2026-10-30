@@ -457,9 +457,9 @@ func registryHostname(raw string) (string, error) {
 	return strings.ToLower(u.Hostname()), nil
 }
 
-// validateRegistryHost checks the address shape, then refuses internal
-// targets unless allowPrivate is set. Link-local and metadata stay
-// refused even then. exempt is the built-in registry host, if any.
+// validateRegistryHost checks the address shape, then refuses loopback,
+// link-local and metadata targets. Private LAN ranges pass; allowPrivate
+// also admits loopback. exempt is the built-in registry host, if any.
 func validateRegistryHost(ctx context.Context, raw, exempt string, allowPrivate bool) error {
 	name, err := registryHostname(raw)
 	if err != nil {
@@ -470,12 +470,12 @@ func validateRegistryHost(ctx context.Context, raw, exempt string, allowPrivate 
 			return nil
 		}
 	}
-	errInternal := errors.New("registry_host points at an internal address; set " + registrycatalog.AllowPrivateEnv + " to allow private registries")
+	errInternal := errors.New("registry_host points at an internal address; loopback needs " + registrycatalog.AllowPrivateEnv + "=true")
 	blocked := func(a netip.Addr) bool {
 		if allowPrivate {
 			return !netguard.IsPrivateTargetAllowed(a)
 		}
-		return netguard.IsBlocked(a)
+		return !netguard.IsPrivateNetworkAllowed(a)
 	}
 	if name == "localhost" || strings.HasSuffix(name, ".localhost") {
 		if allowPrivate {

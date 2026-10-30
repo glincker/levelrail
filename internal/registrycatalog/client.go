@@ -23,8 +23,9 @@ import (
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
-// AllowPrivateEnv lets operators register self-hosted registries on
-// private networks. Link-local and metadata addresses stay refused.
+// AllowPrivateEnv additionally lets operators use registries on loopback.
+// Private LAN ranges are allowed by default; link-local and metadata
+// addresses are always refused.
 const AllowPrivateEnv = "APP_REGISTRY_ALLOW_PRIVATE_NETWORKS"
 
 // AllowPrivate reports whether AllowPrivateEnv is set to a true value.
@@ -58,11 +59,9 @@ func NewClient() *Client {
 // addresses: dials are guarded against internal targets and redirects are
 // not followed, so the Basic credential never leaves the chosen host.
 func NewExternalClient() *Client {
-	var hc *http.Client
+	hc := netguard.NewClientPrivateNetworks()
 	if AllowPrivate() {
 		hc = netguard.NewClientPrivateTarget()
-	} else {
-		hc = netguard.NewClientAllowing(AllowPrivateEnv)
 	}
 	hc.Timeout = requestTimeout
 	hc.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }

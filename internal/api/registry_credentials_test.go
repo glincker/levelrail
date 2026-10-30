@@ -574,9 +574,11 @@ func TestValidateRegistryHost_Shapes(t *testing.T) {
 		{name: "bad scheme", host: "ftp://8.8.8.8", wantErr: true},
 		{name: "loopback refused", host: "127.0.0.1:5000", wantErr: true},
 		{name: "localhost refused", host: "localhost", wantErr: true},
-		{name: "private refused", host: "10.0.0.5", wantErr: true},
+		{name: "private allowed by default", host: "10.0.0.5"},
+		{name: "unique local allowed by default", host: "[fd12:3456::1]:5000"},
+		{name: "loopback allowed by opt-out", host: "127.0.0.1:5000", allow: true},
+		{name: "localhost allowed by opt-out", host: "localhost", allow: true},
 		{name: "metadata refused", host: "169.254.169.254", wantErr: true},
-		{name: "private allowed by opt-out", host: "10.0.0.5", allow: true},
 		{name: "metadata refused despite opt-out", host: "169.254.169.254", allow: true, wantErr: true},
 		{name: "built-in host exempt", host: "127.0.0.1:5540", exempt: "127.0.0.1:5540"},
 	}

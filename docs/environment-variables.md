@@ -55,6 +55,7 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_MEMORY_MB` | `0` | Memory one build may use, in MB. `0` means no limit. A saved global or per-app override wins. Control plane, Linux cgroup v2. |
 | `APP_BUILD_CPU_MILLIS` | `0` | CPU one build may use, in thousandths of a core (`1500` is 1.5 cores). `0` means no limit. A saved override wins. Control plane, Linux cgroup v2. |
 | `APP_BUILD_CGROUP_ROOT` | `/sys/fs/cgroup` | Where the control plane creates the per-build cgroups that enforce the memory and CPU limits. |
+| `APP_REGISTRY_ALLOW_PRIVATE_NETWORKS` | unset (off) | Registries on private LAN ranges (RFC 1918, `fc00::/7`) work by default when you add or browse a registry credential. Set to `true` to also allow loopback registries. Link-local and cloud metadata addresses are always refused. Control plane. |
 
 ## Source cache and git fetches
 
