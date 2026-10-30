@@ -92,6 +92,10 @@ jobs:
           QUARANTINE_AGE: warn
         run: scripts/check-flaky-tests.sh
 
+      # Cheap sweep, so it also runs on drafts.
+      - name: Em and en dash sweep
+        run: scripts/check-dashes.sh
+
   # Planning is its own job so the test lanes start as soon as the plan is
   # known instead of waiting behind go build and go vet.
   plan:
@@ -229,6 +233,11 @@ jobs:
       - name: Fan-in budget
         if: needs.plan.outputs.scope != 'none'
         run: scripts/check-fanin.sh
+
+      # Generators need Go (and the runner's node); heavy, so skipped on drafts.
+      - name: Generated files are current
+        if: needs.plan.outputs.scope != 'none' && needs.changes.outputs.draft != 'true'
+        run: scripts/code-gen-check.sh
 
       # release.yml ships the CLI for these targets; a unix-only call in a
       # shared package otherwise only fails at tag time.
