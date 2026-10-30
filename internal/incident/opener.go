@@ -309,6 +309,13 @@ func (o *Opener) Sweep(ctx context.Context) {
 	for _, m := range list {
 		exists[m.ID] = true
 	}
+	// A dropped queue entry or a store error in Handle would otherwise lose the outage, so
+	// re-run the idempotent opening path for every monitor that is confirmed down now.
+	for _, m := range list {
+		if st := mons.Status(m.ID); st.State == monitor.StateDown && m.Enabled {
+			o.Handle(ctx, monitor.Transition{Monitor: m, State: monitor.StateDown, Reason: "still down (sweep)"})
+		}
+	}
 	incs, err := o.store.ListMonitorIncidents(ctx, o.now())
 	if err != nil {
 		o.logger.Error("incident sweep: list incidents failed", slog.String("error", err.Error()))

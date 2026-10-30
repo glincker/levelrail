@@ -47,6 +47,7 @@ func (s *bootState) startMonitors() {
 	s.apiRouter.SetMonitors(svc)
 	go svc.Run(s.ctx)
 	if linker != nil {
+		linker.SetPublisher(s.apiRouter.EmitStatusIncident)
 		linker.SetMonitors(svc)
 		go linker.Run(s.ctx)
 	}

@@ -107,3 +107,27 @@ func must(t *testing.T, err error) {
 		t.Fatal(err)
 	}
 }
+
+func TestLinkerPublishesOpenAndResolve(t *testing.T) {
+	ctx := context.Background()
+	db, err := store.Open(ctx, filepath.Join(t.TempDir(), "state.db"))
+	must(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	m := monitor.Monitor{ID: "m1", Name: "api", Kind: monitor.KindTCP, Interval: time.Minute, Timeout: time.Second, Enabled: true,
+		Spec: monitor.Spec{StatusLink: true, Host: "localhost", Port: 80}, CreatedAt: time.Now()}
+	must(t, db.SaveMonitor(ctx, m))
+	fm := &fakeMonitors{status: map[string]monitor.Status{"m1": {State: monitor.StateDown, FailStreak: 2}}}
+	l := NewLinker(LinkConfig{ConfirmFailures: 1, RecoveryPeriod: time.Minute, SweepInterval: time.Minute, Impact: "major", QueueMax: 4}, db, nil, fm, nil, nil)
+	clock := time.Now().UTC()
+	l.now = func() time.Time { return clock }
+	var events []bool
+	l.SetPublisher(func(_ context.Context, _ string, opened bool) { events = append(events, opened) })
+	l.Reconcile(ctx, "m1")
+	fm.status["m1"] = monitor.Status{State: monitor.StateUp}
+	l.Reconcile(ctx, "m1")
+	clock = clock.Add(2 * time.Minute)
+	l.Reconcile(ctx, "m1")
+	if len(events) != 2 || !events[0] || events[1] {
+		t.Fatalf("want opened then resolved events, got %v", events)
+	}
+}

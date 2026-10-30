@@ -42,17 +42,21 @@ type LinkStore interface {
 // Auditor records one system audit row.
 type Auditor func(ctx context.Context, action, monitorID, incidentID string)
 
+// Publisher queues a status webhook for a public incident; opened is false on resolve.
+type Publisher func(ctx context.Context, incidentID string, opened bool)
+
 // Linker opens a public status page incident for an opted-in monitor that is confirmed down and
 // resolves it after the recovery period. Paging stays with the monitor_down alert rule.
 type Linker struct {
-	cfg    LinkConfig
-	store  LinkStore
-	guard  Guard
-	mons   MonitorState
-	audit  Auditor
-	logger *slog.Logger
-	now    func() time.Time
-	queue  chan monitor.Transition
+	cfg     LinkConfig
+	store   LinkStore
+	guard   Guard
+	mons    MonitorState
+	audit   Auditor
+	publish Publisher
+	logger  *slog.Logger
+	now     func() time.Time
+	queue   chan monitor.Transition
 
 	mu      sync.Mutex
 	upSince map[string]time.Time
@@ -65,6 +69,23 @@ func NewLinker(cfg LinkConfig, st LinkStore, g Guard, mons MonitorState, audit A
 	}
 	return &Linker{cfg: cfg, store: st, guard: g, mons: mons, audit: audit, logger: logger, now: time.Now,
 		queue: make(chan monitor.Transition, max(cfg.QueueMax, 1)), upSince: map[string]time.Time{}}
+}
+
+// SetPublisher wires the status webhook emitter from the composition root, so this package
+// does not import the API or alerting layers.
+func (l *Linker) SetPublisher(p Publisher) {
+	l.mu.Lock()
+	l.publish = p
+	l.mu.Unlock()
+}
+
+func (l *Linker) emit(ctx context.Context, incidentID string, opened bool) {
+	l.mu.Lock()
+	p := l.publish
+	l.mu.Unlock()
+	if p != nil {
+		p(ctx, incidentID, opened)
+	}
 }
 
 // SetMonitors wires the monitor service once it exists (it needs Notify first).
@@ -239,6 +260,7 @@ func (l *Linker) open(ctx context.Context, m monitor.Monitor, st monitor.Status)
 	}
 	l.update(ctx, in.ID, statusOpen, autoLabel+m.Name+" failed its health checks and was confirmed down.", now)
 	l.record(ctx, AuditLinkOpened, m.ID, in.ID)
+	l.emit(ctx, in.ID, true)
 }
 
 // manualOpenFor reports an unresolved operator incident already covering one of the components.
@@ -269,6 +291,7 @@ func (l *Linker) resolve(ctx context.Context, inc store.InternalStatusIncident, 
 	}
 	l.update(ctx, inc.ID, statusResolved, fmt.Sprintf("%sResolved: %s.", autoLabel, why), now)
 	l.record(ctx, AuditLinkResolved, inc.SourceRef, inc.ID)
+	l.emit(ctx, inc.ID, false)
 }
 
 func (l *Linker) update(ctx context.Context, incidentID, status, body string, at time.Time) {

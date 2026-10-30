@@ -1,6 +1,9 @@
 package monitor
 
-import "sync"
+import (
+	"math"
+	"sync"
+)
 
 // Confirmed monitor states (ADR 054). Suspect and recovering are the unconfirmed steps either side of down.
 const (
@@ -89,9 +92,14 @@ func (t *Tracker) Observe(m Monitor, r Result) string {
 				tr.state = StateDown
 				fire = &Transition{Monitor: m, State: StateDown, Reason: r.Reason}
 			}
+		case StateDown:
+			// Keep counting so a per-monitor link threshold above the global one can still be met.
+			if tr.fails < math.MaxInt32 {
+				tr.fails++
+			}
 		case StateRecovering:
 			// A failure while recovering returns to down without a new notification.
-			tr.state = StateDown
+			tr.state, tr.fails = StateDown, t.confirm
 		}
 	}
 	state, n := tr.state, t.notifier

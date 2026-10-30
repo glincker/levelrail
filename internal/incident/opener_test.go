@@ -197,3 +197,16 @@ func TestConfig_DisabledByDefaultAndNeedsBothFlags(t *testing.T) {
 		t.Fatal("must default off")
 	}
 }
+
+func TestOpener_SweepOpensMissedOutageOnce(t *testing.T) {
+	ctx := context.Background()
+	o, db, _ := setup(t, testCfg(), &fakeGuard{})
+	fm := &fakeMonitors{list: []monitor.Monitor{{ID: "m1", Name: "name-m1", Enabled: true}},
+		status: map[string]monitor.Status{"m1": {State: monitor.StateDown, FailStreak: 3}}}
+	o.SetMonitors(fm)
+	o.Sweep(ctx)
+	o.Sweep(ctx)
+	if n := len(open(t, db)); n != 1 {
+		t.Fatalf("sweep must open the dropped outage exactly once, got %d", n)
+	}
+}

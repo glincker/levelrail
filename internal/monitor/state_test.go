@@ -42,3 +42,14 @@ func TestTrackerStatusCounts(t *testing.T) {
 		t.Fatalf("suspect: %+v", st)
 	}
 }
+
+func TestTrackerKeepsCountingWhileDown(t *testing.T) {
+	tr := NewTracker(2, 2, nil)
+	m := Monitor{ID: "mon_3"}
+	for range 6 {
+		tr.Observe(m, Result{Reason: "refused"})
+	}
+	if st := tr.Status(m.ID); st.State != StateDown || st.FailStreak != 6 {
+		t.Fatalf("down streak must keep growing past the global threshold: %+v", st)
+	}
+}
