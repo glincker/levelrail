@@ -219,7 +219,7 @@ For a single box, or to try backups before you have a bucket, add a `local` targ
 levelrail-cli backup-targets create --name nightly --provider local --path nightly
 ```
 
-The directory lives under `APP_BACKUP_LOCAL_ROOT` (default `backups/` under `APP_DATA_DIR`). The path must be relative and cannot leave the root, symlinks included. Directories are created with mode `0700`. Each write checks free space against `APP_MIN_BACKUP_DISK_MB` (default `256`) and refuses with an error when the disk is below it.
+The directory lives under `APP_BACKUP_LOCAL_ROOT` (default `backups/` under `APP_DATA_DIR`, which must be an absolute path; otherwise local targets are refused until one is set). The path must be relative and cannot leave the root, symlinks included. Directories are created with mode `0700`. Each write checks free space against `APP_MIN_BACKUP_DISK_MB` (default `256`) and refuses with an error when the disk is below it.
 
 <Warning>
 A local target lives on the server it protects. It does not help if the server is lost, wiped or its disk fails. Use an off-server target (S3, R2, B2) for data you care about.

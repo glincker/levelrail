@@ -9,7 +9,7 @@ This is the runbook for moving a running server to a newer release. The self-upd
 ## Before you start
 
 1. Open Settings > Updates, or run `levelrail-cli upgrade --plan`. Read the breaking changes between your version and the target. Ones that need acknowledgement block the upgrade until you tick them (dashboard) or pass their ids with `--ack-breaking`.
-2. Check the preflight card or `levelrail-cli upgrade`: release signature published, Docker Engine not on the known-bad list, free disk (`APP_UPGRADE_MIN_FREE_BYTES`, 2 GiB default), a recent [control plane backup](/control-plane-backup).
+2. Check the preflight card or `levelrail-cli upgrade`: release signature published, Docker Engine not on the known-bad list, free disk (the computed need; `APP_UPGRADE_MIN_FREE_BYTES`, in bytes, raises the floor when set and has no default), a recent [control plane backup](/control-plane-backup).
 3. Make sure the master key is backed up somewhere safe. A snapshot never contains it.
 
 ## Preview an upgrade without changing anything
