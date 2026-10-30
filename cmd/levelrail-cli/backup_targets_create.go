@@ -102,7 +102,7 @@ Connects a new backup target.
 Flags:
   --name string                  display name for the backup target (required)
   --provider string               provider: aws, r2, custom, or local (required; --type is an alias)
-  --path string                   directory under APP_BACKUP_LOCAL_ROOT (local type, replaces bucket and keys)
+  --path string                   directory under APP_BACKUP_LOCAL_ROOT, default APP_DATA_DIR/backups (local type, replaces bucket and keys; lives on the server, so it does not survive losing it)
   --endpoint string               S3-compatible endpoint URL (required for r2 and custom)
   --region string                 bucket region (required for custom)
   --bucket string                 bucket name (required)

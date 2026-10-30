@@ -16,20 +16,35 @@ import (
 // EnvLocalRoot names the one directory local backup targets may live under.
 const EnvLocalRoot = "APP_BACKUP_LOCAL_ROOT"
 
+// envDataDir is the control plane data directory; backups/ under it is the default local root.
+const envDataDir = "APP_DATA_DIR"
+
+// localDirMode keeps backup directories private to the control plane user.
+const localDirMode = 0o700
+
 // LocalEndpointScheme marks a destination that is a directory on the control plane host.
 const LocalEndpointScheme = store.LocalEndpointScheme
 
 // ErrLocalRootUnset means a local target was used but no confinement root is configured.
-var ErrLocalRootUnset = errors.New("backup: local targets need " + EnvLocalRoot + " set to an absolute directory")
+var ErrLocalRootUnset = errors.New("backup: local targets need " + EnvLocalRoot + " or " + envDataDir + " set to an absolute directory")
 
 // ErrLocalPathEscapes means a local target path resolves outside the configured root.
 var ErrLocalPathEscapes = errors.New("backup: local path leaves " + EnvLocalRoot)
 
-// LocalRootFromEnv returns the confinement root, or "" when unset or not absolute.
+// LocalRootFromEnv returns the confinement root: APP_BACKUP_LOCAL_ROOT when set,
+// else backups/ under APP_DATA_DIR, else "" (also "" when the value is not absolute).
 func LocalRootFromEnv(lookup func(string) (string, bool)) string {
 	v, ok := lookup(EnvLocalRoot)
 	v = strings.TrimSpace(v)
-	if !ok || !filepath.IsAbs(v) {
+	if !ok || v == "" {
+		d, dok := lookup(envDataDir)
+		d = strings.TrimSpace(d)
+		if !dok || !filepath.IsAbs(d) {
+			return ""
+		}
+		return filepath.Join(filepath.Clean(d), "backups")
+	}
+	if !filepath.IsAbs(v) {
 		return ""
 	}
 	return filepath.Clean(v)
@@ -94,8 +109,12 @@ func (r Routed) localUpload(dest Destination, key string, rd io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
+	if err := os.MkdirAll(filepath.Dir(p), localDirMode); err != nil {
 		return fmt.Errorf("backup: local upload: %w", err)
+	}
+	// Same floor as other backup writes, so a full disk fails fast instead of mid-stream.
+	if err := checkDiskSpace(filepath.Dir(p)); err != nil {
+		return err
 	}
 	tmp, err := os.CreateTemp(filepath.Dir(p), ".upload-*")
 	if err != nil {
