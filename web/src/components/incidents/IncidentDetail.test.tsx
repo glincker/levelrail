@@ -80,4 +80,23 @@ describe('IncidentDetail publish', () => {
       expect(calls.some((c) => c.includes('/publish'))).toBe(true)
     })
   })
+
+  it('shows a publish failure inside the dialog and keeps it open', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+          return Promise.resolve(
+            Response.json({ error: 'save exploded' }, { status: 500 }),
+          )
+        }
+        return Promise.resolve(Response.json(base))
+      }),
+    )
+    await publishFlow()
+    expect(await screen.findAllByText(/save exploded/)).not.toHaveLength(0)
+    expect(
+      screen.getByRole('button', { name: 'incidents.publish.confirm' }),
+    ).toBeInTheDocument()
+  })
 })

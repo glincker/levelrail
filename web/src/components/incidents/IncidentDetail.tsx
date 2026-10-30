@@ -116,6 +116,7 @@ function DraftForm({
   )
   const [confirming, setConfirming] = useState(false)
   const [stale, setStale] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
   const empty = !title.trim() || !body.trim()
 
   const saveDraft = () => {
@@ -132,6 +133,7 @@ function DraftForm({
     )
   }
   const doPublish = async () => {
+    setPublishError(null)
     // Save first so the reviewed text is what goes public, then send the fresh updated_at.
     try {
       await save.mutateAsync({
@@ -159,7 +161,10 @@ function DraftForm({
       if (err instanceof ApiError && err.status === 409) {
         setConfirming(false)
         setStale(true)
+        return
       }
+      // Keep the dialog open so the operator sees the failure and can retry.
+      setPublishError(err instanceof Error ? err.message : String(err))
     }
   }
 
@@ -273,7 +278,10 @@ function DraftForm({
       </div>
       <ConfirmDialog
         open={confirming}
-        onOpenChange={setConfirming}
+        onOpenChange={(open) => {
+          setConfirming(open)
+          if (!open) setPublishError(null)
+        }}
         title={t('incidents.publish.confirmTitle')}
         description={t('incidents.publish.confirmBody')}
         consequences={[title.trim(), body.trim()]}
@@ -282,11 +290,7 @@ function DraftForm({
         tone="destructive"
         focusCancel
         pending={publish.isPending || save.isPending}
-        error={
-          publish.error && publish.error.status !== 409
-            ? publish.error.message
-            : null
-        }
+        error={publishError}
         onConfirm={() => void doPublish()}
       />
     </form>
@@ -352,6 +356,7 @@ export function IncidentDetail({
       <Timeline incident={inc} />
       <NoteForm id={inc.id} />
       <DraftForm
+        key={inc.updated_at}
         incident={inc}
         monitorName={monitorName}
         onRefresh={() => void query.refetch()}
