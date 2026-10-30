@@ -1,12 +1,20 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { sortReportsNewest, sortCauses } from '@/lib/analysisReports'
+import {
+  formatSizingLimit,
+  sortCauses,
+  sortReportsNewest,
+  summarizeLogGroups,
+  usableMetrics,
+  usableSizing,
+} from '@/lib/analysisReports'
 import { formatAbsoluteTime, formatRelativeTime } from '@/lib/relativeTime'
 import {
   useAnalysisReport,
   useAnalysisReports,
 } from '../../queries/analysisReports'
 import type {
+  AnalysisDigest,
   AnalysisReportBody,
   AnalysisReportSummary,
 } from '../../types/analysisReport'
@@ -26,6 +34,119 @@ function EvidenceIds({ ids }: { ids: string[] }) {
         </code>
       ))}
     </span>
+  )
+}
+
+const num = (n: number) => String(Math.round(n * 100) / 100)
+
+function DigestEvidence({ digest }: { digest?: AnalysisDigest | null }) {
+  const { t } = useTranslation('common')
+  if (!digest) return null
+  const metrics = usableMetrics(digest.metrics)
+  const sizing = usableSizing(digest.sizing)
+  const levels = summarizeLogGroups(digest.logs ?? [])
+  const restarts = digest.restarts > 0
+  if (
+    metrics.length === 0 &&
+    sizing.length === 0 &&
+    levels.length === 0 &&
+    !restarts
+  )
+    return null
+  return (
+    <section aria-label={t('appAnalysis.evidence.title')} className="space-y-1">
+      <h3 className="text-xs font-medium uppercase text-muted-foreground">
+        {t('appAnalysis.evidence.title')}
+      </h3>
+      {metrics.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="text-xs">
+            <thead className="text-left text-muted-foreground">
+              <tr>
+                <th scope="col" className="pr-4 font-medium">
+                  {t('appAnalysis.evidence.metric')}
+                </th>
+                <th scope="col" className="pr-4 font-medium">
+                  p50
+                </th>
+                <th scope="col" className="pr-4 font-medium">
+                  p95
+                </th>
+                <th scope="col" className="pr-4 font-medium">
+                  max
+                </th>
+                <th scope="col" className="font-medium">
+                  {t('appAnalysis.evidence.trend')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.map((m) => (
+                <tr key={m.evidence}>
+                  <th scope="row" className="pr-4 text-left font-medium">
+                    {m.metric}
+                  </th>
+                  <td className="pr-4 tabular-nums">{num(m.p50)}</td>
+                  <td className="pr-4 tabular-nums">{num(m.p95)}</td>
+                  <td className="pr-4 tabular-nums">{num(m.max)}</td>
+                  <td className="text-muted-foreground">
+                    {m.trend === 'flat' || m.trend === 'none'
+                      ? t(`appAnalysis.evidence.trends.${m.trend}`)
+                      : `${t(`appAnalysis.evidence.trends.${m.trend}`, { defaultValue: m.trend })} ${num(m.trend_pct)}%`}
+                    {m.anomaly_count > 0 &&
+                      `, ${t('appAnalysis.evidence.anomalies', { count: m.anomaly_count })}`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(sizing.length > 0 || levels.length > 0 || restarts) && (
+        <ul className="flex flex-wrap items-center gap-1.5">
+          {sizing.map((s) => {
+            const cur = formatSizingLimit(s.dimension, s.current_limit)
+            const sug = formatSizingLimit(s.dimension, s.suggested_limit)
+            const changes =
+              s.data_sufficient && s.suggested_limit > 0 && sug !== cur
+            return (
+              <li
+                key={s.dimension}
+                className={`${CHIP} bg-muted text-muted-foreground`}
+              >
+                {t(`appAnalysis.evidence.dimension.${s.dimension}`, {
+                  defaultValue: s.dimension,
+                })}
+                {': '}
+                {changes
+                  ? t('appAnalysis.evidence.sizingChange', {
+                      current: cur,
+                      suggested: s.suggested_text || sug,
+                    })
+                  : cur}
+              </li>
+            )
+          })}
+          {levels.map((l) => (
+            <li
+              key={l.level}
+              className={`${CHIP} bg-muted text-muted-foreground`}
+            >
+              {t('appAnalysis.evidence.logLevel', {
+                level: l.level,
+                lines: l.lines,
+                groups: l.groups,
+              })}
+            </li>
+          ))}
+          {restarts && (
+            <li className={`${CHIP} bg-muted text-muted-foreground`}>
+              {t('appAnalysis.evidence.restarts', { count: digest.restarts })}
+            </li>
+          )}
+        </ul>
+      )}
+    </section>
   )
 }
 
@@ -77,6 +198,7 @@ export function AnalysisReportBodyView({ body }: { body: AnalysisReportBody }) {
           </ol>
         </section>
       )}
+      <DigestEvidence digest={body.digest} />
       {recs.length > 0 && (
         <section
           aria-label={t('appAnalysis.recommendations')}

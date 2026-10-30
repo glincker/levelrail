@@ -130,7 +130,28 @@
     },
     "timeline": "Cronología",
     "title": "Análisis",
-    "view": "Ver informe"
+    "view": "Ver informe",
+    "evidence": {
+      "title": "Evidencia",
+      "metric": "Métrica",
+      "trend": "Tendencia",
+      "anomalies_one": "{{count}} anomalía",
+      "anomalies_other": "{{count}} anomalías",
+      "sizingChange": "{{current}} a {{suggested}}",
+      "logLevel": "{{level}}: {{lines}} líneas, {{groups}} grupos",
+      "restarts_one": "{{count}} reinicio",
+      "restarts_other": "{{count}} reinicios",
+      "dimension": {
+        "memory": "Memoria",
+        "cpu": "CPU"
+      },
+      "trends": {
+        "flat": "estable",
+        "none": "sin datos",
+        "rising": "al alza",
+        "falling": "a la baja"
+      }
+    }
   },
   "appSectionHelp": "Lee la guía de esta página",
   "appActions": {

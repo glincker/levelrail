@@ -159,7 +159,28 @@
     "saving": "Saves about ${{amount}}/mo",
     "timeline": "Timeline",
     "title": "Analysis",
-    "view": "View report"
+    "view": "View report",
+    "evidence": {
+      "title": "Evidence",
+      "metric": "Metric",
+      "trend": "Trend",
+      "anomalies_one": "{{count}} anomaly",
+      "anomalies_other": "{{count}} anomalies",
+      "sizingChange": "{{current}} to {{suggested}}",
+      "logLevel": "{{level}}: {{lines}} lines, {{groups}} groups",
+      "restarts_one": "{{count}} restart",
+      "restarts_other": "{{count}} restarts",
+      "dimension": {
+        "memory": "Memory",
+        "cpu": "CPU"
+      },
+      "trends": {
+        "flat": "flat",
+        "none": "no data",
+        "rising": "rising",
+        "falling": "falling"
+      }
+    }
   },
   "appReleases": {
     "title": "Releases",
