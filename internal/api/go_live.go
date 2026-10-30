@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -78,6 +79,8 @@ type goLiveResult struct {
 	Policy    domainAutomationPolicy `json:"policy"`
 	Undoable  bool                   `json:"undoable,omitempty"`
 	CheckedAt string                 `json:"checked_at"`
+	// DNSStatus is set by a plan that asked for status: each required record's live state.
+	DNSStatus *dnsstatus.Status `json:"dns_status,omitempty"`
 	undo      []undoAction
 }
 

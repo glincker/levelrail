@@ -2,15 +2,16 @@ package api
 
 import (
 	"context"
-	"github.com/GLINCKER/levelrail/internal/mailrecords"
 	"log/slog"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/mailcast"
 	"github.com/GLINCKER/levelrail/internal/mailgroups"
+	"github.com/GLINCKER/levelrail/internal/mailrecords"
 	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -70,6 +71,9 @@ type mailState struct {
 	// nsResolver is nil in production (net.DefaultResolver); nsCache keeps detections briefly.
 	nsResolver mailrecords.NSResolver
 	nsCache    mailNSCache
+	// statusResolver is nil in production (net.DefaultResolver); statusCache absorbs retry bursts.
+	statusResolver dnsstatus.Resolver
+	statusCache    dnsstatus.Cache
 }
 
 func (rt *Router) attachMail(s any) {

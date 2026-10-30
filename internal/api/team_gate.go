@@ -38,6 +38,7 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/static-sites":         true,
 	"GET /api/v1/domains":              true,
 	"GET /api/v1/domains/dns-provider": true,
+	"GET /api/v1/domains/dns-status":   true,
 	"GET /api/v1/projects":             true,
 	"POST /api/v1/projects":            true,
 	"GET /api/v1/environments":         true,

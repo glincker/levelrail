@@ -152,6 +152,8 @@ type goLivePlanRequest struct {
 	Domain     string                    `json:"domain"`
 	Domains    []string                  `json:"domains,omitempty"`
 	Automation *domainAutomationOverride `json:"automation,omitempty"`
+	// Status adds each required record's live state, read from the provider or public DNS.
+	Status bool `json:"status,omitempty"`
 }
 
 type goLivePlanResponse struct {
@@ -188,7 +190,13 @@ func (rt *Router) handleGoLivePlan(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		out.Plans = append(out.Plans, rt.goLive(r.Context(), r, name, d, policy, goLiveRequest{}, goLiveModePlan))
+		res := rt.goLive(r.Context(), r, name, d, policy, goLiveRequest{}, goLiveModePlan)
+		if req.Status {
+			if st, err := rt.appDomainStatus(r, d); err == nil {
+				res.DNSStatus = &st
+			}
+		}
+		out.Plans = append(out.Plans, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }

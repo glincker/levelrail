@@ -21,6 +21,7 @@ func mailUsage(prog string) string {
   %[1]s mail dns apply <domain> --plan-hash H --confirm [flags]   write a plan you reviewed
   %[1]s mail dns check <domain> [--host H] [--dkim-selector S]    grade the live mail DNS
   %[1]s mail dns provider <domain>        where the domain's DNS lives and whether it is connected
+  %[1]s mail dns status <domain>          each mail record: live, waiting, different, conflict or unknown
   %[1]s mail dns domains                  candidate domains: install, claimed, app domains and zones
   %[1]s mail dns applied <domain>         the records mail DNS added, with provider record ids
 
@@ -144,6 +145,8 @@ func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runMailDNSDomains(prog, rest, stdout, stderr, lookupEnv)
 	case "applied":
 		return runMailDNSApplied(prog, rest, stdout, stderr, lookupEnv)
+	case "status":
+		return runMailDNSStatus(prog, rest, stdout, stderr, lookupEnv)
 	case "plan", "apply":
 		apply := args[1] == "apply"
 		var m mailFlags

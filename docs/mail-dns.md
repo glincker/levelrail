@@ -58,6 +58,20 @@ To replace, list the kinds explicitly: `--replace-existing MX,SPF`. Valid kinds 
 | `TLS-RPT` (TXT at `_smtp._tls`) | Where senders report TLS delivery failures. |
 | Autoconfig | CNAMEs for `autoconfig` and `autodiscover` plus `_submission._tcp` and `_imaps._tcp` SRV records (RFC 6186), so mail apps find the server. |
 
+## Record status
+
+`mail dns status <domain>` (`GET /api/v1/mail/dns/status`), `domains dns-status <domain> [--app NAME]` (`GET /api/v1/domains/dns-status`), the plan, the check and a go-live plan sent with `"status": true` report each record with what already exists (`found`). When a connected provider can see the zone and you may see it, the zone listing is used (`provider_source: provider`); otherwise public DNS (`public_dns`).
+
+| Status | Meaning |
+| --- | --- |
+| `live` | The record exists with the right value. Case, trailing dots, quotes, split TXT strings and spacing do not count as a difference. A live record is not added again and does not change the plan hash. |
+| `waiting` | Nothing is there yet, or a just-added record has not propagated. |
+| `different` | The name holds another value (shown in `found`). It is not overwritten unless you pass its kind in `replace_existing`. |
+| `conflict` | A proxied (orange cloud) record hides a mail host name. Switch it to DNS only; apply refuses until then. |
+| `unknown` | The lookup timed out or the server failed. Check again. |
+
+Results are reused for `APP_DNS_STATUS_CACHE_SECONDS` (default 3, 0 disables) and identical concurrent checks share one lookup. `APP_DNS_STATUS_LOOKUP_TIMEOUT`, `APP_DNS_STATUS_PROVIDER_TIMEOUT` and `APP_DNS_STATUS_CONCURRENCY` bound the lookups.
+
 ## Provider presets
 
 `--preset` fills the MX, SPF include and fixed DKIM records of a hosted provider. Included: `google`, `fastmail`, `proton`, `zoho` (US data center), and the sending-only `ses`, `mailgun` and `postmark`. Each preset notes where its values come from and which records still come from the provider's dashboard (per-account DKIM keys, verification tokens). Check them against the provider's current instructions before applying.

@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 )
 
@@ -55,6 +57,9 @@ type PlanResult struct {
 	Shadowed []string       `json:"shadowed,omitempty"`
 	Summary  map[string]int `json:"summary"`
 	Blocked  bool           `json:"blocked"`
+	// ToAdd holds the status ids an apply writes; live records are never in it.
+	ToAdd []string `json:"to_add"`
+	dnsstatus.Status
 }
 
 // NormalizeReplace validates and canonicalizes the record kinds a caller may replace.
@@ -146,6 +151,9 @@ func Plan(ctx context.Context, p dnszones.Provider, zone dnszones.Zone, spec Spe
 	}
 	res.Blocked = len(res.Refusals) > 0
 	res.Hash = planHash(res)
+	zopts := dnsstatus.ZoneOptions{Shadow: ShadowNames(desired, spec.Domain), ProxyAware: p.Capabilities().Proxied}
+	res.Status = dnsstatus.FromZone(Wants(desired, spec.Domain), ZoneSets(existing, zone.Name), zopts, time.Now())
+	res.ToAdd = toAdd(res)
 	return res, nil
 }
 
@@ -216,6 +224,10 @@ func planHash(r PlanResult) string {
 	}
 	pins := make([]pin, 0, len(r.Changes))
 	for _, c := range r.Changes {
+		// Live records stay out, so the hash changes when one flips to live.
+		if c.Action == ActionUnchanged {
+			continue
+		}
 		p := pin{c.Action, c.Kind, c.Set.Name, c.Set.Type, c.Set.Values, nil, c.Removed}
 		if c.Before != nil {
 			p.Before = c.Before.Values

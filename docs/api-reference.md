@@ -1170,6 +1170,7 @@ Endpoints for:
 | POST | /api/v1/registry-credentials/presets/test | AbilityWriteSensitive | handleTestRegistryPreset |
 | POST | /api/v1/registry-credentials/{id}/refresh | AbilityWriteSensitive | handleRefreshRegistryCredential |
 | GET | /api/v1/domains/dns-provider | AbilityRead | handleDomainDNSProvider |
+| GET | /api/v1/domains/dns-status | AbilityRead | handleDomainDNSStatus |
 
 ## Built-in Container Registry
 
@@ -2124,6 +2125,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mcp/oauth/clients | AbilityRoot | handleListMCPClients |
 | POST | /api/v1/mcp/oauth/clients | AbilityRoot | handleCreateMCPClient |
 | DELETE | /api/v1/mcp/oauth/clients/{id} | AbilityRoot | handleDeleteMCPClient |
+| GET | /api/v1/mail/dns/status | AbilityRead | handleMailDNSStatus |
 | POST | /mcp | Public |  |
 
 ## See also

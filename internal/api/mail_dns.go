@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/mailrecords"
 )
@@ -115,7 +116,16 @@ func (rt *Router) handleMailDNSCheck(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, rep)
+	resp := mailDNSCheckResponse{Report: rep, Status: dnsstatus.Status{ProviderSource: dnsstatus.SourcePublicDNS, Records: []dnsstatus.Record{}}}
+	spec, err := mailSpecFromQuery(q)
+	spec.Domain, spec.MailHost, spec.DKIMSelector = domain, exp.MailHost, exp.DKIMSelector
+	if err == nil {
+		rt.mailDemoFillSpec(&spec)
+		if desired, _, err := mailrecords.Build(spec); err == nil {
+			resp.Status = rt.mailDNSStatus(r, spec.Domain, desired)
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (rt *Router) mailResolver() mailrecords.Resolver {

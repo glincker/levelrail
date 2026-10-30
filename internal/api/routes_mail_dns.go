@@ -12,8 +12,10 @@ func (rt *Router) registerMailDNSRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/mail/dns/provider", rt.requireAbility(AbilityRead, rt.handleMailDNSProvider))
 	mux.HandleFunc("GET /api/v1/mail/dns/domains", rt.requireAbility(AbilityRead, rt.handleMailDNSDomains))
 	mux.HandleFunc("GET /api/v1/mail/dns/applied", rt.requireAbility(AbilityRead, rt.handleMailDNSApplied))
+	mux.HandleFunc("GET /api/v1/mail/dns/status", rt.requireAbility(AbilityRead, rt.handleMailDNSStatus))
 	// Not under /mail/, so the mail flag does not gate it: the Domains page uses it too.
 	mux.HandleFunc("GET /api/v1/domains/dns-provider", rt.requireAbility(AbilityRead, rt.handleDomainDNSProvider))
+	mux.HandleFunc("GET /api/v1/domains/dns-status", rt.requireAbility(AbilityRead, rt.handleDomainDNSStatus))
 	// Always registered so route guards see it; the handler answers 404 with demo off.
 	mux.HandleFunc("POST /api/v1/mail/demo/reset", rt.requireAbility(AbilityRoot, rt.handleMailDemoReset))
 }

@@ -173,6 +173,7 @@ var Tree = map[string]*Node{
 	"plugins": {Subs: map[string]*Node{"list": nil, "show": nil, "inspect": nil, "install": nil, "upgrade": nil, "restart": nil, "uninstall": nil, "approve": nil, "enable": nil, "disable": nil, "remove": nil, "test": nil, "dns-provider": nil, "run": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "marketplace": {Subs: map[string]*Node{"search": nil, "info": nil, "install": nil, "update": nil, "refresh": nil, "sources": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}}}},
 	"mobile":  {Subs: map[string]*Node{"pair": nil, "devices": {Subs: map[string]*Node{"list": nil, "revoke": nil}}}},
 	"domains": {Subs: map[string]*Node{
+		"dns-status":           nil,
 		"list":                 nil,
 		"cloudflare-dns":       {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"route53-dns":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
@@ -378,7 +379,7 @@ var Tree = map[string]*Node{
 		"invites": {Subs: map[string]*Node{"list": nil, "create": nil, "revoke": nil, "accept": nil}}}},
 	"quota":   {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 	"members": {Subs: map[string]*Node{"list": nil, "set-role": nil, "remove": nil, "leave": nil}},
-	"mail":    {Subs: map[string]*Node{"status": nil, "dns": {Subs: map[string]*Node{"plan": nil, "apply": nil, "check": nil}}}},
+	"mail":    {Subs: map[string]*Node{"status": nil, "dns": {Subs: map[string]*Node{"plan": nil, "apply": nil, "check": nil, "status": nil}}}},
 	"dns": {Subs: map[string]*Node{
 		"zones":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "nameservers": nil, "verify": nil}},
 		"records":       {Subs: map[string]*Node{"list": nil, "add": nil, "update": nil, "delete": nil, "import": nil, "export": nil, "template": nil}},
