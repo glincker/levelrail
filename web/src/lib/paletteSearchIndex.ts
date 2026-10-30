@@ -47,6 +47,27 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-help': 'docs documentation support guide',
   'settings-stacks': 'stack gitops iac revision rollback drift plan prune',
   'settings-stack-templates': 'stack template bundle starter iac gitops',
+  'settings-platform':
+    'platform https ingress dashboard address dns providers status overview',
+  'settings-platform-https': 'https ssl tls certificate lets encrypt secure',
+  'settings-platform-ingress':
+    'ingress proxy ports 80 443 reverse connectivity',
+  'settings-platform-addresses':
+    'dashboard address url apps base domain fallback sslip',
+  'settings-platform-dns-providers':
+    'dns provider cloudflare route53 aws google cloud token',
+  'settings-platform-enable-https':
+    'https ssl tls enable turn on lets encrypt acme padlock secure',
+  'settings-platform-dashboard-address':
+    'dashboard address url public host domain link',
+  'settings-platform-apps-base-domain': 'apps base domain wildcard subdomain',
+  'settings-platform-fallback-domains': 'fallback sslip nip automatic hostname',
+  'settings-platform-ingress-settings': 'ingress primary domain acme hsts',
+  'settings-platform-reverse-proxy':
+    'reverse proxy nginx caddy traefik behind guide',
+  'settings-platform-cloudflare-dns': 'cloudflare dns token zone provider',
+  'settings-platform-route53': 'route 53 route53 aws amazon dns hosted zone',
+  'settings-platform-google-cloud-dns': 'google cloud gcp dns service account',
   'settings-tokens': 'api token key secret pat access',
   'settings-security': 'secret secrets password 2fa mfa auth session',
   'settings-oauth': 'sso login auth oidc github google sign in',
@@ -95,6 +116,14 @@ export const SYNONYM_GROUPS: readonly SynonymGroup[] = [
   {
     terms: ['domain', 'dns', 'ssl', 'tls', 'cert', 'certificate'],
     keys: ['nav-domains', 'nav-dns', 'nav-firewall'],
+  },
+  {
+    terms: ['https', 'ingress', 'platform'],
+    keys: [
+      'settings-platform-enable-https',
+      'settings-platform-ingress',
+      'settings-platform',
+    ],
   },
   {
     terms: ['secret', 'env', 'token', 'password'],

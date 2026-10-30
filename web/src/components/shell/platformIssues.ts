@@ -110,7 +110,7 @@ export function derivePlatformIssues(src: IssueSources): PlatformIssue[] {
         {
           kind: 'link',
           label: 'Set up HTTPS',
-          to: '/domains',
+          to: '/settings/platform/addresses',
           hash: src.dashboardUrlAnchor,
         },
       ],

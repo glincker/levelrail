@@ -1,0 +1,141 @@
+{
+  "breadcrumb": {
+    "settings": "Settings",
+    "platform": "Platform",
+    "label": "Breadcrumb"
+  },
+  "overview": {
+    "title": "Platform",
+    "description": "Where this server is reachable and how it gets certificates. Each tile opens its own page.",
+    "tilesLabel": "Platform status",
+    "open": "Open",
+    "loading": "Checking",
+    "https": {
+      "title": "HTTPS",
+      "off": "HTTPS not enabled",
+      "offLine": "The dashboard and your apps are served without a trusted certificate.",
+      "on": "HTTPS enabled",
+      "onLine": "Serving {{domain}} over HTTPS.",
+      "enable": "Enable HTTPS"
+    },
+    "ingress": {
+      "title": "Ingress",
+      "healthy": "Ingress healthy",
+      "healthyLine": "Ports 80 and 443 answer on {{host}}.",
+      "healthyNoHost": "Ports 80 and 443 answer.",
+      "attention": "Ingress needs attention",
+      "attentionLine": "Open the page to see which port or address is the problem."
+    },
+    "addresses": {
+      "title": "Addresses",
+      "set": "Dashboard address set",
+      "setLine": "{{url}}",
+      "unset": "No dashboard address",
+      "unsetLine": "Set the public address people use to reach this dashboard."
+    },
+    "dns": {
+      "title": "DNS providers",
+      "connected": "DNS: {{providers}} connected",
+      "connectedLine": "Records and DNS-01 certificates can be handled for you.",
+      "none": "No DNS provider connected",
+      "noneLine": "Connect one to issue wildcard certificates and create records."
+    },
+    "search": {
+      "label": "Search settings",
+      "placeholder": "Search platform settings",
+      "hint": "Press / to search",
+      "results": "Platform settings results",
+      "empty": "No platform setting matches \"{{query}}\".",
+      "count_one": "{{count}} setting",
+      "count_other": "{{count}} settings",
+      "go": "Open {{title}} on the {{page}} page"
+    }
+  },
+  "pages": {
+    "https": {
+      "title": "HTTPS",
+      "description": "Turn on a trusted certificate for the dashboard and see how every domain's certificate is doing."
+    },
+    "ingress": {
+      "title": "Ingress",
+      "description": "How traffic reaches this server: the proxy, its ports, and a guide for running behind your own reverse proxy."
+    },
+    "addresses": {
+      "title": "Addresses",
+      "description": "The dashboard address, the base domain for apps, automatic fallback hostnames and DNS automation."
+    },
+    "dnsProviders": {
+      "title": "DNS providers",
+      "description": "Connect a DNS provider so certificates and records are handled for you."
+    }
+  },
+  "pageNames": {
+    "https": "HTTPS",
+    "ingress": "Ingress",
+    "addresses": "Addresses",
+    "dns-providers": "DNS providers"
+  },
+  "index": {
+    "enableHttps": {
+      "title": "Enable HTTPS",
+      "description": "Issue a trusted certificate and serve the dashboard over HTTPS."
+    },
+    "certificates": {
+      "title": "Certificates summary",
+      "description": "Expiry and issuer of every certificate, with a link to the certificate center."
+    },
+    "ingressSettings": {
+      "title": "Ingress settings",
+      "description": "Primary domain, ACME email and HSTS."
+    },
+    "ingressEdge": {
+      "title": "Ingress edge",
+      "description": "The built-in proxy and the ports it listens on."
+    },
+    "connectivity": {
+      "title": "Ingress connectivity",
+      "description": "Whether ports 80 and 443 answer on this server's address."
+    },
+    "reverseProxy": {
+      "title": "Reverse proxy guide",
+      "description": "Run this platform behind your own reverse proxy."
+    },
+    "dashboardUrl": {
+      "title": "Dashboard address",
+      "description": "The public URL used in links, emails and webhooks."
+    },
+    "appsBaseDomain": {
+      "title": "Apps base domain",
+      "description": "The domain new apps get a subdomain on."
+    },
+    "fallbackDomains": {
+      "title": "Fallback domains",
+      "description": "Automatic hostnames for apps that have no domain yet."
+    },
+    "domainAutomation": {
+      "title": "Domain automation",
+      "description": "Create DNS records for new domains automatically."
+    },
+    "cloudflareDns": {
+      "title": "Cloudflare DNS",
+      "description": "API token for DNS records and DNS-01 certificates."
+    },
+    "route53Dns": {
+      "title": "Route 53 DNS",
+      "description": "AWS credentials for hosted zone records."
+    },
+    "googleCloudDns": {
+      "title": "Google Cloud DNS",
+      "description": "Service account for Cloud DNS zones."
+    }
+  },
+  "strip": {
+    "label": "Platform status",
+    "httpsOff": "HTTPS not enabled",
+    "httpsOn": "HTTPS enabled",
+    "enable": "Enable HTTPS",
+    "address": "Dashboard address",
+    "addressUnset": "Not set",
+    "manage": "Platform settings"
+  }
+}

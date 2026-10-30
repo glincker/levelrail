@@ -49,7 +49,7 @@ export function FormEmbed({
             {t('embed.noPublicUrl.body')}
             <div className="mt-2">
               <Link
-                to="/domains"
+                to="/settings/platform/addresses"
                 hash={DASHBOARD_URL_ANCHOR}
                 className={cn(buttonVariants({ size: 'sm' }))}
               >

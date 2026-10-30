@@ -242,6 +242,36 @@ export const settingsNavSections: SettingsNavSection[] = [
     ],
   },
   {
+    id: 'platform',
+    items: [
+      {
+        id: 'platform',
+        to: '/settings/platform',
+        icon: SettingsGlassIcon,
+      },
+      {
+        id: 'platform-https',
+        to: '/settings/platform/https',
+        icon: LockGlassIcon,
+      },
+      {
+        id: 'platform-ingress',
+        to: '/settings/platform/ingress',
+        icon: PlugGlassIcon,
+      },
+      {
+        id: 'platform-addresses',
+        to: '/settings/platform/addresses',
+        icon: GlobeGlassIcon,
+      },
+      {
+        id: 'platform-dns-providers',
+        to: '/settings/platform/dns-providers',
+        icon: CloudCheckGlassIcon,
+      },
+    ],
+  },
+  {
     id: 'domains',
     items: [
       {

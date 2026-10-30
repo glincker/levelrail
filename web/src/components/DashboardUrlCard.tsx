@@ -30,7 +30,7 @@ export function DashboardUrlCard() {
   const value = draft ?? data.dashboard_url
 
   return (
-    <Card id={DASHBOARD_URL_ANCHOR} className="scroll-mt-20">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <LockGlassIcon className="size-5" />

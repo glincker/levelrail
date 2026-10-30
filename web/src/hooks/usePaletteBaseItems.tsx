@@ -56,9 +56,12 @@ export function usePaletteBaseItems(
         to: string,
         params?: Record<string, string>,
         search?: Record<string, string>,
+        hash?: string,
       ) =>
       () =>
-        void navigate(search ? { to, params, search } : { to, params })
+        void navigate(
+          search ? { to, params, search, hash } : { to, params, hash },
+        )
     const items: PaletteItem[] = ROUTE_ENTRIES.map((e) =>
       routeEntryItem(
         e,

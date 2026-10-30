@@ -7,6 +7,7 @@ import {
   BotGlassIcon,
   ChartLineGlassIcon,
   CircleQuestionMarkGlassIcon,
+  CloudCheckGlassIcon,
   CoinsGlassIcon,
   ContrastGlassIcon,
   CpuGlassIcon,
@@ -104,6 +105,7 @@ export interface RouteEntry {
   to: string
   search?: Record<string, string>
   feature?: ExperimentalFeature
+  hash?: string
 }
 
 export const GROUP_ORDER = [
@@ -134,7 +136,8 @@ const nav = (
   to: string,
   group = 'Navigate',
   feature?: ExperimentalFeature,
-): RouteEntry => ({ key, label, group, icon, to, feature })
+  hash?: string,
+): RouteEntry => ({ key, label, group, icon, to, feature, hash })
 
 export const ROUTE_ENTRIES: RouteEntry[] = [
   nav(
@@ -345,6 +348,122 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Settings',
   ),
   nav(
+    'settings-platform',
+    'Platform settings',
+    <SettingsGlassIcon size="1.4em" />,
+    '/settings/platform',
+    'Settings',
+  ),
+  nav(
+    'settings-platform-https',
+    'HTTPS settings',
+    <LockGlassIcon size="1.4em" />,
+    '/settings/platform/https',
+    'Settings',
+  ),
+  nav(
+    'settings-platform-ingress',
+    'Ingress',
+    <PlugGlassIcon size="1.4em" />,
+    '/settings/platform/ingress',
+    'Settings',
+  ),
+  nav(
+    'settings-platform-addresses',
+    'Addresses',
+    <GlobeGlassIcon size="1.4em" />,
+    '/settings/platform/addresses',
+    'Settings',
+  ),
+  nav(
+    'settings-platform-dns-providers',
+    'DNS providers',
+    <CloudCheckGlassIcon size="1.4em" />,
+    '/settings/platform/dns-providers',
+    'Settings',
+  ),
+  nav(
+    'settings-platform-enable-https',
+    'Enable HTTPS',
+    <LockGlassIcon size="1.4em" />,
+    '/settings/platform/https',
+    'Settings',
+    undefined,
+    'enable-https',
+  ),
+  nav(
+    'settings-platform-dashboard-address',
+    'Dashboard address',
+    <GlobeGlassIcon size="1.4em" />,
+    '/settings/platform/addresses',
+    'Settings',
+    undefined,
+    'dashboard-url',
+  ),
+  nav(
+    'settings-platform-apps-base-domain',
+    'Apps base domain',
+    <GlobeGlassIcon size="1.4em" />,
+    '/settings/platform/addresses',
+    'Settings',
+    undefined,
+    'apps-base-domain',
+  ),
+  nav(
+    'settings-platform-fallback-domains',
+    'Fallback domains',
+    <GlobeGlassIcon size="1.4em" />,
+    '/settings/platform/addresses',
+    'Settings',
+    undefined,
+    'fallback-domains',
+  ),
+  nav(
+    'settings-platform-ingress-settings',
+    'Ingress settings',
+    <PlugGlassIcon size="1.4em" />,
+    '/settings/platform/ingress',
+    'Settings',
+    undefined,
+    'ingress-settings',
+  ),
+  nav(
+    'settings-platform-reverse-proxy',
+    'Reverse proxy guide',
+    <PlugGlassIcon size="1.4em" />,
+    '/settings/platform/ingress',
+    'Settings',
+    undefined,
+    'reverse-proxy-guide',
+  ),
+  nav(
+    'settings-platform-cloudflare-dns',
+    'Cloudflare DNS',
+    <CloudCheckGlassIcon size="1.4em" />,
+    '/settings/platform/dns-providers',
+    'Settings',
+    undefined,
+    'cloudflare-dns',
+  ),
+  nav(
+    'settings-platform-route53',
+    'Route 53',
+    <CloudCheckGlassIcon size="1.4em" />,
+    '/settings/platform/dns-providers',
+    'Settings',
+    undefined,
+    'route53-dns',
+  ),
+  nav(
+    'settings-platform-google-cloud-dns',
+    'Google Cloud DNS',
+    <CloudCheckGlassIcon size="1.4em" />,
+    '/settings/platform/dns-providers',
+    'Settings',
+    undefined,
+    'google-cloud-dns',
+  ),
+  nav(
     'settings-account',
     'Account',
     <UserGlassIcon size="1.4em" />,
@@ -528,6 +647,7 @@ export function routeEntryItem(
     to: string,
     params?: Record<string, string>,
     search?: Record<string, string>,
+    hash?: string,
   ) => () => void,
   lockedSubtitle: string,
 ): PaletteItem {
@@ -549,7 +669,7 @@ export function routeEntryItem(
   }
   return {
     ...base,
-    run: go(e.to, undefined, e.search),
+    run: go(e.to, undefined, e.search, e.hash),
     hint: NO_HINT_KEYS.has(e.key) ? undefined : chordFor(e.to),
   }
 }

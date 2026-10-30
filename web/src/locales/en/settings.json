@@ -396,6 +396,10 @@
         "title": "AI and agents",
         "description": "Agent connections, AI control and the assistant."
       },
+      "platform": {
+        "title": "Platform",
+        "description": "HTTPS, ingress, addresses and DNS providers for this server."
+      },
       "domains": {
         "title": "Domains and TLS",
         "description": "Platform ingress and certificates."
@@ -657,6 +661,26 @@
       "cleanup": {
         "title": "Cleanup",
         "description": "Retention, previews and run history for stored data, plus disk and Docker cleanup."
+      },
+      "platform": {
+        "title": "Platform overview",
+        "description": "Status of HTTPS, ingress, addresses and DNS providers, with search across every platform setting."
+      },
+      "platform-https": {
+        "title": "HTTPS",
+        "description": "Enable HTTPS and review certificates."
+      },
+      "platform-ingress": {
+        "title": "Ingress",
+        "description": "Proxy settings, connectivity and the reverse proxy guide."
+      },
+      "platform-addresses": {
+        "title": "Addresses",
+        "description": "Dashboard address, apps base domain and fallback domains."
+      },
+      "platform-dns-providers": {
+        "title": "DNS providers",
+        "description": "Cloudflare, Route 53 and Google Cloud DNS."
       },
       "domains": {
         "title": "Domains",
