@@ -2,10 +2,13 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -109,6 +112,13 @@ func (rt *Router) handleGoLiveRun(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if req.PlanHash != "" {
+		planned := rt.goLive(r.Context(), r, name, domain, rt.effectiveAutomation(r.Context(), r, req.Automation), goLiveRequest{}, goLiveModePlan)
+		if goLivePlanHash(planned) != req.PlanHash {
+			writeError(w, http.StatusConflict, "the plan changed since you reviewed it, review it again")
+			return
+		}
+	}
 	var undo []undoAction
 	owns, err := rt.appOwnsDomain(r.Context(), name, domain)
 	if err != nil {
@@ -146,6 +156,24 @@ func (rt *Router) handleGoLiveRun(w http.ResponseWriter, r *http.Request) {
 	res.Undoable = len(res.undo) > 0
 	rt.recordGoLiveRun(r.Context(), &res)
 	writeJSON(w, http.StatusOK, res)
+}
+
+// goLivePlanHash fingerprints the planned records, order independent.
+func goLivePlanHash(res goLiveResult) string {
+	lines := make([]string, 0, len(res.DNS))
+	for _, d := range res.DNS {
+		if d.Record == nil {
+			continue
+		}
+		action := d.Planned
+		if action == "" {
+			action = d.DNS
+		}
+		lines = append(lines, strings.Join([]string{d.Domain, d.Record.Type, d.Record.Name, d.Record.Value, strconv.Itoa(d.Record.TTLSeconds), action}, "|"))
+	}
+	sort.Strings(lines)
+	sum := sha256.Sum256([]byte(strings.Join(lines, "\n")))
+	return hex.EncodeToString(sum[:])
 }
 
 type goLivePlanRequest struct {
@@ -191,6 +219,7 @@ func (rt *Router) handleGoLivePlan(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		res := rt.goLive(r.Context(), r, name, d, policy, goLiveRequest{}, goLiveModePlan)
+		res.PlanHash = goLivePlanHash(res)
 		if req.Status {
 			if st, err := rt.appDomainStatus(r, d); err == nil {
 				res.DNSStatus = &st

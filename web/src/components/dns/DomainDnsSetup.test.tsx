@@ -175,7 +175,12 @@ describe('DomainDnsSetup', () => {
       await screen.findByRole('button', { name: 'Add 1, review 1 different' }),
     ).toBeTruthy()
     expect(screen.getByText('Found: old')).toBeTruthy()
-    await userEvent.click(screen.getByRole('button', { name: 'Replace' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Existing record' }),
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Replace' }),
+    )
     await userEvent.click(
       await screen.findByRole('button', { name: 'Add 2 records' }),
     )
@@ -188,5 +193,51 @@ describe('DomainDnsSetup', () => {
       replace_existing: ['SPF'],
       plan_hash: 'h1',
     })
+  })
+  const toReview = async (det: object) => {
+    mockApi(det, [rec('MX', 'MX', 'add')])
+    setup()
+    await screen.findByTestId('detect-sentence')
+    const btn =
+      screen.queryByRole('button', { name: 'Continue without connecting' }) ??
+      screen.getByRole('button', { name: 'Continue' })
+    await userEvent.click(btn)
+    await screen.findByTestId('detect-banner')
+  }
+  it('offers no approve card when the flow flag is absent', async () => {
+    await toReview(
+      detection({ connected: false, domain_connect: { supported: true } }),
+    )
+    await screen.findByRole('button', { name: 'Connect Cloudflare' })
+    expect(screen.queryByTestId('apply-options')).toBeNull()
+    expect(screen.queryByText(/no token/)).toBeNull()
+  })
+  it('shows approve and token cards side by side when the flow flag is set', async () => {
+    await toReview(
+      detection({
+        connected: false,
+        domain_connect: { supported: true, flow: true, host: 'Cloudflare' },
+      }),
+    )
+    const group = await screen.findByTestId('apply-options')
+    expect(group.textContent).toContain('Approve at Cloudflare (no token)')
+    expect(group.textContent).toContain('Connect Cloudflare with a token')
+  })
+  it('connected shows Add N records and no option cards', async () => {
+    await toReview(
+      detection({ domain_connect: { supported: true, flow: true } }),
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Add 1 record' }),
+    ).toBeTruthy()
+    expect(screen.queryByTestId('apply-options')).toBeNull()
+  })
+  it('renders when detection has no domain_connect field', async () => {
+    const det = detection({}) as Record<string, unknown>
+    delete det.domain_connect
+    await toReview(det)
+    expect(
+      await screen.findByRole('button', { name: 'Add 1 record' }),
+    ).toBeTruthy()
   })
 })

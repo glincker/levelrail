@@ -84,13 +84,17 @@ type goLiveResult struct {
 	// DelegationWarning is set by a plan when the domain's zone is not delegated yet; it never blocks.
 	DelegationWarning bool   `json:"delegation_warning,omitempty"`
 	DelegationReason  string `json:"delegation_reason,omitempty"`
-	undo              []undoAction
+	// PlanHash fingerprints the planned records; send it back on run to pin the confirm.
+	PlanHash string `json:"plan_hash,omitempty"`
+	undo     []undoAction
 }
 
 type goLiveRequest struct {
 	Automation *domainAutomationOverride `json:"automation,omitempty"`
 	DNS        string                    `json:"dns,omitempty"`
 	Replace    bool                      `json:"replace,omitempty"`
+	// PlanHash, when set, must match a fresh plan or the run is refused as stale.
+	PlanHash string `json:"plan_hash,omitempty"`
 	// skipVerify leaves propagation, certificate and http unprobed, so a
 	// request that only adds a domain never waits on the network.
 	skipVerify bool

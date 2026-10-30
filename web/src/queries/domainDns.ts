@@ -11,7 +11,13 @@ export interface DnsDetection {
   zone: string
   nameservers: string[]
   provider: string
-  domain_connect: { supported: boolean; host?: string; path?: string }
+  domain_connect: {
+    supported: boolean
+    host?: string
+    path?: string
+    /** Set by a server that can start the approve-at-provider flow. */
+    flow?: boolean
+  }
   connected: boolean
   connectable: boolean
   zone_id?: string
@@ -78,9 +84,10 @@ interface GoLiveDns {
 
 interface GoLiveResult {
   dns?: GoLiveDns[]
+  plan_hash?: string
 }
 
-// Marker hash: go-live has no pinned plan, it recomputes add-only on apply.
+// Marker hash for an older server whose plan carries no plan_hash: apply is then unpinned.
 const GO_LIVE_HASH = 'go-live'
 const DEFAULT_TTL = 300
 
@@ -99,7 +106,11 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return (await res.json()) as T
 }
 
-function goLivePlan(domain: string, r: GoLiveResult): MailPlan | null {
+function goLivePlan(
+  domain: string,
+  r: GoLiveResult,
+  hash: string = GO_LIVE_HASH,
+): MailPlan | null {
   const changes = (r.dns ?? []).flatMap((d) => {
     if (!d.record) return []
     const set = {
@@ -119,7 +130,7 @@ function goLivePlan(domain: string, r: GoLiveResult): MailPlan | null {
   if (changes.length === 0) return null
   return {
     domain,
-    hash: GO_LIVE_HASH,
+    hash,
     changes,
     summary: {},
     blocked: false,
@@ -137,7 +148,8 @@ export async function planDomainDns(
       `/api/v1/apps/${encodeURIComponent(app)}/domains/go-live/plan`,
       { domain },
     )
-    const plan = goLivePlan(domain, out.plans?.[0] ?? {})
+    const first = out.plans?.[0] ?? {}
+    const plan = goLivePlan(domain, first, first.plan_hash || GO_LIVE_HASH)
     if (plan) return plan
   }
   const addr = await getJson<ServerAddressRecords>(
@@ -158,12 +170,14 @@ export async function applyDomainDns(
   planHash: string,
   app?: string,
 ): Promise<DnsApplyResult> {
-  if (!app || planHash !== GO_LIVE_HASH) {
+  if (!app || !planHash) {
     throw new ApiError(400, 'dns apply needs an app and a go-live plan')
   }
+  // The server refuses the run when the plan changed since it was shown.
+  const pinned = planHash === GO_LIVE_HASH ? {} : { plan_hash: planHash }
   const out = await postJson<GoLiveResult>(
     `/api/v1/apps/${encodeURIComponent(app)}/domains/${encodeURIComponent(domain)}/go-live`,
-    { dns: 'auto', replace: false },
+    { dns: 'auto', replace: false, ...pinned },
   )
   const done = (out.dns ?? []).filter(
     (d) => d.dns === 'created' || d.dns === 'updated',

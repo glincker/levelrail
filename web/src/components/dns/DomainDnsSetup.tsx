@@ -34,8 +34,10 @@ import {
   type MailCheckReport,
   type MailDnsSpec,
 } from '@/queries/mailDns'
-import { fetchDnsStatus } from '@/queries/dnsStatus'
+import { fetchDnsStatus, progressOf } from '@/queries/dnsStatus'
+import { startDomainConnectApply } from '@/queries/domainConnect'
 import { useServerAddress } from '@/queries/serverAddress'
+import { DnsApplyOptions } from './DnsApplyOptions'
 import { DnsConnectPopover } from './DnsConnectPopover'
 import { DnsHostTile } from './DnsHostChip'
 import { DnsPickStep, type PickCandidate } from './DnsPickStep'
@@ -45,7 +47,6 @@ import { useCopy } from './useCopy'
 import {
   detectState,
   jsonText,
-  liveCount,
   primaryActionOf,
   providerLabel,
   rememberDomain,
@@ -221,8 +222,17 @@ export function DomainDnsSetup({
   })
   const plan = planQ.data
   const statusQ = useQuery({
-    queryKey: ['dns-setup', 'status', kind, domain, app ?? ''],
-    queryFn: () => fetchDnsStatus(kind, domain, app),
+    queryKey: [
+      'dns-setup',
+      'status',
+      kind,
+      domain,
+      app ?? '',
+      spec.preset ?? '',
+      spec.mail_host ?? '',
+      spec.ipv4 ?? '',
+    ],
+    queryFn: () => fetchDnsStatus(kind, domain, app, spec),
     enabled: !!domain && (step === 'review' || step === 'verify'),
     staleTime: 0,
   })
@@ -247,13 +257,22 @@ export function DomainDnsSetup({
     onError: (e) => setApplyError(errText(e) || t('review.applyFailed')),
   })
 
+  const approveMut = useMutation({
+    mutationFn: () => startDomainConnectApply(domain, kind),
+    onSuccess: () => {
+      setApplyError('')
+      setStep('verify')
+    },
+    onError: () => setApplyError(t('options.failed')),
+  })
+
   // Not connected: public-DNS check results stand in for the zone read.
   const overlay = kind === 'mail' && state !== 'connected' ? report : undefined
   const statuses = plan
     ? plan.changes.map((c) => rowStatus(c, overlay, liveStatus))
     : []
-  const live = liveCount(statuses)
-  const allLive = statuses.length > 0 && live === statuses.length
+  const { live, total } = progressOf(statuses, liveStatus)
+  const allLive = total > 0 && live === total
 
   const runCheck = async () => {
     setChecking(true)
@@ -391,6 +410,10 @@ export function DomainDnsSetup({
       </Button>
     )
 
+  const connectOptions = action === 'connect' && !myself
+  const showCards = connectOptions && det?.domain_connect?.flow === true
+  const optionsHost = det?.domain_connect?.host ?? label
+
   return (
     <section
       ref={rootRef}
@@ -450,6 +473,15 @@ export function DomainDnsSetup({
           ))}
         </ol>
       </header>
+
+      {kind === 'app' && step !== 'pick' && (
+        <p className="text-xs font-medium">
+          {t('serverAddress.recordsTitle', {
+            ns: 'domains',
+            defaultValue: t('review.recordsTitle'),
+          })}
+        </p>
+      )}
 
       {step === 'pick' && (
         <div className="space-y-3">
@@ -519,10 +551,10 @@ export function DomainDnsSetup({
               </p>
             </div>
           )}
-          {det?.domain_connect.supported && (
+          {det?.domain_connect?.supported && (
             <p className="text-xs text-muted-foreground">
               {t('detect.domainConnect', {
-                host: det.domain_connect.host ?? label,
+                host: det.domain_connect?.host ?? label,
               })}
             </p>
           )}
@@ -572,6 +604,16 @@ export function DomainDnsSetup({
                 : t('banner.hosted', { provider: label })}
             </span>
             {state !== 'unknown' && <span>{`· ${t(`banner.${state}`)}`}</span>}
+            {state === 'notConnected' && det?.connectable && (
+              <DnsConnectPopover
+                provider={provider}
+                label={label}
+                variant="ghost"
+                size="xs"
+              >
+                {t('options.connectLink')}
+              </DnsConnectPopover>
+            )}
           </p>
           {planQ.isLoading && (
             <div
@@ -593,15 +635,34 @@ export function DomainDnsSetup({
               <DnsSummaryBar
                 count={count}
                 live={live}
-                total={statuses.length}
+                total={total}
                 checked={hasChecks}
-                primary={primaryNode}
+                primary={showCards ? null : primaryNode}
                 onCopy={copyAs}
               />
               {plan.blocked && (
                 <p role="alert" className="text-xs text-tone-danger">
                   {t('review.blocked')}
                 </p>
+              )}
+              {showCards && (
+                <DnsApplyOptions
+                  host={optionsHost}
+                  flow
+                  approving={approveMut.isPending}
+                  certs={det?.can_issue_certificates ?? false}
+                  mail={kind === 'mail'}
+                  onApprove={() => approveMut.mutate()}
+                  token={
+                    <DnsConnectPopover
+                      provider={provider}
+                      label={label}
+                      variant="outline"
+                    >
+                      {t('options.connectToken', { host: optionsHost })}
+                    </DnsConnectPopover>
+                  }
+                />
               )}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 {(action === 'add' || action === 'connect') && (
@@ -646,6 +707,13 @@ export function DomainDnsSetup({
                       </a>
                     )}
                   </p>
+                ) : action === 'connect' && !showCards ? (
+                  <span className="text-xs text-muted-foreground">
+                    {t('options.tokenHint')}
+                    {det?.can_issue_certificates && kind === 'mail'
+                      ? ` ${t('options.tokenCerts')}`
+                      : ''}
+                  </span>
                 ) : (
                   action === 'add' && (
                     <span className="text-xs text-muted-foreground">

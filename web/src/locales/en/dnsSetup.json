@@ -89,7 +89,8 @@
     "confirmReplace_other": "This overwrites {{count}} existing records. Confirm to continue.",
     "confirmButton_one": "Yes, replace {{count}} and add",
     "confirmButton_other": "Yes, replace {{count}} and add",
-    "applyFailed": "The records were not added."
+    "applyFailed": "The records were not added.",
+    "recordsTitle": "DNS record to create"
   },
   "manual": {
     "whereKnown": "Paste these in the {{provider}} DNS dashboard.",
@@ -147,5 +148,16 @@
     "expand": "Show full value",
     "collapse": "Hide full value",
     "existing": "Existing record"
+  },
+  "options": {
+    "label": "Ways to add these records",
+    "approve": "Approve at {{host}} (no token)",
+    "approving": "Opening",
+    "approveHint": "Opens your DNS host in a new tab. You approve there, nothing is stored.",
+    "connectToken": "Connect {{host}} with a token",
+    "tokenHint": "A token also enables live checks and the managed record list.",
+    "tokenCerts": "It also lets the mail host certificate renew automatically.",
+    "failed": "Could not start the approval. Try connecting with a token instead.",
+    "connectLink": "Connect"
   }
 }

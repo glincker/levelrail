@@ -129,7 +129,12 @@ describe('DnsRecordTable', () => {
   it('stages Replace for a Different row and moves focus with arrow keys', async () => {
     const onToggle = vi.fn()
     renderTable(onToggle)
-    await userEvent.click(screen.getByRole('button', { name: 'Replace' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Existing record' }),
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Replace' }),
+    )
     expect(onToggle).toHaveBeenCalledWith('SPF')
     const rows = document.querySelectorAll<HTMLElement>('[data-row]')
     rows[0]?.focus()

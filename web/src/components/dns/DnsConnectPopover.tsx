@@ -17,11 +17,13 @@ export function DnsConnectPopover({
   label,
   children,
   variant = 'default',
+  size = 'sm',
 }: {
   provider: string
   label: string
   children: ReactNode
   variant?: 'default' | 'outline' | 'ghost'
+  size?: 'sm' | 'xs'
 }) {
   const { t } = useTranslation('dnsSetup')
   const qc = useQueryClient()
@@ -51,7 +53,7 @@ export function DnsConnectPopover({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button size="sm" variant={variant} />}>
+      <PopoverTrigger render={<Button size={size} variant={variant} />}>
         {children}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 space-y-2">

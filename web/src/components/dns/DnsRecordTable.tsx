@@ -11,7 +11,13 @@ import {
   CopyGlassIcon,
   ShieldAlertGlassIcon,
 } from '@thesvg/ui-react'
-import type { DnsStatusReport } from '@/queries/dnsStatus'
+import { statusFor, type DnsStatusReport } from '@/queries/dnsStatus'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import type { MailCheckReport, MailPlan } from '@/queries/mailDns'
 import {
@@ -172,6 +178,11 @@ export function DnsRecordTable({
             const chip: ChipStatus =
               st === 'waiting' && phase === 'review' ? 'willAdd' : st
             const staged = replaceKinds?.includes(c.kind) ?? false
+            const liveRow = statusFor(status, c.set.name, c.set.type)
+            const foundValues = liveRow?.found.length
+              ? liveRow.found.map((f) => f.value)
+              : (c.before?.values ?? [])
+            const reason = c.reason ?? liveRow?.reason
             return c.set.values.map((v, j) => {
               const { priority, value } = splitPriority(c.set, v)
               const id = `${c.set.name}-${c.set.type}-${i}-${j}`
@@ -299,54 +310,47 @@ export function DnsRecordTable({
                       {value}
                     </code>
                   )}
-                  {j === 0 && c.before && (
+                  {j === 0 && foundValues.length > 0 && (
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-0 text-xs text-muted-foreground sm:pl-[7.5rem]">
                       <span className="min-w-0 break-all font-mono">
                         {t('foundValue', {
-                          value: c.before.values.join(' | '),
+                          value: foundValues.join(' | '),
                         })}
                       </span>
                       {st === 'different' &&
                         onToggleReplace &&
                         phase === 'review' && (
-                          <span
-                            role="group"
-                            aria-label={t('table.existing')}
-                            className="inline-flex overflow-hidden rounded border border-border"
-                          >
-                            <button
-                              type="button"
-                              aria-pressed={!staged}
-                              onClick={() => staged && onToggleReplace(c.kind)}
-                              className={cn(
-                                'px-2 py-1 focus-visible:outline-2 focus-visible:outline-ring',
-                                !staged
-                                  ? 'bg-muted text-foreground'
-                                  : 'hover:bg-muted',
-                              )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              aria-label={t('table.existing')}
+                              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                             >
-                              {t('keepMine')}
-                            </button>
-                            <button
-                              type="button"
-                              aria-pressed={staged}
-                              onClick={() => !staged && onToggleReplace(c.kind)}
-                              className={cn(
-                                'border-l border-border px-2 py-1 focus-visible:outline-2 focus-visible:outline-ring',
-                                staged
-                                  ? 'bg-muted text-foreground'
-                                  : 'hover:bg-muted',
-                              )}
-                            >
-                              {t('replace')}
-                            </button>
-                          </span>
+                              {staged ? t('replace') : t('keepMine')}
+                              <ChevronDownGlassIcon size="1em" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  staged && onToggleReplace(c.kind)
+                                }
+                              >
+                                {t('keepMine')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  !staged && onToggleReplace(c.kind)
+                                }
+                              >
+                                {t('replace')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                     </div>
                   )}
-                  {j === 0 && st === 'conflict' && c.reason && (
+                  {j === 0 && st === 'conflict' && reason && (
                     <p className="mt-0.5 text-xs text-tone-warning sm:pl-[7.5rem]">
-                      {c.reason}
+                      {reason}
                     </p>
                   )}
                 </div>
