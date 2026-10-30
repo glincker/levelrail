@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -17,7 +18,12 @@ func runSecurityAdvisories(prog string, args []string, stdout, stderr io.Writer,
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		mode, rest = args[0], args[1:]
 	}
-	if mode != "list" && mode != "match" {
+	sub := mode
+	switch sub {
+	case "refresh":
+		return runSecurityAdvisoryRefresh(prog, rest, stdout, stderr, lookupEnv)
+	case "list", "match":
+	default:
 		_, _ = fmt.Fprint(stderr, securityUsage(prog))
 		return exitUsage
 	}
@@ -59,8 +65,38 @@ func printAdvisories(w io.Writer, mode string, res apiclient.AdvisoriesResource)
 		_, _ = fmt.Fprintln(tw, "No running image matches a known advisory.")
 		return
 	}
-	_, _ = fmt.Fprintln(tw, "APP\tIMAGE\tADVISORY\tSEVERITY\tFIX")
+	_, _ = fmt.Fprintln(tw, "APP\tIMAGE\tDIGEST\tADVISORY\tSEVERITY\tFIXED IN\tFIX")
 	for _, m := range res.Matches {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", m.App, m.Image, m.AdvisoryID, m.Severity, m.Hint)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", m.App, m.Image, dash(m.Digest), m.AdvisoryID, m.Severity, dash(m.FixedIn), m.Hint)
 	}
+}
+
+// runSecurityAdvisoryRefresh implements "security advisories refresh <app>".
+func runSecurityAdvisoryRefresh(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	var confirm *bool
+	client, fs, jsonOut, of, code, ok := securityCommand(prog, "security advisories refresh", "print the result as JSON to stdout and nothing else", args, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		confirm = fs.Bool("confirm", false, "acknowledge a protected environment (the deploy then waits for approval)")
+	})
+	if !ok {
+		return code
+	}
+	if fs.NArg() != 1 {
+		_, _ = fmt.Fprintf(stderr, "usage: %s security advisories refresh <app> [--confirm] [flags]\n", prog)
+		return exitUsage
+	}
+	res, err := client.RefreshAdvisoryApp(context.Background(), fs.Arg(0), *confirm)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("security advisories refresh: %w", err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, res, func() {
+		if res.PendingApproval != nil {
+			_, _ = fmt.Fprintf(stdout, "Refresh of %s is waiting for approval (%s).\n", fs.Arg(0), res.PendingApproval.ID)
+			return
+		}
+		_, _ = fmt.Fprintf(stdout, "Refresh of %s accepted: redeploying on the newest digest of its tag.\n", fs.Arg(0))
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
 }

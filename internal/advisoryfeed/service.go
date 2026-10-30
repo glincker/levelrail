@@ -155,6 +155,11 @@ func (s *Service) reload(ctx context.Context) {
 // accept verifies when a key is configured, then parses. A bad signature
 // yields no entries, so an unauthenticated feed is never trusted by accident.
 func (s *Service) accept(snap Snapshot, data, sig []byte) (Snapshot, error) {
+	// A feed fetched over the network is never trusted without a key.
+	if s.isURL() && s.cfg.PubKey == "" {
+		snap.Signature = SigInvalid
+		return snap, errors.New("a remote advisory feed needs " + EnvPubKey + " so its signature can be verified")
+	}
 	if s.cfg.PubKey != "" {
 		key, err := ParsePublicKey(s.cfg.PubKey)
 		if err != nil {

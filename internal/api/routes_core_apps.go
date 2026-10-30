@@ -252,6 +252,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// AbilityRead like the comparison view above; the trigger itself is
 	// AbilityDeploy, matching POST .../deploys.
 	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePromotePreview))
+	mux.HandleFunc("POST /api/v1/apps/{name}/advisory-refresh", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleAdvisoryRefresh)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handlePromoteApp)))
 
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving

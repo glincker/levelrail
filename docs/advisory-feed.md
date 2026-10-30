@@ -15,6 +15,7 @@ This slice reads a feed from a file or URL you control. Hosting a public feed an
 | `APP_ADVISORY_FEED_PUBKEY` | Optional base64 ed25519 public key (32 bytes). When set, the feed needs a detached signature. |
 | `APP_ADVISORY_FEED_REFRESH` | How long a URL feed is reused before it is fetched again. Default `6h`. A file is reloaded only when it changes. |
 | `APP_ADVISORY_FEED_MAX_BYTES` | Largest accepted feed. Default 4 MiB. |
+| `APP_ADVISORY_REFRESH_ACTION` | Set to `on` to allow the refresh action below. Default off. |
 
 There is no polling loop. The feed is read when something asks for it (the dashboard, the CLI or the attention feed), and matches are recomputed only when the feed or the set of running images changes.
 
@@ -22,7 +23,9 @@ There is no polling loop. The feed is read when something asks for it (the dashb
 
 With a public key configured, the signature is read from the feed location plus `.sig` and is the base64 of an ed25519 signature over the exact feed bytes. A missing or wrong signature rejects the whole feed and shows `invalid`.
 
-Without a key the feed is labelled `unsigned` in the dashboard, the CLI and the API. It is still used, because you chose the source, but it is never presented as verified.
+A feed fetched from an `http(s)` URL needs the key: without `APP_ADVISORY_FEED_PUBKEY` it is rejected and shown as `invalid`.
+
+Without a key a local file feed is labelled `unsigned` in the dashboard, the CLI and the API. It is still used, because you chose the source, but it is never presented as verified.
 
 ## Format
 
@@ -62,3 +65,16 @@ Without a key the feed is labelled `unsigned` in the dashboard, the CLI and the 
 - Security center, Checklist tab: a compact card with the feed state, signature label and per-app matches.
 - CLI: `levelrail-cli security advisories list` and `levelrail-cli security advisories match`.
 - API: `GET /api/v1/security/advisories` (read ability). Callers only see apps they can read.
+
+## Refresh an affected app
+
+When an app matches an advisory and the registry holds a newer digest of the same tag, you can redeploy it on that digest:
+
+```
+levelrail-cli security advisories match
+levelrail-cli security advisories refresh <app> [--confirm]
+```
+
+`POST /api/v1/apps/{name}/advisory-refresh` (deploy ability on the app) pins the newest registry digest of the app's tag and sends it through the normal deploy path. Freeze windows, deploy policy, protected-environment approvals (`--confirm` returns a pending approval, nothing deploys until it is approved), release bindings (`APP_RELEASE_BINDINGS`), image signature enforcement and the registry digest check all still apply, and the request is audited.
+
+It is refused when `APP_ADVISORY_REFRESH_ACTION` is not `on`, when the feed signature is not `verified`, when the app matches no advisory, when the registry has no newer digest than the one running, or when the registry cannot be reached. A newer digest is not proof of a fix: check that the match disappears afterwards, and move to the `fixed_in` version when it does not.

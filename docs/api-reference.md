@@ -673,6 +673,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/releases | AbilityRead | handleListAppReleases |
 | GET | /api/v1/apps/{name}/analysis/reports | AbilityRead | handleListAnalysisReports |
 | POST | /api/v1/apps/{name}/analysis/reports | AbilityWrite | handleRunAnalysisReport |
+| POST | /api/v1/apps/{name}/advisory-refresh | AbilityDeploy | handleAdvisoryRefresh |
 
 </Accordion>
 

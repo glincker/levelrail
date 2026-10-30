@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -44,5 +45,22 @@ type AdvisoriesResource struct {
 func (c *Client) GetAdvisories(ctx context.Context) (AdvisoriesResource, error) {
 	var out AdvisoriesResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/security/advisories", nil, &out)
+	return out, err
+}
+
+// AdvisoryRefreshResult is the reply of POST /api/v1/apps/{name}/advisory-refresh.
+type AdvisoryRefreshResult struct {
+	Name            string `json:"name,omitempty"`
+	Image           string `json:"image,omitempty"`
+	DeployID        string `json:"deploy_id,omitempty"`
+	PendingApproval *struct {
+		ID string `json:"id"`
+	} `json:"pending_approval,omitempty"`
+}
+
+// RefreshAdvisoryApp redeploys an app on the newest digest of its tag.
+func (c *Client) RefreshAdvisoryApp(ctx context.Context, app string, confirm bool) (AdvisoryRefreshResult, error) {
+	var out AdvisoryRefreshResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+url.PathEscape(app)+"/advisory-refresh", map[string]bool{"confirm": confirm}, &out)
 	return out, err
 }

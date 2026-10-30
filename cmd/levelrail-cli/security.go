@@ -52,6 +52,7 @@ func securityUsage(prog string) string {
   %[1]s security policy set [policy flags] [flags]       change the policy (root)
   %[1]s security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
   %[1]s security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
+  %[1]s security advisories refresh <app> [--confirm]    redeploy a matched app on the newest digest of its tag through the normal deploy gates (needs APP_ADVISORY_REFRESH_ACTION=on and a verified feed)
 
 A token used here must belong to a user and hold write:sensitive or
 signin:approve for sessions; --user (another account) needs root.

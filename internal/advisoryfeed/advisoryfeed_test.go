@@ -5,9 +5,12 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 const testFeed = `{"version":1,"entries":[
@@ -75,5 +78,14 @@ func TestServiceOffIsInert(t *testing.T) {
 	}
 	if snap, m := s.Match(context.Background(), []Image{{App: "a", Ref: "node:1"}}); snap.Enabled || m != nil {
 		t.Fatal("must do nothing")
+	}
+}
+
+func TestRemoteFeedWithoutKeyFailsClosed(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(testFeed)) }))
+	defer srv.Close()
+	s := New(Config{Source: srv.URL, MaxBytes: 1 << 20, Refresh: time.Hour}, nil).Snapshot(context.Background())
+	if len(s.Entries) != 0 || s.Error == "" || s.Signature != SigInvalid {
+		t.Fatalf("remote feed without a key must be rejected: %+v", s)
 	}
 }

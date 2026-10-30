@@ -161,3 +161,7 @@ These shipped alongside the fixes and are listed for completeness: agents must g
 ## What this page is not
 
 It is not a penetration-test report and it does not claim the absence of other issues. The 0.9 entries came from an internal, AI-assisted source review of the control plane, agent, installer and CI, followed by fixes with regression tests. Areas that review did not cover are listed in the [threat model](/threat-model). An independent review is planned before a stable release; its report will be linked here.
+
+## Advisories about the images you run
+
+Separate from the Levelrail advisories above, the [advisory feed](/advisory-feed) matches the images your own apps run against a signed feed. `levelrail-cli security advisories match` lists each app, image digest, advisory, severity and fixed-in version, and `levelrail-cli security advisories refresh <app>` redeploys a matched app on the newest digest of its tag through the normal deploy approvals.
