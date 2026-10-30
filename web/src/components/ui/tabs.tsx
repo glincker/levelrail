@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs'
 import { cva, type VariantProps } from 'class-variance-authority'
 
@@ -39,13 +40,50 @@ const tabsListVariants = cva(
 function TabsList({
   className,
   variant = 'default',
+  onScroll,
   ...props
 }: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [edges, setEdges] = useState({ start: false, end: false })
+  const measure = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const start = el.scrollLeft > 1
+    const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+    setEdges((e) => (e.start === start && e.end === end ? e : { start, end }))
+  }, [])
+  useEffect(() => {
+    const el = ref.current
+    if (!el || variant !== 'default') return
+    // Bring the selected tab on screen, e.g. when opened by ?tab=.
+    el.querySelector<HTMLElement>('[data-active]')?.scrollIntoView?.({
+      inline: 'nearest',
+      block: 'nearest',
+    })
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+    }
+  }, [variant, measure])
   return (
     <TabsPrimitive.List
+      ref={ref}
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      data-fade-start={edges.start || undefined}
+      data-fade-end={edges.end || undefined}
+      onScroll={(e) => {
+        measure()
+        onScroll?.(e)
+      }}
+      className={cn(
+        tabsListVariants({ variant }),
+        'data-fade-end:data-fade-start:[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)] data-fade-end:not-data-fade-start:[mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] data-fade-start:not-data-fade-end:[mask-image:linear-gradient(to_right,transparent,black_1.5rem)]',
+        className,
+      )}
       {...props}
     />
   )
