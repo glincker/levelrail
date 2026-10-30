@@ -21,6 +21,7 @@ const (
 	EnvOverrideTTL   = "APP_SCAN_OVERRIDE_TTL"
 	EnvKeepPerApp    = "APP_SBOM_KEEP_PER_APP"
 	EnvSweepInterval = "APP_SCAN_SWEEP_INTERVAL"
+	EnvFailClosed    = "APP_SUPPLYCHAIN_FAIL_CLOSED"
 )
 
 // Default scanner images. Pinned tags, override with APP_SCANNER_IMAGE.
@@ -45,6 +46,8 @@ type Config struct {
 	// KeepPerApp is how many recent SBOM documents are kept per app.
 	KeepPerApp    int
 	SweepInterval time.Duration
+	// FailClosed denies blocking-mode releases when the scan is missing.
+	FailClosed bool
 }
 
 // ConfigFromEnv reads Config from lookup (os.LookupEnv in production).
@@ -76,6 +79,7 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 		OverrideTTL:   r.duration(EnvOverrideTTL, time.Hour),
 		KeepPerApp:    r.integer(EnvKeepPerApp, 20),
 		SweepInterval: r.duration(EnvSweepInterval, time.Hour),
+		FailClosed:    r.boolean(EnvFailClosed, false),
 	}
 }
 

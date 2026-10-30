@@ -41,6 +41,12 @@ Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variab
 | --- | --- | --- |
 | `APP_COOKIE_SECURE` | unset (Secure only when the dashboard URL is `https://`) | Set to `true` to always mark the session cookie Secure. Use it when a proxy terminates TLS in front of an `http://` dashboard URL. Control plane. |
 
+## Supply chain gate
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_SUPPLYCHAIN_FAIL_CLOSED` | `false` | Set to `true` so a blocking gate mode (`block_on_critical`, `block_on_high`) denies a release when the scan is unavailable (recorded as "scan unavailable") and counts unknown severity findings as critical. Control plane. |
+
 ## Builds and build cache
 
 The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache on top of that. See [Build node routing](/build-node-routing) for dedicated build nodes.

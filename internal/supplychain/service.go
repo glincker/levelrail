@@ -195,7 +195,11 @@ func (s *Service) persist(ctx context.Context, rec Record) error {
 
 func (s *Service) applyGate(ctx context.Context, settings Settings, rec *Record, scan *ScanSummary) error {
 	override := ""
-	if settings.Gate.blocking() && scan != nil && scan.Counts.Critical+gateHighCount(settings.Gate, scan) > 0 {
+	unknown := 0
+	if scan != nil && s.cfg.FailClosed {
+		unknown = scan.Counts.Unknown
+	}
+	if settings.Gate.blocking() && scan != nil && scan.Counts.Critical+unknown+gateHighCount(settings.Gate, scan) > 0 {
 		reason, ok, err := s.deps.Store.ConsumeOverride(ctx, rec.App, s.now().Add(-s.cfg.OverrideTTL))
 		if err != nil {
 			s.log.Warn("supplychain: consume override failed", slog.String("app", rec.App), slog.String("error", err.Error()))
@@ -203,7 +207,7 @@ func (s *Service) applyGate(ctx context.Context, settings Settings, rec *Record,
 			override = reason
 		}
 	}
-	d := Decide(settings.Gate, scan, override)
+	d := DecideStrict(settings.Gate, scan, override, s.cfg.FailClosed)
 	rec.GateAction, rec.GateReason = d.Action, d.Reason
 	if err := s.persist(ctx, *rec); err != nil {
 		s.log.Warn("supplychain: save gate decision failed", slog.String("app", rec.App), slog.String("attempt_id", rec.AttemptID), slog.String("error", err.Error()))
