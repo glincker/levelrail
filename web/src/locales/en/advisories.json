@@ -37,7 +37,7 @@
   "digestTitle": "Digest {{digest}}",
   "noFix": "No fixed version listed",
   "reference": "Open advisory {{id}}",
-  "refresh": "Refresh",
+  "refresh": "Refresh image",
   "refreshLabel": "Refresh {{app}} onto the newest image",
   "confirmTitle": "Refresh {{app}}?",
   "confirmDescription": "{{app}} runs {{image}}, which matches {{id}}.",

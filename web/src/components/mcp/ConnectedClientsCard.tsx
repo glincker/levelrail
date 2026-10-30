@@ -1,12 +1,18 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { BotGlassIcon, PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
+import {
+  BotGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { CopyCommand } from '@/components/settings/CopyCommand'
 import { useIsRoot } from '@/hooks/useIsRoot'
 import { devModeQueryOptions } from '../../queries/devMode'
 import {
@@ -80,10 +86,15 @@ function ClientsBody() {
 
       {created ? (
         <Banner variant="success" title={t('clients.created')}>
-          <p className="text-sm">
-            {t('clients.clientId')}{' '}
-            <code className="font-mono select-all">{created.id}</code>
-          </p>
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <CopyCommand label={t('clients.clientId')} command={created.id} />
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setCreated(null)}>
+              <XGlassIcon aria-hidden="true" />
+              {t('clients.dismiss')}
+            </Button>
+          </div>
         </Banner>
       ) : null}
 

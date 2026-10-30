@@ -488,7 +488,14 @@
     "reset": "Use defaults",
     "saved": "Rollout policy saved.",
     "resetDone": "Rollout policy reset to defaults.",
-    "saveFailed": "Could not update the rollout policy."
+    "saveFailed": "Could not update the rollout policy.",
+    "placeholder": "e.g. 25% or 1",
+    "format": "A count (1) or a percent (25%)",
+    "error": {
+      "format": "Use a whole number or a percent, such as 1 or 25%.",
+      "percent": "A percent must be between 0% and 100%.",
+      "bothZero": "Max surge and max unavailable cannot both be 0, the rollout could never progress."
+    }
   },
   "appOverview": {
     "title": "Overview",

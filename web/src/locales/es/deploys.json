@@ -488,7 +488,14 @@
     "reset": "Usar predeterminados",
     "saved": "Política de despliegue guardada.",
     "resetDone": "Política de despliegue restablecida.",
-    "saveFailed": "No se pudo actualizar la política de despliegue."
+    "saveFailed": "No se pudo actualizar la política de despliegue.",
+    "placeholder": "p. ej. 25% o 1",
+    "format": "Un número (1) o un porcentaje (25%)",
+    "error": {
+      "format": "Usa un número entero o un porcentaje, como 1 o 25%.",
+      "percent": "El porcentaje debe estar entre 0% y 100%.",
+      "bothZero": "Surge máximo e indisponibles máximos no pueden ser 0 a la vez, el despliegue nunca avanzaría."
+    }
   },
   "appOverview": {
     "title": "Resumen",

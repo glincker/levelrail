@@ -37,7 +37,7 @@
   "digestTitle": "Digest {{digest}}",
   "noFix": "Sin versión corregida indicada",
   "reference": "Abrir aviso {{id}}",
-  "refresh": "Actualizar",
+  "refresh": "Actualizar imagen",
   "refreshLabel": "Actualizar {{app}} a la imagen más reciente",
   "confirmTitle": "¿Actualizar {{app}}?",
   "confirmDescription": "{{app}} ejecuta {{image}}, que coincide con {{id}}.",
