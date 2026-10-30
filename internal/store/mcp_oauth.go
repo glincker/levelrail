@@ -199,6 +199,20 @@ func (db *DB) DecideMCPOAuthRequest(ctx context.Context, id, userID string, appr
 	return n == 1, nil
 }
 
+// GetMCPOAuthRequestByCode loads the approved request a code hash belongs to
+// without consuming it, so the caller can check the presenting client first.
+func (db *DB) GetMCPOAuthRequestByCode(ctx context.Context, codeHash string) (*MCPOAuthRequest, error) {
+	var id string
+	err := db.QueryRowContext(ctx, `SELECT id FROM mcp_oauth_requests WHERE code_hash = ? AND code_hash <> '' AND approved = 1`, codeHash).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrMCPOAuthNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: lookup mcp oauth code: %w", err)
+	}
+	return db.GetMCPOAuthRequest(ctx, id)
+}
+
 // ConsumeMCPOAuthCode marks the code used exactly once. reused is true when
 // the code was already redeemed, with the request returned so its grant can be revoked.
 func (db *DB) ConsumeMCPOAuthCode(ctx context.Context, codeHash string, now int64) (req *MCPOAuthRequest, reused bool, err error) {

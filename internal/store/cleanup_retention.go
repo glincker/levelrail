@@ -28,6 +28,11 @@ const (
 	RetentionCanaryOutcomes  RetentionTable = "canary_outcomes"
 	RetentionUsageCostDaily  RetentionTable = "usage_cost_daily"
 	RetentionStatusIncidents RetentionTable = "status_incidents"
+
+	RetentionMCPOAuthRequests RetentionTable = "mcp_oauth_requests"
+	RetentionMCPOAuthRefresh  RetentionTable = "mcp_oauth_refresh"
+	RetentionMCPOAuthTokens   RetentionTable = "mcp_oauth_tokens" //nolint:gosec // table name, not a credential
+	RetentionMCPOAuthGrants   RetentionTable = "mcp_oauth_grants"
 )
 
 const (
@@ -52,6 +57,16 @@ func parseMicro(s string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("store: parse unix micro %q: %w", s, err)
 	}
 	return time.UnixMicro(n).UTC(), nil
+}
+
+func argUnix(t time.Time) any { return t.UTC().Unix() }
+
+func parseUnix(s string) (time.Time, error) {
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("store: parse unix seconds %q: %w", s, err)
+	}
+	return time.Unix(n, 0).UTC(), nil
 }
 
 func argTime(t time.Time) any { return t.UTC() }
@@ -168,6 +183,32 @@ var retentionTables = map[RetentionTable]retentionSpec{
 		stats:       `SELECT COUNT(*), COALESCE(MIN(day), '') FROM usage_cost_daily`,
 		countOlder:  `SELECT COUNT(*) FROM usage_cost_daily WHERE day < ?`,
 		deleteOlder: `DELETE FROM usage_cost_daily WHERE rowid IN (SELECT rowid FROM usage_cost_daily WHERE day < ? LIMIT ?)`,
+	},
+	RetentionMCPOAuthRequests: {
+		arg: argUnix, parse: parseUnix,
+		stats:       `SELECT COUNT(*), COALESCE(CAST(MIN(expires_at) AS TEXT), '') FROM mcp_oauth_requests`,
+		countOlder:  `SELECT COUNT(*) FROM mcp_oauth_requests WHERE expires_at < ?`,
+		deleteOlder: `DELETE FROM mcp_oauth_requests WHERE rowid IN (SELECT rowid FROM mcp_oauth_requests WHERE expires_at < ? LIMIT ?)`,
+	},
+	// A used refresh row is kept for the window so a replay still reaches reuse detection.
+	RetentionMCPOAuthRefresh: {
+		arg: argUnix, parse: parseUnix,
+		stats:       `SELECT COUNT(*), COALESCE(CAST(MIN(expires_at) AS TEXT), '') FROM mcp_oauth_refresh`,
+		countOlder:  `SELECT COUNT(*) FROM mcp_oauth_refresh WHERE expires_at < ?1 OR used_at < ?1`,
+		deleteOlder: `DELETE FROM mcp_oauth_refresh WHERE rowid IN (SELECT rowid FROM mcp_oauth_refresh WHERE expires_at < ?1 OR used_at < ?1 LIMIT ?2)`,
+	},
+	// Token rows go before their grant; a dead grant is revoked or past its hard expiry.
+	RetentionMCPOAuthTokens: {
+		arg: argUnix, parse: parseUnix,
+		stats:       `SELECT COUNT(*), COALESCE(CAST(MIN(created_at) AS TEXT), '') FROM mcp_oauth_tokens`,
+		countOlder:  `SELECT COUNT(*) FROM mcp_oauth_tokens WHERE grant_id IN (SELECT id FROM mcp_oauth_grants WHERE revoked_at < ?1 OR expires_at < ?1)`,
+		deleteOlder: `DELETE FROM mcp_oauth_tokens WHERE rowid IN (SELECT rowid FROM mcp_oauth_tokens WHERE grant_id IN (SELECT id FROM mcp_oauth_grants WHERE revoked_at < ?1 OR expires_at < ?1) LIMIT ?2)`,
+	},
+	RetentionMCPOAuthGrants: {
+		arg: argUnix, parse: parseUnix,
+		stats:       `SELECT COUNT(*), COALESCE(CAST(MIN(created_at) AS TEXT), '') FROM mcp_oauth_grants`,
+		countOlder:  `SELECT COUNT(*) FROM mcp_oauth_grants WHERE revoked_at < ?1 OR expires_at < ?1`,
+		deleteOlder: `DELETE FROM mcp_oauth_grants WHERE rowid IN (SELECT rowid FROM mcp_oauth_grants WHERE revoked_at < ?1 OR expires_at < ?1 LIMIT ?2)`,
 	},
 	RetentionStatusIncidents: {
 		arg: argRFC3339Nano, parse: parseDriverTime,

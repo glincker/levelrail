@@ -34,12 +34,22 @@ func oauthErrorBody(w http.ResponseWriter, status int, code, desc string) {
 // handleMCPAuthorize validates an authorization request, parks it server side
 // and sends the browser to the consent page. Nothing from the query is trusted
 // again at approval time.
-func (rt *Router) handleMCPAuthorize(w http.ResponseWriter, r *http.Request) {
+func (m *mcpHTTP) handleMCPAuthorize(w http.ResponseWriter, r *http.Request) {
+	rt := m.rt
+	// Unauthenticated and writes a row per call, so it is limited per IP before any lookup.
+	if allowed, retry := m.authzLimit.allow("authorize|" + clientIP(r)); !allowed {
+		writeRateLimited(w, retry)
+		return
+	}
 	st, issuer, ok := rt.mcpOAuthReady(w, r)
 	if !ok {
 		return
 	}
 	q := r.URL.Query()
+	if len(q.Get("state")) > mcpOAuthMaxStateLen {
+		oauthErrorBody(w, http.StatusBadRequest, "invalid_request", "state is too long")
+		return
+	}
 	client, err := st.GetMCPOAuthClient(r.Context(), q.Get("client_id"))
 	if errors.Is(err, store.ErrMCPOAuthNotFound) {
 		oauthErrorBody(w, http.StatusBadRequest, "invalid_client", "unknown client_id")
@@ -206,7 +216,11 @@ func (rt *Router) decideMCPConsent(w http.ResponseWriter, r *http.Request, appro
 		return
 	}
 	var body mcpConsentDecision
-	_ = decodeJSONBody(r, &body)
+	// An empty body keeps the default of every grantable scope; a malformed one must not.
+	if err := decodeJSONBody(r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid consent body")
+		return
+	}
 	grantable := mcpGrantable(req.Scopes, user.Abilities)
 	chosen := grantable
 	if len(body.Scopes) > 0 {

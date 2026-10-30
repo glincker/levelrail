@@ -47,9 +47,10 @@ type retentionDef struct {
 func retentionDefs() []retentionDef {
 	return []retentionDef{
 		{TargetAuthExpired, "Expired sign-in records",
-			"Sessions, device login codes and magic links that expired before the window. Live and recently expired ones are kept.",
+			"Sessions, device login codes, magic links and finished MCP OAuth requests, refresh rows and grants that expired before the window. Live and recently expired ones are kept.",
 			runtimesettings.KeyAuthExpiredDays, CategoryAuth,
-			[]store.RetentionTable{store.RetentionAuthSessions, store.RetentionAuthDeviceCodes, store.RetentionAuthMagicLinks}},
+			[]store.RetentionTable{store.RetentionAuthSessions, store.RetentionAuthDeviceCodes, store.RetentionAuthMagicLinks,
+				store.RetentionMCPOAuthRequests, store.RetentionMCPOAuthRefresh, store.RetentionMCPOAuthTokens, store.RetentionMCPOAuthGrants}},
 		{TargetAIHistory, "AI assistant history",
 			"Chats idle past the window with their messages, and AI usage metering rows.",
 			runtimesettings.KeyAIHistoryDays, CategoryData,

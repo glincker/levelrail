@@ -60,6 +60,9 @@ func (rt *Router) legacySystemToken(ctx context.Context, raw string) (*store.API
 // then serves it from there so abilities come from one place. Anything other
 // than a clean import refuses the token.
 func (rt *Router) importLegacyOwnedToken(ctx context.Context, raw string, rec *store.APIToken) (*store.APIToken, error) {
+	if !rt.mcpOAuthAudienceOK(ctx, rec) {
+		return nil, store.ErrAPITokenNotFound
+	}
 	res, err := rt.authLib.tokens.ImportLegacyToken(ctx, *rec)
 	switch {
 	case errors.Is(err, authengine.ErrLegacyAlreadyLinked):
@@ -185,9 +188,22 @@ func (rt *Router) libraryListTokens(ctx context.Context, callerID string, admin 
 	return out, nil
 }
 
-// libraryRevokeToken revokes in the library and in the legacy mirror.
-// It returns store.ErrAPITokenNotFound for an unknown id.
+// libraryRevokeToken revokes in the library and in the legacy mirror, and ends
+// the OAuth grant the token belongs to so a purged token row cannot let a
+// refresh resume access. It returns store.ErrAPITokenNotFound for an unknown id.
 func (rt *Router) libraryRevokeToken(ctx context.Context, id string) error {
+	err := rt.revokeTokenRows(ctx, id)
+	if st := rt.mcpOAuth(); st != nil {
+		if g, gerr := st.GetMCPOAuthGrantByToken(ctx, id); gerr == nil && !g.Revoked {
+			if _, rerr := st.RevokeMCPOAuthGrant(ctx, g.ID, nowUnix()); rerr != nil {
+				rt.logger.Error("api: revoke oauth grant of token failed", "grant_id", g.ID)
+			}
+		}
+	}
+	return err
+}
+
+func (rt *Router) revokeTokenRows(ctx context.Context, id string) error {
 	err := rt.authLib.tokens.RevokeToken(ctx, id)
 	if errors.Is(err, authengine.ErrTokenUnknown) {
 		return rt.tokens.RevokeAPIToken(ctx, id)

@@ -30,12 +30,16 @@ const (
 	envMCPOAuthGrantMax   = "APP_MCP_OAUTH_GRANT_MAX_AGE"
 	envMCPOAuthTokenRPM   = "APP_MCP_OAUTH_TOKEN_RPM" //nolint:gosec // env var name
 
+	envMCPOAuthAuthorizeRPM = "APP_MCP_OAUTH_AUTHORIZE_RPM"
+	mcpOAuthMaxStateLen     = 512
+
 	mcpOAuthDefaultCodeTTL    = time.Minute
 	mcpOAuthDefaultRequestTTL = 10 * time.Minute
 	mcpOAuthDefaultAccessTTL  = time.Hour
 	mcpOAuthDefaultRefreshTTL = 30 * 24 * time.Hour
 	mcpOAuthDefaultGrantMax   = 90 * 24 * time.Hour
 	mcpOAuthDefaultTokenRPM   = 30
+	mcpOAuthDefaultAuthRPM    = 30
 
 	mcpOAuthAgentPrefix = "mcp:"
 	mcpOAuthConsentPath = "/oauth/consent"
@@ -58,6 +62,7 @@ type mcpOAuthStore interface {
 	DeleteMCPOAuthClient(ctx context.Context, id string, now int64) ([]string, error)
 	CreateMCPOAuthRequest(ctx context.Context, r store.MCPOAuthRequest, now int64) error
 	GetMCPOAuthRequest(ctx context.Context, id string) (*store.MCPOAuthRequest, error)
+	GetMCPOAuthRequestByCode(ctx context.Context, codeHash string) (*store.MCPOAuthRequest, error)
 	DecideMCPOAuthRequest(ctx context.Context, id, userID string, approved bool, scopes []string, codeHash string, codeExpires, now int64) (bool, error)
 	ConsumeMCPOAuthCode(ctx context.Context, codeHash string, now int64) (*store.MCPOAuthRequest, bool, error)
 	CreateMCPOAuthGrant(ctx context.Context, g store.MCPOAuthGrant, tokenID, refreshHash string, refreshExpires, now int64) error
@@ -170,7 +175,10 @@ func mcpGrantable(requested, userAbilities []string) []string {
 }
 
 func mcpAbilitiesFor(scopes []string) []string {
-	out := []string{AbilityRead}
+	var out []string
+	if slices.Contains(scopes, mcpScopeRead) {
+		out = append(out, AbilityRead)
+	}
 	if slices.Contains(scopes, mcpScopeReadSensitive) {
 		out = append(out, AbilityReadSensitive)
 	}
@@ -340,6 +348,10 @@ func nowUnix() int64 { return time.Now().Unix() }
 // control always governs a remote caller.
 func mcpOAuthAgentName(clientName string) string {
 	return mcpTruncate(mcpOAuthAgentPrefix+clientName, mcpOAuthMaxAgentLen)
+}
+
+func envMCPOAuthAuthorizeLimit() int {
+	return envPositiveInt(envMCPOAuthAuthorizeRPM, mcpOAuthDefaultAuthRPM)
 }
 
 func envMCPOAuthTokenLimit() int { return envPositiveInt(envMCPOAuthTokenRPM, mcpOAuthDefaultTokenRPM) }
