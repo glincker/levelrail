@@ -7,14 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/netip"
+	"net/url"
+	"strings"
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/registrytoken"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // registryCredentialTestTimeout bounds the synchronous auth check
@@ -222,6 +228,12 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if req.Preset == "" {
+		if err := rt.checkRegistryHost(r.Context(), req.RegistryHost); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 
 	_, err := rt.registryCredentials.GetRegistryCredentialByName(r.Context(), req.Name)
 	if err == nil {
@@ -285,6 +297,10 @@ func (rt *Router) handleUpdateRegistryCredential(w http.ResponseWriter, r *http.
 		return
 	}
 	if err := validateUpdateRegistryCredentialRequest(req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := rt.checkRegistryHost(r.Context(), req.RegistryHost); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -383,23 +399,108 @@ func (rt *Router) handleTestRegistryCredential(w http.ResponseWriter, r *http.Re
 	ctx, cancel := context.WithTimeout(r.Context(), registryCredentialTestTimeout)
 	defer cancel()
 	if err := rt.registryAuthTester.TestRegistryAuth(ctx, cred.RegistryHost, cred.Username, password); err != nil {
+		rt.logger.Warn("api: registry credential test failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusBadGateway, registryAuthTestErrorMessage(err))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// registryAuthTestErrorMessage classifies a failed TestRegistryAuth error
-// into the one specific reason cerrdefs can actually distinguish
-// (rejected credentials) versus everything else (registry unreachable,
-// TLS failure, timeout). Never includes the password: TestRegistryAuth's
-// own error wraps only the daemon's response, which never echoes back
-// what it was given.
+// registryAuthTestErrorMessage maps a failed TestRegistryAuth error to a
+// coarse category so daemon detail (addresses, resolver output) is never
+// returned to the caller; the detail is logged by the handler.
 func registryAuthTestErrorMessage(err error) string {
 	if cerrdefs.IsUnauthorized(err) {
 		return "authentication rejected by registry: check the username and password"
 	}
-	return fmt.Sprintf("could not reach registry: %s", err.Error())
+	low := strings.ToLower(err.Error())
+	var netErr net.Error
+	switch {
+	case strings.Contains(low, "x509") || strings.Contains(low, "tls:") || strings.Contains(low, "certificate"):
+		return "could not reach registry: TLS error"
+	case errors.Is(err, context.DeadlineExceeded) || errors.As(err, &netErr) ||
+		strings.Contains(low, "no such host") || strings.Contains(low, "connection refused") || strings.Contains(low, "timeout"):
+		return "could not reach registry: unreachable"
+	}
+	return "could not verify the registry credential"
+}
+
+// checkRegistryHost validates a registry address before it is stored or
+// used. The platform registry's own host is exempt so it keeps working
+// on private networks.
+func (rt *Router) checkRegistryHost(ctx context.Context, host string) error {
+	exempt := ""
+	if rt.registry != nil {
+		if settings, err := rt.registry.GetRegistrySettings(ctx); err == nil {
+			exempt = settings.Host
+		}
+	}
+	return validateRegistryHost(ctx, host, exempt, registrycatalog.AllowPrivate())
+}
+
+// registryHostname extracts the bare hostname from a host[:port] or
+// scheme://host[:port] registry address, rejecting anything else.
+func registryHostname(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.ContainsAny(raw, " \t\r\n@?#") {
+		return "", errors.New("registry_host must be a plain host or host:port")
+	}
+	target := raw
+	if !strings.Contains(raw, "://") {
+		target = "https://" + raw
+	}
+	u, err := url.Parse(target)
+	if err != nil || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" ||
+		(u.Path != "" && u.Path != "/") || (u.Scheme != "http" && u.Scheme != "https") {
+		return "", errors.New("registry_host must be a plain host or host:port")
+	}
+	return strings.ToLower(u.Hostname()), nil
+}
+
+// validateRegistryHost checks the address shape, then refuses internal
+// targets unless allowPrivate is set. Link-local and metadata stay
+// refused even then. exempt is the built-in registry host, if any.
+func validateRegistryHost(ctx context.Context, raw, exempt string, allowPrivate bool) error {
+	name, err := registryHostname(raw)
+	if err != nil {
+		return err
+	}
+	if exempt != "" {
+		if ex, exErr := registryHostname(exempt); exErr == nil && ex == name {
+			return nil
+		}
+	}
+	errInternal := errors.New("registry_host points at an internal address; set " + registrycatalog.AllowPrivateEnv + " to allow private registries")
+	blocked := func(a netip.Addr) bool {
+		if allowPrivate {
+			return !netguard.IsPrivateTargetAllowed(a)
+		}
+		return netguard.IsBlocked(a)
+	}
+	if name == "localhost" || strings.HasSuffix(name, ".localhost") {
+		if allowPrivate {
+			return nil
+		}
+		return errInternal
+	}
+	if ip, perr := netip.ParseAddr(name); perr == nil {
+		if blocked(ip) {
+			return errInternal
+		}
+		return nil
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	addrs, lerr := net.DefaultResolver.LookupNetIP(lookupCtx, "ip", name)
+	if lerr != nil || len(addrs) == 0 {
+		return nil
+	}
+	for _, a := range addrs {
+		if !blocked(a) {
+			return nil
+		}
+	}
+	return errInternal
 }
 
 // randomRegistryCredentialID mirrors randomBackupTargetID's exact shape.

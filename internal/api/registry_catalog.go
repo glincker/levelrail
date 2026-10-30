@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
@@ -178,7 +179,7 @@ func (rt *Router) handleListRegistryCredentialRepositories(w http.ResponseWriter
 		return
 	}
 
-	repos, err := rt.registryCatalog.ListRepositories(r.Context(), cred.RegistryHost, cred.Username, password)
+	repos, err := rt.credentialCatalog().ListRepositories(r.Context(), registryBaseURL(cred.RegistryHost), cred.Username, password)
 	if err != nil {
 		rt.logger.Error("api: list registry credential repositories failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusBadGateway, "could not reach the registry")
@@ -204,7 +205,7 @@ func (rt *Router) handleListRegistryCredentialTags(w http.ResponseWriter, r *htt
 		return
 	}
 
-	tags, err := rt.registryCatalog.ListTags(r.Context(), cred.RegistryHost, cred.Username, password, repository)
+	tags, err := rt.credentialCatalog().ListTags(r.Context(), registryBaseURL(cred.RegistryHost), cred.Username, password, repository)
 	if errors.Is(err, registrycatalog.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "repository not found in this registry")
 		return
@@ -245,4 +246,23 @@ func (rt *Router) loadRegistryCredentialForBrowse(w http.ResponseWriter, r *http
 	}
 
 	return cred, password, true
+}
+
+// credentialCatalog is the guarded client for stored external credentials;
+// the loopback built-in registry keeps its own unguarded client.
+func (rt *Router) credentialCatalog() RegistryCatalogClient {
+	if rt.registryCatalogExternal != nil {
+		return rt.registryCatalogExternal
+	}
+	return rt.registryCatalog
+}
+
+// registryBaseURL turns a stored host[:port] into a base URL, defaulting
+// to https, and trims a trailing slash.
+func registryBaseURL(host string) string {
+	host = strings.TrimRight(strings.TrimSpace(host), "/")
+	if strings.Contains(host, "://") {
+		return host
+	}
+	return "https://" + host
 }
