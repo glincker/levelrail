@@ -51,8 +51,9 @@ function filePathToRoutePath(relFile: string): string {
 // "plain Markdown, deliberately" every other page here promises
 // (docs/README.md). It's built for the separate hosted VitePress site,
 // not this in-app viewer, so it's excluded the same way .vitepress/
-// itself already is.
-const EXCLUDED_TOP_LEVEL_DIRS = new Set(['changelog'])
+// itself already is. docs/i18n/ holds translated READMEs and their sync
+// notes: they are not pages of the hosted docs site (not in docs.json).
+const EXCLUDED_TOP_LEVEL_DIRS = new Set(['changelog', 'i18n'])
 
 function listMarkdownFiles(dir: string, base = ''): string[] {
   const out: string[] = []

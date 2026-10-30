@@ -1,3 +1,5 @@
+-- Uptime monitors: probe definitions, short-lived raw results and hourly rollups for the
+-- experimental monitor engine (ADR 054). Nothing runs unless APP_MONITORS_ENABLED is on.
 CREATE TABLE monitors (
     id          TEXT    PRIMARY KEY,
     name        TEXT    NOT NULL,

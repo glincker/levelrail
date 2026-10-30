@@ -1,6 +1,7 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
 # v0.8.11: new leaf packages analysis, apptype, rollbackref (imports docker) and scaffold pull in store/spec/policy, adding 3 to 4 dependents to the shared core.
+# v0.8.11: internal/api imports internal/monitor, so every dependent of the API now depends on it and on kit/netguard (the SSRF guard its probes dial through).
 internal/autoscale 142
 internal/bindaddr 142
 internal/bindmount 144
@@ -22,6 +23,7 @@ internal/frameworks 43
 internal/gpu 135
 internal/loadbalancer 142
 internal/meshpath 39
+internal/monitor 135
 internal/network 45
 internal/pkgregistry 24
 internal/policy 137
@@ -39,7 +41,7 @@ internal/version 29
 kit/cronexpr 142
 kit/diskspace 37
 kit/ids 68
-kit/netguard 71
+kit/netguard 152
 kit/probe 142
 kit/semver 26
 kit/timeutil 136
