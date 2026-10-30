@@ -703,6 +703,7 @@ type Router struct {
 	domainAuto                   domainAutoSeams                                            // zero value uses the real DNS provider, TLS and HTTP probes; tests replace single funcs
 	dnsZoneProviders             dnsZoneProvidersFunc                                       // nil uses rt.resolveDNSZoneProviders (dns_zones.go); tests swap in fakes
 	dnsQuerier                   dnszones.Querier                                           // nil uses a real miekg/dns querier; tests swap in a fake
+	dnsNS                        dnsNameserverState                                         // lazy delegation checker, registrar lookup and demo zones (dns_zones_delegation.go)
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                        VaultSettingsStore                                         // always set, same shape as cloudflareTunnel above

@@ -25,6 +25,13 @@ type mailDNSApplyRequest struct {
 	PlanHash string `json:"plan_hash"`
 }
 
+// mailDNSPlanResponse is the plan plus a warning when the zone is not delegated yet.
+type mailDNSPlanResponse struct {
+	mailrecords.PlanResult
+	DelegationWarning bool   `json:"delegation_warning,omitempty"`
+	DelegationReason  string `json:"delegation_reason,omitempty"`
+}
+
 type mailDNSApplyResponse struct {
 	Applied int                         `json:"applied"`
 	Plan    mailrecords.PlanResult      `json:"plan"`
@@ -70,7 +77,12 @@ func (rt *Router) handleMailDNSPlan(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusConflict, map[string]any{"error": res.Shadowed[0], "plan": res})
 		return
 	}
-	writeJSON(w, http.StatusOK, res)
+	resp := mailDNSPlanResponse{PlanResult: res}
+	if rt.mail.demo == nil {
+		resp.DelegationReason = rt.domainDelegation(r.Context(), p.Name(), z, req.Domain)
+		resp.DelegationWarning = resp.DelegationReason != ""
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // handleMailDNSApply handles POST /api/v1/mail/dns/apply: writes a confirmed plan, refusing a stale one.

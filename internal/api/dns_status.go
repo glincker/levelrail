@@ -78,7 +78,7 @@ func (rt *Router) liveDNSStatus(r *http.Request, domain string, wants []dnsstatu
 	}
 	// Detached from the request: a coalesced call must not die with its first caller.
 	ctx := context.WithoutCancel(r.Context())
-	return rt.mail.statusCache.Do(dnsstatus.Key(wants, domain, src, z.ID), dnsstatus.CacheTTL(), func() dnsstatus.Status {
+	st := rt.mail.statusCache.Do(dnsstatus.Key(wants, domain, src, z.ID), dnsstatus.CacheTTL(), func() dnsstatus.Status {
 		if viaProvider {
 			pctx, cancel := context.WithTimeout(ctx, opts.ProviderTimeout)
 			sets, err := p.ListRecordSets(pctx, z)
@@ -90,6 +90,12 @@ func (rt *Router) liveDNSStatus(r *http.Request, domain string, wants []dnsstatu
 		}
 		return dnsstatus.FromResolver(ctx, rt.dnsStatusResolver(), wants, opts, time.Now())
 	})
+	if viaProvider {
+		if reason := rt.domainDelegation(ctx, p.Name(), z, domain); reason != "" {
+			st.DelegationWarning, st.DelegationReason = true, reason
+		}
+	}
+	return st
 }
 
 // mailDNSStatus grades the built mail records; demo mode reads the fake zone.

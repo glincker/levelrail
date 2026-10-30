@@ -42,6 +42,25 @@ type dnsProviderResponse struct {
 	DashboardURL         string `json:"dashboard_url,omitempty"`
 	CanIssueCertificates bool   `json:"can_issue_certificates"`
 	Hint                 string `json:"hint"`
+	// Delegation is set when a connected zone holds the domain.
+	Delegation        *dnszones.NSDelegation `json:"delegation,omitempty"`
+	DelegationWarning bool                   `json:"delegation_warning,omitempty"`
+	DelegationReason  string                 `json:"delegation_reason,omitempty"`
+}
+
+// connectUndelegated reports a connected zone that the domain's nameservers do not point at yet.
+func (rt *Router) connectUndelegated(ctx context.Context, out *dnsProviderResponse, det mailrecords.Detection) bool {
+	name, z, ok := rt.findConnectedZone(ctx, det.Zone)
+	if !ok {
+		return false
+	}
+	d := dnszones.ClassifyDelegation(z.Private, z.NameServers, det.Nameservers, nil)
+	out.Connected, out.ZoneID, out.Delegation = true, z.ID, &d
+	out.Hint = "DNS for " + det.Zone + " has a connected " + zoneProviderLabels[name] + " zone. Records can be added in one step."
+	if reason := delegationReasonText(name, d); reason != "" {
+		out.DelegationWarning, out.DelegationReason, out.Hint = true, reason, reason+" Set the zone's nameservers at your registrar."
+	}
+	return true
 }
 
 type nsCacheEntry struct {
@@ -126,6 +145,8 @@ func (rt *Router) dnsProviderReport(ctx context.Context, domain string, reveal b
 	name, ok := hostProviders[det.Provider]
 	out.Connectable = ok
 	switch {
+	case !ok && reveal && rt.connectUndelegated(ctx, &out, det):
+		return out, nil
 	case !ok:
 		out.Hint = "DNS for " + det.Zone + " is hosted at " + label + ". Add the records there by hand; this host cannot be connected yet."
 		return out, nil
@@ -138,6 +159,9 @@ func (rt *Router) dnsProviderReport(ctx context.Context, domain string, reveal b
 		return out, fmt.Errorf("resolve dns zone providers: %w", err)
 	}
 	p := providers[name]
+	if p == nil && rt.connectUndelegated(ctx, &out, det) {
+		return out, nil
+	}
 	if p == nil {
 		out.Hint = "DNS for " + det.Zone + " is hosted at " + label + ". Connect a " + label + " credential under DNS settings to add the records in one step."
 		return out, nil
@@ -148,6 +172,9 @@ func (rt *Router) dnsProviderReport(ctx context.Context, domain string, reveal b
 		return out, nil
 	}
 	z, err := dnszones.FindZone(zones, det.Zone)
+	if err != nil && rt.connectUndelegated(ctx, &out, det) {
+		return out, nil
+	}
 	if err != nil {
 		out.Hint = "The connected " + label + " credential cannot see the zone " + det.Zone + ". Give it access to this zone (DNS edit and zone read), then check again."
 		return out, nil
@@ -158,6 +185,11 @@ func (rt *Router) dnsProviderReport(ctx context.Context, domain string, reveal b
 		out.DashboardURL = "https://dash.cloudflare.com/" + z.AccountID + "/" + url.PathEscape(z.Name) + "/dns/records"
 	}
 	out.Hint = "DNS for " + det.Zone + " is at " + label + " and the connected credential manages it. Records can be added in one step."
+	d := dnszones.ClassifyDelegation(z.Private, z.NameServers, det.Nameservers, nil)
+	out.Delegation = &d
+	if reason := delegationReasonText(name, d); reason != "" {
+		out.DelegationWarning, out.DelegationReason = true, reason
+	}
 	return out, nil
 }
 
@@ -247,12 +279,13 @@ func (rt *Router) detectedZoneProvider(ctx context.Context, domain string) strin
 		return ""
 	}
 	name, ok := hostProviders[det.Provider]
-	if !ok {
+	all, err := rt.zoneProviders(ctx)
+	if err != nil {
 		return ""
 	}
-	all, err := rt.zoneProviders(ctx)
-	if err != nil || all[name] == nil {
-		return ""
+	if !ok || all[name] == nil {
+		// The zone may exist at a connected provider the registrar does not point at yet.
+		name, _, _ = rt.findConnectedZone(ctx, det.Zone)
 	}
 	return name
 }

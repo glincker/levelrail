@@ -196,6 +196,8 @@ func (rt *Router) handleGoLivePlan(w http.ResponseWriter, r *http.Request) {
 				res.DNSStatus = &st
 			}
 		}
+		res.DelegationReason = rt.visibleDelegationWarning(r, d)
+		res.DelegationWarning = res.DelegationReason != ""
 		out.Plans = append(out.Plans, res)
 	}
 	writeJSON(w, http.StatusOK, out)

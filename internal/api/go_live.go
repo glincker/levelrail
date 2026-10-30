@@ -81,7 +81,10 @@ type goLiveResult struct {
 	CheckedAt string                 `json:"checked_at"`
 	// DNSStatus is set by a plan that asked for status: each required record's live state.
 	DNSStatus *dnsstatus.Status `json:"dns_status,omitempty"`
-	undo      []undoAction
+	// DelegationWarning is set by a plan when the domain's zone is not delegated yet; it never blocks.
+	DelegationWarning bool   `json:"delegation_warning,omitempty"`
+	DelegationReason  string `json:"delegation_reason,omitempty"`
+	undo              []undoAction
 }
 
 type goLiveRequest struct {

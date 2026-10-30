@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1902 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1903 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1073,6 +1073,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/dns/zone", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSZone", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/zones", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSZones", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/zones", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateDNSZone", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones/{provider}/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDNSZoneDetail", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/dns/zones/{zone}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteDNSZone", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/zones/{zone}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDNSZone", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/delegation", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSZoneDelegation", Description: ""},

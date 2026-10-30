@@ -195,7 +195,7 @@ var Tree = map[string]*Node{
 		"waf":                  {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"error-pages":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"search-visibility":    nil,
-		"dns":                  {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}},
+		"dns":                  {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil, "zones": nil, "zone": nil, "records": nil}},
 		"go-live":              {Subs: map[string]*Node{"runs": nil, "undo": nil}},
 		"backfill-base-domain": nil,
 		"headers":              {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "preset": nil, "clear": nil}},

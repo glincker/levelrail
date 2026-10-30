@@ -16,6 +16,24 @@ type DNSZone struct {
 	NameServers []string `json:"name_servers"`
 	Private     bool     `json:"private,omitempty"`
 	ModifiedAt  string   `json:"modified_at,omitempty"`
+	// Delegated is yes, no, partial or unknown; set by the list and detail routes.
+	Delegated          string            `json:"delegated,omitempty"`
+	DelegationReason   string            `json:"delegation_reason,omitempty"`
+	CurrentNameservers []string          `json:"current_nameservers,omitempty"`
+	RegistrarHint      *DNSRegistrarHint `json:"registrar_hint,omitempty"`
+}
+
+// DNSRegistrarHint mirrors internal/dnszones.RegistrarHint.
+type DNSRegistrarHint struct {
+	Name string `json:"name"`
+	URL  string `json:"url,omitempty"`
+}
+
+// GetDNSZoneDetail calls GET /api/v1/dns/zones/{provider}/{id}.
+func (c *Client) GetDNSZoneDetail(ctx context.Context, provider, id string) (DNSZone, error) {
+	var out DNSZone
+	err := c.do(ctx, http.MethodGet, "/api/v1/dns/zones/"+PathEscape(provider)+"/"+PathEscape(id), nil, &out)
+	return out, err
 }
 
 // DNSCapabilities mirrors internal/dnszones.Capabilities.
@@ -47,7 +65,10 @@ type DNSRecordSet struct {
 	Failover      string   `json:"failover,omitempty"`
 	HealthCheckID string   `json:"health_check_id,omitempty"`
 	Managed       bool     `json:"managed,omitempty"`
-	Alias         *struct {
+	ReadOnly      bool     `json:"read_only,omitempty"`
+	// ManagedByLevelrail is set when the mail DNS ledger says this instance wrote the record.
+	ManagedByLevelrail bool `json:"managed_by_levelrail,omitempty"`
+	Alias              *struct {
 		DNSName string `json:"dns_name"`
 	} `json:"alias,omitempty"`
 }
@@ -65,6 +86,7 @@ type DNSRecordsList struct {
 	Provider string         `json:"provider"`
 	Records  []DNSRecordSet `json:"records"`
 	Total    int            `json:"total"`
+	Matched  int            `json:"matched,omitempty"`
 }
 
 // DNSIssue is a conflict or warning on a record set.
@@ -228,7 +250,7 @@ func (c *Client) UpdateDNSZoneRecord(ctx context.Context, provider, zone string,
 
 // DeleteDNSZoneRecord calls DELETE /api/v1/dns/zones/{zone}/records.
 func (c *Client) DeleteDNSZoneRecord(ctx context.Context, provider, zone string, k DNSRecordKey) error {
-	q := url.Values{"name": {k.Name}, "type": {k.Type}}
+	q := url.Values{"name": {k.Name}, "type": {k.Type}, "confirm": {k.Name}}
 	if k.SetIdentifier != "" {
 		q.Set("set_identifier", k.SetIdentifier)
 	}

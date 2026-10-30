@@ -2126,6 +2126,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/mcp/oauth/clients | AbilityRoot | handleCreateMCPClient |
 | DELETE | /api/v1/mcp/oauth/clients/{id} | AbilityRoot | handleDeleteMCPClient |
 | GET | /api/v1/mail/dns/status | AbilityRead | handleMailDNSStatus |
+| GET | /api/v1/dns/zones/{provider}/{id} | AbilityRead | handleGetDNSZoneDetail |
 | POST | /mcp | Public |  |
 
 ## See also

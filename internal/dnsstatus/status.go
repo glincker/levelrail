@@ -77,6 +77,9 @@ type Status struct {
 	CheckedAt      string   `json:"checked_at"`
 	Counts         Counts   `json:"counts"`
 	Records        []Record `json:"records"`
+	// DelegationWarning means the records come from a provider zone public DNS does not use yet.
+	DelegationWarning bool   `json:"delegation_warning,omitempty"`
+	DelegationReason  string `json:"delegation_reason,omitempty"`
 }
 
 func (c *Counts) add(status string) {
