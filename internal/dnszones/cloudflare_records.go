@@ -29,6 +29,7 @@ type cfRecord struct {
 	Proxied  *bool   `json:"proxied,omitempty"`
 	TTL      int     `json:"ttl"`
 	Data     *cfData `json:"data,omitempty"`
+	Comment  string  `json:"comment,omitempty"`
 }
 
 func intp(v int) *int { return &v }
@@ -61,7 +62,7 @@ func (r cfRecord) value() string {
 
 // toCFRecord builds the API body for one value of rs.
 func toCFRecord(rs RecordSet, zone Zone, value string) (cfRecord, error) {
-	rec := cfRecord{Type: rs.Type, Name: FQDN(rs.Name, zone.Name), TTL: rs.TTL}
+	rec := cfRecord{Type: rs.Type, Name: FQDN(rs.Name, zone.Name), TTL: rs.TTL, Comment: rs.Comment}
 	if rs.Type == "A" || rs.Type == "AAAA" || rs.Type == "CNAME" {
 		p := rs.Proxied
 		rec.Proxied = &p
@@ -185,4 +186,19 @@ func (c *Cloudflare) DeleteRecordSet(ctx context.Context, zone Zone, k Key) erro
 		}
 	}
 	return nil
+}
+
+// RecordIDs returns the Cloudflare ids of the records in the set whose value is one of values.
+func (c *Cloudflare) RecordIDs(ctx context.Context, zone Zone, k Key, values []string) ([]string, error) {
+	recs, err := c.setRecords(ctx, zone, k)
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, r := range recs {
+		if slices.Contains(values, r.value()) {
+			ids = append(ids, r.ID)
+		}
+	}
+	return ids, nil
 }

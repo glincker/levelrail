@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/mailrecords"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -66,6 +67,9 @@ type mailState struct {
 	backup *mailBackupConfig
 	// sysEmail guards the system email actions (mail_system_email.go).
 	sysEmail sysEmailRuntime
+	// nsResolver is nil in production (net.DefaultResolver); nsCache keeps detections briefly.
+	nsResolver mailrecords.NSResolver
+	nsCache    mailNSCache
 }
 
 func (rt *Router) attachMail(s any) {

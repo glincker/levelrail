@@ -110,7 +110,7 @@ type cfZone struct {
 }
 
 func (z cfZone) toZone() Zone {
-	return Zone{ID: z.ID, Name: NormalizeDomain(z.Name), Provider: ProviderCloudflare, Status: z.Status, NameServers: normalizeAll(z.NameServers), ModifiedAt: z.ModifiedOn}
+	return Zone{ID: z.ID, Name: NormalizeDomain(z.Name), Provider: ProviderCloudflare, Status: z.Status, NameServers: normalizeAll(z.NameServers), ModifiedAt: z.ModifiedOn, AccountID: z.Account.ID}
 }
 
 // paginate fetches every page of path (which must already carry a query string).

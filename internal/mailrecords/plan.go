@@ -44,15 +44,17 @@ type Change struct {
 
 // PlanResult is the dry-run diff. Hash pins it so a stale plan cannot be applied.
 type PlanResult struct {
-	Domain    string         `json:"domain"`
-	Provider  string         `json:"provider,omitempty"`
-	Hash      string         `json:"hash"`
-	Changes   []Change       `json:"changes"`
-	Notes     []Note         `json:"notes,omitempty"`
-	Refusals  []string       `json:"refusals,omitempty"`
-	Replacing []string       `json:"replacing,omitempty"`
-	Summary   map[string]int `json:"summary"`
-	Blocked   bool           `json:"blocked"`
+	Domain    string   `json:"domain"`
+	Provider  string   `json:"provider,omitempty"`
+	Hash      string   `json:"hash"`
+	Changes   []Change `json:"changes"`
+	Notes     []Note   `json:"notes,omitempty"`
+	Refusals  []string `json:"refusals,omitempty"`
+	Replacing []string `json:"replacing,omitempty"`
+	// Shadowed lists proxied records that would hide a mail host; they also block the plan.
+	Shadowed []string       `json:"shadowed,omitempty"`
+	Summary  map[string]int `json:"summary"`
+	Blocked  bool           `json:"blocked"`
 }
 
 // NormalizeReplace validates and canonicalizes the record kinds a caller may replace.
@@ -116,8 +118,13 @@ func Plan(ctx context.Context, p dnszones.Provider, zone dnszones.Zone, spec Spe
 		return PlanResult{}, fmt.Errorf("list records: %w", err)
 	}
 	res := PlanResult{Domain: spec.Domain, Provider: p.Name(), Notes: notes, Replacing: replace, Summary: map[string]int{}}
+	res.Shadowed = proxiedShadows(desired, existing, zone.Name)
+	res.Refusals = append(res.Refusals, res.Shadowed...)
 	var writes []dnszones.RecordSet
 	for _, d := range desired {
+		// Mail never works through an HTTP proxy, so every record is DNS only.
+		d.Set.Proxied = false
+		d.Set.Comment = ManagedComment
 		ch := diffOne(d, existing, replace)
 		if ch.Action == ActionRefused {
 			res.Refusals = append(res.Refusals, ch.Reason)
@@ -260,4 +267,79 @@ func (r PlanResult) AuditSubject(applied int) string {
 		}
 	}
 	return fmt.Sprintf("mail_dns applied=%d %s", applied, strings.Join(parts, ","))
+}
+
+// mailHostNames are the names mail clients and servers must reach directly.
+func mailHostNames(desired []Record, zone string) map[string]bool {
+	out := map[string]bool{}
+	for _, d := range desired {
+		switch d.Set.Type {
+		case "A", "AAAA", "CNAME":
+			out[dnszones.FQDN(d.Set.Name, zone)] = true
+		case "MX", "SRV":
+			for _, v := range d.Set.Values {
+				if f := strings.Fields(v); len(f) > 0 {
+					out[dnszones.NormalizeDomain(f[len(f)-1])] = true
+				}
+			}
+		}
+		if d.Kind == KindMTASTS {
+			out["mta-sts."+zone] = true
+		}
+	}
+	return out
+}
+
+// proxiedShadows refuses a proxied A, AAAA or CNAME at a mail host name: the
+// proxy carries only HTTP, so SMTP and IMAP would silently stop working.
+func proxiedShadows(desired []Record, existing []dnszones.RecordSet, zone string) []string {
+	names := mailHostNames(desired, dnszones.NormalizeDomain(zone))
+	var out []string
+	for _, e := range existing {
+		if !e.Proxied || (e.Type != "A" && e.Type != "AAAA" && e.Type != "CNAME") {
+			continue
+		}
+		if fq := dnszones.FQDN(e.Name, zone); names[fq] {
+			out = append(out, fmt.Sprintf("%s %s is proxied (orange cloud), so mail cannot reach it. Switch it to DNS only at the DNS provider, then plan again.", fq, e.Type))
+		}
+	}
+	return out
+}
+
+// RecordIDer is implemented by providers that expose per-record ids (Cloudflare).
+type RecordIDer interface {
+	RecordIDs(ctx context.Context, zone dnszones.Zone, k dnszones.Key, values []string) ([]string, error)
+}
+
+// AppliedRecord is one record set mail DNS wrote, with the provider ids of the values it added.
+type AppliedRecord struct {
+	Name   string   `json:"name"`
+	Type   string   `json:"type"`
+	Action string   `json:"action"`
+	IDs    []string `json:"ids"`
+}
+
+// AppliedRecords lists what an applied plan added; ids stay empty when the provider has none.
+func AppliedRecords(ctx context.Context, p dnszones.Provider, zone dnszones.Zone, res PlanResult) []AppliedRecord {
+	ider, _ := p.(RecordIDer)
+	var out []AppliedRecord
+	for _, c := range res.Changes {
+		if c.Action != ActionAdd && c.Action != ActionReplace {
+			continue
+		}
+		a := AppliedRecord{Name: c.Set.Name, Type: c.Set.Type, Action: c.Action, IDs: []string{}}
+		if ider != nil {
+			var ours []string
+			for _, v := range c.Set.Values {
+				if c.Before == nil || !slices.Contains(c.Before.Values, v) {
+					ours = append(ours, v)
+				}
+			}
+			if ids, err := ider.RecordIDs(ctx, zone, c.Set.Key(), ours); err == nil && ids != nil {
+				a.IDs = ids
+			}
+		}
+		out = append(out, a)
+	}
+	return out
 }

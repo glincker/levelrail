@@ -25,8 +25,9 @@ type mailDNSApplyRequest struct {
 }
 
 type mailDNSApplyResponse struct {
-	Applied int                    `json:"applied"`
-	Plan    mailrecords.PlanResult `json:"plan"`
+	Applied int                         `json:"applied"`
+	Plan    mailrecords.PlanResult      `json:"plan"`
+	Records []mailrecords.AppliedRecord `json:"records"`
 }
 
 // mailDNSTarget decodes the spec and resolves its zone, writing the error response itself.
@@ -42,6 +43,7 @@ func (rt *Router) mailDNSTarget(w http.ResponseWriter, r *http.Request, req *mai
 		writeError(w, http.StatusBadRequest, err.Error())
 		return nil, dnszones.Zone{}, mailrecords.PlanOptions{}, false
 	}
+	rt.mailDefaultProvider(r.Context(), r, req.Domain)
 	r.SetPathValue("zone", req.Domain)
 	p, z, ok := rt.mailZone(w, r)
 	return p, z, mailrecords.PlanOptions{ReplaceExisting: replace}, ok
@@ -61,6 +63,10 @@ func (rt *Router) handleMailDNSPlan(w http.ResponseWriter, r *http.Request) {
 	res, err := mailrecords.Plan(r.Context(), p, z, req.Spec, opts)
 	if err != nil {
 		rt.dnsProviderError(w, "mail dns plan", err)
+		return
+	}
+	if len(res.Shadowed) > 0 {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": res.Shadowed[0], "plan": res})
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
@@ -91,8 +97,9 @@ func (rt *Router) handleMailDNSApply(w http.ResponseWriter, r *http.Request) {
 		rt.dnsProviderError(w, "mail dns apply", err)
 		return
 	}
-	rt.auditDNS(r, auditMailDNSApply, z, res.AuditSubject(n), http.StatusOK)
-	writeJSON(w, http.StatusOK, mailDNSApplyResponse{Applied: n, Plan: res})
+	recs := mailrecords.AppliedRecords(r.Context(), p, z, res)
+	rt.auditDNS(r, auditMailDNSApply, z, mailLedgerSubject(req.Domain, p.Name(), n, recs), http.StatusOK)
+	writeJSON(w, http.StatusOK, mailDNSApplyResponse{Applied: n, Plan: res, Records: recs})
 }
 
 // handleMailDNSCheck handles GET /api/v1/mail/dns/check?domain=: grades the live mail DNS.

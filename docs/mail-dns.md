@@ -21,6 +21,20 @@ levelrail-cli mail dns check example.com --host mail.example.com --dkim-selector
 
 API: `POST /api/v1/mail/dns/plan`, `POST /api/v1/mail/dns/apply` (body needs `confirm: true` and `plan_hash`), `GET /api/v1/mail/dns/check?domain=`.
 
+## Detect the DNS host, then apply in one step
+
+`levelrail-cli mail dns provider example.com` (API `GET /api/v1/mail/dns/provider?domain=`, and `GET /api/v1/domains/dns-provider?domain=` outside the mail flag) looks up the public NS records, walking up from a subdomain to the first name that has them, and names the host: Cloudflare, Route 53, Google Cloud DNS, DigitalOcean, Azure, Hetzner, Namecheap, GoDaddy, or `manual` with the raw nameservers. It also says whether a connected credential can see that zone (`connected`) and whether that credential could later issue certificates over DNS-01 (`can_issue_certificates`). Results are cached for `APP_MAIL_DNS_PROVIDER_CACHE_SECONDS` (default 300). A team member sees `connected`, `zone_id` and `dashboard_url` only for zones holding a domain of their own team.
+
+It also reads `_domainconnect.<apex>` (then the zone found above) and reports `domain_connect` with the published host. This is discovery only: nothing calls that host yet. For a connected Cloudflare zone whose account id is known, `dashboard_url` links straight to its DNS records page.
+
+`mail dns plan` and `apply` without `--provider` use the connected provider the nameservers point at. `mail dns domains` lists candidate domains (install, claimed, app domains, managed zones) and `mail dns applied example.com` lists every record mail DNS added, with the provider record ids, read from the audit log. On Cloudflare each record carries the comment `managed by levelrail mail`.
+
+Least privilege Cloudflare token: Zone, DNS, Edit on the single zone plus Zone, Zone, Read. Nothing more is needed.
+
+Mail records are never proxied. The Cloudflare proxy carries only HTTP, so a proxied mail host, MX target, autoconfig or `mta-sts` name silently breaks SMTP and IMAP. Every record mail DNS creates is DNS only, and the plan is refused with `409` and a plain reason when an existing proxied record would shadow one of those names. `check` also returns `ptr_hint`: reverse DNS is set at the hosting provider that owns the server IP, named when its PTR reveals it.
+
+For app domains the one-step flow already exists: `POST /api/v1/apps/{name}/domains/go-live/plan` and `POST /api/v1/apps/{name}/domains/{domain}/go-live` (CLI `domains go-live`).
+
 ## Add-only by default
 
 Changing mail records can break a live domain. By default nothing existing is overwritten:
