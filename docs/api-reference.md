@@ -2064,6 +2064,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/incidents/{id}/publish | AbilityWrite | handlePublishIncident |
 | GET | /api/v1/mail/status | AbilityRead | handleMailStatus |
 | PATCH | /api/v1/monitors/{id} | AbilityWrite | handleUpdateMonitorLink |
+| GET | /api/v1/mail/ports | AbilityRead | handleMailPorts |
+| POST | /api/v1/mail/ports/open | AbilityWriteSensitive | handleMailPortsOpen |
 | POST | /mcp | Public |  |
 
 ## See also

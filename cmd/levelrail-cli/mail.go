@@ -17,7 +17,7 @@ import (
 func mailUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s mail status                       show whether the mail server is installed, running and ready
-  %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
+%[3]s  %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
   %[1]s mail dns apply <domain> --plan-hash H --confirm [flags]   write a plan you reviewed
   %[1]s mail dns check <domain> [--host H] [--dkim-selector S]    grade the live mail DNS
 
@@ -32,7 +32,7 @@ Experimental: needs APP_EXPERIMENTAL=mail. The default is add-only: existing
 MX, SPF, DKIM and DMARC records are never replaced unless --replace-existing
 lists their kind (MX, SPF, DKIM, DMARC, HOST, MTASTS, TLSRPT, AUTOCONFIG).
 Presets: %[2]s.
-`, prog, strings.Join(mailrecords.PresetIDs(), ", "))
+`, prog, strings.Join(mailrecords.PresetIDs(), ", "), fmt.Sprintf(mailPortsUsageLines, prog))
 }
 
 type mailFlags struct {
@@ -82,6 +82,9 @@ func (m *mailFlags) finish(domain string) error {
 }
 
 func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) >= 1 && args[0] == "ports" {
+		return runMailPorts(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	if len(args) >= 1 && args[0] == "status" {
 		var app string
 		c, code, ok := parseDBAccess(prog, "mail status", "mail status [--app name]", args[1:], 0, "", stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {

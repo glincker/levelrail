@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1840 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1842 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1265,6 +1265,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMailGroup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateMailGroup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/mail/layout", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetMailLayout", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/ports", Ability: "AbilityRead", Group: "Other", Handler: "handleMailPorts", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/ports/open", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMailPortsOpen", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/status", Ability: "AbilityRead", Group: "Other", Handler: "handleMailStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailSuppressions", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddMailSuppression", Description: ""},
