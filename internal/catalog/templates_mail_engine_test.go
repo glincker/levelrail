@@ -33,6 +33,10 @@ func TestMailMoxInstallLeavesNoUnresolvedEnv(t *testing.T) {
 			}
 		}
 	}
+	cmd := strings.Join(f.Services["mox"].Command, "\n")
+	if !strings.Contains(cmd, "MAIL_TLS_WAIT_SECONDS:=60") || !strings.Contains(cmd, "waiting for the certificate to be created") || !strings.Contains(cmd, "sleep 1") {
+		t.Error("mox start script must wait for the generated certificate")
+	}
 	if got := f.Services["mox"].Environment["MAIL_FIRST_DOMAIN"]; got != "example.com" {
 		t.Fatalf("domain env = %q", got)
 	}

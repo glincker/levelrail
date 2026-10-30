@@ -115,6 +115,7 @@ services:
       - mail_config:/mox/config
   mox:
     image: r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e
+    restart: unless-stopped
     labels:
       levelrail.mail: engine
     mem_limit: "@MEM@m"
@@ -147,6 +148,12 @@ services:
         mkdir -p config data
         [ -n "$MAIL_FIRST_DOMAIN" ] || { echo "mail template: the mail domain is not set. Install with: levelrail-cli templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com (or fill in Mail domain in the dashboard install form)" >&2; exit 1; }
         : "${MAIL_HOSTNAME:=mail.$MAIL_FIRST_DOMAIN}" "${MAIL_TLS_CERT_FILE:=certs/selfsigned.pem}" "${MAIL_TLS_KEY_FILE:=certs/selfsigned.key}" "${MAIL_SMARTHOST_PORT:=587}"
+        : "${MAIL_TLS_WAIT_SECONDS:=60}"
+        if [ ! -f "config/$MAIL_TLS_CERT_FILE" ] || [ ! -f "config/$MAIL_TLS_KEY_FILE" ]; then
+          echo "mail template: waiting for the certificate to be created"
+          waited=0
+          while { [ ! -f "config/$MAIL_TLS_CERT_FILE" ] || [ ! -f "config/$MAIL_TLS_KEY_FILE" ]; } && [ "$waited" -lt "$MAIL_TLS_WAIT_SECONDS" ]; do sleep 1; waited=$((waited + 1)); done
+        fi
         if [ ! -f "config/$MAIL_TLS_CERT_FILE" ] || [ ! -f "config/$MAIL_TLS_KEY_FILE" ]; then echo "mail template: the certificate or key file is missing from the config volume ($MAIL_TLS_CERT_FILE, $MAIL_TLS_KEY_FILE under /mox/config). Add both files or clear the two settings to use a self-signed certificate, then restart." >&2; exit 1; fi
         if [ -f config/certs/.selfsigned ] && [ "$MAIL_TLS_CERT_FILE" = certs/selfsigned.pem ]; then echo "mail template: using a self-signed certificate, replace it before sending real mail: put your certificate and key in the config volume, set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE, and restart"; fi
         : "${MAIL_ADMIN_EMAIL:=postmaster@$MAIL_FIRST_DOMAIN}"
