@@ -33,6 +33,7 @@ export const NAMESPACES = [
   'updates',
   'infraCanvas',
   'canvas',
+  'mailServer',
   'exposure',
   'appExposure',
   'appAccess',

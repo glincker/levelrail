@@ -47,6 +47,7 @@ import {
   SignpostGlassIcon,
   SlidersHorizontalGlassIcon,
   SplitGlassIcon,
+  MailGlassIcon,
   TerminalGlassIcon,
   TrafficConeGlassIcon,
   UploadGlassIcon,
@@ -81,6 +82,7 @@ export type GlobalTo =
   | '/domains'
   | '/dns'
   | '/loadbalancers'
+  | '/mail'
   | '/firewall'
   | '/models'
   | '/ai-assistant'
@@ -279,6 +281,13 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/loadbalancers',
         icon: <SplitGlassIcon size="1.4em" />,
         feature: 'load-balancer',
+      },
+      {
+        id: 'mail',
+        label: 'Mail',
+        to: '/mail',
+        icon: <MailGlassIcon size="1.4em" />,
+        feature: 'mail',
       },
       {
         id: 'cdn',

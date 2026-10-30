@@ -1,0 +1,91 @@
+{
+  "title": "Mail",
+  "description": "Set up DNS for your own mail server and see what is still missing. Experimental.",
+  "eyebrow": "Experimental",
+  "install": {
+    "title": "Install a mail server",
+    "body": "Deploys the mox template: SMTP, IMAP and webmail in one container.",
+    "action": "Install mail server"
+  },
+  "overview": {
+    "title": "Setup checklist",
+    "hint": "Run a check on a domain to fill this in. Anything not checked stays marked as such.",
+    "label": "Mail setup checklist for {{domain}}"
+  },
+  "status": {
+    "pass": "Passing",
+    "warn": "Needs attention",
+    "fail": "Failing",
+    "not_tested": "Not checked"
+  },
+  "items": {
+    "server": "Mail server installed",
+    "dns": "MX record",
+    "spf": "SPF",
+    "dkim": "DKIM",
+    "dmarc": "DMARC",
+    "mta_sts": "MTA-STS",
+    "ptr": "Reverse DNS (PTR)",
+    "port25": "Port 25 outbound"
+  },
+  "unknown": {
+    "server": "Not detected from here. Install it with the card above.",
+    "ptr": "Set by your hosting provider. This page cannot read it yet."
+  },
+  "dns": {
+    "title": "Domain DNS",
+    "domain": "Domain",
+    "domainPlaceholder": "example.com",
+    "knownDomains": "Domains on this instance",
+    "preset": "Mail provider",
+    "selfHosted": "Self-hosted (this server)",
+    "mailHost": "Mail host",
+    "ipv4": "Server IPv4",
+    "ipv4Placeholder": "Public address",
+    "plan": "Preview records",
+    "apply": "Apply {{count}} records",
+    "applying": "Applying",
+    "check": "Check",
+    "checking": "Checking",
+    "planHash": "Plan {{hash}}",
+    "noChanges": "Nothing to add. These records already exist.",
+    "blocked": "The plan is blocked by existing records. Fix them at your DNS provider first.",
+    "applied": "Applied {{count}} records",
+    "colAction": "Plan",
+    "colName": "Name",
+    "colType": "Type",
+    "colValue": "Value",
+    "colLive": "Live",
+    "tableLabel": "Planned mail DNS records",
+    "action": {
+      "add": "Add",
+      "unchanged": "Unchanged",
+      "replace": "Replace",
+      "refused": "Refused"
+    },
+    "error": "Request failed: {{message}}"
+  },
+  "soon": {
+    "label": "Coming next",
+    "mailboxes": {
+      "title": "Mailboxes",
+      "body": "Create and remove mailboxes and set quotas for each domain."
+    },
+    "aliases": {
+      "title": "Aliases",
+      "body": "Forward addresses and catch-alls to a mailbox."
+    },
+    "queue": {
+      "title": "Queue",
+      "body": "See messages waiting to be delivered, retry or drop them."
+    },
+    "storage": {
+      "title": "Storage",
+      "body": "Mailbox disk usage and the volume the mail lives on."
+    },
+    "backup": {
+      "title": "Backup",
+      "body": "Scheduled mail backups with a restore check."
+    }
+  }
+}

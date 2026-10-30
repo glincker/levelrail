@@ -17,6 +17,7 @@ export type ExperimentalFeature =
   | 'plugins'
   | 'git-push'
   | 'canvas'
+  | 'mail'
 
 export const BETA_FEATURES_PATH = '/settings/beta-features'
 

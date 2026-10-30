@@ -38,6 +38,7 @@ import type attention from '../locales/en/attention.json'
 import type updates from '../locales/en/updates.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
 import type canvas from '../locales/en/canvas.json'
+import type mailServer from '../locales/en/mailServer.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type databaseVersions from '../locales/en/databaseVersions.json'
@@ -153,6 +154,7 @@ declare module 'i18next' {
       updates: typeof updates
       infraCanvas: typeof infraCanvas
       canvas: typeof canvas
+      mailServer: typeof mailServer
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions

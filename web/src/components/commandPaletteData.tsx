@@ -265,6 +265,14 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Navigate',
     'load-balancer',
   ),
+  nav(
+    'nav-mail',
+    'Mail',
+    <MailGlassIcon size="1.4em" />,
+    '/mail',
+    'Navigate',
+    'mail',
+  ),
   nav('nav-backups', 'Backups', <UploadGlassIcon size="1.4em" />, '/backups'),
   nav('nav-assets', 'Assets', <ImagesGlassIcon size="1.4em" />, '/assets'),
   nav(

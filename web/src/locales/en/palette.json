@@ -130,6 +130,7 @@
       "nav-firewall": "Control which ports and sources can reach your nodes.",
       "nav-private-networks": "Private networks that link nodes and apps.",
       "nav-loadbalancers": "Spread traffic across replicas and nodes.",
+      "nav-mail": "DNS setup and status for your own mail server.",
       "nav-deployments": "Deploy history across all apps.",
       "nav-deploy-timeline": "A timeline of releases and what changed.",
       "nav-builds": "Build queue, logs and cache for container images.",
