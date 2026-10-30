@@ -63,6 +63,7 @@ export const NAMESPACES = [
   'smartDeploy',
   'dataExport',
   'eventWebhooks',
+  'mcpConsent',
   'trafficExport',
   'compliance',
   'deploySafety',

@@ -1,0 +1,53 @@
+{
+  "title": "{{client}} quiere leer este plano de control",
+  "redirectsTo": "Cuando respondas, tu navegador vuelve a",
+  "access": {
+    "none": "Tu cuenta no tiene ninguno de los accesos pedidos, asi que no se puede conceder nada.",
+    "read": "Acceso de solo lectura a tus recursos. Los secretos y valores sensibles siguen ocultos.",
+    "sensitive": "Acceso de solo lectura, incluidos los valores sensibles.",
+    "trimmed": "Parte de lo pedido queda fuera porque tu cuenta no lo tiene."
+  },
+  "facts": {
+    "never": "Nunca puede crear, cambiar, desplegar ni borrar nada.",
+    "permissions": "Actua como tu y nunca con mas permisos de los que tienes.",
+    "expiry": "El acceso dura {{access}} y se renueva hasta {{refresh}} salvo que lo revoques.",
+    "revoke": "Puedes quitar el cliente cuando quieras en Ajustes, Acceso CLI."
+  },
+  "approve": "Aprobar",
+  "deny": "Denegar",
+  "working": "Procesando",
+  "duration": {
+    "minutes_one": "{{count}} minuto",
+    "minutes_other": "{{count}} minutos",
+    "hours_one": "{{count}} hora",
+    "hours_other": "{{count}} horas",
+    "days_one": "{{count}} dia",
+    "days_other": "{{count}} dias"
+  },
+  "errors": {
+    "missing": "Este enlace no tiene una solicitud de autorizacion. Inicia la conexion de nuevo desde tu cliente de IA.",
+    "featureOff": "La conexion de clientes de IA esta desactivada. Activa MCP remoto en Ajustes, Funciones beta.",
+    "gone": "Esta solicitud caduco o ya fue respondida. Inicia la conexion de nuevo desde tu cliente de IA.",
+    "unavailable": "El inicio de sesion de MCP remoto no esta disponible en este plano de control.",
+    "load": "No se pudo cargar la solicitud. Revisa tu conexion y recarga.",
+    "decide": "No se pudo registrar tu respuesta."
+  },
+  "clients": {
+    "title": "Clientes de IA conectados",
+    "body": "Clientes preregistrados que pueden pedir conectarse por MCP remoto.",
+    "add": "Anadir cliente",
+    "name": "Nombre",
+    "uris": "URI de redireccion",
+    "urisPlaceholder": "https://cliente.example/callback",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "created": "Cliente creado",
+    "clientId": "ID de cliente:",
+    "empty": "No hay clientes preregistrados.",
+    "loadError": "No se pudieron cargar los clientes de IA.",
+    "remove": "Quitar {{name}}",
+    "confirmTitle": "Quitar {{name}}?",
+    "confirmBody": "Sus tokens de acceso dejan de funcionar al instante. Se puede anadir de nuevo mas tarde.",
+    "confirm": "Quitar cliente"
+  }
+}

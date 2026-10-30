@@ -1,0 +1,193 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
+import { BotGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
+import { Banner } from '@/components/ui/banner'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ApiError } from '../../lib/apiError'
+import { devModeQueryOptions } from '../../queries/devMode'
+import {
+  useDecideMcpConsent,
+  useMcpConsent,
+  type McpConsent,
+} from '../../queries/mcpOauth'
+
+const SENSITIVE_SCOPE = 'mcp:read:sensitive'
+const MCP_FEATURE = 'mcp-http'
+const SECONDS_PER_MINUTE = 60
+const SECONDS_PER_HOUR = 3600
+const SECONDS_PER_DAY = 86400
+
+function useDuration() {
+  const { t } = useTranslation('mcpConsent')
+  return (seconds: number) => {
+    if (seconds >= SECONDS_PER_DAY) {
+      return t('duration.days', {
+        count: Math.round(seconds / SECONDS_PER_DAY),
+      })
+    }
+    if (seconds >= SECONDS_PER_HOUR) {
+      return t('duration.hours', {
+        count: Math.round(seconds / SECONDS_PER_HOUR),
+      })
+    }
+    return t('duration.minutes', {
+      count: Math.max(1, Math.round(seconds / SECONDS_PER_MINUTE)),
+    })
+  }
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-3 py-8">
+      {children}
+    </div>
+  )
+}
+
+export function ConsentCard({ requestId }: { requestId: string | undefined }) {
+  const { t } = useTranslation('mcpConsent')
+  const { data: dev } = useQuery(devModeQueryOptions())
+  const consent = useMcpConsent(requestId ?? '')
+
+  if (!requestId) {
+    return (
+      <Shell>
+        <Banner variant="critical" title={t('errors.missing')} />
+      </Shell>
+    )
+  }
+  if (dev && !dev.experimental.includes(MCP_FEATURE)) {
+    return (
+      <Shell>
+        <Banner variant="warning" title={t('errors.featureOff')} />
+      </Shell>
+    )
+  }
+  if (consent.isPending) {
+    return (
+      <Shell>
+        <Skeleton className="h-64 w-full" aria-hidden="true" />
+      </Shell>
+    )
+  }
+  if (consent.error) {
+    const status =
+      consent.error instanceof ApiError ? consent.error.status : undefined
+    const key =
+      status === 404
+        ? 'errors.gone'
+        : status === 501
+          ? 'errors.unavailable'
+          : 'errors.load'
+    return (
+      <Shell>
+        <Banner variant="critical" title={t(key)} />
+      </Shell>
+    )
+  }
+  return <ConsentBody requestId={requestId} consent={consent.data} />
+}
+
+function ConsentBody({
+  requestId,
+  consent,
+}: {
+  requestId: string
+  consent: McpConsent
+}) {
+  const { t } = useTranslation('mcpConsent')
+  const duration = useDuration()
+  const decide = useDecideMcpConsent(requestId)
+  const [done, setDone] = useState(false)
+  const grantable = consent.grantable_scopes
+  const sensitive = grantable.includes(SENSITIVE_SCOPE)
+  const trimmed = consent.requested_scopes.length > grantable.length
+
+  function submit(approve: boolean) {
+    decide.mutate(
+      { approve, scopes: grantable },
+      {
+        onSuccess: (res) => {
+          setDone(true)
+          window.location.assign(res.redirect_to)
+        },
+      },
+    )
+  }
+
+  const busy = decide.isPending || done
+
+  return (
+    <Shell>
+      <section
+        aria-labelledby="mcp-consent-title"
+        className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm"
+      >
+        <header className="flex items-start gap-3">
+          <BotGlassIcon className="mt-0.5 size-8 shrink-0" aria-hidden="true" />
+          <div className="min-w-0">
+            <h1 id="mcp-consent-title" className="text-base font-semibold">
+              {t('title', { client: consent.client_name })}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {t('redirectsTo')}{' '}
+              <span className="font-mono break-all text-foreground">
+                {consent.redirect_host}
+              </span>
+            </p>
+          </div>
+        </header>
+
+        <div className="space-y-1 rounded-lg border border-border p-3 text-sm">
+          <p className="flex items-center gap-2 font-medium">
+            <ShieldCheckGlassIcon className="size-5" aria-hidden="true" />
+            {grantable.length === 0
+              ? t('access.none')
+              : sensitive
+                ? t('access.sensitive')
+                : t('access.read')}
+          </p>
+          {trimmed && grantable.length > 0 ? (
+            <p className="text-muted-foreground">{t('access.trimmed')}</p>
+          ) : null}
+        </div>
+
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>{t('facts.never')}</li>
+          <li>{t('facts.permissions')}</li>
+          <li>
+            {t('facts.expiry', {
+              access: duration(consent.access_ttl_seconds),
+              refresh: duration(consent.refresh_ttl_seconds),
+            })}
+          </li>
+          <li>{t('facts.revoke')}</li>
+        </ul>
+
+        {decide.error ? (
+          <Banner variant="critical" title={t('errors.decide')}>
+            {decide.error.message}
+          </Banner>
+        ) : null}
+
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => submit(false)}
+          >
+            {t('deny')}
+          </Button>
+          <Button
+            disabled={busy || grantable.length === 0}
+            onClick={() => submit(true)}
+          >
+            {decide.isPending ? t('working') : t('approve')}
+          </Button>
+        </div>
+      </section>
+    </Shell>
+  )
+}
