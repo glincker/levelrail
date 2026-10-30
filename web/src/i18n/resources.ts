@@ -103,6 +103,7 @@ import type deployEvents from '../locales/en/deployEvents.json'
 import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
+import type monitors from '../locales/en/monitors.json'
 import type secretRotation from '../locales/en/secretRotation.json'
 import type encryptionKeys from '../locales/en/encryptionKeys.json'
 import type templates from '../locales/en/templates.json'
@@ -209,6 +210,7 @@ declare module 'i18next' {
       images: typeof images
       buildCenter: typeof buildCenter
       functions: typeof functions
+      monitors: typeof monitors
       secretRotation: typeof secretRotation
       encryptionKeys: typeof encryptionKeys
       models: typeof models

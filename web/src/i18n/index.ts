@@ -88,6 +88,7 @@ export const NAMESPACES = [
   'images',
   'buildCenter',
   'functions',
+  'monitors',
   'secretRotation',
   'encryptionKeys',
   'aiAssistant',

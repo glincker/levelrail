@@ -1,0 +1,44 @@
+{
+  "title": "Monitores de disponibilidad",
+  "add": "Añadir monitor",
+  "cancel": "Cancelar",
+  "empty": "Aún no hay monitores. Añade uno para vigilar una URL o un puerto TCP.",
+  "loadError": "No se pudieron cargar los monitores: {{message}}",
+  "columns": {
+    "name": "Nombre",
+    "target": "Destino",
+    "state": "Estado",
+    "lastCheck": "Última comprobación",
+    "uptime": "Disponibilidad (24h)"
+  },
+  "state": {
+    "up": "Activo",
+    "down": "Caído",
+    "paused": "En pausa",
+    "unknown": "Sin datos"
+  },
+  "never": "nunca",
+  "form": {
+    "kind": "Tipo",
+    "http": "HTTP",
+    "tcp": "TCP",
+    "url": "URL",
+    "host": "Host",
+    "port": "Puerto",
+    "name": "Nombre",
+    "interval": "Cada (s)",
+    "timeout": "Tiempo límite (ms)",
+    "save": "Crear",
+    "saving": "Creando...",
+    "created": "Monitor {{name}} creado",
+    "error": "No se pudo crear el monitor: {{message}}"
+  },
+  "delete": {
+    "action": "Eliminar {{name}}",
+    "title": "¿Eliminar el monitor {{name}}?",
+    "description": "Sus resultados y agregados se eliminan con él.",
+    "confirm": "Eliminar",
+    "pending": "Eliminando...",
+    "done": "Monitor {{name}} eliminado"
+  }
+}

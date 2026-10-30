@@ -1,0 +1,44 @@
+{
+  "title": "Uptime monitors",
+  "add": "Add monitor",
+  "cancel": "Cancel",
+  "empty": "No monitors yet. Add one to watch a URL or a TCP port.",
+  "loadError": "Monitors could not be loaded: {{message}}",
+  "columns": {
+    "name": "Name",
+    "target": "Target",
+    "state": "State",
+    "lastCheck": "Last check",
+    "uptime": "Uptime (24h)"
+  },
+  "state": {
+    "up": "Up",
+    "down": "Down",
+    "paused": "Paused",
+    "unknown": "No data"
+  },
+  "never": "never",
+  "form": {
+    "kind": "Type",
+    "http": "HTTP",
+    "tcp": "TCP",
+    "url": "URL",
+    "host": "Host",
+    "port": "Port",
+    "name": "Name",
+    "interval": "Every (s)",
+    "timeout": "Timeout (ms)",
+    "save": "Create",
+    "saving": "Creating...",
+    "created": "Monitor {{name}} created",
+    "error": "Could not create the monitor: {{message}}"
+  },
+  "delete": {
+    "action": "Delete {{name}}",
+    "title": "Delete monitor {{name}}?",
+    "description": "Its results and rollups are deleted with it.",
+    "confirm": "Delete",
+    "pending": "Deleting...",
+    "done": "Monitor {{name}} deleted"
+  }
+}

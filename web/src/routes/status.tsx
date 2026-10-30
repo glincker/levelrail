@@ -21,6 +21,7 @@ import { CopyFailureDetail } from '../components/attention/CopyFailureDetail'
 import { CopyItemControls } from '../components/attention/CopyItemControls'
 import { useSnoozed } from '../components/shell/snoozeStore'
 import { SilenceMenu } from '../components/attention/SilenceMenu'
+import { MonitorsSection } from '../components/monitors/MonitorsSection'
 import { SilencedSection } from '../components/attention/SilencedSection'
 
 export const Route = createFileRoute('/status')({
@@ -309,6 +310,7 @@ export function StatusPage() {
           })}
         </ul>
       )}
+      <MonitorsSection />
       <SilencedSection
         items={all}
         silences={silences}
