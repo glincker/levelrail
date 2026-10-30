@@ -8,11 +8,11 @@ import (
 
 // Environment variable names read by ConfigFromEnv.
 const (
-	EnvConnectTimeout  = "LEVELRAIL_PLUGIN_EGRESS_CONNECT_TIMEOUT"
-	EnvIdleTimeout     = "LEVELRAIL_PLUGIN_EGRESS_IDLE_TIMEOUT"
-	EnvMaxTunnels      = "LEVELRAIL_PLUGIN_EGRESS_MAX_TUNNELS"
-	EnvBytesPerMinute  = "LEVELRAIL_PLUGIN_EGRESS_BYTES_PER_MINUTE"
-	EnvAllowPrivate    = "LEVELRAIL_PLUGIN_EGRESS_ALLOW_PRIVATE"
+	EnvConnectTimeout  = "APP_PLUGIN_EGRESS_CONNECT_TIMEOUT"
+	EnvIdleTimeout     = "APP_PLUGIN_EGRESS_IDLE_TIMEOUT"
+	EnvMaxTunnels      = "APP_PLUGIN_EGRESS_MAX_TUNNELS"
+	EnvBytesPerMinute  = "APP_PLUGIN_EGRESS_BYTES_PER_MINUTE"
+	EnvAllowPrivate    = "APP_PLUGIN_EGRESS_ALLOW_PRIVATE"
 	defaultConnect     = 10 * time.Second
 	defaultIdle        = 60 * time.Second
 	defaultMaxTunnels  = 16
@@ -32,7 +32,7 @@ type Config struct {
 	AllowPrivate bool
 }
 
-// ConfigFromEnv builds a Config from LEVELRAIL_PLUGIN_EGRESS_* variables.
+// ConfigFromEnv builds a Config from APP_PLUGIN_EGRESS_* variables.
 // Unparseable values are ignored so a typo keeps the safe default.
 func ConfigFromEnv(lookup func(string) (string, bool)) Config {
 	get := func(k string) string {

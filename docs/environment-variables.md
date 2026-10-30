@@ -103,6 +103,7 @@ The pipeline engine's own tuning variables are listed in [Pipelines](/pipelines)
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_PIPELINE_SCHEDULER_INTERVAL` | `30s` | How often the pipeline scheduler runs. Control plane. |
+| `APP_PIPELINE_MAX_REF_LEN` | `255` | Longest git ref a webhook run accepts, in bytes. Positive integer. Control plane. |
 | `APP_GIT_STATUS_TIMEOUT` | `10s` | Time limit for each commit status post a pipeline run sends to the git forge. Control plane. |
 | `APP_OIDC_KEY_RETIRE_GRACE` | `24h` | How long a rotated-out signing key stays published in the JWKS document before it is removed. Control plane. |
 | `APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE` | `60` | Rate limit on the unauthenticated JWKS endpoint. Positive integer. Control plane. |
@@ -232,6 +233,16 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_UPDATE_CHECK_INTERVAL` | `1h` | How often the control plane checks the configured release channel for a newer version. Control plane. |
+
+## Plugin egress proxy
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_PLUGIN_EGRESS_CONNECT_TIMEOUT` | `10s` | Time limit for opening an outbound connection for a plugin. Control plane. |
+| `APP_PLUGIN_EGRESS_IDLE_TIMEOUT` | `60s` | How long a plugin tunnel may sit idle before it is closed. Control plane. |
+| `APP_PLUGIN_EGRESS_MAX_TUNNELS` | `16` | Simultaneous tunnels allowed per plugin. Positive integer. Control plane. |
+| `APP_PLUGIN_EGRESS_BYTES_PER_MINUTE` | `268435456` (256 MiB) | Traffic cap per plugin per minute, both directions combined. Positive integer. Control plane. |
+| `APP_PLUGIN_EGRESS_ALLOW_PRIVATE` | `false` | Set to `true` to let plugin tunnels reach targets that resolve to internal addresses. Control plane. |
 
 ## SSH node provisioning
 

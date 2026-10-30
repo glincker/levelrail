@@ -38,7 +38,7 @@ var (
 // validatePipelineRefSHA keeps hostile ref and sha values out of the OIDC
 // subject, the checkout script and commit statuses. Empty values are allowed.
 func validatePipelineRefSHA(ref, sha string) error {
-	maxLen := envPositiveInt("LEVELRAIL_PIPELINE_MAX_REF_LEN", defaultPipelineMaxRefLen)
+	maxLen := envPositiveInt("APP_PIPELINE_MAX_REF_LEN", defaultPipelineMaxRefLen)
 	if ref != "" {
 		if len(ref) > maxLen || !pipelineRefRe.MatchString(ref) || strings.Contains(ref, "..") ||
 			strings.Contains(ref, "//") || strings.HasSuffix(ref, "/") || strings.HasSuffix(ref, ".") ||
