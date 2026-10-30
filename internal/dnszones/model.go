@@ -48,6 +48,8 @@ type Zone struct {
 	NameServers []string `json:"name_servers"`
 	Private     bool     `json:"private,omitempty"`
 	ModifiedAt  string   `json:"modified_at,omitempty"`
+	// AccountID is the provider account that owns the zone, when the provider reports one.
+	AccountID string `json:"account_id,omitempty"`
 }
 
 // RecordSet is every value of one name, type and set identifier. Values use
@@ -64,6 +66,8 @@ type RecordSet struct {
 	Failover      string   `json:"failover,omitempty"`
 	HealthCheckID string   `json:"health_check_id,omitempty"`
 	Alias         *Alias   `json:"alias,omitempty"`
+	// Comment is written on create where the provider keeps comments (Cloudflare).
+	Comment string `json:"comment,omitempty"`
 }
 
 // Alias is a Route53 alias target. Alias sets are shown but edited only through the provider.

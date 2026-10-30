@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -216,31 +217,42 @@ func (rt *Router) handleListMailDomains(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	list, err := db.ListMailDomains(r.Context())
+	list, err := rt.visibleMailDomains(r, db)
 	if err != nil {
 		rt.internalError(w, "api: list mail domains", err)
 		return
 	}
+	out := []mailDomainResource{}
+	for _, d := range list {
+		out = append(out, mailDomainResource{d})
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// visibleMailDomains returns the claimed mail domains the caller may read.
+func (rt *Router) visibleMailDomains(r *http.Request, db MailboxStore) ([]store.MailDomain, error) {
+	list, err := db.ListMailDomains(r.Context())
+	if err != nil {
+		return nil, fmt.Errorf("list mail domains: %w", err)
+	}
 	pType, pID, abilities, err := rt.callerPrincipal(r)
 	if err != nil {
-		rt.internalError(w, "api: mail: resolve caller", err)
-		return
+		return nil, fmt.Errorf("resolve caller: %w", err)
 	}
 	var policies []store.Policy
 	if rt.policies != nil {
 		if policies, err = rt.policies.ListPoliciesForPrincipal(r.Context(), pType, pID); err != nil {
-			rt.internalError(w, "api: mail: list policies", err)
-			return
+			return nil, fmt.Errorf("list policies: %w", err)
 		}
 	}
 	scope, _ := callerTeamScope(r.Context())
-	out := []mailDomainResource{}
+	var out []store.MailDomain
 	for _, d := range list {
 		if mailDecide(scope, abilities, policies, d.TeamID, AbilityRead, mailResDomain+d.Domain, mailResService+d.Service) == 0 {
-			out = append(out, mailDomainResource{d})
+			out = append(out, d)
 		}
 	}
-	writeJSON(w, http.StatusOK, out)
+	return out, nil
 }
 
 // handleClaimMailDomain handles POST /api/v1/mail/domains: one team takes

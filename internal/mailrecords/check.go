@@ -49,6 +49,8 @@ type Item struct {
 type Report struct {
 	Domain string `json:"domain"`
 	Items  []Item `json:"items"`
+	// PTRHint says where reverse DNS is set, naming the host when the PTR reveals it.
+	PTRHint string `json:"ptr_hint"`
 }
 
 func trimDot(s string) string { return strings.TrimSuffix(strings.ToLower(s), ".") }
@@ -71,6 +73,7 @@ func Check(ctx context.Context, r Resolver, domain string, exp Expect) (Report, 
 		txtPresence(ctx, r, "tls_rpt", "_smtp._tls."+domain, "v=tlsrptv1", "TLS-RPT record found.", "No TLS-RPT record. Optional, it only adds delivery failure reports."),
 		checkAutoconfig(ctx, r, domain))
 	rep.Items = append(rep.Items, checkFCrDNS(ctx, r, host)...)
+	rep.PTRHint = ptrHintFor(ctx, r, host)
 	rep.Items = append(rep.Items, Item{ID: "port25", Status: StatusNotTested, Message: "Outbound port 25 is not probed here. Many cloud hosts block it by default; ask the host to open it before sending."})
 	return rep, nil
 }

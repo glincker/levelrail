@@ -20,6 +20,9 @@ func mailUsage(prog string) string {
 %[3]s%[4]s%[5]s%[6]s%[7]s  %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
   %[1]s mail dns apply <domain> --plan-hash H --confirm [flags]   write a plan you reviewed
   %[1]s mail dns check <domain> [--host H] [--dkim-selector S]    grade the live mail DNS
+  %[1]s mail dns provider <domain>        where the domain's DNS lives and whether it is connected
+  %[1]s mail dns domains                  candidate domains: install, claimed, app domains and zones
+  %[1]s mail dns applied <domain>         the records mail DNS added, with provider record ids
 
 Plan and apply flags (same values on both, or the plan hash will not match):
   --host H  --ipv4 IP  --ipv6 IP  --mx-priority N  --preset ID
@@ -27,6 +30,8 @@ Plan and apply flags (same values on both, or the plan hash will not match):
   --dmarc-policy none|quarantine|reject  --dmarc-rua ADDR  --dmarc-pct N
   --mta-sts testing|enforce  --tls-rpt  --autoconfig  --replace-existing KINDS
   --provider P  --plan-hash H  --confirm
+Without --provider, plan and apply use the connected provider the domain's
+nameservers point at, falling back to the first connected one.
 
 Experimental: needs APP_EXPERIMENTAL=mail. The default is add-only: existing
 MX, SPF, DKIM and DMARC records are never replaced unless --replace-existing
@@ -60,7 +65,7 @@ func (m *mailFlags) register(fs *flag.FlagSet, apply bool) {
 	fs.BoolVar(&s.TLSRPT, "tls-rpt", false, "also build the TLS-RPT record")
 	fs.BoolVar(&s.Autoconfig, "autoconfig", false, "also build autoconfig, autodiscover and SRV records")
 	fs.StringVar(&m.replace, "replace-existing", "", "comma separated record kinds that may be replaced")
-	fs.StringVar(&m.provider, "provider", "", "DNS provider when more than one is connected")
+	fs.StringVar(&m.provider, "provider", "", "DNS provider (default: the one the nameservers point at)")
 	if apply {
 		fs.StringVar(&m.req.PlanHash, "plan-hash", "", "hash printed by plan")
 		fs.BoolVar(&m.confirm, "confirm", false, "write the records")
@@ -133,6 +138,12 @@ func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	}
 	rest := args[2:]
 	switch args[1] {
+	case "provider":
+		return runDNSProvider(prog, "mail dns provider", rest, true, stdout, stderr, lookupEnv)
+	case "domains":
+		return runMailDNSDomains(prog, rest, stdout, stderr, lookupEnv)
+	case "applied":
+		return runMailDNSApplied(prog, rest, stdout, stderr, lookupEnv)
 	case "plan", "apply":
 		apply := args[1] == "apply"
 		var m mailFlags

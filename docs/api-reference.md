@@ -1168,6 +1168,7 @@ Endpoints for:
 | PUT | /api/v1/backup-targets/{id}/encryption | AbilityRoot | handleSetBackupTargetEncryption |
 | POST | /api/v1/registry-credentials/presets/test | AbilityWriteSensitive | handleTestRegistryPreset |
 | POST | /api/v1/registry-credentials/{id}/refresh | AbilityWriteSensitive | handleRefreshRegistryCredential |
+| GET | /api/v1/domains/dns-provider | AbilityRead | handleDomainDNSProvider |
 
 ## Built-in Container Registry
 
@@ -2108,6 +2109,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/mail/system-email/disable | AbilityRoot | handleDisableSystemEmail |
 | POST | /api/v1/mail/system-email/rotate | AbilityRoot | handleRotateSystemEmail |
 | POST | /api/v1/mail/system-email/test | AbilityRoot | handleTestSystemEmail |
+| GET | /api/v1/mail/dns/provider | AbilityRead | handleMailDNSProvider |
+| GET | /api/v1/mail/dns/domains | AbilityRead | handleMailDNSDomains |
+| GET | /api/v1/mail/dns/applied | AbilityRead | handleMailDNSApplied |
 | POST | /mcp | Public |  |
 
 ## See also
