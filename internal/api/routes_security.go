@@ -6,6 +6,7 @@ import "net/http"
 // sessions and devices, the account switch and the "this wasn't me" link.
 func (rt *Router) registerSecurityRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/security/posture", rt.requireAbility(AbilityRead, rt.handleSecurityPosture))
+	mux.HandleFunc("GET /api/v1/security/advisories", rt.requireAbility(AbilityRead, rt.handleSecurityAdvisories))
 	mux.HandleFunc("GET /api/v1/security/reachability", rt.requireAbility(AbilityRoot, rt.handleSecurityReachability))
 	mux.HandleFunc("GET /api/v1/security/policy", rt.requireAbility(AbilityRead, rt.handleGetSecurityPolicy))
 	mux.HandleFunc("PUT /api/v1/security/policy", rt.requireAbility(AbilityRoot, rt.handlePutSecurityPolicy))

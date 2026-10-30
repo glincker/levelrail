@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
@@ -25,6 +26,7 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
     String(DEFAULT_INTERVAL_SECONDS),
   )
   const [timeout, setTimeoutValue] = useState(String(DEFAULT_TIMEOUT_MS))
+  const [statusLink, setStatusLink] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const effectiveName =
@@ -38,6 +40,7 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
       kind,
       interval_seconds: Number(interval),
       timeout_ms: Number(timeout),
+      ...(statusLink ? { status_link: true } : {}),
       ...(kind === 'http' ? { url } : { host, port: Number(port) }),
     }
     create.mutate(input, {
@@ -150,6 +153,18 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
             setTimeoutValue(e.target.value)
           }}
         />
+      </div>
+      <div className="flex items-center gap-2 pb-1.5">
+        <Checkbox
+          id="monitor-status-link"
+          checked={statusLink}
+          onCheckedChange={(v) => {
+            setStatusLink(v)
+          }}
+        />
+        <Label htmlFor="monitor-status-link" title={t('form.statusLinkHint')}>
+          {t('form.statusLink')}
+        </Label>
       </div>
       <Button type="submit" size="sm" disabled={create.isPending}>
         {create.isPending ? t('form.saving') : t('form.save')}

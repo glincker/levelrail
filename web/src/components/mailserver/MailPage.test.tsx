@@ -58,6 +58,88 @@ function renderPage() {
 
 afterEach(() => vi.unstubAllGlobals())
 
+function statusFetch(body: unknown) {
+  return vi.fn((url: string) =>
+    Promise.resolve(url.endsWith('/mail/status') ? jsonRes(body) : jsonRes([])),
+  )
+}
+
+describe('MailPage status', () => {
+  it('offers install and a prefilled CLI line when not installed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      statusFetch({
+        installed: false,
+        container_state: 'none',
+        admin_reachable: false,
+        tls: 'unknown',
+        next_step: 'Install the mail-mox template.',
+      }),
+    )
+    renderPage()
+    expect(await screen.findByText('Install the mail server')).toBeTruthy()
+    expect(
+      screen.getByText(
+        /lrcli templates install mail-mox --env MAIL_FIRST_DOMAIN=/,
+      ),
+    ).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Install' })).toBeTruthy()
+  })
+
+  it('warns with the server text when installed but stopped', async () => {
+    vi.stubGlobal(
+      'fetch',
+      statusFetch({
+        installed: true,
+        container_state: 'stopped',
+        admin_reachable: false,
+        tls: 'self-signed',
+        next_step: 'The mail container is not running.',
+      }),
+    )
+    renderPage()
+    expect(await screen.findByText('Start the mail container')).toBeTruthy()
+    expect(
+      screen.getAllByText('The mail container is not running.').length,
+    ).toBeGreaterThan(0)
+    expect(screen.getByText('TLS: self-signed')).toBeTruthy()
+  })
+
+  it('marks the server done when running and reachable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      statusFetch({
+        installed: true,
+        container_state: 'running',
+        admin_reachable: true,
+        tls: 'provided',
+        next_step: 'Mail is up.',
+      }),
+    )
+    renderPage()
+    expect(await screen.findByText('Add your DNS records')).toBeTruthy()
+    expect(screen.getByText('Running and answering')).toBeTruthy()
+  })
+
+  it('does not call a running but unreachable server done', async () => {
+    vi.stubGlobal(
+      'fetch',
+      statusFetch({
+        installed: true,
+        container_state: 'running',
+        admin_reachable: false,
+        tls: 'self-signed',
+        next_step: 'Admin API does not answer yet.',
+      }),
+    )
+    renderPage()
+    expect(
+      await screen.findByText('Wait for the mail server to answer'),
+    ).toBeTruthy()
+    expect(screen.queryByText('Running and answering')).toBeNull()
+  })
+})
+
 describe('MailPage', () => {
   it('shows every unchecked step as not checked and lists the coming panels', async () => {
     vi.stubGlobal(

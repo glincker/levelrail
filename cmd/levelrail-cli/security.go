@@ -33,6 +33,8 @@ func runSecurity(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSecurityPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "hsts":
 		return runSecurityHSTS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "advisories":
+		return runSecurityAdvisories(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown security subcommand %q\n\n", prog, args[0])
 	_, _ = fmt.Fprint(stderr, securityUsage(prog))
@@ -49,6 +51,7 @@ func securityUsage(prog string) string {
   %[1]s security policy get [flags]                      show the security policy and where each value comes from
   %[1]s security policy set [policy flags] [flags]       change the policy (root)
   %[1]s security hsts status|enable|disable [flags]      HSTS state and trusted-certificate probe; enable is refused until every domain passes (root)
+  %[1]s security advisories list|match [flags]           advisories in the configured feed, and running images that match them (feed is off unless APP_ADVISORY_FEED is set)
 
 A token used here must belong to a user and hold write:sensitive or
 signin:approve for sessions; --user (another account) needs root.

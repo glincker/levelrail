@@ -6,6 +6,8 @@ import { buttonVariants } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { cn } from '@/lib/utils'
 import type { MailCheckReport } from '@/queries/mailDns'
+import { useMailStatus } from '@/queries/mailStatus'
+import { MailNextStep } from './MailNextStep'
 import { MailChecklist } from './MailChecklist'
 import { MailDnsPanel } from './MailDnsPanel'
 import { MailSoonPanels } from './MailSoonPanels'
@@ -14,6 +16,8 @@ import { MailSoonPanels } from './MailSoonPanels'
 export function MailPage() {
   const { t } = useTranslation('mailServer')
   const [report, setReport] = useState<MailCheckReport | undefined>()
+  const [domain, setDomain] = useState('')
+  const status = useMailStatus().data
   return (
     <PageTemplate
       eyebrow={t('eyebrow')}
@@ -33,8 +37,13 @@ export function MailPage() {
       }
     >
       <div className="space-y-3">
-        <MailChecklist report={report} />
-        <MailDnsPanel report={report} onReport={setReport} />
+        <MailNextStep status={status} report={report} domain={domain} />
+        <MailChecklist report={report} status={status} />
+        <MailDnsPanel
+          report={report}
+          onReport={setReport}
+          onDomain={setDomain}
+        />
         <MailSoonPanels />
       </div>
     </PageTemplate>

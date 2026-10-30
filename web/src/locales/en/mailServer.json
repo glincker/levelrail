@@ -29,7 +29,7 @@
     "port25": "Port 25 outbound"
   },
   "unknown": {
-    "server": "Not detected from here. Install it with the card above.",
+    "server": "Status unavailable.",
     "ptr": "Set by your hosting provider. This page cannot read it yet."
   },
   "dns": {
@@ -87,5 +87,35 @@
       "title": "Backup",
       "body": "Scheduled mail backups with a restore check."
     }
+  },
+  "next": {
+    "title": "Next step",
+    "allSet": "Setup looks complete",
+    "step": {
+      "install": "Install the mail server",
+      "fix": "Start the mail container",
+      "wait": "Wait for the mail server to answer",
+      "dns": "Add your DNS records",
+      "verify": "Check DNS again"
+    },
+    "tls": {
+      "self-signed": "TLS: self-signed",
+      "provided": "TLS: provided certificate",
+      "unknown": "TLS: unknown"
+    },
+    "tlsSelfSigned": "Self-signed: replace before sending real mail.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "done": "Done ({{count}})",
+    "doneItem": {
+      "installed": "Mail app installed",
+      "running": "Container running",
+      "admin": "Admin API answers"
+    }
+  },
+  "server": {
+    "installAction": "Install",
+    "done": "Running and answering",
+    "stopped": "Installed but not running"
   }
 }

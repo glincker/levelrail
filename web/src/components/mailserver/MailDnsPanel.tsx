@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
@@ -64,9 +64,11 @@ const errText = (e: unknown) => (e instanceof Error ? e.message : '')
 export function MailDnsPanel({
   report,
   onReport,
+  onDomain,
 }: {
   report: MailCheckReport | undefined
   onReport: (r: MailCheckReport) => void
+  onDomain?: (domain: string) => void
 }) {
   const { t } = useTranslation('mailServer')
   const domains = useQuery(domainsQueryOptions())
@@ -82,6 +84,9 @@ export function MailDnsPanel({
   const [plan, setPlan] = useState<MailPlan | null>(null)
 
   const effective = (domain ?? known[0] ?? '').trim().toLowerCase()
+  useEffect(() => {
+    onDomain?.(effective)
+  }, [effective, onDomain])
   const mailHost = host ?? (effective ? `mail.${effective}` : '')
   const spec: MailDnsSpec =
     preset === SELF

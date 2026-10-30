@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1838 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1840 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -550,6 +550,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/roles/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateRole", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAccountSecurity", Description: ""},
 	{Method: "PUT", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutAccountSecurity", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/advisories", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSecurityAdvisories", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/hsts", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetHSTS", Description: ""},
 	{Method: "PUT", Path: "/api/v1/security/hsts", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutHSTS", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/policy", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSecurityPolicy", Description: ""},
@@ -1366,6 +1367,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/monitors", Ability: "AbilityRead", Group: "Other", Handler: "handleListMonitors", Description: "List uptime monitors. Answers 404 unless APP_MONITORS_ENABLED is set."},
 	{Method: "POST", Path: "/api/v1/monitors", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateMonitor", Description: "Create an http or tcp uptime monitor. Header values are stored encrypted and never returned."},
 	{Method: "DELETE", Path: "/api/v1/monitors/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteMonitor", Description: "Delete a monitor with its results and rollups."},
+	{Method: "PATCH", Path: "/api/v1/monitors/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateMonitorLink", Description: "Change a monitor's status page link: open and resolve an incident on its component when it fails."},
 	{Method: "GET", Path: "/api/v1/monitors/{id}/results", Ability: "AbilityRead", Group: "Other", Handler: "handleMonitorResults", Description: "Recent raw results and hourly rollups for a monitor (window and limit query parameters)."},
 	{Method: "GET", Path: "/api/v1/network-shares", Ability: "AbilityRead", Group: "Other", Handler: "handleListNetworkShares", Description: "Network shares (network_shares.go): an NFS/CIFS export mountable as a Docker local-driver volume. Same ability tiers as registry credentials just above: POST/PUT/DELETE handle a live CIFS password, test is a read-only reachability dial."},
 	{Method: "POST", Path: "/api/v1/network-shares", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateNetworkShare", Description: ""},

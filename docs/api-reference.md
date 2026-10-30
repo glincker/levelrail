@@ -307,6 +307,7 @@ Endpoints for:
 | GET | /api/v1/auth/session | Public | handleAuthSession |
 | GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
 | PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
+| GET | /api/v1/security/advisories | AbilityRead | handleSecurityAdvisories |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -2062,6 +2063,7 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/incidents/{id}/draft | AbilityWrite | handleSaveIncidentDraft |
 | POST | /api/v1/incidents/{id}/publish | AbilityWrite | handlePublishIncident |
 | GET | /api/v1/mail/status | AbilityRead | handleMailStatus |
+| PATCH | /api/v1/monitors/{id} | AbilityWrite | handleUpdateMonitorLink |
 | POST | /mcp | Public |  |
 
 ## See also

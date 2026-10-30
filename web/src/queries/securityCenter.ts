@@ -270,3 +270,30 @@ export function useDisownSignIn() {
     mutationFn: disownSignIn,
   })
 }
+
+export interface AdvisoryMatch {
+  app: string
+  image: string
+  advisory_id: string
+  severity: PostureSeverity
+  summary: string
+  fixed_in?: string
+  reference?: string
+  hint: string
+}
+
+export interface AdvisoriesResource {
+  enabled: boolean
+  signature?: 'unsigned' | 'verified' | 'invalid'
+  error?: string
+  entries: { id: string }[]
+  matches: AdvisoryMatch[]
+}
+
+export function advisoriesQueryOptions() {
+  return queryOptions({
+    queryKey: ['security', 'advisories'] as const,
+    queryFn: () =>
+      send<AdvisoriesResource>('GET', '/api/v1/security/advisories'),
+  })
+}
