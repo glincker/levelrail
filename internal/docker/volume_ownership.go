@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 )
 
@@ -14,6 +16,10 @@ const (
 	VolumeOwnerServiceLabel = "levelrail.volume.service"
 	VolumeOwnerNameLabel    = "levelrail.volume.name"
 )
+
+// ContainerAppLabel names the app a container belongs to. It sits under the
+// reserved prefix so an operator label cannot spoof it.
+const ContainerAppLabel = "platform-reserved.app"
 
 // ErrVolumeOwnerMismatch means a volume of that name belongs to another owner.
 var ErrVolumeOwnerMismatch = errors.New("volume belongs to a different owner")
@@ -40,7 +46,8 @@ func (o VolumeOwner) labels() map[string]string {
 }
 
 // checkVolumeOwner rejects a volume whose owner label is set and differs.
-// A volume without the label predates ownership and is accepted as is.
+// A volume without the label is accepted here; EnsureOwnedVolume then checks
+// which containers use it.
 func checkVolumeOwner(name string, existing map[string]string, want VolumeOwner) error {
 	if want.App == "" {
 		return nil
@@ -68,8 +75,36 @@ func EnsureVolumeFor(ctx context.Context, rt interface {
 	return rt.EnsureVolume(ctx, name)
 }
 
+// checkVolumeUsers refuses an unlabelled volume when a container of another
+// app mounts it, so a legacy volume in use cannot be adopted.
+func checkVolumeUsers(name string, want VolumeOwner, users []map[string]string) error {
+	for _, labels := range users {
+		if app := labels[ContainerAppLabel]; app != "" && app != want.App {
+			return fmt.Errorf("docker: volume %q is in use by another app: %w", name, ErrVolumeOwnerMismatch)
+		}
+	}
+	return nil
+}
+
+// volumeUserLabels returns the labels of every container, running or
+// stopped, that mounts the named volume.
+func (c *Client) volumeUserLabels(ctx context.Context, name string) ([]map[string]string, error) {
+	f := filters.NewArgs()
+	f.Add("volume", name)
+	list, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list containers using volume %q: %w", name, err)
+	}
+	out := make([]map[string]string, 0, len(list))
+	for _, ct := range list {
+		out = append(out, ct.Labels)
+	}
+	return out, nil
+}
+
 // EnsureOwnedVolume creates the volume stamped with owner, or accepts an
-// existing one that has no owner label or the same one.
+// existing one with the same owner label, or with none when no other app's
+// container uses it.
 func (c *Client) EnsureOwnedVolume(ctx context.Context, name string, owner VolumeOwner) error {
 	v, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{
 		Name:   name,
@@ -78,5 +113,15 @@ func (c *Client) EnsureOwnedVolume(ctx context.Context, name string, owner Volum
 	if err != nil {
 		return fmt.Errorf("docker: ensure volume %q: %w", name, err)
 	}
-	return checkVolumeOwner(name, v.Labels, owner)
+	if err := checkVolumeOwner(name, v.Labels, owner); err != nil {
+		return err
+	}
+	if _, labelled := v.Labels[VolumeOwnerAppLabel]; labelled || owner.App == "" {
+		return nil
+	}
+	users, err := c.volumeUserLabels(ctx, name)
+	if err != nil {
+		return err
+	}
+	return checkVolumeUsers(name, owner, users)
 }
