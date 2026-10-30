@@ -61,6 +61,8 @@ The template has no node field of its own. Choose the node in the deploy dialog 
 
 The first start works with no manual steps. A one-shot `mox-tls` service makes a self-signed certificate for the mail host name in the config volume (`certs/selfsigned.pem`) and the log says so. It is for testing only: replace it before sending real mail.
 
+mox waits for that certificate before it starts (up to `MAIL_TLS_WAIT_SECONDS`, default 60) and restarts on its own if it still fails.
+
 To use a real certificate, put the chain and key in the config volume (for example `certs/cur.pem` and `certs/cur.key`), set the two inputs and restart. Existing files are never overwritten. mox has no reload: restart after every renewal. The built-in ACME client is not offered because ports 80 and 443 are not published.
 
 Check the state with `levelrail-cli mail status` (installed, container, admin API, certificate kind and the next step).

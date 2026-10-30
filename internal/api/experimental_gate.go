@@ -48,6 +48,8 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		return experimental.Plugins, true
 	case strings.HasPrefix(p, "/api/v1/mail/"):
 		return experimental.Mail, true
+	case p == mcpHTTPPath:
+		return experimental.MCPHTTP, true
 	case strings.HasPrefix(p, mobileRoutePrefix):
 		return experimental.MobileAPI, true
 	case strings.HasPrefix(p, "/api/v1/auth/saml/"), strings.HasPrefix(p, "/api/v1/sso/"), strings.HasPrefix(p, "/api/v1/scim/"):

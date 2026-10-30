@@ -66,6 +66,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
 	"POST /api/v1/auth/cli-pairing/redeem":           "CLI pairing, authenticated by the single-use code a signed-in browser issued, rate limited per IP and code",
+	"POST /mcp":                                      "read-only remote MCP, authenticated inside the handler by a bearer API token with read, rate limited per token, every tool call re-authorized by the REST gates and audited",
 	"POST /api/v1/mobile/pair":                       "phone pairing, authenticated by the one-time pairing code, rate limited per IP and code",
 	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
 	"GET /api/v1/auth/saml/providers":                "login screen lists enabled SAML connections, id and name only",

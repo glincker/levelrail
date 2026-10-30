@@ -142645,6 +142645,58 @@
         ]
       }
     },
+    "/mcp": {
+      "post": {
+        "description": "Unauthenticated at the mux: serve checks the bearer token itself, plus flag, Origin and limits.\n\nNo authentication required.",
+        "operationId": "Postmcp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Unauthenticated at the mux: serve checks the bearer token itself, plus flag, Origin and limits.",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
     "/metrics": {
       "get": {
         "description": "Requires the `read` ability.",

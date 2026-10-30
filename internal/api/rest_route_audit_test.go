@@ -11,8 +11,8 @@ import (
 
 // Counts are pinned so adding a mutating route forces a human look at whether it is audited.
 const (
-	pinnedNonGETRoutes   = 1033
-	pinnedExemptions     = 118
+	pinnedNonGETRoutes   = 1034
+	pinnedExemptions     = 119
 	pinnedKnownAuditGaps = 0
 )
 
@@ -156,6 +156,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/security/sessions/revoke-others",
 		"PUT /api/v1/security/account",
 		"DELETE /api/v1/mobile/devices/{id}",
+		"POST /mcp",
 
 		"POST /api/v1/ci/oidc-exchange",
 		"POST /api/v1/auth/sign-in-alert/disown",

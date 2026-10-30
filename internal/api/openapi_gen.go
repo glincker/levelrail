@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1837 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1838 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1621,6 +1621,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v2/nodes/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGet", Description: ""},
 	{Method: "PATCH", Path: "/api/v2/{kind}/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleApplyUnsupported", Description: ""},
 	{Method: "GET", Path: "/gate/login", Ability: "Public", Group: "Other", Handler: "handleGateLogin", Description: ""},
+	{Method: "POST", Path: "/mcp", Ability: "Public", Group: "Other", Handler: "", Description: "Unauthenticated at the mux: serve checks the bearer token itself, plus flag, Origin and limits."},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
 	{Method: "GET", Path: "/public/status.atom", Ability: "Public", Group: "Other", Handler: "handlePublicStatusAtom", Description: ""},
