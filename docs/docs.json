@@ -979,6 +979,7 @@
             "group": "Engineering notes",
             "pages": [
               "ci",
+              "contributing-guards",
               "first-hour-smoke-test",
               "vps-smoke",
               "i18n",
