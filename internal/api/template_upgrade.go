@@ -38,7 +38,7 @@ func (rt *Router) loadTemplateUpgrade(r *http.Request, appID string) (templateUp
 	}
 	latest, err := revs.GetComposeRevision(r.Context(), appID, 0)
 	if errors.Is(err, store.ErrComposeRevisionNotFound) {
-		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusNotFound, msg: "this app has no compose history"}
+		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusNotFound, msg: "this app was not deployed from a catalog template (it has no compose history)"}
 	}
 	if err != nil {
 		return templateUpgradeState{}, &templateUpgradeErr{status: http.StatusInternalServerError, msg: "api: template upgrade: load latest failed", cause: err}

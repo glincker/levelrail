@@ -106,6 +106,28 @@ func (f *egressAllowFlag) Set(s string) error {
 	return nil
 }
 
+// parseQuietOnError keeps the full usage for -h only. For a bad flag the flag
+// package prints its error line and then calls Usage, which buries the error
+// under a screen of help, so Usage is swapped for a one-line pointer.
+func parseQuietOnError(fs *flag.FlagSet, args []string, stderr io.Writer) error {
+	orig := fs.Usage
+	fs.Usage = func() {}
+	err := fs.Parse(args)
+	fs.Usage = orig
+	switch {
+	case err == nil:
+	case errors.Is(err, flag.ErrHelp):
+		if orig != nil {
+			orig()
+		} else {
+			fs.PrintDefaults()
+		}
+	default:
+		_, _ = fmt.Fprintf(stderr, "run \"%s --help\" for the flags this command accepts\n", fs.Name())
+	}
+	return err
+}
+
 // --json stays as shorthand for --output json so existing scripts keep working.
 func apiFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.FlagSet, tokenFlag, apiURLFlag, profileFlag *string, jsonOut *bool, outputFlag, queryFlag *string) {
 	fs = flag.NewFlagSet(prog+" "+cmdLabel, flag.ContinueOnError)
@@ -235,7 +257,7 @@ type outputFlags struct {
 
 // ok is false when parsing, --help, or a bad --output already wrote to stderr; return exitCode unchanged.
 func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog string, stderr io.Writer) (tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+	if err := parseQuietOnError(fs, reorderArgsFlagsFirst(fs, args), stderr); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return "", "", "", false, outputFlags{}, exitOK, false
 		}
@@ -251,7 +273,7 @@ func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog stri
 
 // Same contract as parseAPIFlags: ok false means the caller returns exitCode unchanged.
 func parseSessionFlags(fs *flag.FlagSet, args []string, jsonOutP *bool, outputFlagP, queryFlagP *string, prog string, stderr io.Writer) (jsonOut bool, of outputFlags, exitCode int, ok bool) {
-	if err := fs.Parse(args); err != nil {
+	if err := parseQuietOnError(fs, args, stderr); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return false, outputFlags{}, exitOK, false
 		}
