@@ -172,8 +172,8 @@ var retentionTables = map[RetentionTable]retentionSpec{
 	RetentionStatusIncidents: {
 		arg: argRFC3339Nano, parse: parseDriverTime,
 		stats:       `SELECT COUNT(*), COALESCE(MIN(updated_at), '') FROM status_incidents`,
-		countOlder:  `SELECT COUNT(*) FROM status_incidents WHERE status IN ('resolved', 'completed') AND updated_at < ?`,
-		deleteOlder: `DELETE FROM status_incidents WHERE id IN (SELECT id FROM status_incidents WHERE status IN ('resolved', 'completed') AND updated_at < ? LIMIT ?)`,
+		countOlder:  `SELECT COUNT(*) FROM status_incidents WHERE (status IN ('resolved', 'completed') OR (published = 0 AND internal_state = 'resolved')) AND updated_at < ?`,
+		deleteOlder: `DELETE FROM status_incidents WHERE id IN (SELECT id FROM status_incidents WHERE (status IN ('resolved', 'completed') OR (published = 0 AND internal_state = 'resolved')) AND updated_at < ? LIMIT ?)`,
 	},
 }
 
