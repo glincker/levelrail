@@ -150,6 +150,24 @@
     "failing": "failing since {{when}}: {{error}}",
     "hint": "Archived WAL is copied to the backup target so point-in-time restore survives losing this host's disk."
   },
+  "pitrNew": {
+    "enableBinlog": "Enable continuous binary log archiving so this database can be restored to any exact moment, not just to when a backup happened to run.",
+    "restoreButton": "Restore to timestamp",
+    "title": "Restore {{name}} to a point in time",
+    "description": "This creates a new database from a base backup plus the archived binary log up to the chosen time. {{name}} is not changed.",
+    "restoreTo": "Restore to",
+    "window": "Recoverable between {{start}} and {{end}}.",
+    "replayFrom": "Replaying from the base backup taken {{when}}.",
+    "noBackup": "No succeeded base backup exists at or before that time.",
+    "newName": "New database name",
+    "newNameHint": "A new {{engine}} database with this name is created.",
+    "cancel": "Cancel",
+    "submit": "Restore into new database",
+    "submitting": "Starting...",
+    "startedTitle": "Point-in-time restore started.",
+    "startedBody": "The new database appears in the list once it is created. This table updates when it finishes.",
+    "failedTitle": "Could not start restore."
+  },
   "majorUpgrade": {
     "title": "Major version upgrade",
     "description": "Upgrades this database across a major version by dump and restore. It is offline while it runs. The old data is copied to a rollback snapshot first, and a failure after that rolls back automatically.",
@@ -546,6 +564,8 @@
     "backToList": "Back to databases"
   },
   "connection": {
+    "forApps": "For apps (over the mesh)",
+    "forAppsHint": "Apps on other nodes get this name and port. The tabs below show the address on the database's own node.",
     "title": "Connection details",
     "description": "How apps and tools reach this database.",
     "engine": "Engine",
@@ -885,6 +905,26 @@
       "start": "Start database",
       "starting": "Starting...",
       "viewProgress": "View progress"
+    }
+  },
+  "pooler": {
+    "title": "Connection pooler",
+    "toggle": "Enable connection pooler",
+    "description": "Transaction pooling in front of Postgres, so many app connections share a few server connections.",
+    "pooled": "Pooled",
+    "direct": "Direct",
+    "copy": "Copy {{label}} URL",
+    "remoteNote": "Apps on other nodes cannot reach the pooler and use the direct URL. Replace <password> with a credential from the Access page.",
+    "imageMissing": "No pooler image is configured on the control plane. Set APP_PG_POOLER_IMAGE to enable this.",
+    "toggleFailed": "Could not change the pooler.",
+    "poolSize": "Pool size",
+    "maxClientConn": "Max client connections",
+    "default": "Default",
+    "applySizing": "Apply sizing",
+    "status": {
+      "running": "Ready",
+      "failed": "Failed",
+      "unknown": "Starting"
     }
   }
 }

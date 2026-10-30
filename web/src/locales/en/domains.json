@@ -350,9 +350,14 @@
       "domainsHint": "One per line, or separated by commas.",
       "ready_one": "{{count}} domain ready to add",
       "ready_other": "{{count}} domains ready to add",
-      "invalid": "Not valid: {{list}}",
-      "duplicates": "Repeated, counted once: {{list}}",
-      "claimed": "{{domain}} is already routed to {{app}}.",
+      "errors": {
+        "invalid": "Not a valid hostname",
+        "duplicate": "Duplicate",
+        "claimedHere": "Already added to this app",
+        "claimedOther": "Already routed to {{app}}",
+        "empty": "Enter at least one domain",
+        "appRequired": "Choose an app"
+      },
       "submit_one": "Add {{count}} domain",
       "submit_other": "Add {{count}} domains",
       "submitting": "Adding...",
@@ -1022,5 +1027,81 @@
     },
     "noApps": "Deploy an app first, then point a domain at it.",
     "noAppsAction": "New app"
+  },
+  "editor": {
+    "title": "Domains",
+    "description": "Domains routed to this app through the ingress layer. Platform-wide ACME and primary domain settings live under <link>Domains</link>.",
+    "dnsHintLink": "DNS record types explained",
+    "dnsHint": "Point an A record at this server's IP address (or a CNAME at its hostname), then a TLS certificate is issued automatically once it resolves.",
+    "empty": "No domains configured.",
+    "inputLabel": "Domain",
+    "inputPlaceholder": "app.example.com",
+    "remove": "Remove domain",
+    "tlsLabel": "TLS certificate:",
+    "provisioning": "Provisioning",
+    "add": "Add domain",
+    "save": "Save domains",
+    "saving": "Saving...",
+    "saved": "Domains saved.",
+    "errors": {
+      "required": "Domain is required",
+      "invalid": "Enter a valid domain, e.g. app.example.com"
+    }
+  },
+  "stepper": {
+    "title": "Domain setup steps",
+    "step": {
+      "domain": "Domain",
+      "records": "DNS records",
+      "check": "Live check",
+      "port": "Container port",
+      "certificate": "Certificate"
+    },
+    "port": {
+      "next": "Port is right, continue"
+    },
+    "domain": {
+      "label": "Domain",
+      "placeholder": "app.example.com",
+      "add": "Add and continue",
+      "invalid": "Enter a valid domain, e.g. app.example.com",
+      "offerPair": "Also want {{other}}? It can redirect here later.",
+      "useOther": "Use {{other}}",
+      "wildcard": "Wildcard domains need a DNS provider connected, because the certificate is proven through DNS."
+    },
+    "records": {
+      "providerLabel": "Where is your DNS hosted?",
+      "next": "I added the records"
+    },
+    "provider": {
+      "cloudflare": "Cloudflare",
+      "route53": "Route 53",
+      "namecheap": "Namecheap",
+      "other": "Other"
+    },
+    "hint": {
+      "cloudflare": "In Cloudflare, open DNS, then Records. Set the proxy to DNS only (grey cloud) until the certificate is issued.",
+      "route53": "In Route 53, open the hosted zone and create the record with a TTL of 300 or lower.",
+      "namecheap": "In Namecheap, open Advanced DNS and add the record. Host is the subdomain only.",
+      "namecheapApex": "Use @ as the host for the apex domain.",
+      "other": "Add the record where this domain's DNS is managed, usually your registrar. Names are shown in full."
+    },
+    "check": {
+      "expected": "Expected",
+      "resolved": "Resolved",
+      "none": "nothing yet",
+      "recheck": "Re-check",
+      "next": "Continue",
+      "propagation": "New records usually show within minutes but can take up to a few hours. This checks again on its own.",
+      "capped": "Automatic checking stopped. Press Re-check once your DNS change has had time to spread."
+    },
+    "cert": {
+      "pending": "Waiting for the certificate",
+      "issued": "Certificate issued",
+      "failed": "Certificate failed",
+      "off": "Certificates are off for this domain",
+      "reason": "Reason",
+      "logs": "Open logs"
+    }
   }
 }

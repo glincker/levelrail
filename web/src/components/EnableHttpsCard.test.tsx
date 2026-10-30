@@ -26,14 +26,14 @@ function json(body: unknown, status = 200): Response {
   } as unknown as Response
 }
 
-function renderCard() {
+function renderCard(compact = false) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>
-        <EnableHttpsCard />
+        <EnableHttpsCard compact={compact} />
       </QueryClientProvider>
     </I18nextProvider>,
   )
@@ -50,6 +50,24 @@ function stubStatus(status: HttpsStatus) {
 describe('EnableHttpsCard', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('collapses to one line with a single button in compact mode and expands on demand', async () => {
+    const user = userEvent.setup()
+    stubStatus({
+      state: 'off',
+      suggested_domain: '203-0-113-5.sslip.io',
+      staging: false,
+    })
+    renderCard(true)
+    const setUp = await screen.findByRole('button', { name: 'Set up' })
+    expect(screen.queryByText(/sslip\.io/)).not.toBeInTheDocument()
+    expect(screen.getByText(/not secure/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/email for certificate/i)).toBeNull()
+    await user.click(setUp)
+    expect(
+      await screen.findByLabelText(/email for certificate/i),
+    ).toBeInTheDocument()
   })
 
   it('offers one-click enable for the suggested sslip.io hostname', async () => {
@@ -87,7 +105,9 @@ describe('EnableHttpsCard', () => {
     expect(await screen.findByLabelText(/email for certificate/i)).toHaveValue(
       'admin@glincker.com',
     )
-    expect(screen.getByText(/plain HTTP stops working/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/sign in over the https address/i),
+    ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Enable HTTPS' }))
     await waitFor(() => {
       const post = fetchMock.mock.calls.find(

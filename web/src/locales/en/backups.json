@@ -244,6 +244,7 @@
         "hint": "Same machine, not safe"
       }
     },
+    "localRootHint": "Stored under {{root}}. Enter a folder inside it.",
     "localWarning": "Backups stored on this machine's own disk are lost with the machine. They protect against a bad deploy or a deleted table, not against a dead disk, a ransomware hit or a deleted server. Use this to try things out, then add an off-site destination.",
     "field": {
       "name": "Name",
@@ -409,5 +410,17 @@
       "storage": "storage",
       "schedule": "schedule"
     }
+  },
+  "volumeFiles": {
+    "title": "Files",
+    "volume": "Volume",
+    "up": "Up",
+    "upload": "Upload file",
+    "loading": "Loading files",
+    "empty": "This directory is empty.",
+    "truncated": "Listing truncated. Open a subdirectory to see the rest.",
+    "download": "Download {{name}}",
+    "delete": "Delete {{name}}",
+    "confirm": "Confirm"
   }
 }

@@ -51,6 +51,11 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// No GET: handleGetDatabase already returns the fields.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/public-access", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleSetDatabasePublicAccess))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/public-access", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleClearDatabasePublicAccess))
+	// Connection pooler (database_pooler.go): it changes the URL every linked
+	// app receives, so toggling it sits with public access at WriteSensitive.
+	mux.HandleFunc("GET /api/v1/databases/{name}/pooler", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabasePooler))
+	mux.HandleFunc("POST /api/v1/databases/{name}/pooler", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleEnableDatabasePooler))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/pooler", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleDisableDatabasePooler))
 
 	// Stop/start, per database (database_stop_start.go). AbilityWriteSensitive,
 	// same tier public-access above uses: taking a database offline (and,
@@ -109,6 +114,13 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupVerifications))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupSchedule))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupSchedule))
+
+	// Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write plus read:sensitive, so an operator can fix a config file without SSH.
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/files", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListVolumeFiles))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/files/content", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleDownloadVolumeFile))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/files/content", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.withReadSensitive(rt.handlePutVolumeFile)))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/files/content", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.withReadSensitive(rt.handleDeleteVolumeFile)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/files/restore", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.withReadSensitive(rt.handleRestoreVolumeFile)))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearVolumeBackupSchedule))
 	// AbilityRoot, matching the database restore route above exactly: see
 	// handleTriggerVolumeRestore's own doc comment for why this is not a
@@ -193,4 +205,5 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// uses, since this is an ordinary declarative resource, not a secret
 	// or network-exfiltration surface like egress-policy/storage.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppVolumes))
+	rt.registerAppFilesRoutes(mux)
 }

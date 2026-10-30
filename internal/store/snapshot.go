@@ -28,6 +28,21 @@ func MaxSchemaVersion() (int, error) {
 	return migrations[len(migrations)-1].version, nil
 }
 
+// MigrationsBetween counts embedded migrations with from < version <= to.
+func MigrationsBetween(from, to int) (int, error) {
+	migrations, err := loadMigrations()
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, m := range migrations {
+		if m.version > from && m.version <= to {
+			n++
+		}
+	}
+	return n, nil
+}
+
 // SnapshotTo writes a consistent copy of the live database to dest using
 // VACUUM INTO, verifies it with integrity_check, and returns its size and
 // sha256. dest must not exist; it only appears once the copy is verified.

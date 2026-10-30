@@ -180,8 +180,8 @@ func TestController_LoadBalancer_ServesPreviousReleaseDuringCutover(t *testing.T
 	oldName := application.ReplicaContainerName(svc.Name, "img:v0", "", 0)
 	base := newFakeRuntime()
 	rt := &prefixRuntime{fakeRuntime: base, byPrefix: []docker.ContainerState{
-		{Name: oldName, Running: true, Ports: []docker.PortBinding{{HostPort: 31000}}},
-		{Name: "web-worker-abcdef123456", Running: true, Ports: []docker.PortBinding{{HostPort: 32000}}},
+		{Name: oldName, Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 31000}}},
+		{Name: "web-worker-abcdef123456", Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 32000}}},
 	}}
 	applier := &fakeApplier{}
 	reg := loadbalancer.NewRegistry()
@@ -205,8 +205,8 @@ func TestController_LoadBalancer_RemoteNodeUpstreams(t *testing.T) {
 	svc := lbService(2)
 	svc.NodeID = "node-2"
 	remote := newFakeRuntime()
-	remote.containers[replicaName(svc, 0)] = &docker.ContainerState{Running: true, Ports: []docker.PortBinding{{HostPort: 40000, HostIP: "0.0.0.0"}}}
-	remote.containers[replicaName(svc, 1)] = &docker.ContainerState{Running: true, Ports: []docker.PortBinding{{HostPort: 40001, HostIP: "127.0.0.1"}}}
+	remote.containers[replicaName(svc, 0)] = &docker.ContainerState{Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 40000, HostIP: "0.0.0.0"}}}
+	remote.containers[replicaName(svc, 1)] = &docker.ContainerState{Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 40001, HostIP: "127.0.0.1"}}}
 	src := fakeLBSource{configs: map[string]string{"web": `{}`}}
 
 	tests := []struct {
@@ -345,7 +345,7 @@ func TestController_ImplicitLoadBalancing_LocalNodeIDIsNotRemote(t *testing.T) {
 	svc.NodeID = "local_abc"
 	rt := newFakeRuntime()
 	for i := 0; i < 3; i++ {
-		rt.containers[replicaName(svc, i)] = &docker.ContainerState{Running: true, Ports: []docker.PortBinding{{HostPort: 30000 + i, HostIP: "127.0.0.1"}}}
+		rt.containers[replicaName(svc, i)] = &docker.ContainerState{Running: true, Ports: []docker.PortBinding{{ContainerPort: 80, HostPort: 30000 + i, HostIP: "127.0.0.1"}}}
 	}
 	applier := &fakeApplier{}
 	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier,

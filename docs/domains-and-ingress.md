@@ -461,7 +461,7 @@ The ingress pass never degrades a domain silently. Each pass records a per-domai
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.
 
-Two providers are supported, configured platform-wide on the **Domains** page or with the CLI. Only one is active per reconcile pass, and Cloudflare wins if both are enabled.
+Three providers are supported, configured platform-wide on the **Domains** page or with the CLI. Only one is active per reconcile pass. Precedence is Cloudflare, then Route53, then Google Cloud DNS.
 
 <Tabs>
 <Tab title="Cloudflare">
@@ -488,6 +488,20 @@ levelrail-cli domains route53-dns clear
 ```
 
 The API is `GET/PUT/DELETE /api/v1/settings/route53-dns`.
+
+</Tab>
+<Tab title="Google Cloud DNS">
+
+Use a service account JSON key with DNS administrator access to the project that holds your zone.
+
+```bash
+levelrail-cli domains google-cloud-dns set --key-file ./key.json
+levelrail-cli domains google-cloud-dns test
+levelrail-cli domains google-cloud-dns get
+levelrail-cli domains google-cloud-dns clear
+```
+
+The API is `GET/PUT/DELETE /api/v1/settings/google-cloud-dns`.
 
 </Tab>
 </Tabs>

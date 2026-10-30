@@ -51,7 +51,7 @@ func (rt *Router) appStatusBuckets(ctx context.Context, svcs []store.DesiredServ
 // result is always reported as filtered because DB paging cannot see status.
 func (rt *Router) restrictToStatus(ctx context.Context, fs appFilterStore, f store.AppListFilter, bucket string, canRead func(string) bool) (func(string) bool, bool, error) {
 	f.Limit, f.Offset = 0, 0
-	svcs, _, err := fs.ListDesiredServicesFiltered(ctx, f)
+	svcs, err := listAppHeads(ctx, fs, f)
 	if err != nil {
 		return nil, false, err
 	}

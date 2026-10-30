@@ -70,7 +70,7 @@ func EncodeUAPI(cfg DeviceConfig, current []Key) string {
 
 	for _, p := range cfg.Peers {
 		fmt.Fprintf(&b, "public_key=%s\n", p.PublicKey.Hex())
-		if p.Endpoint != "" {
+		if p.Endpoint != "" && !strings.ContainsFunc(p.Endpoint, isUAPIControl) {
 			fmt.Fprintf(&b, "endpoint=%s\n", p.Endpoint)
 		}
 		// Always written, including as 0, unlike private_key above: 0 is
@@ -271,3 +271,6 @@ func peerKeys(st Status) []Key {
 func hostPrefix(a netip.Addr) netip.Prefix {
 	return netip.PrefixFrom(a, a.BitLen())
 }
+
+// isUAPIControl reports characters that would end the line or start a new key.
+func isUAPIControl(r rune) bool { return r < 0x20 || r == 0x7f || r == '=' }

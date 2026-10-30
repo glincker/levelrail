@@ -83,6 +83,7 @@ func printHTTPSStatusHuman(out io.Writer, s httpsStatusResource) {
 		} else {
 			_, _ = fmt.Fprintf(out, "dashboard:  https://%s\n", s.Domain)
 			_, _ = fmt.Fprintln(out, "note:       plain HTTP sign-in stops once the https dashboard URL is saved")
+			_, _ = fmt.Fprintf(out, "next:       settings dashboard-url set --url https://%s (clears the dashboard_url_https doctor warning)\n", s.Domain)
 		}
 	}
 	for _, p := range s.Preflight {

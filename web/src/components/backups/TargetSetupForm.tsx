@@ -1,16 +1,20 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { HardDrivesIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SecretInput } from '@/components/ui/secret-input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { BrandTile } from '../BrandLogoBadge'
 import { backupCoverageKeys } from '../../queries/backupCoverage'
-import { useCreateBackupTarget } from '../../queries/backupTargets'
+import {
+  backupTargetListQueryOptions,
+  useCreateBackupTarget,
+} from '../../queries/backupTargets'
 import type { BackupTarget } from '../../types/backupTarget'
 import {
   buildTargetRequest,
@@ -37,6 +41,8 @@ export function TargetSetupForm({
 }: {
   onCreated: (target: BackupTarget) => void
 }) {
+  const { data: existing } = useQuery(backupTargetListQueryOptions())
+  const localRoot = existing?.find((x) => x.local_root)?.local_root
   const { t } = useTranslation('backups')
   const create = useCreateBackupTarget()
   const queryClient = useQueryClient()
@@ -157,6 +163,11 @@ export function TargetSetupForm({
               set('bucket', e.target.value)
             }}
           />
+          {preset.sameMachine && localRoot ? (
+            <p className="text-xs text-muted-foreground">
+              {t('target.localRootHint', { root: localRoot })}
+            </p>
+          ) : null}
         </FormField>
         <FormField id="target-region" label={t('target.field.region')}>
           <Input
@@ -203,9 +214,8 @@ export function TargetSetupForm({
           label={t('target.field.secretAccessKey')}
           invalid={missing === 'secretAccessKey'}
         >
-          <Input
+          <SecretInput
             id="target-secret"
-            type="password"
             value={values.secretAccessKey}
             autoComplete="new-password"
             onChange={(e) => {

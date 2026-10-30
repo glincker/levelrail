@@ -11,7 +11,7 @@ import (
 func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_audit_log",
-		Description: "List recorded write, deploy and root requests, newest first: who did what, when, from where, and whether it succeeded. Agent token entries carry agent_name and MCP client. Filter with q, agent and status=failed.",
+		Description: "List recorded write, deploy and root requests, newest first: who, what, when, from where, success. Agent entries carry agent_name. Filter with q, agent, status=failed.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in auditLogInput) (*mcp.CallToolResult, []apiclient.AuditLogEntryResource, error) {
 		entries, err := client.ListAuditLog(ctx, apiclient.ListAuditLogOptions{
 			Limit:      in.Limit,
@@ -30,12 +30,12 @@ func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 }
 
 type auditLogInput struct {
-	Limit  int    `json:"limit,omitempty" jsonschema:"max entries to return, default the server's own default"`
-	Before string `json:"before,omitempty" jsonschema:"only return entries recorded before this RFC3339 timestamp, for paging backward"`
-	Path   string `json:"path,omitempty" jsonschema:"only return entries whose request path matches this"`
-	Method string `json:"method,omitempty" jsonschema:"only return entries whose HTTP method matches this, e.g. POST"`
-	Query  string `json:"q,omitempty" jsonschema:"case-insensitive substring match across actor, ability, method, path and remote address"`
-	Status string `json:"status,omitempty" jsonschema:"set to failed to only return entries with an HTTP status of 400 or above"`
-	Agent  string `json:"agent,omitempty" jsonschema:"only return entries made with a token labeled with this agent name"`
-	Fields string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
+	Limit  int    `json:"limit,omitempty" jsonschema:"max entries; server default"`
+	Before string `json:"before,omitempty" jsonschema:"entries before this RFC3339 time"`
+	Path   string `json:"path,omitempty" jsonschema:"only this request path"`
+	Method string `json:"method,omitempty" jsonschema:"only this HTTP method, e.g. POST"`
+	Query  string `json:"q,omitempty" jsonschema:"case-insensitive substring of actor, ability, method, path or address"`
+	Status string `json:"status,omitempty" jsonschema:"failed: only status 400 and up"`
+	Agent  string `json:"agent,omitempty" jsonschema:"only tokens labeled with this agent name"`
+	Fields string `json:"fields,omitempty" jsonschema:"keys to keep per item"`
 }

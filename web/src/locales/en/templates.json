@@ -1,4 +1,19 @@
 {
+  "prefill": {
+    "loading": "Opening {{slug}}",
+    "notFoundTitle": "Template not found",
+    "notFoundDescription": "This instance has no template named \"{{slug}}\". It may be spelled differently or not in this version's catalog.",
+    "errorTitle": "Could not open the template",
+    "browse": "Browse templates"
+  },
+  "description": {
+    "label": "Setup notes"
+  },
+  "verified": {
+    "badge": "Verified",
+    "hint": "Passed the last live smoke test: it started and its health check passed.",
+    "filter": "Verified only"
+  },
   "detail": {
     "back": "Back to templates",
     "ramRecommended": "~{{size}} RAM recommended",
@@ -216,5 +231,96 @@
     "deploy": "Deploy",
     "deploying": "Deploying...",
     "success": "Deployed {{app}}"
+  },
+  "card": {
+    "ramRecommended": "~{{size}} RAM recommended",
+    "needsGpu": "Needs NVIDIA GPU",
+    "deployNow": "Deploy now",
+    "deployNowSetup": "Deploy now (needs setup)",
+    "deploying": "Deploying...",
+    "searchPlaceholder": "Search templates...",
+    "searchLabel": "Search templates",
+    "noMatch": "No templates match “{{search}}”."
+  },
+  "install": {
+    "title": "What this installs",
+    "description_one": "One service will be created.",
+    "description_other": "{{count}} services will be created.",
+    "volumes": "Volumes",
+    "env": "Environment variables",
+    "pin": {
+      "digest": "Pinned by digest",
+      "tag": "Version tag",
+      "floating": "Floating tag"
+    },
+    "envKind": {
+      "generated": "generated",
+      "required": "you provide",
+      "optional": "optional"
+    }
+  },
+  "trust": {
+    "digest_one": "{{count}} image pinned by digest",
+    "digest_other": "{{count}} images pinned by digest",
+    "digestHint": "The exact image content is fixed",
+    "tag_one": "{{count}} image on a version tag",
+    "tag_other": "{{count}} images on a version tag",
+    "tagHint": "A version tag can still be re-pushed upstream",
+    "floating_one": "{{count}} image on a floating tag",
+    "floating_other": "{{count}} images on a floating tag",
+    "floatingHint": "The latest tag or no tag: the image can change between deploys"
+  },
+  "stackFile": {
+    "title": "View as stack file",
+    "preview": "Preview of the compose file this template deploys",
+    "download": "Download",
+    "label": "Template compose file"
+  },
+  "result": {
+    "title": "{{name}} is deploying",
+    "deployFailed": "Deploy failed",
+    "address": "Address",
+    "addressPending": "The address appears once the app is running.",
+    "credentials": "Generated credentials",
+    "credentialsHint": "Created for this app. Shown only when you ask, then hidden again.",
+    "noCredentials": "This template generated no credentials.",
+    "reveal": "Reveal {{key}}",
+    "hide": "Hide {{key}}",
+    "copy": "Copy {{key}}",
+    "copied": "Copied",
+    "hidesIn": "Hides in {{seconds}}s",
+    "revealDenied": "Revealing values needs owner or admin access, or is turned off for this app.",
+    "openEnvironment": "Open Environment",
+    "nextSteps": "Next steps",
+    "openApp": "Open app",
+    "viewLogs": "View logs",
+    "close": "Close",
+    "accessDetails": "Access details",
+    "toastDeployed": "\"{{name}}\" deployed",
+    "toastRunning_one": "{{count}} service running now.",
+    "toastRunning_other": "{{count}} services running now.",
+    "services_one": "{{count}} service starting",
+    "services_other": "{{count}} services starting"
+  },
+  "access": {
+    "title": "Access details",
+    "description": "Address, generated logins and setup notes for this app.",
+    "open": "Open access details"
+  },
+  "wizard": {
+    "deployedUnder_one": "{{count}} service deployed under \"{{app}}\".",
+    "deployedUnder_other": "{{count}} services deployed under \"{{app}}\".",
+    "created": "Created",
+    "view": "View",
+    "done": "Done",
+    "back": "Back to templates",
+    "ramRecommended": "RAM recommended",
+    "documentation": "Documentation",
+    "name": "Name",
+    "namePlaceholder": "e.g. my-stack",
+    "nameHint": "Groups every service this template defines under one app name.",
+    "composeHint": "Pre-filled from the template. Edit it if you need to before deploying.",
+    "deploying": "Deploying...",
+    "deploy": "Deploy"
   }
 }

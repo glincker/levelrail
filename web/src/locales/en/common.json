@@ -1,4 +1,8 @@
 {
+  "nodeSelect": {
+    "auto": "Automatic (least loaded)",
+    "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there."
+  },
   "draft": {
     "message": "You have an unsaved draft from {{time}}.",
     "continue": "Continue where you left off",
@@ -34,7 +38,10 @@
     "settingsLinkHint": "Build, run, safety and automation options for this app live in one place.",
     "settingsLinkCta": "Open deploy settings",
     "rerunOf": "Retry of {{id}}",
-    "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran"
+    "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran",
+    "current": "Current",
+    "rollbackBadge": "Rollback",
+    "outcomeFailed": "Not serving"
   },
   "actions": {
     "copy": "Copy",
@@ -45,6 +52,14 @@
     "viewApp": "View app",
     "viewDatabase": "View database",
     "closeToast": "Close notification"
+  },
+  "deployApprovalStatus": {
+    "all": "All",
+    "pending": "Pending",
+    "approving": "Applying",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "expired": "Expired"
   },
   "tableLabels": {
     "appServices": "App services",
@@ -97,6 +112,7 @@
     "title": "Apps",
     "tableLabel": "Apps",
     "colName": "Name",
+    "colNode": "Node",
     "colTraffic": "Traffic 1h",
     "colP95": "p95",
     "colErrors": "Errors",
@@ -162,6 +178,12 @@
     "rollbackStarted": "Rolling back \"{{name}}\".",
     "pending": "Working...",
     "alreadyStopped": "{{name}} is already stopped."
+  },
+  "unsavedGuard": {
+    "title": "Discard unsaved changes?",
+    "description": "You have edits that are not saved. Leaving now will lose them.",
+    "keep": "Keep editing",
+    "discard": "Discard"
   },
   "confirmDialog": {
     "cancel": "Cancel",
@@ -295,6 +317,7 @@
     },
     "account": {
       "controlPlane": "Control plane",
+      "updateAvailable": "Update available: {{version}}",
       "signOut": "Sign out"
     },
     "breadcrumb": {
@@ -358,6 +381,17 @@
       "incident": "Incident: a health check is failing",
       "busy": "An upgrade or restart is in progress",
       "unknown": "Status unknown"
+    },
+    "accountMenu": {
+      "account": "Account settings",
+      "feedback": "Feedback",
+      "theme": "Theme",
+      "changelog": "Changelog",
+      "help": "Help",
+      "docs": "Docs",
+      "allNormal": "All systems normal",
+      "issues_one": "{{count}} issue needs attention",
+      "issues_other": "{{count}} issues need attention"
     }
   },
   "cliConsole": {
@@ -598,7 +632,8 @@
       "abilities": "Abilities: {{abilities}}",
       "confirm": "Revoke token",
       "pending": "Revoking...",
-      "success": "Token \"{{name}}\" revoked."
+      "success": "Token \"{{name}}\" revoked.",
+      "devFixture": "Dev fixture tokens are reseeded on the next dev-mode start unless you remove them from the fixtures file."
     },
     "alertRule": {
       "trigger": "Delete",
@@ -761,6 +796,7 @@
       "safety": "Sets how long a new release must stay healthy before the old one is retired.",
       "watch": "Keeps watching a release after it goes live and rolls back if it degrades.",
       "autoRollback": "Redeploys the last working image when a crashloop alert fires.",
+      "predeploySnapshot": "Backs up linked databases before each deploy so a rollback can restore the data too.",
       "sloBurn": "Rolls back automatically when the error budget burns too fast after a deploy.",
       "canary": "Sends a small share of traffic to a new image before everyone gets it.",
       "freeze": "Blocks automatic deploys during windows you choose, such as a holiday.",
@@ -829,5 +865,125 @@
     "copyRequestId": "Copy request ID",
     "copied": "Copied",
     "generic": "Something went wrong on the server."
+  },
+  "notFound": {
+    "requested": "Requested: {{name}}",
+    "causes": "It may have been renamed or deleted, or it belongs to a different project or environment than the one selected in the header switcher.",
+    "didYouMean": "Did you mean",
+    "resources": {
+      "app": {
+        "title": "App not found",
+        "list": "Back to apps",
+        "create": "Deploy a new app"
+      },
+      "database": {
+        "title": "Database not found",
+        "list": "Back to databases"
+      },
+      "domain": {
+        "title": "Domain not found",
+        "list": "Back to domains"
+      },
+      "template": {
+        "title": "Template not found",
+        "list": "Back to templates"
+      },
+      "project": {
+        "title": "Project not found",
+        "list": "Back to projects"
+      },
+      "generic": {
+        "title": "Page not found",
+        "list": "Back to dashboard"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "Something went wrong",
+      "body": "This page hit an unexpected error. Trying again often clears it. If it keeps happening, copy the details and report it.",
+      "retry": "Try again",
+      "home": "Back to dashboard"
+    },
+    "unreachable": {
+      "title": "Can't reach the control plane",
+      "body": "The server did not answer or returned an error. Your apps keep running. Check that the control plane is up, then retry.",
+      "retry": "Retry"
+    },
+    "details": "Details",
+    "copy": "Copy details",
+    "copied": "Copied",
+    "report": "Report an issue",
+    "requestId": "Request ID: {{id}}",
+    "detailsHeader": "Error report"
+  },
+  "secretInput": {
+    "show": "Show value",
+    "hide": "Hide value",
+    "existing": "Set. Leave blank to keep the current value."
+  },
+  "lbTraffic": {
+    "title": "Traffic",
+    "empty": "No traffic data yet",
+    "emptyHint": "Rates appear once requests have gone through the ingress.",
+    "rps": "{{value}} req/s",
+    "errors": "{{value}} errors",
+    "p50": "p50 {{value}} ms",
+    "p95": "p95 {{value}} ms",
+    "sparkline": "Requests per second over the last {{minutes}} minutes for {{dial}}"
+  },
+  "formErrorSummary": {
+    "title_one": "{{count}} field needs attention",
+    "title_other": "{{count}} fields need attention",
+    "name": "Name",
+    "engine": "Engine",
+    "version": "Version",
+    "envKey": "Variable name, row {{row}}",
+    "envValue": "Variable value, row {{row}}"
+  },
+  "appPower": {
+    "restartTitle": "Restart {{name}}?",
+    "restartDescription": "Containers are replaced with fresh ones, so the app is briefly down.",
+    "restartConsequenceRequests": "In-flight requests may fail while it comes back.",
+    "restartConsequencePolicy": "The restart policy brings it back on its own if it exits.",
+    "restartConfirm": "Restart",
+    "restartSkip": "Don't ask again for restart",
+    "stopTitle": "Stop {{name}}?",
+    "stopDescription": "The app stops serving traffic until you start it again.",
+    "stopConsequenceRequests": "In-flight requests are dropped.",
+    "stopConsequencePolicy": "The restart policy will not bring it back. Config, env and domains are kept.",
+    "stopConfirm": "Stop",
+    "pending": "Working...",
+    "applying": "Applying changes.",
+    "restarting": "Restarting...",
+    "stillRestarting": "Still restarting...",
+    "stopping": "Stopping...",
+    "restarted": "\"{{name}}\" restarted.",
+    "stopped": "\"{{name}}\" stopped.",
+    "restartFailed": "\"{{name}}\" did not come back",
+    "stillRestartingToast": "\"{{name}}\" is still restarting",
+    "stillRestartingHint": "It has not reported healthy yet. Check the logs.",
+    "stillStoppingToast": "\"{{name}}\" is still stopping",
+    "viewLogs": "View logs",
+    "starting": "Starting \"{{name}}\"."
+  },
+  "resourceLabels": {
+    "title": "Labels",
+    "description": "Free-form key and value pairs for grouping and filtering. They do not change how the resource runs.",
+    "empty": "No labels yet.",
+    "edit": "Edit labels",
+    "save": "Save labels",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "saved": "Labels saved",
+    "keyPlaceholder": "key",
+    "valuePlaceholder": "value",
+    "add": "Add label",
+    "remove": "Remove label {{key}}",
+    "duplicate": "Each key can be used once.",
+    "incomplete": "Fill in both the key and the value, or remove the row.",
+    "filterLabel": "Filter by label",
+    "filterPlaceholder": "env=prod,tier!=db",
+    "filterInvalid": "That selector could not be read."
   }
 }

@@ -10,14 +10,15 @@ import (
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
 const envImportSourceToken = "APP_IMPORT_SOURCE_TOKEN" //nolint:gosec // env var name, not a credential
 
 type importPlatformFlags struct {
-	url, token, only, collision, apiURL, profile string
-	tokenStdin, dryRun, jsonOut                  bool
-	insecure, allowPrivate, allowLoopback        bool
+	url, token, only, collision, apiURL, profile, dbVersion, team string
+	tokenStdin, dryRun, jsonOut                                   bool
+	insecure, allowPrivate, allowLoopback                         bool
 }
 
 func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -29,8 +30,8 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 		return exitOK
 	}
 	platform := args[0]
-	if platform != "coolify" && platform != "dokploy" && platform != "caprover" {
-		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy or caprover\n", prog, platform)
+	if platform != "coolify" && platform != "dokploy" && platform != "caprover" && platform != "heroku" && platform != "vercel" && platform != "render" {
+		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy, caprover, heroku, vercel or render\n", prog, platform)
 		return exitUsage
 	}
 	var f importPlatformFlags
@@ -43,14 +44,27 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	fs.BoolVar(&f.dryRun, "dry-run", false, "report what would be created without creating anything")
 	fs.StringVar(&f.only, "only", "", "comma-separated source ids or names to import")
 	fs.StringVar(&f.collision, "collision", "suffix", "name collision handling: suffix or skip")
+	fs.StringVar(&f.dbVersion, "db-version", "", "engine version for source databases that report none, e.g. postgres=16,redis=7.4")
+	fs.StringVar(&f.team, "team", "", "Vercel team id (team_...) or slug, default is the personal account")
 	fs.BoolVar(&f.insecure, "insecure-tls", false, "skip TLS verification of the source")
 	fs.BoolVar(&f.allowPrivate, "allow-private", false, "allow a private-network source (also needs the control plane env opt-in)")
 	fs.BoolVar(&f.allowLoopback, "allow-loopback", false, "allow a loopback source (also needs the control plane env opt-in)")
 	fs.StringVar(&f.apiURL, "api-url", "", "control plane API base URL")
 	fs.StringVar(&f.profile, "profile", "", "named credentials profile for the control plane")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the report as JSON")
+	var em importEmitFlags
+	bindImportEmitFlags(fs, &em, true)
 	if err := fs.Parse(args[1:]); err != nil {
 		return exitUsage
+	}
+	if f.url == "" && platform == "heroku" {
+		f.url = platformimport.DefaultHerokuURL
+	}
+	if f.url == "" && platform == "vercel" {
+		f.url = platformimport.DefaultVercelURL
+	}
+	if f.url == "" && platform == "render" {
+		f.url = platformimport.DefaultRenderURL
 	}
 	if f.url == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: --url is required\n", prog)
@@ -60,8 +74,27 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	if !ok {
 		return code
 	}
+	if em.active() {
+		return runImportPlatformEmit(prog, platform, f, em, token, stdout, stderr)
+	}
 	req := apiclient.PlatformImportRequest{Platform: platform, URL: f.url, Token: token, InsecureTLS: f.insecure,
 		AllowPrivate: f.allowPrivate, AllowLoopback: f.allowLoopback, Collision: f.collision}
+	dbv, err := platformimport.ParseDBVersions(f.dbVersion)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: --db-version: %v\n", prog, err)
+		return exitUsage
+	}
+	req.DBVersions = dbv
+	if f.team != "" {
+		if platform != "vercel" {
+			_, _ = fmt.Fprintf(stderr, "%s: --team is only for vercel\n", prog)
+			return exitUsage
+		}
+		if req.TeamID, err = platformimport.ValidateVercelTeam(f.team); err != nil {
+			_, _ = fmt.Fprintf(stderr, "%s: --team: %v\n", prog, err)
+			return exitUsage
+		}
+	}
 	for _, o := range strings.Split(f.only, ",") {
 		if o = strings.TrimSpace(o); o != "" {
 			req.Only = append(req.Only, o)
@@ -70,7 +103,6 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	client := apiClientFromFlags(prog, f.apiURL, "", f.profile, lookupEnv)
 	ctx := context.Background()
 	var rep apiclient.PlatformImportReport
-	var err error
 	if f.dryRun {
 		rep, err = client.DiscoverPlatformImport(ctx, req)
 	} else {
@@ -91,6 +123,48 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 		return exitCheckFailed
 	}
 	return exitOK
+}
+
+// runImportPlatformEmit reads the source here (read-only) and writes stack documents instead of creating anything.
+func runImportPlatformEmit(prog, platform string, f importPlatformFlags, em importEmitFlags, token string, stdout, stderr io.Writer) int {
+	opts, err := em.options(platform + "-import")
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, err)
+	}
+	dbv, err := platformimport.ParseDBVersions(f.dbVersion)
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, newValidationError("--db-version: %v", err))
+	}
+	team := ""
+	if f.team != "" {
+		if platform != "vercel" {
+			return reportError(stdout, stderr, f.jsonOut, newValidationError("--team is only for vercel"))
+		}
+		if team, err = platformimport.ValidateVercelTeam(f.team); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, newValidationError("--team: %v", err))
+		}
+	}
+	src, err := platformimport.NewSource(platformimport.Platform(platform), f.url, token, platformimport.ClientOptions{
+		Policy: platformimport.NetworkPolicy{AllowPrivate: f.allowPrivate, AllowLoopback: f.allowLoopback}, Insecure: f.insecure, Team: team})
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("import from %s: %w", platform, err))
+	}
+	disc, err := src.Discover(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("import from %s: %w", platform, err))
+	}
+	var only []string
+	for _, o := range strings.Split(f.only, ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			only = append(only, o)
+		}
+	}
+	plan := platformimport.BuildPlan(disc, platformimport.PlanOptions{Only: only, Collision: platformimport.CollisionSuffix, DBVersions: dbv})
+	files, err := platformimport.EmitStack(plan.EmitInput(), opts)
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, newValidationError("%v", err))
+	}
+	return finishEmit(prog, opts, em.out, files, em.force, f.jsonOut, stdout, stderr)
 }
 
 func resolveSourceToken(prog string, f importPlatformFlags, stdin io.Reader, stderr io.Writer, lookupEnv func(string) (string, bool)) (string, int, bool) {
@@ -149,22 +223,24 @@ func printPlatformImportReport(w io.Writer, rep apiclient.PlatformImportReport, 
 
 func importPlatformUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s import platform coolify|dokploy|caprover --url URL [flags]
+  %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]
 
 Reads apps, databases and settings from another platform (read-only) and
 creates them here. Use --dry-run first. Databases and volumes are created
 empty, data is not migrated. Re-running skips what was already imported.
 
-The source token (Coolify API token, Dokploy API key, CapRover password) is
+The source token (Coolify API token, Dokploy API key, CapRover password, Heroku API token, Vercel token, Render API key) is
 read from %[2]s, or --token-stdin, or --token (warns: it lands in shell
 history). It is sent to this control plane in the request body only and is
 never stored.
 
 Flags:
-  --url string          source platform base URL (required)
+  --url string          source platform base URL (required, Heroku, Vercel and Render default to their public API)
   --dry-run             report only, create nothing
   --only string         comma-separated source ids or names to import
   --collision string    suffix (default) or skip when a name is taken
+  --db-version string   engine version for databases the source reports none for (postgres=16,redis=7.4)
+  --team string         Vercel only: team id (team_...) or slug, default is the personal account
   --insecure-tls        skip TLS verification of the source
   --allow-private       allow a private-network source (control plane also needs APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true)
   --allow-loopback      allow a loopback source (control plane also needs APP_IMPORT_ALLOW_LOOPBACK=true)
@@ -172,6 +248,18 @@ Flags:
   --api-url string      control plane API base URL
   --profile string      named credentials profile for the control plane
   --json                print the report as JSON
+  --emit stack          write reviewable documents instead of creating anything here
+                        (reads the source only, needs no control plane); also needs --out
+  --out DIR             with --emit: the directory to write into
+  --stack NAME          with --emit: stack name (default PLATFORM-import)
+  --project NAME        with --emit: project name (default: the stack name)
+  --environment NAME    with --emit: also write an Environment and place the apps in it
+  --image-repo REPO     with --emit: image path for apps with no image, as REPO/APP:latest
+  --force               with --emit: overwrite files already in DIR
+
+With --emit stack the output is a Stack, Project, Database, App and Domain
+documents plus SECRETS.md (secret names only, never values) and MIGRATION.md.
+Review them in a pull request, then run stack plan and stack apply.
 
 Delete imported resources by label: apps carry import/source-id.
 `, prog, envImportSourceToken)

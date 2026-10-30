@@ -80,6 +80,8 @@ Discord sends a verification ping when you save and refuses the URL if the ping 
 **Identity scope**
 
 Levelrail has no link between a Slack or Discord user and a Levelrail account. A verified click is authorized at the channel level: anyone who can click the button in that Slack channel or Discord server can decide the approval. The clicking user's name is recorded on the decision for visibility, but it does not authorize it. Treat the channel or server you point this at as the trust boundary.
+
+Because a chat click decides as the channel, not as a person, the requester's own self-approval check cannot match it: a requester who can see the channel can approve their own request there. This is channel-level trust by design today. For approvals that need true separation of duties, approve only from the dashboard or the CLI, and leave **Interactive approval buttons** off on every channel (it is off by default; there is no global switch).
 </Warning>
 
 ## Endpoints

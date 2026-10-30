@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // This file is the real deploy-attempt history and log surface: a
@@ -128,7 +129,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		errMsg := ""
 		if deployErr != nil {
 			status = store.DeployAttemptStatusFailed
-			errMsg = deployErr.Error()
+			errMsg = deployErrorMessage(deployErr)
 		}
 		if err := rt.deployAttempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
 			rt.logger.Error("api: trigger build: finish deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
@@ -136,9 +137,13 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		}
 		// Fires only after FinishDeployAttempt persists the terminal status.
 		if rt.deployNotifier != nil {
-			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), alerting.DeployOutcome{
+			outcome := alerting.DeployOutcome{
 				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg, AttemptID: id,
-			})
+			}
+			if deployErr == nil {
+				outcome.ReleaseNotes = rt.releaseNotesForDeploy(finishCtx, req.ServiceName, "")
+			}
+			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), outcome)
 		}
 	}
 
@@ -238,9 +243,14 @@ type deployAttemptResource struct {
 	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *failure.Failure `json:"failure,omitempty"`
-	// Outcome is set by the single-deploy endpoint only: in_progress, healthy,
-	// failed, canceled, superseded or blocked.
+	// Outcome is in_progress, healthy, failed, canceled, superseded or
+	// blocked, on every response that carries an attempt.
 	Outcome string `json:"outcome,omitempty"`
+	// OutcomeReason is a one-line why behind Outcome.
+	OutcomeReason string `json:"outcome_reason,omitempty"`
+	// RolloutCrashLoopRestarts is the restart count at which a never-serving
+	// rollout counts as failed, read-only so clients apply the same rule.
+	RolloutCrashLoopRestarts int `json:"rollout_crash_loop_restarts,omitempty"`
 	// Phase is the stored attempt status when the single-deploy endpoint
 	// reports a derived Status (building, rolling_out, failed).
 	Phase string `json:"phase,omitempty"`
@@ -331,13 +341,19 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	supply := rt.supplyChainRecords(r.Context(), ids)
 	deployURLs := rt.deployURLsByAttempt(r.Context(), name)
 	held := rt.heldBuildIDs(r.Context(), name)
+	conds := rt.rolloutConditions(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	chainPos := rerunChainPositions(attempts)
-	for _, a := range attempts {
+	liveID := newestSucceededID(attempts)
+	for i, a := range attempts {
 		res := toDeployAttemptResource(a)
+		applyDeployOutcome(&res, a, i == 0, conds)
+		if isRedeployOfEarlierImage(a, attempts) {
+			res.Trigger = store.DeploymentTriggerRollback
+		}
 		res.ChainPosition = chainPos(a.ID)
 		res.DeployURL = deployURLs[a.ID]
-		res.Live = a.Status == store.DeployAttemptStatusSucceeded && a.Image == svc.Image
+		res.Live = a.ID == liveID && a.Image == svc.Image
 		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {
 			res.Live = false
 			res.PublishState = publishStateHeld
@@ -563,4 +579,10 @@ func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
 		return
 	}
 	_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
+}
+
+// deployErrorMessage is stored and served on the deploy record and the error
+// carries repo-author build output, so strip control codes, redact and bound it.
+func deployErrorMessage(err error) string {
+	return untrusted.Sanitize(err.Error(), failureOptions().MaxBytes)
 }

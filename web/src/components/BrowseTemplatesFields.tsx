@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowLeftIcon,
   ArrowSquareOutIcon,
@@ -20,6 +21,8 @@ import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { formatBytes } from '../lib/format'
 import { RamFitBadge } from './RamFitBadge'
 import { ServiceTemplateGrid } from './ServiceTemplateGrid'
+import { TemplateDescription } from './templates/TemplateDescription'
+import { TemplateDeployResult } from './templates/TemplateDeployResult'
 import { TemplateRequirementsCard } from './templates/TemplateRequirementsCard'
 import { needsAcknowledgement } from '../lib/templateRequirements'
 import { useDeployTemplateNow } from '../hooks/useDeployTemplateNow'
@@ -98,9 +101,12 @@ export function BrowseTemplatesFields({
     initialTemplateId ?? null,
   )
   const templateDetail = useServiceTemplate(templateId ?? '')
+  const { t } = useTranslation('templates')
   const [acknowledged, setAcknowledged] = useState(false)
   const deployCompose = useDeployCompose()
-  const deployTemplateNow = useDeployTemplateNow(onCreated)
+  const deployTemplateNow = useDeployTemplateNow(undefined, {
+    showResult: true,
+  })
 
   const { register, handleSubmit, formState, reset, setValue } = useForm<
     FormInput,
@@ -157,8 +163,8 @@ export function BrowseTemplatesFields({
   // less secret (requires_configuration, computed server-side from its
   // Compose body, internal/api/service_templates.go's
   // templateRequiresConfiguration) deploys immediately under a
-  // generated name via the shared useDeployTemplateNow hook (toast +
-  // navigate to the new app's page). A template that does need
+  // generated name via the shared useDeployTemplateNow hook (opens the access
+  // details dialog). A template that does need
   // configuration falls back to the existing pre-filled step
   // (setTemplateId), the same screen a plain card click already opens,
   // rather than deploying with an empty or fake secret.
@@ -177,8 +183,7 @@ export function BrowseTemplatesFields({
         <Alert>
           <CheckCircleIcon className="text-green-600 dark:text-green-400" />
           <AlertDescription>
-            {services.length} {services.length === 1 ? 'service' : 'services'}{' '}
-            deployed under &ldquo;{appId}&rdquo;.
+            {t('wizard.deployedUnder', { count: services.length, app: appId })}
           </AlertDescription>
         </Alert>
         <ul className="space-y-2">
@@ -192,7 +197,7 @@ export function BrowseTemplatesFields({
                   <span className="truncate text-sm font-medium text-foreground">
                     {service.name}
                   </span>
-                  <Badge variant="success">Created</Badge>
+                  <Badge variant="success">{t('wizard.created')}</Badge>
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {service.image}
@@ -207,14 +212,14 @@ export function BrowseTemplatesFields({
                 }
                 nativeButton={false}
               >
-                View
+                {t('wizard.view')}
               </Button>
             </li>
           ))}
         </ul>
         <DialogFooter>
           <Button type="button" onClick={onCreated}>
-            Done
+            {t('wizard.done')}
           </Button>
         </DialogFooter>
       </div>
@@ -226,7 +231,7 @@ export function BrowseTemplatesFields({
       <div className="space-y-4">
         <Button type="button" variant="ghost" size="sm" onClick={backToGrid}>
           <ArrowLeftIcon />
-          Back to templates
+          {t('wizard.back')}
         </Button>
         {templateDetail.isLoading ? (
           <div className="space-y-3">
@@ -246,8 +251,8 @@ export function BrowseTemplatesFields({
             className="space-y-4"
           >
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="min-w-0 text-sm font-medium break-words text-foreground">
                   {templateDetail.data.name}
                 </span>
                 <Badge variant="outline">{templateDetail.data.category}</Badge>
@@ -258,7 +263,7 @@ export function BrowseTemplatesFields({
                       {formatBytes(
                         templateDetail.data.recommended_memory_bytes,
                       )}{' '}
-                      RAM recommended
+                      {t('wizard.ramRecommended')}
                     </Badge>
                     <RamFitBadge
                       recommendedMemoryBytes={
@@ -271,6 +276,10 @@ export function BrowseTemplatesFields({
               <p className="text-xs text-muted-foreground">
                 {templateDetail.data.slogan}
               </p>
+              <TemplateDescription
+                description={templateDetail.data.description}
+                slogan={templateDetail.data.slogan}
+              />
               {templateDetail.data.documentation_url ? (
                 <a
                   href={templateDetail.data.documentation_url}
@@ -278,7 +287,7 @@ export function BrowseTemplatesFields({
                   rel="noreferrer noopener"
                   className="inline-flex items-center gap-1 text-xs text-primary underline underline-offset-4"
                 >
-                  Documentation
+                  {t('wizard.documentation')}
                   <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
                 </a>
               ) : null}
@@ -291,15 +300,15 @@ export function BrowseTemplatesFields({
             />
 
             <Field>
-              <FieldLabel htmlFor="template-app-name">Name</FieldLabel>
+              <FieldLabel htmlFor="template-app-name">
+                {t('wizard.name')}
+              </FieldLabel>
               <Input
                 id="template-app-name"
-                placeholder="e.g. my-stack"
+                placeholder={t('wizard.namePlaceholder')}
                 {...register('name')}
               />
-              <FieldHint>
-                Groups every service this template defines under one app name.
-              </FieldHint>
+              <FieldHint>{t('wizard.nameHint')}</FieldHint>
               <FieldError errors={[formState.errors.name]} />
             </Field>
 
@@ -311,10 +320,7 @@ export function BrowseTemplatesFields({
                 spellCheck={false}
                 {...register('compose')}
               />
-              <FieldHint>
-                Pre-filled from the template. Edit it if you need to before
-                deploying.
-              </FieldHint>
+              <FieldHint>{t('wizard.composeHint')}</FieldHint>
               <FieldError errors={[formState.errors.compose]} />
             </Field>
 
@@ -336,7 +342,9 @@ export function BrowseTemplatesFields({
                     !acknowledged)
                 }
               >
-                {deployCompose.isPending ? 'Deploying...' : 'Deploy'}
+                {deployCompose.isPending
+                  ? t('wizard.deploying')
+                  : t('wizard.deploy')}
               </Button>
             </DialogFooter>
           </form>
@@ -349,10 +357,20 @@ export function BrowseTemplatesFields({
   // scroll owner (dialog.tsx). A fixed max-h box here used to clip
   // whichever category header landed just above it.
   return (
-    <ServiceTemplateGrid
-      onSelect={setTemplateId}
-      onDeployNow={handleDeployNow}
-      deployingId={deployTemplateNow.pendingId}
-    />
+    <>
+      <ServiceTemplateGrid
+        onSelect={setTemplateId}
+        onDeployNow={handleDeployNow}
+        deployingId={deployTemplateNow.pendingId}
+      />
+      <TemplateDeployResult
+        result={deployTemplateNow.deployed?.response ?? null}
+        templateId={deployTemplateNow.deployed?.templateId}
+        onClose={() => {
+          deployTemplateNow.clearDeployed()
+          onCreated()
+        }}
+      />
+    </>
   )
 }

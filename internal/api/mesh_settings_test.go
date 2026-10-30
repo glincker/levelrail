@@ -142,3 +142,13 @@ func TestTopologyResponse_GroupsLocalWhenMeshOff(t *testing.T) {
 		t.Fatalf("groups = %+v, want one local group holding both resources", got.Groups)
 	}
 }
+
+func TestMeshSettings_ReportsAgentAddr(t *testing.T) {
+	rt, _, cookie := newMeshSettingsRouter(t, false)
+	rt.doctorAgentAdvertiseHost = "203.0.113.5"
+	rt.doctorAgentAdvertisePort = 9443
+	_, res := meshSettingsDo(t, rt, cookie, http.MethodGet, "")
+	if res.AgentAddr != "203.0.113.5:9443" {
+		t.Fatalf("agent_addr = %q, want the advertise address agents dial", res.AgentAddr)
+	}
+}

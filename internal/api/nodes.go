@@ -51,6 +51,9 @@ type nodeResource struct {
 	CertFingerprint string     `json:"cert_fingerprint,omitempty"`
 	JoinedAt        *time.Time `json:"joined_at,omitempty"`
 	LastSeenAt      *time.Time `json:"last_seen_at,omitempty"`
+	// OfflineSince is the last heartbeat of a node that is offline now, the
+	// moment it stopped being reachable. Omitted while the node is not offline.
+	OfflineSince *time.Time `json:"offline_since,omitempty"`
 	// Schedulable is the cordon state: false means the node
 	// refuses new placements (handleSetAppNode, handleDrainNode) while
 	// whatever's already running there keeps running, see
@@ -91,6 +94,10 @@ type nodeResource struct {
 	Agent *nodeAgentResource `json:"agent,omitempty"`
 	// Failure is set while the node has a live failure state (node_failure.go).
 	Failure *nodeFailureSummary `json:"failure,omitempty"`
+	// PlacedApps, PlacedDatabases and Labels are single-node fetch only.
+	PlacedApps      []string          `json:"placed_apps,omitempty"`
+	PlacedDatabases []string          `json:"placed_databases,omitempty"`
+	Labels          map[string]string `json:"labels,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -134,14 +141,30 @@ func nodeStatusReason(n store.Node, now time.Time, staleAfter time.Duration) str
 }
 
 func toNodeResource(n store.Node) nodeResource {
+	// Enrollment never stamps address or joined time, so show the mesh address
+	// and the row's creation time (the enrollment moment) rather than blanks.
+	address := n.Address
+	if address == "" {
+		address = n.MeshAddress
+	}
+	joined := n.JoinedAt
+	if joined == nil && n.Status != store.NodeStatusPending && !n.CreatedAt.IsZero() {
+		c := n.CreatedAt
+		joined = &c
+	}
+	var offlineSince *time.Time
+	if n.Status == store.NodeStatusOffline {
+		offlineSince = n.LastSeenAt
+	}
 	return nodeResource{
 		ID:                    n.ID,
 		Name:                  n.Name,
-		Address:               n.Address,
+		Address:               address,
 		Status:                string(n.Status),
 		CertFingerprint:       n.CertFingerprint,
-		JoinedAt:              n.JoinedAt,
+		JoinedAt:              joined,
 		LastSeenAt:            n.LastSeenAt,
+		OfflineSince:          offlineSince,
 		Schedulable:           n.Schedulable,
 		AcceptsAppWorkloads:   n.AcceptsAppWorkloads,
 		AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
@@ -228,6 +251,13 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		}
 		nodes, total = all, len(all)
 	}
+	if sel, err := parseV2Selector(r.URL.Query().Get(labelQueryParam)); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	} else if len(sel) > 0 {
+		nodes = rt.filterNodesByLabels(r.Context(), nodes, sel)
+		total = len(nodes)
+	}
 	gpus := rt.nodeGPUResources(r.Context())
 	renewal := rt.renewalStates(r.Context())
 	now := time.Now()
@@ -264,6 +294,10 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if errors.Is(err, store.ErrNodeNotFound) {
+		// The CLI and operators know nodes by name, so accept it here too.
+		n, err = rt.nodeByName(r.Context(), id)
+	}
+	if errors.Is(err, store.ErrNodeNotFound) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	}
@@ -273,6 +307,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := toNodeResource(*n)
+	rt.fillNodeWorkloads(r.Context(), &res)
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
@@ -528,6 +563,9 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		rt.previewNodeDrain(w, r)
 		return
 	}
+	if rt.refuseDrainBudget(w, r) {
+		return
+	}
 	if rt.multiNode != nil {
 		rt.handleStartDrain(w, r)
 		return
@@ -706,6 +744,15 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "node_name must be lowercase letters, digits and dashes, starting with a letter")
 		return
 	}
+	domain, err := validJoinDomain(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if host := rt.advertiseHost(); req.Mesh && meshAdvertiseHostNeedsIP(host) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf(meshAdvertiseHostMessage, host))
+		return
+	}
 	rec, err := rt.mintNodeJoinToken(r.Context(), rt.effectiveJoinTokenTTL())
 	if err != nil {
 		rt.internalError(w, "api: create node join token failed", err)
@@ -713,7 +760,7 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 	}
 	resp := createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint, ControlPlaneAddr: addr}
 	if addr != "" {
-		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh)
+		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh, domain)
 		resp.JoinCommands = &cmds
 	}
 	writeJSON(w, http.StatusCreated, resp)
@@ -766,4 +813,38 @@ func randomNodeJoinTokenID() (string, error) {
 		return "", fmt.Errorf("api: generate node join token id: %w", err)
 	}
 	return "njt_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// nodeByName finds a node by its unique name.
+func (rt *Router) nodeByName(ctx context.Context, name string) (*store.Node, error) {
+	all, err := rt.nodes.ListNodes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range all {
+		if all[i].Name == name {
+			return &all[i], nil
+		}
+	}
+	return nil, store.ErrNodeNotFound
+}
+
+// fillNodeWorkloads adds the placed apps and databases and the labels to a
+// single-node response; a failed lookup leaves the field empty.
+func (rt *Router) fillNodeWorkloads(ctx context.Context, res *nodeResource) {
+	if svcs, err := rt.apps.ListDesiredServicesByNode(ctx, res.ID); err == nil {
+		for _, s := range svcs {
+			res.PlacedApps = append(res.PlacedApps, s.Name)
+		}
+	}
+	if dbs, err := rt.databases.ListDesiredDatabasesByNode(ctx, res.ID); err == nil {
+		for _, d := range dbs {
+			res.PlacedDatabases = append(res.PlacedDatabases, d.Name)
+		}
+	}
+	if rt.multiNode != nil {
+		if labels, err := rt.multiNode.store.GetNodeLabels(ctx, res.ID); err == nil && len(labels) > 0 {
+			res.Labels = labels
+		}
+	}
 }

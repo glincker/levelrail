@@ -270,10 +270,26 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		go cfg.renewer.Run(renewCtx, client)
 		go reportRenewals(renewCtx, cfg.renewer, func(m *agentpb.AgentMessage) error { return rs.Send(m) })
 	}
+	if cfg.onboardingProbe != nil {
+		send := sessionStream.Send
+		if cfg.renewer == nil {
+			ls := &lockedStream{inner: stream}
+			sessionStream, send = ls, ls.Send
+		}
+		obCtx, stopOnboarding := context.WithCancel(ctx)
+		defer stopOnboarding()
+		go onboardingLoop(obCtx, cfg.onboardingProbe, cfg.onboardingEvery, send)
+	}
 
 	heartbeatInterval := defaultHeartbeatInterval
 	if cfg.heartbeatInterval > 0 {
 		heartbeatInterval = cfg.heartbeatInterval
+	}
+
+	if cfg.silence != nil {
+		ctx = withSilence(ctx, cfg.silence)
+		cfg.silence.SetConnected(true)
+		defer cfg.silence.SetConnected(false)
 	}
 
 	return serveSession(WithFileRoot(ctx, cfg.fileRoot), sessionStream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, cfg.gpuProbe, logger, cfg.hostProbe)
@@ -289,8 +305,11 @@ type sessionConfig struct {
 	keepaliveTimeout  time.Duration
 	gpuProbe          GPUProbe
 	hostProbe         HostProbe
+	onboardingProbe   OnboardingProbe
+	onboardingEvery   time.Duration
 	renewer           *Renewer
 	fileRoot          string
+	silence           *SilenceWatcher
 }
 
 // WithFileStorage lets the control plane read and write objects under dir, and nowhere else, over this session.
@@ -407,6 +426,10 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 			builds.Cancel(p.BuildCancel.GetBuildId())
 		case *agentpb.ControlMessage_BuildCredit:
 			builds.Credit(p.BuildCredit)
+		case *agentpb.ControlMessage_SilenceConfig:
+			if w := silenceFrom(ctx); w != nil {
+				w.SetURL(p.SilenceConfig.GetUrl())
+			}
 		case *agentpb.ControlMessage_GoAway:
 			return errControlPlaneGoAway
 		}

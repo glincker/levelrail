@@ -103,6 +103,8 @@ The token is sent to this control plane in the request body, used in memory for 
 | `--url` | Source platform base URL (required) |
 | `--dry-run` | Report only, create nothing |
 | `--only a,b` | Import only these source ids or names |
+| `--db-version postgres=16,redis=7.4` | Engine version for source databases that report none (Heroku), checked against the version catalog |
+| `--team team_...` | Vercel only: team id or slug, default is the personal account |
 | `--collision suffix\|skip` | When a name is taken: rename with a numeric suffix (default) or skip |
 | `--insecure-tls` | Skip TLS verification of the source (self-signed certificates) |
 | `--allow-private`, `--allow-loopback` | Allow a private-network or loopback source, see below |
@@ -244,6 +246,23 @@ Secret-looking names are values whose key matches password, secret, token, key, 
 
 A database whose engine or version cannot be determined is reported as unsupported.
 
+### Heroku
+
+`levelrail import platform heroku` reads the public Heroku Platform API, so `--url` is optional. The token is a Heroku API key, from `heroku authorizations:create` or the account settings page. Only read-only GET requests are sent.
+
+- **Maps.** Apps (with their config vars, formation, domains and worker dynos) and `heroku-postgresql` and `heroku-redis` add-ons, which become empty [managed databases](/managing-databases).
+- **Does not map.** Other add-ons are listed as warnings to set up by hand. Source code and buildpack builds are not imported: point the app at an image or repository. Release phase commands are not run.
+- **Database version.** Heroku reports no engine version. Pass `--db-version postgres=16,redis=7.4` to choose one; otherwise the newest version in the catalog is used and the report warns that you must check compatibility before restoring data.
+- **Procfile and app.json.** The config translator can turn these into settings for the imported app once it is available.
+
+### Vercel
+
+`levelrail import platform vercel` reads the public Vercel REST API, so `--url` is optional. Create the token at vercel.com/account/tokens. For a team, pass `--team` with the team id (`team_...`) from the team's Settings page, or the team slug; without it only your personal account is read. Only read-only GET requests are sent.
+
+- **Maps.** Projects, their environment variable keys, custom domains and the linked git repository.
+- **Env values.** Sensitive variables are not readable through the API, so only their keys are imported and you set the values by hand.
+- **Does not map.** Vercel Blob, KV, Postgres and other storage, Edge Config, and source code or builds: point the app at an image or repository. Cron jobs are not read from the API: run `levelrail-cli import config` on a checkout to turn `vercel.json` into app settings.
+
 ### Compose files and Dokku
 
 Two more sources need no network and no token: paste the content instead. They use the same plan, stage, verify and cutover steps as the platforms above.
@@ -286,6 +305,38 @@ Practical notes:
 - The source host must be reachable from the node that runs the database. Link-local and metadata addresses are refused.
 - ClickHouse, KeyDB and Dragonfly are reported `unsupported`. Take a dump with the source's own tools and restore it with the backup and restore tools.
 - Redis is copied as an RDB snapshot and the target restarts to load it. Keys that expire during the copy can make the key counts differ slightly, in which case the status is `failed` with both numbers shown. Re-run it.
+
+## Move a hosted Postgres (Heroku)
+
+`databases import-hosted` copies a hosted Postgres into a managed Postgres database you created first. It is a logical dump and restore, so the old app must stop writing while it runs.
+
+```bash
+heroku maintenance:on -a APP
+export SOURCE_DATABASE_URL="$(heroku config:get DATABASE_URL -a APP)"
+levelrail-cli databases create --name mydb --engine postgres --version 16
+levelrail-cli databases import-hosted mydb --from-env SOURCE_DATABASE_URL --writes-frozen --dry-run
+levelrail-cli databases import-hosted mydb --from-env SOURCE_DATABASE_URL --writes-frozen
+```
+
+1. Turn maintenance mode on and stop workers and schedulers, so nothing writes to the source.
+2. Read the URL with `heroku config:get DATABASE_URL -a APP` into an environment variable. The CLI never takes the URL as an argument, because arguments show up in process lists. `--from-stdin` reads it from the first line of stdin instead.
+3. Create the target with `databases create`. Use the same or a newer major version than the source. The target container must be running.
+4. Dry-run. It only reads from the source and prints blockers, warnings and info, each with the fix.
+5. Run it. Without `--writes-frozen` it refuses. It copies, restores and compares row counts per table. Follow it with `migrate db-status mydb`.
+6. Verify the counts, link the app to the new database so its connection variable changes, and deploy. `heroku maintenance:off` is not needed after the cutover, because the old app is retired.
+
+The same two steps are available over the API: `POST /api/v1/imports/platform/databases/{name}/hosted/preflight` and `.../hosted/run` (ability `write:sensitive`). The body is `{"url", "writes_frozen", "allow_large", "create_missing_roles"}`. The URL is held in memory for the request and the helper container, never stored or logged, and every response shows it with the password masked. Run answers `409` until `writes_frozen` is true, and `202` once the move starts.
+
+Limits, stated plainly:
+
+- It is a logical dump only. There is no continuous replication, so downtime lasts as long as the dump and restore.
+- Databases above `APP_MIGRATE_HOSTED_MAX_BYTES` (default 100 GiB) are blocked unless you pass `--allow-large` and accept a long downtime.
+- A public host must use TLS. `sslmode=disable`, `allow` or `prefer` are refused unless `APP_MIGRATE_HOSTED_ALLOW_INSECURE=true`.
+- Provider extension schemas (such as `heroku_ext`) are rewritten to `public`, and provider-only extensions are skipped with a warning.
+- Owners and grants are not copied. Every object belongs to the managed database user.
+- Row level security policies that name roles missing on the target are a blocker (the check reads the target's own roles, so it clears once the role exists). Pass `--create-missing-roles` (API `create_missing_roles`) to create them as NOLOGIN NOINHERIT before the restore; the dry run lists which roles would be created and the result reports them.
+- Running the import again replaces the previous copy: every schema the dump declares, such as `heroku_ext`, is dropped and recreated in the same transaction as the restore.
+- It has not been verified against a real Heroku database yet. Test it on a copy first.
 
 ## Migrating a whole database server (Migration hub)
 
@@ -381,6 +432,35 @@ The source keeps serving until you change DNS, and keeps serving the clients who
 4. To roll back, point the record at the source again. Because the TTL is low, that takes minutes. Keep the source running for at least a full traffic cycle before stopping it.
 
 Writes accepted by the source after the final copy and before clients move are not carried over. For databases with steady writes, put the source app in maintenance mode for the last copy and the switch.
+
+## Parity check before cutover
+
+`migrate verify` proves this server matches the source before you switch DNS. It reads the source with the same readers as the importer and compares:
+
+- apps (matched by import label, then by name), domains, scheduled jobs and volume mounts
+- environment variable **names** only. Values are never read into the comparison, the stored report or the output.
+- databases and their engines and versions
+- a live HTTP probe of every domain on both sides: status code, TLS validity and days to expiry, latency and redirect target
+
+```bash
+levelrail-cli migrate verify coolify --url https://coolify.example.com --token "$COOLIFY_TOKEN" --target-ip 203.0.113.10
+levelrail-cli migrate verify --recheck        # again, with the credential the server still holds
+levelrail-cli migrate verify --latest --output json
+```
+
+Every difference is **blocking** (hold the cutover), **warning** (check it) or **info** (nothing to do), with a one-line fix. The command exits 1 when any blocking difference exists, so it works as a gate in a script. A staged app that holds its domains back until cutover shows those domains as warnings, not blocking.
+
+Probes never follow a redirect: they report where it points and flag one that leaves the domain's family. They refuse private and loopback addresses, and cloud metadata addresses always. Allowing private probes needs both `--allow-private-probes` and `APP_MIGRATE_VERIFY_ALLOW_PRIVATE_PROBES=true` on the control plane. `--target-ip` and `--source-ip` dial a given IP while keeping the domain as the host name, so you can probe this server before DNS moves.
+
+| Setting | Flag | Environment | Default |
+| --- | --- | --- | --- |
+| Probe timeout | `--probe-timeout` | `APP_MIGRATE_VERIFY_PROBE_TIMEOUT` | 10s, at most 60s |
+| Domains probed at once | `--probe-concurrency` | `APP_MIGRATE_VERIFY_PROBE_CONCURRENCY` | 6, at most 32 |
+| Certificate warning window | | `APP_MIGRATE_VERIFY_TLS_WARN_DAYS` | 14 days |
+| Slower-than-source factor and floor | | `APP_MIGRATE_VERIFY_LATENCY_FACTOR`, `APP_MIGRATE_VERIFY_LATENCY_FLOOR_MS` | 3 times, 300 ms |
+| How long the server holds the source token for Re-check | | `APP_MIGRATE_VERIFY_CREDENTIAL_TTL` | 30m, memory only |
+
+The API is `POST /api/v1/migrations/verify` (root token) and `GET /api/v1/migrations/verify/latest` (read). The dashboard shows the latest report on the Cutover tab of the Migrate page with a Re-check button, and the read-only MCP tool is `get_migration_verify_report`.
 
 ## What does not migrate
 

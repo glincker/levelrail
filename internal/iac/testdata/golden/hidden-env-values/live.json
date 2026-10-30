@@ -1,0 +1,26 @@
+{
+  "projects": {
+    "p1": {
+      "id": "p1",
+      "name": "shop"
+    }
+  },
+  "apps": {
+    "web": {
+      "name": "web",
+      "image": "ghcr.io/acme/web:1.2.3",
+      "port": 3000,
+      "bind_address": "private",
+      "strategy": "blue-green",
+      "replicas": 1,
+      "project_id": "p1",
+      "env": {
+        "LOG_LEVEL": "warn"
+      },
+      "secret_env": [
+        "API_KEY"
+      ],
+      "env_dirty": false
+    }
+  }
+}

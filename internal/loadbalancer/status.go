@@ -68,6 +68,7 @@ type Registry struct {
 	obs       map[string]Observation
 	firstSeen map[string]map[string]time.Time
 	hist      map[string]map[string]*upstreamHist
+	traffic   trafficState
 	histCfg   HistoryConfig
 	now       func() time.Time
 }
@@ -144,6 +145,7 @@ func (r *Registry) Retain(keep map[string]bool) {
 			delete(r.hist, s)
 		}
 	}
+	r.traffic.retain(keep)
 }
 
 // Stats are live counters for one upstream address from the proxy.
@@ -267,6 +269,9 @@ type UpstreamStatus struct {
 	AdminState  string     `json:"admin_state"`
 	// LastChangedAt is when State last changed, or when it was first observed.
 	LastChangedAt *time.Time `json:"last_changed_at,omitempty"`
+
+	// Traffic is nil until two samples of ingress counters exist.
+	Traffic *UpstreamTraffic `json:"traffic,omitempty"`
 
 	probed *CheckRecord
 }

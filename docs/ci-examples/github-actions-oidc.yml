@@ -1,0 +1,57 @@
+# .github/workflows/deploy.yml
+# Build, push and deploy by digest with no stored Levelrail token.
+# One-time setup on the control plane:
+#   levelrail-cli apps ci trust add my-app --repo example/my-app --ref refs/heads/main
+# Repository variable LEVELRAIL_API_URL holds the control plane URL (not a secret).
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: deploy-my-app
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      APP: my-app
+      IMAGE: ghcr.io/example/my-app
+      LEVELRAIL_API_URL: ${{ vars.LEVELRAIL_API_URL }}
+      LEVELRAIL_CLI_INSTALL_DIR: ${{ github.workspace }}/.bin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Install levelrail-cli
+        run: |
+          curl -fsSL https://levelrail.com/install-cli.sh | sh
+          echo "$LEVELRAIL_CLI_INSTALL_DIR" >> "$GITHUB_PATH"
+
+      - name: Deploy and wait for healthy
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          LEVELRAIL_TOKEN=$(levelrail-cli apps ci token "$APP" --provider github)
+          echo "::add-mask::$LEVELRAIL_TOKEN"
+          export LEVELRAIL_TOKEN
+          levelrail-cli apps deploy "$APP" --image "$IMAGE@$DIGEST"
+          levelrail-cli apps wait "$APP" --timeout 5m

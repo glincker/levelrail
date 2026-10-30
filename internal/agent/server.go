@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -48,13 +49,15 @@ const (
 // Server implements agentpb.AgentServiceServer.
 type Server struct {
 	agentpb.UnimplementedAgentServiceServer
-	ca        *CA
-	store     EnrollStore
-	registry  *Registry
-	logger    *slog.Logger
-	gpuSink   GPUSink        // nil is valid: GPU reports are ignored
-	hostSink  HostReportSink // nil is valid: host reports are ignored
-	onSession func(nodeID, remoteIP string)
+	ca             *CA
+	store          EnrollStore
+	registry       *Registry
+	logger         *slog.Logger
+	gpuSink        GPUSink // nil is valid: GPU reports are ignored
+	silenceSrc     atomic.Pointer[SilenceSource]
+	hostSink       HostReportSink // nil is valid: host reports are ignored
+	onboardingSink OnboardingSink // nil is valid: onboarding reports are ignored
+	onSession      func(nodeID, remoteIP string)
 
 	certValidity time.Duration
 	renewGrace   time.Duration
@@ -279,11 +282,17 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	// with an open connection stops looking healthy. Buffered and
 	// non-blocking: recvLoop must never block delivering the signal.
 	heartbeats := make(chan struct{}, 1)
+	caps := &capSet{}
 	m := newMuxWithHandlers(stream, muxHandlers{
 		gpu: s.onGPUReport(nodeID),
 		hostReport: func(r *agentpb.HostReport) {
 			if s.hostSink != nil {
 				s.hostSink.SetNodeHostReport(nodeID, hostReportFromPB(r))
+			}
+		},
+		onboarding: func(r *agentpb.OnboardingReport) {
+			if s.onboardingSink != nil {
+				s.onboardingSink.SetNodeOnboarding(nodeID, onboardingFromPB(r), s.now())
 			}
 		},
 		heartbeat: func() {
@@ -293,6 +302,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 			}
 		},
 		hello: func(info *agentpb.AgentInfo) {
+			caps.store(info.GetCapabilities())
 			go s.recordAgentInfo(context.Background(), nodeID, info)
 		},
 		renewal: func(r *agentpb.RenewalReport) {
@@ -300,12 +310,13 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		},
 	})
 	live := s.trackSession(nodeID, m)
-	s.registry.Register(nodeID, newGRPCTransport(m))
+	s.registry.Register(nodeID, newGRPCTransportWithCaps(m, caps))
 	s.observeSession(ctx, nodeID)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
 	heartbeatDone := make(chan struct{})
 	go s.heartbeatLoop(nodeID, heartbeats, heartbeatDone)
+	go s.silenceLoop(ctx, nodeID, m, silencePushEveryFromEnv(), heartbeatDone)
 
 	defer func() {
 		close(heartbeatDone)

@@ -178,3 +178,32 @@ func TestRun_Templates_Help(t *testing.T) {
 		t.Errorf("stdout = %q, want usage text", stdout)
 	}
 }
+
+func TestRun_Templates_List_VerifiedFilter(t *testing.T) {
+	srv := newListEchoServer(t, nil, []serviceTemplateListItem{
+		{ID: "grafana", Name: "Grafana", Category: "Monitoring", Slogan: "Dashboards", Verified: true},
+		{ID: "untested-thing", Name: "Untested", Category: "Misc", Slogan: "Maybe"},
+	})
+
+	all, _ := runCLIExpectOK(t, []string{"templates", "list", "--api-url", srv.URL})
+	if !strings.Contains(all, "VERIFIED") || !strings.Contains(all, "untested-thing") {
+		t.Errorf("unfiltered list = %q, want VERIFIED column and both rows", all)
+	}
+	only, _ := runCLIExpectOK(t, []string{"templates", "list", "--verified", "--api-url", srv.URL})
+	if !strings.Contains(only, "grafana") || strings.Contains(only, "untested-thing") {
+		t.Errorf("--verified list = %q, want only grafana", only)
+	}
+}
+
+func TestRun_Templates_Get_Description(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(serviceTemplateDetail{ID: "rustdesk-server", Name: "RustDesk", Slogan: "Short", Description: "Set RELAY.\nOpen TCP 21117.", Compose: "services: {}\n"})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"templates", "get", "rustdesk-server", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "description:\n  Set RELAY.\n  Open TCP 21117.\n") {
+		t.Errorf("stdout = %q, want an indented description block", stdout)
+	}
+}

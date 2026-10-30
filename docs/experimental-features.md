@@ -26,9 +26,10 @@ The value is a comma separated list of feature keys. Unknown keys are logged at 
 | `git-push` | Deploy an app with `git push` to a remote on your own server, per-app token ([Git push deploy](/git-push-deploy)), beta |
 | `saml-scim` | SAML single sign-on and SCIM provisioning on the sign-in library ([SAML](/sso-saml), [SCIM](/scim)), beta, not yet verified against a live identity provider |
 | `plugins` | [Plugins](/plugins): signed, operator-approved plugins in locked-down containers, starting with notification channels |
+| `canvas` | [Canvas](/canvas) (beta): a visual project editor that turns a draft into a reviewable plan. Needs `iac` to review and apply |
 | `resource-advisor` | [Resource advisor](/resource-advisor) (beta): limit, idle and tuning suggestions |
 
-Every feature has a switch in Settings, Beta features, and the choice is saved at once. `ai-chat`, `resource-advisor`, `cli-console`, `mobile-api`, `git-push` and `saml-scim` apply live. The rest are wired at server start: the card shows "Restart to apply" with a Restart now button (root, supervised installs), and `levelrail-cli settings beta-features set <feature> on --restart` does the same from the CLI. A feature listed in `APP_EXPERIMENTAL` shows as "Enabled by server setting" and stays on regardless of Settings. Turning a feature off never deletes its data.
+Every feature has a switch in Settings, Beta features, and the choice is saved at once. `ai-chat`, `resource-advisor`, `cli-console`, `mobile-api`, `git-push`, `saml-scim` and `canvas` apply live. The rest are wired at server start: the card shows "Restart to apply" with a Restart now button (root, supervised installs), and `levelrail-cli settings beta-features set <feature> on --restart` does the same from the CLI. A feature listed in `APP_EXPERIMENTAL` shows as "Enabled by server setting" and stays on regardless of Settings. Turning a feature off never deletes its data.
 
 Prefer config over the UI? Each card has "Use the CLI or server config instead", which shows the CLI command and the systemd and Docker lines to copy.
 

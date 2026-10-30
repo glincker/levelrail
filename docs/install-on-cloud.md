@@ -36,7 +36,7 @@ Open these inbound ports in the cloud firewall, security group or network rules 
 Keep SSH (22) open to your own address so you can read the setup token. Optionally open `443/udp` for HTTP/3. Agent-only nodes need no inbound ports at all, see [Multi-node](/multi-node).
 
 <Warning>
-The first admin setup token is printed at the end of the install and written to the boot log. Treat it as a secret. Read it over SSH, use it once, and do not paste it into tickets or chat. Back up `<data dir>/master.key` as soon as the install finishes, as the installer reminds you. Without that key, encrypted secrets cannot be read after a restore.
+The first admin setup token is printed at the end of an interactive install only. When the output is not a terminal (cloud-init, CI, a pipe), the installer prints the `setup-token` command and the token file path instead, so the token never lands in `/var/log/cloud-init-output.log`. It is never written to the service log; print it again with `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token`. With `docker-compose.yml`, run `docker compose exec levelrail levelrail setup-token` instead; the token is no longer in `docker logs`. Treat it as a secret. Read it over SSH, use it once, and do not paste it into tickets or chat. Back up `<data dir>/master.key` as soon as the install finishes, as the installer reminds you. Without that key, encrypted secrets cannot be read after a restore.
 </Warning>
 
 ## AWS EC2
@@ -234,7 +234,7 @@ Create a Hetzner Cloud Firewall with inbound TCP 80 and 443 from all addresses a
 
 ## After the install
 
-1. Read the dashboard URL and the setup token from the boot log over SSH, or run `systemctl status levelrail`.
+1. Read the dashboard URL and the setup token from the install output over SSH, or run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` (`docker compose exec levelrail levelrail setup-token` for a compose install).
 2. Open `http://<public-ip>:8080/login#setup=<token>` once, create the admin, then set a domain with TLS on the dashboard as described in [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
 3. Back up `master.key` from the data directory, then close port 8080 to the public.
 4. Run `levelrail-cli doctor` on the server to check Docker, disk and the ports.

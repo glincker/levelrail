@@ -225,14 +225,14 @@ services:
 `,
 		},
 		{
-			name: "udp protocol",
+			name: "sctp protocol",
 			yaml: `
 services:
   web:
     image: nginx:1.27
     ports:
       - target: 53
-        protocol: udp
+        protocol: sctp
 `,
 		},
 		{

@@ -418,7 +418,49 @@ body {
   animation: kit-exit var(--motion-base) var(--motion-ease) both;
 }
 
+@keyframes cleanup-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes cleanup-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes cleanup-flash {
+  from {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.cleanup-grow {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: cleanup-grow var(--motion-slow) var(--motion-ease) both;
+}
+.cleanup-sheen {
+  animation: cleanup-sheen 1.2s linear infinite;
+}
+.cleanup-flash {
+  animation: cleanup-flash 1.6s var(--motion-ease) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .cleanup-grow,
+  .cleanup-sheen,
+  .cleanup-flash,
   .kit-shimmer,
   .kit-pulse-ring,
   .kit-enter,
@@ -463,11 +505,11 @@ body {
 /* Page width: PageTemplate reads these two tokens, so one attribute retunes every page. */
 :root,
 :root[data-width='comfortable'] {
-  --glinr-content-max: 72rem;
-  --glinr-content-max-wide: 96rem;
+  --glinr-content-max: 88rem;
+  --glinr-content-max-wide: 112rem;
 }
 :root[data-width='wide'] {
-  --glinr-content-max: 80rem;
+  --glinr-content-max: 104rem;
   --glinr-content-max-wide: 120rem;
 }
 :root[data-width='full'] {

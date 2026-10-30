@@ -1,0 +1,3 @@
+info heroku.web.port web
+info heroku.health.none web
+warn config.source.unknown web

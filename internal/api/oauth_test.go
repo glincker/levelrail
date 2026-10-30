@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"golang.org/x/oauth2"
@@ -80,6 +81,7 @@ func (f *fakeOAuthClient) FetchUserInfo(_ context.Context, _ *oauth2.Token) (oau
 // past its own "is this configured and enabled" checks.
 func enableOAuthProviderForTest(t *testing.T, rt *Router) {
 	t.Helper()
+	t.Setenv(authengine.EnvDashboardURL, "http://example.com")
 	const provider = store.OAuthProviderGoogle
 	if rt.oauthSecrets == nil {
 		rt.oauthSecrets = newFakeOAuthSecrets()
@@ -195,6 +197,32 @@ func TestHandleOAuthLinkStart_RequiresSession(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/link/start", nil))
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestHandleOAuthLinkStart_ForgedHostDoesNotPickRedirectURI(t *testing.T) {
+	rt, db := newTestRouter(t)
+	enableOAuthProviderForTest(t, rt)
+	t.Setenv(authengine.EnvDashboardURL, "")
+	var gotRedirect string
+	rt.oauthClientFactory = func(_ string, _ store.OAuthProviderSettings, _, redirectURL string) (oauthProviderClient, error) {
+		gotRedirect = redirectURL
+		return &fakeOAuthClient{}, nil
+	}
+	cookie := sessionCookieForTest(t, rt, storeUserForTest(t, db, "forged-host@example.com").ID)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/link/start", nil)
+	req.Host = "evil.example"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 when no trusted base URL exists, body = %s", rec.Code, rec.Body.String())
+	}
+	if gotRedirect != "" {
+		t.Fatalf("redirect URI built from a forged Host: %q", gotRedirect)
 	}
 }
 

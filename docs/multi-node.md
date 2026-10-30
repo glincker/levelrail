@@ -30,7 +30,7 @@ The platform is single-node-first. The dashboard node picker only renders once a
 Enrollment exchanges a one-time join token for a client certificate. The agent dials out to the control plane, and the control plane never initiates a connection. For a cloud server created for you, see [Node provisioning](/node-provisioning). To have the control plane set up a machine over SSH, see [Enrolling over SSH](#enrolling-over-ssh-instead-of-by-hand).
 
 <Warning>
-Set the advertise host first. Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent uses in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only matches a single-machine test. With a mismatch, enrollment still succeeds (the first certificate exchange pins the CA fingerprint, not the hostname) and the node appears in `nodes list`, but its session then fails TLS hostname verification on every attempt and the node stays `pending` forever.
+Set the advertise host first. Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent uses in `APP_CONTROL_PLANE_ADDR`. With the mesh on it must be an IP address, not a hostname: WireGuard does not resolve names. Creating a join token with `mesh: true` (Add node with the mesh selected) is refused with a 400 naming `APP_AGENT_ADVERTISE_HOST` while it is a hostname; without the mesh a hostname is fine. It defaults to `127.0.0.1`, which only matches a single-machine test. With a mismatch, enrollment still succeeds (the first certificate exchange pins the CA fingerprint, not the hostname) and the node appears in `nodes list`, but its session then fails TLS hostname verification on every attempt and the node stays `pending` forever.
 </Warning>
 
 ```mermaid
@@ -48,7 +48,7 @@ graph LR
 <Tabs>
 <Tab title="Dashboard">
 
-Open the Nodes page and click **Add node**. The dialog shows the `docker` and `binary` commands with copy buttons, plus the expiry time.
+Open the Nodes page and click **Add node**. The dialog pre-fills the advertise address the agent certificate covers, pre-selects the mesh when it is on, and offers Docker, Podman and binary tabs with copy buttons, plus the expiry time. Rootful Podman needs `sudo systemctl enable --now podman.socket` once on the new machine.
 
 </Tab>
 <Tab title="CLI">
@@ -127,7 +127,7 @@ APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json \
 | --- | --- |
 | `APP_CONTROL_PLANE_ADDR` | `host:port` of the control plane's agent gRPC listener. Required. |
 | `APP_JOIN_TOKEN` | The token from step 1. Single use. |
-| `APP_CA_FINGERPRINT` | The control plane's CA fingerprint, shown next to the token. Recommended: the agent then refuses to enroll, and never sends the token, unless the control plane's certificate chains to this CA. Without it, the agent trusts whatever answers at the address on first use. |
+| `APP_CA_FINGERPRINT` | The control plane's CA fingerprint, shown next to the token. Required: the agent refuses to enroll, and never sends the token, unless the control plane's certificate chains to this CA. To trust whatever answers at the address on first use anyway, set `APP_ALLOW_UNPINNED_ENROLL=1` (not recommended). |
 | `APP_NODE_NAME` | Optional. Defaults to the machine hostname. |
 | `APP_AGENT_IDENTITY_FILE` | Where to save the identity, mode `0600`. Default `./levelrail-agent-identity.json`. |
 
@@ -268,6 +268,16 @@ A connected agent sends a `Heartbeat` frame up its Session stream at a regular i
 | Frozen process (for example `SIGSTOP`) | The TCP and TLS connection can stay open indefinitely. The HTTP/2 PING keepalive is the backstop: the transport notices the peer stopped responding, ends the connection, and the hard-disconnect path follows. |
 
 The keepalive is configured with `APP_NODE_KEEPALIVE_TIME` and `APP_NODE_KEEPALIVE_TIMEOUT` (default 10s/10s on the control plane; the agent mirrors this with env vars of the same name).
+
+### What an offline node means for its apps
+
+While a node's agent is down, its containers keep running, because the node's own Docker owns them. What stops is everything that goes through the agent: the control plane cannot manage the node, and when the mesh runs inside the agent (the default with `APP_MESH_ENABLED=1`), the ingress path from the control plane to the node's apps is down too, so those apps are not reachable through ingress.
+
+The app's `Ready` condition says so instead of keeping the last value: it turns `False` with reason `NodeOffline`, and the message names the node and how long it has been offline. `apps status` and `deploys wait` show it. When the agent reconnects the condition returns to its real state without recreating any container.
+
+Changes to an app on an offline node are refused instead of silently queued. Deploy, rollback, restart, start and stop return `409` with code `node_offline`, the node name, how long it has been unseen, and the fix: bring the node back, or move the app with `apps move` or `nodes drain`. No deploy attempt is recorded and desired state is not touched. To record the change anyway and let the node apply it when it returns, send `queue_while_offline: true` (deploy and rollback body) or `?queue_while_offline=true` (restart, start, stop); the CLI flag is `--queue-while-offline`. The attempt then shows as `pending`, never `succeeded`; once the node is back and the app reconciles, the newest queued attempt becomes `succeeded` and older ones `superseded`. App payloads carry `node_offline: true` while the hosting node is offline, and node payloads carry `offline_since`.
+
+Observed recovery in a live two-node test: about 35 seconds after the agent restarts, and about 60 seconds after a control plane restart.
 
 ### The control plane's local node
 
@@ -421,6 +431,8 @@ levelrail-cli nodes zones
 
 When at least one eligible node has a `zone` label, placement spreads across zones by default: the zone holding the fewest replicas of the same workload wins, then the zone carrying the fewest workloads overall, then the usual headroom order. Drains and auto-placement use the same ranking, so draining a node prefers another zone. If no node has a zone label nothing changes. A node with no `region` label shows the free-text region set on the node, if any. `GET /api/v1/nodes/zones` returns each zone with its nodes and workload counts, and the **Failure domains** card on the nodes page shows the same view, with a button to the node page when no zone is set yet.
 
+For the guided add-node flow that detects these labels from cloud metadata, see [Add a node anywhere](/add-node-anywhere). Placement also spreads across providers, and an app whose replicas all share one zone gets a warning.
+
 ### Dry runs: where would it land, and what if a zone dies
 
 Both checks use the real scheduler on a copy of the fleet and change nothing.
@@ -562,7 +574,7 @@ Run as root with `--cap-add NET_ADMIN --device /dev/net/tun -e APP_MESH_ENABLED=
 </Step>
 <Step title="Open the hub">
 
-The control plane is the hub: agents send WireGuard handshakes to `APP_AGENT_ADVERTISE_HOST` on UDP `51820`. Set that variable to the control plane's public host, and allow **inbound UDP 51820** on its firewall and cloud security group. A loopback advertise host leaves agents with no endpoint (`no known endpoint for peer`); `levelrail-cli doctor` reports this as `mesh_hub_endpoint`.
+The control plane is the hub: agents send WireGuard handshakes to `APP_AGENT_ADVERTISE_HOST` on UDP `51820`. Set that variable to the control plane's public IP address (a hostname enrols but the endpoint cannot be parsed, and handshakes never happen), and allow **inbound UDP 51820** on its firewall and cloud security group. A loopback advertise host leaves agents with no endpoint (`no known endpoint for peer`); `levelrail-cli doctor` reports this as `mesh_hub_endpoint`.
 
 </Step>
 <Step title="Match the brand">
@@ -705,7 +717,7 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 An agent dials out to the control plane; nothing connects in. Trust is established once, by the operator, and then checked on every connection.
 
 1. **Join token.** The operator mints a single-use token (15 minutes). It is stored hashed and spent before anything else happens, so a failed enrollment never leaves it reusable. Only the token's id is ever logged or shown in security events, never the token.
-2. **CA fingerprint pin.** Before the agent sends the token it can check the control plane's CA against the SHA-256 fingerprint the join command carries (`APP_CA_FINGERPRINT`). With a pin, an impostor control plane is refused before it sees the token. Without one the agent trusts the control plane on first use and says so in its log; the node page shows **Not pinned**.
+2. **CA fingerprint pin.** Before the agent sends the token it can check the control plane's CA against the SHA-256 fingerprint the join command carries (`APP_CA_FINGERPRINT`). With a pin, an impostor control plane is refused before it sees the token. Without one the agent refuses to enroll unless `APP_ALLOW_UNPINNED_ENROLL=1` is set; in that case it trusts the control plane on first use, says so in its log, and the node page shows **Not pinned**.
 3. **Agent-side key.** The agent generates its own private key and sends a certificate request. The control plane signs it and never sees the key.
 4. **Mutual TLS on every connection.** The agent verifies the control plane against the CA it stored at enrollment. The control plane verifies the agent's certificate on every handshake (chain to its CA, client auth usage, validity window), then again when the session opens, and checks that the certificate's fingerprint is the one recorded for that node (or the previous one, inside the renewal overlap). A revoked node is refused here too.
 5. **Renewal.** At a fraction of the certificate's lifetime the agent renews over its authenticated connection (see [Automatic renewal](#automatic-renewal)).

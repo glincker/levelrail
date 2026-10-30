@@ -20,7 +20,7 @@ const on = (v: boolean, detail: string) => (v ? detail : 'off')
 const orDash = (s: string) => (s.trim() === '' ? 'unset' : s.trim())
 const algoLabel = (f: LbFormState) =>
   ALGORITHM_OPTIONS.find((o) => o.value === f.algorithm)?.label ?? f.algorithm
-const STICKY = new Set(['ip_hash', 'cookie', 'uri_hash'])
+const STICKY = new Set(['ip_hash', 'client_ip_hash', 'cookie', 'uri_hash'])
 
 const FIELDS: FieldDef[] = [
   {

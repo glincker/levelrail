@@ -1,0 +1,104 @@
+{
+  "title": "Security and runtime",
+  "description": "Protections ship on by default. Change them here, from the CLI or the API; a saved value wins over the environment, which wins over the default.",
+  "loadError": "Could not load runtime settings: {{message}}",
+  "retry": "Try again",
+  "empty": {
+    "title": "No runtime settings registered",
+    "body": "This build has nothing to configure here yet. Reload after updating the control plane."
+  },
+  "readOnly": "Only an administrator can change these settings. You can still see the current values.",
+  "categories": {
+    "security": "Security",
+    "networking": "Networking",
+    "deploys": "Deploys",
+    "observability": "Observability",
+    "experimental": "Experimental",
+    "retention": "Data retention"
+  },
+  "source": {
+    "default": "Default",
+    "env": "Set by environment",
+    "saved": "Saved"
+  },
+  "badges": {
+    "restart": "Restart required"
+  },
+  "row": {
+    "envHint": "Environment variable: {{env}}",
+    "defaultHint": "Default: {{value}}",
+    "updatedBy": "Saved by {{actor}}",
+    "on": "On",
+    "off": "Off",
+    "listLabel": "{{title}}, one entry per line",
+    "listPlaceholder": "/srv/apps",
+    "save": "Save",
+    "saving": "Saving",
+    "reset": "Reset to default",
+    "resetting": "Resetting",
+    "invalid": "Enter a whole number."
+  },
+  "toast": {
+    "saved": "{{title}} saved.",
+    "reset": "{{title}} is back to its default.",
+    "saveError": "Could not save {{title}}: {{message}}",
+    "resetError": "Could not reset {{title}}: {{message}}"
+  },
+  "restart": {
+    "title_one": "A restart is needed to apply {{count}} change",
+    "title_other": "A restart is needed to apply {{count}} changes",
+    "body": "Saved values for restart settings take effect the next time the control plane starts. Running apps keep serving.",
+    "now": "Restart now",
+    "confirmTitle": "Restart the control plane?",
+    "confirmBody": "The dashboard and API are unavailable for a short moment. Running apps keep serving traffic.",
+    "unsupported": "This install cannot restart itself. Restart the control plane process yourself, then check again.",
+    "recheck": "Check again",
+    "error": "Could not restart: {{message}}"
+  },
+  "confirm": {
+    "title": "Lower this protection?",
+    "body": "{{title}} protects this install. Changing it is recorded in the audit log with your name.",
+    "consequence": "Anything that relied on it is exposed until you turn it back on.",
+    "action": "Lower protection",
+    "cancel": "Keep protection"
+  },
+  "onboarding": {
+    "title": "Review your security defaults",
+    "intro": "These protections are on by default. Leave them as they are, or change any of them now. You can revisit them later in Settings.",
+    "safeDefault": "Safe default: {{value}}",
+    "ack": "Looks good",
+    "acking": "Saving",
+    "ackError": "Could not save your review: {{message}}",
+    "openSettings": "Open all security settings"
+  },
+  "values": {
+    "true": "On",
+    "false": "Off",
+    "empty": "none"
+  },
+  "retention": {
+    "never": "Never delete",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "year": "1 year"
+  },
+  "overview": {
+    "title": "Data retention",
+    "intro": "How long each kind of history is kept. Token windows change here and in Settings, API tokens; the rest are set by environment variable or by their own page.",
+    "open": "Open",
+    "policy": "Set by the cleanup policy",
+    "items": {
+      "revokedTokens": "Revoked API tokens",
+      "expiredTokens": "Expired API tokens",
+      "auditLog": "Audit log",
+      "emailLog": "Email log",
+      "eventWebhooks": "Event webhook deliveries",
+      "webhookDeliveries": "Git webhook deliveries",
+      "alertHistory": "Alert history",
+      "inboxArchive": "Archived inbox items",
+      "deployAttempts": "Old deploy attempts",
+      "metricsAndLogs": "Metrics and logs",
+      "pipelineArtifacts": "Pipeline artifacts"
+    }
+  }
+}

@@ -11,14 +11,18 @@
     "Step": "status without a session",
     "Status": 401,
     "Body": {
-      "error": "authentication required"
+      "code": "unauthorized",
+      "error": "authentication required",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "confirm before setup",
     "Status": 400,
     "Body": {
-      "error": "call setup before confirm"
+      "code": "validation_failed",
+      "error": "call setup before confirm",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
@@ -41,14 +45,18 @@
     "Step": "confirm with a bad code",
     "Status": 400,
     "Body": {
-      "error": "invalid code"
+      "code": "validation_failed",
+      "error": "invalid code",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "confirm with a bad body",
     "Status": 400,
     "Body": {
-      "error": "invalid request body"
+      "code": "validation_failed",
+      "error": "invalid request body",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
@@ -70,28 +78,36 @@
     "Step": "setup when enabled",
     "Status": 409,
     "Body": {
-      "error": "two-factor authentication is already enabled"
+      "code": "conflict",
+      "error": "two-factor authentication is already enabled",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "confirm when enabled",
     "Status": 409,
     "Body": {
-      "error": "two-factor authentication is already enabled"
+      "code": "conflict",
+      "error": "two-factor authentication is already enabled",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "regenerate with a bad code",
     "Status": 400,
     "Body": {
-      "error": "invalid code"
+      "code": "validation_failed",
+      "error": "invalid code",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "regenerate with no code",
     "Status": 400,
     "Body": {
-      "error": "invalid code"
+      "code": "validation_failed",
+      "error": "invalid code",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
@@ -113,21 +129,27 @@
     "Step": "disable with a bad code",
     "Status": 400,
     "Body": {
-      "error": "invalid code"
+      "code": "validation_failed",
+      "error": "invalid code",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "disable with no code",
     "Status": 400,
     "Body": {
-      "error": "invalid code"
+      "code": "validation_failed",
+      "error": "invalid code",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "disable with a bad body",
     "Status": 400,
     "Body": {
-      "error": "invalid request body"
+      "code": "validation_failed",
+      "error": "invalid request body",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
@@ -147,14 +169,18 @@
     "Step": "disable when not enabled",
     "Status": 409,
     "Body": {
-      "error": "two-factor authentication is not enabled"
+      "code": "conflict",
+      "error": "two-factor authentication is not enabled",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "regenerate when not enabled",
     "Status": 409,
     "Body": {
-      "error": "two-factor authentication is not enabled"
+      "code": "conflict",
+      "error": "two-factor authentication is not enabled",
+      "request_id": "\u003credacted\u003e"
     }
   }
 ]

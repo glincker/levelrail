@@ -207,7 +207,9 @@ describe('base domain empty state and zone hint', () => {
       screen.getByText(/No DNS provider is connected yet/),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: /Connect Cloudflare or Route53/ }),
+      screen.getByRole('link', {
+        name: /Connect Cloudflare, Route53 or Google Cloud DNS/,
+      }),
     ).toBeInTheDocument()
   })
 

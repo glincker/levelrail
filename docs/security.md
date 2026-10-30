@@ -120,7 +120,7 @@ Evaluation order, the full ability list, and policy examples: [Identity and acce
 - HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](/domains-and-ingress#tls-whats-actually-shipped-today).
 - WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](/domains-and-ingress#opt-in-waf-and-rate-limiting).
 - The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
-- **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
+- **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent refuses to enroll, so the token is never sent to an unverified server; setting `APP_ALLOW_UNPINNED_ENROLL=1` opts back in to trust on first use and logs a warning. The enrollment connection requires TLS 1.3. After enrollment every connection is mutual TLS against the saved CA.
 - **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](/docker#control-plane).
 - **`install.sh` fails closed on checksums.** A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`. Release checksums are cosign-signed; `APP_INSTALL_VERIFY=require` makes the installer insist on a valid signature, see [Verifying release binaries](/installing#verifying-release-binaries).
 
@@ -151,9 +151,15 @@ A short list for the server itself, independent of anything Levelrail configures
 - **Don't expose anything Levelrail didn't ask you to.** Docker's daemon socket, the SQLite database file, and the mesh DNS listener (`:5390` by default, see [Multi-node](/multi-node#wireguard-mesh-and-internal-dns)) are all meant to stay local to the box.
 - **Keep the OS patched.** The `patch_status` alert (see [Observability](/observability)) can warn you about pending security patches on a managed node, but it only reports, it doesn't apply anything; that's still on you (`unattended-upgrades`, `dnf-automatic`, or your distro's equivalent).
 
+## Security settings and data retention
+
+Security protections default to on. An environment variable can only override a default, and an administrator can change any registered setting under **Settings, Security and runtime** or with `levelrail-cli settings runtime`. A saved value beats the environment variable, which beats the default. Turning a protection off needs an explicit confirmation, writes an audit row, and the page says which settings need a restart. A first-run review in the Get Started hub lists the defaults for you to confirm.
+
+Retention is managed in one place, **Settings, Cleanup**: a retention period per data type with a minimum for security data (audit entries cannot be kept for less than 90 days, security events for less than 365), a dry-run preview before anything is deleted, a history of every run, and CSV and JSON export. See [Cleanup center](/cleanup-center).
+
 ## Audit log
 
-Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable, exportable as NDJSON or CSV, verifiable as a hash chain, and streamable to a webhook or an S3 bucket. See [Identity and access](/identity-and-access#audit-log).
+Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable, exportable as NDJSON or CSV, verifiable as a hash chain, and streamable to a webhook or an S3 bucket. Reads that can expose secrets or personal data, such as app and database logs, Loki queries and data exports, are recorded too. Every change to a security setting and every cleanup run is audited with counts only, never row contents or secret values. See [Identity and access](/identity-and-access#audit-log).
 
 ## Container hardening
 
@@ -182,7 +188,7 @@ The control plane and each agent reach Docker through an in-process allowlisting
 
 ## Rootless and Podman
 
-`GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail-cli doctor`) reports which container engine and privilege mode the control plane is talking to: Docker or Podman, rootful or rootless, and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless or Podman socket path, then the rootful default `/var/run/docker.sock`).
+`GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail-cli doctor`) reports which container engine, privilege mode and support level the control plane has: Docker, Podman, Docker Desktop, Colima, OrbStack, Rancher Desktop or unknown, rootful or rootless (rootful Docker on Linux is `supported`, other known engines `best-effort`, unknown `unverified`), and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless, Podman or desktop runtime socket path (`~/.docker/run`, `~/.colima/default`, `~/.orbstack/run`, `~/.rd`), then the rootful default `/var/run/docker.sock`).
 
 Podman exposes a Docker-compatible Engine API socket, so the existing Docker Engine API client talks to it unchanged, no CLI shelling and no new client library, consistent with the rule that Levelrail never shells out to the Docker CLI. `APP_CONTAINER_RUNTIME_SOCKET` pins the connection to a specific socket (for example `unix:///run/user/1000/podman/podman.sock`) ahead of `DOCKER_HOST`, for operators who would rather not export `DOCKER_HOST` into the whole process environment.
 
@@ -194,7 +200,7 @@ Container hardening (above) adjusts automatically under detected rootless: `Pids
 - **Low host ports.** Rootless port publishing goes through a userspace proxy (`rootlesskit`/`slirp4netns`), which by default can't bind host ports below 1024 regardless of the container's own capabilities. The embedded ingress runs on the host directly, not in a rootless container, so this only affects an app that needs to publish a low host port itself.
 - **cgroup limits beyond PidsLimit.** Memory and CPU limits also need a delegated cgroup v2 controller under rootless; unlike PidsLimit, this isn't currently detected or adjusted for `Resources.MemoryBytes`/`NanoCPUs`.
 
-Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
+Source builds (Dockerfile, Railpack) need BuildKit inside dockerd: on Podman, image and compose deploys are expected to work and source builds are not verified. Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
 
 ## Other hardening details
 
@@ -217,6 +223,15 @@ Stored certificates from other CAs are purged only when the configured CA change
 <Accordion title="Bind mounts">
 
 In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the directories that hold executables (`/bin`, `/sbin`, `/lib`, `/usr/bin`, `/usr/local/bin` and similar), `/var/spool/cron`, the control plane and agent data directories (including a custom `APP_DATA_DIR`), and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
+
+
+
+Paths that are or sit inside a credential directory (`.ssh`, `.gnupg`, `.aws`, `.kube`, `.docker`), a bare home directory such as `/home/deploy`, `/var/log` and `/usr/local/etc` are refused too. Set `APP_BIND_ALLOWED_ROOTS` (colon-separated absolute directories) to allow bind mounts only inside those directories; it is also a setting under **Settings, Security and runtime**.
+
+</Accordion>
+<Accordion title="Webhook replay protection">
+
+A git webhook is accepted only with a valid signature. A signed body that already started a deploy is also ignored for a short window (`APP_WEBHOOK_REPLAY_WINDOW`, 10 minutes by default), even if the delivery header changes or is missing, because delivery headers are not covered by the signature. A rejected or ignored delivery does not use up the window, so a provider retry still works. The window is kept in memory and resets on restart.
 
 </Accordion>
 <Accordion title="Registry port">
@@ -246,12 +261,41 @@ Data and install directories must be absolute, free of shell and unit metacharac
 </Accordion>
 </AccordionGroup>
 
+## Node trust
+
+A new node enrolls with a join token. The control plane stores only a SHA-256 hash of it, shows the plaintext once, and the token is single use and expires after 15 minutes by default (`APP_NODE_JOIN_TOKEN_TTL`). The agent generates its own private key and sends only a certificate signing request, so the key never leaves the node. The control plane signs a client certificate, and later connections present it and are checked against the agent CA. Details and failure modes: [Multi-node](/multi-node).
+
+## AI assistant safety
+
+The built-in assistant cannot change anything on its own. The server, not the model or the browser, decides which tool calls pause:
+
+- A tool call that is not marked read-only pauses for an explicit human confirmation before it runs. A tool with no annotations is treated as mutating and also pauses.
+- Tools whose output can contain untrusted text (logs, remote content) mark the conversation as tainted. Once tainted, even read-only tools that reach outside the system or return sensitive data pause for confirmation.
+- A confirmation belongs to one chat session and can be resolved once.
+
+This lives in `internal/ai` (`classify.go`, `engine.go`). See [AI assistant](/ai-assistant) and [AI control](/ai-control).
+
+## Production hardening checklist
+
+1. Set an `https://` dashboard URL and serve it through the ingress. Sign-in over plain HTTP is then refused.
+2. Keep port `8080` on loopback (the default in `docker-compose.yml`) and reach it through the ingress or an SSH tunnel.
+3. Set `APP_CA_FINGERPRINT` on every agent, using the fingerprint shown with the join token.
+4. Turn on two-factor sign-in for every account that holds `root`.
+5. Keep the master key outside the data directory and outside host snapshots, or wrap it with Vault or OpenBao. See [Master key rotation](/master-key-rotation).
+6. Back up the control plane on a schedule and test a restore. See [Control plane backup](/control-plane-backup).
+7. Update on a regular cadence, because fixes ship only in the latest release. See [Upgrade safely](/upgrade-safely).
+8. Open the [Security center](/security-center) and clear what it flags.
+9. Read the [threat model](/threat-model), [deploy safety](/deploy-safety) and [supply chain](/supply-chain) pages for what each layer covers.
+
 ## Reporting a vulnerability
 
 Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) has the full policy, including what to expect after reporting.
 
 ## What this does not cover yet
 
+- No third-party penetration test or formal certification (such as SOC 2 or ISO 27001) is claimed.
+- The node agent runs as root in its container with access to the Docker socket, because it manages containers and creates the WireGuard device. A stolen node certificate, or a compromised control plane, is therefore equivalent to root on the nodes it manages. Keep node enrollment tokens short-lived and pin the agent CA fingerprint.
+- One control plane runs the whole install. There is no high-availability control plane, so back it up.
 - No LDAP. Sign-in is local password, passkey, email sign-in code, OAuth or OIDC (20 providers plus generic OpenID Connect, see [Identity and access](/identity-and-access)), or beta [SAML](/sso-saml) single sign-on (off by default), with beta [SCIM](/scim) provisioning. SAML and SCIM sit behind the `saml-scim` feature toggle and have not been verified against a live identity provider yet.
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart. API tokens are unaffected.

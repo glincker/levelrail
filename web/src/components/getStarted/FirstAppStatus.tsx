@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { GoLiveCta } from '../golive/GoLiveCta'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowSquareOutIcon,
@@ -8,10 +9,20 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { DomainStepper } from '../domains/DomainStepper'
 import type { AppListEntry } from '../../types/appDetail'
 import { useAppNetwork } from '../../queries/appNetwork'
+import { useAppUrls } from '../../queries/appUrls'
+import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
+import { useIsRoot } from '../../hooks/useIsRoot'
 import { useDiagnosis } from '../../queries/diagnosis'
-import { liveUrl } from '../../lib/firstApp'
+import {
+  APP_POLL_INTERVAL_MS,
+  SAMPLE_APP,
+  firstAppAddress,
+} from '../../lib/firstApp'
+import { deployAttemptsQueryOptions } from '../../queries/deployAttempts'
+import { useTriggerDeploy } from '../../queries/deploys'
 import type { AppPhase } from '../../lib/firstApp'
 
 /** FirstAppStatus renders the tracked app's deploy progress, its live URL, or its diagnosis. */
@@ -26,46 +37,96 @@ export function FirstAppStatus({
 }) {
   const { t } = useTranslation('getStarted')
   const { data: network } = useAppNetwork(app.name)
-  const url = liveUrl(app, network, window.location.hostname)
-  const failed = phase === 'failed'
+  const { data: urls } = useAppUrls(app.name)
+  const isRoot = useIsRoot()
+  const { data: https } = useQuery({
+    ...httpsStatusQueryOptions(),
+    enabled: isRoot,
+    retry: false,
+  })
+  const address = firstAppAddress(
+    app,
+    network,
+    urls,
+    window.location.hostname,
+    https?.state === 'issued',
+  )
+  const url = address?.url
+  // On the dashboard the card itself is the destination, so the shortcut would be a no-op link.
+  const onDashboard = window.location.pathname === '/'
+  // The server's deploy outcome also fails a crash-looping app whose status
+  // summary still reads as starting.
+  const { data: attempts } = useQuery({
+    ...deployAttemptsQueryOptions(app.name),
+    enabled: phase !== 'live' && phase !== 'none',
+    refetchInterval: APP_POLL_INTERVAL_MS,
+  })
+  const newest = attempts?.[0]
+  const failed =
+    phase === 'failed' || (phase !== 'live' && newest?.outcome === 'failed')
+  const failure = attempts?.find((a) => a.failure)?.failure
+  const redeploy = useTriggerDeploy(app.name)
+  const [retried, setRetried] = useState(false)
+  const [showDomain, setShowDomain] = useState(false)
+  const canRetry = app.name === SAMPLE_APP.name && failure?.retryable !== false
   const { data: diagnosis, isLoading: diagnosing } = useDiagnosis(
     app.name,
     undefined,
     failed,
   )
 
+  // The live address pill already opens the app, so the extra Open button only shows without one.
+  const showOpenApp = phase !== 'live' || !url
   const appLinks = (
     <div className="flex flex-wrap gap-2">
+      {showOpenApp ? (
+        <Button
+          size="sm"
+          className="max-sm:min-h-11"
+          variant="outline"
+          render={<Link to="/apps/$name" params={{ name: app.name }} />}
+        >
+          {t('first.status.openApp')}
+        </Button>
+      ) : null}
       <Button
         size="sm"
-        variant="outline"
-        render={<Link to="/apps/$name" params={{ name: app.name }} />}
-      >
-        {t('first.status.openApp')}
-      </Button>
-      <Button
-        size="sm"
+        className="max-sm:min-h-11"
         variant="outline"
         render={<Link to="/apps/$name/logs" params={{ name: app.name }} />}
       >
         {t('first.status.viewLogs')}
       </Button>
+      {phase === 'live' ? (
+        <Button
+          size="sm"
+          className="max-sm:min-h-11"
+          variant="outline"
+          aria-expanded={showDomain}
+          onClick={() => {
+            setShowDomain((v) => !v)
+          }}
+        >
+          {t('first.status.goLive')}
+        </Button>
+      ) : null}
     </div>
   )
 
   if (phase === 'live') {
     return (
       <div className="space-y-3 rounded-lg border border-tone-success-border bg-tone-success-soft p-4">
-        <p className="flex items-center gap-2 text-base font-semibold text-foreground">
-          <CheckCircleIcon className="size-5 text-tone-success" />
-          {t('first.status.live')}
-        </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="flex items-center gap-2 text-sm text-foreground">
+          <CheckCircleIcon
+            aria-hidden="true"
+            className="size-5 shrink-0 text-tone-success"
+          />
           {t('first.status.liveDetail', { name: app.name })}
         </p>
         {url ? (
           <Button
             size="sm"
+            className="max-sm:min-h-11"
             render={<a href={url} target="_blank" rel="noreferrer" />}
             nativeButton={false}
           >
@@ -77,11 +138,21 @@ export function FirstAppStatus({
             {t('first.status.noAddress')}
           </p>
         )}
-        <GoLiveCta app={app.name} />
+        {address?.certWarning ? (
+          <p className="text-xs text-muted-foreground">
+            {t('first.status.certNote')}
+          </p>
+        ) : null}
+        {showDomain ? <DomainStepper appName={app.name} /> : null}
         <div className="flex flex-wrap gap-2">
           {appLinks}
-          {onDone ? (
-            <Button size="sm" variant="ghost" onClick={onDone}>
+          {onDone && !onDashboard ? (
+            <Button
+              size="sm"
+              className="max-sm:min-h-11"
+              variant="ghost"
+              onClick={onDone}
+            >
               {t('first.status.done')}
             </Button>
           ) : null}
@@ -97,12 +168,23 @@ export function FirstAppStatus({
           <WarningCircleIcon className="size-5 text-destructive" />
           {t('first.status.failed', { name: app.name })}
         </p>
-        {diagnosing ? (
+        {failure ? (
+          <div className="space-y-1 text-sm">
+            <p className="text-foreground">{failure.cause}</p>
+            {failure.suggested_fix ? (
+              <p className="text-muted-foreground">{failure.suggested_fix}</p>
+            ) : null}
+          </div>
+        ) : null}
+        {!failure && newest?.outcome_reason ? (
+          <p className="text-sm text-foreground">{newest.outcome_reason}</p>
+        ) : null}
+        {diagnosing && !failure ? (
           <p className="text-xs text-muted-foreground">
             {t('first.status.diagnosing')}
           </p>
         ) : null}
-        {diagnosis ? (
+        {diagnosis && !failure ? (
           <div className="space-y-1.5 text-sm">
             <p className="text-foreground">{diagnosis.explanation}</p>
             {diagnosis.suggestion ? (
@@ -119,9 +201,32 @@ export function FirstAppStatus({
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
+          {canRetry ? (
+            <Button
+              size="sm"
+              className="max-sm:min-h-11"
+              disabled={redeploy.isPending || retried}
+              onClick={() =>
+                redeploy.mutate(
+                  {
+                    image: SAMPLE_APP.image,
+                    rerunOf: failure?.deploy_id ?? newest?.id,
+                  },
+                  { onSuccess: () => setRetried(true) },
+                )
+              }
+            >
+              {t('first.status.retry')}
+            </Button>
+          ) : null}
           {appLinks}
-          {onDone ? (
-            <Button size="sm" variant="ghost" onClick={onDone}>
+          {onDone && !onDashboard ? (
+            <Button
+              size="sm"
+              className="max-sm:min-h-11"
+              variant="ghost"
+              onClick={onDone}
+            >
               {t('first.status.done')}
             </Button>
           ) : null}
@@ -139,6 +244,11 @@ export function FirstAppStatus({
       <p className="text-sm text-muted-foreground">
         {t('first.status.deployingDetail', { status: app.status.label })}
       </p>
+      {phase === 'deploying' ? (
+        <p className="text-xs text-muted-foreground">
+          {t('first.status.expectedWait')}
+        </p>
+      ) : null}
       {phase === 'slow' ? (
         <p className="text-xs text-muted-foreground">
           {t('first.status.slow')}

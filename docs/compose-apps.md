@@ -53,16 +53,43 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | Compose key | Behavior |
 | --- | --- |
 | `image` | Required. `build:` is rejected here; use a git deploy for that. |
-| `ports` | The first container port is the one ingress routes to. Host ports are never published. |
+| `ports` | The first container port is the one ingress routes to. A TCP host port is never published from compose. A UDP entry, `HOST:CONTAINER/udp` in short form or `protocol: udp` in long form, is published directly on the host (local node only), and TCP and UDP on the same number are separate ports. See [UDP published ports](/udp-ports). |
 | `x-levelrail-domains` | Maps a service to a domain. HTTPS is issued automatically once DNS points at the server. |
 | `volumes` | Named volumes become Docker volumes scoped to the app and service. An absolute host path is a bind mount and needs the `root` ability. |
 | `environment` | Literal values are stored as config. `${SERVICE_PASSWORD_X}` and the other generated kinds are created once, encrypted, and injected when the container is created. |
 | `x-levelrail-strategy`, `x-levelrail-strategy-reason` | Per service: `recreate`, `rolling` or `blue-green` (the default). Use `recreate` for an app that locks its state volume, since the old container must stop first. That means brief downtime on each deploy; a failed readiness check still rolls back to the previous image. The reason is shown next to the strategy in the app's Deploy settings and in `apps get`. |
-| `depends_on` | A dependent service is created only after its dependency's container runs. With `condition: service_healthy`, it also waits until the dependency passes its readiness check. |
+| `depends_on` | A dependent service is created only after its dependency's container runs (or already ran and exited 0). With `condition: service_healthy`, it also waits until the dependency passes its readiness check. With `condition: service_completed_successfully`, it waits until the dependency exits with code 0; a nonzero exit blocks it with a `DependencyFailed` reason. |
+| `restart` | Only an explicit `restart: "no"` or `restart: on-failure` (also `on-failure:N`, N a non-negative integer that is accepted and ignored: there is no retry cap) makes a service run to completion, for a migration, init or seed container. Exit code 0 marks it `Completed`: it is not restarted, and its first deploy succeeds once it exits 0 (and fails on a nonzero exit). A long run is never stopped: past `APP_DEPLOY_ONESHOT_TIMEOUT` (default `30m`, or the service's own ready timeout) it reports `CompletionTimeout` and keeps running, and the deploy shows as failed with that reason until the service exits 0, when it flips back to done. A nonzero exit is restarted with crash backoff, as for any service. Any other value (for example `on-failure:abc` or `on-failure:-1`) gets a warning and is ignored. An unset `restart`, `always` and `unless-stopped` keep the default: the reconciler keeps the service running and restarts it after any exit. |
 | `healthcheck` | An HTTP check (`curl` or `wget` against localhost) becomes an HTTP readiness probe. Any other command runs inside the container as an exec probe. |
+| `x-levelrail-healthcheck` | Per service: a readiness probe the platform runs from outside the container against its published port, for images with no shell, `curl` or `wget` (built `FROM scratch` or distroless). It replaces `healthcheck:` here, so a file can keep `healthcheck:` for plain Compose. Fields: `kind` (`http` or `tcp`, required), `path` (http only, default `/`), `port` (must be the first TCP port, the default), `interval`, `timeout`, `retries`, `start_period`, `expect_status` (http only, for example `200-399`). Unset durations use `APP_PROBE_DEFAULT_INTERVAL` and `APP_PROBE_DEFAULT_TIMEOUT`. Redirects are never followed, the response body is not kept, and no credentials or environment values are sent. The deploy timeline notes the probe kind and its readiness result. |
 | `profiles` | A service with `profiles:` only deploys when one of its profiles is enabled with `--profile-name` (or `?profiles=` on the API). |
 | `deploy.replicas`, `deploy.resources.reservations.devices` | Replica count and GPU reservations. Other Swarm keys are rejected. |
-| `restart`, `networks` | Parsed and reported as notices. The reconciler restarts containers, and every service shares one app network. |
+| `mem_limit`, `cpus`, `deploy.resources.limits.memory`, `deploy.resources.limits.cpus` | Hard memory and CPU caps for the service (`512m`, `1g`, `0.5`). The shorthand wins when both are set. |
+| `shm_size` | Size of `/dev/shm` (`1gb`, `256m`), for Chromium based apps that crash with Docker's 64 MB default. Changing it recreates the container. |
+| `networks` | Parsed and reported as a notice. Every service shares one app network. |
+
+Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `APP_COMPOSE_MAX_MEMORY_BYTES` and `APP_COMPOSE_MAX_CPUS` on the control plane to lower the cap; unset keeps only the built-in overflow guard. `shm_size` is capped at 2 GiB by default; set `APP_COMPOSE_MAX_SHM_BYTES` (bytes) to raise or lower it. A service with `shm_size` and no memory limit counts its `/dev/shm` size against the project memory quota, since that memory comes from the host.
+
+### Keys that are ignored
+
+A key outside the table above does not stop the deploy, but it is never dropped silently. Every ignored key is reported as a warning that names the service, the key and what to do instead. `levelrail-cli apps deploy-compose` prints each one with the file path, `compose preview` and `apps validate` list them, and the deploy API returns them in `notices` (level `warning`).
+
+Common ones and their alternatives:
+
+| Ignored key | Instead |
+| --- | --- |
+| `extends` | Inline the extended service's keys. |
+| `env_file` | Move the values into `environment:` or the app's env vars. |
+| `container_name`, `hostname`, `links` | Not needed: containers are named `<app>-<service>` and services reach each other by name. |
+| `user`, `working_dir` | Set `USER` or `WORKDIR` in the image. |
+| `cap_drop`, `pids_limit` | Not needed: every container already drops all capabilities except a minimal set and gets a process limit (`APP_CONTAINER_PIDS_LIMIT`, default 4096). |
+| `expose` | Add `ports:` for the port ingress should route to. |
+| `deploy.resources.reservations` CPU and memory | Only limits are applied. |
+| `tty`, `stdin_open`, `logging`, `ulimits`, `stop_grace_period` | Remove them, they have no effect. |
+| Top-level `volumes:` options, `name:` | Named volumes are always created for the app. |
+| `healthcheck.disable`, `healthcheck.start_interval`, `depends_on.restart`, `depends_on.required`, long-form `ports` `host_ip`, long-form `volumes` `bind` or `tmpfs` | Remove them. |
+
+`x-` extension fields are ignored by design, as the Compose spec allows. Anchors and merge keys (`<<: *common`) are resolved before keys are checked.
 
 ### What is rejected
 
@@ -71,7 +98,7 @@ These keys widen a container's access to the host, so a compose file that sets a
 - `privileged: true` [privileged]
 - `network_mode: host` [network_host], and `network_mode: service:...` or `container:...`
 - `pid`, `ipc`, `uts`, `userns_mode` or `cgroup` set to `host`
-- `cap_add`, `devices`, `volumes_from`, and `security_opt` (except `no-new-privileges`)
+- `cap_add` (so no `NET_ADMIN` yet, see [UDP published ports](/udp-ports#not-yet)), `devices`, `volumes_from`, and `security_opt` (except `no-new-privileges`)
 - a bind mount of the Docker socket (`docker.sock`, `podman.sock` or `containerd.sock`) from any path, plus system paths such as `/`, `/etc` and `/var/lib/docker`
 - top-level and per-service `secrets:` and `configs:`
 

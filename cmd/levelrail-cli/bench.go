@@ -42,6 +42,8 @@ func runBench(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 			return runBenchChaos(prog, args[1:], stdout, stderr, lookupEnv)
 		case "soak":
 			return runBenchSoak(prog, args[1:], stdout, stderr, lookupEnv)
+		case "results":
+			return runBenchResults(prog, args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	if len(args) == 0 || args[0] != "run" {
@@ -214,5 +216,8 @@ One failure scenario at most:
 
   --hardware TEXT           server hardware note stored in the report
   --json                    print the report as JSON to stdout and nothing else
+
+Related: "bench chaos" runs the failure scenarios, "bench results" lists and
+compares stored runs, "bench soak" holds load and samples the footprint.
 `, prog)
 }

@@ -77,8 +77,9 @@ func (s *bootState) startTelemetry() {
 	}
 
 	logCollector := telemetry.NewLogCollector(client, telemetryDB, logBroadcaster, logger)
+	logCollector.SetNodeSource(&multiNodeLogSource{local: client, registry: agentRegistry})
 	go func() {
-		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client, agentRegistry, meshCfg, logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
 		}
 	}()
@@ -137,6 +138,7 @@ func (s *bootState) startAlerting() {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
+	alertingEngine.SetBackupCopy(backupCopyAlertSource{db: db}, backup.CopyLagAlertFromEnv(os.LookupEnv))
 	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
@@ -165,7 +167,7 @@ func (s *bootState) startAlerting() {
 	}()
 	go func() {
 		prune := func(c context.Context) error {
-			_, err := pruneEmailDeliveries(c, db, emailLogRetention(), time.Now())
+			_, err := pruneEmailDeliveries(c, db, emailLogRetention(c, apiRouter.RuntimeSettings()), time.Now())
 			return err
 		}
 		if err := footprint.Every(ctx, "email delivery log prune", time.Hour, logger, prune); err != nil && !errors.Is(err, context.Canceled) {
@@ -176,7 +178,7 @@ func (s *bootState) startAlerting() {
 	go runCostBudgets(ctx, apiRouter)
 	go runAutoscaler(ctx, apiRouter, autoscale.IntervalFromEnv(autoscale.OSEnv))
 	alertingEngine.SetChanges(withLogSignatures(changes.New(db, db, db, logger), alertingFederator), alertDashboardLink())
-	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
+	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger, apiRouter.RuntimeSettings()), alertingDB, db, logger))
 	go func() {
 		if err := apiRouter.RunStatusPageSampler(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("status page sampler stopped", slog.String("error", err.Error()))
@@ -234,6 +236,7 @@ func (s *bootState) startSchedulers() {
 		apiRouter.SetWALShipStatus(walShip)
 		startWhenWork(ctx, logger, "backups", hasScheduledBackups(db), func() {
 			startBackupDrills(ctx, logger, db, newBackupProtection(db, secretsManager, client, backupRunner, logger), alertingEngine)
+			startBackupCopies(ctx, logger, db, secretsManager, routedStorage(agentRegistry))
 			go func() {
 				if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 					logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
@@ -273,9 +276,20 @@ func (s *bootState) startSchedulers() {
 
 	// Fires through the same git-source deploy path a webhook push uses.
 	appScheduleScheduler := scheduledeploy.NewScheduler(db, db, apiRouter, logger)
+	appScheduleScheduler.OneShotCatchUp = appScheduleOneShotCatchUp(logger)
 	go func() {
 		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	oneShotRunner := &scheduledeploy.OneShotRunner{
+		Store: db, Freeze: db, Exec: apiRouter, Notify: apiRouter, Logger: logger,
+		Grace: scheduledDeployGrace(logger), StaleRun: scheduledDeployStaleRun(logger),
+	}
+	go func() {
+		if err := oneShotRunner.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("one-shot scheduled deploy runner stopped", slog.String("error", err.Error()))
 		}
 	}()
 

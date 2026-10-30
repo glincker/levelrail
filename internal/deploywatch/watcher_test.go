@@ -23,7 +23,18 @@ func (f fakeInspector) InspectExitState(_ context.Context, name string) (*docker
 
 type fakeRestarts int
 
-func (f fakeRestarts) CountSince(string, time.Time) int { return int(f) }
+func (f fakeRestarts) CountContainersSince([]string, time.Time) int { return int(f) }
+
+// restartsByContainer reports restarts only for the containers asked about.
+type restartsByContainer map[string]int
+
+func (f restartsByContainer) CountContainersSince(names []string, _ time.Time) int {
+	total := 0
+	for _, n := range names {
+		total += f[n]
+	}
+	return total
+}
 
 type fakeMetrics map[string]float64
 
@@ -299,5 +310,104 @@ func TestWatcher_NoTargetAndSuperseded(t *testing.T) {
 	g.watcher.Tick(ctx)
 	if events := g.events(t); len(events) != 1 {
 		t.Errorf("superseded release got watch events: %+v", events)
+	}
+}
+
+// A failing release left running beside the live one restarts under the same
+// service; those restarts must not trip the live release's watch.
+func TestWatcher_IgnoresRestartsOfOtherReleaseContainers(t *testing.T) {
+	f := newWatchFixture(t, true)
+	other := application.ReplicaContainerName("web", "app:v3", "", 0)
+	f.watcher.Restarts = restartsByContainer{other: 5}
+	f.watcher.Tick(context.Background())
+	if hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, "") {
+		t.Fatalf("watch tripped on another release's restarts: %+v", f.events(t))
+	}
+	f.watcher.Restarts = restartsByContainer{currentContainer(): 5}
+	f.watcher.Tick(context.Background())
+	if !hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, deploysafety.ReasonWatchCrashloop) {
+		t.Fatalf("own restarts should trip: %+v", f.events(t))
+	}
+}
+
+// A crashloop on a release the operator rolled back to must not walk to
+// another release behind the operator's back.
+func TestWatcher_RespectsOperatorRollback(t *testing.T) {
+	f := newWatchFixture(t, true)
+	ctx := context.Background()
+	if _, err := f.db.ExecContext(ctx, `UPDATE deploy_attempts SET reason = 'RollbackTo: dep_v0' WHERE id = 'dep_v2'`); err != nil {
+		t.Fatal(err)
+	}
+	f.watcher.Restarts = fakeRestarts(3)
+	f.watcher.Tick(ctx)
+	if svc, _ := f.db.GetDesiredService(ctx, "web"); svc.Image != "app:v2" {
+		t.Errorf("image = %q, an operator rollback must stay", svc.Image)
+	}
+	if !hasEvent(f.events(t), deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback) {
+		t.Errorf("events = %+v, want an OperatorRollback event", f.events(t))
+	}
+	if len(f.notes.msgs) != 1 || !strings.Contains(f.notes.msgs[0], "operator rollback") {
+		t.Errorf("notifications = %v", f.notes.msgs)
+	}
+	if a, _ := f.db.GetDeployAttempt(ctx, "dep_v2"); a.Status != store.DeployAttemptStatusSucceeded || a.Reason != "RollbackTo: dep_v0" {
+		t.Errorf("operator rollback row = %q / %q, want it left succeeded with its reason", a.Status, a.Reason)
+	}
+}
+
+// The OperatorRollback event must not depend on the auto-rollback setting.
+func TestWatcher_OperatorRollbackEventWithAutoRollbackOff(t *testing.T) {
+	f := newWatchFixture(t, true)
+	ctx := context.Background()
+	off := false
+	if err := f.db.SaveDeploySafetySettings(ctx, store.DeploySafetySettings{ServiceName: "web", AutoRollback: &off}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.db.ExecContext(ctx, `UPDATE deploy_attempts SET reason = 'RollbackTo: dep_v0' WHERE id = 'dep_v2'`); err != nil {
+		t.Fatal(err)
+	}
+	f.watcher.Restarts = fakeRestarts(3)
+	f.watcher.Tick(ctx)
+	if !hasEvent(f.events(t), deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback) {
+		t.Errorf("events = %+v, want an OperatorRollback event", f.events(t))
+	}
+	if a, _ := f.db.GetDeployAttempt(ctx, "dep_v2"); a.Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("status = %q, want succeeded", a.Status)
+	}
+}
+
+// Live shape: an operator redeploys the older image after a newer deploy
+// (with or without the RollbackTo marker), auto-rollback stays on, and the
+// release crashes twice. The choice must be recorded, not rolled back.
+func TestWatcher_OperatorRollbackLiveShape(t *testing.T) {
+	for _, marker := range []string{"", "RollbackTo: dep_v1"} {
+		t.Run("marker="+marker, func(t *testing.T) {
+			f := newWatchFixture(t, true)
+			ctx := context.Background()
+			v1 := store.DesiredService{Name: "web", Image: "app:v1", Port: 8080, Env: map[string]string{"MODE": "old"}}
+			saveAttempt(t, f.db, "dep_v3", v1, f.now.Add(-time.Minute))
+			if marker != "" {
+				if _, err := f.db.ExecContext(ctx, `UPDATE deploy_attempts SET reason = ? WHERE id = 'dep_v3'`, marker); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := f.db.SaveDesiredService(ctx, v1); err != nil {
+				t.Fatal(err)
+			}
+			if err := f.db.RecordGateEvent(ctx, store.DeployGateEvent{DeployAttemptID: "dep_v3", ServiceName: "web", Phase: deploysafety.PhaseCutover, Status: deploysafety.StatusPassed, At: f.now.Add(-30 * time.Second)}); err != nil {
+				t.Fatal(err)
+			}
+			f.watcher.Restarts = restartsByContainer{application.ReplicaContainerName("web", application.NameImage(v1), "", 0): 2}
+			f.watcher.Tick(ctx)
+			events, err := f.db.ListGateEvents(ctx, "dep_v3")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !hasEvent(events, deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback) {
+				t.Fatalf("events = %+v, want an OperatorRollback event", events)
+			}
+			if svc, _ := f.db.GetDesiredService(ctx, "web"); svc.Image != "app:v1" {
+				t.Errorf("image = %q, an operator rollback must stay", svc.Image)
+			}
+		})
 	}
 }

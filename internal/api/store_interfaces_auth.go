@@ -19,6 +19,8 @@ type AuthStore interface {
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUserAbilities(ctx context.Context, id string, abilities []string) error
 	UpdateUserDisplayName(ctx context.Context, id, name string) error
+	SetUserSetupSession(ctx context.Context, userID, sessionID, ip string) error
+	ClaimFirstLoginTrust(ctx context.Context, userID string) (bool, error)
 }
 
 // SessionLinkTokenStore is the store surface the session-link flow

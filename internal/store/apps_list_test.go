@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -76,5 +77,38 @@ func TestListDesiredServicesFiltered(t *testing.T) {
 				t.Errorf("query took %s, over budget", d)
 			}
 		})
+	}
+}
+
+func TestListServiceHeadsMatchesFullLoad(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedListApps(t, db, 12)
+	if err := db.SaveDesiredService(ctx, DesiredService{
+		Name: "vol-app", Image: "img:1", Port: 80, NodeID: "n2",
+		Domains: []string{"a.example.test"},
+		Volumes: []ServiceVolume{{Name: "app-vol-app-data", ContainerPath: "/data"}},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	for _, f := range []AppListFilter{{}, {Environment: "staging"}, {Query: "app-00"}, {Tags: []string{"team:core"}}} {
+		full, _, err := db.ListDesiredServicesFiltered(ctx, f)
+		if err != nil {
+			t.Fatalf("full: %v", err)
+		}
+		heads, err := db.ListServiceHeads(ctx, f)
+		if err != nil {
+			t.Fatalf("heads: %v", err)
+		}
+		if len(heads) != len(full) {
+			t.Fatalf("filter %+v: %d heads, %d full", f, len(heads), len(full))
+		}
+		for i := range full {
+			h, s := heads[i], full[i]
+			if h.Name != s.Name || h.NodeID != s.NodeID || h.EnvironmentID != s.EnvironmentID ||
+				!reflect.DeepEqual(h.Domains, s.Domains) || !reflect.DeepEqual(h.Volumes, s.Volumes) {
+				t.Fatalf("filter %+v row %d: head %+v differs from full %+v", f, i, h, s)
+			}
+		}
 	}
 }

@@ -193,11 +193,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithCapacityForecastLookback(capacityForecastLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
+		api.WithPRCommentCommands(prCommentCommandConfig(logger)),
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithStaticOrphanGrace(staticOrphanGrace(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
-		api.WithAuditLogRetention(auditLogRetention(logger)),
-		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
 		api.WithWebhookFailedDeliveryLimits(
 			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_DELIVERY_KEEP"),
 			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_BODY_BYTES"),
@@ -241,6 +240,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// Email settings' SMTP password / SES secret access key go
 		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
+		// Traffic export sink credentials use the same secretsManager; the service taps the ingress access log.
+		if svc := startTrafficExport(context.Background(), logger, b, db, secretsManager); svc != nil {
+			opts = append(opts, api.WithTrafficExport(secretsManager, svc))
+		}
 		// Cloudflare Tunnel's token goes through the same secretsManager,
 		// same nil-interface hazard as everything else in this block.
 		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))
@@ -324,6 +327,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// Needs ExecWithInput on the local runtime, the same way ContainerDumper needs Exec.
 			api.WithRestoreRunner(restoreRunner),
 			api.WithServiceVolumeRestoreRunner(restoreRunner),
+			api.WithRehydrateStore(db),
 			// Waits for the new database to come up, unlike the restore it sits beside.
 			api.WithCloneRestoreRunner(&backup.CloneRestoreRunner{
 				Store:      db,
@@ -380,6 +384,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// restore endpoint.
 			api.WithBaseBackupRunner(baseBackupRunner),
 			api.WithPITRRestoreRunner(pitrRunner),
+			api.WithMySQLPITRRestoreRunner(newMySQLPITRRunner(db, secretsManager, client, routedStorage(agentRegistry), logger)),
 			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
 		// Optional: without a dial address the
@@ -413,6 +418,11 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		}))
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
+	if builder != nil {
+		// Spec file deploys (webhook, git push, builds) admit host ports like POST /apps.
+		builder.SetPortAdmitter(rt)
+	}
+	wireBindMountSettings(rt)
 	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler(b))))), rt
 }
 

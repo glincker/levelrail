@@ -113,7 +113,7 @@ func newTestRouterWithNodeProvisioning(t *testing.T, secrets NodeProviderSecrets
 	db := openTestDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
 	factory := func(string, string) (NodeProvisioner, error) { return fake, nil }
-	return NewRouter(logger, testBrand(), db, WithNodeProviderSecrets(secrets), WithNodeProvisionerFactory(factory)), db
+	return NewRouter(logger, testBrand(), db, WithNodeProviderSecrets(secrets), WithNodeProvisionerFactory(factory), WithAgentCAFingerprint("test-ca-fingerprint")), db
 }
 
 func TestHandleListNodeProviders(t *testing.T) {
@@ -667,6 +667,7 @@ func TestHandleCreateNodeProvision_CleansUpOrphanedServerOnPersistFailure(t *tes
 		WithNodeProviderSecrets(secrets),
 		WithNodeProvisionerFactory(factory),
 		WithNodeProvisions(failingStore),
+		WithAgentCAFingerprint("test-ca-fingerprint"),
 	)
 	cookie := loginTestSession(t, rt, db)
 

@@ -49,6 +49,7 @@ export function RepoSimpleForm({
   analysis,
   branch,
   initialName,
+  deployOnPush,
   takenNames,
   deploying,
   failure,
@@ -59,6 +60,8 @@ export function RepoSimpleForm({
   analysis: ImportAnalysis
   branch: string
   initialName: string
+  /** Set from Git settings, so the form does not ask twice. */
+  deployOnPush: boolean
   takenNames: ReadonlySet<string>
   deploying: boolean
   failure: string | null
@@ -120,7 +123,7 @@ export function RepoSimpleForm({
     const merged = {
       ...edits,
       healthPath: options.healthPath.trim() || edits.healthPath,
-      deployOptions: options,
+      deployOptions: { ...options, deployOnPush },
     }
     onSubmit(databases ? { ...merged, databases } : merged)
   }
@@ -285,6 +288,7 @@ export function RepoSimpleForm({
         branch={branch}
         value={options}
         onChange={setOptions}
+        hidePush
       />
 
       <Collapsible open={advancedOpen} onOpenChange={onAdvancedOpen}>
@@ -388,7 +392,8 @@ export function RepoSimpleForm({
 
       <div className="flex min-w-0 flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="min-w-0 text-sm text-muted-foreground" aria-live="polite">
-          {t('import.summary', { builder, branch, target })}
+          {t('import.summary', { builder, branch, target })}{' '}
+          {deployOnPush ? t('import.pushOn') : t('import.pushOff')}
         </p>
         <Button type="submit" disabled={deploying} className="w-full sm:w-auto">
           {deploying ? t('import.form.deploying') : t('import.form.deploy')}

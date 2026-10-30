@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { SecretInput } from '@/components/ui/secret-input'
 import {
   Select,
   SelectContent,
@@ -220,9 +221,8 @@ export function AddGitConnectionDialog({
               <FieldLabel htmlFor="git-conn-token">
                 {t('gitConnections.add.token')}
               </FieldLabel>
-              <Input
+              <SecretInput
                 id="git-conn-token"
-                type="password"
                 autoComplete="off"
                 spellCheck={false}
                 value={token}
@@ -273,9 +273,8 @@ export function AddGitConnectionDialog({
                     <FieldLabel htmlFor="git-conn-client-secret">
                       {t('gitConnections.add.clientSecret')}
                     </FieldLabel>
-                    <Input
+                    <SecretInput
                       id="git-conn-client-secret"
-                      type="password"
                       autoComplete="off"
                       spellCheck={false}
                       value={clientSecret}

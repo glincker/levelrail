@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -38,6 +39,13 @@ func IsNotFound(err error) bool {
 	return errors.As(err, &se) && se.Status == http.StatusNotFound
 }
 
+// IsFeatureOff reports whether err is the 404 a gated endpoint answers while
+// its beta feature is disabled.
+func IsFeatureOff(err error) bool {
+	var se *StatusError
+	return errors.As(err, &se) && se.Status == http.StatusNotFound && strings.Contains(se.Message, "feature is off by default")
+}
+
 func esc(s string) string { return url.PathEscape(s) }
 
 type wireProject struct {
@@ -62,32 +70,42 @@ type wireDatabase struct {
 	Engine    string `json:"engine"`
 	Version   string `json:"version"`
 	ProjectID string `json:"project_id,omitempty"`
+	Pooler    bool   `json:"pooler_enabled,omitempty"`
+	PoolSize  int    `json:"pooler_pool_size,omitempty"`
+	MaxConn   int    `json:"pooler_max_client_conn,omitempty"`
 }
 
 type wireApp struct {
-	Name          string                    `json:"name"`
-	Image         string                    `json:"image"`
-	Port          int                       `json:"port"`
-	HostPort      *int                      `json:"host_port,omitempty"`
-	BindAddress   string                    `json:"bind_address"`
-	Domains       []string                  `json:"domains,omitempty"`
-	Env           map[string]string         `json:"env,omitempty"`
-	SecretEnv     []string                  `json:"secret_env,omitempty"`
-	VaultEnv      map[string]map[string]any `json:"vault_env,omitempty"`
-	Resources     *store.ServiceResources   `json:"resources,omitempty"`
-	Health        *store.ServiceHealth      `json:"health,omitempty"`
-	Hooks         *store.ServiceHooks       `json:"hooks,omitempty"`
-	Strategy      string                    `json:"strategy"`
-	Replicas      int                       `json:"replicas"`
-	Labels        map[string]string         `json:"labels,omitempty"`
-	Command       []string                  `json:"command,omitempty"`
-	ProjectID     string                    `json:"project_id,omitempty"`
-	EnvironmentID string                    `json:"environment_id,omitempty"`
-	Tags          []string                  `json:"tags,omitempty"`
-	Volumes       []map[string]any          `json:"volumes,omitempty"`
-	BindMounts    []map[string]any          `json:"bind_mounts,omitempty"`
-	Egress        map[string]any            `json:"egress,omitempty"`
-	EnvDirty      bool                      `json:"env_dirty"`
+	Name           string                    `json:"name"`
+	Image          string                    `json:"image"`
+	Port           int                       `json:"port"`
+	HostPort       *int                      `json:"host_port,omitempty"`
+	PublishedPorts []store.PublishedPort     `json:"published_ports,omitempty"`
+	BindAddress    string                    `json:"bind_address"`
+	Domains        []string                  `json:"domains,omitempty"`
+	Env            map[string]string         `json:"env,omitempty"`
+	SecretEnv      []string                  `json:"secret_env,omitempty"`
+	VaultEnv       map[string]map[string]any `json:"vault_env,omitempty"`
+	Resources      *store.ServiceResources   `json:"resources,omitempty"`
+	Health         *store.ServiceHealth      `json:"health,omitempty"`
+	Hooks          *store.ServiceHooks       `json:"hooks,omitempty"`
+	Strategy       string                    `json:"strategy"`
+	Replicas       int                       `json:"replicas"`
+	Labels         map[string]string         `json:"labels,omitempty"`
+	Command        []string                  `json:"command,omitempty"`
+	ProjectID      string                    `json:"project_id,omitempty"`
+	EnvironmentID  string                    `json:"environment_id,omitempty"`
+	Tags           []string                  `json:"tags,omitempty"`
+	Volumes        []map[string]any          `json:"volumes,omitempty"`
+	BindMounts     []map[string]any          `json:"bind_mounts,omitempty"`
+	Egress         map[string]any            `json:"egress,omitempty"`
+	EnvDirty       bool                      `json:"env_dirty"`
+	DatabaseEnv    map[string]wireDBRef      `json:"database_env,omitempty"`
+}
+
+type wireDBRef struct {
+	Database string `json:"database"`
+	Field    string `json:"field"`
 }
 
 type wireSecretKey struct {

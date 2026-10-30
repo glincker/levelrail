@@ -209,7 +209,11 @@ func (rt *Router) advisorNode(ctx context.Context, n resourceadvisor.Node, from,
 		}
 	}
 	if n.NoIdentity {
-		if total, avail, err := telemetry.HostMemoryBytes(); err == nil {
+		readMem := rt.hostMemory
+		if readMem == nil {
+			readMem = telemetry.HostMemoryBytes
+		}
+		if total, avail, err := readMem(); err == nil {
 			n.MemoryTotal = float64(total)
 			n.MemoryAvailable = []resourceadvisor.Sample{{At: now, Value: float64(avail)}}
 		}

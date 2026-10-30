@@ -40,34 +40,28 @@ func dashboardPort() string {
 }
 
 // ensureSetupToken creates the first-admin setup token when no user exists
-// yet, logging it only when newly generated.
+// yet. The token never goes to the log (journald keeps it); only its file
+// and the subcommand that prints it do.
 func ensureSetupToken(ctx context.Context, logger *slog.Logger, db *store.DB) {
-	token, created, err := api.EnsureSetupToken(ctx, db, dataDirFromEnv())
+	token, _, err := api.EnsureSetupToken(ctx, db, dataDirFromEnv())
 	if err != nil {
 		logger.Error("setup token not available: first-admin registration is closed", slog.String("error", err.Error()))
 		return
 	}
-	switch {
-	case token == "":
+	if token == "" {
 		return
-	case created:
-		logger.Warn("no admin account exists yet: open the dashboard and create one with this setup token",
-			slog.String("setup_token", token),
-			slog.String("path", setupURLPath(token)),
-		)
-	default:
-		logger.Warn("no admin account exists yet: print the setup token with the setup-token subcommand",
-			slog.String("file", api.SetupTokenPath(dataDirFromEnv())),
-		)
 	}
+	logger.Warn("no admin account exists yet: print the setup token with the setup-token subcommand",
+		slog.String("file", api.SetupTokenPath(dataDirFromEnv())),
+	)
 }
 
 // runSetupToken is the setup-token subcommand: it prints the current
 // first-admin setup token, creating one if the file is missing.
-func runSetupToken(ctx context.Context, stdout io.Writer, openStore func(context.Context) (*store.DB, error)) error {
+func runSetupToken(ctx context.Context, stdout io.Writer, plain bool, openStore func(context.Context) (*store.DB, error)) error {
 	dbPath := filepath.Join(dataDirFromEnv(), storeFilename)
 	if _, err := os.Stat(dbPath); err != nil {
-		return fmt.Errorf("no control plane database at %s; set APP_DATA_DIR to the control plane's data directory: %w", dbPath, err)
+		return fmt.Errorf("no control plane database at %s; set APP_DATA_DIR to the control plane's data directory (tried %s; the installer uses %s): %w", dbPath, dataDirFromEnv(), installedDataDir, err)
 	}
 	db, err := openStore(ctx)
 	if err != nil {
@@ -84,11 +78,16 @@ func runSetupToken(ctx context.Context, stdout io.Writer, openStore func(context
 	if token == "" {
 		return errAdminExists
 	}
+	// Scripts capture stdout whole, so --plain prints the bare token only.
+	if plain {
+		_, _ = fmt.Fprintln(stdout, token)
+		return nil
+	}
 	host := publicHost()
 	if host == "" {
 		host = "<server-ip>"
 	}
-	_, _ = fmt.Fprintf(stdout, "setup token: %s\nopen: http://%s%s\n", token, net.JoinHostPort(host, dashboardPort()), setupURLPath(token))
+	_, _ = fmt.Fprintf(stdout, "open: http://%s%s\n%s\n", net.JoinHostPort(host, dashboardPort()), setupURLPath(token), token)
 	return nil
 }
 

@@ -1,0 +1,24 @@
+{
+  "framework": "vite",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {"source": "/docs/:path*", "destination": "/guide/:path*"},
+    {"source": "/api/(.*)", "destination": "https://api.example.com/$1"},
+    {"source": "/(.*)", "destination": "/index.html"}
+  ],
+  "redirects": [
+    {"source": "/old", "destination": "/new", "permanent": true},
+    {"source": "/tmp", "destination": "/elsewhere"},
+    {"source": "/gone/:id(\\d+)", "destination": "/new/:id", "statusCode": 301},
+    {"source": "/ab", "destination": "/cd", "has": [{"type": "cookie", "key": "x"}]}
+  ],
+  "headers": [
+    {"source": "/(.*)", "headers": [{"key": "X-Frame-Options", "value": "DENY"}]},
+    {"source": "/assets/(.*)", "headers": [{"key": "Cache-Control", "value": "public, max-age=31536000, immutable"}]}
+  ],
+  "crons": [{"path": "/api/x", "schedule": "* * * * *"}]
+}

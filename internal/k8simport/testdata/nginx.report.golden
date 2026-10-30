@@ -1,0 +1,7 @@
+changes-behavior Deployment/web spec.template.spec.containers[web].env.UPSTREAM: value names an in-cluster DNS address: reach another app by its app name here
+changes-behavior Deployment/web spec.template.spec.containers[web].livenessProbe.tcpSocket: TCP probes do not exist here: only an HTTP path or an exec command can be checked
+changes-behavior Deployment/web spec.template.spec.nodeSelector: field is not supported and was ignored
+changes-behavior Ingress/web metadata.annotations.nginx.ingress.kubernetes.io/rewrite-target: controller annotation has no equivalent
+ignored-safe Deployment/web spec.template.spec.containers[web].resources.requests.cpu: no reservation concept, the limit is applied
+ignored-safe Deployment/web spec.template.spec.containers[web].resources.requests.memory: no reservation concept, the limit is applied
+ignored-safe Ingress/web spec.tls: certificates are issued automatically for domains

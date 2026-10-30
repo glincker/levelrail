@@ -21,6 +21,10 @@ const (
 	// DefaultNetworkPool is 1024 /24 networks, in a private range Docker's
 	// own defaults (172.17/16 to 172.31/16, 192.168/16) never touch.
 	DefaultNetworkPool = "10.88.0.0/14"
+	// EnvNetworkPoolPodman overrides the default pool on Podman only.
+	EnvNetworkPoolPodman = "APP_NETWORK_POOL_PODMAN"
+	// DefaultPodmanNetworkPool sits clear of netavark's 10.88 to 10.9x range.
+	DefaultPodmanNetworkPool = "10.200.0.0/14"
 
 	networkPoolSubnetBits = 24
 	maxAllocAttempts      = 8
@@ -72,11 +76,15 @@ func (p NetworkPool) candidate(i int) netip.Prefix {
 	return netip.PrefixFrom(netip.AddrFrom4([4]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)}), networkPoolSubnetBits) //nolint:gosec // byte conversion of masked octets
 }
 
+// podmanDefaultSubnet is netavark's default network. It is skipped even when
+// the engine does not list it, so the default pool never collides with Podman.
+var podmanDefaultSubnet = netip.MustParsePrefix("10.88.0.0/16")
+
 // Allocate returns the first /24 in the pool overlapping nothing in used.
 func (p NetworkPool) Allocate(used []netip.Prefix) (netip.Prefix, bool) {
 	for i := 0; i < p.Capacity(); i++ {
 		c := p.candidate(i)
-		if !overlapsAny(c, used) {
+		if !c.Overlaps(podmanDefaultSubnet) && !overlapsAny(c, used) {
 			return c, true
 		}
 	}

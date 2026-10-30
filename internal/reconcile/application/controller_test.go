@@ -26,13 +26,20 @@ type fakeStore struct {
 	err        error
 	streams    []store.AppStream
 	streamsErr error
+	// afterFirst, when set, replaces svc once the first read returned,
+	// standing in for a deploy that lands while a pass is in flight.
+	afterFirst *store.DesiredService
 }
 
 func (f *fakeStore) GetDesiredService(_ context.Context, _ string) (*store.DesiredService, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
-	return f.svc, nil
+	svc := f.svc
+	if f.afterFirst != nil {
+		f.svc, f.afterFirst = f.afterFirst, nil
+	}
+	return svc, nil
 }
 
 func (f *fakeStore) ListAppStreamsForService(_ context.Context, _ string) ([]store.AppStream, error) {
@@ -296,6 +303,9 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 		}
 		f.specPorts[id] = spec.Ports
 	}
+	if len(spec.Ports) > 0 {
+		f.containers[spec.Name].ConfiguredPorts = spec.Ports
+	}
 	return id, nil
 }
 
@@ -337,11 +347,19 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 				continue
 			}
 			if f.hostPort != 0 {
-				cs.Ports = []docker.PortBinding{{ContainerPort: 80, HostPort: f.hostPort}}
+				cs.Ports = []docker.PortBinding{{ContainerPort: fakeRoutedPort(cs), HostPort: f.hostPort}}
 			}
 		}
 	}
 	return nil
+}
+
+// fakeRoutedPort is the container port the created spec routes, 80 by default.
+func fakeRoutedPort(cs *docker.ContainerState) int {
+	if len(cs.ConfiguredPorts) > 0 && cs.ConfiguredPorts[0].ContainerPort != 0 {
+		return cs.ConfiguredPorts[0].ContainerPort
+	}
+	return 80
 }
 
 func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
@@ -3868,5 +3886,42 @@ func TestController_Reconcile_BindAddress_InvalidFailsReconcile(t *testing.T) {
 	// the one this test actually cares about, needs to be NotReady.
 	if len(result.Conditions) == 0 || result.Conditions[0].Status != reconcile.ConditionFalse {
 		t.Errorf("Conditions = %+v, want a NotReady Ready condition first", result.Conditions)
+	}
+}
+
+// A pass that finishes after a newer deploy changed the desired state must
+// not publish its verdict: the failure belongs to the old release, and a
+// waiter on the new deploy would read it as that deploy's result.
+func TestController_Reconcile_DesiredChangedMidPass_DropsStaleConditions(t *testing.T) {
+	probe := &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}}
+	tests := []struct {
+		name      string
+		next      store.DesiredService
+		wantStale bool
+	}{
+		{"image changed", store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Health: probe}, true},
+		{"restart nonce changed", store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Health: probe, RestartNonce: "n2"}, true},
+		{"unchanged", store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Health: probe}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := neverHealthy()
+			defer srv.Close()
+			rt := newFakeRuntime(serverPort(t, srv))
+			first := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Health: probe}
+			next := tt.next
+			c := New("web", &fakeStore{svc: first, afterFirst: &next}, rt, WithReadyBudget(150*time.Millisecond))
+
+			result, err := c.Reconcile(context.Background())
+			if tt.wantStale {
+				if err != nil || len(result.Conditions) != 0 {
+					t.Fatalf("Reconcile() = %+v, %v, want no conditions and no error for a stale pass", result, err)
+				}
+				return
+			}
+			if err == nil || len(result.Conditions) == 0 {
+				t.Fatalf("Reconcile() = %+v, %v, want the readiness failure published", result, err)
+			}
+		})
 	}
 }

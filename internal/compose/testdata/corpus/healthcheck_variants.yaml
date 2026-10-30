@@ -1,0 +1,23 @@
+services:
+  http:
+    image: ghcr.io/acme/http:1.0.0
+    ports: ["8080"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_interval: 5s
+  shell:
+    image: postgres:16-alpine
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 5s
+  off:
+    image: ghcr.io/acme/off:1.0.0
+    healthcheck:
+      disable: true
+  none:
+    image: ghcr.io/acme/none:1.0.0
+    healthcheck:
+      test: ["NONE"]

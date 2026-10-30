@@ -3,7 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AppDetail } from '../../types/appDetail'
+import { resetPowerTransitions } from '../apps/appPower'
 import { useSuggestionActions } from './useSuggestionActions'
+
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input
+  return input instanceof URL ? input.href : input.url
+}
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }))
 
@@ -17,15 +23,22 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 function mockFetch() {
-  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-    ok: true,
-    status: 202,
-    json: () => Promise.resolve({ ...app }),
-  } as unknown as Response)
+  return vi.spyOn(globalThis, 'fetch').mockImplementation((input) =>
+    Promise.resolve({
+      ok: true,
+      status: 202,
+      json: () =>
+        Promise.resolve(urlOf(input).endsWith('/deploys') ? [] : { ...app }),
+    } as unknown as Response),
+  )
 }
 
 describe('useSuggestionActions', () => {
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    window.localStorage.clear()
+    resetPowerTransitions()
+  })
 
   it('apply_pending posts to the apply-pending endpoint', async () => {
     const spy = mockFetch()
@@ -38,6 +51,7 @@ describe('useSuggestionActions', () => {
   })
 
   it('restart posts to the restart endpoint (env_dirty fallback)', async () => {
+    window.localStorage.setItem('app-power:skip-restart-confirm', '1')
     const spy = mockFetch()
     const { result } = renderHook(() => useSuggestionActions(app), { wrapper })
     act(() => result.current.run.restart())

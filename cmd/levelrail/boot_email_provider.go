@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -103,9 +104,14 @@ func (r *emailDeliveryRecorder) RecordDelivery(ctx context.Context, d email.Deli
 		errText = errText[:1000]
 	}
 	return r.db.InsertEmailDelivery(ctx, store.EmailDelivery{
-		CreatedAt: d.At, Provider: d.Provider, Kind: d.Kind, Status: d.Status, MessageID: d.MessageID,
+		CreatedAt: d.At, Provider: d.Provider, ProviderID: d.ProviderID, FailoverFrom: d.FailoverFrom, Kind: d.Kind, Status: d.Status, MessageID: d.MessageID,
 		Error: errText, ErrorKind: string(d.ErrorKind), Attempts: d.Attempts,
 	}, d.To, r.fullAddress)
+}
+
+// RecordProviderResult stamps last_ok_at / last_error_kind on the provider row.
+func (r *emailDeliveryRecorder) RecordProviderResult(ctx context.Context, providerID string, ok bool, kind email.FailureKind, at time.Time) error {
+	return r.db.RecordEmailProviderResult(ctx, providerID, ok, string(kind), at)
 }
 
 func (r *emailDeliveryRecorder) CountSent(ctx context.Context, since time.Time) (int, error) {
@@ -113,14 +119,8 @@ func (r *emailDeliveryRecorder) CountSent(ctx context.Context, since time.Time) 
 }
 
 // emailLogRetention is how long delivery log rows are kept; zero keeps them forever.
-func emailLogRetention() time.Duration {
-	days := 30
-	if v := os.Getenv("APP_EMAIL_LOG_RETENTION_DAYS"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
-			days = n
-		}
-	}
-	return time.Duration(days) * 24 * time.Hour
+func emailLogRetention(ctx context.Context, settings *runtimesettings.Service) time.Duration {
+	return time.Duration(settings.Int(ctx, runtimesettings.KeyEmailLogDays)) * 24 * time.Hour
 }
 
 // pruneEmailDeliveries is one sweep of the delivery log; a zero retention keeps everything.

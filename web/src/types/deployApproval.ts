@@ -4,8 +4,10 @@
 // mirror the JSON wire shape directly, the same convention
 // types/appDetail.ts's own doc comment establishes for this dashboard.
 
+// approving: one approver holds the claim while the change applies; it
+// ends as approved or returns to pending.
 export type DeployApprovalStatus =
-  'pending' | 'approved' | 'rejected' | 'expired'
+  'pending' | 'approving' | 'approved' | 'rejected' | 'expired'
 
 export type DeployApprovalAction = 'deploy' | 'promote'
 

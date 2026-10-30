@@ -93,6 +93,9 @@ type ContainerState struct {
 	// alone isn't enough on a Docker daemon shared by more than one
 	// control-plane instance.
 	Labels map[string]string
+	// LabelsUnknown is set by a remote transport that received no labels,
+	// which an agent older than the labels field cannot tell from none.
+	LabelsUnknown bool
 	// Networks lists the Docker networks the container is attached to with
 	// its address on each. Only the local Docker client reports it.
 	Networks []ContainerNetwork
@@ -274,6 +277,27 @@ type ContainerSpec struct {
 	RestartPolicy string
 	// User runs the container process as this uid[:gid]. Empty keeps the image's user.
 	User string
+	// UsernsMode is the engine's user namespace mode, such as "auto" or
+	// "keep-id" (Podman). Empty keeps the engine default.
+	UsernsMode string
+	// SecurityOpt lists extra --security-opt entries. Added after the
+	// hardening defaults, never replacing them.
+	SecurityOpt []string
+	// Devices are "host[:container[:perms]]" passthrough entries, for
+	// example /dev/fuse.
+	Devices []string
+	// Files are inline files written into the container before it starts.
+	Files []FileMount
+}
+
+// NeedsFilesCapability reports whether the spec carries files an agent that
+// predates them would silently drop, starting the app without its config.
+func (s ContainerSpec) NeedsFilesCapability() bool { return len(s.Files) > 0 }
+
+// NeedsSecurityCapability reports whether the spec sets a field an agent that
+// predates it would silently drop, weakening the container profile.
+func (s ContainerSpec) NeedsSecurityCapability() bool {
+	return s.UsernsMode != "" || len(s.SecurityOpt) > 0 || len(s.Devices) > 0 || s.User != "" || len(s.BindMounts) > 0
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

@@ -40,7 +40,7 @@ type archivedLogsInput struct {
 func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_storage_destinations",
-		Description: "List connected storage destinations (S3, R2, B2, MinIO, Wasabi, custom S3 or a node directory): name, kind, bucket, region, used bytes, quota, estimated cost, default data classes and policy count. No credentials.",
+		Description: "List connected storage destinations (S3 compatible or a node directory): name, kind, bucket, region, used bytes, quota, estimated cost and policy count. No credentials.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StorageDestination, error) {
 		out, err := client.ListStorageDestinations(ctx)
 		if err != nil {
@@ -51,7 +51,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "test_storage_destination",
-		Description: "Write, read back and delete a small probe object in a storage destination's bucket to prove its stored credentials work. Returns per-step results and a stable failure reason (invalid_credentials, access_denied, bucket_not_found, region_mismatch, endpoint_blocked, tls_error, unreachable). Leaves no object behind.",
+		Description: "Write, read back and delete a probe object in a storage destination's bucket to prove its credentials work. Returns per-step results and a failure reason.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in storageDestinationIDInput) (*mcp.CallToolResult, apiclient.StorageProbeResult, error) {
 		out, err := client.TestStorageDestination(ctx, in.ID)
 		if err != nil {
@@ -73,7 +73,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_log_archive_policy",
-		Description: "Create or replace the log archive policy for one app (or every app when app_name is omitted): ship node-local logs to a storage destination as gzip NDJSON on a schedule. Only new logs from now on are archived; use start_log_archive_dump for history.",
+		Description: "Create or replace the log archive policy for one app (or all when app_name is omitted): ship node logs to a storage destination on a schedule. Only new logs; use start_log_archive_dump for history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchivePolicyInput) (*mcp.CallToolResult, apiclient.LogArchivePolicy, error) {
 		out, err := client.SetLogArchivePolicy(ctx, apiclient.LogArchivePolicyRequest{
 			AppName: in.AppName, TargetID: in.TargetID, Interval: in.Interval, RetentionDays: in.RetentionDays, Enabled: in.Enabled,
@@ -86,7 +86,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "start_log_archive_dump",
-		Description: "Archive a past time range of an app's (or every app's) logs to a storage destination now. Returns immediately with a running run; poll list_log_archive_runs for the outcome.",
+		Description: "Archive a past time range of an app's (or every app's) logs to a storage destination now. Poll list_log_archive_runs for the outcome.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchiveDumpInput) (*mcp.CallToolResult, apiclient.LogArchiveRun, error) {
 		out, err := client.StartLogArchiveDump(ctx, apiclient.LogArchiveDumpRequest{AppName: in.AppName, TargetID: in.TargetID, From: in.From, To: in.To})
 		if err != nil {
@@ -108,7 +108,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_archived_logs",
-		Description: "List archived log objects (key, size, modified time) in a storage destination, newest partitions last, optionally for one app. Read-only; use the CLI or dashboard to download an object.",
+		Description: "List archived log objects (key, size, modified time) in a storage destination, newest partitions last, optionally for one app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in archivedLogsInput) (*mcp.CallToolResult, apiclient.LogArchiveObjects, error) {
 		out, err := client.ListLogArchiveObjects(ctx, in.TargetID, in.AppName, in.Cursor)
 		if err != nil {

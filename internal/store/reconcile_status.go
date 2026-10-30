@@ -48,6 +48,9 @@ func (db *DB) UpsertConditions(ctx context.Context, controllerName string, condi
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
+	if err := recordAppStatusChange(ctx, tx, controllerName, string(data)); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO reconcile_status (controller_name, condition_type, status, reason, message, updated_at)
 		SELECT ?, json_extract(value, '$.t'), json_extract(value, '$.s'), json_extract(value, '$.r'), json_extract(value, '$.m'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
@@ -128,7 +131,7 @@ func (db *DB) GetConditionsForControllers(ctx context.Context, controllerNames [
 		return nil, fmt.Errorf("store: marshal batched condition names: %w", err)
 	}
 
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT controller_name, condition_type, status, reason, message, updated_at
 		FROM reconcile_status
 		WHERE controller_name IN (SELECT value FROM json_each(?))

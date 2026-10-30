@@ -1,0 +1,6 @@
+version: 1
+kind: Stack
+metadata:
+  name: {{name}}
+spec:
+  project: {{name}}

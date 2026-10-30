@@ -11,7 +11,13 @@ import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export type LoadBalancerAlgorithm =
-  'round_robin' | 'least_conn' | 'ip_hash' | 'uri_hash' | 'cookie' | 'weighted'
+  | 'round_robin'
+  | 'least_conn'
+  | 'ip_hash'
+  | 'client_ip_hash'
+  | 'uri_hash'
+  | 'cookie'
+  | 'weighted'
 
 export type LoadBalancerExportFormat =
   'terraform' | 'cdk' | 'cloudformation' | 'caddy' | 'caddy-json'
@@ -72,6 +78,15 @@ export interface LoadBalancerResource {
 export type UpstreamState =
   'healthy' | 'unhealthy' | 'draining' | 'disabled' | 'unknown'
 
+export interface UpstreamTraffic {
+  window_seconds: number
+  requests_per_sec: number
+  error_rate: number
+  p50_ms: number
+  p95_ms: number
+  rps_series: number[]
+}
+
 export interface UpstreamStatus {
   id: string
   dial: string
@@ -85,6 +100,7 @@ export interface UpstreamStatus {
   last_check?: string
   latency_ms?: number
   reason?: string
+  traffic?: UpstreamTraffic
 }
 
 export interface LoadBalancerStatus {

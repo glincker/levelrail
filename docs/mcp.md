@@ -27,9 +27,11 @@ By default a session lists about 2,400 estimated tokens: a small core (list and 
 
 ## Tools follow the token's abilities
 
-`tools/list` offers only the tools the connected token can call. A `read` token sees read tools, a `read,deploy` token also sees the deploy tier (`deploy_app`, `rollback_app`, `restart_app` and the canary tools) but not `set_app_env` or `set_app_domains`, a `write` or `write:sensitive` token sees the write tools, and `root` sees everything its mode lists. `enable_toolset` and `list_toolsets` apply the same filter, so a toolset with nothing the token can call is not offered. The filter only narrows the list and costs no extra tokens. It is skipped, and the full mode list is shown, when the token's abilities cannot be read or when IAM policies are attached to it, since a policy can grant access to one resource beyond the base abilities. The server still decides every call.
+`tools/list` offers only the tools the connected token can call. A `read` token sees read tools, a `read,deploy` token also sees the deploy tier (`deploy_app`, `deploy_template`, `rollback_app`, `restart_app` and the canary tools) but not `set_app_env` or `set_app_domains`, a `write` or `write:sensitive` token sees the write tools, and `root` sees everything its mode lists. `enable_toolset` and `list_toolsets` apply the same filter, so a toolset with nothing the token can call is not offered. The filter only narrows the list and costs no extra tokens. It is skipped, and the full mode list is shown, when the token's abilities cannot be read or when IAM policies are attached to it, since a policy can grant access to one resource beyond the base abilities. The server still decides every call.
 
 A call the server refuses for a missing ability returns a short structured error such as `forbidden: {"missing_ability":"write:sensitive","use_instead":"plan_change"}`: the ability to ask for, and a read-only tool to call instead. Refusals from AI control or step-up keep their own message.
+
+`deploy_template` (toolset `deploys`, `standard` mode) installs a catalog template as a new app with the same deploy ability as `deploy_app`. Inputs: `id` (from `list_service_templates`), `name` (default is the id plus a random suffix), `env` (template settings, see `get_service_template`), `wait` and `max_wait_seconds`. It has no domains input. The result lists the app, each service with its image and URL, and only the names of generated secret keys (`secret_keys`), never values, with a pointer to the reveal flow: the app's environment page in the dashboard, or `apps env get <app> <KEY> --reveal`, which needs `secrets:reveal`. With `wait` it blocks on the newest deploy of the app.
 
 `get_model_endpoint_health` (toolset `models`, enable it on demand) returns the last probe of an external inference endpoint registered with `models endpoint`.
 
@@ -39,7 +41,7 @@ A call the server refuses for a missing ability returns a short structured error
 
 The exact tool counts and estimated tokens per mode and per toolset are generated into [MCP tool surface](/mcp-tool-surface), so they stay in step with the code. In short: `read-only` lists the fewest tools, `standard` adds the mutating ones and `full` adds the destructive ones; the default listing stays small because output schemas are omitted unless you pass `--output-schemas`.
 
-The budgets are the static (`--all`) listing and a documented ceiling; the budget tests (`internal/mcptools/budget_test.go`) enforce both listings, print headroom on every run, and on failure name the heaviest tools and toolsets. Override a ceiling deliberately with `APP_MCP_TOKEN_BUDGET_<MODE>` or `APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>` (mode upper case, dashes as underscores). Budgets are ratchets: lower them when a change shrinks the listing, never raise them. The default session, one toolset and every description (400 characters) have their own limits in the same tests.
+The budgets are the static (`--all`) listing and a documented ceiling; the budget tests (`internal/mcptools/budget_test.go`) enforce both listings, print headroom on every run, and on failure name the heaviest tools and toolsets. Override a ceiling deliberately with `APP_MCP_TOKEN_BUDGET_<MODE>` or `APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>` (mode upper case, dashes as underscores). `APP_MCP_TOKEN_MIN_HEADROOM` (default `150`, a non-negative integer) is read by the budget test `TestCompactBudgetKeepsHeadroom`: each mode's compact listing must stay at least that many estimated tokens under its budget, so a new tool fails the test before it eats the whole margin. It does not affect a running server. Budgets are ratchets: lower them when a change shrinks the listing, never raise them. The default session, one toolset and every description (400 characters) have their own limits in the same tests.
 
 New tools return compact rows with a row cap and a `truncated` flag rather than the raw API resource.
 
@@ -56,11 +58,16 @@ All are `read` class and available in every mode. Tools marked untrusted return 
 | `backups_health` | Per resource backup state, last backup and verified restore, target warnings. Unhealthy first. | no |
 | `list_backup_drills` | Restore drill history. | yes |
 | `get_upgrade_readiness` | Upgrade plan: breaking changes and whether it can be applied. Never applies one. | yes |
+| `get_template_upgrade_plan` | Risk, blockers and changes if a template app moved to the current template. Never applies one. | no |
 | `list_node_moves` | Status of app and database moves between nodes. | yes |
 | `list_teams` | Teams the token can see, honouring the configured scope. | no |
 | `list_team_members` | Members and roles of one team. | no |
 
 [Preview environments](/previews) are listed by the existing `list_preview_environments`.
+
+## Stack tools
+
+Stacks are declarative resource files applied as numbered revisions under an apply lease. The `stacks` toolset has four tools. `list_stacks` and `get_stack` (resources, lock, drift, last apply) and `plan_stack` (a dry run that returns the change list and plan hash, and changes nothing) are `read` class. `apply_stack` is `mutate` class, needs a token with write access to the stack, and is refused locally unless `confirm` is `true`; pass the `expected_plan_hash` from `plan_stack` so it only proceeds if nothing moved. A second apply while one holds the lease gets a 409 conflict. Replies carry counts, resource names and revision status only. Secret values are not accepted by these tools and never returned: files reference them with `secretRef`, and values are set through the app env tools or the CLI.
 
 These four are on demand: none is in the default session, enable the toolset first with `enable_toolset`.
 
@@ -82,6 +89,9 @@ Three more on-demand toolsets, all read only. None is in the default session, an
 | `security` | `get_template_requirements` | read | A service template's security level, findings and protections. |
 | `migrate` | `list_app_import_sessions` | read | App import sessions with step and per-state counts. |
 | `migrate` | `get_app_import_plan` | read | One session's per-app verdict, state, reasons and manual leftovers. |
+| `migrate` | `get_app_import_exit_report` | read | Coolify exit report of a connected session: outcome counts and each skipped or manual item. |
+| `migrate` | `get_migration_verify_report` | read | Latest pre-cutover parity report with a fix hint per difference. |
+| `migrate` | `get_migration_job_status` | read | Migration job progress, failed items, next steps and whether the old instance is safe to delete. |
 | `migrate` | `get_app_import_cutover_plan` | read | Cutover readiness of one staged app: verdict, checks, DNS method per domain. |
 | `migrate` | `list_app_import_cutover_runs` | read | Cutover dry runs and switches of one app with their state. |
 | `migrate` | `list_database_data_copies` | read | Status of each database data copy, with mismatches. |

@@ -92,6 +92,7 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// identical immediate side effect (a real command actually runs
 	// inside a running container right now), not just a config change.
 	rt.registerJobRoutes(mux)
+	rt.registerOneShotJobRoutes(mux)
 
 	// Feature flags: CRUD at AbilityWrite/AbilityRead. Evaluate is a flat AbilityRead route an app
 	// calls at runtime with a read-only token.

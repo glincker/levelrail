@@ -22,7 +22,7 @@ Pick one of two paths:
 </Step>
 <Step title="Set the advertise host before enrolling">
 
-Set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will dial. It defaults to `127.0.0.1`. With a mismatch, enrollment succeeds but the node's session then fails TLS hostname verification on every attempt, and the node stays `pending`. Details are in [multi-node](/multi-node#enrolling-a-second-node).
+Set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will dial (an IP address when the mesh is on). It defaults to `127.0.0.1`. With a mismatch, enrollment succeeds but the node's session then fails TLS hostname verification on every attempt, and the node stays `pending`. Details are in [multi-node](/multi-node#enrolling-a-second-node).
 
 </Step>
 <Step title="Enroll and confirm">
@@ -56,7 +56,7 @@ That run did not cover:
 
 ## If the control plane dies
 
-A container placed on a remote node keeps running and serving, because the agent owns it through its own Docker connection. The agent takes no destructive action on disconnect and retries with exponential backoff until the control plane returns. That node's services are skipped for reconcile passes until then. [Resilience](/resilience) has the measured numbers, and [Resilience summary](/resilience-summary) has the overview.
+A container placed on a remote node keeps running, because the agent owns it through its own Docker connection. The agent takes no destructive action on disconnect and retries with exponential backoff until the control plane returns. That node's services are skipped for reconcile passes until then and report `Ready=False` with reason `NodeOffline`. When the mesh runs inside the agent, ingress cannot reach them either, so they stop serving through the control plane until the agent returns (about 35 seconds after an agent restart). [Resilience](/resilience) has the measured numbers, and [Resilience summary](/resilience-summary) has the overview.
 
 ## Troubleshooting
 

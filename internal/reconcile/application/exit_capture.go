@@ -44,7 +44,14 @@ type containerLogReader interface {
 // stable window, a container that exits right away would otherwise count
 // as ready the instant it started.
 func (c *Controller) watchStartup(ctx context.Context, name string, desired *store.DesiredService) error {
-	if c.startupWatch <= 0 || c.safetyFor(ctx, desired).StableWindow > 0 {
+	if c.safetyFor(ctx, desired).StableWindow > 0 {
+		return nil
+	}
+	// Always one inspect: an instant exit must not pass with the watch off.
+	if crash := c.exitedCrash(ctx, name); crash != nil {
+		return crash
+	}
+	if c.startupWatch <= 0 {
 		return nil
 	}
 	if _, ok := c.runtime.(docker.ExitStateInspector); !ok {

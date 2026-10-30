@@ -32,12 +32,31 @@ type retryingRuntime struct {
 
 // Create retries the underlying Create on retryable pull errors.
 func (r retryingRuntime) Create(ctx context.Context, spec docker.ContainerSpec) (string, error) {
+	return createWithRetry(ctx, r.t, r.Runtime.Create, spec)
+}
+
+// retryingClient embeds the concrete client so every optional interface the
+// reconciler type-asserts (exit state, networks, logs) stays visible.
+type retryingClient struct {
+	*docker.Client
+	t *testing.T
+}
+
+// Create retries the client's Create on retryable pull errors.
+func (r retryingClient) Create(ctx context.Context, spec docker.ContainerSpec) (string, error) {
+	return createWithRetry(ctx, r.t, r.Client.Create, spec)
+}
+
+// ReportsExitTimes is true because the local client fills start and finish times.
+func (r retryingClient) ReportsExitTimes() bool { return true }
+
+func createWithRetry(ctx context.Context, t *testing.T, create func(context.Context, docker.ContainerSpec) (string, error), spec docker.ContainerSpec) (string, error) {
 	var id string
 	err := retryPull(ctx, sleepCtx, func() error {
 		var createErr error
-		id, createErr = r.Runtime.Create(ctx, spec)
+		id, createErr = create(ctx, spec)
 		if createErr != nil && isRetryablePullError(createErr) {
-			r.t.Logf("registry pull for %q failed, retrying: %v", spec.Image, createErr)
+			t.Logf("registry pull for %q failed, retrying: %v", spec.Image, createErr)
 		}
 		return createErr
 	})
@@ -45,6 +64,9 @@ func (r retryingRuntime) Create(ctx context.Context, spec docker.ContainerSpec) 
 }
 
 func withPullRetry(t *testing.T, rt docker.Runtime) docker.Runtime {
+	if c, ok := rt.(*docker.Client); ok {
+		return retryingClient{Client: c, t: t}
+	}
 	return retryingRuntime{Runtime: rt, t: t}
 }
 

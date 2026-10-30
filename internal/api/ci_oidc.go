@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -20,11 +22,14 @@ const (
 	ciTokenTTL          = 15 * time.Minute
 	ciExchangeBodyLimit = 16 << 10
 	maxCIRefPatternLen  = 200
+	maxCIIssuerLen      = 300
 )
 
 var (
-	ciRepositoryPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
-	errCINoDashboardURL = errors.New("set the dashboard URL in Settings first, it is the audience CI tokens are issued for")
+	ciRepositoryPattern  = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+	gitLabProjectPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$`)
+	ciUUIDPattern        = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	errCINoDashboardURL  = errors.New("set the dashboard URL in Settings first, it is the audience CI tokens are issued for")
 )
 
 // CIOIDCTrustStore is the store surface for CI OIDC trusts.
@@ -41,6 +46,12 @@ type CIClaims struct {
 	Ref         string
 	Environment string
 	Subject     string
+	// Provider is empty for GitHub; the fields below are set only by the GitLab and CircleCI verifiers.
+	Provider             string
+	Issuer               string
+	RefProtected         bool
+	EnvironmentProtected bool
+	ContextIDs           []string
 }
 
 // CIIDTokenVerifier checks a CI identity token's signature, issuer, audience and expiry.
@@ -52,21 +63,47 @@ type CIIDTokenVerifier interface {
 func (rt *Router) SetCIIDTokenVerifier(v CIIDTokenVerifier) { rt.ciVerifier = v }
 
 type ciTrustResource struct {
-	ID          string    `json:"id"`
-	Repository  string    `json:"repository"`
-	RefPattern  string    `json:"ref_pattern"`
-	Environment string    `json:"environment"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID               string    `json:"id"`
+	Provider         string    `json:"provider"`
+	Issuer           string    `json:"issuer,omitempty"`
+	Repository       string    `json:"repository"`
+	RefPattern       string    `json:"ref_pattern"`
+	Environment      string    `json:"environment"`
+	ProtectedRefOnly bool      `json:"protected_ref_only,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
+	Warning          string    `json:"warning,omitempty"`
 }
 
+// ciTrustRequest: repository is owner/name on GitHub, the project path on GitLab and the project ID on CircleCI.
 type ciTrustRequest struct {
+	Provider    string `json:"provider,omitempty"`
+	Issuer      string `json:"issuer,omitempty"`
+	OrgID       string `json:"org_id,omitempty"`
 	Repository  string `json:"repository"`
 	RefPattern  string `json:"ref_pattern"`
 	Environment string `json:"environment"`
+	// ProtectedRefOnly is a pointer so an omitted value takes the provider default (true for GitLab).
+	ProtectedRefOnly *bool `json:"protected_ref_only,omitempty"`
+}
+
+const ciGitLabUnprotectedWarning = "this trust accepts pipelines on unprotected branches and tags: any developer who can push a matching ref can deploy"
+
+func (req ciTrustRequest) protectedRefOnly() bool {
+	return req.ProtectedRefOnly != nil && *req.ProtectedRefOnly
 }
 
 func toCITrustResource(t store.CIOIDCTrust) ciTrustResource {
-	return ciTrustResource{ID: t.ID, Repository: t.Repository, RefPattern: t.RefPattern, Environment: t.Environment, CreatedAt: t.CreatedAt}
+	return ciTrustResource{
+		ID: t.ID, Provider: ciProviderName(t.Provider), Issuer: t.Issuer, Repository: t.Repository, RefPattern: t.RefPattern,
+		Environment: t.Environment, ProtectedRefOnly: t.ProtectedRefOnly, CreatedAt: t.CreatedAt,
+	}
+}
+
+func ciProviderName(p string) string {
+	if p == "" {
+		return ciProviderGitHub
+	}
+	return p
 }
 
 func (rt *Router) requireAppForCI(w http.ResponseWriter, r *http.Request, name string) bool {
@@ -82,11 +119,14 @@ func (rt *Router) requireAppForCI(w http.ResponseWriter, r *http.Request, name s
 }
 
 func validateCITrust(req *ciTrustRequest) string {
+	req.Provider = ciProviderName(strings.ToLower(strings.TrimSpace(req.Provider)))
+	req.Issuer = strings.TrimSpace(req.Issuer)
+	req.OrgID = strings.TrimSpace(req.OrgID)
 	req.Repository = strings.TrimSpace(req.Repository)
 	req.RefPattern = strings.TrimSpace(req.RefPattern)
 	req.Environment = strings.TrimSpace(req.Environment)
-	if !ciRepositoryPattern.MatchString(req.Repository) {
-		return "repository must be owner/name"
+	if msg := validateCIProvider(req); msg != "" {
+		return msg
 	}
 	if !strings.HasPrefix(req.RefPattern, "refs/") || len(req.RefPattern) > maxCIRefPatternLen {
 		return "ref_pattern must be a full ref such as refs/heads/main, refs/heads/release/* or refs/tags/v*"
@@ -98,6 +138,70 @@ func validateCITrust(req *ciTrustRequest) string {
 		return "environment is too long"
 	}
 	return ""
+}
+
+// validateCIProvider fixes the issuer at configuration time: exchanges only ever fetch keys from an issuer set here.
+func validateCIProvider(req *ciTrustRequest) string {
+	switch req.Provider {
+	case ciProviderGitHub:
+		if req.Issuer != "" || req.OrgID != "" || req.protectedRefOnly() {
+			return "issuer, org_id and protected_ref_only apply to gitlab and circleci trusts only"
+		}
+		if !ciRepositoryPattern.MatchString(req.Repository) {
+			return "repository must be owner/name"
+		}
+	case ciProviderGitLab:
+		if req.OrgID != "" {
+			return "org_id applies to circleci trusts only"
+		}
+		if req.ProtectedRefOnly == nil {
+			req.ProtectedRefOnly = new(true)
+		}
+		if req.Issuer == "" {
+			req.Issuer = gitLabDefaultIssuer
+		}
+		iss, msg := normalizeCIIssuer(req.Issuer)
+		if msg != "" {
+			return msg
+		}
+		req.Issuer = iss
+		if !gitLabProjectPattern.MatchString(req.Repository) || len(req.Repository) > maxCIRefPatternLen {
+			return "repository must be the GitLab project path, such as group/project or group/subgroup/project"
+		}
+	case ciProviderCircleCI:
+		if req.protectedRefOnly() {
+			return "protected_ref_only applies to gitlab trusts only"
+		}
+		if !ciUUIDPattern.MatchString(req.OrgID) {
+			return "org_id must be the CircleCI organization ID (Organization Settings > Overview)"
+		}
+		iss := circleCIIssuerBase + req.OrgID
+		if req.Issuer != "" && req.Issuer != iss {
+			return "issuer for circleci must be " + iss
+		}
+		req.Issuer, req.OrgID = iss, ""
+		if !ciUUIDPattern.MatchString(req.Repository) {
+			return "repository must be the CircleCI project ID (Project Settings > Overview)"
+		}
+		if req.Environment != "" && !ciUUIDPattern.MatchString(req.Environment) {
+			return "environment for circleci must be a context ID the job runs with"
+		}
+	default:
+		return "provider must be github, gitlab or circleci"
+	}
+	return ""
+}
+
+// normalizeCIIssuer accepts a plain https issuer URL; a self-managed GitLab may live under a path.
+func normalizeCIIssuer(raw string) (string, string) {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || len(raw) > maxCIIssuerLen {
+		return "", "issuer must be an https URL such as https://gitlab.com or https://gitlab.example.com"
+	}
+	if h := strings.ToLower(u.Hostname()); h == "token.actions.githubusercontent.com" || h == "oidc.circleci.com" {
+		return "", "issuer belongs to another CI provider"
+	}
+	return strings.TrimRight(u.Scheme+"://"+u.Host+u.EscapedPath(), "/"), ""
 }
 
 // handleListCITrusts handles GET /api/v1/apps/{name}/ci/trusts.
@@ -133,6 +237,10 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAppForCI(w, r, name) {
 		return
 	}
+	if ok, msg := rt.ciTrustCallerMay(r, name, req); !ok {
+		writeError(w, http.StatusForbidden, msg)
+		return
+	}
 	trustID, err := store.NewCIOIDCTrustID()
 	if err != nil {
 		rt.internalError(w, "create ci trust", err)
@@ -147,17 +255,23 @@ func (rt *Router) handleCreateCITrust(w http.ResponseWriter, r *http.Request) {
 	t := store.CIOIDCTrust{
 		ID: trustID, ServiceName: name, Repository: req.Repository, RefPattern: req.RefPattern,
 		Environment: req.Environment, PolicyID: policyID, CreatedBy: actor, CreatedAt: time.Now().UTC(),
+		Provider: req.Provider, Issuer: req.Issuer, ProtectedRefOnly: req.protectedRefOnly(),
 	}
 	if err := rt.ciTrusts.SaveCIOIDCTrust(r.Context(), t); err != nil {
 		_ = rt.policies.DeletePolicy(r.Context(), policyID)
 		if errors.Is(err, store.ErrCIOIDCTrustExists) {
-			writeError(w, http.StatusConflict, "that repository, ref and environment is already trusted for this app")
+			writeError(w, http.StatusConflict, "that provider, issuer, repository, ref and environment is already trusted for this app")
 			return
 		}
 		rt.internalError(w, "save ci trust", err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toCITrustResource(t))
+	rt.auditCITrust(r.Context(), r, auditActionCITrustCreated, t)
+	res := toCITrustResource(t)
+	if t.Provider == ciProviderGitLab && !t.ProtectedRefOnly {
+		res.Warning = ciGitLabUnprotectedWarning
+	}
+	writeJSON(w, http.StatusCreated, res)
 }
 
 // handleDeleteCITrust handles DELETE /api/v1/apps/{name}/ci/trusts/{id}.
@@ -174,6 +288,7 @@ func (rt *Router) handleDeleteCITrust(w http.ResponseWriter, r *http.Request) {
 	if err := rt.policies.DeletePolicy(r.Context(), t.PolicyID); err != nil && !errors.Is(err, store.ErrPolicyNotFound) {
 		rt.logger.Warn("api: delete ci trust policy failed", slog.String("trust_id", t.ID), slog.String("error", err.Error()))
 	}
+	rt.auditCITrust(r.Context(), r, auditActionCITrustDeleted, t)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -196,14 +311,38 @@ func (rt *Router) saveCIPolicy(ctx context.Context, trustID, app string) (string
 	return id, nil
 }
 
+// ciTrustMatches is the policy gate: provider, issuer, repository, ref and environment must all match, else deny.
 func ciTrustMatches(t store.CIOIDCTrust, c CIClaims) bool {
-	if t.Repository != c.Repository {
+	if !ciIdentityAllowed(t.Provider, t.Issuer, t.Repository, t.Environment, t.ProtectedRefOnly, c) {
 		return false
 	}
-	if ok, err := path.Match(t.RefPattern, c.Ref); err != nil || !ok {
+	ok, err := path.Match(t.RefPattern, c.Ref)
+	return err == nil && ok
+}
+
+// ciIdentityAllowed holds every provider rule except the ref glob, shared by app and stack trusts.
+func ciIdentityAllowed(trustProvider, trustIssuer, repository, environment string, protectedOnly bool, c CIClaims) bool {
+	provider := ciProviderName(trustProvider)
+	if provider != ciProviderName(c.Provider) || repository != c.Repository || c.Ref == "" {
 		return false
 	}
-	return t.Environment == "" || t.Environment == c.Environment
+	if provider != ciProviderGitHub && (trustIssuer == "" || trustIssuer != c.Issuer) {
+		return false
+	}
+	if protectedOnly && !c.RefProtected {
+		return false
+	}
+	if environment == "" {
+		return true
+	}
+	switch provider {
+	case ciProviderCircleCI:
+		return slices.Contains(c.ContextIDs, environment)
+	case ciProviderGitLab:
+		// Any job may declare an environment; only a protected one limits who can run it.
+		return c.EnvironmentProtected && environment == c.Environment
+	}
+	return environment == c.Environment
 }
 
 type ciExchangeRequest struct {
@@ -236,28 +375,31 @@ func (rt *Router) handleCIOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, errCINoDashboardURL.Error())
 		return
 	}
-	verifier := rt.ciVerifier
-	if verifier == nil {
-		verifier = defaultGitHubOIDCVerifier
+	claims, candidates, err := rt.verifyCIIdentity(r.Context(), req.App, req.IDToken, audience)
+	var storeErr *ciTrustLookupError
+	if errors.As(err, &storeErr) {
+		rt.internalError(w, "ci exchange: list trusts", storeErr.err)
+		return
 	}
-	claims, err := verifier.Verify(r.Context(), req.IDToken, audience)
 	if err != nil {
 		rt.logger.Info("api: ci exchange: token rejected", slog.String("app", req.App), slog.String("error", err.Error()))
+		rt.auditCIExchange(r.Context(), r, ciExchangeAuditDetail{App: clipClaim(req.App), Provider: ciUnverifiedProvider(req.IDToken), Reason: ciExchangeReasonRejected})
 		writeError(w, http.StatusUnauthorized, "identity token rejected")
 		return
 	}
-	match, err := rt.authorizeCIExchange(r.Context(), claims, req.App)
-	if err != nil {
-		rt.internalError(w, "ci exchange: list trusts", err)
-		return
-	}
+	match := firstCITrustMatch(candidates, claims)
 	if match == nil {
-		rt.logger.Info("api: ci exchange: no trust", slog.String("app", req.App), slog.String("repository", claims.Repository), slog.String("ref", claims.Ref))
+		rt.logger.Info("api: ci exchange: no trust", slog.String("app", req.App), slog.String("provider", ciProviderName(claims.Provider)), slog.String("subject", ciLogSubject(claims.Subject)))
+		rt.auditCIExchange(r.Context(), r, ciExchangeAuditDetail{App: req.App, Provider: ciProviderName(claims.Provider), Reason: ciExchangeReasonNoTrust, Subject: ciRedactedSubject(claims.Subject)})
 		writeError(w, http.StatusForbidden, "no CI trust on this app matches the repository, ref and environment of the workflow")
 		return
 	}
 	expires := time.Now().Add(ciTokenTTL)
-	raw, rec, err := MintAPIToken(r.Context(), rt.tokens, "ci:"+claims.Repository+"@"+claims.Ref, nil, &expires)
+	label := "ci:" + claims.Repository + "@" + claims.Ref
+	if p := ciProviderName(claims.Provider); p != ciProviderGitHub {
+		label = "ci:" + p + ":" + claims.Repository + "@" + claims.Ref
+	}
+	raw, rec, err := MintAPIToken(r.Context(), rt.tokens, label, nil, &expires)
 	if err != nil {
 		rt.internalError(w, "ci exchange: mint token", err)
 		return
@@ -271,22 +413,73 @@ func (rt *Router) handleCIOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "ci exchange: scope token", err)
 		return
 	}
-	rt.logger.Info("api: ci exchange: token issued", slog.String("app", req.App), slog.String("repository", claims.Repository), slog.String("ref", claims.Ref), slog.String("subject", claims.Subject), slog.String("token_id", rec.ID))
+	rt.logger.Info("api: ci exchange: token issued", slog.String("app", req.App), slog.String("trust_id", match.ID), slog.String("provider", ciProviderName(claims.Provider)), slog.String("subject", ciLogSubject(claims.Subject)), slog.String("token_id", rec.ID))
+	rt.auditCIExchange(r.Context(), r, ciExchangeAuditDetail{
+		App: req.App, Provider: ciProviderName(claims.Provider), Reason: ciExchangeReasonIssued,
+		Subject: ciRedactedSubject(claims.Subject), TrustID: match.ID, TokenID: rec.ID,
+	})
 	writeJSON(w, http.StatusOK, ciExchangeResponse{Token: raw, ExpiresAt: expires})
 }
 
-// authorizeCIExchange returns the trust that lets these verified claims act on app, or nil.
-func (rt *Router) authorizeCIExchange(ctx context.Context, claims CIClaims, app string) (*store.CIOIDCTrust, error) {
-	trusts, err := rt.ciTrusts.ListCIOIDCTrustsForRepo(ctx, claims.Repository, app)
-	if err != nil {
-		return nil, err
+type ciTrustLookupError struct{ err error }
+
+func (e *ciTrustLookupError) Error() string { return "api: list ci trusts: " + e.err.Error() }
+func (e *ciTrustLookupError) Unwrap() error { return e.err }
+
+// verifyCIIdentity picks the verifier by issuer: GitHub's fixed one, or a GitLab or CircleCI issuer that a trust on
+// this app names exactly. Any other issuer is refused before a single key fetch.
+func (rt *Router) verifyCIIdentity(ctx context.Context, app, rawToken, audience string) (CIClaims, []store.CIOIDCTrust, error) {
+	iss := unverifiedCIIssuer(rawToken)
+	if iss == "" || iss == githubActionsOIDCIssuer {
+		verifier := rt.ciVerifier
+		if verifier == nil {
+			verifier = defaultGitHubOIDCVerifier
+		}
+		claims, err := verifier.Verify(ctx, rawToken, audience)
+		if err != nil {
+			return CIClaims{}, nil, err
+		}
+		trusts, err := rt.ciTrusts.ListCIOIDCTrustsForRepo(ctx, claims.Repository, app)
+		if err != nil {
+			return CIClaims{}, nil, &ciTrustLookupError{err}
+		}
+		return claims, trusts, nil
 	}
-	for i := range trusts {
-		if ciTrustMatches(trusts[i], claims) {
-			return &trusts[i], nil
+	all, err := rt.ciTrusts.ListCIOIDCTrusts(ctx, app)
+	if err != nil {
+		return CIClaims{}, nil, &ciTrustLookupError{err}
+	}
+	var candidates []store.CIOIDCTrust
+	for _, t := range all {
+		if p := ciProviderName(t.Provider); p != ciProviderGitHub && t.Issuer == iss {
+			candidates = append(candidates, t)
 		}
 	}
-	return nil, nil
+	if len(candidates) == 0 {
+		return CIClaims{}, nil, errors.New("api: ci oidc issuer is not configured on any trust of this app")
+	}
+	spec, err := ciProviderSpecFor(ciProviderName(candidates[0].Provider), candidates[0].Issuer)
+	if err != nil {
+		return CIClaims{}, nil, err
+	}
+	pv, ok := rt.ciVerifier.(ciProviderVerifier)
+	if !ok {
+		pv = defaultCIJWTVerifier()
+	}
+	claims, err := pv.VerifyProvider(ctx, rawToken, spec, audience)
+	if err != nil {
+		return CIClaims{}, nil, err
+	}
+	return claims, candidates, nil
+}
+
+func firstCITrustMatch(trusts []store.CIOIDCTrust, claims CIClaims) *store.CIOIDCTrust {
+	for i := range trusts {
+		if ciTrustMatches(trusts[i], claims) {
+			return &trusts[i]
+		}
+	}
+	return nil
 }
 
 type ciWorkflowResource struct {

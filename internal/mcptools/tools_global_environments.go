@@ -24,7 +24,7 @@ func registerGlobalEnvironmentTools(server *mcp.Server, client *apiclient.Client
 
 	addTool(server, &mcp.Tool{
 		Name:        "move_app_environment",
-		Description: "Move an app to another environment. A move into or out of a protected environment needs confirm true and then returns a pending_approval that a human must approve; it never applies by itself. Blocked during a deploy freeze.",
+		Description: "Move an app to another environment. A protected environment needs confirm true and returns pending_approval. Blocked during a deploy freeze.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in moveAppEnvironmentInput) (*mcp.CallToolResult, apiclient.MoveEnvironmentResult, error) {
 		res, err := client.MoveAppEnvironment(ctx, in.Name, apiclient.MoveEnvironmentRequest{EnvironmentID: in.EnvironmentID, Confirm: in.Confirm})
 		if err != nil {

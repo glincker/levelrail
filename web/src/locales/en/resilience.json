@@ -57,5 +57,105 @@
   "cli": {
     "summary": "Run the scenarios from a terminal instead",
     "note": "Needs a CLI built with the chaoslive tag and a local Docker daemon."
+  },
+  "benchmarks": {
+    "title": "Benchmarks",
+    "description": "Results files from bench chaos run, kept with the host and build that produced them so runs can be shown and compared.",
+    "refresh": "Refresh",
+    "loadError": "Could not load benchmark results.",
+    "standingCaveat": {
+      "title": "Not production capacity numbers",
+      "body": "These runs measure a load generator and the control plane on one machine. Unless the host is a Linux server, they are NOT Linux production numbers. Read the caveats of each run before quoting a figure."
+    },
+    "caveatsTitle": "Read this first",
+    "empty": {
+      "title": "No benchmark runs stored yet",
+      "body": "Run the scenarios on a machine with Docker and upload the results file, and each run appears here."
+    },
+    "history": {
+      "title": "Run history",
+      "keep": "Keeps the newest {{count}} runs.",
+      "nonLinux": "Some runs are from non-Linux hosts.",
+      "select": "Select for compare",
+      "selectRun": "Select run {{id}} for compare",
+      "when": "Measured",
+      "build": "Build",
+      "host": "Host",
+      "result": "Result",
+      "actions": "Actions",
+      "view": "View",
+      "compare": "Compare selected",
+      "passed_one": "{{count}} passed",
+      "passed_other": "{{count}} passed",
+      "failed_one": "{{count}} failed",
+      "failed_other": "{{count}} failed",
+      "repeat_one": "{{count}} run each",
+      "repeat_other": "{{count}} runs each",
+      "deleteRun": "Delete run {{id}}"
+    },
+    "groups": {
+      "failover": "Failover and recovery",
+      "deploy": "Deploy",
+      "rollout": "Rollout",
+      "throughput": "Throughput"
+    },
+    "host": {
+      "title": "Host and build",
+      "platform": "Platform",
+      "kernel": "Kernel",
+      "cpu": "CPU and cores",
+      "memory": "Memory",
+      "docker": "Docker engine",
+      "load": "Load average",
+      "loadValue": "{{start}} at start, {{end}} at end",
+      "version": "Version",
+      "commit": "Commit",
+      "runs": "Runs per scenario",
+      "note": "Note",
+      "unknown": "unknown"
+    },
+    "table": {
+      "scenario": "Scenario",
+      "run": "Run",
+      "status": "Status",
+      "summary": "What happened",
+      "metric": "Metric",
+      "runN": "Run {{n}}"
+    },
+    "limits": {
+      "title": "Limits table",
+      "question": "Question",
+      "status": "Status"
+    },
+    "method": "How these numbers were taken",
+    "chart": {
+      "aria": "{{title}}, requests per second by concurrency: {{summary}}"
+    },
+    "compare": {
+      "title": "Compare",
+      "base": "Base",
+      "head": "Head",
+      "runs_one": "{{count}} run",
+      "runs_other": "{{count}} runs",
+      "basis": "Each value is the median over that side's runs. A change under {{noise}} percent reads as the same.",
+      "warningsTitle": "Be careful reading this comparison",
+      "statusTitle": "Outcome changes",
+      "to": "to",
+      "delta": "Change",
+      "verdict": "Verdict",
+      "oneSided": "one side only",
+      "direction": {
+        "better": "Better",
+        "worse": "Worse",
+        "same": "Same"
+      }
+    },
+    "confirmDelete": {
+      "title": "Delete this benchmark run?",
+      "body": "Run {{id}} is removed for everyone. The results file you uploaded is not affected.",
+      "confirm": "Delete run"
+    },
+    "deleted": "Run deleted",
+    "deleteFailed": "Could not delete the run"
   }
 }

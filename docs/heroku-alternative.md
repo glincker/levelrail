@@ -55,6 +55,21 @@ Heroku is a managed platform. Levelrail is the same workflow on infrastructure y
   </Step>
 </Steps>
 
+## Moving an existing Heroku app
+
+Two offline or read-only helpers exist, and neither changes anything on Heroku:
+
+- `levelrail-cli import config` reads `Procfile` and `app.json` from a directory and prints a proposed `app.yaml`, with findings for what has no equivalent (each with a fix). The file is ready for `apps create --file`: database sections and database references are left out and printed as an ordered command sequence instead (`databases create`, then `apps create --file`, then `databases link` per app). It is offline and needs no token.
+- `levelrail-cli import platform heroku --dry-run` reads your apps through the Heroku Platform API with a token and reports what would be created.
+
+To move the Postgres data itself, create a managed database and run `levelrail-cli databases import-hosted` while the Heroku app is in maintenance mode. The steps and limits are in [Move a hosted Postgres](/migration-reference#move-a-hosted-postgres-heroku).
+
+The two helpers above are previews you review, not a one-click migration. Add-ons and anything the findings flag as a blocker still need manual work. See [Migrate to Levelrail](/migrate-to-levelrail).
+
+### Emit it as a stack and review it in a pull request
+
+Instead of creating apps straight away, `levelrail-cli import platform heroku --emit stack --out DIR` reads your Heroku apps and add-ons (read only) and writes a Stack with App, Database and Domain documents, a `SECRETS.md` listing config var names (never values) and a `MIGRATION.md` of what has to be done by hand. Commit the directory, read the plan with `levelrail-cli stack plan`, and apply it when the pull request merges. See [Stacks and GitOps](/stacks#migrate-into-a-stack).
+
 ## Frequently asked questions
 
 <AccordionGroup>

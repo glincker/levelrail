@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Select as SelectPrimitive } from '@base-ui/react/select'
 
 import { cn } from '@/lib/utils'
+import { useFieldControl } from '@/components/ui/field-context'
 import {
   CaretDownIcon,
   CheckIcon,
@@ -36,6 +37,7 @@ function SelectTrigger({
 }: SelectPrimitive.Trigger.Props & {
   size?: 'sm' | 'default'
 }) {
+  const wired = useFieldControl(props)
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
@@ -45,6 +47,7 @@ function SelectTrigger({
         className,
       )}
       {...props}
+      {...wired}
     >
       {children}
       <SelectPrimitive.Icon

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 )
@@ -91,5 +92,51 @@ func TestLauncherBase(t *testing.T) {
 		if got := launcherBase(in); got != want {
 			t.Errorf("launcherBase(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestRun_DeployLinkRepo(t *testing.T) {
+	var opened string
+	openBrowserFunc = func(_ context.Context, u string) error { opened = u; return nil }
+	t.Cleanup(func() { openBrowserFunc = openBrowser })
+	stdout, _ := runCLIExpectOK(t, []string{
+		"deploy-link", "--repo", "https://github.com/you/app.git", "--branch", "main", "--name", "app", "--port", "3000",
+		"--api-url", "https://lr.example.com", "--open",
+	})
+	want := "https://lr.example.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fyou%2Fapp.git&branch=main&name=app&port=3000"
+	for _, s := range []string{want, "README Markdown:", "README HTML:", "docs/assets/deploy-to-levelrail.svg"} {
+		if !strings.Contains(stdout, s) {
+			t.Errorf("stdout missing %q:\n%s", s, stdout)
+		}
+	}
+	if opened != want {
+		t.Errorf("opened %q, want %q", opened, want)
+	}
+}
+
+func TestRun_DeployLinkRepo_Errors(t *testing.T) {
+	base := []string{"deploy-link", "--api-url", "https://lr.example.com"}
+	tests := []struct {
+		name     string
+		args     []string
+		wantCode int
+	}{
+		{"credentials", []string{"--repo", "https://u:p@github.com/a/b"}, exitValidation},
+		{"file scheme", []string{"--repo", "file:///etc/passwd"}, exitValidation},
+		{"bad template", []string{"--template", "Bad Id"}, exitValidation},
+		{"branch with template", []string{"--template", "postgres", "--branch", "main"}, exitValidation},
+		{"repo and template", []string{"--repo", "https://github.com/a/b", "--template", "postgres"}, exitValidation},
+		{"repo with image", []string{"--repo", "https://github.com/a/b", "--image", "nginx"}, exitUsage},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, errb bytes.Buffer
+			if got := run("levelrail-cli-test", append(append([]string{}, base...), tc.args...), &out, &errb, envMap()); got != tc.wantCode {
+				t.Fatalf("exit = %d, want %d (stderr=%q)", got, tc.wantCode, errb.String())
+			}
+			if out.Len() != 0 {
+				t.Errorf("unexpected stdout %q", out.String())
+			}
+		})
 	}
 }

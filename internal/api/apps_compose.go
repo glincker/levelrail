@@ -16,7 +16,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
+	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -126,6 +128,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	}
 
 	services, healthWarnings, err := compose.ToDesiredServices(name, file)
+	if errors.Is(err, spec.ErrInvalidPublishedPort) {
+		writeCodedError(w, http.StatusBadRequest, codePublishedPortInvalid, err.Error())
+		return composeDeployResponse{}, false
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
@@ -142,6 +148,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		key := strings.TrimPrefix(services[i].Name, name+"-")
 		services[i].SecretEnv = append(services[i].SecretEnv, store.SecretEnvRefsFromNames(secretEnv[key])...)
 		services[i].IsTrial = isTrial
+		services[i].TemplateID = opts.templateID
 	}
 
 	// Loaded before this deploy writes anything: staleComposeServices
@@ -155,6 +162,11 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
 		return composeDeployResponse{}, false
 	}
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, name, previousServices, services)
+	if !portsOK {
+		return composeDeployResponse{}, false
+	}
+	defer portsRelease()
 	serviceNames := make([]string, 0, len(services))
 	for _, svc := range services {
 		serviceNames = append(serviceNames, svc.Name)
@@ -162,6 +174,12 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	if !rt.authorizeServiceNames(w, r, name, serviceNames) {
 		return composeDeployResponse{}, false
 	}
+
+	quotaRelease, quotaOK := rt.admitComposeQuota(w, r, previousServices, services)
+	if !quotaOK {
+		return composeDeployResponse{}, false
+	}
+	defer quotaRelease()
 
 	templateDefaults := rt.planTemplateDefaults(r.Context(), name, opts.templateID, file, services, previousServices)
 
@@ -207,7 +225,8 @@ func composeConfigChanged(prev, next store.DesiredService) bool {
 		!slices.Equal(prev.Command, next.Command) ||
 		!slices.Equal(prev.Entrypoint, next.Entrypoint) ||
 		prev.Port != next.Port ||
-		!ptrIntEqual(prev.HostPort, next.HostPort)
+		!ptrIntEqual(prev.HostPort, next.HostPort) ||
+		!slices.Equal(prev.PublishedPorts, next.PublishedPorts)
 }
 
 func ptrIntEqual(a, b *int) bool {
@@ -325,4 +344,70 @@ func hasBindMount(services []store.DesiredService) bool {
 		}
 	}
 	return false
+}
+
+// admitComposeQuota gates a compose deploy like apps create and update: a
+// new service counts as one app plus its reservation in its project, an
+// existing one only its growth. It runs before any write, so a refusal saves nothing.
+func (rt *Router) admitComposeQuota(w http.ResponseWriter, r *http.Request, previous, next []store.DesiredService) (func(), bool) {
+	noop := func() {}
+	db := rt.quotaDB()
+	if db == nil {
+		return noop, true
+	}
+	prevByName := make(map[string]store.DesiredService, len(previous))
+	for _, svc := range previous {
+		prevByName[svc.Name] = svc
+	}
+	deltas := map[string]quota.Amounts{}
+	var projects []string
+	add := func(projectID string, d quota.Amounts) {
+		if _, ok := deltas[projectID]; !ok {
+			projects = append(projects, projectID)
+		}
+		cur := deltas[projectID]
+		cur.Apps += d.Apps
+		cur.MemoryBytes += d.MemoryBytes
+		cur.NanoCPUs += d.NanoCPUs
+		deltas[projectID] = cur
+	}
+	for _, svc := range next {
+		existing, ok := prevByName[svc.Name]
+		if !ok {
+			got, err := rt.apps.GetDesiredService(r.Context(), svc.Name)
+			switch {
+			case err == nil:
+				existing, ok = *got, true
+			case !errors.Is(err, store.ErrServiceNotFound):
+				rt.internalError(w, "api: deploy compose: quota: load service", err, slog.String("service", svc.Name))
+				return nil, false
+			}
+		}
+		if ok {
+			add(existing.ProjectID, growth(serviceReservation(existing.Resources, existing.Replicas), serviceReservation(svc.Resources, svc.Replicas)))
+			continue
+		}
+		res := serviceReservation(svc.Resources, svc.Replicas)
+		add("", quota.Amounts{Apps: 1, MemoryBytes: res.MemoryBytes, NanoCPUs: res.NanoCPUs})
+	}
+
+	rt.quotaMu.Lock()
+	for _, projectID := range projects {
+		delta := deltas[projectID]
+		if delta.Unlimited() {
+			continue
+		}
+		denial, err := rt.quotaDenialFor(r.Context(), db, projectID, store.ResourceOwner{}, delta)
+		if err != nil {
+			rt.quotaMu.Unlock()
+			rt.internalError(w, "api: quota check failed", err, slog.String("project_id", projectID))
+			return nil, false
+		}
+		if denial != nil {
+			rt.quotaMu.Unlock()
+			writeQuotaDenied(w, *denial)
+			return nil, false
+		}
+	}
+	return rt.quotaMu.Unlock, true
 }

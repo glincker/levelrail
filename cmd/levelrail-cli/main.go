@@ -14,13 +14,24 @@ import (
 
 func main() {
 	prog := filepath.Base(os.Args[0])
-	os.Exit(run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv))
+	// Piped stdin or stdout implies CI mode; run() only sees env so tests stay deterministic.
+	forceCI = !isTerminal(os.Stdin) || !isTerminal(os.Stdout)
+	finishHint := startUpdateHint(prog, os.Args[1:], os.Stderr, os.LookupEnv)
+	code := run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv)
+	finishHint()
+	os.Exit(code)
 }
 
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	rawLookupEnv = lookupEnv
+	lookupEnv = currentContextLookup(prog, envAliasLookup(lookupEnv))
+	ciMode = forceCI || ciEnv(rawLookupEnv)
+	if colorDisabled(rawLookupEnv, ciMode) {
+		_ = os.Setenv(envNoColor, "1")
+	}
 	args, debug := extractDebugFlag(args)
-	args, scopeFlags = extractScopeFlags(args)
+	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()
 	if debug {
@@ -75,6 +86,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAliasedDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAliasedRollback(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restart":
+		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "databases", "db":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "functions":
@@ -89,6 +102,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runProfile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tokens":
 		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cleanup":
+		return runCleanup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "mobile":
 		return runMobile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "plugins":
@@ -105,6 +120,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runArchive(prog, args[1:], stdout, stderr, lookupEnv)
 	case "control-plane-backups":
 		return runControlPlaneBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "control-plane":
+		return runControlPlane(prog, args[1:], stdout, stderr, lookupEnv)
 	case "app-volume-backups":
 		return runAppVolumeBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cloudflare-tunnel":
@@ -173,6 +190,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "assets":
+		return runAssets(prog, args[1:], stdout, stderr, lookupEnv)
+	case "stack":
+		return runStack(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compliance":
 		return runCompliance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "otel":
@@ -197,6 +218,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
+	case "update", "self-update":
+		return runUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
 		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-control":
@@ -233,6 +256,28 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runProxy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-engine":
 		return runAuthEngine(prog, args[1:], stdout, stderr, lookupEnv)
+	case "explain":
+		return runExplain(prog, args[1:], stdout, stderr, lookupEnv)
+	case "api-resources":
+		return runAPIResources(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollout":
+		return runRollout(prog, args[1:], stdout, stderr, lookupEnv)
+	case "get":
+		return runGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "label":
+		return runLabel(prog, args[1:], stdout, stderr, lookupEnv)
+	case "describe":
+		return runDescribe(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "edit":
+		return runEdit(prog, args[1:], stdout, stderr, lookupEnv)
+	case "port-forward":
+		return runPortForward(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cp":
+		return runCp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "config":
+		return runConfig(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":
@@ -257,6 +302,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runResources(prog, args[1:], stdout, stderr, lookupEnv)
 	case "costs":
 		return runCosts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "spend":
+		return runSpend(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ingress-limits":
@@ -347,6 +394,7 @@ Usage:
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s deploy <name> [flags]        convenience alias for apps deploy
   %[1]s rollback <name> [flags]      convenience alias for apps rollback
+  %[1]s restart <name> [--wait]      convenience alias for apps restart
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
@@ -376,6 +424,7 @@ Usage:
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
+  %[1]s traffic export sinks list|add|set|rm|test|status [flags]   export edge requests to an analytics vendor (PostHog, OTLP, webhook), no visitor identity by default
   %[1]s traffic <app> [--since 5m|1h|24h|7d] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
   %[1]s cache status|rules|purge|history <app> [flags]   response cache at the ingress: hit rate, rules, purge by URL, prefix, tag or all
   %[1]s forms list|create|update|snippet|fields|test|delete|submissions|spam|unspam|remove|export <app> [flags]   form capture endpoints for static sites with spam trap, inbox and CSV export
@@ -395,6 +444,7 @@ Usage:
   %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
   %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
   %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
+  %[1]s stack list|show|create|plan|apply|history|show-revision|diff|rollback|pin|unpin|unlock|delete|settings <name> [flags]   stacks: named, versioned sets of resources with revisions and rollback
   %[1]s export destinations list|create|test|status|enable|disable|delete, export audit   send logs, audit events and metrics to your own tools
   %[1]s otel destinations list|add|test|remove                 OTLP/HTTP metric and log export to your own collector
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
@@ -415,6 +465,7 @@ Usage:
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
   %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
+  %[1]s update [--check] [--version TAG] [--dry-run] [--yes]  check for a newer CLI release, or replace this binary with a verified one
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
   %[1]s network mesh status|enable|disable [flags]            the WireGuard mesh between nodes
@@ -428,6 +479,7 @@ Usage:
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s spend caps list|status|set|rm|dry-run|override        per app and project spend caps with a deploy guard and a pause preview
   %[1]s costs explore|budgets [flags]                         cost explorer with forecast and movers, named budgets with alerts and a 100%% action
   %[1]s ingress-limits show|set|clear APP [flags]             per-app request body cap
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause
@@ -442,11 +494,22 @@ Usage:
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|install|status|apply|verify|disable [flags] let this server manage its routes in that proxy (Traefik)
+  %[1]s explain <kind[.field]>                                 document a resource kind or field from the embedded schema
+  %[1]s api-resources                                         list resource kinds
+  %[1]s rollout status|history|undo|restart <app>             kubectl style aliases over deploy commands
+  %[1]s config get-contexts|current-context|use-context       switch between saved profiles
+  %[1]s get <kind> [name] [-o wide|json|yaml|name] [-l SEL]   list or show apps, databases and nodes
+  %[1]s describe <kind> <name>                                 one resource with conditions and recent events
+  %[1]s delete <kind> <name> [--yes]                           delete an app or a database
+  %[1]s edit app <name> [--yes]                                edit the app document in $EDITOR and apply it
+  %[1]s port-forward <app|db/name> [LOCAL:]REMOTE              friendly alias over the app and database tunnels
+  %[1]s cp <app/volume:path> <local>                           copy a file to or from an app volume
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
-  %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README Markdown for an image
+  %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s archive ls|create|restore|verify|download|delete|policy [flags]   archive cold audit, deploy and pipeline rows into bundles and bring them back
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
+  %[1]s control-plane rehydrate plan|run|status [flags]   whole-server recovery: restore data for every app, database and volume
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
@@ -475,7 +538,8 @@ Usage:
   %[1]s mobile pair|devices [flags]   pair a phone with the mobile app and manage paired phones
   %[1]s plugins list|show|inspect|install|upgrade|approve|enable|disable|restart|uninstall|run|trust [flags]   signed plugins (needs the plugins experimental feature)
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
-  %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
+  %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
+  %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant

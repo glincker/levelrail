@@ -211,3 +211,91 @@ func TestDockerFakes(t *testing.T) {
 		t.Errorf("DiskUsage() error = %v", err)
 	}
 }
+
+func TestSeedReadiness(t *testing.T) {
+	ctx := context.Background()
+	db := seeded(t, 1)
+	names := make([]string, len(appSpecs))
+	for i, a := range appSpecs {
+		names[i] = "application/" + a.name
+	}
+	conds, err := db.GetConditionsForControllers(ctx, names)
+	if err != nil {
+		t.Fatalf("GetConditionsForControllers() error = %v", err)
+	}
+	ready := 0
+	for _, a := range appSpecs {
+		cs := conds["application/"+a.name]
+		if len(cs) != 1 || cs[0].Type != "Ready" {
+			t.Fatalf("%s conditions = %+v, want one Ready", a.name, cs)
+		}
+		if cs[0].Status == "True" {
+			ready++
+			if !cs[0].LastTransitionTime.Before(testAnchor) {
+				t.Errorf("%s ready since %v, want before anchor", a.name, cs[0].LastTransitionTime)
+			}
+			attempts, err := db.ListDeployAttempts(ctx, a.name)
+			if err != nil || len(attempts) == 0 {
+				t.Fatalf("attempts for %s: %d, %v", a.name, len(attempts), err)
+			}
+			serving := false
+			for _, at := range attempts {
+				serving = serving || at.RolloutState == store.RolloutStateServing
+			}
+			if !serving {
+				t.Errorf("%s has no serving attempt", a.name)
+			}
+		}
+	}
+	if want := len(appSpecs) - 2; ready != want {
+		t.Errorf("ready apps = %d, want %d", ready, want)
+	}
+	if c := conds["application/"+crashloopApp][0]; c.Status != "False" || c.Reason != "CrashLoopBackOff" {
+		t.Errorf("%s condition = %+v, want failing", crashloopApp, c)
+	}
+	if c := conds["application/legacy-cms"][0]; c.Reason != "Suspended" {
+		t.Errorf("legacy-cms condition = %+v, want Suspended", c)
+	}
+}
+
+func TestSeedCalmScenario(t *testing.T) {
+	ctx := context.Background()
+	db := openDB(t)
+	if _, err := Seed(ctx, db, Options{Seed: 1, Anchor: testAnchor, Scenario: ScenarioCalm}); err != nil {
+		t.Fatalf("Seed() error = %v", err)
+	}
+	for _, a := range appSpecs {
+		conds, err := db.GetConditionsForControllers(ctx, []string{"application/" + a.name})
+		if err != nil {
+			t.Fatalf("conditions for %s: %v", a.name, err)
+		}
+		c := conds["application/"+a.name][0]
+		if c.Status != "True" && c.Reason != "Suspended" {
+			t.Errorf("%s condition = %+v, want ready or stopped", a.name, c)
+		}
+		attempts, err := db.ListDeployAttempts(ctx, a.name)
+		if err != nil {
+			t.Fatalf("attempts for %s: %v", a.name, err)
+		}
+		for _, at := range attempts {
+			if at.Status == store.DeployAttemptStatusFailed {
+				t.Errorf("%s has failed attempt %s in calm scenario", a.name, at.ID)
+			}
+		}
+	}
+	list, err := db.ListDeployApprovals(ctx, store.DeployApprovalStatusPending, "")
+	if err != nil {
+		t.Fatalf("ListDeployApprovals() error = %v", err)
+	}
+	pending := len(list)
+	if pending > 1 {
+		t.Errorf("pending approvals = %d, want at most 1", pending)
+	}
+}
+
+func TestSeedUnknownScenario(t *testing.T) {
+	db := openDB(t)
+	if _, err := Seed(context.Background(), db, Options{Seed: 1, Anchor: testAnchor, Scenario: "chaos"}); err == nil {
+		t.Fatal("Seed() with unknown scenario succeeded, want error")
+	}
+}

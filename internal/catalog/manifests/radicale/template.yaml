@@ -1,0 +1,15 @@
+id: radicale
+name: Radicale
+description: "Calendar (CalDAV) and contacts (CardDAV) server. One user is created at first boot with a generated password (visible in the service environment settings, never on a process command line); it is stored as a SHA-512 hash in /var/lib/radicale/users and each user only sees their own collections. Add users by appending htpasswd lines to that file."
+icon: calendar
+category: Productivity
+documentation_url: https://radicale.org/v3.html
+recommended_memory_bytes: 134217728
+domains:
+  - service: radicale
+    port: 5232
+    description: Public address of the Radicale server and its web interface.
+healthcheck:
+  service: radicale
+  port: 5232
+  path: /.web/

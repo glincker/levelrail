@@ -114,6 +114,8 @@ func TestBreakGlass_Live_AgentSurvivesControlPlaneDeath(t *testing.T) {
 	agentEnv := envWithOverrides(hermeticEnv(
 		"APP_CONTROL_PLANE_ADDR="+agentAddr,
 		"APP_JOIN_TOKEN="+joinToken.Token,
+		// Loopback test with no fingerprint to pin; agents refuse unpinned enrollment by default.
+		"APP_ALLOW_UNPINNED_ENROLL=1",
 		"APP_NODE_NAME="+nodeName,
 		"APP_AGENT_IDENTITY_FILE="+filepath.Join(workDir, "agent-identity.json"),
 		// Accelerates the node's Online transition below: the control

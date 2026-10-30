@@ -129,3 +129,22 @@ func TestRunDemoServeFailsClosed(t *testing.T) {
 		})
 	}
 }
+
+func TestNextDemoResetAt(t *testing.T) {
+	now := time.Date(2026, 3, 1, 10, 20, 0, 0, time.UTC)
+	cases := []struct {
+		name, interval string
+		want           time.Time
+	}{
+		{"unset keeps daily", "", time.Date(2026, 3, 2, 4, 0, 0, 0, time.UTC)},
+		{"invalid keeps daily", "soon", time.Date(2026, 3, 2, 4, 0, 0, 0, time.UTC)},
+		{"too short keeps daily", "5s", time.Date(2026, 3, 2, 4, 0, 0, 0, time.UTC)},
+		{"half hour", "30m", time.Date(2026, 3, 1, 10, 30, 0, 0, time.UTC)},
+		{"hourly", "1h", time.Date(2026, 3, 1, 11, 0, 0, 0, time.UTC)},
+	}
+	for _, c := range cases {
+		if got := nextDemoResetAt(now, c.interval); !got.Equal(c.want) {
+			t.Errorf("%s: got %s, want %s", c.name, got, c.want)
+		}
+	}
+}

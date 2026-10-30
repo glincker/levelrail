@@ -43,7 +43,7 @@ spec: {}                # kind specific
 
 The [JSON Schema](https://github.com/glincker/levelrail/blob/main/docs/schemas/resources.schema.json) is also served at `GET /api/v1/apply/schema`. Point your editor at it for completion. Errors are reported with file and line: `infra/web.yaml:14: additional properties 'prot' not allowed (spec.service.prot)`.
 
-An App's `spec.service` is the app.yaml service definition, validated by the same schema. The document schema embeds the app.yaml definitions unchanged, with one addition: an env value may be `{ secretRef: NAME }`.
+An App's `spec.service` is the app.yaml service definition, validated by the same schema. The document schema embeds the app.yaml definitions unchanged, with two additions: an env value may be `{ secretRef: NAME }`, or `{ from: { database: NAME, field: url } }` to read a value from a Database (see [Database references](#database-references)).
 
 ### Project
 
@@ -114,9 +114,53 @@ spec:
       LOG_LEVEL: info
       API_KEY: { secretRef: API_KEY }
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DATABASE_URL: { from: { database: main-db, field: url } }
+    volumes:
+      - name: data
+        path: /data
+    jobs:
+      - name: nightly-report
+        schedule: "0 3 * * *"
+        command: [node, scripts/report.js]
+        timeout: 10m
 ```
 
-Apply manages apps that run a prebuilt image (`build.type: image`). Git builds are configured with a git source, not here. Not supported yet, and rejected with a clear error: volumes, egress policies, GPU requests, registry credentials, `from` and `vault` env references. A live app that uses them keeps them when you apply; the plan warns.
+Apply manages apps that run a prebuilt image (`build.type: image`). Git builds are configured with a git source, not here. `port`, `health.readiness` and `health.liveness` are applied as written. Not supported yet, and rejected with a clear error: host-path volumes, egress policies, GPU requests, registry credentials and `vault` env references. A live app that uses them keeps them when you apply; the plan warns.
+
+#### Database references
+
+`{ from: { database: NAME, field: FIELD } }` points an env var at a Database's connection details. `field` is one of `url` (the default), `host`, `port`, `username`, `password` or `database`. The app.yaml string form `{ from: main-db.url }` is accepted too.
+
+The value is never read by apply. Apply records the reference (the same connection the dashboard's Connect button makes), and the control plane fills in the value when it creates the container. So the files, the plan, the plan hash and stack revisions only ever hold `main-db.url`, never the password or the URL. The database must exist or be declared in the same files; the plan shows the reference as `connections.DATABASE_URL: main-db.url` and lists the database under `dependsOn`, and databases are always applied before apps. If the live app also has a literal or secret value under the same name, the plan warns so you can remove it.
+
+#### Volumes
+
+`service.volumes` lists named volumes (`name`, `path`). Apply matches them by name through `PUT /api/v1/apps/{name}/volumes`: a new name is attached, a changed path is updated, and the plan shows `volumes.data: /data`. Host-path bind mounts are rejected, so the files can never mount a host directory. Volumes that the files do not list are kept, and detached only by prune on an app the source manages. Detaching never deletes the Docker volume or its data; deleting data is a separate, explicit action. Mounts are fixed when the container is created, so a volume change restarts the app unless `--no-deploy` is set, and the app shows a pending config change until then. An app document without a `volumes` key never touches the app's volumes.
+
+#### Published ports and restart
+
+`service.published_ports` binds ports straight on the host beside the routed `port`, for UDP services such as DNS or WireGuard. Each entry is `container_port`, `host_port` and `protocol` (`tcp`, the default, or `udp`), the same shape as app.yaml and the API. A port out of range, a protocol other than tcp or udp, or the same host port and protocol twice is rejected before the plan. Apply runs the same host port admission as `POST /api/v1/apps`: a port another app already publishes, a reserved port, or a service placed on a remote node fails the apply with the API's own message, and nothing is saved for that app.
+
+`service.port` may be left out when the service has at least one `published_ports` entry (a UDP-only DNS or VPN app). A service with `domains` still needs a `port`, since the proxy routes HTTP to it, and a service with neither a `port` nor `published_ports` is rejected.
+
+`service.restart` takes `no`, `on-failure` or `on-failure:N` for a service that runs to completion (a migration or seed job), and `always` or `unless-stopped`. The plan shows changes as `publishedPorts` and `restart`, an out-of-band change to either is drift, and revisions and rollbacks keep both. An app document without `published_ports` or `restart` leaves the live values alone; `published_ports: []` clears the ports.
+
+```yaml
+version: 1
+kind: App
+metadata: {name: dns}
+spec:
+  service:
+    build: {type: image, image: "ghcr.io/acme/dns:1.0.0"}
+    port: 8080
+    published_ports:
+      - {container_port: 53, host_port: 53, protocol: udp}
+      - {container_port: 53, host_port: 53, protocol: tcp}
+```
+
+#### Scheduled jobs
+
+`service.jobs` is the app.yaml jobs list. Apply matches jobs by name: a new name is created, a changed one is updated in place (its run history is kept). Jobs created in the dashboard or CLI that the files do not list are kept, and removed only by prune on an app the source manages. A job that the app's own app.yaml declares is left alone with a warning, so each job has one owner. An app document without a `jobs` key never touches the app's jobs.
 
 ### Domain
 
@@ -225,7 +269,7 @@ levelrail-cli export --app web -o -
 levelrail-cli export --project shop --include-env-values=false -o infra/
 ```
 
-Output is stable: documents are ordered by kind then name, keys are sorted, and there are no timestamps or generated ids. Export, apply, export gives identical files, and applying an export to the control plane it came from changes nothing. Live settings the format cannot express (volumes, egress policies, vault env) are listed as warnings on stderr.
+Output is stable: documents are ordered by kind then name, keys are sorted, and there are no timestamps or generated ids. Export, apply, export gives identical files, and applying an export to the control plane it came from changes nothing. Database connections are exported as `from` references. Live settings the format cannot express (bind mounts, egress policies, vault env) are listed as warnings on stderr.
 
 ## Apply
 
@@ -348,6 +392,8 @@ Pass placeholder values with `--var` or name them with `--allow-env`; the runner
 
 Planning needs only a read token. Use a separate token with write ability for the apply job. The install step is yours to supply: download the `levelrail-cli` release binary for the runner, the way the bundled deploy action does. See [GitHub Actions](/github-actions) for token setup and that action.
 
+For numbered revisions, rollback, approvals and drift checks on the same files, see [Stacks and GitOps](/stacks). It is experimental and behind `APP_EXPERIMENTAL=iac`.
+
 ## Examples
 
 ### A single app
@@ -396,7 +442,7 @@ spec:
     port: 3000
     domains: [staging.shop.example.com]
     env:
-      DATABASE_PASSWORD: { secretRef: DATABASE_PASSWORD }
+      DATABASE_URL: { from: { database: shop-db } }
 ---
 version: 1
 kind: App
@@ -410,7 +456,7 @@ spec:
     replicas: 2
     domains: [shop.example.com]
     env:
-      DATABASE_PASSWORD: { secretRef: DATABASE_PASSWORD }
+      DATABASE_URL: { from: { database: shop-db, field: url } }
 ---
 version: 1
 kind: Domain
@@ -430,7 +476,7 @@ From there, change files and let CI apply them. To let prune clean up later, run
 
 ## Not in scope
 
-Git sync is a recipe, not an engine. Backup schedules, volumes, egress policies, node placement, registry credentials and vault or database env references are not expressible yet and are left as they are.
+Git sync is a recipe, not an engine. Backup schedules, egress policies, node placement, registry credentials and vault env references are not expressible yet and are left as they are.
 
 ## Next steps
 

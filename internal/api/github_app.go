@@ -69,6 +69,8 @@ type GitHubAppClient interface {
 	ListIssueComments(ctx context.Context, instanceURL, token, owner, repo string, number int) ([]gitprovider.Comment, error)
 	UpdateIssueComment(ctx context.Context, instanceURL, token, owner, repo string, commentID int64, body string) error
 	CreateCommitStatus(ctx context.Context, instanceURL, token, owner, repo, sha string, state githubapp.CommitStatusState, targetURL, description, statusContext string) error
+	GetPullRequest(ctx context.Context, instanceURL, token, owner, repo string, number int) (githubapp.PullRequest, error)
+	GetCollaboratorPermission(ctx context.Context, instanceURL, token, owner, repo, login string) (string, error)
 }
 
 // gitHubAppStatusResource is the wire shape for GET /api/v1/github-app.

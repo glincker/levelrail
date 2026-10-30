@@ -65,6 +65,9 @@ type doctorCheckResource struct {
 	// FixID and FixKind name the typed fixit fix for a failing check, when one exists.
 	FixID   string `json:"fix_id,omitempty"`
 	FixKind string `json:"fix_kind,omitempty"`
+	// EngineKind and SupportLevel are set by the container_runtime check only.
+	EngineKind   string `json:"engine_kind,omitempty"`
+	SupportLevel string `json:"support_level,omitempty"`
 }
 
 type systemDoctorResponse struct {

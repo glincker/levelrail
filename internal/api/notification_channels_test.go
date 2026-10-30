@@ -54,6 +54,7 @@ func TestNotificationChannelRoutes_NotConfigured(t *testing.T) {
 }
 
 func TestHandleCreateNotificationChannel_Success(t *testing.T) {
+	noNotifyDNS(t)
 	rt, db, _ := newTestRouterWithNotificationChannels(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -77,6 +78,7 @@ func TestHandleCreateNotificationChannel_Success(t *testing.T) {
 }
 
 func TestHandleCreateNotificationChannel_PushoverKindAccepted(t *testing.T) {
+	noNotifyDNS(t)
 	rt, db, _ := newTestRouterWithNotificationChannels(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -97,6 +99,7 @@ func TestHandleCreateNotificationChannel_PushoverKindAccepted(t *testing.T) {
 }
 
 func TestHandleCreateNotificationChannel_NewKindsAccepted(t *testing.T) {
+	noNotifyDNS(t)
 	tests := []struct {
 		kind      string
 		notifyURL string
@@ -206,6 +209,7 @@ func TestHandleCreateNotificationChannel_ValidationFailures(t *testing.T) {
 // TestHandleCreateNotificationChannel_InteractiveApprovals proves the
 // secret is accepted and stored but never echoed back on the wire.
 func TestHandleCreateNotificationChannel_InteractiveApprovals(t *testing.T) {
+	noNotifyDNS(t)
 	rt, db, adb := newTestRouterWithNotificationChannels(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -736,4 +740,11 @@ func TestHandleListNotificationChannels_ReadTierDoesNotSeeSecrets(t *testing.T) 
 	if !strings.Contains(rec.Body.String(), "topsecret") {
 		t.Errorf("root list lost the full URL: %s", rec.Body.String())
 	}
+}
+
+// noNotifyDNS skips the guard's hostname lookup so a save-time test never
+// waits on a real resolver (a slow or blocked one stalls the whole package).
+func noNotifyDNS(t *testing.T) {
+	t.Helper()
+	t.Setenv(netguard.AllowPrivateEnv, "true")
 }

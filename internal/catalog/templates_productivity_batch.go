@@ -178,7 +178,7 @@ var productivityBatchTemplates = []Template{
     volumes:
       - triliumnext_data:/home/node/trilium-data
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:8080/api/health-check || exit 1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:8080/api/health-check',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -230,6 +230,8 @@ var productivityBatchTemplates = []Template{
         condition: service_started
       teable-db:
         condition: service_healthy
+      teable-db-migrate:
+        condition: service_completed_successfully
     environment:
       PUBLIC_ORIGIN: ${SERVICE_FQDN_TEABLE:-http://localhost:3000}
       PRISMA_DATABASE_URL: postgresql://teable:$SERVICE_PASSWORD_DB@teable-db:5432/teable

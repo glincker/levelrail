@@ -111,6 +111,11 @@
     "started": "Deploy from the source cache started",
     "failed": "Could not deploy from cache"
   },
+  "failureDetails": {
+    "classLabel": "Failure class",
+    "failedAt": "Failed at {{step}}",
+    "excerpt": "Error excerpt"
+  },
   "failureAlsoMatched": "Also matched: {{codes}}",
   "workspace": {
     "title": "Workspace packages",
@@ -204,5 +209,19 @@
     "revokeTitle": "Turn off git push for this app?",
     "revokeBody": "The push token stops working at once. Deploys from other sources are not affected.",
     "revoked": "Git push turned off."
+  },
+  "ciGate": {
+    "title": "Wait for CI before deploying",
+    "description": "Hold a push deploy until the commit's checks pass. If a check fails or the wait times out, the deploy is skipped and the reason shows in webhook deliveries and deploy history.",
+    "toggle": "Wait for CI checks",
+    "checksLabel": "Required checks",
+    "checksHelp": "Leave empty to wait for every check on the commit. Add names such as build or test to wait only for those.",
+    "checkPlaceholder": "Check name",
+    "add": "Add",
+    "remove": "Remove {{name}}",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "CI gate saved.",
+    "saveFailed": "Could not save the CI gate."
   }
 }

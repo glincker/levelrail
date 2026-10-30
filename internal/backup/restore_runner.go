@@ -160,28 +160,9 @@ func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets Se
 		return fmt.Errorf("backup %q has status %q, not %q: refusing to restore from an attempt that did not succeed", backupHistoryID, bh.Status, store.BackupStatusSucceeded)
 	}
 
-	target, err := resolver.GetBackupTarget(ctx, bh.TargetID)
+	dest, err := resolveCopyDestination(ctx, resolver, secrets, bh.TargetID)
 	if err != nil {
-		return fmt.Errorf("get backup target %q: %w", bh.TargetID, err)
-	}
-
-	secretsKey := store.BackupTargetSecretsKey(bh.TargetID)
-	accessKeyID, err := secrets.Resolve(ctx, secretsKey, "access_key_id")
-	if err != nil {
-		return fmt.Errorf("resolve access key id for target %q: %w", bh.TargetID, err)
-	}
-	secretAccessKey, err := secrets.Resolve(ctx, secretsKey, "secret_access_key")
-	if err != nil {
-		return fmt.Errorf("resolve secret access key for target %q: %w", bh.TargetID, err)
-	}
-
-	dest := Destination{
-		Provider:        target.Provider,
-		Endpoint:        target.Endpoint,
-		Region:          target.Region,
-		Bucket:          target.Bucket,
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
+		return err
 	}
 
 	if err := verifyObjectBeforeRestore(ctx, downloader, dest, bh); err != nil {
@@ -283,28 +264,9 @@ func downloadAndRestoreVolume(ctx context.Context, resolver backupResolver, secr
 		return fmt.Errorf("backup %q has status %q, not %q: refusing to restore from an attempt that did not succeed", backupHistoryID, bh.Status, store.BackupStatusSucceeded)
 	}
 
-	target, err := resolver.GetBackupTarget(ctx, bh.TargetID)
+	dest, err := resolveCopyDestination(ctx, resolver, secrets, bh.TargetID)
 	if err != nil {
-		return fmt.Errorf("get backup target %q: %w", bh.TargetID, err)
-	}
-
-	secretsKey := store.BackupTargetSecretsKey(bh.TargetID)
-	accessKeyID, err := secrets.Resolve(ctx, secretsKey, "access_key_id")
-	if err != nil {
-		return fmt.Errorf("resolve access key id for target %q: %w", bh.TargetID, err)
-	}
-	secretAccessKey, err := secrets.Resolve(ctx, secretsKey, "secret_access_key")
-	if err != nil {
-		return fmt.Errorf("resolve secret access key for target %q: %w", bh.TargetID, err)
-	}
-
-	dest := Destination{
-		Provider:        target.Provider,
-		Endpoint:        target.Endpoint,
-		Region:          target.Region,
-		Bucket:          target.Bucket,
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
+		return err
 	}
 
 	if err := verifyObjectBeforeRestore(ctx, downloader, dest, bh); err != nil {

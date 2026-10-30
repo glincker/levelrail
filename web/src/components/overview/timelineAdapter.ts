@@ -16,6 +16,7 @@ const ATTEMPT_STATUS: Record<DeployAttemptStatus, TimelineStatus> = {
   superseded: 'info',
   queued: 'pending',
   canceled: 'info',
+  pending: 'pending',
 }
 
 const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
@@ -27,14 +28,19 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   clone: 'clone',
   schedule: 'schedule',
   auto_rollback: 'auto rollback',
+  restart: 'restart',
+  start: 'start',
+  stop: 'stop',
   git_push: 'git push',
   poll: 'poll',
   upload: 'cli upload',
+  pr_comment: 'pr comment',
 }
 
 function attemptTitle(a: DeployAttempt): string {
   if (a.source === 'auto_rollback')
     return `Rolled back to ${imageTagOf(a.image)}`
+  if (a.source === 'restart') return `Restart ${imageTagOf(a.image)}`
   if (a.commit_sha) return `Deploy ${a.commit_sha.slice(0, 7)}`
   return `Deploy ${imageTagOf(a.image)}`
 }

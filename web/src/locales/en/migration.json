@@ -184,8 +184,8 @@
     "loadError": "Could not load the migration plan."
   },
   "appImport": {
-    "title": "Move apps from Coolify",
-    "description": "Plan, stage, verify and switch each application one at a time. Your Coolify instance is only ever read, nothing on it is stopped, edited or deleted.",
+    "title": "Migration wizard",
+    "description": "Plan, stage, verify and switch each application one at a time, from Coolify, Dokploy, CapRover or an old server. Your old instance is only ever read, nothing on it is stopped, edited or deleted.",
     "loadError": "Could not load the import session.",
     "newImport": "Start a new import",
     "forget": "Forget this session",
@@ -201,11 +201,12 @@
       "verify": "Build and verify",
       "volumes": "Volumes",
       "cutover": "Cutover",
-      "takeover": "Take over ports"
+      "takeover": "Take over ports",
+      "retire": "Safe to delete"
     },
     "safe": {
       "title": "What this does and does not do",
-      "readOnly": "Only read requests are sent to Coolify. The token is kept in memory for this session and never stored.",
+      "readOnly": "Only read requests are sent to the old platform. The credential is kept in memory for this session and never stored.",
       "staged": "Staged apps are created stopped and not routed, with environment variables and secrets imported encrypted.",
       "volumes": "Volume data is never copied for you. You get the exact command per volume and confirm it yourself.",
       "dns": "DNS is never changed for you. You switch each domain when you are satisfied, and can switch back at any time."
@@ -227,10 +228,10 @@
       "rolled-back": "Rolled back"
     },
     "connect": {
-      "title": "Connect to Coolify",
+      "title": "Connect to {{name}}",
       "reconnectTitle": "Enter the token again",
       "description": "Use a read-only API token. Add the read:sensitive ability if you want secret values imported, otherwise they come back empty and are flagged.",
-      "url": "Coolify URL",
+      "url": "{{name}} URL",
       "token": "API token",
       "tokenHelp": "Held in memory for this session only, sent in the request body, never stored or logged.",
       "network": "Private network options",
@@ -246,7 +247,7 @@
       "snapshotHelp": "Contains environment variables, including secrets. It is held in memory for this session only, sent in the request body, never stored or logged.",
       "snapshotFile": "Or load it from a file",
       "mode": {
-        "api": "Coolify API",
+        "api": "Platform API",
         "docker": "Docker snapshot",
         "compose": "Compose file",
         "dokku": "Dokku env dump",
@@ -267,7 +268,27 @@
         "compose": "Compose file",
         "dokku": "Environment dump"
       },
-      "appName": "Dokku app name"
+      "appName": "Dokku app name",
+      "platform": "Source platform",
+      "platformName": {
+        "coolify": "Coolify",
+        "dokploy": "Dokploy",
+        "caprover": "CapRover"
+      },
+      "tokenFor": {
+        "coolify": "API token",
+        "dokploy": "API key",
+        "caprover": "Password"
+      },
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "Connected to {{name}}. Found {{apps}} app(s), {{databases}} database(s), {{volumes}} volume(s), {{domains}} domain(s) and {{crons}} cron job(s). {{unsupported}} cannot be imported.",
+      "testServers": "Servers: {{list}}",
+      "testFailure": {
+        "credentials": "The source rejected the credential. Check the token or password and its permissions.",
+        "blocked": "This address is not allowed. Use the private network options below if the source is on your own network.",
+        "unreachable": "The source did not answer. Check the URL, the port and whether this server can reach it."
+      }
     },
     "inventory": {
       "title": "Applications found",
@@ -304,7 +325,8 @@
         "compose": "Compose",
         "service": "One-click service",
         "unknown": "Unknown"
-      }
+      },
+      "crons": "{{count}} cron job(s)"
     },
     "preflight": {
       "title": "Preflight and mapping",
@@ -363,7 +385,12 @@
       "stageNote": "Rolling back only removes apps this import created. Volumes are kept on disk.",
       "verifyNote": "Verifying starts the app briefly. If it runs background jobs they work against the database it is configured with.",
       "toVerify": "Continue to verify",
-      "toVolumes": "Continue to volumes"
+      "toVolumes": "Continue to volumes",
+      "retry": "Retry",
+      "interrupted": "Interrupted by a restart. Verify it again.",
+      "progressTitle": "Live progress",
+      "progress": "{{done}} of {{total}} done, {{failed}} failed",
+      "failedHelp": "A failed item never blocks the others. Retry it alone, or fix the reason and run the step again."
     },
     "volumes": {
       "title": "Persistent volumes",
@@ -381,7 +408,7 @@
       "title": "Cutover",
       "description": "Per app: lower the TTL, enable routing here, change the DNS record, then run the post-switch check.",
       "keepSource": "Keep the source running until you are satisfied.",
-      "keepSourceBody": "Nothing here stops or changes anything on Coolify. To go back, point the DNS record at the source again.",
+      "keepSourceBody": "Nothing here stops or changes anything on the old instance. To go back, point the DNS record at the source again.",
       "routed": "Routing enabled",
       "notRouted": "Not routed",
       "volumesPending": "{{count}} volume(s) unconfirmed",
@@ -586,12 +613,76 @@
           "skipped": "Use the command"
         }
       }
+    },
+    "exit": {
+      "title": "Exit report",
+      "help": "What each resource becomes, what still needs you, the DNS switch order and the cutover checklist. Read only.",
+      "show": "Show exit report",
+      "recheck": "Re-check",
+      "next": "Next:",
+      "ready": "Every resource is imported and none needs action. Run the safe-to-delete check before you remove anything.",
+      "wavesTitle": "DNS switch order",
+      "checklistTitle": "Cutover checklist",
+      "outcome": {
+        "imported": "Imported",
+        "manual": "Needs manual action",
+        "skipped": "Skipped"
+      },
+      "mode": {
+        "dry-run": "Plan",
+        "verify": "Verification"
+      }
+    },
+    "probe": {
+      "dns": "Check DNS now",
+      "http": "Check the app responds here",
+      "checking": "Checking...",
+      "help": "The response check reaches this server directly with the domain name, so it works before DNS has moved.",
+      "ok": "Passed",
+      "failed": "Failed"
+    },
+    "retire": {
+      "title": "Safe to delete the old instance?",
+      "description": "This turns green only when every check below passes with evidence from this migration. Until then keep the old instance running: it is your fallback.",
+      "run": "Run the live checks",
+      "running": "Checking...",
+      "targetIp": "This server public IP",
+      "safeTitle": "Every gate passed",
+      "safeBody": "Stop the old instance first and keep it stopped for a few days. Delete it only after that, and keep its backups.",
+      "notSafeTitle": "Not safe to delete yet",
+      "notSafeBody": "{{count}} gate(s) are still open. Nothing has been changed on the old instance.",
+      "confirm": "I did this",
+      "status": {
+        "pass": "Passed",
+        "fail": "Failed",
+        "pending": "Not checked",
+        "manual": "Needs you"
+      },
+      "next": "Next:",
+      "fallbackTitle": "If something goes wrong",
+      "gate": {
+        "staged": "Apps built and healthy here",
+        "leftovers": "Resources the importer could not move",
+        "volumes": "Volumes copied",
+        "databases": "Database copies verified",
+        "routed": "Apps serving their domains here",
+        "dns": "DNS points at this server",
+        "responds": "Apps answer from this server",
+        "source-backup": "Old instance backed up",
+        "traffic-cycle": "Full traffic cycle completed"
+      },
+      "back": "Back",
+      "open": "Continue to the safe-to-delete check"
     }
   },
   "platformImport": {
     "tokenApi": "API token",
     "tokenKey": "API key",
     "tokenPassword": "Login password",
+    "tokenAccess": "Access token",
+    "teamId": "Team ID (optional)",
+    "teamIdPlaceholder": "team_... or team slug, empty for your personal account",
+    "vercelUrlPlaceholder": "Leave empty for the public Vercel API",
     "requestFailed": "Request failed",
     "summaryTitle": "Import summary",
     "summaryCounts": "{{created}} created, {{failed}} failed, {{already}} already imported.",
@@ -608,6 +699,7 @@
     "connectIntro": "Reads apps, databases and settings from the other platform without changing it. The credential is sent to this control plane once per step and is never stored.",
     "platform": "Platform",
     "sourceUrl": "Source URL",
+    "herokuUrlPlaceholder": "Leave empty for the public Heroku API",
     "skipTakenLabel": "Skip names already in use",
     "skipTaken": "Skip resources whose name is already taken (default renames them)",
     "privateLabel": "Source is on a private network",

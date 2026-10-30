@@ -1,12 +1,14 @@
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo } from 'react'
-import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
+import { useFieldArray, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
   PlusIcon,
   BracketsCurlyIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useAppForm } from '../hooks/useAppForm'
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { EnvExportButton } from './EnvExportButton'
 import { EnvPasteDialog } from './EnvPasteDialog'
 import { EnvPendingDiff } from './EnvPendingDiff'
@@ -21,6 +23,7 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import {
   Select,
   SelectContent,
@@ -81,7 +84,8 @@ export interface EnvVarsFormProps {
   values?: Record<string, string>
   isPending: boolean
   errorMessage?: string
-  onSave: (vars: Record<string, string>) => void
+  // Call onSaved once the save succeeds so the form re-baselines and the unsaved guard re-arms.
+  onSave: (vars: Record<string, string>, onSaved: () => void) => void
   // Renders next to a row's key input, keyed off that row's live (not
   // just initial) key value: EnvEditor uses this to show which shared
   // tier, if any, an effective value would fall back to.
@@ -150,24 +154,41 @@ export function EnvVarsForm({
     () => ({ vars: toFieldValues(values) }),
     [values],
   )
-  const { control, register, handleSubmit, formState, getValues } =
-    useForm<EnvFormValues>({
-      resolver: zodResolver(envSchema),
-      values: syncedValues,
-      resetOptions: { keepDirtyValues: true },
-    })
+  const { t: tc } = useTranslation('common')
+  const form = useAppForm<EnvFormValues>(envSchema, {
+    values: syncedValues,
+    resetOptions: { keepDirtyValues: true },
+  })
+  const { control, register, handleSubmit, formState, getValues, reset } = form
+  const unsavedGuard = useUnsavedGuard(formState.isDirty)
   const watchedVars = useWatch({ control, name: 'vars' })
   const { fields, append, remove, replace, update } = useFieldArray({
     control,
     name: 'vars',
   })
 
+  const summaryFields = Object.fromEntries(
+    fields.flatMap((_, index) => [
+      [
+        `vars.${index}.key`,
+        { label: tc('formErrorSummary.envKey', { row: index + 1 }) },
+      ],
+      [
+        `vars.${index}.value`,
+        { label: tc('formErrorSummary.envValue', { row: index + 1 }) },
+      ],
+    ]),
+  )
+
   const onSubmit = handleSubmit((formValues) => {
     const vars: Record<string, string> = {}
     for (const v of formValues.vars) {
       vars[v.key.trim()] = v.value
     }
-    onSave(vars)
+    // Re-baseline on what was typed (secrets stay as entered), so isDirty is false until the next edit.
+    onSave(vars, () => {
+      reset({ vars: formValues.vars })
+    })
   })
 
   // Shared by paste-import and file-import: stages parsed rows into the
@@ -219,6 +240,7 @@ export function EnvVarsForm({
 
   return (
     <Card>
+      {unsavedGuard}
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BracketsCurlyIcon className="size-4" />
@@ -233,6 +255,7 @@ export function EnvVarsForm({
           }}
           className="space-y-3"
         >
+          <FormErrorSummary form={form} fields={summaryFields} />
           {fields.length === 0 ? (
             <p className="text-sm text-muted-foreground">{emptyMessage}</p>
           ) : (

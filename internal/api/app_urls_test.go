@@ -105,3 +105,47 @@ func TestGetAppURLs(t *testing.T) {
 		t.Fatalf("unknown app: %d", rec.Code)
 	}
 }
+
+func TestGetAppURLsHTTPFallback(t *testing.T) {
+	cases := []struct {
+		name    string
+		domains []string
+		ing     store.IngressSettings
+		httpP   int
+		want    string
+	}{
+		{"redirect ingress has no plain route", nil, store.IngressSettings{}, 0, ""},
+		{"acme issued has nothing new", nil, store.IngressSettings{ACMEEnabled: true, ACMEEmail: "a@b.co"}, 0, ""},
+		{"custom domain unchanged", []string{"x.example.com"}, store.IngressSettings{TLSTerminatedUpstream: true}, 0, ""},
+		{"fallback disabled", nil, store.IngressSettings{TLSTerminatedUpstream: true, FallbackDomainsDisabled: true}, 0, ""},
+		{"proxy fronted default port", nil, store.IngressSettings{TLSTerminatedUpstream: true}, 0, "http://web.203-0-113-5.sslip.io"},
+		{"proxy fronted custom port", nil, store.IngressSettings{TLSTerminatedUpstream: true}, 8080, "http://web.203-0-113-5.sslip.io:8080"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			rt.publicHost = "203.0.113.5"
+			rt.doctorHTTPPort = c.httpP
+			cookie := loginTestSession(t, rt, db)
+			ctx := context.Background()
+			if err := db.UpdateIngressSettings(ctx, c.ing); err != nil {
+				t.Fatal(err)
+			}
+			if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "i:1", Port: 3000, BindAddress: "private", Domains: c.domains}); err != nil {
+				t.Fatal(err)
+			}
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/urls", ""))
+			if rec.Code != 200 {
+				t.Fatalf("got %d %s", rec.Code, rec.Body.String())
+			}
+			var res appAccessResource
+			if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+				t.Fatal(err)
+			}
+			if res.HTTPFallbackURL != c.want {
+				t.Fatalf("http_fallback_url = %q, want %q", res.HTTPFallbackURL, c.want)
+			}
+		})
+	}
+}

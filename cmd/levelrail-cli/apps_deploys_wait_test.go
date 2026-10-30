@@ -61,3 +61,63 @@ func TestRun_AppsDeploysWait(t *testing.T) {
 		})
 	}
 }
+
+func TestRun_AppsDeploysWait_FrozenAfterRefusedDeploy(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/deploy-freeze") {
+			_, _ = w.Write([]byte(`{"windows":[],"status":{"frozen":true,"reason":"release freeze"}}`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(deployAttemptResource{ID: "dep_old", ServiceName: "web", Status: "succeeded", Outcome: "healthy"})
+	}))
+	t.Cleanup(srv.Close)
+	for _, tc := range []struct {
+		name     string
+		extra    []string
+		wantExit int
+	}{
+		{"implicit latest is blocked", nil, exitDeployNotHealthy},
+		{"explicit id still reports healthy", []string{"dep_old"}, exitOK},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := append([]string{"apps", "deploys", "wait", "web"}, tc.extra...)
+			args = append(args, "--poll-interval", "5ms", "--api-url", srv.URL)
+			var stdout, stderr bytes.Buffer
+			if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != tc.wantExit {
+				t.Fatalf("exit = %d, want %d (stdout %q stderr %q)", got, tc.wantExit, stdout.String(), stderr.String())
+			}
+			if tc.wantExit != exitOK && !strings.Contains(stderr.String(), "frozen") {
+				t.Errorf("stderr %q should name the freeze", stderr.String())
+			}
+		})
+	}
+}
+
+func TestRun_AppsDeploysWait_CrashLoopLine(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/apps/web/deploys" {
+			_, _ = w.Write([]byte(`[{"type":"Ready","status":"False","reason":"CrashLoopBackOff","message":"\"web-1\" keeps exiting (3 restarts), next restart in 20s","last_transition_time":"2026-10-24T10:00:00Z"}]`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(deployAttemptResource{ID: "dep_9", ServiceName: "web", Status: "failed", Outcome: "failed",
+			Failure: &apiclient.DeployFailure{Code: "container_crashed", Cause: "exited"}})
+	}))
+	t.Cleanup(srv.Close)
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "wait", "web", "dep_9", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitDeployNotHealthy {
+		t.Fatalf("exit = %d, want %d (stderr %q)", got, exitDeployNotHealthy, stderr.String())
+	}
+	if want := "crash loop detected: the release restarted 3 times, next retry in 20s"; !strings.Contains(stdout.String(), want) {
+		t.Errorf("stdout %q missing %q", stdout.String(), want)
+	}
+}
+
+func TestCrashLoopLine(t *testing.T) {
+	if got := crashLoopLine(nil, false); got != "" {
+		t.Errorf("healthy app got %q", got)
+	}
+	if got := crashLoopLine(nil, true); !strings.Contains(got, "container crash") {
+		t.Errorf("crash without backoff got %q", got)
+	}
+}

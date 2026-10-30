@@ -24,6 +24,7 @@ func telemetryTargets(db *store.DB, local docker.Runtime, registry *agent.Regist
 		}
 
 		var targets []telemetry.Target
+		listings := map[string]*tickListing{}
 		for _, svc := range services {
 			nodeID := runtimeNodeID(deps, svc.NodeID)
 			nodeRuntime, err := resolveNodeTransport(local, registry, nodeID)
@@ -33,7 +34,12 @@ func telemetryTargets(db *store.DB, local docker.Runtime, registry *agent.Regist
 					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
 				continue
 			}
-			containers, err := nodeRuntime.ListByPrefix(ctx, svc.Name+"-")
+			listing := listings[nodeID]
+			if listing == nil {
+				listing = &tickListing{rt: nodeRuntime}
+				listings[nodeID] = listing
+			}
+			containers, err := listing.withPrefix(ctx, svc.Name+"-")
 			if err != nil {
 				logger.Warn("telemetry: list containers failed, skipping this tick",
 					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
@@ -114,7 +120,8 @@ func (s *multiNodeStatsSource) Stats(ctx context.Context, nodeID, containerID st
 }
 
 // Deliberately duplicates telemetryTargets: streaming and polling collectors use distinct target types.
-func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]telemetry.LogTarget, error) {
+func logTargets(db *store.DB, runtime docker.Runtime, registry *agent.Registry, meshCfg *meshSetup, logger *slog.Logger) func(context.Context) ([]telemetry.LogTarget, error) {
+	deps := dynamicSourceDeps{meshCfg: meshCfg}
 	return func(ctx context.Context) ([]telemetry.LogTarget, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -122,21 +129,41 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 		}
 
 		var targets []telemetry.LogTarget
+		listings := map[string]*tickListing{}
 		for _, svc := range services {
-			containers, err := runtime.ListByPrefix(ctx, svc.Name+"-")
+			nodeID := runtimeNodeID(deps, svc.NodeID)
+			nodeRuntime, err := resolveNodeTransport(runtime, registry, nodeID)
 			if err != nil {
-				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
+				// An offline node keeps its already-streaming targets out of this tick only; collection resumes on reconnect.
+				logger.Warn("telemetry: service's node unreachable, skipping log targets this tick",
+					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+				continue
+			}
+			listing := listings[nodeID]
+			if listing == nil {
+				listing = &tickListing{rt: nodeRuntime}
+				listings[nodeID] = listing
+			}
+			containers, err := listing.withPrefix(ctx, svc.Name+"-")
+			if err != nil {
+				if nodeID == "" {
+					return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
+				}
+				logger.Warn("telemetry: list containers failed, skipping log targets this tick",
+					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+				continue
 			}
 			for _, c := range containers {
 				targets = append(targets, telemetry.LogTarget{
 					ResourceID:  "service:" + svc.Name,
 					ContainerID: c.ID,
+					NodeID:      nodeID,
 					Stopped:     !c.Running,
 				})
 			}
 		}
 
-		dbTargets, err := databaseLogTargets(ctx, db, runtime)
+		dbTargets, err := databaseLogTargets(ctx, db, runtime, registry, deps, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +175,7 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 // databaseLogTargets is logTargets' database-kind counterpart, the same
 // InspectByName-not-ListByPrefix reasoning databaseTelemetryTargets'
 // own doc comment explains.
-func databaseLogTargets(ctx context.Context, db *store.DB, runtime docker.Runtime) ([]telemetry.LogTarget, error) {
+func databaseLogTargets(ctx context.Context, db *store.DB, runtime docker.Runtime, registry *agent.Registry, deps dynamicSourceDeps, logger *slog.Logger) ([]telemetry.LogTarget, error) {
 	databases, err := db.ListDesiredDatabases(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list desired databases: %w", err)
@@ -156,9 +183,21 @@ func databaseLogTargets(ctx context.Context, db *store.DB, runtime docker.Runtim
 
 	var targets []telemetry.LogTarget
 	for _, d := range databases {
-		cs, err := runtime.InspectByName(ctx, "db-"+d.Name)
+		nodeID := runtimeNodeID(deps, d.NodeID)
+		nodeRuntime, err := resolveNodeTransport(runtime, registry, nodeID)
 		if err != nil {
-			return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
+			logger.Warn("telemetry: database's node unreachable, skipping log target this tick",
+				slog.String("database", d.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			continue
+		}
+		cs, err := nodeRuntime.InspectByName(ctx, "db-"+d.Name)
+		if err != nil {
+			if nodeID == "" {
+				return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
+			}
+			logger.Warn("telemetry: inspect database container failed, skipping log target this tick",
+				slog.String("database", d.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			continue
 		}
 		if cs == nil {
 			continue
@@ -166,10 +205,29 @@ func databaseLogTargets(ctx context.Context, db *store.DB, runtime docker.Runtim
 		targets = append(targets, telemetry.LogTarget{
 			ResourceID:  "database:" + d.Name,
 			ContainerID: cs.ID,
+			NodeID:      nodeID,
 			Stopped:     !cs.Running,
 		})
 	}
 	return targets, nil
+}
+
+// multiNodeLogSource hands the log collector the transport of a remote node.
+type multiNodeLogSource struct {
+	local    docker.Runtime
+	registry *agent.Registry
+}
+
+func (s *multiNodeLogSource) LogSourceFor(nodeID string) (telemetry.LogSource, error) {
+	rt, err := resolveNodeTransport(s.local, s.registry, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	src, ok := rt.(telemetry.LogSource)
+	if !ok {
+		return nil, fmt.Errorf("node %q's runtime cannot stream container logs", nodeID)
+	}
+	return src, nil
 }
 
 // Only enabled drains are returned; DrainForwarder spawns a goroutine only for these.

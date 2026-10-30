@@ -27,7 +27,11 @@ const (
 	demoDefaultAddr  = "127.0.0.1:8080"
 	demoSessionTTL   = 2 * time.Hour
 	demoResetHourUTC = 4
-	demoRobotsTxt    = "User-agent: *\nDisallow: /\n"
+	// demoEnvResetInterval overrides the daily reset time with a fixed cadence,
+	// so the banner matches a host that re-seeds more often.
+	demoEnvResetInterval = "APP_DEMO_RESET_INTERVAL"
+	demoMinResetInterval = time.Minute
+	demoRobotsTxt        = "User-agent: *\nDisallow: /\n"
 )
 
 // runDemo dispatches `demo seed` and `demo serve`. The demo is a separate
@@ -59,7 +63,12 @@ func runDemoSeed(ctx context.Context, logger *slog.Logger, args []string, stdout
 	fs := flag.NewFlagSet("demo seed", flag.ContinueOnError)
 	seed := fs.Int64("seed", 1, "deterministic seed")
 	anchorRaw := fs.String("anchor", "now", "RFC 3339 anchor time, or now")
+	scenarioRaw := fs.String("scenario", demo.ScenarioIncident, "storyline: incident or calm")
 	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	scenario, err := demo.ParseScenario(*scenarioRaw)
+	if err != nil {
 		return err
 	}
 	anchor := time.Now().UTC().Truncate(time.Minute)
@@ -94,7 +103,7 @@ func runDemoSeed(ctx context.Context, logger *slog.Logger, args []string, stdout
 	}
 	defer func() { _ = alertingDB.Close() }()
 	m, err := demo.SeedAll(ctx, demo.Stores{DB: db, Telemetry: telemetryDB, Alerting: alertingDB},
-		demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b)})
+		demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b), Scenario: scenario})
 	if err != nil {
 		return err
 	}
@@ -218,7 +227,15 @@ func demoStaticHeaders(next http.Handler) http.Handler {
 }
 
 func nextDemoReset() time.Time {
-	now := time.Now().UTC()
+	return nextDemoResetAt(time.Now().UTC(), os.Getenv(demoEnvResetInterval))
+}
+
+// nextDemoResetAt returns the next reset after now: the next multiple of the
+// configured interval (UTC aligned), or the daily default when it is unset or invalid.
+func nextDemoResetAt(now time.Time, interval string) time.Time {
+	if d, err := time.ParseDuration(interval); err == nil && d >= demoMinResetInterval {
+		return now.Truncate(d).Add(d)
+	}
 	next := time.Date(now.Year(), now.Month(), now.Day(), demoResetHourUTC, 0, 0, 0, time.UTC)
 	if !next.After(now) {
 		next = next.AddDate(0, 0, 1)

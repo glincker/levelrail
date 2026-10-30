@@ -1,0 +1,13 @@
+# One image app with a readiness probe. @SUFFIX@ is replaced per run.
+# stack-run.sh creates the project first: a first apply needs it to exist, and
+# the --project filter drops every resource that does not name it.
+version: 1
+kind: App
+metadata: { name: qa-hello-@SUFFIX@ }
+spec:
+  project: qa-@SUFFIX@
+  service:
+    build: { type: image, image: "@IMAGE@" }
+    port: 80
+    health:
+      readiness: { path: /, interval: 2s, timeout: 2s }

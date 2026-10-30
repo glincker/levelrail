@@ -472,3 +472,38 @@ func TestMigration_0045_BackfillsExistingUsersToRoot(t *testing.T) {
 		t.Errorf("Abilities = %v, want [root] for a pre-migration user", got.Abilities)
 	}
 }
+
+func TestClaimFirstLoginTrustIsOneShot(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.CreateUser(ctx, User{ID: "user_first", Email: "a@example.com", Abilities: []string{"root"}, IsFirstUser: true, CreatedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.CreateUser(ctx, User{ID: "user_later", Email: "b@example.com", Abilities: []string{"read"}, CreatedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetUserSetupSession(ctx, "user_first", "sess_1", "192.0.2.1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetUserSetupSession(ctx, "user_later", "sess_2", "192.0.2.2"); err != nil {
+		t.Fatal(err)
+	}
+	u, _ := db.GetUserByID(ctx, "user_first")
+	if u.SetupSessionID != "sess_1" || u.SetupIP != "192.0.2.1" || u.FirstLoginTrustUsed {
+		t.Fatalf("setup record = %+v", u)
+	}
+	if later, _ := db.GetUserByID(ctx, "user_later"); later.SetupSessionID != "" {
+		t.Fatal("only the setup admin may carry a setup session")
+	}
+	for _, tc := range []struct {
+		id   string
+		want bool
+	}{{"user_first", true}, {"user_first", false}, {"user_later", false}, {"user_missing", false}} {
+		if got, err := db.ClaimFirstLoginTrust(ctx, tc.id); err != nil || got != tc.want {
+			t.Fatalf("claim %s = %v, %v; want %v", tc.id, got, err, tc.want)
+		}
+	}
+	if u, _ = db.GetUserByID(ctx, "user_first"); !u.FirstLoginTrustUsed {
+		t.Fatal("the spent flag must persist")
+	}
+}

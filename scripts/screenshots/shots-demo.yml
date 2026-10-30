@@ -1,0 +1,63 @@
+# shot-scraper multi-shot config for capture-demo.sh (see docs/screenshots.md).
+#
+# __BASE_URL__ and __CHROME_JS__ are substituted by capture-demo.sh. Output
+# paths use the same names as shots.yml so the demo run is a drop-in refresh;
+# __OUT_DIR__ is replaced with OUT_DIR. Only pages that render cleanly in demo
+# mode are listed. Rejected: databases-list (renders the empty
+# state), backups (never leaves its loading skeleton), status-page (a wall of warnings).
+
+- output: __OUT_DIR__/dashboard-home.png
+  url: __BASE_URL__/?board=start
+  width: 1280
+  height: 900
+  wait: 4000
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/apps-list.png
+  url: __BASE_URL__/apps/
+  width: 1280
+  height: 800
+  wait: 2500
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/app-overview.png
+  url: __BASE_URL__/apps/marketing-site/metrics
+  width: 1280
+  height: 900
+  wait: 4000
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/deploy-history.png
+  url: __BASE_URL__/apps/marketing-site/deploys
+  width: 1280
+  height: 800
+  wait: 2500
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/deployments-all.png
+  url: __BASE_URL__/deployments
+  width: 1500
+  height: 800
+  wait: 2500
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/nodes.png
+  url: __BASE_URL__/nodes/
+  width: 1280
+  height: 700
+  wait: 2500
+  javascript: "__CHROME_JS__; const n = [...document.querySelectorAll('h2,h3,th')].find(e => /^(Name|Nodes? )/.test(e.textContent || '')); if (n) n.scrollIntoView({block: 'start'});"
+
+- output: __OUT_DIR__/alerts.png
+  url: __BASE_URL__/alerts
+  width: 1280
+  height: 800
+  wait: 2500
+  javascript: "__CHROME_JS__"
+
+- output: __OUT_DIR__/inbox.png
+  url: __BASE_URL__/inbox
+  width: 1280
+  height: 800
+  wait: 2500
+  javascript: "__CHROME_JS__"

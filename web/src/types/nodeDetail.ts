@@ -29,6 +29,8 @@ export interface NodeResource {
   cert_fingerprint?: string
   joined_at?: string
   last_seen_at?: string
+  // Set while status is offline: when the node was last seen healthy.
+  offline_since?: string
   // Schedulable is cordon's real backing state (see the NodeStatus
   // comment above): false means the node refuses new placements but
   // keeps running whatever's already on it. Toggled by
@@ -64,6 +66,9 @@ export interface NodeResource {
   // Machine-readable reason a status needs action, e.g. a pending node
   // whose agent never connected after its join token was spent.
   status_reason?: 'enrolled_never_connected'
+  // Single-node fetch only: names of the apps and databases placed here.
+  placed_apps?: string[]
+  placed_databases?: string[]
   // Present only when the node reported an NVIDIA GPU.
   gpu?: NodeGpuResource
   // Absent from control planes that predate ADR 021.
@@ -117,6 +122,7 @@ export interface NodeJoinTokenResponse {
 
 export interface NodeJoinCommands {
   docker: string
+  podman?: string
   binary: string
 }
 

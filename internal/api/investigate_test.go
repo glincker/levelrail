@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -170,5 +171,29 @@ func TestHandleFailureContext(t *testing.T) {
 	getObs(t, rt, cookie, "/api/v1/apps/web/failure-context", &both)
 	if both.State != "crashlooping" || both.Deploy == nil || both.Deploy.ID != "dpl_f" {
 		t.Errorf("both = %+v", both)
+	}
+}
+
+func TestHandleFailureContext_ClearsOnceReadyAndQuiet(t *testing.T) {
+	rt, db, tdb, cookie := investigateFixture(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	for i := 0; i < 4; i++ {
+		if err := tdb.RecordContainerRestart(ctx, "web", now.Add(-time.Duration(10+i)*time.Minute)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var loop failureContextResponse
+	getObs(t, rt, cookie, "/api/v1/apps/web/failure-context", &loop)
+	if loop.State != failureStateCrashlooping {
+		t.Fatalf("not ready: state = %q, want crashlooping", loop.State)
+	}
+	if err := db.UpsertConditions(ctx, applicationControllerName("web"), []reconcile.Condition{{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Deployed"}}); err != nil {
+		t.Fatal(err)
+	}
+	var healed failureContextResponse
+	getObs(t, rt, cookie, "/api/v1/apps/web/failure-context", &healed)
+	if healed.State != failureStateHealthy {
+		t.Fatalf("ready and quiet: state = %q, want healthy", healed.State)
 	}
 }

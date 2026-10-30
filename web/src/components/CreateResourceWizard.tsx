@@ -134,8 +134,13 @@ export function CreateResourceWizard({
   scope,
   initialSelected,
   initialTemplateId,
+  open: controlledOpen,
+  onOpenChange,
 }: {
-  trigger: React.ReactElement
+  trigger?: React.ReactElement
+  /** Lets a caller open the wizard from its own control (a menu item) instead of a trigger. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   scope?: 'applications' | 'databases'
   /** Opens straight to step 2 on this option instead of step 1's picker, e.g. "browse-templates" for a "Start from a template" entry point. */
   initialSelected?: FixedWizardOption
@@ -146,7 +151,8 @@ export function CreateResourceWizard({
   initialTemplateId?: string
 }) {
   const { t } = useTranslation('databases')
-  const [open, setOpen] = useState(false)
+  const [innerOpen, setOpen] = useState(false)
+  const open = controlledOpen ?? innerOpen
   const [selected, setSelected] = useState<string | null>(
     initialSelected ?? null,
   )
@@ -191,6 +197,7 @@ export function CreateResourceWizard({
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
+    onOpenChange?.(next)
     if (!next) {
       // A fresh step 1 next time the dialog opens (or back to
       // initialSelected, for a caller that always opens straight to
@@ -284,7 +291,7 @@ export function CreateResourceWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={trigger} />
+      {trigger ? <DialogTrigger render={trigger} /> : null}
       <DialogContent
         // sm:max-w-* overrides the default variant's sm:max-w-sm; the
         // base variant already caps height at 85vh and scrolls inside.

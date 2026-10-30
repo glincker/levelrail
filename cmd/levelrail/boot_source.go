@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/dbprovision"
+	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -70,8 +71,11 @@ type dynamicSourceDeps struct {
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
+	imageIDs        *application.ImageIDCache
 	// restartBackoff is shared for the same reason as livenessTracker.
 	restartBackoff *application.RestartBackoff
+	// retainedDeploys outlives the per-pass controllers so its failure counts survive them.
+	retainedDeploys *deployurls.Guard
 	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
 	// for the zero-config fallback domain feature; see
 	// ingressreconcile.WithPublicHost's own doc comment.
@@ -113,7 +117,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+2)
-		controllers = append(controllers, appControllersFor(deps, services)...)
+		controllers = append(controllers, appControllersFor(ctx, deps, services)...)
 		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
 		controllers = append(controllers, modelControllersFor(deps, modelRows)...)
 		for _, n := range nodes {
@@ -226,7 +230,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(deps.firewallRulePrefix), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
 
 		// Exposure restrictions re-assert DOCKER-USER rules after a reboot or Docker restart.
-		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger))
+		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger, exposurereconcile.WithPodmanCheck(runtimeIsPodman(deps.runtime))))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger), meshreconcile.WithHiddenApps(privateNetworkHiddenApps(deps.db))))
@@ -242,6 +246,7 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	// Storage targets and database attachments need no master key; only their credentials do.
 	sharedEnvResolver := sharedenv.NewResolver(deps.db, deps.secretsManager)
 	appOpts := []application.Option{
+		application.WithStopGrace(application.StopGraceFromEnv(os.Getenv)),
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithHookRunRecorder(deps.db),
 		application.WithProbeAttemptRecorder(deps.db),
@@ -273,8 +278,15 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 	}
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
+	if reconcile.WorkersFromEnv(os.Getenv) > 1 {
+		appOpts = append(appOpts, application.WithReadinessRequeue(pendingReadiness(), application.ReadinessRequeueFromEnv(os.Getenv)))
+	}
+	if deps.retainedDeploys != nil {
+		appOpts = append(appOpts, application.WithRetainedDeploys(deps.retainedDeploys))
+	}
 	if deps.secretsManager != nil {
-		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))
+		// A retained deploy URL runs its app's config, so it reads the app's secrets.
+		appOpts = append(appOpts, application.WithSecretResolver(deployurls.ParentSecrets{Inner: deps.secretsManager, Apps: deps.db}))
 	}
 	if deps.meshDNSAddr != "" {
 		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))
@@ -288,19 +300,66 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	return appOpts
 }
 
+// nodeOfflineControllerFor keeps an unreachable node's app from showing a stale Ready.
+func nodeOfflineControllerFor(ctx context.Context, deps dynamicSourceDeps, svc store.DesiredService) reconcile.Controller {
+	name, since := svc.NodeID, time.Time{}
+	if n, err := deps.db.GetNode(ctx, svc.NodeID); err == nil && n != nil {
+		name = n.Name
+		if n.LastSeenAt != nil {
+			since = *n.LastSeenAt
+		}
+	}
+	return application.NewNodeOfflineController(svc.Name, name, since)
+}
+
+// nodeRecentlyRecovered is true when the node went back online within
+// APP_NODE_RECOVERY_WINDOW (default 2m).
+func nodeRecentlyRecovered(ctx context.Context, deps dynamicSourceDeps, nodeID string) bool {
+	if nodeID == "" {
+		return false
+	}
+	window := 2 * time.Minute
+	if d, err := time.ParseDuration(os.Getenv("APP_NODE_RECOVERY_WINDOW")); err == nil && d > 0 {
+		window = d
+	}
+	events, err := deps.db.ListNodeStatusEvents(ctx, nodeID, 1)
+	return err == nil && len(events) == 1 && events[0].ToStatus == store.NodeStatusOnline && time.Since(events[0].CreatedAt) < window
+}
+
 // appControllersFor builds one application.Controller per service,
 // skipping (with a warning) any whose node isn't currently reachable.
-func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
 	appOpts := appOptionsFor(deps)
+	snap := application.NewPassSnapshot(application.SnapshotMaxAgeFromEnv(os.Getenv))
 	controllers := make([]reconcile.Controller, 0, len(services))
+	targets := map[string]*prefetchNode{}
 	for _, svc := range services {
-		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, svc.NodeID))
+		nodeID := runtimeNodeID(deps, svc.NodeID)
+		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, nodeID)
 		if err != nil {
 			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
 				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
+			controllers = append(controllers, nodeOfflineControllerFor(ctx, deps, svc))
 			continue
 		}
-		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, appOpts...))
+		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID), application.WithNodeRecovering(nodeRecentlyRecovered(ctx, deps, svc.NodeID)))
+		appCtl := reconcile.Controller(application.New(svc.Name, deps.db, svcRuntime, svcOpts...))
+		if svc.NodeID != "" {
+			// Only a placed app can have attempts queued for an offline node.
+			appCtl = application.WithPendingAttemptResolution(appCtl, svc.Name, deps.db)
+		}
+		controllers = append(controllers, appCtl)
+		if !svc.Suspended {
+			n := targets[nodeID]
+			if n == nil {
+				n = &prefetchNode{rt: svcRuntime}
+				targets[nodeID] = n
+			}
+			n.names = append(n.names, replicaTargets(svc)...)
+		}
+	}
+	for nodeID, n := range targets {
+		snap.Prefetch(ctx, nodeID, n.rt, n.names)
 	}
 	controllers = append(controllers, application.NewDeleteFinalizer(deps.db, func(nodeID string) (docker.Runtime, error) {
 		return resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, nodeID))
@@ -326,9 +385,21 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
 		dbOpts = append(dbOpts, database.WithProvisionRecorder(provisionRecorder(deps.db)))
+		dbOpts = append(dbOpts, database.WithAgentVersion(agentVersionLookup(deps)))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
+}
+
+var (
+	pendingReadinessOnce sync.Once
+	pendingReadinessInst *application.PendingReadiness
+)
+
+// pendingReadiness is shared so a candidate's readiness wait survives the per-pass controller rebuild.
+func pendingReadiness() *application.PendingReadiness {
+	pendingReadinessOnce.Do(func() { pendingReadinessInst = application.NewPendingReadiness() })
+	return pendingReadinessInst
 }
 
 var (
@@ -459,4 +530,56 @@ func nodePendingExpireAfter() time.Duration {
 		return d
 	}
 	return time.Hour
+}
+
+type prefetchNode struct {
+	rt    docker.Runtime
+	names []string
+}
+
+// replicaTargets are the container names the application controller will look up for svc this pass.
+func replicaTargets(svc store.DesiredService) []string {
+	replicas := svc.Replicas
+	if replicas <= 0 {
+		replicas = store.DefaultReplicas
+	}
+	names := make([]string, replicas)
+	for i := range names {
+		names[i] = application.ReplicaContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce, i)
+	}
+	return names
+}
+
+// runtimeIsPodman reports whether the live engine identifies as Podman.
+func runtimeIsPodman(rt docker.Runtime) func(context.Context) bool {
+	return func(ctx context.Context) bool {
+		c, ok := rt.(interface {
+			Runtime() docker.RuntimeInfo
+			EngineIdentity(context.Context) (docker.EngineIdentity, error)
+		})
+		if !ok {
+			return false
+		}
+		kind := c.Runtime().Kind
+		if id, err := c.EngineIdentity(ctx); err == nil {
+			kind = docker.RefineKind(kind, id)
+		}
+		return kind == docker.RuntimeKindPodman
+	}
+}
+
+// agentVersionLookup reports the agent build of a database's node, so the
+// controller can hold back destructive drift decisions on an outdated agent.
+func agentVersionLookup(deps dynamicSourceDeps) database.AgentVersionLookup {
+	return func(ctx context.Context, nodeID string) (string, bool, error) {
+		id := runtimeNodeID(deps, nodeID)
+		if id == "" {
+			return "", false, nil
+		}
+		n, err := deps.db.GetNode(ctx, id)
+		if err != nil {
+			return "", true, err
+		}
+		return n.AgentVersion, true, nil
+	}
 }

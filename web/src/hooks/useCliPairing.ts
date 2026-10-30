@@ -81,5 +81,6 @@ export function useCliPairing() {
       create.mutate()
     },
     pending: create.isPending,
+    failed: create.isError,
   }
 }

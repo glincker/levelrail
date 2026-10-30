@@ -3,6 +3,7 @@ package iac
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -22,8 +23,19 @@ func appBody(f appFields) map[string]any {
 	} else {
 		delete(body, "host_port")
 	}
+	if f.PublishedPorts != nil {
+		body["published_ports"] = *f.PublishedPorts
+	}
 	setOrClear(body, "resources", resourcesToStore(f.Resources), f.Resources != nil)
-	setOrClear(body, "health", healthToStore(f.Health), f.Health != nil)
+	health := healthToStore(f.Health)
+	if f.Restart != "" {
+		if health == nil {
+			health = &store.ServiceHealth{}
+		}
+		health.Restart = f.Restart
+	}
+	// An unsent health keeps the stored restart: the API merges it back on PUT.
+	setOrClear(body, "health", health, health != nil)
 	var hooks *store.ServiceHooks
 	if f.Hooks != nil {
 		hooks = &store.ServiceHooks{PreDeploy: f.Hooks.PreDeploy, PostDeploy: f.Hooks.PostDeploy}
@@ -65,8 +77,8 @@ func (x *executor) createApp(ctx context.Context, r *Resource, f map[string]any,
 	return x.afterApp(ctx, r, fields, nil, false, setSecrets)
 }
 
-// updateApp saves the merged app through PUT (a full replace) starting from
-// the live body, so settings apply does not manage survive the write.
+// updateApp saves the merged app through PUT starting from the live body,
+// so settings apply does not manage survive the write.
 func (x *executor) updateApp(ctx context.Context, r *Resource, f map[string]any, live *liveApp, prune bool, setSecrets []string) error {
 	var fields appFields
 	if err := remarshal(f, &fields); err != nil {
@@ -81,13 +93,9 @@ func (x *executor) updateApp(ctx context.Context, r *Resource, f map[string]any,
 		merged.Labels = mergeEnv(lw.Labels, fields.Labels)
 	}
 	body := copyFields(live.raw)
+	// An unset field goes as an explicit null: PUT keeps omitted fields, and apply must clear them.
 	for k, v := range appBody(merged) {
 		body[k] = v
-	}
-	for k, v := range body {
-		if v == nil {
-			delete(body, k)
-		}
 	}
 	if prune && len(merged.SecretEnv) == 0 && len(lw.SecretEnv) > 0 {
 		body["secret_env"] = []string{}
@@ -132,7 +140,15 @@ func (x *executor) afterApp(ctx context.Context, r *Resource, want appFields, li
 			return fmt.Errorf("set secret %s: %w", name, err)
 		}
 	}
-	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0) {
+	connsChanged, err := x.syncConnections(ctx, r.Name, want.Connections, live, prune)
+	if err != nil {
+		return err
+	}
+	volsChanged, err := x.syncVolumes(ctx, r.Name, want.Volumes, live, prune)
+	if err != nil {
+		return err
+	}
+	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0 || connsChanged || volsChanged) {
 		return x.do(ctx, http.MethodPost, app+"/restart", nil, nil)
 	}
 	return nil
@@ -179,4 +195,36 @@ func (x *executor) syncTags(ctx context.Context, app string, want []string, live
 		}
 	}
 	return nil
+}
+
+// syncVolumes attaches declared volumes by name through the app volumes
+// endpoint, which replaces the whole mount list, so unlisted live volumes
+// are re-sent unless prune detaches them. A document without volumes never
+// touches them. Detaching never deletes the
+// Docker volume or its data.
+func (x *executor) syncVolumes(ctx context.Context, app string, want map[string]string, live *wireApp, prune bool) (bool, error) {
+	have := map[string]string{}
+	if live != nil {
+		have = appFromWire(*live, idNames{x.st}).Volumes
+	}
+	merged := map[string]string{}
+	if !prune {
+		for n, p := range have {
+			merged[n] = p
+		}
+	}
+	for n, p := range want {
+		merged[n] = p
+	}
+	if len(want) == 0 || maps.Equal(have, merged) {
+		return false, nil
+	}
+	list := make([]map[string]string, 0, len(merged))
+	for _, n := range sortedKeys(merged) {
+		list = append(list, map[string]string{"name": n, "container_path": merged[n]})
+	}
+	if err := x.do(ctx, http.MethodPut, "/api/v1/apps/"+esc(app)+"/volumes", map[string]any{"volumes": list}, nil); err != nil {
+		return false, fmt.Errorf("set volumes: %w", err)
+	}
+	return true, nil
 }

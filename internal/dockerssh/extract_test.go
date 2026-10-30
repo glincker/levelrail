@@ -190,3 +190,50 @@ func TestExtractArchiveRequiresADirectoryTarget(t *testing.T) {
 		t.Fatal("extracted into a missing directory")
 	}
 }
+
+func TestExtractArchiveRefusesLinkChainsThatLeaveTheVolume(t *testing.T) {
+	parent := t.TempDir()
+	dst := filepath.Join(parent, "vol")
+	if err := os.Mkdir(dst, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	st, err := ExtractArchive(buildTar(t, []entry{
+		{name: "data/d", typeflag: tar.TypeDir},
+		{name: "data/d/l", typeflag: tar.TypeSymlink, link: "."},
+		{name: "data/e", typeflag: tar.TypeSymlink, link: "d/l/../.."},
+	}), dst, Limits{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, lerr := os.Lstat(filepath.Join(dst, "e")); lerr == nil {
+		t.Fatalf("link chain that resolves outside the volume was created (%v)", st.Warnings)
+	}
+	if _, lerr := os.Lstat(filepath.Join(dst, "d", "l")); lerr != nil {
+		t.Fatalf("a harmless in-volume link should still be created: %v", lerr)
+	}
+}
+
+func TestExtractArchiveDirectoryEntryNeverFollowsASymlink(t *testing.T) {
+	parent := t.TempDir()
+	dst := filepath.Join(parent, "vol")
+	if err := os.Mkdir(dst, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(parent, "outside")
+	if err := os.Mkdir(outside, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(dst, "e")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExtractArchive(buildTar(t, []entry{{name: "data/e", typeflag: tar.TypeDir, mode: 0o777}}), dst, Limits{}); err == nil {
+		t.Fatal("a directory entry over a symlink must be refused")
+	}
+	fi, err := os.Stat(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm() != 0o500 {
+		t.Fatalf("directory outside the volume was chmodded to %v", fi.Mode().Perm())
+	}
+}

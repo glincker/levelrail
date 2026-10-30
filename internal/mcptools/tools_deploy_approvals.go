@@ -11,7 +11,7 @@ import (
 func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_approvals",
-		Description: "List pending (or, with status 'all', every) two-person approval gate on a deploy/promote into a protected environment. status defaults to 'pending' when omitted; service filters to one app.",
+		Description: "List pending (or with status 'all', every) two-person approval on a deploy or promote into a protected environment. service filters to one app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeployApprovalsInput) (*mcp.CallToolResult, []apiclient.DeployApprovalResource, error) {
 		approvals, err := client.ListDeployApprovals(ctx, in.Status, in.Service)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "approve_deploy_approval",
-		Description: "Approve a pending deploy approval: the gated deploy/promote actually runs through the normal reconcile path once this succeeds. Fails if the caller is the same actor who requested it, or if it's no longer pending.",
+		Description: "Approve a pending deploy approval; the gated deploy or promote then runs. Fails if the caller requested it or it is no longer pending.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployApprovalIDInput) (*mcp.CallToolResult, apiclient.DeployApprovalDecisionResult, error) {
 		result, err := client.ApproveDeployApproval(ctx, in.ID)
 		if err != nil {

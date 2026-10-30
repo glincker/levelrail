@@ -24,6 +24,7 @@ import { NodeLabelsCard } from '../../components/NodeLabelsCard'
 import { NodeRegionCard } from '../../components/nodes/NodeRegionCard'
 import { NodeAllocationCard } from '../../components/nodes/NodeAllocationCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
+import { NodeWorkloadsCard } from '../../components/nodes/NodeWorkloadsCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { NodeEventsCard } from '../../components/NodeEventsCard'
@@ -202,6 +203,11 @@ function NodeDetailPage() {
 
       <NodeNeverConnectedAlert node={node} />
       <NodeAlertStatusCard nodeId={id} />
+
+      <NodeWorkloadsCard
+        apps={node.placed_apps ?? []}
+        databases={node.placed_databases ?? []}
+      />
 
       <NodeGpuCard gpu={node.gpu} />
 

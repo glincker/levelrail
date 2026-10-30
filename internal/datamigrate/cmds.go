@@ -15,7 +15,12 @@ const (
 	envDatabase = "SRC_DB"
 	envAuthDB   = "SRC_AUTHDB"
 	envTLS      = "SRC_TLS"
+	envSSLMode  = "SRC_SSLMODE"
 )
+
+// pgTLS applies the source's libpq sslmode (require when unset) and, for the
+// verifying modes, trusts the helper image's system CA bundle.
+const pgTLS = `if [ -n "$SRC_TLS" ]; then export PGSSLMODE="${SRC_SSLMODE:-require}"; case "$SRC_SSLMODE" in verify-ca|verify-full) export PGSSLROOTCERT=system;; esac; fi`
 
 const sqlBacktick = "\\`"
 
@@ -35,6 +40,9 @@ func helperEnv(s Source) map[string]string {
 	if s.TLS {
 		env[envTLS] = "1"
 	}
+	if s.SSLMode != "" {
+		env[envSSLMode] = s.SSLMode
+	}
 	return env
 }
 
@@ -51,7 +59,7 @@ func DumpCommand(engine string) ([]string, error) {
 	case EnginePostgres:
 		script = `export PGHOST="$SRC_HOST" PGPORT="$SRC_PORT" PGUSER="$SRC_USER" PGPASSWORD="$SRC_PASSWORD" PGDATABASE="$SRC_DB" PGCONNECT_TIMEOUT=20
 ` + pgReadOnly + `
-if [ -n "$SRC_TLS" ]; then export PGSSLMODE=require; fi
+` + pgTLS + `
 exec pg_dump --no-password --no-owner --no-privileges`
 	case EngineMySQL:
 		script = `export MYSQL_PWD="$SRC_PASSWORD"
@@ -86,7 +94,7 @@ func SourceCountCommand(engine string) ([]string, error) {
 	case EnginePostgres:
 		script = `export PGHOST="$SRC_HOST" PGPORT="$SRC_PORT" PGUSER="$SRC_USER" PGPASSWORD="$SRC_PASSWORD" PGDATABASE="$SRC_DB" PGCONNECT_TIMEOUT=20
 ` + pgReadOnly + `
-if [ -n "$SRC_TLS" ]; then export PGSSLMODE=require; fi
+` + pgTLS + `
 psql --no-password -At -F '|' -v ON_ERROR_STOP=1 <<'SQL'
 ` + pgCountQuery + `
 SQL`

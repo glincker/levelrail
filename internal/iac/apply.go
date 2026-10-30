@@ -96,6 +96,15 @@ func (x *executor) ensureTag(ctx context.Context, name string) (string, error) {
 	return out.ID, nil
 }
 
+// setDatabasePooler uses the same routes as the CLI and dashboard.
+func (x *executor) setDatabasePooler(ctx context.Context, db string, enabled bool, poolSize, maxClientConn int) error {
+	if !enabled {
+		return x.do(ctx, http.MethodDelete, "/api/v1/databases/"+esc(db)+"/pooler", nil, nil)
+	}
+	body := map[string]int{"pool_size": poolSize, "max_client_conn": maxClientConn}
+	return x.do(ctx, http.MethodPost, "/api/v1/databases/"+esc(db)+"/pooler", body, nil)
+}
+
 func (x *executor) setDatabaseProject(ctx context.Context, db, project string) error {
 	if project == "" {
 		return nil
@@ -182,6 +191,9 @@ func runItem(ctx context.Context, x *executor, it *item, stopped bool) ItemResul
 	case stopped:
 		res.Status = StatusSkipped
 		res.Error = "not attempted after an earlier failure"
+	case ctx.Err() != nil:
+		res.Status = StatusSkipped
+		res.Error = "not attempted: " + context.Cause(ctx).Error()
 	case it.exec == nil:
 		res.Status = StatusNoop
 	default:

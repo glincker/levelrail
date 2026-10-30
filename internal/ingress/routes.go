@@ -84,6 +84,9 @@ type ProxyRoute struct {
 	LB *LBRoute
 	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
 	Policy *RoutePolicy
+	// Abuse, if non-nil and active, puts the owning app's abuse defense in
+	// front of every other control on the route.
+	Abuse *AbusePolicy
 	// Upstream, if non-nil, shapes a standalone domain's single backend.
 	// Ignored when LB is set.
 	Upstream *UpstreamOptions
@@ -622,6 +625,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		// Traffic controls, front side: redirects, geo and headers run first.
 		handle = r.Policy.wrapFront(r.Hosts[0], handle)
+		handle = r.Abuse.wrap(handle)
 		if DefaultSplits().Active(r.Hosts) {
 			handle = append([]any{NewSplitTestingHandler()}, handle...)
 		}
@@ -783,7 +787,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		case opts.ACMEEnabled:
 			cfg.Apps.TLS = acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
 			cfg.Apps.PKI = newInternalPKIApp()
-			cfg.Apps.Events = newACMEEventsApp()
+			cfg.Apps.ACMEEvents = &ACMEEventsApp{}
 			cfg.Logging = newACMELogTap()
 		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)

@@ -97,14 +97,14 @@ func newDashboardPerfFixture(t *testing.T) *dashboardPerfFixture {
 	}
 	seedPerfTelemetry(t, tdb, resources, nodes, rawDays, now)
 
-	rt := NewRouter(discardLogger(), testBrand(), sdb,
+	rt := withOfflineDoctorNetwork(NewRouter(discardLogger(), testBrand(), sdb,
 		WithTelemetryQuerier(telemetry.NewLocalFederator(tdb)),
 		WithDataDir(t.TempDir()),
 		WithDockerPinger(slowDockerFake{ping: 5 * time.Millisecond}),
 		WithDockerDiskUsager(slowDockerFake{disk: 400 * time.Millisecond}),
 		WithDBPinger(sdb),
 		WithDashboardCache(5*time.Second, time.Minute),
-	)
+	))
 	return &dashboardPerfFixture{rt: rt, cookie: loginTestSession(t, rt, sdb)}
 }
 
@@ -187,8 +187,8 @@ func TestDashboardEndpointBudget(t *testing.T) {
 		miss := f.get(t, path)
 		hit := f.get(t, path)
 		t.Logf("%-32s live=%v cache_miss=%v cache_hit=%v", path, live.Round(time.Millisecond), miss.Round(time.Millisecond), hit.Round(time.Millisecond))
-		// Doctor's outbound probes depend on the host network, so its budget
-		// applies to the cache fill, not the live probe run.
+		// Doctor's first run also execs host tools (firewall probes), so its
+		// budget applies to the cache fill with the network faked offline.
 		measured := live
 		if path == "/api/v1/system/doctor" {
 			measured = miss

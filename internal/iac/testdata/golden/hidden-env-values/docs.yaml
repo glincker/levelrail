@@ -1,0 +1,16 @@
+version: 1
+kind: Project
+metadata: {name: shop}
+---
+version: 1
+kind: App
+metadata: {name: web}
+spec:
+  project: shop
+  service:
+    build: {type: image, image: "ghcr.io/acme/web:1.2.3"}
+    port: 3000
+    env:
+      LOG_LEVEL: info
+      API_KEY: {secretRef: API_KEY}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}

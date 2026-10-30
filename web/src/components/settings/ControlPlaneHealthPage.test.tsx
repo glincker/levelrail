@@ -51,6 +51,11 @@ function health(findings: CPHealth['findings']): CPHealth {
       in_use: 0,
       wait_count: 0,
       wait_ms: 0,
+      read_pool_enabled: true,
+      read_pool_size: 4,
+      read_in_use: 1,
+      read_wait_count: 7,
+      read_wait_ms: 42,
       wal_bytes: 1 << 20,
       db_bytes: 1 << 20,
       recent_slow: [],
@@ -91,6 +96,83 @@ describe('ControlPlaneHealthPage', () => {
     expect(
       screen.getByText(/Every measurement is under its threshold/),
     ).toBeTruthy()
+  })
+
+  it('shows read pool queueing and usage when the pool is enabled', () => {
+    state.health = health([])
+    render(<ControlPlaneHealthPage />)
+    expect(screen.getByText('Reads that waited')).toBeTruthy()
+    expect(screen.getByText('7')).toBeTruthy()
+    expect(
+      screen.getByText(/42 ms waiting in total, 1 of 4 connections busy/),
+    ).toBeTruthy()
+  })
+
+  it('shows the reconcile queue only when the worker pool runs', () => {
+    const h = health([])
+    state.health = h
+    const { unmount } = render(<ControlPlaneHealthPage />)
+    expect(screen.queryByText('Reconcile queue')).toBeNull()
+    unmount()
+    state.health = {
+      ...h,
+      reconcile: {
+        ...h.reconcile,
+        queue: {
+          workers: 4,
+          queue_depth: 3,
+          in_flight: 2,
+          oldest_wait_seconds: 1.5,
+        },
+      },
+    }
+    render(<ControlPlaneHealthPage />)
+    expect(screen.getByText('Reconcile queue')).toBeTruthy()
+    expect(screen.getByText('2 of 4 workers busy')).toBeTruthy()
+    expect(screen.getByText('3 waiting, oldest 1.5 s')).toBeTruthy()
+  })
+
+  it('says reads use the writer when the pool is disabled', () => {
+    const h = health([])
+    state.health = {
+      ...h,
+      db: { ...h.db, read_pool_enabled: false, read_pool_size: 0 },
+    }
+    render(<ControlPlaneHealthPage />)
+    expect(screen.getByText('Read pool off, reads use the writer')).toBeTruthy()
+  })
+
+  it('loads the footprint card lazily when the server reports one', async () => {
+    state.health = {
+      ...health([]),
+      idle_footprint: {
+        status: 'over_tolerance',
+        platform: 'linux/arm64',
+        current: {
+          rss_bytes: 300 << 20,
+          cpu_percent: 1,
+          cpu_window_seconds: 60,
+          goroutines: 900,
+          open_fds: 30,
+          threads: 4,
+          apps: 0,
+        },
+        baseline: { apps: 0, peak_rss_mb: 212 },
+        checks: [
+          {
+            name: 'goroutines',
+            unit: 'count',
+            current: 900,
+            baseline: 129,
+            limit: 139,
+            ok: false,
+          },
+        ],
+      },
+    }
+    render(<ControlPlaneHealthPage />)
+    expect(await screen.findByText('Over tolerance')).toBeTruthy()
+    expect(screen.getByText('Footprint')).toBeTruthy()
   })
 
   it('uses the hero banner and a fix button when a finding needs attention', () => {

@@ -31,7 +31,7 @@ One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; ob
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a> &middot;
   <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
 </p>
-<img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880">
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880"></picture>
 </div>
 
 Levelrail is an open source (Apache 2.0) **self-hosted PaaS**: a Vercel and Heroku alternative that runs on any Linux server you own, from a small VPS to a rack (the one measured host is a 2 vCPU, 8 GB box). It turns plain servers into a private cloud with Git deploys (forge webhooks), HTTPS (self-signed by default, Let's Encrypt when enabled), databases with verified backups, metrics, logs and alerts, without Kubernetes and without the monitoring stack you would otherwise bolt on.
@@ -52,12 +52,12 @@ The last lines of output include the dashboard address and a one-time setup link
 Levelrail vX.Y.Z installed and running.
 
 Open the dashboard:
-  http://203.0.113.10:8080/login?setup=<token>
+  http://203.0.113.10:8080/login#setup=<token>
 ```
 
 ### 2. Create the admin account
 
-Open the setup link and choose a password. The first sign-in opens one screen that turns on a free certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
+Open the setup link and choose a password. The token sits in the `#` fragment, so it never reaches the server or its logs; lost it? `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` prints it again. The first sign-in opens one screen that turns on a free certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
 
 ### 3. Deploy an app
 
@@ -81,6 +81,18 @@ Signing in with your password from a new device needs approval: the CLI prints t
 
 Without `--deploy`, `import` only prints the deployment plan. To see the app's address, run `levelrail-cli open your-app`. It prints the custom domain first, then the automatic URL.
 
+### Or let your coding agent do it
+
+Install the skill once, then ask your agent in plain words. It deploys, waits for the rollout to actually converge, reads the failure if there is one, and rolls back safely:
+
+```bash
+npx skills add https://github.com/glincker/levelrail --skill levelrail
+```
+
+> Deploy this repo to my Levelrail and tell me when it is live.
+
+The skill is also listed at [skills.sh](https://www.skills.sh/glincker/levelrail/levelrail). Details: [Agents](docs/agents.md).
+
 ### If something fails
 
 | Step | Error you see | Fix |
@@ -91,7 +103,7 @@ Without `--deploy`, `import` only prints the deployment plan. To see the app's a
 | Login | `start device login: ... connection refused` | The CLI points at the wrong address. Run `export APP_API_URL=http://127.0.0.1:<dashboard port>` and try again. |
 | Import | `plan import: ... connection refused` | The control plane is not running. Start it with `systemctl start levelrail`. |
 
-More fixes: [Troubleshooting](docs/troubleshooting.md). Full install options (Docker image, pinned version, source build): [Installing](docs/installing.md). Deploy from a local project with `levelrail-cli up`: [One command quickstart](docs/quickstart-one-command.md). Server profiles (`install.sh --profile minimal|standard|suite`): [Server profiles](docs/profiles.md). Migrating from another platform? `levelrail-cli import platform coolify|dokploy|caprover --dry-run` shows what would be created first, and the old server keeps serving. Full guide: [Migrate to Levelrail](docs/migrate-to-levelrail.md).
+More fixes: [Troubleshooting](docs/troubleshooting.md). Full install options (Docker image, pinned version, source build): [Installing](docs/installing.md). Deploy from a local project with `levelrail-cli up`: [One command quickstart](docs/quickstart-one-command.md). Server profiles (`install.sh --profile minimal|standard|suite`): [Server profiles](docs/profiles.md). Migrating from another platform? `levelrail-cli import platform coolify|dokploy|caprover --dry-run` shows what would be created first, and the old server keeps serving. Full guide: [Migrate to Levelrail](docs/migrate-to-levelrail.md). Publishing an open-source project? Add a one-click button to its README: [Deploy to Levelrail button](docs/deploy-button.md).
 
 <table>
   <tr>
@@ -160,120 +172,103 @@ This is positioning, not a ranking, and every project here is worth using. Where
 
 <table>
   <tr>
-    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deploy-live-log.png"><img src="docs/assets/screenshots/deploy-live-log-light.png" alt="Levelrail live deploy log" loading="lazy"></picture></a><br><sub><b>Live deploys</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/search.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/command-palette.png"><img src="docs/assets/screenshots/command-palette-light.png" alt="Levelrail command palette search" loading="lazy"></picture></a><br><sub><b>One search for everything</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/control-plane-health.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/control-plane-health.png"><img src="docs/assets/screenshots/control-plane-health-light.png" alt="Levelrail control plane health page" loading="lazy"></picture></a><br><sub><b>Health and footprint</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/dashboard-home.png"><img src="docs/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home: fleet health, requests and recent deploys" loading="lazy"></picture></a><br><sub><b>The control plane at a glance</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/frameworks.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/framework-preset-picker.png"><img src="docs/assets/screenshots/framework-preset-picker-light.png" alt="Levelrail new app page with the framework preset picker" loading="lazy"></picture></a><br><sub><b>Pick a framework preset and the build settings fill in</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/template-catalog.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/templates-catalog.png"><img src="docs/assets/screenshots/templates-catalog-light.png" alt="Levelrail service template catalog" loading="lazy"></picture></a><br><sub><b>Install a known service from the template catalog</b></sub></td>
   </tr>
   <tr>
-    <td width="33%" valign="top"><a href="docs/managing-databases.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-backups.png"><img src="docs/assets/screenshots/database-backups-light.png" alt="Levelrail database backups" loading="lazy"></picture></a><br><sub><b>Verified backups</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/plugins.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/plugins-marketplace.png"><img src="docs/assets/screenshots/plugins-marketplace-light.png" alt="Levelrail plugin marketplace" loading="lazy"></picture></a><br><sub><b>Plugin marketplace</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/security.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/security-center.png"><img src="docs/assets/screenshots/security-center-light.png" alt="Levelrail security center" loading="lazy"></picture></a><br><sub><b>Security center</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deploy-live-log.png"><img src="docs/assets/screenshots/deploy-live-log-light.png" alt="Levelrail live deploy log" loading="lazy"></picture></a><br><sub><b>Live deploys</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/load-balancing.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/load-balancer.png"><img src="docs/assets/screenshots/load-balancer-light.png" alt="Levelrail load balancer upstreams and health checks" loading="lazy"></picture></a><br><sub><b>Load balance across replicas with health checks</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/apps-list.png"><img src="docs/assets/screenshots/apps-list-light.png" alt="Levelrail apps list with status and last deploy" loading="lazy"></picture></a><br><sub><b>Every app, its health, and its last deploy</b></sub></td>
   </tr>
 </table>
 
 <details>
-<summary><b>More screenshots</b> (50 screens, shown in your GitHub theme, dark or light)</summary>
+<summary><b>More screenshots</b> (41 screens, shown in your GitHub theme, dark or light)</summary>
 <br>
 <table>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/account-activity.png"><img src="docs/assets/screenshots/account-activity-light.png" alt="Levelrail dashboard: Account activity feed" title="See every sign-in and change made to your account" loading="lazy"></picture><br><sub><b>See every sign-in and change made to your account.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/account-danger-zone.png"><img src="docs/assets/screenshots/account-danger-zone-light.png" alt="Levelrail dashboard: Account danger zone" title="Export your data or delete your account safely" loading="lazy"></picture><br><sub><b>Export your data or delete your account safely.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/account-passkeys.png"><img src="docs/assets/screenshots/account-passkeys-light.png" alt="Levelrail dashboard: Passkey manager" title="Add, test and remove passkeys, synced or device-bound" loading="lazy"></picture><br><sub><b>Add, test and remove passkeys, synced or device-bound.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-deploy-settings.png"><img src="docs/assets/screenshots/app-deploy-settings-light.png" alt="Levelrail dashboard: Deploy strategy and health settings" title="Deploy strategy, health checks, and rollout behavior" loading="lazy"></picture><br><sub><b>Deploy strategy, health checks, and rollout behavior.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-environment.png"><img src="docs/assets/screenshots/app-environment-light.png" alt="Levelrail dashboard: Environment editor with masked secret values" title="Environment variables, with secrets masked" loading="lazy"></picture><br><sub><b>Environment variables, with secrets masked.</b></sub></td>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-overview.png"><img src="docs/assets/screenshots/app-overview-light.png" alt="Levelrail dashboard: App metrics: CPU, memory, network, disk charts with deploy markers" title="Per-app metrics, with deploy markers on every chart" loading="lazy"></picture><br><sub><b>Per-app metrics, with deploy markers on every chart.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/logs.png"><img src="docs/assets/screenshots/logs-light.png" alt="Levelrail dashboard: App log viewer with search and filters" title="Search and tail container logs without installing anything" loading="lazy"></picture><br><sub><b>Search and tail container logs without installing anything.</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-overview-page.png"><img src="docs/assets/screenshots/app-overview-page-light.png" alt="Levelrail dashboard: App overview: health, URLs, deploys, metrics summary" title="Each app&#x27;s overview in one place" loading="lazy"></picture><br><sub><b>Each app&#x27;s overview in one place.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-resources.png"><img src="docs/assets/screenshots/app-resources-light.png" alt="Levelrail dashboard: CPU and memory limits for an app" title="Resource limits per app" loading="lazy"></picture><br><sub><b>Resource limits per app.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-source.png"><img src="docs/assets/screenshots/app-source-light.png" alt="Levelrail dashboard: App source and repository connection" title="Where an app&#x27;s code comes from" loading="lazy"></picture><br><sub><b>Where an app&#x27;s code comes from.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/apps-list.png"><img src="docs/assets/screenshots/apps-list-light.png" alt="Levelrail dashboard: All apps with status and last deploy" title="Every app, its health, and its last deploy" loading="lazy"></picture><br><sub><b>Every app, its health, and its last deploy.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/archives.png"><img src="docs/assets/screenshots/archives-light.png" alt="Levelrail dashboard: Storage page showing the log archive and build cache sections" title="Archive logs to a bucket on a schedule" loading="lazy"></picture><br><sub><b>Archive logs to a bucket on a schedule.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/backups.png"><img src="docs/assets/screenshots/backups-light.png" alt="Levelrail dashboard: Backups: targets and history" title="Backups with a history you can restore from" loading="lazy"></picture><br><sub><b>Backups with a history you can restore from.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/beta-features.png"><img src="docs/assets/screenshots/beta-features-light.png" alt="Levelrail dashboard: Beta features list" title="Opt in to beta features one at a time" loading="lazy"></picture><br><sub><b>Opt in to beta features one at a time.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/build-cache.png"><img src="docs/assets/screenshots/build-cache-light.png" alt="Levelrail dashboard: Build cache panel for an app" title="Build cache: rebuilds reuse unchanged layers" loading="lazy"></picture><br><sub><b>Build cache: rebuilds reuse unchanged layers.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/build-performance.png"><img src="docs/assets/screenshots/build-performance-light.png" alt="Levelrail dashboard: Build performance settings" title="Build speed: how long builds take and what they cost" loading="lazy"></picture><br><sub><b>Build speed: how long builds take and what they cost.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/ci-deploy-github-actions.png"><img src="docs/assets/screenshots/ci-deploy-github-actions-light.png" alt="Levelrail dashboard: Deploys page with the GitHub Actions reporting card (tall capture)" title="Report deploys back to GitHub Actions" loading="lazy"></picture><br><sub><b>Report deploys back to GitHub Actions.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/cli-access.png"><img src="docs/assets/screenshots/cli-access-light.png" alt="Levelrail dashboard: CLI access: this server, tokens, pending logins" title="Sign in the CLI from your own machine, with tokens you can revoke" loading="lazy"></picture><br><sub><b>Sign in the CLI from your own machine, with tokens you can revoke.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/command-palette.png"><img src="docs/assets/screenshots/command-palette-light.png" alt="Levelrail dashboard: Command palette (Cmd+K) open over the app overview" title="Jump to any app or action with Cmd+K" loading="lazy"></picture><br><sub><b>Jump to any app or action with Cmd+K.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/command-palette-search.png"><img src="docs/assets/screenshots/command-palette-search-light.png" alt="Levelrail dashboard: Command palette search results" title="One search across apps, databases, nodes and actions" loading="lazy"></picture><br><sub><b>One search across apps, databases, nodes and actions.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/control-plane-health.png"><img src="docs/assets/screenshots/control-plane-health-light.png" alt="Levelrail dashboard: Control plane health: goroutines, DB latency, reconcile pass" title="Live health of the control plane itself" loading="lazy"></picture><br><sub><b>Live health of the control plane itself.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/dashboard-home.png"><img src="docs/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard: Dashboard home" title="The control plane at a glance" loading="lazy"></picture><br><sub><b>The control plane at a glance.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-access.png"><img src="docs/assets/screenshots/database-access-light.png" alt="Levelrail dashboard: Database access and credentials" title="Connection details and password rotation for a database" loading="lazy"></picture><br><sub><b>Connection details and password rotation for a database.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-backups.png"><img src="docs/assets/screenshots/database-backups-light.png" alt="Levelrail dashboard: Database overview scrolled to backups and placement" title="Database backups and placement, on the database&#x27;s own page" loading="lazy"></picture><br><sub><b>Database backups and placement, on the database&#x27;s own page.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-overview.png"><img src="docs/assets/screenshots/database-overview-light.png" alt="Levelrail dashboard: Database overview: connection, status, resources" title="One database, its connection details, and its state" loading="lazy"></picture><br><sub><b>One database, its connection details, and its state.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/databases-list.png"><img src="docs/assets/screenshots/databases-list-light.png" alt="Levelrail dashboard: Managed databases list" title="Managed Postgres and friends, next to your apps" loading="lazy"></picture><br><sub><b>Managed Postgres and friends, next to your apps.</b></sub></td>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deploy-history.png"><img src="docs/assets/screenshots/deploy-history-light.png" alt="Levelrail dashboard: Deploy history for one app (Current, Visit, Logs, Promote)" title="Deploy history, with promote and logs for each release" loading="lazy"></picture><br><sub><b>Deploy history, with promote and logs for each release.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deploy-live-log.png"><img src="docs/assets/screenshots/deploy-live-log-light.png" alt="Levelrail dashboard: One deploy, Roll out tab (live timeline)" title="Watch a deploy roll out, step by step, as it happens" loading="lazy"></picture><br><sub><b>Watch a deploy roll out, step by step, as it happens.</b></sub></td>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deployments-all.png"><img src="docs/assets/screenshots/deployments-all-light.png" alt="Levelrail dashboard: Deployments across all apps" title="Deployments across the whole control plane" loading="lazy"></picture><br><sub><b>Deployments across the whole control plane.</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/domains-list.png"><img src="docs/assets/screenshots/domains-list-light.png" alt="Levelrail dashboard: Domains with TLS status and routing" title="Domains, certificates, and where each one routes" loading="lazy"></picture><br><sub><b>Domains, certificates, and where each one routes.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/encryption-keys.png"><img src="docs/assets/screenshots/encryption-keys-light.png" alt="Levelrail dashboard: Encryption keys" title="Master and per-app encryption key status and rotation" loading="lazy"></picture><br><sub><b>Master and per-app encryption key status and rotation.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/nodes.png"><img src="docs/assets/screenshots/nodes-light.png" alt="Levelrail dashboard: Node list: primary server, online, builds only" title="Nodes the control plane places apps and databases on" loading="lazy"></picture><br><sub><b>Nodes the control plane places apps and databases on.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/control-plane-health.png"><img src="docs/assets/screenshots/control-plane-health-light.png" alt="Levelrail control plane health page" loading="lazy"></picture><br><sub><b>Health and footprint</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/framework-preset-picker.png"><img src="docs/assets/screenshots/framework-preset-picker-light.png" alt="Levelrail dashboard: New app page with the framework preset picker" title="Pick a framework preset and the build settings fill in for you" loading="lazy"></picture><br><sub><b>Pick a framework preset and the build settings fill in for you.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/status-page-settings.png"><img src="docs/assets/screenshots/status-page-settings-light.png" alt="Levelrail dashboard: Public status page settings" title="A public status page for your apps" loading="lazy"></picture><br><sub><b>A public status page for your apps.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/pipeline-run.png"><img src="docs/assets/screenshots/pipeline-run-light.png" alt="Levelrail dashboard: Pipeline run: stages, jobs, live job log" title="A pipeline run with its stages, jobs, and live log" loading="lazy"></picture><br><sub><b>A pipeline run with its stages, jobs, and live log.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/ci-deploy-github-actions.png"><img src="docs/assets/screenshots/ci-deploy-github-actions-light.png" alt="Levelrail dashboard: Deploys page with the GitHub Actions reporting card (tall capture)" title="Report deploys back to GitHub Actions" loading="lazy"></picture><br><sub><b>Report deploys back to GitHub Actions.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/build-performance.png"><img src="docs/assets/screenshots/build-performance-light.png" alt="Levelrail dashboard: Build performance settings" title="Build speed: how long builds take and what they cost" loading="lazy"></picture><br><sub><b>Build speed: how long builds take and what they cost.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/build-cache.png"><img src="docs/assets/screenshots/build-cache-light.png" alt="Levelrail dashboard: Build cache panel for an app" title="Build cache: rebuilds reuse unchanged layers" loading="lazy"></picture><br><sub><b>Build cache: rebuilds reuse unchanged layers.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-deploy-settings.png"><img src="docs/assets/screenshots/app-deploy-settings-light.png" alt="Levelrail dashboard: Deploy strategy and health settings" title="Deploy strategy, health checks, and rollout behavior" loading="lazy"></picture><br><sub><b>Deploy strategy, health checks, and rollout behavior.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-source.png"><img src="docs/assets/screenshots/app-source-light.png" alt="Levelrail dashboard: App source and repository connection" title="Where an app&#x27;s code comes from" loading="lazy"></picture><br><sub><b>Where an app&#x27;s code comes from.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-environment.png"><img src="docs/assets/screenshots/app-environment-light.png" alt="Levelrail dashboard: Environment editor with masked secret values" title="Environment variables, with secrets masked" loading="lazy"></picture><br><sub><b>Environment variables, with secrets masked.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-resources.png"><img src="docs/assets/screenshots/app-resources-light.png" alt="Levelrail dashboard: CPU and memory limits for an app" title="Resource limits per app" loading="lazy"></picture><br><sub><b>Resource limits per app.</b></sub></td>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/get-started.png"><img src="docs/assets/screenshots/get-started-light.png" alt="Levelrail dashboard: Get started checklist" title="A guided checklist from install to your first deploy" loading="lazy"></picture><br><sub><b>A guided checklist from install to your first deploy.</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/janitor-settings.png"><img src="docs/assets/screenshots/janitor-settings-light.png" alt="Levelrail dashboard: Automatic cleanup (janitor) settings" title="Automatic cleanup of old images, containers, and logs" loading="lazy"></picture><br><sub><b>Automatic cleanup of old images, containers, and logs.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/load-balancer.png"><img src="docs/assets/screenshots/load-balancer-light.png" alt="Levelrail dashboard: Load balancer upstreams and health checks" title="Load balance an app across replicas with health checks" loading="lazy"></picture><br><sub><b>Load balance an app across replicas with health checks.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/setup-wizard.png"><img src="docs/assets/screenshots/setup-wizard-light.png" alt="Levelrail dashboard: First-run setup checklist" title="First-run setup, step by step" loading="lazy"></picture><br><sub><b>First-run setup, step by step.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-overview.png"><img src="docs/assets/screenshots/database-overview-light.png" alt="Levelrail dashboard: Database overview: connection, status, resources" title="One database, its connection details, and its state" loading="lazy"></picture><br><sub><b>One database, its connection details, and its state.</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/logs.png"><img src="docs/assets/screenshots/logs-light.png" alt="Levelrail dashboard: App log viewer with search and filters" title="Search and tail container logs without installing anything" loading="lazy"></picture><br><sub><b>Search and tail container logs without installing anything.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-access.png"><img src="docs/assets/screenshots/database-access-light.png" alt="Levelrail dashboard: Database access and credentials" title="Connection details and password rotation for a database" loading="lazy"></picture><br><sub><b>Connection details and password rotation for a database.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/database-backups.png"><img src="docs/assets/screenshots/database-backups-light.png" alt="Levelrail database backups" loading="lazy"></picture><br><sub><b>Verified backups</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/backups.png"><img src="docs/assets/screenshots/backups-light.png" alt="Levelrail dashboard: Backups: targets and history" title="Backups with a history you can restore from" loading="lazy"></picture><br><sub><b>Backups with a history you can restore from.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/storage-destinations.png"><img src="docs/assets/screenshots/storage-destinations-light.png" alt="Levelrail dashboard: Storage destinations: empty state with next steps" title="Connect an S3-compatible bucket for backups and archives" loading="lazy"></picture><br><sub><b>Connect an S3-compatible bucket for backups and archives.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/archives.png"><img src="docs/assets/screenshots/archives-light.png" alt="Levelrail dashboard: Storage page showing the log archive and build cache sections" title="Archive logs to a bucket on a schedule" loading="lazy"></picture><br><sub><b>Archive logs to a bucket on a schedule.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/domains-list.png"><img src="docs/assets/screenshots/domains-list-light.png" alt="Levelrail dashboard: Domains with TLS status and routing" title="Domains, certificates, and where each one routes" loading="lazy"></picture><br><sub><b>Domains, certificates, and where each one routes.</b></sub></td>
+  </tr>
+  <tr>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/mesh-network.png"><img src="docs/assets/screenshots/mesh-network-light.png" alt="Levelrail dashboard: Private networks: which apps may talk to each other" title="Private networks decide which apps can reach each other" loading="lazy"></picture><br><sub><b>Private networks decide which apps can reach each other.</b></sub></td>
-  </tr>
-  <tr>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/node-providers.png"><img src="docs/assets/screenshots/node-providers-light.png" alt="Levelrail dashboard: Node provider settings" title="Add a server from a cloud provider" loading="lazy"></picture><br><sub><b>Add a server from a cloud provider.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/nodes.png"><img src="docs/assets/screenshots/nodes-light.png" alt="Levelrail dashboard: Node list: primary server, online, builds only" title="Nodes the control plane places apps and databases on" loading="lazy"></picture><br><sub><b>Nodes the control plane places apps and databases on.</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/pipeline-run.png"><img src="docs/assets/screenshots/pipeline-run-light.png" alt="Levelrail dashboard: Pipeline run: stages, jobs, live job log" title="A pipeline run with its stages, jobs, and live log" loading="lazy"></picture><br><sub><b>A pipeline run with its stages, jobs, and live log.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/pipelines.png"><img src="docs/assets/screenshots/pipelines-light.png" alt="Levelrail dashboard: Pipelines across apps" title="Pipelines: CI-style jobs that run on the control plane" loading="lazy"></picture><br><sub><b>Pipelines: CI-style jobs that run on the control plane.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-overview-page.png"><img src="docs/assets/screenshots/app-overview-page-light.png" alt="Levelrail dashboard: App overview: health, URLs, deploys, metrics summary" title="Each app&#x27;s overview in one place" loading="lazy"></picture><br><sub><b>Each app&#x27;s overview in one place.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/security-center.png"><img src="docs/assets/screenshots/security-center-light.png" alt="Levelrail security center" loading="lazy"></picture><br><sub><b>Security center</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/encryption-keys.png"><img src="docs/assets/screenshots/encryption-keys-light.png" alt="Levelrail dashboard: Encryption keys" title="Master and per-app encryption key status and rotation" loading="lazy"></picture><br><sub><b>Master and per-app encryption key status and rotation.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/account-passkeys.png"><img src="docs/assets/screenshots/account-passkeys-light.png" alt="Levelrail dashboard: Passkey manager" title="Add, test and remove passkeys, synced or device-bound" loading="lazy"></picture><br><sub><b>Add, test and remove passkeys, synced or device-bound.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/cli-access.png"><img src="docs/assets/screenshots/cli-access-light.png" alt="Levelrail dashboard: CLI access: this server, tokens, pending logins" title="Sign in the CLI from your own machine, with tokens you can revoke" loading="lazy"></picture><br><sub><b>Sign in the CLI from your own machine, with tokens you can revoke.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/janitor-settings.png"><img src="docs/assets/screenshots/janitor-settings-light.png" alt="Levelrail dashboard: Automatic cleanup (janitor) settings" title="Automatic cleanup of old images, containers, and logs" loading="lazy"></picture><br><sub><b>Automatic cleanup of old images, containers, and logs.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/beta-features.png"><img src="docs/assets/screenshots/beta-features-light.png" alt="Levelrail dashboard: Beta features list" title="Opt in to beta features one at a time" loading="lazy"></picture><br><sub><b>Opt in to beta features one at a time.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/plugins-marketplace.png"><img src="docs/assets/screenshots/plugins-marketplace-light.png" alt="Levelrail plugin marketplace" loading="lazy"></picture><br><sub><b>Plugin marketplace</b></sub></td>
   </tr>
   <tr>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/plugins.png"><img src="docs/assets/screenshots/plugins-light.png" alt="Levelrail dashboard: Installed plugins" title="Manage the plugins you have installed and their permissions" loading="lazy"></picture><br><sub><b>Manage the plugins you have installed and their permissions.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/plugins-marketplace.png"><img src="docs/assets/screenshots/plugins-marketplace-light.png" alt="Levelrail dashboard: Plugin marketplace" title="Install signed plugins in one click" loading="lazy"></picture><br><sub><b>Install signed plugins in one click.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/security-center.png"><img src="docs/assets/screenshots/security-center-light.png" alt="Levelrail dashboard: Security center: score, checklist, affected items" title="A security score with the checks that need attention" loading="lazy"></picture><br><sub><b>A security score with the checks that need attention.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/settings-account.png"><img src="docs/assets/screenshots/settings-account-light.png" alt="Levelrail dashboard: Account settings: profile and password" title="Your account, your password, your sessions" loading="lazy"></picture><br><sub><b>Your account, your password, your sessions.</b></sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/settings-general.png"><img src="docs/assets/screenshots/settings-general-light.png" alt="Levelrail dashboard: General settings" title="Instance name, dashboard URL and defaults" loading="lazy"></picture><br><sub><b>Instance name, dashboard URL and defaults.</b></sub></td>
     <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/settings-health.png"><img src="docs/assets/screenshots/settings-health-light.png" alt="Levelrail dashboard: Settings health" title="Spot misconfigured settings and fix them with one click" loading="lazy"></picture><br><sub><b>Spot misconfigured settings and fix them with one click.</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/setup-wizard.png"><img src="docs/assets/screenshots/setup-wizard-light.png" alt="Levelrail dashboard: First-run setup checklist" title="First-run setup, step by step" loading="lazy"></picture><br><sub><b>First-run setup, step by step.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/status-page-settings.png"><img src="docs/assets/screenshots/status-page-settings-light.png" alt="Levelrail dashboard: Public status page settings" title="A public status page for your apps" loading="lazy"></picture><br><sub><b>A public status page for your apps.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/settings-general.png"><img src="docs/assets/screenshots/settings-general-light.png" alt="Levelrail dashboard: General settings" title="Instance name, dashboard URL and defaults" loading="lazy"></picture><br><sub><b>Instance name, dashboard URL and defaults.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/settings-account.png"><img src="docs/assets/screenshots/settings-account-light.png" alt="Levelrail dashboard: Account settings: profile and password" title="Your account, your password, your sessions" loading="lazy"></picture><br><sub><b>Your account, your password, your sessions.</b></sub></td>
   </tr>
   <tr>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/storage-destinations.png"><img src="docs/assets/screenshots/storage-destinations-light.png" alt="Levelrail dashboard: Storage destinations: empty state with next steps" title="Connect an S3-compatible bucket for backups and archives" loading="lazy"></picture><br><sub><b>Connect an S3-compatible bucket for backups and archives.</b></sub></td>
-    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/templates-catalog.png"><img src="docs/assets/screenshots/templates-catalog-light.png" alt="Levelrail dashboard: Template catalog" title="Install a known service from the template catalog" loading="lazy"></picture><br><sub><b>Install a known service from the template catalog.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/account-activity.png"><img src="docs/assets/screenshots/account-activity-light.png" alt="Levelrail dashboard: Account activity feed" title="See every sign-in and change made to your account" loading="lazy"></picture><br><sub><b>See every sign-in and change made to your account.</b></sub></td>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/command-palette-search.png"><img src="docs/assets/screenshots/command-palette-search-light.png" alt="Levelrail dashboard: Command palette search results" title="One search across apps, databases, nodes and actions" loading="lazy"></picture><br><sub><b>One search across apps, databases, nodes and actions.</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/command-palette.png"><img src="docs/assets/screenshots/command-palette-light.png" alt="Levelrail command palette search" loading="lazy"></picture><br><sub><b>One search for everything</b></sub></td>
   </tr>
 </table>
 </details>
@@ -293,6 +288,14 @@ Step by step walkthroughs, each tested against a real install:
 | [Logs, traces and errors without a stack](https://github.com/glincker/levelrail/discussions/1240) | Observability and Grafana |
 | [Scale to zero on a small VPS](https://github.com/glincker/levelrail/discussions/1242) | Run many projects on one box |
 | [Levelrail vs Coolify, Dokploy, CapRover, Dokku and Kamal](https://github.com/glincker/levelrail/discussions/1235) | Where each one fits |
+
+## Add a Deploy button to your project
+
+Maintain an open-source app? Let people run it on their own server in a few clicks.
+
+[![Deploy to Levelrail](docs/assets/brand/deploy-button-split.svg)](docs/deploy-button.md)
+
+Copy-paste snippets and the four badge styles: [Deploy button](docs/deploy-button.md) and the [Brand kit](docs/brand.md).
 
 ## For AI agents and crawlers
 

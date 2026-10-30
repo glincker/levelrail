@@ -16,6 +16,7 @@ APP_DATA_DIR=/var/lib/demo-data levelrail demo seed --seed 1
 
 - `--seed` picks the deterministic data set. The same seed and anchor always produce the same rows.
 - `--anchor` sets the "now" the 14 days of history are counted back from (RFC 3339, default the current hour).
+- `--scenario` picks the storyline: `incident` (default, the public demo with a crashlooping app, pending approvals and a firing disk alert) or `calm` (a healthy fleet with succeeded deploys only and at most one pending approval, used for marketing screenshots). Unknown values are rejected.
 - Seeding refuses a data directory that already holds users, and re-running with the same options is a no-op.
 
 To refresh the time anchor, seed into a new empty data directory and swap it in.
@@ -33,7 +34,9 @@ APP_DEMO_MODE=1 APP_DATA_DIR=/var/lib/demo-data levelrail demo serve
 - `DOCKER_HOST`, `APP_AGENT_ADDR`, `APP_INGRESS_HTTP_ADDR` and `APP_INGRESS_HTTPS_ADDR` are all unset.
 - `APP_HTTP_ADDR`, if set, is a loopback address. The default is `127.0.0.1:8080`.
 
-Put your own reverse proxy or tunnel in front of the loopback port.
+Put your own reverse proxy or tunnel in front of the loopback port. For a Caddy based public host see [Host a public read-only demo](/hosted-demo).
+
+Set `APP_DEMO_RESET_INTERVAL` (a duration such as `30m`, at least one minute) if your host re-seeds more often than daily; the banner then shows the matching next reset time.
 
 ## What visitors can do
 

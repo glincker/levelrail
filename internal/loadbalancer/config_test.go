@@ -14,6 +14,8 @@ func TestConfigValidate(t *testing.T) {
 	}{
 		{name: "nil is valid", cfg: nil},
 		{name: "empty is valid", cfg: &Config{}},
+		{name: "client ip hash is valid", cfg: &Config{Algorithm: AlgoClientIPHash}},
+		{name: "cookie name on client ip hash", cfg: &Config{Algorithm: AlgoClientIPHash, CookieName: "x"}, wantErr: "cookie_name"},
 		{name: "unknown algorithm", cfg: &Config{Algorithm: "random"}, wantErr: "algorithm"},
 		{name: "cookie name on wrong algorithm", cfg: &Config{CookieName: "x"}, wantErr: "cookie_name"},
 		{name: "weights on wrong algorithm", cfg: &Config{Weights: []int{1}}, wantErr: "weights only"},
@@ -63,5 +65,37 @@ func TestEffectiveWeightsSlowStart(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("weights = %v, want %v", got, want)
 		}
+	}
+}
+
+func TestConfigDefaults(t *testing.T) {
+	tests := []struct {
+		name  string
+		cfg   Config
+		check func(Config) bool
+	}{
+		{"empty gets round robin", Config{}, func(c Config) bool { return c.Algorithm == AlgoRoundRobin }},
+		{"cookie gets default name", Config{Algorithm: AlgoCookie}, func(c Config) bool { return c.CookieName == "lb" }},
+		{"cookie keeps custom name", Config{Algorithm: AlgoCookie, CookieName: "sid"}, func(c Config) bool { return c.CookieName == "sid" }},
+		{"active health fills probe defaults", Config{ActiveHealth: &ActiveHealth{Path: "/h"}}, func(c Config) bool {
+			h := c.ActiveHealth
+			return h.Interval == "10s" && h.Timeout == "5s" && h.Passes == 1 && h.Fails == 1
+		}},
+		{"passive health fills defaults", Config{PassiveHealth: &PassiveHealth{}}, func(c Config) bool {
+			return c.PassiveHealth.FailDuration == "30s" && c.PassiveHealth.MaxFails == 1
+		}},
+		{"retries fill try duration", Config{Retries: &Retries{Count: 2}}, func(c Config) bool { return c.Retries.TryDuration == "5s" }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.Defaults(); !tt.check(got) {
+				t.Fatalf("Defaults() = %+v", got)
+			}
+		})
+	}
+	in := Config{ActiveHealth: &ActiveHealth{Path: "/h"}}
+	_ = in.Defaults()
+	if in.ActiveHealth.Interval != "" {
+		t.Fatal("Defaults mutated the receiver's nested config")
 	}
 }

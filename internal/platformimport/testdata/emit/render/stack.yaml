@@ -1,0 +1,7 @@
+version: 1
+kind: Stack
+metadata:
+  name: render-import
+spec:
+  project: render-import
+  environment: production

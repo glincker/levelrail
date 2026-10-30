@@ -24,7 +24,7 @@ var (
 	}
 	deploymentTriggerValues = []string{
 		store.DeploymentTriggerGitPush, store.DeploymentTriggerManual, store.DeploymentTriggerRollback,
-		store.DeploymentTriggerAPI, store.DeploymentTriggerPreview, store.DeploymentTriggerSchedule, "pipeline",
+		store.DeploymentTriggerAPI, store.DeploymentTriggerPreview, store.DeploymentTriggerSchedule, store.DeploymentTriggerRestart, "pipeline",
 	}
 )
 
@@ -93,6 +93,7 @@ func parseDeploymentQuery(q url.Values, now time.Time) (store.DeploymentFilter, 
 		App:         q.Get("app"),
 		Branch:      q.Get("branch"),
 		Environment: q.Get("environment"),
+		Project:     q.Get("project"),
 		Query:       q.Get("q"),
 		Cursor:      q.Get("cursor"),
 		Limit:       deploymentsDefaultLimit,

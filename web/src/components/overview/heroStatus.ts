@@ -11,6 +11,8 @@ export interface HeroStatusInput {
   /** Plain-words label of the running deploy stage, when deploying. */
   deployPhase?: string
   latestAttemptStatus?: DeployAttemptStatus
+  /** The server's outcome for the newest deploy; absent on older servers. */
+  serverOutcome?: { outcome?: string; reason?: string }
 }
 
 export interface HeroStatus {
@@ -42,6 +44,18 @@ export function deriveHeroStatus(input: HeroStatusInput): HeroStatus {
       label: 'Needs attention',
       live: false,
       title: failing ? `${failing.Type}: ${failing.Reason}` : undefined,
+    }
+  }
+  // A crash loop reads as Reconciling locally; the server says it failed.
+  if (
+    summary.label === 'Reconciling' &&
+    input.serverOutcome?.outcome === 'failed'
+  ) {
+    return {
+      tone: 'danger',
+      label: 'Needs attention',
+      live: false,
+      title: input.serverOutcome.reason,
     }
   }
   if (summary.label === 'Reconciling') {

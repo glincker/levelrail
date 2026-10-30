@@ -100,7 +100,7 @@ func (db *DB) GetEnvironmentsByIDs(ctx context.Context, ids []string) (map[strin
 	if err != nil {
 		return nil, fmt.Errorf("store: marshal batched environment ids: %w", err)
 	}
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+environmentColumns+`
 		FROM environments
 		WHERE id IN (SELECT value FROM json_each(?))
@@ -224,7 +224,7 @@ func (db *DB) SetServiceEnvironment(ctx context.Context, serviceName, envID stri
 	if n == 0 {
 		return ErrServiceNotFound
 	}
-	return nil
+	return db.noteAppChange(ctx, serviceName)
 }
 
 func kindOrCustom(k string) string {

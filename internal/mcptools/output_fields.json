@@ -49,6 +49,21 @@
   "results",
   "skipped"
  ],
+ "apply_stack": [
+  "applied",
+  "changes",
+  "failed",
+  "issues",
+  "noop",
+  "pending_approval",
+  "plan_hash",
+  "replayed",
+  "revision",
+  "stack",
+  "status",
+  "summary",
+  "warnings"
+ ],
  "approve_deploy_approval": [
   "app",
   "approval"
@@ -298,6 +313,15 @@
   "swap_group",
   "updated_at"
  ],
+ "deploy_template": [
+  "app",
+  "notices",
+  "reveal",
+  "secret_keys",
+  "services",
+  "wait",
+  "wait_note"
+ ],
  "deployments_summary": [
   "counts",
   "duration",
@@ -435,6 +459,8 @@
   "deploy_paths_ignore",
   "has_token",
   "post_pr_comments",
+  "pr_comment_commands",
+  "pr_comment_commands_forks",
   "preview_enabled",
   "repo_url",
   "report_status",
@@ -454,6 +480,13 @@
   "checks",
   "domains",
   "verdict"
+ ],
+ "get_app_import_exit_report": [
+  "counts",
+  "id",
+  "mode",
+  "open",
+  "ready_to_retire"
  ],
  "get_app_import_plan": [
   "blocking",
@@ -550,6 +583,7 @@
   "countries",
   "error_rate_4xx",
   "error_rate_5xx",
+  "error_spikes",
   "from",
   "has_traffic",
   "latency",
@@ -563,6 +597,7 @@
   "slow_routes",
   "status_classes",
   "to",
+  "top_routes",
   "upstream_errors",
   "window"
  ],
@@ -700,6 +735,13 @@
   "supported",
   "suspended_apps"
  ],
+ "get_database_pitr_status": [
+  "enabled",
+  "restore_mode",
+  "window_end",
+  "window_error",
+  "window_start"
+ ],
  "get_database_reachability": [
   "allowed_sources",
   "apps",
@@ -797,6 +839,9 @@
   "top_packages",
   "types",
   "unlicensed"
+ ],
+ "get_deploy_timeline": [
+  "events"
  ],
  "get_deploy_vulnerabilities": [
   "deployment_id",
@@ -914,6 +959,15 @@
  "get_load_balancer_history": [
   "upstreams"
  ],
+ "get_migration_job_status": [
+  "done",
+  "failed",
+  "next",
+  "open_gates",
+  "phase",
+  "safe_to_delete",
+  "total"
+ ],
  "get_migration_plan": [
   "cutover",
   "host",
@@ -923,6 +977,10 @@
   "sessions",
   "step",
   "verified"
+ ],
+ "get_migration_verify_report": [
+  "differences",
+  "verdict"
  ],
  "get_model": [
   "api_key_prefix",
@@ -1142,6 +1200,10 @@
   "tiers",
   "windows"
  ],
+ "get_stack": [
+  "last_apply",
+  "stack"
+ ],
  "get_status_page": [
   "preview",
   "settings"
@@ -1164,6 +1226,17 @@
   "id",
   "level",
   "protections"
+ ],
+ "get_template_upgrade_plan": [
+  "app_id",
+  "automatic",
+  "blockers",
+  "from_version",
+  "has_changes",
+  "risk",
+  "services",
+  "template_id",
+  "to_version"
  ],
  "get_upgrade_readiness": [
   "breaking",
@@ -1911,6 +1984,9 @@
  "list_sso_group_mappings": [
   "mappings"
  ],
+ "list_stacks": [
+  "stacks"
+ ],
  "list_status_incidents": [
   "body",
   "component_ids",
@@ -1991,8 +2067,10 @@
   "status_code"
  ],
  "list_zones": [
+  "domains",
   "labeled",
   "nodes",
+  "onboarding",
   "zones"
  ],
  "log_signatures": [
@@ -2034,6 +2112,14 @@
   "services",
   "source",
   "suggested_name",
+  "warnings"
+ ],
+ "plan_stack": [
+  "changes",
+  "issues",
+  "plan_hash",
+  "stack",
+  "summary",
   "warnings"
  ],
  "preflight_app": [

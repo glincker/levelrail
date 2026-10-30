@@ -49,27 +49,63 @@ fi
 go_pkg_dirs=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' ':!tools/*' ':!kit/*' ':!integrations/terraform-provider/*' ':!docs-local/*' | xargs -n1 dirname 2>/dev/null | sort -u | while read -r d; do [ -d "$d" ] && echo "./$d"; done)
 go_mod_staged=$(git diff --cached --name-only -- go.mod go.sum)
 
-echo "pre-commit: go vet (changed packages)"
+# vet and golangci-lint are independent, so they run side by side; vet's
+# output is printed after lint so the two logs never interleave.
+echo "pre-commit: go vet + golangci-lint (changed packages, lint on new issues only)"
+vet_log="$(mktemp)"
+vet_pid=""
 if [ -n "$go_pkg_dirs" ] || [ -n "$go_mod_staged" ]; then
 	# shellcheck disable=SC2086
-	if ! go vet ${go_pkg_dirs:-./...} 2>&1; then
-		fail=1
-	fi
+	( go vet ${go_pkg_dirs:-./...} ) >"$vet_log" 2>&1 &
+	vet_pid=$!
 else
-	echo "no staged Go files, skipped"
+	echo "no staged Go files, vet skipped"
 fi
 
-echo "pre-commit: golangci-lint (changed packages, new issues only)"
 if [ -z "$go_pkg_dirs" ]; then
-	echo "no staged Go files, skipped"
+	echo "no staged Go files, lint skipped"
 elif command -v golangci-lint >/dev/null; then
-	# shellcheck disable=SC2086
-	if ! GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run --new-from-rev=HEAD $go_pkg_dirs; then
+	# Parallel runners are allowed so agents never queue behind each other; the
+	# cache is shared across worktrees (its writes are atomic). If an older
+	# binary still reports the single-run lock, wait a bounded time and retry,
+	# then fail loudly: lint is never skipped silently.
+	lint_cache="${LEVELRAIL_LINT_CACHE:-$(git rev-parse --path-format=absolute --git-common-dir)/golangci-lint-cache}"
+	lint_wait="${APP_LINT_LOCK_WAIT_SECONDS:-300}"
+	lint_log="$(mktemp)"
+	lint_start="$(date +%s)"
+	while :; do
+		# shellcheck disable=SC2086
+		GOLANGCI_LINT_CACHE="$lint_cache" golangci-lint run --allow-parallel-runners --new-from-rev=HEAD $go_pkg_dirs >"$lint_log" 2>&1
+		lint_rc=$?
+		cat "$lint_log"
+		if [ "$lint_rc" -eq 0 ]; then
+			break
+		fi
+		if grep -q "parallel golangci-lint is running" "$lint_log"; then
+			if [ $(($(date +%s) - lint_start)) -ge "$lint_wait" ]; then
+				echo "golangci-lint lock still held after ${lint_wait}s (APP_LINT_LOCK_WAIT_SECONDS), lint NOT run, commit aborted."
+				fail=1
+				break
+			fi
+			echo "golangci-lint lock held by another run, retrying in 5s (limit ${lint_wait}s)"
+			sleep 5
+			continue
+		fi
 		fail=1
-	fi
+		break
+	done
+	rm -f "$lint_log"
 else
 	echo "golangci-lint not installed, skipping (CI still enforces this)"
 fi
+
+if [ -n "$vet_pid" ]; then
+	if ! wait "$vet_pid"; then
+		cat "$vet_log"
+		fail=1
+	fi
+fi
+rm -f "$vet_log"
 
 echo "pre-commit: kit (vet, lint, build, brand strings)"
 staged_kit_files=$(git diff --cached --name-only --diff-filter=ACM -- 'kit/')
@@ -177,14 +213,10 @@ echo "pre-commit: web (tsc, eslint, prettier)"
 staged_web_files=$(git diff --cached --name-only --diff-filter=ACM -- 'web/*.ts' 'web/*.tsx')
 if [ -n "$staged_web_files" ]; then
 	rel_web_files=$(echo "$staged_web_files" | sed 's#^web/##')
-	# routeTree.gen.ts is gitignored and written by vite build, so a fresh
-	# worktree makes tsc -b fail on every route until it exists.
-	if [ ! -f web/src/routeTree.gen.ts ]; then
-		echo "web/src/routeTree.gen.ts missing: generating it with vite build (once per checkout)"
-		if ! ( cd web && npx vite build >/dev/null 2>&1 ); then
-			echo "vite build failed; run: cd web && npx vite build"
-			fail=1
-		fi
+	# routeTree.gen.ts is gitignored and goes stale whenever src/routes
+	# changes; regenerate it (about 0.5s) instead of failing tsc -b.
+	if ! scripts/ensure-route-tree.sh; then
+		fail=1
 	fi
 	# tsc -b, not tsc --noEmit: the root tsconfig only holds project
 	# references, so --noEmit checks nothing. -b is what CI runs. It is the

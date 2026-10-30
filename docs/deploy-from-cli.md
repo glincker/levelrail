@@ -47,6 +47,8 @@ deploy dep_1: healthy
 https://demo-app.203-0-113-10.sslip.io
 ```
 
+On the first deploy of a new domain the certificate is requested only when the app goes live, so the URL can refuse connections for up to a minute. When the certificate is not issued yet, the summary adds `live on <url> (certificate is being issued, usually under a minute)` on stderr, and `--json` carries `"certificate": "pending"`. Pass `--wait-url` to block until it is issued (limit `APP_DEPLOY_CERT_WAIT`, default 2m).
+
 The exit code is 0 for a healthy deploy, 7 when the deploy failed or rolled back and a timeout code when `--timeout` (default 15 minutes) ends before the deploy finishes. The deploy itself keeps running after a timeout.
 
 ## What is uploaded
@@ -108,7 +110,19 @@ This only works while the archive is still within the retention period; after th
 - Archives are checked before they are stored and again when extracted: absolute paths, `..` segments, symbolic links, hard links, devices and other special files are rejected, and file count and expanded size are capped so a small archive cannot expand into a disk-filling bomb.
 - Stored archives live in the control plane data directory, never in a web-served path.
 
+## Safe retries in CI
+
+`apps deploy`, `apps rollback` and `apps promote` send an `Idempotency-Key` header, so a re-run of the same CI job is applied once and the first result is replayed. The key is derived from the app, the image (or target environment) and the run id: `GITHUB_RUN_ID` plus `GITHUB_RUN_ATTEMPT`, else `CI_PIPELINE_ID`, else the current minute. Pass `--idempotency-key` to set your own.
+
+The CLI retries HTTP 429 and 503 only for idempotent requests or requests carrying an `Idempotency-Key`, waiting for `Retry-After` (seconds or HTTP date) plus a little jitter. Two environment variables bound it:
+
+- `LEVELRAIL_RETRY_MAX`: retries after the first attempt (default `3`, `0` turns retry off).
+- `LEVELRAIL_RETRY_MAX_WAIT`: total time spent waiting, in seconds or a duration such as `90s` (default `60s`).
+
+Responses also carry `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` (seconds until the budget is full again).
+
 ## Related
 
+- [Use any CI](/use-any-ci) has GitLab CI, CircleCI, Jenkins and Buildkite templates that build elsewhere and deploy with `apps deploy --image`.
 - [Deploying apps](/deploying-apps) covers git sources, images, rollbacks and promotion.
 - [Getting started](/getting-started) installs the control plane and the CLI.

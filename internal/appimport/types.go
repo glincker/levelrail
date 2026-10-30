@@ -98,6 +98,7 @@ type Entry struct {
 	Domains     []string      `json:"domains,omitempty"`
 	Env         EnvSummary    `json:"env"`
 	Volumes     []VolumeEntry `json:"volumes,omitempty"`
+	Crons       int           `json:"crons,omitempty"`
 	Health      *HealthEntry  `json:"health,omitempty"`
 	MemoryBytes int64         `json:"memory_bytes,omitempty"`
 	NanoCPUs    int64         `json:"nano_cpus,omitempty"`

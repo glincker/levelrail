@@ -71,7 +71,8 @@ A deploy that carries a `loadbalancer:` block saves it. A deploy without the blo
 | --- | --- |
 | `round_robin` | Each request goes to the next replica in turn. The default. |
 | `least_conn` | The replica with the fewest active requests. |
-| `ip_hash` | The same client address always reaches the same replica. |
+| `ip_hash` | The same client address always reaches the same replica. It keys on the connection's remote address, so behind a proxy or CDN all clients share that proxy's address. |
+| `client_ip_hash` | Hashes the client IP after trusted-proxy handling, so clients behind one CDN spread across replicas. Needs `APP_INGRESS_TRUSTED_PROXIES` set to your proxy ranges. Forwarded client address headers are honoured only from those ranges; without it the key is the connection address and it behaves like `ip_hash`. |
 | `uri_hash` | The same path always reaches the same replica. Good for caches. |
 | `cookie` | A cookie (`cookie_name`, default `lb`) pins a browser to a replica. New visitors are placed round robin. |
 | `weighted` | `weights: [3, 1]` gives replica 0 three quarters of the traffic. Weights are indexed by replica number and default to 1. |

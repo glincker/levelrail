@@ -30,10 +30,11 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -218,39 +219,46 @@ const (
 // from ServiceStore on every Reconcile, never cached) to a running
 // container.
 type Controller struct {
-	serviceName       string
-	conditions        ConditionReader
-	store             ServiceStore
-	runtime           docker.Runtime
-	httpClient        *http.Client
-	probeLimits       probe.Limits
-	readyBudget       time.Duration
-	secretResolver    SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder    DeployRecorder // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr       string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
-	meshDB            *MeshDatabaseConfig
-	meshZone          string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
-	nodeGPU           NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
-	storageTargets    StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
-	projectEnv        ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
-	orgEnv            OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
-	environmentEnv    EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
-	appIntegrations   AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
-	bucketBindings    BucketBindingStore      // nil is valid: bound buckets are just skipped, see WithBucketBindings
-	networkPrefix     string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
-	registryCreds     RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
-	databaseScope     DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
-	databases         DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
-	vaultSettings     VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
-	vaultResolver     VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
-	hookRuns          HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
-	traceStore        TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
-	probeAttempts     ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
-	hookTimeout       time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
-	wakeWindow        WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
-	wakeProbeInterval time.Duration
-	liveness          *LivenessTracker // per-container liveness failure counts, in memory only, see LivenessTracker
-	instanceID        string           // empty means no instance-ownership check, see WithInstanceID
+	serviceName string
+	conditions  ConditionReader
+	store       ServiceStore
+	runtime     docker.Runtime
+	snap        *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
+	snapNode    string
+	imageIDs    *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
+	imageNode   string
+	httpClient  *http.Client
+	// probeUnreachableLogged keeps an unreachable-node warning to one per outage.
+	probeUnreachableLogged atomic.Bool
+	probeLimits            probe.Limits
+	readyBudget            time.Duration
+	completionBudget       time.Duration  // 0 reads EnvOneShotTimeout, see effectiveCompletionBudget
+	secretResolver         SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder         DeployRecorder // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr            string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshDB                 *MeshDatabaseConfig
+	meshZone               string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
+	nodeGPU                NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
+	storageTargets         StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
+	projectEnv             ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
+	orgEnv                 OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
+	environmentEnv         EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
+	appIntegrations        AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
+	bucketBindings         BucketBindingStore      // nil is valid: bound buckets are just skipped, see WithBucketBindings
+	networkPrefix          string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	registryCreds          RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
+	databaseScope          DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
+	databases              DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
+	vaultSettings          VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
+	vaultResolver          VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
+	hookRuns               HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	traceStore             TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
+	probeAttempts          ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
+	hookTimeout            time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
+	wakeWindow             WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
+	wakeProbeInterval      time.Duration
+	liveness               *LivenessTracker // per-container liveness failure counts, in memory only, see LivenessTracker
+	instanceID             string           // empty means no instance-ownership check, see WithInstanceID
 	// egressReadyBudget/egressReadyPollInterval override
 	// defaultEgressReadyBudget/defaultEgressReadyPollInterval (egress.go);
 	// zero means "use the default", see effectiveEgressReadyBudget and
@@ -262,16 +270,23 @@ type Controller struct {
 
 	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
 	servingImageID      string                // image ID of the last replica proven ready this pass
+	stopGrace           time.Duration         // 0 uses defaultStopGrace
 	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
 	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
+	now                 func() time.Time // nil uses time.Now; tests step a fake clock
 	unconfirmedMu       sync.Mutex
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
+	reviveWatch         time.Duration                   // see WithReviveWatch
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
-	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
-	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
-	gateDefaults        *deploysafety.Effective         // nil: one readiness pass is enough, see WithStabilityGate
+	pendingReady        *PendingReadiness               // nil keeps the blocking readiness wait, see WithReadinessRequeue
+	readinessRequeue    time.Duration
+	deferReadiness      bool                    // this run uses pendingReady: set per run from the strategy
+	retained            RetainedDeploys         // nil means no service is a retained deploy URL
+	restartBackoff      *RestartBackoff         // nil disables crash restart backoff, see WithRestartBackoff
+	meshPaths           meshpath.Resolver       // nil is valid: remote ports stay on loopback, see WithMeshPaths
+	gateDefaults        *deploysafety.Effective // nil: one readiness pass is enough, see WithStabilityGate
 	gateSource          DeploySafetySource
 	gateRecorder        GateRecorder
 	gateTick            time.Duration
@@ -279,6 +294,7 @@ type Controller struct {
 	pinner              RollbackPinner
 	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
 	startupWatch        time.Duration // see WithStartupWatch
+	nodeRecovering      bool          // see WithNodeRecovering
 }
 
 // Option configures optional Controller behavior.
@@ -487,6 +503,22 @@ func WithLivenessTracker(t *LivenessTracker) Option {
 	}
 }
 
+// RetainedDeploys bounds the retries of retained deploy-URL services (a past
+// deploy kept at its own hostname). *deployurls.Guard satisfies it.
+type RetainedDeploys interface {
+	// NoteUnready records a readiness failure; stopped is true once the
+	// service was suspended because it failed too many times in a row.
+	NoteUnready(ctx context.Context, service string) (retained, stopped bool, err error)
+	NoteReady(service string)
+	IsRetained(ctx context.Context, service string) bool
+}
+
+// WithRetainedDeploys makes retained deploy services stop retrying after
+// repeated readiness failures instead of looping with the crash backoff.
+func WithRetainedDeploys(r RetainedDeploys) Option {
+	return func(ctrl *Controller) { ctrl.retained = r }
+}
+
 // WithRestartBackoff shares one crash restart backoff across every
 // controller a caller builds, for the same reason as WithLivenessTracker.
 func WithRestartBackoff(b *RestartBackoff) Option {
@@ -541,9 +573,32 @@ func (c *Controller) Name() string { return ControllerName(c.serviceName) }
 // ControllerName is Name's naming convention, usable without a *Controller.
 func ControllerName(serviceName string) string { return "application/" + serviceName }
 
+// IsServiceControllerName reports whether name is one service's controller
+// (or its node-offline stand-in), as opposed to a fleet-wide application controller.
+func IsServiceControllerName(name string) bool {
+	svc, ok := strings.CutPrefix(name, "application/")
+	return ok && svc != "" && svc != "delete-finalizer" && svc != "network-cleanup" && !strings.Contains(svc, "/")
+}
+
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
-	desired, err := c.store.GetDesiredService(ctx, c.serviceName)
+	started, err := c.store.GetDesiredService(ctx, c.serviceName)
+	result, rerr := c.reconcileDesired(ctx, started, err)
+	if err != nil || started == nil {
+		return result, rerr
+	}
+	// A deploy or restart that landed mid-pass owns the next verdict. Publishing
+	// this one would stamp the old release's outcome on the new attempt; the
+	// nudge that deploy sent already queues the next pass.
+	if now, gerr := c.store.GetDesiredService(ctx, c.serviceName); gerr == nil && now != nil &&
+		desiredChanged(started, now) {
+		return reconcile.Result{}, nil
+	}
+	return result, rerr
+}
+
+// reconcileDesired runs one pass against the desired state Reconcile read.
+func (c *Controller) reconcileDesired(ctx context.Context, desired *store.DesiredService, err error) (reconcile.Result, error) {
 	if errors.Is(err, store.ErrServiceNotFound) {
 		// Not a failure: a controller can be registered for a service
 		// before its first deploy has ever written desired state.
@@ -560,7 +615,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if desired.Suspended {
 		// One container listing serves both teardowns: this runs for every
 		// suspended app on every resync.
-		all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+		all, err := c.listPrefix(ctx, c.serviceName+"-")
 		if err != nil {
 			err = fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
@@ -569,6 +624,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		result := unknownResult("Suspended")
+		if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
+			result = unknownResult(reasonRetainedDeployStopped)
+		}
 		result.Conditions = append(result.Conditions, c.reconcileEgressWith(ctx, c.filterEgressSidecars(all), nil, desired))
 		return result, nil
 	}
@@ -619,6 +677,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	c.servingImageID = ""
+	// Rolling retires per step and recreate skips converged targets, so both keep the blocking wait.
+	c.deferReadiness = c.pendingReady != nil && strategy == strategyBlueGreen
+	// Revive before the desired release's readiness wait: a dead serving
+	// release must not stay down for the whole wait of a failing deploy.
+	c.reviveIfDead(ctx, targets, desired, true)
 	var result reconcile.Result
 	switch strategy {
 	case strategyBlueGreen:
@@ -637,7 +700,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StrategyUnrecognized", fmt.Errorf("unrecognized deploy strategy %q", strategy)), nil
 	}
 	if isReady(result) {
+		// Recover first so RecordRollout then supersedes the older serving rows.
+		c.recoverRestart(ctx, desired)
 		c.recordRollout(ctx, desired, store.RolloutStateServing, c.servingImageID)
+	} else {
+		c.reviveLastReady(ctx, targets, desired)
 	}
 	return c.appendEgressCondition(ctx, result, targets, desired), err
 }
@@ -677,11 +744,18 @@ func (c *Controller) Teardown(ctx context.Context) error {
 // torn down, so a bad deploy never has a moment where nothing healthy is
 // serving.
 func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
+	if c.deferReadiness {
+		c.abortSupersededPending(ctx, targets)
+	}
 	anyDeployed := false
 	for i, target := range targets {
 		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
 		if err != nil {
+			c.pruneSupersededPrevious(ctx, targets)
 			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
+		}
+		if deployed.pending {
+			return c.pendingResult(target), nil
 		}
 		anyDeployed = anyDeployed || deployed.justDeployed
 	}
@@ -721,7 +795,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
 	allRunning := true
 	for _, target := range targets {
-		state, err := c.runtime.InspectByName(ctx, target)
+		state, err := c.inspectByName(ctx, target)
 		if err != nil {
 			return notReady("InspectFailed", err), fmt.Errorf("application/%s: inspect %q: %w", c.serviceName, target, err)
 		}
@@ -730,13 +804,21 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 			break
 		}
 	}
+	completed := !allRunning && c.oneShotsDone(ctx, targets, desired)
 
 	stale, err := c.staleContainers(ctx, targets)
 	if err != nil {
 		return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
 	}
 
+	if completed && len(stale) == 0 {
+		return ready(ReasonCompleted), nil
+	}
 	if allRunning && len(stale) == 0 {
+		if desired.RunsToCompletion() {
+			reason, err := c.stillRunning(ctx, targets[0], desired)
+			return notReady(reason, err), nil
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
 
@@ -762,83 +844,15 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 	return c.finishReconcile(ctx, targets, desired, true)
 }
 
-// reconcileRolling replaces targets one at a time: ensure the next
-// target is running and ready, then immediately retire exactly one
-// stale (old-image) container before moving to the next target, rather
-// than proving the whole new set healthy first the way
-// reconcileBlueGreen does.
-//
-// Pairing a retired container with the target that triggered its
-// retirement is by count, not identity: container names derive from
-// image plus index, so an image change renames every target at once and
-// there is no way to say which old container "belongs to" which replica.
-// The safety property rolling promises, never more than one replica
-// short of the desired count, holds regardless of which stale container
-// each step happens to remove.
-//
-// A failed per-step retirement is not fatal to the rollout: the
-// container just stays stale and is picked up again by the final
-// removeStale sweep below, the same "the important fact, a healthy set
-// is serving, is still true" tolerance reconcileBlueGreen's own cleanup
-// failure path already establishes. Only that final sweep's error (if
-// it still fails) is what gets reported, which is also why the "at most
-// one extra container" overlap bound is best-effort rather than an
-// invariant a caller may rely on.
-func (c *Controller) reconcileRolling(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
-	anyDeployed := false
-	for i, target := range targets {
-		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
-		if err != nil {
-			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
-		}
-		anyDeployed = anyDeployed || deployed.justDeployed
-
-		if deployed.justDeployed {
-			stale, err := c.staleContainers(ctx, targets)
-			if err != nil {
-				return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
-			}
-			// With a hold configured the last old container stays as the
-			// held previous release. With a drain window nothing old stops
-			// mid-pass: ingress still balances over it until this pass ends.
-			safety := c.safetyFor(ctx, desired)
-			if safety.DrainTimeout <= 0 && (len(stale) > 1 || (len(stale) == 1 && c.effectiveHold(safety) <= 0)) {
-				// Created is often tied at test/fake-clock resolution, so
-				// break ties on name to keep this deterministic rather
-				// than following ListByPrefix's map-iteration order.
-				sort.SliceStable(stale, func(i, j int) bool {
-					if !stale[i].Created.Equal(stale[j].Created) {
-						return stale[i].Created.Before(stale[j].Created)
-					}
-					return stale[i].Name < stale[j].Name
-				})
-				// An old release's replica 0 is what ingress still dials until
-				// this pass ends and the route moves, so it goes last.
-				for _, cs := range stale {
-					if releaseOf(cs.Name) != cs.Name {
-						_ = c.removeContainers(ctx, []docker.ContainerState{cs})
-						break
-					}
-				}
-			}
-		}
-	}
-
-	if err := c.retireStale(ctx, targets, desired, anyDeployed); err != nil {
-		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
-			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
-		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
-	}
-
-	return c.finishReconcile(ctx, targets, desired, anyDeployed)
-}
-
 // finishReconcile records the deploy metric (if a real cutover happened
 // this pass) and returns the final Ready condition, the shared tail
 // every strategy's reconcile* method ends with.
 func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
+		c.recordAdoptedCutover(ctx, targets[0], desired)
+		if desired.RunsToCompletion() {
+			return ready(ReasonCompleted), nil
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
 
@@ -894,6 +908,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 // constructs a reconcile.Result.
 type replicaOutcome struct {
 	justDeployed bool
+	pending      bool // started but not ready yet, see WithReadinessRequeue
 	reason       string
 	imageID      string
 }
@@ -907,31 +922,50 @@ type replicaOutcome struct {
 // the old container still serving in its place) purely because Docker
 // reports it Running.
 func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, index int, desired *store.DesiredService) (replicaOutcome, error) {
-	state, err := c.runtime.InspectByName(ctx, target)
+	state, err := c.inspectByName(ctx, target)
 	if err != nil {
 		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
 	}
 
 	if pinnedPortUnbound(state, desired) {
-		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPinnedPortUnbound}, fmt.Errorf("remove %q running without its pinned host port %d: %w", target, *desired.HostPort, err)
 		}
 		state = nil
 	}
 
 	if c.meshBindStale(ctx, state, desired) {
-		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: "MeshBindRecreateFailed"}, fmt.Errorf("remove %q to republish its port on the mesh address: %w", target, err)
 		}
 		state = nil
 	}
 
+	if shmDrifted(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonShmDriftRecreate}, fmt.Errorf("remove %q to apply its changed shm_size: %w", target, err)
+		}
+		state = nil
+	}
+
 	meshIP, _ := c.meshBindIP(ctx, desired)
-	if publishedPortDrifted(state, desired, meshIP) {
-		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
 		}
 		state = nil
+	}
+
+	if desired.RunsToCompletion() && state != nil {
+		if out, done, err := c.settleOneShot(ctx, target, state, desired); done {
+			return out, err
+		}
+	}
+
+	if c.defersReadiness(desired) && state != nil && !state.Running {
+		if out, ok, err := c.stoppedCandidate(ctx, target, state, desired); ok {
+			return out, err
+		}
 	}
 
 	var released []docker.ContainerState
@@ -956,15 +990,22 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			}
 			return replicaOutcome{reason: reason}, relErr
 		}
+		if c.pendingReady != nil {
+			// A pending candidate replaced under us still owes its stopped previous release.
+			if prior, ok := c.pendingReady.take(c.serviceName, target); ok {
+				released = append(released, c.locateReleased(ctx, prior.released)...)
+			}
+		}
 		if err := c.createAndStart(ctx, target, desired); err != nil {
-			c.traceAbort(ctx, desired, target, createFailureReason(err), err)
-			return replicaOutcome{reason: createFailureReason(err)}, c.abortHandoff(ctx, target, released, err)
+			reason, err := c.createFailure(err)
+			c.traceAbort(ctx, desired, target, reason, err)
+			return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 		}
 		justDeployed = true
 		created = true
 	case !state.Running:
 		if wait, restarts := c.restartBackoff.remaining(target, time.Now()); wait > 0 {
-			return replicaOutcome{reason: reasonCrashLoopBackOff}, fmt.Errorf("%q keeps exiting (%d restarts), next restart in %s", target, restarts, wait.Round(time.Second))
+			return replicaOutcome{reason: reasonCrashLoopBackOff}, errors.New(deploysafety.CrashLoopMessage(target, restarts, wait))
 		}
 		c.restartBackoff.recordRestart(target, time.Now())
 		// The container's own network can go missing between reconcile
@@ -981,7 +1022,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			}
 			return replicaOutcome{reason: reason}, fmt.Errorf("restart %q: %w", target, err)
 		}
-		if err := c.runtime.Start(ctx, state.ID); err != nil {
+		if err := c.startContainer(ctx, state.ID); err != nil {
 			// EnsureNetwork just succeeded, so a Start failure here means
 			// this specific container is broken (a container whose first
 			// Start ever failed can be left with no network binding at
@@ -989,7 +1030,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			// network is missing again. Remove and recreate, the same
 			// operation a redeploy already performs routinely.
 			startErr := err
-			if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			if err := c.removeContainer(ctx, state.ID); err != nil {
 				return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: start failed (%w) and the broken container could not be removed for recreation: %w", target, startErr, err)
 			}
 			if err := c.createAndStart(ctx, target, desired); err != nil {
@@ -1002,7 +1043,19 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 
 	if !justDeployed {
 		c.restartBackoff.observeRunning(target, time.Now())
+		defers := c.defersReadiness(desired)
+		if defers {
+			if p, started, ok := c.trackedCandidate(ctx, target, state); ok {
+				return c.resumeCandidate(ctx, target, state, desired, p, started)
+			}
+		}
 		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
+			var crash *readinessCrashError
+			if defers && !errors.As(err, &crash) {
+				if started, ok := c.adoptable(ctx, target, state, desired); ok {
+					return c.deferCandidate(target, state, pendingCandidate{created: true, firstSeen: started}), nil
+				}
+			}
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
 		}
 		// Re-ensured every steady-state pass, not just at create/restart:
@@ -1031,8 +1084,8 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		return replicaOutcome{reason: "VanishedAfterStart"}, fmt.Errorf("%q not found immediately after starting it", target)
 	}
 	if pinnedPortUnbound(state, desired) {
-		_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
-		_ = c.runtime.Remove(ctx, state.ID, true)
+		_ = c.stopContainer(ctx, state.ID)
+		_ = c.removeContainer(ctx, state.ID)
 		cause := fmt.Errorf("%q started without publishing pinned host port %d", target, *desired.HostPort)
 		return replicaOutcome{reason: reasonPinnedPortUnbound}, c.abortHandoff(ctx, target, released, cause)
 	}
@@ -1056,13 +1109,40 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			// container survives, but Reconcile still reports failure
 			// (this method's own error return) so it's never mistaken for
 			// a healthy deploy.
-			_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
-			_ = c.runtime.Remove(ctx, state.ID, true)
+			_ = c.stopContainer(ctx, state.ID)
+			_ = c.removeContainer(ctx, state.ID)
 			return replicaOutcome{reason: "PreDeployHookFailed"}, c.abortHandoff(ctx, target, released, fmt.Errorf("pre-deploy hook: %w", err))
 		}
 	}
 
-	if err := c.waitReady(ctx, state, desired); err != nil {
+	var readyErr error
+	if desired.RunsToCompletion() {
+		readyErr = c.awaitCompletion(ctx, state.Name, desired)
+		var still *completionPending
+		if errors.As(readyErr, &still) {
+			return replicaOutcome{reason: still.reason}, still
+		}
+	} else if c.defersReadiness(desired) {
+		c.noteImplicitReadiness(ctx, state.Name, desired, c.deployReadinessProbeFor(desired))
+		now := time.Now()
+		pending, err := c.probeCandidate(ctx, state, desired, c.startedAt(ctx, state, now))
+		if pending {
+			return c.deferCandidate(target, state, pendingCandidate{created: created, released: releasedIDs(released), firstSeen: now}), nil
+		}
+		readyErr = err
+	} else {
+		readyErr = c.waitReady(ctx, state, desired)
+	}
+	return c.readinessVerdict(ctx, target, state, desired, created, released, readyErr)
+}
+
+// readinessVerdict finishes a candidate once its readiness wait has an
+// answer, whether the wait blocked or was spread over requeued runs.
+func (c *Controller) readinessVerdict(ctx context.Context, target string, state *docker.ContainerState, desired *store.DesiredService, created bool, released []docker.ContainerState, readyErr error) (replicaOutcome, error) {
+	if err := readyErr; err != nil {
+		if errors.Is(err, errSuperseded) {
+			return replicaOutcome{reason: reasonSuperseded}, c.abortSuperseded(ctx, target, released)
+		}
 		reason := readinessReason(err, deploysafety.ReasonReadinessFailed)
 		var crash *readinessCrashError
 		if errors.As(err, &crash) {
@@ -1072,14 +1152,33 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		c.traceAbort(ctx, desired, target, reason, err)
 		c.recordRolloutFailure(ctx, desired, err)
 		c.markGateFailure(ctx, desired, reason)
-		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
+		abortErr := c.abortHandoff(ctx, target, released, err)
+		if c.retained != nil {
+			if _, stopped, nerr := c.retained.NoteUnready(ctx, c.serviceName); nerr != nil {
+				slog.Warn("reconcile: retained deploy failure bookkeeping failed", slog.String("service", c.serviceName), slog.String("error", nerr.Error()))
+			} else if stopped {
+				reason = reasonRetainedDeployStopped
+				abortErr = fmt.Errorf("%w (retained deploy URL stopped after repeated readiness failures, resume it to retry)", abortErr)
+			}
+		}
+		return replicaOutcome{reason: reason}, abortErr
+	}
+	if c.retained != nil {
+		c.retained.NoteReady(c.serviceName)
 	}
 	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
-	if err := c.stabilityGate(ctx, state, desired); err != nil {
+	// A crash restart of a probed container already proved itself once, so it
+	// only needs readiness, not another stability window of downtime.
+	if err := c.stabilityGateForNew(ctx, state, desired, created); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
 		c.traceAbort(ctx, desired, target, reason, err)
-		c.recordRolloutFailure(ctx, desired, err)
-		c.markGateFailure(ctx, desired, reason)
+		// A steady-state crash is not a rollout: it must not fail an earlier, succeeded deploy.
+		if created {
+			c.recordRolloutFailure(ctx, desired, err)
+			c.markGateFailure(ctx, desired, reason)
+		} else if crash := (*readinessCrashError)(nil); errors.As(err, &crash) {
+			c.captureExit(ctx, desired, target, crash.exit, crash.verdict())
+		}
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 	}
 	delete(c.handoffFailed, target)
@@ -1143,28 +1242,43 @@ func (c *Controller) connectReferencedDatabases(ctx context.Context, desired *st
 	if att := desired.DatabaseAttachment; att != nil {
 		names[att.DatabaseName] = true
 	}
+	// Sorted so the pass and the combined error are deterministic.
+	sorted := make([]string, 0, len(names))
 	for dbName := range names {
-		allowed, why, err := c.databaseScopeAllows(ctx, desired, dbName)
-		if err != nil {
-			return err
+		sorted = append(sorted, dbName)
+	}
+	slices.Sort(sorted)
+	// One database failing must not keep the others from being connected.
+	var errs []error
+	for _, dbName := range sorted {
+		if err := c.connectReferencedDatabase(ctx, desired, networkName, dbName); err != nil {
+			errs = append(errs, err)
 		}
-		if !allowed {
-			return c.enforceDatabaseScope(ctx, networkName, dbName, why)
-		}
-		if c.crossNodeDatabaseName(ctx, desired.NodeID, dbName) {
-			continue
-		}
-		containerName := database.ContainerName(dbName)
-		state, err := c.runtime.InspectByName(ctx, containerName)
-		if err != nil {
-			return fmt.Errorf("inspect database %q before network connect: %w", dbName, err)
-		}
-		if state == nil {
-			continue
-		}
-		if err := c.runtime.NetworkConnect(ctx, networkName, containerName); err != nil {
-			return fmt.Errorf("connect database %q to network %q: %w", dbName, networkName, err)
-		}
+	}
+	return errors.Join(errs...)
+}
+
+func (c *Controller) connectReferencedDatabase(ctx context.Context, desired *store.DesiredService, networkName, dbName string) error {
+	allowed, why, err := c.databaseScopeAllows(ctx, desired, dbName)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return c.enforceDatabaseScope(ctx, networkName, dbName, why)
+	}
+	if c.crossNodeDatabaseName(ctx, desired.NodeID, dbName) {
+		return nil
+	}
+	containerName := database.ContainerName(dbName)
+	state, err := c.runtime.InspectByName(ctx, containerName)
+	if err != nil {
+		return fmt.Errorf("inspect database %q before network connect: %w", dbName, err)
+	}
+	if state == nil {
+		return nil
+	}
+	if err := c.runtime.NetworkConnect(ctx, networkName, containerName); err != nil {
+		return fmt.Errorf("connect database %q to network %q: %w", dbName, networkName, err)
 	}
 	return nil
 }
@@ -1203,6 +1317,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		}
 	}
 
+	if err := c.refuseRemotePublishedPorts(desired); err != nil {
+		return err
+	}
 	spec, err := toContainerSpec(name, desired)
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
@@ -1214,6 +1331,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	spec.Ports = append(spec.Ports, streamPorts...)
 	spec.Env = env
+	if spec.Files, err = c.resolveFiles(ctx, desired, env); err != nil {
+		return fmt.Errorf("resolve files: %w", err)
+	}
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
@@ -1247,7 +1367,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.OnPull = ct.onPull
 	}
 	stopWatch := c.watchLifecycle(ctx, tr, name, c.effectiveReadyBudget(desired))
-	id, err := c.runtime.Create(ctx, spec)
+	id, err := c.createContainer(ctx, spec)
 	ct.created(id, err)
 	if err != nil {
 		stopWatch()
@@ -1256,12 +1376,12 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	c.traceImageInspect(ctx, tr, desired.Image)
 	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
 	startSpan := tr.Begin(ctx, deploytrace.StepContainerStart, "starting "+name)
-	if err := c.runtime.Start(ctx, id); err != nil {
+	if err := c.startContainer(ctx, id); err != nil {
 		// A container whose first start failed can be started again by Docker
 		// without its port bindings, so it is never left behind to retry.
 		startSpan.Fail(ctx, "StartFailed", err)
 		stopWatch()
-		_ = c.runtime.Remove(ctx, id, true)
+		_ = c.removeContainer(ctx, id)
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	startSpan.Done(ctx, name+" is running")
@@ -1696,11 +1816,19 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 		host, port = ep.host, ep.port
 	}
 
+	// The pooler shares the database's namespace: same host, other port.
+	// Cross-node apps keep the direct route, the mesh only maps 5432.
+	pooled := database.PoolerActive(desiredDB) && !crossNode
 	switch field {
 	case "host":
 		return host, nil
 	case "port":
+		if pooled {
+			return strconv.Itoa(database.PoolerPort), nil
+		}
 		return strconv.Itoa(port), nil
+	case "direct_url":
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	case "database":
 		return dbName, nil
 	case "username":
@@ -1708,6 +1836,10 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	case "password":
 		return c.resolveDatabasePassword(ctx, dbName, desiredDB.Engine)
 	case "url":
+		if pooled {
+			// Client to pooler stays inside the namespace bridge, no TLS there.
+			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, database.PoolerPort, false)
+		}
 		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	default:
 		return "", fmt.Errorf("unsupported database field %q", field)
@@ -2097,7 +2229,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 		return c.watchStartup(ctx, state.Name, desired)
 	}
 
-	target, err := probeTarget(state, *readiness)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
 		// No published port here almost always means the container
 		// already died (Docker clears bindings once it stops).
@@ -2121,24 +2253,75 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	// fakes don't, and gracefully just don't get the fast-fail below).
 	inspector, ok := c.runtime.(docker.ExitStateInspector)
 	if !ok {
-		if err := <-readyErr; err != nil {
-			return fmt.Errorf("readiness probe: %w", err)
-		}
-		return nil
+		return c.awaitReady(ctx, desired, state.Name, readyErr, nil)
 	}
 
 	crashErr := make(chan error, 1)
 	go watchForCrash(probeCtx, inspector, state.Name, cfg.Interval, crashErr)
 
-	select {
-	case err := <-readyErr:
-		if err != nil {
-			return fmt.Errorf("readiness probe: %w", err)
+	return c.awaitReady(ctx, desired, state.Name, readyErr, crashErr)
+}
+
+// awaitReady waits for the readiness or crash verdict. On an unpinned port it
+// also revives the last ready release if it dies meanwhile, so the wait of a
+// failing deploy does not extend an outage. crashErr may be nil.
+func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredService, candidate string, readyErr, crashErr <-chan error) error {
+	// The ticker also re-reads desired state, so a rollback or new deploy
+	// ends the wait instead of waiting out the full readiness budget.
+	t := time.NewTicker(c.effectiveReviveWatch())
+	defer t.Stop()
+	for {
+		select {
+		case err := <-readyErr:
+			if err != nil {
+				return fmt.Errorf("readiness probe: %w", err)
+			}
+			return nil
+		case err := <-crashErr:
+			return err
+		case <-t.C:
+			if c.desiredSuperseded(ctx, desired) {
+				return errSuperseded
+			}
+			if desired.HostPort == nil && len(desired.PublishedPorts) == 0 {
+				c.reviveIfDead(ctx, []string{candidate}, desired, false)
+			}
 		}
-		return nil
-	case err := <-crashErr:
-		return err
 	}
+}
+
+// errSuperseded ends a readiness wait whose desired state changed under it.
+// It is not a failure of the old release: nothing is recorded against it.
+var errSuperseded = errors.New("desired state changed during the readiness wait")
+
+// desiredSuperseded reports whether the stored desired state now differs from
+// what this pass began with in a way that makes the pass's work moot. A store
+// error keeps waiting: the next tick or the pass end decides.
+func (c *Controller) desiredSuperseded(ctx context.Context, began *store.DesiredService) bool {
+	now, err := c.store.GetDesiredService(ctx, c.serviceName)
+	if err != nil || now == nil {
+		return false
+	}
+	return desiredChanged(began, now)
+}
+
+func desiredChanged(a, b *store.DesiredService) bool {
+	return a.Image != b.Image || a.RestartNonce != b.RestartNonce || a.Replicas != b.Replicas || a.Suspended != b.Suspended
+}
+
+// abortSuperseded stops the candidate without recording a failure or arming
+// the handoff retry delay, and puts back any release freed for it. The normal
+// stale logic removes the stopped container on the next pass.
+func (c *Controller) abortSuperseded(ctx context.Context, target string, released []docker.ContainerState) error {
+	if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil && state.Running {
+		_ = c.stopContainer(ctx, state.ID)
+	}
+	if len(released) > 0 {
+		if err := c.restoreReleased(ctx, released); err != nil {
+			return fmt.Errorf("%w (and the previous release could not be restored: %w)", errSuperseded, err)
+		}
+	}
+	return errSuperseded
 }
 
 // verifyRunningReady re-checks the readiness of a replica Docker already
@@ -2152,13 +2335,23 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
 	readiness := readinessProbeFor(desired)
 	if readiness == nil {
+		// The container list can lag an exit a live inspect already sees.
+		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
+			return crash
+		}
 		return nil
 	}
 
-	target, err := probeTarget(state, *readiness)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 	if err != nil {
-		return fmt.Errorf("readiness recheck: %w", err)
+		// Not evaluated, not failed: an unreachable node must never flip a
+		// serving app unhealthy.
+		if c.probeUnreachableLogged.CompareAndSwap(false, true) {
+			slog.Warn("reconcile: readiness recheck skipped, probe target unreachable", slog.String("service", c.serviceName), slog.String("error", err.Error()))
+		}
+		return nil
 	}
+	c.probeUnreachableLogged.Store(false)
 
 	probeErr := c.prober().Check(ctx, target, readiness.ProbeConfig())
 	if probeErr == nil {
@@ -2262,7 +2455,7 @@ func (c *Controller) removeStale(ctx context.Context, keep []string) error {
 // same Docker daemon happening to run a service with the identical name
 // and image hash (see internal/spec.InstanceLabelKey's own doc comment).
 func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]docker.ContainerState, error) {
-	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+	all, err := c.listPrefix(ctx, c.serviceName+"-")
 	if err != nil {
 		return nil, fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 	}
@@ -2335,10 +2528,10 @@ func mergeLabel(labels map[string]string, key, value string) map[string]string {
 func (c *Controller) removeContainers(ctx context.Context, cs []docker.ContainerState) error {
 	var firstErr error
 	for _, container := range cs {
-		if err := c.runtime.Stop(ctx, container.ID, 10*time.Second); err != nil && firstErr == nil {
+		if err := c.stopContainer(ctx, container.ID); err != nil && firstErr == nil {
 			firstErr = fmt.Errorf("stop stale container %s: %w", container.Name, err)
 		}
-		if err := c.runtime.Remove(ctx, container.ID, true); err != nil && firstErr == nil {
+		if err := c.removeContainer(ctx, container.ID); err != nil && firstErr == nil {
 			firstErr = fmt.Errorf("remove stale container %s: %w", container.Name, err)
 		}
 	}
@@ -2349,11 +2542,12 @@ func (c *Controller) removeContainers(ctx context.Context, cs []docker.Container
 // port binding a service with exactly one declared port produces.
 // Exported so internal/api's health-discovery endpoint (apps_health_discover.go)
 // can resolve the same address without reimplementing this lookup.
-func PrimaryAddr(state *docker.ContainerState) (string, error) {
-	if len(state.Ports) == 0 {
-		return "", fmt.Errorf("container %s has no published ports to probe", state.Name)
+func PrimaryAddr(state *docker.ContainerState, port int) (string, error) {
+	p, ok := docker.PrimaryPort(state.Ports, port)
+	if !ok {
+		return "", fmt.Errorf("container %s has no published tcp port to probe", state.Name)
 	}
-	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), nil
+	return "127.0.0.1:" + strconv.Itoa(p.HostPort), nil
 }
 
 // hashLen is the number of hex characters ContainerName keeps from the
@@ -2526,6 +2720,16 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		}
 		spec.Ports = []docker.PortBinding{binding}
 	}
+	if len(desired.PublishedPorts) > 0 {
+		// Same bind address rule as the routed port, so a UDP port is private unless the service is public.
+		hostIP, err := bindaddr.Resolve(desired.BindAddress)
+		if err != nil {
+			return docker.ContainerSpec{}, fmt.Errorf("bind address: %w", err)
+		}
+		for _, p := range desired.PublishedPorts {
+			spec.Ports = append(spec.Ports, docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: hostIP, Protocol: p.EffectiveProtocol()})
+		}
+	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{
 			MemoryBytes:     desired.Resources.MemoryBytes,
@@ -2537,6 +2741,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			spec.GPU = &docker.GPURequest{Count: g.Count, DeviceIDs: g.DeviceIDs}
 		}
 	}
+	spec.ShmSizeBytes, spec.Labels = shmSpec(desired, spec.Labels)
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}

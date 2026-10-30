@@ -292,6 +292,13 @@ func (rt *Router) acceptingUserID(r *http.Request) (string, bool) {
 	if err != nil || rec.RevokedAt != nil || rec.OwnerUserID == "" || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
 		return "", false
 	}
+	if gone, gerr := rt.tokenOwnerGone(r.Context(), rec); gerr != nil || gone {
+		return "", false
+	}
+	// This route runs outside requireAbility, so the stack gate never sees it.
+	if rt.tokenStackScoped(r.Context(), rec.ID) {
+		return "", false
+	}
 	return rec.OwnerUserID, true
 }
 

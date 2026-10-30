@@ -1,0 +1,25 @@
+{
+  "name": "shop",
+  "stack": "heroku-22",
+  "buildpacks": [{"url": "heroku/ruby"}, {"url": "https://github.com/example/custom-buildpack"}],
+  "env": {
+    "RAILS_ENV": {"value": "production"},
+    "SECRET_KEY_BASE": {"description": "session key", "generator": "secret"},
+    "STRIPE_KEY": {"description": "payments", "required": true},
+    "OPTIONAL_FLAG": {"description": "not needed", "required": false},
+    "LOG_LEVEL": "info"
+  },
+  "addons": [
+    "heroku-postgresql:essential-0",
+    {"plan": "heroku-redis:mini", "as": "CACHE"},
+    "papertrail:choklad",
+    "scheduler:standard",
+    "sendgrid:starter"
+  ],
+  "formation": {
+    "web": {"quantity": 2, "size": "standard-1x"},
+    "worker": {"quantity": 1}
+  },
+  "healthchecks": {"web": [{"type": "startup", "path": "/up"}]},
+  "scripts": {"postdeploy": "bundle exec rake db:seed", "test": "bundle exec rspec"}
+}

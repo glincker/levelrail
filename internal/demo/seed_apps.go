@@ -113,7 +113,7 @@ func (s *seeder) deploys() error {
 				sha: s.rng.hex(7), title: commitTitles[s.rng.intn(len(commitTitles))],
 				author: authors[s.rng.intn(len(authors))], dur: time.Duration(40+s.rng.intn(140)) * time.Second,
 			}
-			if i == 2 && failures < 6 {
+			if i == 2 && failures < 6 && !s.opts.calm() {
 				failures++
 				at2.status = store.DeployAttemptStatusFailed
 				at2.failure = buildFailures[failures%len(buildFailures)]
@@ -134,6 +134,9 @@ func (s *seeder) deploys() error {
 					reason: "p95 latency doubled after a41c9e2; rolled back automatically", dur: 38 * time.Second},
 			)
 		case crashloopApp:
+			if s.opts.calm() {
+				break
+			}
 			bad := s.opts.Anchor.Add(-20 * time.Minute)
 			list = append(list,
 				attempt{at: bad.Add(-6 * time.Minute), status: store.DeployAttemptStatusFailed, source: store.DeployAttemptSourceWebhook,
@@ -159,6 +162,9 @@ func (s *seeder) deploys() error {
 }
 
 func (s *seeder) saveAttempts(a appSpec, list []attempt) error {
+	if s.lastOK == nil {
+		s.lastOK = map[string]okAttempt{}
+	}
 	for i, t := range list {
 		id := fmt.Sprintf("dep_%s_%03d", a.name, i+1)
 		da := store.DeployAttempt{
@@ -172,6 +178,9 @@ func (s *seeder) saveAttempts(a appSpec, list []attempt) error {
 		}
 		if err := s.db.FinishDeployAttempt(s.ctx, id, t.status, t.at.Add(t.dur), t.failure); err != nil {
 			return fmt.Errorf("demo: finish deploy attempt %q: %w", id, err)
+		}
+		if t.status == store.DeployAttemptStatusSucceeded {
+			s.lastOK[a.name] = okAttempt{id: id, at: t.at.Add(t.dur)}
 		}
 	}
 	if len(list) > 1 {

@@ -80,6 +80,10 @@ func ResolveImage(ctx context.Context, r docker.ImageResolver, image string, aut
 		out.Reason = store.DigestReasonResolved
 	case docker.ImageSourceCache:
 		out.Reason = store.DigestReasonPullFailedUsingCached
+		// No repo digest means the image never came from a registry, so no pull was expected.
+		if res.Digest == "" && res.LocalID != "" {
+			out.Reason = store.DigestReasonLocalImage
+		}
 	default:
 		out.Reason = store.DigestReasonUnresolved
 	}

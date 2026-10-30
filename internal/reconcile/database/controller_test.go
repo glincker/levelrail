@@ -88,6 +88,7 @@ type fakeRuntime struct {
 	// path, not just ExecWithInput above.
 	execCalls      int
 	lastExecArgCmd []string
+	execArgCmds    [][]string
 	execErr        error
 }
 
@@ -263,6 +264,7 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, cmd []string) (io.ReadCl
 	defer f.mu.Unlock()
 	f.execCalls++
 	f.lastExecArgCmd = cmd
+	f.execArgCmds = append(f.execArgCmds, cmd)
 	if f.execErr != nil {
 		return nil, f.execErr
 	}
@@ -2241,5 +2243,43 @@ func TestDragonflyCommand(t *testing.T) {
 		if got := dragonflyCommand(tt.threads); !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("dragonflyCommand(%q) = %v, want %v", tt.threads, got, tt.want)
 		}
+	}
+}
+
+// An agent older than the labels field reports no labels: a running TLS
+// container is adopted, while real labels that disagree still recreate it.
+func TestController_Reconcile_TLS_LabelsAbsentAdoptsRunningContainer(t *testing.T) {
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-cache")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	tests := []struct {
+		name    string
+		labels  map[string]string
+		wantNew bool
+	}{
+		{name: "no labels at all keeps the container", labels: nil, wantNew: false},
+		{name: "labels present without the tls marker recreates", labels: map[string]string{"other": "x"}, wantNew: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}
+			c := New("cache", &fakeStore{db: desired}, rt, WithTLS(&TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}))
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("first Reconcile() error = %v", err)
+			}
+			before := rt.createCalls
+			rt.mu.Lock()
+			rt.containers[containerName("cache")].Labels = tt.labels
+			rt.containers[containerName("cache")].LabelsUnknown = len(tt.labels) == 0
+			rt.mu.Unlock()
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("second Reconcile() error = %v", err)
+			}
+			if (rt.createCalls > before) != tt.wantNew {
+				t.Errorf("createCalls %d -> %d, recreated want %v", before, rt.createCalls, tt.wantNew)
+			}
+		})
 	}
 }

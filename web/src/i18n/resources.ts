@@ -25,6 +25,8 @@ import type logPipeline from '../locales/en/logPipeline.json'
 import type logBudgets from '../locales/en/logBudgets.json'
 import type alertSetup from '../locales/en/alertSetup.json'
 import type environments from '../locales/en/environments.json'
+import type stacks from '../locales/en/stacks.json'
+import type assets from '../locales/en/assets.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -34,6 +36,7 @@ import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
 import type updates from '../locales/en/updates.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
+import type canvas from '../locales/en/canvas.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type databaseVersions from '../locales/en/databaseVersions.json'
@@ -52,6 +55,7 @@ import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
 import type splitTesting from '../locales/en/splitTesting.json'
+import type scheduledDeploy from '../locales/en/scheduledDeploy.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
@@ -59,9 +63,11 @@ import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
+import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
 import type janitor from '../locales/en/janitor.json'
+import type cleanup from '../locales/en/cleanup.json'
 import type deployPolicies from '../locales/en/deployPolicies.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
@@ -83,6 +89,7 @@ import type errors from '../locales/en/errors.json'
 import type edgeAccess from '../locales/en/edgeAccess.json'
 import type trafficDetail from '../locales/en/trafficDetail.json'
 import type betaFeatures from '../locales/en/betaFeatures.json'
+import type runtimeSettings from '../locales/en/runtimeSettings.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
@@ -91,6 +98,7 @@ import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type staticRoutes from '../locales/en/staticRoutes.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
+import type deployEvents from '../locales/en/deployEvents.json'
 import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
@@ -101,6 +109,7 @@ import type models from '../locales/en/models.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
 import type secretScan from '../locales/en/secretScan.json'
+import type appFiles from '../locales/en/appFiles.json'
 import type sso from '../locales/en/sso.json'
 import type cdn from '../locales/en/cdn.json'
 
@@ -129,6 +138,8 @@ declare module 'i18next' {
       logBudgets: typeof logBudgets
       alertSetup: typeof alertSetup
       environments: typeof environments
+      stacks: typeof stacks
+      assets: typeof assets
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
@@ -138,6 +149,7 @@ declare module 'i18next' {
       attention: typeof attention
       updates: typeof updates
       infraCanvas: typeof infraCanvas
+      canvas: typeof canvas
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions
@@ -155,6 +167,7 @@ declare module 'i18next' {
       sleepHistory: typeof sleepHistory
       forms: typeof forms
       splitTesting: typeof splitTesting
+      scheduledDeploy: typeof scheduledDeploy
       gitBuild: typeof gitBuild
       frameworks: typeof frameworks
       teams: typeof teams
@@ -162,6 +175,7 @@ declare module 'i18next' {
       smartDeploy: typeof smartDeploy
       dataExport: typeof dataExport
       eventWebhooks: typeof eventWebhooks
+      trafficExport: typeof trafficExport
       compliance: typeof compliance
       deploySafety: typeof deploySafety
       resilience: typeof resilience
@@ -182,12 +196,14 @@ declare module 'i18next' {
       edgeAccess: typeof edgeAccess
       trafficDetail: typeof trafficDetail
       betaFeatures: typeof betaFeatures
+      runtimeSettings: typeof runtimeSettings
       newApp: typeof newApp
       getStarted: typeof getStarted
       usage: typeof usage
       costs: typeof costs
       resources: typeof resources
       deployTimeline: typeof deployTimeline
+      deployEvents: typeof deployEvents
       images: typeof images
       buildCenter: typeof buildCenter
       functions: typeof functions
@@ -198,9 +214,11 @@ declare module 'i18next' {
       aiAssistant: typeof aiAssistant
       demo: typeof demo
       secretScan: typeof secretScan
+      appFiles: typeof appFiles
       maintenance: typeof maintenance
       buildPerformance: typeof buildPerformance
       janitor: typeof janitor
+      cleanup: typeof cleanup
       sso: typeof sso
       cdn: typeof cdn
       trialApp: typeof trialApp

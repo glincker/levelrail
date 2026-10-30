@@ -46,7 +46,7 @@ levelrail-cli templates deploy vaultwarden
 
 ```text
 app_id: vaultwarden
-deployed 1 service(s):
+accepted 1 service(s), containers are starting:
   vaultwarden-vaultwarden	vaultwarden/server:1.32.1
 ```
 

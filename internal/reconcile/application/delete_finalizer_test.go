@@ -229,10 +229,13 @@ func TestDeleteFinalizer_RemoveAppNetwork(t *testing.T) {
 		{"unlabeled", docker.NetworkDetail{Name: name}, false},
 		{"prefix sibling", docker.NetworkDetail{Name: name + "-2", Labels: own}, false},
 	}
+	// RemoveAppNetwork never touches the store, so one shared DB (a ~0.7s
+	// migrate) serves every case.
+	db := newFinalizerStore(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rt := &netAdminRuntime{fakeRuntime: newFakeRuntime(0), details: []docker.NetworkDetail{tt.detail}}
-			f := NewDeleteFinalizer(newFinalizerStore(t), func(string) (docker.Runtime, error) { return rt, nil }, nil,
+			f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return rt, nil }, nil,
 				WithNetworkPrefix("lr"), WithInstanceID("inst-1"))
 			if err := f.RemoveAppNetwork(context.Background(), "shop", ""); err != nil {
 				t.Fatalf("RemoveAppNetwork() error = %v", err)

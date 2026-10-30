@@ -12,7 +12,7 @@ This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail inst
 Some areas are still beta (see [feature status](/feature-status)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](/acme-verification-runbook)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
 </Warning>
 
-Unlike the platform importer in [Migrate to Levelrail](/migrate-to-levelrail), there is no importer for Vercel. Everything below is manual.
+Unlike the platform importer in [Migrate to Levelrail](/migrate-to-levelrail), there is no platform API importer for Vercel. One offline helper exists: `levelrail-cli import config` reads `vercel.json` (and a `Procfile` or `app.json` if present) from a directory and prints a proposed `app.yaml` plus findings for what has no equivalent, each with a fix. It needs no token and changes nothing; review its output before using it. Everything else below is manual.
 
 ## 1. Inventory what Vercel holds
 
@@ -99,6 +99,8 @@ Server-only variables are set as normal app env or secrets and read when the con
 6. Move data if the app uses Vercel Postgres or KV: create a managed database here, restore a dump into it, and rehearse the restore before cutover.
 7. Recreate cron jobs as scheduled tasks, and run each once with `apps scheduled-tasks run`.
 8. Enable previews with `apps previews enable <app>` if you rely on PR preview URLs.
+
+To review the move in a pull request instead of creating things directly, run `levelrail-cli import platform vercel --emit stack --out DIR` (or `import config --emit stack --out DIR` on a checkout with a `vercel.json`). It writes App, Database and Domain documents plus a `SECRETS.md` of env variable names (never values) and a `MIGRATION.md` for cron jobs, rewrites and anything else the documents cannot hold. See [Stacks and GitOps](/stacks#migrate-into-a-stack).
 
 ## 4. What has no equivalent
 

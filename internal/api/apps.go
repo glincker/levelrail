@@ -51,6 +51,9 @@ type appResource struct {
 	// time. Settable on create and update, like Port itself, not
 	// response-only.
 	HostPort *int `json:"host_port,omitempty"`
+	// PublishedPorts are ports bound straight on the host beside Port (UDP
+	// today). On update, omitted keeps the stored list and [] clears it.
+	PublishedPorts []store.PublishedPort `json:"published_ports,omitempty"`
 	// BindAddress picks which network interface Port (and HostPort, if
 	// pinned) binds to on the host (store.DesiredService.BindAddress,
 	// migrations/0098): "private" (loopback only, the default), "public"
@@ -142,6 +145,9 @@ type appResource struct {
 	// when NodeID points at a node that no longer exists.
 	NodeName    string `json:"node_name,omitempty"`
 	NodeIsLocal bool   `json:"node_is_local,omitempty"`
+	// NodeOffline is response-only: true while the hosting node is offline, so
+	// clients need not join against the nodes list.
+	NodeOffline bool `json:"node_offline,omitempty"`
 	// AutoPlaced is response-only, set only by handleCreateApp: true when
 	// node_id was omitted from the create request and simple spread
 	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
@@ -210,6 +216,8 @@ type appResource struct {
 	// handleDeployServiceTemplateNow at create time, never through this
 	// endpoint.
 	IsTrial bool `json:"is_trial,omitempty"`
+	// TemplateID is the catalog template the app was deployed from; response-only, set at deploy time.
+	TemplateID string `json:"template_id,omitempty"`
 	// LogDrain is response-only, the same boundary NodeID/ProjectID/
 	// StorageTargetID already establish above: set it via PUT/DELETE
 	// /api/v1/apps/{name}/log-drain (apps_log_drain.go) instead.
@@ -317,6 +325,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Image:               svc.Image,
 		Port:                svc.Port,
 		HostPort:            svc.HostPort,
+		PublishedPorts:      svc.PublishedPorts,
 		BindAddress:         svc.BindAddress,
 		Domains:             svc.Domains,
 		Env:                 svc.Env,
@@ -338,6 +347,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Suspended:           svc.Suspended,
 		AppID:               svc.AppID,
 		IsTrial:             svc.IsTrial,
+		TemplateID:          svc.TemplateID,
 		LogDrain:            svc.LogDrain,
 		PreviewEnvOverrides: svc.PreviewEnvOverrides,
 		EnvDirty:            svc.EnvDirty,
@@ -351,20 +361,21 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 
 func (a appResource) toDesiredService() store.DesiredService {
 	return store.DesiredService{
-		Name:        a.Name,
-		Image:       a.Image,
-		Port:        a.Port,
-		HostPort:    a.HostPort,
-		BindAddress: a.BindAddress,
-		Domains:     a.Domains,
-		Env:         a.Env,
-		Resources:   a.Resources,
-		Health:      a.Health,
-		Hooks:       a.Hooks,
-		Strategy:    a.Strategy,
-		Replicas:    a.Replicas,
-		Labels:      a.Labels,
-		Command:     a.Command,
+		Name:           a.Name,
+		Image:          a.Image,
+		Port:           a.Port,
+		HostPort:       a.HostPort,
+		BindAddress:    a.BindAddress,
+		Domains:        a.Domains,
+		Env:            a.Env,
+		Resources:      a.Resources,
+		Health:         a.Health,
+		Hooks:          a.Hooks,
+		Strategy:       a.Strategy,
+		Replicas:       a.Replicas,
+		Labels:         a.Labels,
+		Command:        a.Command,
+		PublishedPorts: a.PublishedPorts,
 	}
 }
 
@@ -404,7 +415,27 @@ var validKnownStrategies = map[string]bool{
 	spec.StrategyBlueGreen: true,
 }
 
+// validateAppPort allows no port for a service that only publishes host
+// ports (a DNS or VPN style UDP server), or one stored without a port (a
+// compose worker); a routed domain still needs one.
+func validateAppPort(a appResource, storedPortless bool) error {
+	if a.Port == 0 && (len(a.PublishedPorts) > 0 || storedPortless) {
+		if len(a.Domains) > 0 {
+			return errors.New("port is required when domains are set, the proxy routes HTTP to it")
+		}
+		return nil
+	}
+	if a.Port <= 0 || a.Port > 65535 {
+		return errors.New("port must be between 1 and 65535, or set published_ports for a service with no HTTP port")
+	}
+	return nil
+}
+
 func validateAppResource(a appResource) error {
+	return validateAppResourceWith(a, false)
+}
+
+func validateAppResourceWith(a appResource, storedPortless bool) error {
 	if a.Name == "" {
 		return errors.New("name is required")
 	}
@@ -414,8 +445,11 @@ func validateAppResource(a appResource) error {
 	if a.Image == "" {
 		return errors.New("image is required")
 	}
-	if a.Port <= 0 {
-		return errors.New("port must be a positive integer")
+	if err := validateAppPort(a, storedPortless); err != nil {
+		return err
+	}
+	if err := validateServiceResources(a.Resources); err != nil {
+		return err
 	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
 		return errors.New("host_port must be between 1 and 65535")
@@ -522,7 +556,15 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := validateAppResource(req); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
+	// Create only: apps that predate this rule keep updating under their old names.
+	if err := spec.ValidateServiceName(req.Name); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !rt.requireWildcardDNS01(w, r, req.Domains) {
 		return
 	}
 	if _, err := envredact.Merge(req.Env, nil); err != nil {
@@ -573,6 +615,30 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	desired := req.toDesiredService()
+	// Required: false for every entry here, since this endpoint has no
+	// { required: true } concept of its own to carry over (that only
+	// ever comes from app.yaml, via internal/deploy's translate.go); the
+	// same permissive default specServiceFromDesired's own doc comment
+	// already documents for a plain manual build.
+	desired.SecretEnv = store.SecretEnvRefsFromNames(unionSecretEnvNames(req.SecretEnv, req.Secrets))
+	if len(req.VaultEnv) > 0 {
+		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
+		for k, v := range req.VaultEnv {
+			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
+		}
+	}
+	// Before admission: a registry round trip must not hold the port lock.
+	resolution, createTrace := rt.resolveCreateImage(r.Context(), &desired)
+
+	admitted := req.toDesiredService()
+	admitted.NodeID = req.NodeID
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, req.Name, nil, []store.DesiredService{admitted})
+	if !portsOK {
+		return
+	}
+	defer portsRelease()
+
 	appReserve := serviceReservation(req.Resources, req.Replicas)
 	quotaRelease, quotaOK := rt.admitQuotaOrWrite(w, r, req.ProjectID, store.ResourceOwner{},
 		quota.Amounts{Apps: 1, MemoryBytes: appReserve.MemoryBytes, NanoCPUs: appReserve.NanoCPUs})
@@ -599,20 +665,6 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	desired := req.toDesiredService()
-	// Required: false for every entry here, since this endpoint has no
-	// { required: true } concept of its own to carry over (that only
-	// ever comes from app.yaml, via internal/deploy's translate.go); the
-	// same permissive default specServiceFromDesired's own doc comment
-	// already documents for a plain manual build.
-	desired.SecretEnv = store.SecretEnvRefsFromNames(unionSecretEnvNames(req.SecretEnv, req.Secrets))
-	if len(req.VaultEnv) > 0 {
-		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
-		for k, v := range req.VaultEnv {
-			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
-		}
-	}
-	resolution, createTrace := rt.resolveCreateImage(r.Context(), &desired)
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -736,6 +788,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 	notes := rt.templateNotesFor(r.Context(), *svc)
 	writeJSON(w, http.StatusOK, appWithRequests{
 		appResource:              resource,
+		ManagedByStack:           rt.loadStackOwners(r.Context()).of("App", "App/"+name),
 		PendingImage:             pendingImage,
 		Requests:                 rt.requestSummaryFor(r, name),
 		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
@@ -764,7 +817,8 @@ func (rt *Router) previousReleaseHeldUntil(ctx context.Context, name string) *ti
 // ingress request summary (rate, error rate, p95), omitted without telemetry.
 type appWithRequests struct {
 	appResource
-	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
+	ManagedByStack string                    `json:"managed_by_stack,omitempty"`
+	Requests       *telemetry.RequestSummary `json:"requests,omitempty"`
 	// PendingImage is the desired image while a rollout to it is in progress
 	// or failed, with Image then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`
@@ -840,22 +894,23 @@ func httpsURL(host string, port int) string {
 	return "https://" + host + ":" + strconv.Itoa(port)
 }
 
-// handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
-// SaveDesiredService itself: there is no partial-update semantics here,
-// matching how store.DesiredService is already documented to work.
+// validateAppUpdate lets a service deployed without a port (compose
+// worker, UDP-only) stay so; req already carries the merged stored fields.
+func validateAppUpdate(req appResource, existing store.DesiredService) error {
+	return validateAppResourceWith(req, req.Port == 0 && existing.Port == 0)
+}
+
+// handleUpdateApp handles PUT /api/v1/apps/{name}. A field the body omits
+// keeps its stored value; an explicit empty value or null clears it.
 func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req appResource
-	if !decodeReq(w, r, &req) {
+	sent, ok := decodeAppUpdate(w, r, &req)
+	if !ok {
 		return
 	}
 	req.Name = name // the path is authoritative, not whatever the body claims
-
-	if err := validateAppResource(req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
 	if len(req.Secrets) > 0 {
 		writeError(w, http.StatusBadRequest, "secret values cannot be set through this endpoint: use PUT /api/v1/apps/{name}/secrets/{key}")
 		return
@@ -868,6 +923,15 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		rt.internalError(w, "api: update app: check existing failed", err, slog.String("name", name))
+		return
+	}
+	mergeOmittedAppFields(&req, *existing, sent)
+
+	if err := validateAppUpdate(req, *existing); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
+	if !rt.requireWildcardDNS01(w, r, req.Domains) {
 		return
 	}
 
@@ -890,6 +954,15 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	imageChanged := req.Image != existing.Image
 	desired := req.toDesiredService()
+	appID := existing.AppID
+	if appID == "" {
+		appID = name
+	}
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, appID, []store.DesiredService{*existing}, []store.DesiredService{desired})
+	if !portsOK {
+		return
+	}
+	defer portsRelease()
 	quotaRelease, quotaOK := rt.admitAppResizeQuota(w, r, *existing, desired)
 	if !quotaOK {
 		return
@@ -1096,12 +1169,38 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	// A stopped app has no container to recreate, so the nonce bump would
+	// be accepted and then do nothing.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
+		return
+	} else if svc.Suspended {
+		writeError(w, http.StatusConflict, "app is stopped, so there is nothing to restart; start it first (apps start, or Start in the dashboard)")
+		return
+	} else if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
+		return
+	} else if writeDisruption(w, rt.checkDisruption(r, *svc, disruptionRestart)) {
+		return
+	}
+
 	if err := rt.apps.RestartService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
 		return
+	}
+	// Own attempt row, like a rollback: the rollout outcome lands on it
+	// instead of the deploy being restarted.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		if rt.offlineNodeFor(r.Context(), *svc) != nil {
+			rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceRestart)
+		} else {
+			rt.recordInstantDeployAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceRestart)
+		}
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventRestart, Title: "Restarted"})
@@ -1116,12 +1215,21 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) || writeDisruption(w, rt.checkDisruption(r, *svc, disruptionStop)) {
+			return
+		}
+	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, true); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: stop app failed", err, slog.String("name", name))
 		return
+	}
+	// A stop on a reachable node needs no row; a queued one does, so history matches intent.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil && rt.offlineNodeFor(r.Context(), *svc) != nil {
+		rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStop)
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSuspend, Title: "Stopped"})
@@ -1134,12 +1242,28 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	wasStopped := false
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
+			return
+		}
+		wasStopped = svc.Suspended
+	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, false); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: start app failed", err, slog.String("name", name))
 		return
+	}
+
+	// Own attempt, so a waiter follows this start and not the last serving deploy.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); wasStopped && err == nil {
+		if rt.offlineNodeFor(r.Context(), *svc) != nil {
+			rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStart)
+		} else {
+			rt.recordInstantDeployAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStart)
+		}
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventResume, Title: "Started"})

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // CPHealthFinding is one saturated measurement on the control plane.
@@ -27,15 +29,20 @@ type CPHealth struct {
 		CPUs       int     `json:"cpus"`
 	} `json:"runtime"`
 	DB struct {
-		Queries     int64   `json:"queries"`
-		SlowQueries int64   `json:"slow_queries"`
-		P50MS       float64 `json:"p50_ms"`
-		P95MS       float64 `json:"p95_ms"`
-		P99MS       float64 `json:"p99_ms"`
-		WaitCount   int64   `json:"wait_count"`
-		WaitMS      float64 `json:"wait_ms"`
-		WALBytes    int64   `json:"wal_bytes"`
-		DBBytes     int64   `json:"db_bytes"`
+		Queries         int64   `json:"queries"`
+		SlowQueries     int64   `json:"slow_queries"`
+		P50MS           float64 `json:"p50_ms"`
+		P95MS           float64 `json:"p95_ms"`
+		P99MS           float64 `json:"p99_ms"`
+		WaitCount       int64   `json:"wait_count"`
+		WaitMS          float64 `json:"wait_ms"`
+		ReadPoolEnabled bool    `json:"read_pool_enabled"`
+		ReadPoolSize    int     `json:"read_pool_size"`
+		ReadInUse       int     `json:"read_in_use"`
+		ReadWaitCount   int64   `json:"read_wait_count"`
+		ReadWaitMS      float64 `json:"read_wait_ms"`
+		WALBytes        int64   `json:"wal_bytes"`
+		DBBytes         int64   `json:"db_bytes"`
 	} `json:"db"`
 	Reconcile struct {
 		Passes      int64   `json:"passes"`
@@ -67,7 +74,8 @@ type CPHealth struct {
 		} `json:"memory_limit"`
 		Loops []CPHealthLoop `json:"loops"`
 	} `json:"footprint"`
-	Findings []CPHealthFinding `json:"findings"`
+	Idle     footprint.Assessment `json:"idle_footprint"`
+	Findings []CPHealthFinding    `json:"findings"`
 }
 
 // CPHealthBreaker is one controller's circuit breaker.
@@ -114,5 +122,12 @@ func (c *Client) GetCPHealth(ctx context.Context) (CPHealth, error) {
 func (c *Client) FixCPHealth(ctx context.Context, fix string) (CPHealth, error) {
 	var out CPHealth
 	err := c.do(ctx, http.MethodPost, "/api/v1/system/control-plane-health/fix", map[string]string{"fix": fix}, &out)
+	return out, err
+}
+
+// GetIdleFootprint calls GET /api/v1/system/footprint.
+func (c *Client) GetIdleFootprint(ctx context.Context) (footprint.Assessment, error) {
+	var out footprint.Assessment
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/footprint", nil, &out)
 	return out, err
 }

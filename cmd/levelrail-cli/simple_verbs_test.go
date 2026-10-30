@@ -205,8 +205,8 @@ func TestHelpTiers(t *testing.T) {
 			t.Errorf("simple help lacks %q", v)
 		}
 	}
-	if n := len(clitree.SimpleVerbs()); n != 13 {
-		t.Errorf("simple verbs = %d, want 13", n)
+	if n := len(clitree.SimpleVerbs()); n != 14 {
+		t.Errorf("simple verbs = %d, want 14", n)
 	}
 	for _, v := range clitree.SimpleVerbs() {
 		if _, ok := clitree.Tree[v]; !ok {

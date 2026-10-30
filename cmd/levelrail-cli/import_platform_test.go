@@ -98,3 +98,24 @@ func TestImportPlatformTokenFlagWarnsAndValidation(t *testing.T) {
 		t.Errorf("import platform without a kind: exit %d, want usage", c)
 	}
 }
+
+func TestImportPlatformTeamFlag(t *testing.T) {
+	srv, _, got := newImportAPI(t, map[string]int{})
+	env := importEnv(map[string]string{envImportSourceToken: "tok", "APP_API_TOKEN": "cp-token"})
+	var out, errb bytes.Buffer
+	if c := runImportPlatform("cli", []string{"vercel", "--team", " team_acme ", "--dry-run", "--api-url", srv.URL}, strings.NewReader(""), &out, &errb, env); c != exitOK {
+		t.Fatalf("exit %d: %s", c, errb.String())
+	}
+	if got.TeamID != "team_acme" || got.Platform != "vercel" {
+		t.Errorf("request: %+v", got)
+	}
+	for _, args := range [][]string{
+		{"coolify", "--url", "https://x", "--team", "team_acme"},
+		{"vercel", "--team", "bad team&x=1"},
+	} {
+		var o, e bytes.Buffer
+		if c := runImportPlatform("cli", args, strings.NewReader(""), &o, &e, env); c != exitUsage {
+			t.Errorf("%v: exit %d, want usage: %s", args, c, e.String())
+		}
+	}
+}

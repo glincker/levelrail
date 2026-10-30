@@ -735,3 +735,36 @@ func TestLogCollector_StoppedContainerFetchedOnceNonFollow(t *testing.T) {
 		}
 	}
 }
+
+type fakeNodeLogs struct{ src map[string]LogSource }
+
+func (f fakeNodeLogs) LogSourceFor(nodeID string) (LogSource, error) {
+	if s, ok := f.src[nodeID]; ok {
+		return s, nil
+	}
+	return nil, errors.New("node offline")
+}
+
+func TestStreamOne_RemoteNodeTargetReadsFromThatNodesSource(t *testing.T) {
+	db := newTestDB(t)
+	local := &fakeLogSource{lines: map[string][]docker.LogLine{"c1": {{Stream: "stdout", Message: "local"}}}}
+	remote := &fakeLogSource{lines: map[string][]docker.LogLine{"c1": {{Stream: "stdout", Message: "from remote"}}}}
+	lc := NewLogCollector(local, db, nil, nil)
+	lc.SetNodeSource(fakeNodeLogs{src: map[string]LogSource{"n2": remote}})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1", NodeID: "n2", Stopped: true}); err != nil {
+		t.Fatalf("StreamOne: %v", err)
+	}
+	got, err := db.QueryLogs(ctx, "service:web", time.Unix(0, 0), time.Now().Add(time.Hour), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Message != "from remote" {
+		t.Fatalf("logs = %+v, want the remote node's line only", got)
+	}
+	if err := lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1", NodeID: "n9"}); err == nil {
+		t.Error("an unreachable node must be an error, not a silent empty stream")
+	}
+}

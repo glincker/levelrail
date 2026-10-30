@@ -1,0 +1,17 @@
+version: 1
+kind: Database
+metadata:
+  name: cache
+spec:
+  engine: redis
+  version: "7.4"
+  project: render-import
+---
+version: 1
+kind: Database
+metadata:
+  name: main-db
+spec:
+  engine: postgres
+  version: "16"
+  project: render-import

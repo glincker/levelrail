@@ -89,6 +89,9 @@ const (
 
 	// Same one-minute value as the backup scheduler, for the same cron granularity reason.
 	defaultAppScheduleSchedulerInterval = 1 * time.Minute
+	defaultAppScheduleOneShotCatchUp    = 24 * time.Hour
+	defaultScheduledDeployGrace         = 5 * time.Minute
+	defaultScheduledDeployStaleRun      = 30 * time.Minute
 
 	// An hour: a days-scale TTL needs no minute-granularity checks.
 	defaultPreviewSweepInterval = 1 * time.Hour
@@ -123,6 +126,9 @@ func main() {
 	}
 	logger := slog.New(secretmask.Handler(slog.NewTextHandler(os.Stdout, nil)))
 
+	if len(os.Args) > 1 && hostCommands[os.Args[1]] {
+		adoptInstalledDataDir(systemdUnitDir)
+	}
 	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
 		return
 	}
@@ -149,6 +155,10 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "emergency-token" {
 		if err := runEmergencyToken(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
+			if errors.Is(err, errEmergencyHelp) {
+				fmt.Println(err.Error())
+				return
+			}
 			logger.Error("emergency-token failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
@@ -190,7 +200,7 @@ func main() {
 		return
 	}
 	if len(os.Args) > 1 && os.Args[1] == "setup-token" {
-		if err := runSetupToken(context.Background(), os.Stdout, openStore); err != nil {
+		if err := runSetupToken(context.Background(), os.Stdout, len(os.Args) > 2 && os.Args[2] == "--plain", openStore); err != nil {
 			logger.Error("setup-token failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}

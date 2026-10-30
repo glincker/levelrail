@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/cloudmeta"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -153,6 +154,9 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		opts = append(opts, agent.WithMesh(holder.Current().NodeID, meshCfg.sink))
 	}
 	opts = append(opts, agent.WithHostProbe(agent.NewHostProbe(rt, agentDataDir())))
+	opts = append(opts, agent.WithOnboardingProbe(
+		agent.NewOnboardingProbe(rt, agentDataDir(), meshCfg != nil, cloudmeta.SystemConfig()),
+		agent.OnboardingIntervalFromEnv(os.LookupEnv)))
 	if rl, ok := rt.(gpu.RuntimeLister); ok {
 		opts = append(opts, agent.WithGPUProbe(func(ctx context.Context) gpu.Info {
 			return gpu.Detect(ctx, gpu.ExecRunner{}, rl)
@@ -160,6 +164,13 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 	}
 	if dir := os.Getenv("APP_AGENT_STORAGE_DIR"); dir != "" {
 		opts = append(opts, agent.WithFileStorage(dir))
+	}
+	if scfg, serr := agent.SilenceConfigFromEnv(os.LookupEnv); serr != nil {
+		logger.Error("control plane silence watcher disabled", slog.String("error", serr.Error()))
+	} else {
+		w := agent.NewSilenceWatcher(scfg, holder.Current().NodeID, logger, randInt63n)
+		go w.Run(ctx)
+		opts = append(opts, agent.WithSilenceWatcher(w))
 	}
 	if d := heartbeatIntervalFromEnv(); d > 0 {
 		opts = append(opts, agent.WithHeartbeatInterval(d))
@@ -229,6 +240,18 @@ func reenrollCommandHint() string {
 // runReenroll implements "<agent> reenroll": exchanges APP_REENROLL_TOKEN
 // for a new certificate for this node and saves it. A running agent picks
 // it up at its next reconnect.
+// envAllowUnpinnedEnroll opts an agent out of the CA fingerprint requirement.
+const envAllowUnpinnedEnroll = "APP_ALLOW_UNPINNED_ENROLL"
+
+// requirePinOrOptOut refuses first enrollment without a pinned CA, because the join token would go to whoever answers.
+func requirePinOrOptOut(logger *slog.Logger) error {
+	if os.Getenv(envAllowUnpinnedEnroll) != "1" {
+		return fmt.Errorf("APP_CA_FINGERPRINT is not set: copy it from the join command or node page, or set %s=1 to trust the control plane on first use", envAllowUnpinnedEnroll)
+	}
+	logger.Warn("enrolling without a pinned CA fingerprint: trusting the control plane's certificate on first use")
+	return nil
+}
+
 func runReenroll(ctx context.Context, addr, path string, logger *slog.Logger) error {
 	token := os.Getenv("APP_REENROLL_TOKEN")
 	if token == "" {
@@ -247,7 +270,9 @@ func runReenroll(ctx context.Context, addr, path string, logger *slog.Logger) er
 		nodeID = existing.NodeID
 		opts = append(opts, agent.WithTrustedCA(existing.CACertPEM))
 	} else if len(opts) == 0 {
-		logger.Warn("no identity file and APP_CA_FINGERPRINT is not set: trusting the control plane's certificate on first use")
+		if err := requirePinOrOptOut(logger); err != nil {
+			return err
+		}
 	}
 	id, err := agent.DialReenroll(ctx, addr, token, nodeID, opts...)
 	if err != nil {
@@ -294,8 +319,8 @@ func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (
 	var enrollOpts []agent.EnrollOption
 	if fp := os.Getenv("APP_CA_FINGERPRINT"); fp != "" {
 		enrollOpts = append(enrollOpts, agent.WithPinnedCAFingerprint(fp))
-	} else {
-		logger.Warn("APP_CA_FINGERPRINT is not set: trusting the control plane's certificate on first use for enrollment")
+	} else if err := requirePinOrOptOut(logger); err != nil {
+		return nil, err
 	}
 	logger.Info("enrolling with control plane", slog.String("addr", addr), slog.String("node_name", nodeName))
 	id, err = agent.DialEnroll(ctx, addr, token, nodeName, enrollOpts...)

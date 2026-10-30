@@ -46,11 +46,15 @@ export interface ServiceTemplateListItem {
   // Card hints read from the template's Compose body.
   needs_database?: boolean
   has_volume?: boolean
+  // Passed the last committed live smoke run (internal/catalog/verified.json).
+  verified?: boolean
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus
 // the full compose.yaml body.
 export interface ServiceTemplateDetail extends ServiceTemplateListItem {
+  // Optional operator setup notes, plain text with newlines.
+  description?: string
   compose: string
   manifest?: TemplateManifest
   requirements: TemplateRequirements

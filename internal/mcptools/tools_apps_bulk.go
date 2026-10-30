@@ -28,7 +28,7 @@ type bulkDeleteAppsInput struct {
 func registerBulkAppTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "bulk_apps",
-		Description: "Apply one action to many apps selected by names, tag or environment. Each app is authorized separately and denied apps are reported per item. Use dry_run first. Protected environments are skipped by redeploy. Deleting is bulk_delete_apps.",
+		Description: "Apply one action to many apps selected by names, tag or environment. Each app is authorized separately. Use dry_run first. Deleting is bulk_delete_apps.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in bulkAppsInput) (*mcp.CallToolResult, apiclient.BulkAppsResponse, error) {
 		if in.Action == "delete" {
 			return nil, apiclient.BulkAppsResponse{}, fmt.Errorf("bulk apps: use bulk_delete_apps to delete")
@@ -44,7 +44,7 @@ func registerBulkAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "bulk_delete_apps",
-		Description: "Permanently delete many apps at once. Requires confirm_names to equal the exact target list; call with dry_run true first and confirm the list with the user. Each deletion is audit logged per app.",
+		Description: "Permanently delete many apps. confirm_names must equal the exact target list; run dry_run first and confirm with the user.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in bulkDeleteAppsInput) (*mcp.CallToolResult, apiclient.BulkAppsResponse, error) {
 		resp, err := client.BulkApps(ctx, apiclient.BulkAppsRequest{
 			Action: "delete", Names: in.Names, Tag: in.Tag, Environment: in.Environment, ConfirmNames: in.ConfirmNames, DryRun: in.DryRun,

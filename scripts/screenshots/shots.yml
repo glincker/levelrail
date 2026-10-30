@@ -105,8 +105,9 @@
   height: 800
   wait: 2000
 
+# The Start tab: the default Metrics tab is sparse and makes a poor hero image.
 - output: docs/assets/screenshots/dashboard-home.png
-  url: __BASE_URL__/
+  url: __BASE_URL__/?board=start
   width: 1280
   height: 900
   wait: 3000
@@ -199,7 +200,7 @@
   javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const e = [...document.querySelectorAll('body *')].find(x => x.children.length === 0 && /log archive for all apps/i.test(x.textContent)); if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 600); } }, 200); })"
 
 - output: docs/assets/screenshots/janitor-settings.png
-  url: __BASE_URL__/settings/janitor
+  url: __BASE_URL__/settings/cleanup?tab=disk
   width: 1280
   height: 900
   wait: 2000

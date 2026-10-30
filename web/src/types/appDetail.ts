@@ -6,6 +6,7 @@
 // backend contract, not a public SDK, and a remapping layer would just
 // be one more place for the two shapes to silently drift apart.
 
+import type { PublishedPort } from './publishedPort'
 import type { EnvVarMeta } from '../lib/envRows'
 
 export interface ServiceResources {
@@ -81,6 +82,8 @@ export interface LogDrain {
 // never-empty/zero value), so both are required here too, not optional.
 export interface AppDetail {
   name: string
+  // Name of the stack managing this app, absent when none or iac is off.
+  managed_by_stack?: string
   image: string
   /** The content image is pinned to; absent for a legacy unpinned tag. */
   image_digest?: string
@@ -90,6 +93,8 @@ export interface AppDetail {
   // "let Docker assign one", the ordinary case. Settable on create and
   // update, like `port` itself, not response-only.
   host_port?: number | null
+  /** Extra host ports published beyond `port`, each tcp or udp. */
+  published_ports?: PublishedPort[]
   // bind_address picks which network interface `port` (and `host_port`,
   // if pinned) binds to on the host (internal/api/apps.go's
   // appResource.BindAddress): "private" (loopback only, the default),
@@ -135,6 +140,8 @@ export interface AppDetail {
   node_id?: string
   node_name?: string
   node_is_local?: boolean
+  // Response-only: true while the hosting node is offline.
+  node_offline?: boolean
   // auto_placed carries `omitempty` on the Go side and is response-only,
   // set only by POST /api/v1/apps: true when the create request omitted
   // node_id and simple spread scheduling picked a non-local node for it.
@@ -208,6 +215,8 @@ export interface AppDetail {
   // (internal/api/service_templates.go's handleDeployServiceTemplateNow).
   // Response-only and never flips after create, drives TrialAppBanner.
   is_trial?: boolean
+  // template_id is the catalog template the app was deployed from; omitted for apps that predate it.
+  template_id?: string
   // log_drain carries `omitempty` on the Go side and is response-only
   // (internal/api/apps.go's appResource own doc comment): forwards this
   // app's container logs to an external HTTP or syslog sink, additive

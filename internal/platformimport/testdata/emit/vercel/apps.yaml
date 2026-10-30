@@ -1,0 +1,47 @@
+version: 1
+kind: App
+metadata:
+  name: bare
+spec:
+  project: vercel-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/bare:latest
+    port: 80
+    replicas: 1
+---
+version: 1
+kind: App
+metadata:
+  name: docs
+spec:
+  project: vercel-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/docs:latest
+    port: 80
+    replicas: 1
+---
+version: 1
+kind: App
+metadata:
+  name: web
+spec:
+  project: vercel-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/web:latest
+    port: 80
+    replicas: 1
+    env:
+      API_KEY: {secretRef: API_KEY}
+      DB_PASS: {secretRef: DB_PASS}
+      FEATURE: prod-on
+      NODE_ENV: production
+      PREVIEW_ONLY: "yes"

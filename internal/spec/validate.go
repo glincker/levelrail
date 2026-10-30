@@ -25,6 +25,14 @@ var egressHostLike = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-
 // is checked here instead.
 var nameLike = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
+// ValidateServiceName checks a service name against the key rules plus the 63 character DNS label limit.
+func ValidateServiceName(name string) error {
+	if len(name) > 63 || !nameLike.MatchString(name) {
+		return fmt.Errorf("name %q must be lowercase letters, digits and hyphens, start with a letter and be at most 63 characters", name)
+	}
+	return nil
+}
+
 // Validate checks rules the JSON Schema can't express: values whose
 // validity depends on another field, or on the rest of the document, not
 // just their own shape. Parse always runs this after schema validation
@@ -70,6 +78,9 @@ func (s *Spec) Validate() error {
 }
 
 func (svc *Service) validate(name string) error {
+	if _, err := ParseRestartPolicy(svc.Restart); err != nil {
+		return fmt.Errorf("spec: service %q: %w", name, err)
+	}
 	if err := svc.validateBuild(name); err != nil {
 		return err
 	}
@@ -89,6 +100,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateCanary(name); err != nil {
 		return err
 	}
+	if err := svc.Rollout.Validate(name); err != nil {
+		return err
+	}
 	if svc.Resources != nil && svc.Resources.SwapMemory != "" && svc.Resources.Memory == "" {
 		return fmt.Errorf("spec: service %q: resources.swapMemory requires resources.memory to also be set", name)
 	}
@@ -96,6 +110,9 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
 	if err := svc.validateHooks(name); err != nil {
+		return err
+	}
+	if err := svc.validateFiles(name); err != nil {
 		return err
 	}
 	if err := svc.validateJobs(name); err != nil {
@@ -199,6 +216,9 @@ func (svc *Service) validateBuild(name string) error {
 	if len(svc.Build.Args) > 0 && svc.Build.Type != BuildDockerfile && !svc.Build.RunsStaticBuild() {
 		return fmt.Errorf("spec: service %q: build.args is not meaningful for build.type %q", name, svc.Build.Type)
 	}
+	if err := svc.Build.validateBuildSecrets(name); err != nil {
+		return err
+	}
 	if svc.Build.BaseDirectory == "" {
 		return nil
 	}
@@ -224,13 +244,27 @@ func (svc *Service) validatePorts(name string) error {
 	// each with its own port from the compose file's own ports:, so the
 	// wrapper itself has no single container to route to either.
 	if svc.Build.Type != BuildStatic && svc.Build.Type != BuildCompose && svc.Port == 0 {
-		return fmt.Errorf("spec: service %q: port is required unless build.type is %q or %q", name, BuildStatic, BuildCompose)
+		// A service that only publishes host ports (UDP DNS or VPN style) has no HTTP port.
+		if len(svc.PublishedPorts) == 0 {
+			return fmt.Errorf("spec: service %q: port is required unless build.type is %q or %q, or published_ports is set for a service with no HTTP port", name, BuildStatic, BuildCompose)
+		}
+		if len(svc.Domains) > 0 {
+			return fmt.Errorf("spec: service %q: port is required when domains are set, the proxy routes HTTP to it", name)
+		}
 	}
 	if svc.Build.Type == BuildStatic && svc.Port != 0 {
 		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, static sites have no running container to route to", name, BuildStatic)
 	}
 	if svc.Build.Type == BuildCompose && svc.Port != 0 {
 		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, each of the compose file's own services has its own port instead", name, BuildCompose)
+	}
+	if len(svc.PublishedPorts) > 0 {
+		if svc.Build.Type == BuildStatic {
+			return fmt.Errorf("spec: service %q: published_ports must not be set when build.type is %q, static sites have no running container to publish a port for", name, BuildStatic)
+		}
+		if err := ValidatePublishedPorts(svc.PublishedPorts); err != nil {
+			return fmt.Errorf("spec: service %q: %w", name, err)
+		}
 	}
 	if svc.HostPort == 0 {
 		return nil

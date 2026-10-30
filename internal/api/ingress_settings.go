@@ -446,6 +446,8 @@ type domainResource struct {
 	// Target says where it proxies.
 	Kind   string `json:"kind"`
 	Target string `json:"target,omitempty"`
+	// ManagedByStack names the stack owning this app domain, omitted when none.
+	ManagedByStack string `json:"managed_by_stack,omitempty"`
 	// Enforcement says which saved traffic controls visitors really get.
 	Enforcement *domainEnforcement `json:"enforcement,omitempty"`
 	// Issues are the problems the last ingress pass found for this domain
@@ -503,12 +505,14 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	owners := rt.loadStackOwners(r.Context())
 	out := make([]domainResource, 0, len(domains))
 	for _, d := range domains {
 		if !canSee(d.ServiceName) {
 			continue
 		}
 		out = append(out, domainResource{
+			ManagedByStack:     owners.of("Domain", "Domain/"+d.Domain),
 			Domain:             d.Domain,
 			ServiceName:        d.ServiceName,
 			WAFEnabled:         wafEnabled[d.Domain],

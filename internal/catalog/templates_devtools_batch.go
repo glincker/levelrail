@@ -220,7 +220,7 @@ var devtoolsBatchTemplates = []Template{
       REGISTRY_AUTH: htpasswd
       REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/registry.htpasswd
-    command: ["/bin/sh", "-c", 'apk add --no-cache apache2-utils >/dev/null 2>&1 && mkdir -p /auth && htpasswd -Bbc /auth/registry.htpasswd "$$HTPASSWD_USER" "$$HTPASSWD_PASS" && exec registry serve /etc/distribution/config.yml']
+    command: ["/bin/sh", "-c", 'apk add --no-cache apache2-utils >/dev/null 2>&1 && mkdir -p /auth && htpasswd -Bbc /auth/registry.htpasswd "$HTPASSWD_USER" "$HTPASSWD_PASS" && exec registry serve /etc/distribution/config.yml']
     volumes:
       - registry_auth_data:/var/lib/registry
     healthcheck:
@@ -443,7 +443,7 @@ var devtoolsBatchTemplates = []Template{
 	{
 		ID:                     "elasticsearch-kibana",
 		Name:                   "Elasticsearch + Kibana",
-		Slogan:                 "Elasticsearch paired with Kibana for log and document search with a visual dashboard.",
+		Slogan:                 "Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host.",
 		Category:               "Database Tools",
 		DocumentationURL:       "https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker",
 		RecommendedMemoryBytes: 2147483648, // 2048Mi
@@ -456,7 +456,7 @@ var devtoolsBatchTemplates = []Template{
 		Compose: `services:
   elasticsearch:
     image: elasticsearch:9.1.2
-    ports: ["9200:9200"]
+    ports: ["9200"]
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -471,7 +471,7 @@ var devtoolsBatchTemplates = []Template{
       start_period: 60s
   kibana:
     image: kibana:9.1.2
-    ports: ["5601:5601"]
+    ports: ["5601"]
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       SERVER_PUBLICBASEURL: ${SERVICE_FQDN_KIBANA:-http://localhost:5601}

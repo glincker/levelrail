@@ -31,6 +31,7 @@ export const DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT: Record<
   superseded: 'muted',
   queued: 'muted',
   canceled: 'muted',
+  pending: 'warning',
 }
 
 export const DEPLOY_ATTEMPT_STATUS_TONE: Record<DeployAttemptStatus, Tone> = {
@@ -41,6 +42,7 @@ export const DEPLOY_ATTEMPT_STATUS_TONE: Record<DeployAttemptStatus, Tone> = {
   superseded: 'neutral',
   queued: 'neutral',
   canceled: 'neutral',
+  pending: 'warning',
 }
 
 export const DEPLOY_ATTEMPT_STATUS_ICON: Record<DeployAttemptStatus, Icon> = {
@@ -51,6 +53,7 @@ export const DEPLOY_ATTEMPT_STATUS_ICON: Record<DeployAttemptStatus, Icon> = {
   superseded: SkipForwardIcon,
   queued: HourglassIcon,
   canceled: ProhibitIcon,
+  pending: HourglassIcon,
 }
 
 export const DEPLOY_ATTEMPT_STATUS_LABEL: Record<DeployAttemptStatus, string> =
@@ -62,6 +65,7 @@ export const DEPLOY_ATTEMPT_STATUS_LABEL: Record<DeployAttemptStatus, string> =
     superseded: 'Superseded',
     queued: 'Queued',
     canceled: 'Canceled',
+    pending: 'Queued until node returns',
   }
 
 export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
@@ -77,4 +81,8 @@ export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
     git_push: 'Git push remote',
     poll: 'Poll, webhook not received',
     upload: 'Uploaded',
+    restart: 'Restart',
+    start: 'Start',
+    stop: 'Stop',
+    pr_comment: 'Pull request comment',
   }

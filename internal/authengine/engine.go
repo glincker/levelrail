@@ -139,7 +139,7 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		PathPrefix:                    cfg.PathPrefix,
 		CookieName:                    cookieName,
 		RateLimitPerIP:                cfg.RateLimitPerIP,
-		SecureCookie:                  strings.HasPrefix(base, "https://"),
+		SecureCookie:                  strings.HasPrefix(base, "https://") || secureCookieForced(),
 		SuppressSecureCookieWarning:   true,
 		SuppressTrustedProxiesWarning: true,
 		PasswordPolicy: theauth.PasswordPolicyConfig{
@@ -222,4 +222,16 @@ func defaultIfEmpty(v, def string) string {
 		return def
 	}
 	return v
+}
+
+// EnvCookieSecure forces the Secure flag on session cookies when the dashboard
+// URL is plain http but a TLS-terminating proxy sits in front.
+const EnvCookieSecure = "APP_COOKIE_SECURE"
+
+func secureCookieForced() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(EnvCookieSecure))) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
 }

@@ -51,6 +51,62 @@ function renderCard() {
 
 afterEach(() => vi.unstubAllGlobals())
 
+describe('HostFirewallCard published ports', () => {
+  it('lists a UDP published port with its protocol badge and state', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          json({
+            ...off,
+            published_ports: [
+              {
+                port: 53,
+                protocol: 'udp',
+                app: 'dns',
+                service: 'resolver',
+                bind_address: '0.0.0.0',
+                allowed: false,
+              },
+            ],
+          }),
+        ),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText('UDP')).toBeInTheDocument()
+    expect(screen.getByText('dns / resolver')).toBeInTheDocument()
+    expect(screen.getByText('Not allowed')).toBeInTheDocument()
+  })
+})
+
+describe('HostFirewallCard loopback binds', () => {
+  it('shows a neutral Local only label instead of Not allowed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          json({
+            ...off,
+            published_ports: [
+              {
+                port: 5353,
+                protocol: 'udp',
+                app: 'dns',
+                bind_address: '127.0.0.1',
+                allowed: false,
+              },
+            ],
+          }),
+        ),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText('Local only')).toBeInTheDocument()
+    expect(screen.queryByText('Not allowed')).toBeNull()
+  })
+})
+
 describe('HostFirewallCard', () => {
   it('previews the exact commands and only enables after confirming', async () => {
     const calls: string[] = []

@@ -3,6 +3,7 @@ package agent
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"runtime"
 	"runtime/debug"
@@ -78,8 +79,26 @@ func (h *IdentityHolder) Set(id *Identity) {
 
 // LocalAgentInfo describes this agent binary and the machine it runs on.
 func LocalAgentInfo() *agentpb.AgentInfo {
-	return &agentpb.AgentInfo{Version: version.Version, Commit: buildCommit(), Os: runtime.GOOS, Arch: runtime.GOARCH}
+	return &agentpb.AgentInfo{
+		Version: version.Version, Commit: buildCommit(), Os: runtime.GOOS, Arch: runtime.GOARCH,
+		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles},
+	}
 }
+
+// CapContainerSpecSecurity means the agent applies userns, security-opt,
+// device, user and bind mount fields of a container spec.
+const CapContainerSpecSecurity = "container_spec_security"
+
+// CapContainerSpecFiles means the agent writes the spec's inline files into
+// the container before starting it.
+const CapContainerSpecFiles = "container_spec_files"
+
+// CapExitTimes means the agent sends exit state start and finish times, so zero means never started.
+const CapExitTimes = "exit_times"
+
+// ErrAgentLacksCapability is returned when a spec needs a feature the node's
+// agent did not advertise, so it would be silently dropped.
+var ErrAgentLacksCapability = errors.New("agent: node agent too old for this container spec, upgrade the agent")
 
 func buildCommit() string {
 	info, ok := debug.ReadBuildInfo()

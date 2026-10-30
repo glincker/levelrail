@@ -1,0 +1,44 @@
+version: 1
+kind: Project
+metadata:
+  name: kubernetes
+spec: {}
+---
+version: 1
+kind: Environment
+metadata:
+  name: shop
+spec:
+  project: kubernetes
+---
+version: 1
+kind: App
+metadata:
+  name: web
+spec:
+  project: kubernetes
+  environment: shop
+  service:
+    build:
+      type: image
+      image: nginx:1.27
+    port: 80
+    replicas: 3
+    strategy: rolling
+    domains:
+      - shop.example.com
+    resources:
+      memory: 256Mi
+      cpu: 0.5
+    health:
+      readiness:
+        path: /healthz
+        interval: 5s
+        failures: 3
+    env:
+      API_TOKEN: {secretRef: API_TOKEN}
+      DB_PASSWORD: {secretRef: DB_PASSWORD}
+      FEATURE_X: "on"
+      LOG_LEVEL: info
+      MODE: production
+      UPSTREAM: http://api.shop.svc.cluster.local:8080

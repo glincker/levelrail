@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 )
 
@@ -39,7 +41,7 @@ func warnEnvDuration(logger *slog.Logger, name string, def time.Duration) time.D
 }
 
 // Zero disables that control; a rule's own fields override holding, flapping, and grouping.
-func alertNoiseConfig(logger *slog.Logger) alerting.NoiseConfig {
+func alertNoiseConfig(logger *slog.Logger, settings *runtimesettings.Service) alerting.NoiseConfig {
 	return alerting.NoiseConfig{
 		ConsecutiveFailures: warnEnvInt(logger, "APP_ALERT_CONSECUTIVE_FAILURES", 1),
 		FlapThreshold:       warnEnvInt(logger, "APP_ALERT_FLAP_THRESHOLD", alerting.DefaultFlapThreshold),
@@ -47,7 +49,9 @@ func alertNoiseConfig(logger *slog.Logger) alerting.NoiseConfig {
 		GroupWindow:         warnEnvDuration(logger, "APP_ALERT_GROUP_WINDOW", 0),
 		RateLimit:           warnEnvInt(logger, "APP_ALERT_CHANNEL_RATE_LIMIT", alerting.DefaultRateLimit),
 		RateWindow:          warnEnvDuration(logger, "APP_ALERT_CHANNEL_RATE_WINDOW", alerting.DefaultRateWindow),
-		HistoryRetention:    warnEnvDuration(logger, "APP_ALERT_HISTORY_RETENTION", alerting.DefaultHistoryRetention),
+		HistoryRetentionFn: func(ctx context.Context) time.Duration {
+			return time.Duration(settings.Int(ctx, runtimesettings.KeyAlertHistoryDays)) * 24 * time.Hour
+		},
 	}
 }
 

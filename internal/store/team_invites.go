@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -136,11 +137,13 @@ func (db *DB) ClaimTeamInvite(ctx context.Context, tokenHash, userID string, now
 }
 
 // APITokenScope limits a token to one team, optionally one project, and a role.
+// Stack, when set, also binds it to one stack; it is stored separately.
 type APITokenScope struct {
 	TokenID   string
 	TeamID    string
 	ProjectID string
 	Role      string
+	Stack     *APITokenStackScope
 }
 
 // SetAPITokenScope records a token's team scope.
@@ -168,6 +171,80 @@ func (db *DB) GetAPITokenScope(ctx context.Context, tokenID string) (*APITokenSc
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: get token scope: %w", err)
+	}
+	return &s, nil
+}
+
+// Stack token verbs. Destroy, unlock and settings are deliberately absent:
+// those stay with a human admin.
+const (
+	StackVerbPlan  = "plan"
+	StackVerbApply = "apply"
+)
+
+// ErrInvalidStackScope rejects a stack scope without a stack or with an unknown verb.
+var ErrInvalidStackScope = errors.New("store: invalid token stack scope")
+
+// APITokenStackScope binds a token to one stack and the verbs it may use there.
+type APITokenStackScope struct {
+	TokenID string
+	StackID string
+	Verbs   []string
+}
+
+// Has reports whether the scope grants verb.
+func (s APITokenStackScope) Has(verb string) bool {
+	for _, v := range s.Verbs {
+		if v == verb {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidStackVerbs reports whether verbs is a non-empty set of plan and apply.
+func ValidStackVerbs(verbs []string) bool {
+	if len(verbs) == 0 {
+		return false
+	}
+	for _, v := range verbs {
+		if v != StackVerbPlan && v != StackVerbApply {
+			return false
+		}
+	}
+	return true
+}
+
+// SetAPITokenStackScope records a token's stack scope.
+func (db *DB) SetAPITokenStackScope(ctx context.Context, s APITokenStackScope) error {
+	if s.TokenID == "" || s.StackID == "" || !ValidStackVerbs(s.Verbs) {
+		return ErrInvalidStackScope
+	}
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO api_token_stack_scopes (token_id, stack_id, verbs) VALUES (?, ?, ?)
+		ON CONFLICT(token_id) DO UPDATE SET stack_id = excluded.stack_id, verbs = excluded.verbs`,
+		s.TokenID, s.StackID, strings.Join(s.Verbs, ","))
+	if err != nil {
+		return fmt.Errorf("store: set token stack scope: %w", err)
+	}
+	return nil
+}
+
+// GetAPITokenStackScope returns a token's stack scope, or nil when it has none.
+// A stored row that no longer parses is an error, so callers fail closed.
+func (db *DB) GetAPITokenStackScope(ctx context.Context, tokenID string) (*APITokenStackScope, error) {
+	s := APITokenStackScope{TokenID: tokenID}
+	var verbs string
+	err := db.QueryRowContext(ctx, `SELECT stack_id, verbs FROM api_token_stack_scopes WHERE token_id = ?`, tokenID).Scan(&s.StackID, &verbs)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: get token stack scope: %w", err)
+	}
+	s.Verbs = strings.Split(verbs, ",")
+	if s.StackID == "" || !ValidStackVerbs(s.Verbs) {
+		return nil, ErrInvalidStackScope
 	}
 	return &s, nil
 }

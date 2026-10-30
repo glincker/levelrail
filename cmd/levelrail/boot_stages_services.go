@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/nodepreflight"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
@@ -22,6 +24,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
@@ -194,12 +197,13 @@ func (s *bootState) wireRouter() {
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { s.restartRequested.Store(true); stop() },
 	})
-	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit(), Integrity: s.integrity, Guard: engine.Guard()})
+	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit(), Integrity: s.integrity, Guard: engine.Guard(), AppCount: db.CountApps})
 	go db.RunWALMaintenance(ctx)
 	configureNodeCerts(apiRouter, agentServer, agentServer)
 	apiRouter.SetMigrationAgent(s.migrationAgent)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)
+	apiRouter.SetNodeOnboarding(s.onboardingReports, nodepreflight.ConfigFromEnv(os.LookupEnv))
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
@@ -207,10 +211,12 @@ func (s *bootState) wireRouter() {
 	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
 	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	startKeyLifecycle(ctx, logger, db, secretsManager, alertingDB, deployDispatcher, apiRouter)
+	setupCleanup(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	startDiskGuard(ctx, logger, agentDataDir, alertingDB, deployDispatcher, apiRouter, db)
 	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	startCanaryReconciler(ctx, logger, db, apiRouter)
+	startStackDrift(ctx, logger, db, apiRouter)
 	apiRouter.StartSplitTesting(ctx)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
@@ -246,6 +252,7 @@ func (s *bootState) startMesh() error {
 	supplyChainSvc := s.supplyChainSvc
 	telemetryDB := s.telemetryDB
 	lbRegistry := loadbalancer.NewRegistry()
+	lbRegistry.SetTrafficSource(lbTrafficSource(), telemetry.LatencyBucketsMS)
 	lbStats := loadbalancer.CaddyAdminStats{Addr: ingressreconcile.DefaultAdminListen}
 	apiRouter.SetLoadBalancers(db, lbRegistry, lbStats)
 	if experimental.Enabled(experimental.LoadBalancer) {
@@ -272,6 +279,7 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))
 	go apiRouter.RunNodeMoves(ctx)
+	go apiRouter.RunNodeOnboarding(ctx)
 	go apiRouter.RunNodeFailure(ctx)
 	// Resolved once: the bridge gateway IP does not change while the process runs.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
@@ -374,7 +382,9 @@ func (s *bootState) startReconciler() {
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
+		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
 		restartBackoff:               newRestartBackoff(logger),
+		retainedDeploys:              &deployurls.Guard{Store: db, Max: deployurls.MaxUnreadyFromEnv(os.Getenv)},
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
@@ -385,6 +395,7 @@ func (s *bootState) startReconciler() {
 		previewNotifier:              previewManager,
 	}
 	engine.SetSource(dynamicSource(sourceDeps))
+	engine.SetKeyed(application.IsServiceControllerName)
 	scheduledTaskRunner.Specs = newJobSpecBuilder(sourceDeps)
 	scheduledTaskRunner.Resolver = func(nodeID string) (docker.Runtime, error) {
 		return resolveNodeTransport(client, agentRegistry, runtimeNodeID(sourceDeps, nodeID))

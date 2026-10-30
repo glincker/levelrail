@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -494,33 +495,45 @@ func TestHandleDeployCompose_NoNoticesForPlainFile(t *testing.T) {
 	}
 }
 
-func TestHandleDeployCompose_RestartAndNetworksSurfaceAsNotices(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
+func TestHandleDeployCompose_RestartAndNetworksNotices(t *testing.T) {
+	cases := []struct {
+		name    string
+		restart string
+		levels  []string
+	}{
+		{"always is the platform default: networks warning only", "always", []string{"warning"}},
+		{"no runs to completion: note then networks warning", `"no"`, []string{"note", "warning"}},
+		{"unrecognized value warns: restart warning then networks warning", "sometimes", []string{"warning", "warning"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
 
-	yaml := "services:\n" +
-		"  web:\n" +
-		"    image: nginx:1.27\n" +
-		"    restart: always\n" +
-		"    networks: [frontend]\n"
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+			yaml := "services:\n" +
+				"  web:\n" +
+				"    image: nginx:1.27\n" +
+				"    restart: " + tc.restart + "\n" +
+				"    networks: [frontend]\n"
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
 
-	var got composeDeployResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	if len(got.Notices) != 2 {
-		t.Fatalf("Notices = %+v, want 2 entries (one restart note, one networks warning)", got.Notices)
-	}
-	if got.Notices[0].Level != "note" {
-		t.Errorf("Notices[0].Level = %q, want note", got.Notices[0].Level)
-	}
-	if got.Notices[1].Level != "warning" {
-		t.Errorf("Notices[1].Level = %q, want warning", got.Notices[1].Level)
+			var got composeDeployResponse
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if len(got.Notices) != len(tc.levels) {
+				t.Fatalf("Notices = %+v, want levels %v", got.Notices, tc.levels)
+			}
+			for i, lvl := range tc.levels {
+				if got.Notices[i].Level != lvl {
+					t.Errorf("Notices[%d].Level = %q, want %q", i, got.Notices[i].Level, lvl)
+				}
+			}
+		})
 	}
 }
 
@@ -565,5 +578,92 @@ services:
 	}
 	if len(svc.Volumes) != 1 || svc.Volumes[0].ContainerPath != "/usr/share/nginx/html" {
 		t.Errorf("Volumes = %+v, want one entry mounted at /usr/share/nginx/html", svc.Volumes)
+	}
+}
+
+func composeMemYAML(mem string) string {
+	return "services:\n  web:\n    image: nginx:1.27\n    mem_limit: " + mem + "\n  redis:\n    image: redis:7\n    mem_limit: " + mem + "\n"
+}
+
+func composeQuotaDeploy(t *testing.T, rt *Router, cookie *http.Cookie, body string) (int, string) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", body))
+	return rec.Code, rec.Body.String()
+}
+
+func TestHandleDeployCompose_Quota_OverLimitRefusedNothingSaved(t *testing.T) {
+	t.Setenv(envQuotaDefaultMemoryMB, "512")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("300m"))
+	if code != http.StatusConflict {
+		t.Fatalf("status = %d %s, want 409", code, body)
+	}
+	var e codedError
+	if err := json.Unmarshal([]byte(body), &e); err != nil {
+		t.Fatal(err)
+	}
+	if e.Code != quotaExceededCode || !strings.Contains(e.Error, "memory quota") {
+		t.Errorf("error = %+v, want the apps create quota shape naming memory", e)
+	}
+	for _, name := range []string{"myapp-web", "myapp-redis"} {
+		if _, err := db.GetDesiredService(context.Background(), name); err == nil {
+			t.Errorf("refused deploy left %s behind", name)
+		}
+	}
+	if _, err := db.GetAppByName(context.Background(), "myapp"); err == nil {
+		t.Error("refused deploy left the app row behind")
+	}
+}
+
+func TestHandleDeployCompose_Quota_UnderLimitAndRedeployNoDoubleCount(t *testing.T) {
+	t.Setenv(envQuotaDefaultMemoryMB, "512")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	for i := range 2 {
+		if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("200m")); code != http.StatusOK {
+			t.Fatalf("deploy %d = %d %s, want 200", i, code, body)
+		}
+	}
+}
+
+func TestHandleDeployCompose_Quota_ProjectGrowthRefused(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	const proj = "proj_compose"
+	if err := db.SaveProject(ctx, store.Project{ID: proj, Name: "shop", CreatedAt: "2026-10-01T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("200m")); code != http.StatusOK {
+		t.Fatalf("first deploy = %d %s", code, body)
+	}
+	for _, name := range []string{"myapp-web", "myapp-redis"} {
+		if err := db.UpdateServiceProject(ctx, name, proj); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("1g")); code != http.StatusOK {
+		t.Fatalf("project without quota = %d %s, want 200", code, body)
+	}
+	if err := db.SetQuota(ctx, quota.ScopeProject, proj, quota.Amounts{MemoryBytes: 2560 << 20}); err != nil {
+		t.Fatal(err)
+	}
+	if code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("1g")); code != http.StatusOK {
+		t.Fatalf("same-size redeploy = %d %s, want 200", code, body)
+	}
+	code, body := composeQuotaDeploy(t, rt, cookie, composeMemYAML("1500m"))
+	if code != http.StatusConflict || !strings.Contains(body, "memory quota") {
+		t.Fatalf("growth = %d %s, want 409 naming memory", code, body)
+	}
+	svc, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if svc.Resources == nil || svc.Resources.MemoryBytes != 1<<30 {
+		t.Errorf("refused growth changed resources to %+v", svc.Resources)
 	}
 }

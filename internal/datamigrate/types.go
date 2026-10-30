@@ -30,6 +30,8 @@ type Source struct {
 	// AuthDatabase is MongoDB's authentication database, "admin" when empty.
 	AuthDatabase string `json:"auth_database,omitempty"`
 	TLS          bool   `json:"tls,omitempty"`
+	// SSLMode is the libpq sslmode for Postgres when TLS is set, "require" when empty.
+	SSLMode string `json:"ssl_mode,omitempty"`
 }
 
 // TableCount is one table (or collection) compared across both sides.
@@ -45,6 +47,18 @@ type Verification struct {
 	Checked    int          `json:"checked"`
 	Mismatched int          `json:"mismatched"`
 	Tables     []TableCount `json:"tables,omitempty"`
+	// Objects counts what else arrived (hosted Postgres moves only).
+	Objects *ObjectCounts `json:"objects,omitempty"`
+	// Findings are what the move changed or created on the way (hosted moves only).
+	Findings []PreflightCheck `json:"findings,omitempty"`
+}
+
+// ObjectCounts are the non-table objects present on the target after a restore.
+type ObjectCounts struct {
+	Sequences  int `json:"sequences"`
+	Views      int `json:"views"`
+	Functions  int `json:"functions"`
+	Extensions int `json:"extensions"`
 }
 
 // Engine ids this package can copy.

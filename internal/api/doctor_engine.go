@@ -62,11 +62,11 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		return doctorCheckDef{ID: id, Group: group, Run: f}
 	}
 	return []doctorCheckDef{
-		one("docker", doctorGroupRuntime, rt.doctorCheckDocker),
+		one("docker", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDocker)),
 		one("install_state", doctorGroupRuntime, rt.doctorCheckInstallState),
 		one("container_runtime", doctorGroupRuntime, rt.doctorCheckContainerRuntime),
-		one("docker_guard", doctorGroupRuntime, rt.doctorCheckDockerGuard),
-		one("docker_privilege", doctorGroupRuntime, rt.doctorCheckDockerPrivilege),
+		one("docker_guard", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerGuard)),
+		one("docker_privilege", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerPrivilege)),
 		one("container_hardening", doctorGroupRuntime, rt.doctorCheckHardeningNow),
 		one("network_pool", doctorGroupRuntime, rt.doctorCheckNetworkPool),
 		one("docker_orphans", doctorGroupRuntime, rt.doctorCheckOrphans),
@@ -74,11 +74,13 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("disk_space", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskSpace() }),
 		one("inodes", doctorGroupHost, rt.doctorCheckInodes),
 		one("docker_root_disk", doctorGroupHost, rt.doctorCheckDockerRootDisk),
+		one("disk_hygiene", doctorGroupHost, rt.doctorCheckDiskHygiene),
 		one("data_dir_writable", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDataDirWritable() }),
 		one("ram", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckRAM() }),
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),
 		one("disk_io_latency", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskIOLatency() }),
 		one("database", doctorGroupHost, rt.doctorCheckDatabase),
+		one("idle_footprint", doctorGroupHost, rt.doctorCheckIdleFootprint),
 
 		one("port_http", doctorGroupNetwork, func(ctx context.Context) doctorCheckResource { return rt.doctorCheckPortCtx(ctx, httpPort) }),
 		one("port_https", doctorGroupNetwork, func(ctx context.Context) doctorCheckResource { return rt.doctorCheckPortCtx(ctx, httpsPort) }),

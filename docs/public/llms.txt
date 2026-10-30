@@ -60,12 +60,15 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Installing](https://docs.levelrail.com/installing): install the control plane and node agent on a Linux server.
 - [Troubleshooting](https://docs.levelrail.com/troubleshooting): fixes for the most common deploy, login, and node problems.
 - [Importing apps](https://docs.levelrail.com/importing-apps): import a repo URL, docker run command, image, compose file, or Dockerfile with a deployment plan preview.
+- [Deploy button](https://docs.levelrail.com/deploy-button): add a Deploy to Levelrail button to a README that opens the reader's own instance with an image, git repository or template prefilled.
 - [Deploying apps](https://docs.levelrail.com/deploying-apps): app.yaml, build strategies, rolling/blue-green/recreate deploys, and rollback.
 - [Deploy safety](https://docs.levelrail.com/deploy-safety): digest-truthful deploys, stale-deploy guards, freeze windows, and the post-cutover hold on the previous release.
 - [Deploy failures](https://docs.levelrail.com/deploy-failures): the structured failure object every failed or blocked deploy carries, and what each code means.
-- [Scheduled deploys](https://docs.levelrail.com/scheduled-deploys): redeploy the latest commit on a branch on a recurring cron schedule.
+- [Scheduled deploys](https://docs.levelrail.com/scheduled-deploys): redeploy the latest commit on a branch on a cron schedule, or schedule a one-shot image or git ref deploy.
+- [Pull request comment commands](https://docs.levelrail.com/pr-comment-commands): redeploy, roll back or check an app from a GitHub pull request comment, write access only, off by default.
 - [Deployments page](https://docs.levelrail.com/deployments-page): the cross-app live deploy list, with filters, a details drawer, and redeploy/rollback actions.
 - [Deploy timeline](https://docs.levelrail.com/deploy-timeline): every deploy across apps on one live time axis, with zoom, filters and a CLI view.
+- [Deploy event timeline](https://docs.levelrail.com/deploy-event-timeline): one deploy as an ordered story from trigger to cutover, watch signals and traffic impact, live, replayable and comparable.
 - [Deploy previews](https://docs.levelrail.com/deploy-previews): thumbnail generation for each deploy, from free page metadata to a real browser screenshot.
 - [Screenshots](https://docs.levelrail.com/screenshots): a visual tour of the dashboard.
 - [Docker](https://docs.levelrail.com/docker): how Levelrail talks to the Docker Engine API directly.
@@ -74,9 +77,12 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Standalone domains](https://docs.levelrail.com/standalone-domains): proxy a domain to a port, address, URL, app port or container without an app, plus the server address for DNS records.
 - [DNS zones and records](https://docs.levelrail.com/dns): zones and records at Cloudflare or Route53, name server delegation, propagation checks, and wildcard subdomains.
 - [Domain traffic controls](https://docs.levelrail.com/domain-traffic-controls): per-domain header rules, path forwarders, country rules, response caching, redirects and raw ports.
+- [Ingress abuse defense](https://docs.levelrail.com/abuse-defense): per app rate limit by client address, address and User-Agent deny lists, a log only mode and a replay of recent traffic before enforcing.
+- [Traffic observability](https://docs.levelrail.com/traffic-observability): per app request rate, status classes, p50/p95/p99, top and slow routes, and 5xx spikes tied to deploys, with bounded storage.
 - [Load balancing](https://docs.levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
 - [ACME verification runbook](https://docs.levelrail.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
 - [Multi-node](https://docs.levelrail.com/multi-node): add servers, the WireGuard mesh, and node placement.
+- [Add a node anywhere](https://docs.levelrail.com/add-node-anywhere): one guided flow to add an EC2, Google Cloud, VPS or home server node, with provider, region and zone auto-detect, preflight checks with fixes and failure-domain aware placement (beta).
 - [Multi-node quickstart](https://docs.levelrail.com/multi-node-quickstart): the short path to a second server and today's known multi-node gaps.
 - [Node provisioning](https://docs.levelrail.com/node-provisioning): automate creating a server at a cloud provider and enrolling it as a node.
 - [Multi-cloud provisioning quickstart](https://docs.levelrail.com/multi-cloud-provisioning): pick a cloud provider and add a provisioned node in a few commands.
@@ -91,9 +97,11 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Control plane backup](https://docs.levelrail.com/control-plane-backup): back up and restore the control plane's own database.
 - [Disaster recovery](https://docs.levelrail.com/disaster-recovery): encrypted off-box backups, master key escrow, and scheduled restore drills.
 - [Deploying from GitHub Actions](https://docs.levelrail.com/github-actions): trigger Levelrail deploys from CI.
+- [Use any CI](https://docs.levelrail.com/use-any-ci): build in GitLab CI, CircleCI, Jenkins or Buildkite and let Levelrail host; templates, exit codes, safe retries.
 - [Pipelines](https://docs.levelrail.com/pipelines): define CI/CD pipelines as YAML with triggers, jobs, matrix builds, and approvals.
 - [Pipelines: OIDC federation](https://docs.levelrail.com/pipelines-oidc): mint short-lived OIDC tokens for pipeline jobs instead of long-lived cloud credentials.
 - [Platform as code](https://docs.levelrail.com/platform-as-code): describe projects, environments, apps, domains, and databases as YAML and apply the plan.
+- [Stacks and GitOps](https://docs.levelrail.com/stacks): experimental; keep a stack of apps, databases and domains in git, review plans in pull requests, apply on merge, and roll back to numbered revisions.
 - [Git integrations](https://docs.levelrail.com/git-integrations): GitHub/GitLab/Bitbucket/Gitea app installs, webhook deploys, and preview environments.
 - [Feature flags](https://docs.levelrail.com/feature-flags): toggle app behavior at runtime without a redeploy.
 - [Host firewall](https://docs.levelrail.com/host-firewall): manage allow and deny rules for the control plane host's ufw, with a lockout guard.
@@ -107,8 +115,11 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Tags: organizing apps](https://docs.levelrail.com/tags): label and organize apps with arbitrary tags for filtering and grouping.
 - [Resilience](https://docs.levelrail.com/resilience): what actually survives a control plane crash, measured against a real SIGKILL.
 - [Resilience, in short](https://docs.levelrail.com/resilience-summary): a one-paragraph summary of the resilience page's findings.
+- [Chaos test coverage](https://docs.levelrail.com/chaos-coverage): which failure scenarios have a test, what each asserts, and whether it is fast or live.
 - [Observability](https://docs.levelrail.com/observability): metrics, log search, alerting, and deploy markers.
+- [Cleanup center](https://docs.levelrail.com/cleanup-center): retention per data type, scheduled cleanup with preview mode, floors for security data, run history and export.
 - [Data export](https://docs.levelrail.com/data-export): send logs, audit events and metrics to Loki, syslog, a webhook, a bucket, Prometheus or OTLP.
+- [Traffic export](https://docs.levelrail.com/traffic-export): stream request records to PostHog, OTLP or a webhook, with no visitor identity unless a destination opts in.
 - [Public status page](https://docs.levelrail.com/status-page): an opt-in public status page with uptime bars, incidents, and an RSS feed.
 - [AI models](https://docs.levelrail.com/ai-models): run Ollama, vLLM, or llama.cpp models on GPU nodes as a first-class resource.
 - [AI assistant integration: levelrail-mcp](https://docs.levelrail.com/ai-assistant): run the MCP server over stdio or the network for an AI assistant, and scope its API token.
@@ -116,6 +127,8 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Integrations](https://docs.levelrail.com/integrations): attach curated third-party tools like PostHog, Sentry, and Datadog to an app.
 - [Templates and registry](https://docs.levelrail.com/templates-and-registry): the curated one-click service catalog, searchable by name or category.
 - [Starter kit templates](https://docs.levelrail.com/templates): curated starter-kit templates for real multi-service Compose patterns.
+- [Migration wizard](https://docs.levelrail.com/migration-wizard): the guided, resumable job for moving off Coolify, Dokploy, CapRover or an old server, with a safe-to-delete gate.
+- [Coolify exit gap report](https://docs.levelrail.com/coolify-exit-gap-report): what the Coolify importer moves, reports or cannot see, and what is not proven.
 - [Migrating from Coolify, Dokploy, or CapRover](https://docs.levelrail.com/migrating-from-coolify-dokploy-and-caprover): move an existing deployment to Levelrail.
 - [Migrating from Vercel](https://docs.levelrail.com/migrating-from-vercel): a runbook for moving a Vercel-hosted Next.js app to Levelrail.
 
@@ -169,6 +182,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Experimental features](https://docs.levelrail.com/experimental-features): features hidden at launch and the switch that turns them on.
 - [Cost explorer and budgets](https://docs.levelrail.com/cost-explorer): cost trend by app, project, tag, node or kind, month end forecast range, top movers and named budgets with alerts and a pause or throttle action.
 - [Usage and cost](https://docs.levelrail.com/usage-and-cost): cost showback per app, project and team from your own prices, how server bills and usage are allocated, budgets, alerts and CSV export.
+- [Canvas](https://docs.levelrail.com/canvas): beta visual project editor: add apps and databases, connect them, review the plan, then apply; what it cannot do yet.
 - [Resource advisor](https://docs.levelrail.com/resource-advisor): beta limit, idle, growth, disk and database tuning suggestions, every rule and threshold, and what it cannot know.
 - [Performance](https://docs.levelrail.com/performance): measured idle footprint of the control plane at 0, 100, and 500 apps.
 - [CI](https://docs.levelrail.com/ci): how pull request checks are chosen and which ones branch protection relies on.

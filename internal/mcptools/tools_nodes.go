@@ -11,7 +11,7 @@ import (
 func registerNodeTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_nodes",
-		Description: "List every node enrolled in the control plane: id, name, address, status, schedulable/cordon state, and which workload kinds (app, build) it accepts. Useful for diagnosing which machine an app runs on.",
+		Description: "List every enrolled node: id, name, address, status, cordon state and accepted workload kinds (app, build).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.NodeResource, error) {
 		nodes, err := client.ListNodes(ctx)
 		if err != nil {

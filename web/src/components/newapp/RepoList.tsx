@@ -1,17 +1,22 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
+  ArrowsClockwiseIcon,
   GitBranchIcon,
+  LinkSimpleIcon,
   LockSimpleIcon,
-  MagnifyingGlassIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { Input } from '@/components/ui/input'
+import { Link } from '@tanstack/react-router'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { BrandTile } from '../BrandLogoBadge'
 import type { NormalizedRepoOption } from '../../lib/gitRepoOptions'
+import { filterRepos } from '../../lib/repoFilter'
+import { hostBrand } from '../../lib/repoImport'
 
-const ROW_HEIGHT = 56
+const ROW_HEIGHT = 48
 
 function lastPushLabel(iso: string | undefined, locale: string): string {
   if (!iso) return ''
@@ -24,36 +29,42 @@ function lastPushLabel(iso: string | undefined, locale: string): string {
   return rtf.format(Math.round(days / 30), 'month')
 }
 
+function hostOf(url: string): string {
+  const m = /^(?:[a-z+]+:\/\/(?:[^@/]+@)?|[\w.-]+@)([^/:]+)/i.exec(url)
+  return m?.[1] ?? ''
+}
+
 /**
- * Searchable, virtualized list of every repository the connected provider
- * apps can see. Rows show name, language and last push.
+ * Virtualized rows for the one repository field: a detected URL comes first
+ * as "Use this URL", then the connected repositories that match the text.
  */
 export function RepoList({
   repos,
   loading,
+  query,
+  urlCandidate,
+  hasError,
+  refreshing,
   onPick,
+  onUseUrl,
+  onRefresh,
 }: {
   repos: NormalizedRepoOption[]
   loading: boolean
+  query: string
+  urlCandidate: string | null
+  hasError: boolean
+  refreshing: boolean
   onPick: (repo: NormalizedRepoOption) => void
+  onUseUrl: (url: string) => void
+  onRefresh: () => void
 }) {
   const { t, i18n } = useTranslation('newApp')
-  const [query, setQuery] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const sorted = [...repos].sort((a, b) =>
-      (b.pushedAt ?? '').localeCompare(a.pushedAt ?? ''),
-    )
-    if (q === '') return sorted
-    return sorted.filter(
-      (r) =>
-        r.displayPath.toLowerCase().includes(q) ||
-        (r.language ?? '').toLowerCase().includes(q),
-    )
-  }, [repos, query])
-
+  const filtered = useMemo(
+    () => filterRepos(repos, query, urlCandidate),
+    [repos, query, urlCandidate],
+  )
   const virtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => scrollRef.current,
@@ -61,42 +72,95 @@ export function RepoList({
     overscan: 8,
   })
 
-  if (loading) {
+  if (loading && !urlCandidate) {
     return (
-      <div className="space-y-2" aria-busy="true">
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-14 w-full" />
-        <Skeleton className="h-14 w-full" />
-        <Skeleton className="h-14 w-full" />
+      <div
+        className="space-y-1.5"
+        role="status"
+        aria-busy="true"
+        aria-label={t('source.repos.loading')}
+      >
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+    )
+  }
+
+  if (repos.length === 0 && !urlCandidate) {
+    return (
+      <div className="space-y-2 rounded-lg border border-dashed border-border p-4">
+        <p className="text-sm font-medium text-foreground">
+          {hasError
+            ? t('source.repos.failedTitle')
+            : t('source.repos.emptyTitle')}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {hasError
+            ? t('source.repos.failedBody')
+            : t('source.repos.emptyBody')}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={refreshing}
+            onClick={onRefresh}
+          >
+            <ArrowsClockwiseIcon aria-hidden="true" />
+            {refreshing
+              ? t('source.repos.refreshing')
+              : t('source.repos.refresh')}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            render={<Link to="/settings/git-connections" />}
+            nativeButton={false}
+          >
+            {t('source.git.manage')}
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-2">
-      <div className="relative">
-        <MagnifyingGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <Input
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
+      {urlCandidate ? (
+        <button
+          type="button"
+          onClick={() => {
+            onUseUrl(urlCandidate)
           }}
-          placeholder={t('source.repos.search')}
-          aria-label={t('source.repos.search')}
-          className="pl-8"
-        />
-      </div>
-      {filtered.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-          {t('source.repos.noMatch', { query })}
+          className="flex w-full items-center gap-3 rounded-lg border border-primary/40 bg-muted/40 px-3 py-2 text-left hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
+          <BrandTile
+            name={hostBrand(hostOf(urlCandidate))}
+            label={hostOf(urlCandidate)}
+            size="sm"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <LinkSimpleIcon className="size-3.5" aria-hidden="true" />
+              {t('source.find.useUrl')}
+            </span>
+            <span className="block truncate font-mono text-xs text-muted-foreground">
+              {urlCandidate}
+            </span>
+          </span>
+        </button>
+      ) : null}
+      {filtered.length === 0 && !urlCandidate ? (
+        <p className="rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
+          {t('source.repos.noMatch', { query: query.trim() })}
         </p>
-      ) : (
+      ) : null}
+      {filtered.length > 0 ? (
         <div
           ref={scrollRef}
-          className="max-h-88 overflow-y-auto rounded-md border border-border"
+          className="max-h-72 overflow-y-auto rounded-lg border border-border xl:max-h-96"
           role="list"
           aria-label={t('source.repos.listLabel')}
         >
@@ -156,7 +220,21 @@ export function RepoList({
             })}
           </div>
         </div>
-      )}
+      ) : null}
+      {hasError ? (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          {t('source.repos.partial')}
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            disabled={refreshing}
+            onClick={onRefresh}
+          >
+            {t('source.repos.retry')}
+          </Button>
+        </p>
+      ) : null}
     </div>
   )
 }

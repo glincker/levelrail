@@ -19,6 +19,8 @@ const (
 	certsMountPath = "/certs"
 	tlsCertFile    = "tls.crt"
 	tlsKeyFile     = "tls.key"
+	// tlsPEMFile is key plus certificate in one file, the shape MongoDB reads.
+	tlsPEMFile = "tls.pem"
 
 	// dbTLSUID/dbTLSGID match the official postgres and redis Docker
 	// images' own runtime service account (both create a uid/gid 999
@@ -42,6 +44,9 @@ const certsHelperImage = "alpine:3.20"
 // (where the database's own container later mounts the same volume):
 // this constant only matters to provisionCerts and the tar command it
 // runs, not to any consumer of the finished volume.
+// certsHelperLabelKey ties a helper to the volume it serves so Teardown can find leftovers.
+const certsHelperLabelKey = "levelrail.certs-volume"
+
 const certsHelperMountPath = "/vol"
 
 func certsVolumeName(dbName string) string { return "db-" + dbName + "-certs" }
@@ -90,6 +95,7 @@ func createCertsHelper(ctx context.Context, rt docker.Runtime, volName string) (
 		Name:    "dbcerts-" + suffix,
 		Image:   certsHelperImage,
 		Command: []string{"sleep", "300"},
+		Labels:  map[string]string{certsHelperLabelKey: volName},
 		Volumes: []docker.VolumeMount{{Name: volName, ContainerPath: certsHelperMountPath}},
 	})
 	if err != nil {
@@ -126,6 +132,7 @@ func tlsTarArchive(material *TLSMaterial) (*bytes.Buffer, error) {
 	}{
 		{tlsCertFile, 0o644, material.CertPEM},
 		{tlsKeyFile, 0o600, material.KeyPEM},
+		{tlsPEMFile, 0o600, append(append([]byte{}, material.KeyPEM...), material.CertPEM...)},
 	}
 	for _, e := range entries {
 		hdr := &tar.Header{

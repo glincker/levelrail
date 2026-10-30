@@ -65,5 +65,23 @@
     "loadFailed": "Could not load the diagnosis.",
     "show": "Show details",
     "hide": "Hide details"
+  },
+  "runtime": {
+    "engine": "Engine",
+    "support": "Support",
+    "kind": {
+      "docker": "Docker Engine",
+      "podman": "Podman",
+      "docker-desktop": "Docker Desktop",
+      "colima": "Colima",
+      "orbstack": "OrbStack",
+      "rancher-desktop": "Rancher Desktop",
+      "unknown": "Unknown engine"
+    },
+    "level": {
+      "supported": "Supported",
+      "best-effort": "Best effort",
+      "unverified": "Unverified"
+    }
   }
 }

@@ -1,10 +1,23 @@
-import { useMemo, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
 
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import {
+  FieldContext,
+  useFieldContext,
+  type FieldContextValue,
+} from '@/components/ui/field-context'
 
 function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
   return (
@@ -71,16 +84,86 @@ const fieldVariants = cva(
 function Field({
   className,
   orientation = 'vertical',
+  required = false,
+  children,
   ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants>) {
+}: React.ComponentProps<'div'> &
+  VariantProps<typeof fieldVariants> & { required?: boolean }) {
+  const generatedId = useId()
+  const [owners, setOwners] = useState<
+    { uid: string; explicitId: string | undefined }[]
+  >([])
+  const [labelFor, setLabelFor] = useState<string | undefined>()
+  const [hints, setHints] = useState<string[]>([])
+  const [errors, setErrors] = useState<string[]>([])
+
+  const claimControl = useCallback(
+    (uid: string, explicitId: string | undefined) => {
+      setOwners((list) => [
+        ...list.filter((o) => o.uid !== uid),
+        { uid, explicitId },
+      ])
+      return () => {
+        setOwners((list) => list.filter((o) => o.uid !== uid))
+      }
+    },
+    [],
+  )
+  const registerDescription = useCallback(
+    (id: string, kind: 'hint' | 'error') => {
+      const set = kind === 'hint' ? setHints : setErrors
+      set((list) => (list.includes(id) ? list : [...list, id]))
+      return () => {
+        set((list) => list.filter((x) => x !== id))
+      }
+    },
+    [],
+  )
+
+  const owner = owners[0]
+  const dataInvalid: unknown = (props as { 'data-invalid'?: unknown })[
+    'data-invalid'
+  ]
+  const invalid =
+    errors.length > 0 || dataInvalid === true || dataInvalid === 'true'
+  const describedBy = [...hints, ...errors].join(' ') || undefined
+  const ctx = useMemo<FieldContextValue>(
+    () => ({
+      invalid,
+      required,
+      controlId: owner
+        ? (owner.explicitId ?? labelFor ?? generatedId)
+        : undefined,
+      describedBy,
+      claimControl,
+      setLabelFor,
+      registerDescription,
+      ownerUid: owner?.uid ?? null,
+    }),
+    [
+      invalid,
+      required,
+      owner,
+      labelFor,
+      generatedId,
+      describedBy,
+      claimControl,
+      registerDescription,
+    ],
+  )
+
   return (
-    <div
-      role="group"
-      data-slot="field"
-      data-orientation={orientation}
-      className={cn(fieldVariants({ orientation }), className)}
-      {...props}
-    />
+    <FieldContext.Provider value={ctx}>
+      <div
+        role="group"
+        data-slot="field"
+        data-orientation={orientation}
+        className={cn(fieldVariants({ orientation }), className)}
+        {...props}
+      >
+        {children}
+      </div>
+    </FieldContext.Provider>
   )
 }
 
@@ -99,10 +182,23 @@ function FieldContent({ className, ...props }: React.ComponentProps<'div'>) {
 
 function FieldLabel({
   className,
+  htmlFor,
   ...props
 }: React.ComponentProps<typeof Label>) {
+  const ctx = useFieldContext()
+  const setLabelFor = ctx?.setLabelFor
+  useLayoutEffect(() => {
+    if (!htmlFor) return undefined
+    setLabelFor?.(htmlFor)
+    return () => {
+      setLabelFor?.(undefined)
+    }
+  }, [htmlFor, setLabelFor])
+  // Only link to a control that exists; a dangling for= would break the
+  // implicit link of a label that wraps its input.
   return (
     <Label
+      htmlFor={htmlFor ?? ctx?.controlId}
       data-slot="field-label"
       className={cn(
         'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:border-primary/30 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-lg has-[>[data-slot=field]]:border *:data-[slot=field]:p-2.5 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10',
@@ -127,9 +223,18 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
+function FieldDescription({
+  className,
+  id,
+  ...props
+}: React.ComponentProps<'p'>) {
+  const generatedId = useId()
+  const descId = id ?? generatedId
+  const register = useFieldContext()?.registerDescription
+  useLayoutEffect(() => register?.(descId, 'hint'), [register, descId])
   return (
     <p
+      id={descId}
       data-slot="field-description"
       className={cn(
         'text-left text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5',
@@ -236,10 +341,25 @@ function FieldError({
   className,
   children,
   errors,
+  id,
   ...props
 }: React.ComponentProps<'div'> & {
   errors?: Array<{ message?: string } | undefined>
 }) {
+  const generatedId = useId()
+  const errorId = id ?? generatedId
+  const register = useFieldContext()?.registerDescription
+  // role=alert only for the first moment so later re-renders and a form
+  // summary do not make a screen reader repeat the message.
+  const [announce, setAnnounce] = useState(true)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnnounce(false)
+    }, 1000)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [])
   const content = useMemo(() => {
     if (children) {
       return children
@@ -267,13 +387,20 @@ function FieldError({
     )
   }, [children, errors])
 
+  const hasContent = Boolean(content)
+  useLayoutEffect(
+    () => (hasContent ? register?.(errorId, 'error') : undefined),
+    [register, errorId, hasContent],
+  )
+
   if (!content) {
     return null
   }
 
   return (
     <div
-      role="alert"
+      id={errorId}
+      role={announce ? 'alert' : undefined}
       data-slot="field-error"
       className={cn('text-sm font-normal text-destructive', className)}
       {...props}

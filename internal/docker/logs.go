@@ -26,6 +26,11 @@ type LogLine struct {
 	Message   string
 }
 
+// LogReader is the optional capability of a runtime that can stream container logs.
+type LogReader interface {
+	Logs(ctx context.Context, containerID string, follow bool, since time.Time) (<-chan LogLine, <-chan error)
+}
+
 // Logs streams a container's log output, demultiplexed into a channel of
 // individually stream-tagged, timestamped lines. Reads directly from the
 // Docker Engine API's log endpoint, per the observability design rule

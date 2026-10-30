@@ -1,0 +1,13 @@
+# Applied twice by stack-run.sh (QA_IMAGE set to the first, then the second
+# tag), then rolled back to revision 1 under a request loop.
+version: 1
+kind: App
+metadata: { name: qa-roll-@SUFFIX@ }
+spec:
+  project: qa-@SUFFIX@
+  service:
+    build: { type: image, image: "@IMAGE@" }
+    port: 80
+    strategy: blue-green
+    health:
+      readiness: { path: /, interval: 1s, timeout: 2s }

@@ -44,12 +44,16 @@ func registerCostExplorerTools(server *mcp.Server, client *apiclient.Client) {
 	})
 	addTool(server, &mcp.Tool{
 		Name:        costBudgetsTool,
-		Description: "Named cost budgets with spend, forecast, fired thresholds and whether the 100 percent action is in force.",
+		Description: "Cost budgets and per-app spend caps: spend, forecast, fired thresholds, deploy guard and enforcement state.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ costBudgetsInput) (*mcp.CallToolResult, map[string]any, error) {
 		res, err := client.ListCostBudgets(ctx)
 		if err != nil {
 			return nil, nil, fmt.Errorf("list cost budgets: %w", err)
 		}
-		return nil, map[string]any{"currency": res.Currency, "budgets": res.Budgets}, nil
+		apps, err := client.ListAppBudgets(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list app spend caps: %w", err)
+		}
+		return nil, map[string]any{"currency": res.Currency, "budgets": res.Budgets, "app_caps": apps.Caps}, nil
 	})
 }

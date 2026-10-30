@@ -122,8 +122,8 @@ func (c *authSessionClient) awaitApproval(ctx context.Context, prog string, logi
 	interactive := approvalInteractive()
 	if !interactive && !opts.wait && !envTruthy(lookupEnv, envLoginApprovalWait) {
 		return loginResponse{}, &apiError{StatusCode: http.StatusUnauthorized, Message: fmt.Sprintf(
-			"new-device approval required (request %s, number %d): approve at %s, or sign in with \"%s login --api-url %s --code XXXX-XXXX\" using a code from the dashboard, or re-run with --wait to wait for approval",
-			login.ApprovalID, login.ApprovalMatch, pageURL, prog, c.baseURL)}
+			"new-device approval required (request %s, number %d): approve at %s, or sign in with \"%s login --api-url %s --code XXXX-XXXX\" using a code from the dashboard, or run \"%s login --wait\" (or set %s=1) to wait for approval",
+			login.ApprovalID, login.ApprovalMatch, pageURL, prog, c.baseURL, prog, envLoginApprovalWait)}
 	}
 	if login.ApprovalExpiresAt != nil {
 		if left := time.Until(*login.ApprovalExpiresAt); left > 0 && left < timeout {

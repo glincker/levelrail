@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -54,6 +55,13 @@ func TestNewDeviceApproval(t *testing.T) {
 		}, http.StatusBadRequest, approvalPollPending, ""},
 		{"a number that is not two digits is refused and leaves it pending", func(h *codeHarness, id string, s *http.Cookie) int {
 			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", `{"match":7}`, "", s).Code
+		}, http.StatusBadRequest, approvalPollPending, ""},
+		{"a string number is a type error and leaves it pending", func(h *codeHarness, id string, s *http.Cookie) int {
+			rec := h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", `{"match":"89"}`, "", s)
+			if !strings.Contains(rec.Body.String(), "match must be a number") {
+				h.t.Errorf("body = %s, want a type error", rec.Body.String())
+			}
+			return rec.Code
 		}, http.StatusBadRequest, approvalPollPending, ""},
 		{"a wrong number denies the sign-in", func(h *codeHarness, id string, s *http.Cookie) int {
 			a, err := h.db.GetLoginApproval(context.Background(), id)

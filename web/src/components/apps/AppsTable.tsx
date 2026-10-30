@@ -8,8 +8,10 @@ import {
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import type { AppListEntry } from '../../types/appDetail'
+import { PlacementLabel } from '../PlacementLabel'
 import { AppRowActions } from '../AppRowActions'
 import { StatusLabel } from '../AppRow'
+import { ManagedByStackTag } from '../stacks/ManagedByStackNotice'
 import { AppLogo, AppMetaChips } from './AppMetaChips'
 import {
   ErrorCell,
@@ -65,8 +67,23 @@ export function AppsTable({
             <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <StatusLabel status={app.status} />
               <AppMetaChips app={app} />
+              <ManagedByStackTag stack={app.managed_by_stack} />
             </span>
           </span>
+        ),
+      },
+      {
+        id: 'node',
+        header: t('appsList.colNode'),
+        priority: 2,
+        width: 'w-32',
+        cell: (app) => (
+          <PlacementLabel
+            nodeId={app.node_id}
+            nodeName={app.node_name}
+            nodeIsLocal={app.node_is_local}
+            className="text-sm"
+          />
         ),
       },
       {

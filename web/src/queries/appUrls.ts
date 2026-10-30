@@ -25,6 +25,7 @@ export interface AppUrls {
   node?: string
   local_node: boolean
   addresses: AppUrlAddress[]
+  http_fallback_url?: string
 }
 
 export const appUrlsKeys = {

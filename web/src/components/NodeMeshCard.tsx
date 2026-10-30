@@ -27,6 +27,20 @@ function formatHandshake(iso?: string): string {
   return new Date(iso).toLocaleString()
 }
 
+function handshakeAge(iso?: string): string {
+  if (!iso) {
+    return 'Never'
+  }
+  const secs = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000))
+  if (secs < 90) {
+    return `${secs}s ago`
+  }
+  if (secs < 5400) {
+    return `${Math.round(secs / 60)} min ago`
+  }
+  return new Date(iso).toLocaleString()
+}
+
 function PeerRow({ peer }: { peer: MeshPeerResource }) {
   const label = peer.name || peer.node_id
   return (
@@ -73,8 +87,9 @@ function PeerRow({ peer }: { peer: MeshPeerResource }) {
   )
 }
 
-// Node detail route's mesh section: this control plane's own WireGuard
-// mesh identity and peer list, plus a rotate-key action. See
+// Node detail route's mesh section: the selected node's own mesh identity
+// (the control plane's for the local node, the control plane's peer entry
+// for a remote one), plus a rotate-key action. See
 // internal/api/mesh.go's own doc comment: GET /api/v1/mesh is one live
 // view (the control plane's own node's UAPI-backed status, plus
 // best-effort static info for every other node), so this card renders
@@ -137,6 +152,17 @@ export function NodeMeshCard({
   }
 
   const rotation = data.rotation
+  // The control plane only has its own device, so a remote node's own
+  // identity is the control plane's peer entry for it, never the local keys.
+  const isLocalNode = !nodeId || nodeId === data.local_node_id
+  const self = isLocalNode
+    ? undefined
+    : data.peers.find((p) => p.node_id === nodeId)
+  const peers = isLocalNode
+    ? data.peers
+    : data.peers.filter((p) => p.node_id === nodeId)
+  const meshAddress = isLocalNode ? data.mesh_address : self?.mesh_address
+  const publicKey = isLocalNode ? data.public_key : self?.public_key
 
   return (
     <Card>
@@ -162,7 +188,7 @@ export function NodeMeshCard({
               Mesh address
             </dt>
             <dd className="mt-1 break-all font-mono text-sm text-foreground">
-              {data.mesh_address || 'Not assigned'}
+              {meshAddress || 'Not assigned'}
             </dd>
           </div>
           <div className="col-span-2 min-w-0">
@@ -170,9 +196,29 @@ export function NodeMeshCard({
               Public key
             </dt>
             <dd className="mt-1 truncate font-mono text-sm text-foreground">
-              {data.public_key || 'Not generated yet'}
+              {publicKey || 'Not generated yet'}
             </dd>
           </div>
+          {!isLocalNode ? (
+            <>
+              <div>
+                <dt className="text-xs text-muted-foreground uppercase">
+                  Endpoint
+                </dt>
+                <dd className="mt-1 break-all font-mono text-sm text-foreground">
+                  {self?.endpoint || 'Unknown'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground uppercase">
+                  Last handshake
+                </dt>
+                <dd className="mt-1 text-sm text-foreground">
+                  {handshakeAge(self?.last_handshake_at)}
+                </dd>
+              </div>
+            </>
+          ) : null}
         </dl>
 
         {rotation ? (
@@ -186,7 +232,7 @@ export function NodeMeshCard({
           />
         ) : null}
 
-        {data.peers.length === 0 ? (
+        {peers.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No peers configured yet.
           </p>
@@ -207,7 +253,7 @@ export function NodeMeshCard({
                 Endpoint
               </span>
             </div>
-            {data.peers.map((peer) => (
+            {peers.map((peer) => (
               <PeerRow key={peer.node_id || peer.public_key} peer={peer} />
             ))}
           </div>

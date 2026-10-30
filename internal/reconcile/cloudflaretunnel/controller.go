@@ -175,7 +175,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		justDeployed = true
 
-	case state.Image != image:
+	case !docker.SameImageRef(state.Image, image):
 		if err := c.replace(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("cloudflare-tunnel: %w", err)
 		}

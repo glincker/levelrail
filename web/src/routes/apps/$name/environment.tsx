@@ -4,6 +4,7 @@ import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
 import { useApp } from '../../../queries/apps'
 import { EnvironmentEditor } from '../../../components/env/EnvironmentEditor'
 import { SecretRotationSection } from '../../../components/env/SecretRotationSection'
+import { AppFilesCard } from '../../../components/AppFilesCard'
 import { EnvHealthCard } from '../../../components/env/EnvHealthCard'
 import { EnvActivityPanel } from '../../../components/EnvActivityPanel'
 import { PreviewEnvOverridesEditor } from '../../../components/PreviewEnvOverridesEditor'
@@ -29,6 +30,7 @@ function EnvironmentSection() {
     <div className="space-y-6">
       <EnvironmentEditor app={app} />
       <SecretRotationSection appName={app.name} />
+      <AppFilesCard appName={app.name} />
       <EnvHealthCard appName={app.name} />
       <EnvActivityPanel appName={app.name} />
       <Collapsible>

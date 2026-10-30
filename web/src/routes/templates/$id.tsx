@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { TemplateDescription } from '@/components/templates/TemplateDescription'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -11,13 +12,16 @@ import {
   useServiceTemplate,
 } from '../../queries/serviceTemplates'
 import { useComposePreview } from '../../queries/composeStack'
-import { TemplateEnvNames } from '../../components/templates/TemplateEnvNames'
 import { TemplateFacts } from '../../components/templates/TemplateFacts'
 import { TemplateRequirementsCard } from '../../components/templates/TemplateRequirementsCard'
+import { TemplateStackFile } from '../../components/templates/TemplateStackFile'
+import { TemplateVerifiedBadge } from '../../components/templates/TemplateVerifiedBadge'
+import { TemplateTrustBadges } from '../../components/templates/TemplateTrustBadges'
 import { TemplateServices } from '../../components/templates/TemplateServices'
 import { TemplateWhatYouGet } from '../../components/templates/TemplateWhatYouGet'
 import { TemplateDeployForm } from '../../components/templates/TemplateDeployForm'
 import { RelatedTemplates } from '../../components/templates/RelatedTemplates'
+import { TemplateDeployResult } from '../../components/templates/TemplateDeployResult'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 import { TemplateLogoTile } from '../../components/TemplateLogoTile'
 import { RamFitBadge } from '../../components/RamFitBadge'
@@ -28,8 +32,8 @@ import {
   primaryVersion,
 } from '../../lib/templateSummary'
 import { formatBytes } from '../../lib/format'
-import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { resourceErrorComponent } from '@/components/resourceErrorComponent'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -39,14 +43,16 @@ export const Route = createFileRoute('/templates/$id')({
     queryClient.ensureQueryData(serviceTemplateQueryOptions(id)),
   component: TemplateDetailRoute,
   pendingComponent: TemplateDetailSkeleton,
-  errorComponent: TemplateDetailError,
+  errorComponent: resourceErrorComponent('template'),
 })
 
 function TemplateDetailRoute() {
   const { t } = useTranslation('templates')
   const { id } = Route.useParams()
   const { data: template } = useServiceTemplate(id)
-  const deployTemplateNow = useDeployTemplateNow()
+  const deployTemplateNow = useDeployTemplateNow(undefined, {
+    showResult: true,
+  })
   const preview = useComposePreview(template?.compose ?? '', [])
   const services = useMemo(
     () => (preview.data?.valid ? preview.data.services : []),
@@ -68,6 +74,7 @@ function TemplateDetailRoute() {
 
   const deploying = deployTemplateNow.pendingId === template.id
   const version = primaryVersion(services)
+  const images = services.flatMap((s) => (s.image ? [s.image] : []))
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -94,6 +101,10 @@ function TemplateDetailRoute() {
             <Badge variant="outline">{template.category}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">{template.slogan}</p>
+          <TemplateDescription
+            description={template.description}
+            slogan={template.slogan}
+          />
           <div className="flex flex-wrap items-center gap-2">
             {template.recommended_memory_bytes ? (
               <>
@@ -107,6 +118,8 @@ function TemplateDetailRoute() {
                 />
               </>
             ) : null}
+            {template.verified ? <TemplateVerifiedBadge /> : null}
+            <TemplateTrustBadges images={images} />
             {template.requires_gpu ? (
               <Badge variant="muted">{t('detail.needsGpu')}</Badge>
             ) : null}
@@ -140,6 +153,13 @@ function TemplateDetailRoute() {
             slug={appSlug(template.id, template.name)}
           />
           <TemplateRequirementsCard requirements={template.requirements} />
+          {preview.isPending ? (
+            <div role="status" aria-label={t('detail.deployed.loading')}>
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : services.length > 0 ? (
+            <TemplateServices services={services} />
+          ) : null}
           {template.manifest ? (
             <TemplateDeployForm manifest={template.manifest} />
           ) : (
@@ -147,13 +167,6 @@ function TemplateDetailRoute() {
               <h2 className="text-base font-semibold">
                 {t('detail.deploy.title')}
               </h2>
-              {preview.isPending ? (
-                <div role="status" aria-label={t('detail.deployed.loading')}>
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : (
-                <TemplateEnvNames services={services} />
-              )}
               <p className="text-sm text-muted-foreground">
                 {template.requires_configuration
                   ? t('detail.deploy.configureHint')
@@ -186,9 +199,10 @@ function TemplateDetailRoute() {
               )}
             </section>
           )}
-          {services.length > 0 ? (
-            <TemplateServices services={services} />
-          ) : null}
+          <TemplateStackFile
+            compose={template.compose}
+            slug={appSlug(template.id, template.name)}
+          />
           <RelatedTemplates id={template.id} category={template.category} />
         </div>
 
@@ -200,6 +214,11 @@ function TemplateDetailRoute() {
           />
         </aside>
       </div>
+      <TemplateDeployResult
+        result={deployTemplateNow.deployed?.response ?? null}
+        templateId={deployTemplateNow.deployed?.templateId}
+        onClose={deployTemplateNow.clearDeployed}
+      />
     </div>
   )
 }
@@ -221,19 +240,5 @@ function TemplateDetailSkeleton() {
       </div>
       <Skeleton className="h-40 w-full rounded-xl" />
     </div>
-  )
-}
-
-function TemplateDetailError({ error }: { error: unknown }) {
-  const { t } = useTranslation('templates')
-  return (
-    <Alert variant="destructive">
-      <AlertDescription>
-        <p>{routeErrorMessage(error)}</p>
-        <Link to="/templates" className="mt-2 inline-block underline">
-          {t('detail.back')}
-        </Link>
-      </AlertDescription>
-    </Alert>
   )
 }

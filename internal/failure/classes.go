@@ -1,10 +1,13 @@
 package failure
 
+import "strings"
+
 // Failure codes.
 const (
 	CodeDockerfileError    = "dockerfile_error"
 	CodeDependencyInstall  = "dependency_install_failed"
 	CodeCompileError       = "compile_error"
+	CodeBuildStepFailed    = "build_step_failed"
 	CodeBuildConfigError   = "build_config_error"
 	CodeBuildOOM           = "build_out_of_memory"
 	CodeBuildTimeout       = "build_timeout"
@@ -25,6 +28,7 @@ const (
 	CodeScanGateBlocked    = "scan_gate_blocked"
 	CodeRollbackTargetGone = "rollback_target_gone"
 	CodeDockerUnreachable  = "docker_unreachable"
+	CodeBuildEngineNoBuild = "build_engine_unsupported"
 	CodeGitHostUnreachable = "git_host_unreachable"
 	CodeSourceNotCached    = "source_not_cached"
 	CodeUnknown            = "unknown"
@@ -32,7 +36,10 @@ const (
 	docsPagePath = "/deploy-failures"
 )
 
-func docsURL(code string) string { return docsPagePath + "#" + code }
+func docsURL(base, code string) string { return base + docsPagePath + "#" + code }
+
+// withDocs fills the {docs} placeholder so inline guide links are full URLs.
+func withDocs(text, base string) string { return strings.ReplaceAll(text, "{docs}", base) }
 
 type class struct {
 	code        string
@@ -109,6 +116,12 @@ var classes = []class{
 		patterns: []string{"cannot connect to the docker daemon", "the docker daemon is not running", "dial unix /var/run/docker.sock"},
 	},
 	{
+		code: CodeBuildEngineNoBuild, buildOnly: true,
+		cause:    "This container engine (Podman) has no BuildKit. Deploy a prebuilt image, or run Docker for source builds. See {docs}/container-runtimes.",
+		fix:      "Deploy a prebuilt image from a registry, or run the build node on Docker. Source builds (Dockerfile and Railpack) need BuildKit, which Podman does not provide. See {docs}/container-runtimes.",
+		patterns: []string{"unable to upgrade to h2c", "buildkit is not available", "no buildkit"},
+	},
+	{
 		code: CodeBuildOOM, buildOnly: true,
 		cause:    "The build ran out of memory and was killed.",
 		fix:      "Give the build node more memory, reduce parallelism in the build (for example lower the bundler worker count), or build a smaller target.",
@@ -178,7 +191,13 @@ var classes = []class{
 		code: CodeDependencyInstall, buildOnly: true,
 		cause:    "A dependency install step in the build failed.",
 		fix:      "Check the failing install command in the log excerpt: fix the lockfile or version pin, and confirm the package registry is reachable from the build node.",
-		patterns: []string{"npm err!", "npm error", "eresolve", "could not resolve host", "unable to locate package", "no matching distribution found", "could not find a version that satisfies", "err_pnpm", "yarn error", "error an unexpected error occurred", "there appears to be trouble with your network", "eai_again", "e: failed to fetch", "temporary failure resolving", "pip install", "process \"/bin/sh"},
+		patterns: []string{"npm err!", "npm error", "eresolve", "could not resolve host", "unable to locate package", "no matching distribution found", "could not find a version that satisfies", "err_pnpm", "yarn error", "error an unexpected error occurred", "there appears to be trouble with your network", "eai_again", "e: failed to fetch", "temporary failure resolving", "pip install", "pip3 install", "npm install", "npm ci", "yarn install", "pnpm install", "go mod download", "apk add", "apt-get install", "apt-get update", "apt install", "unable to select packages", "cargo fetch", "bundle install", "composer install"},
+	},
+	{
+		code: CodeBuildStepFailed, buildOnly: true,
+		cause:    "A command in the build exited with an error.",
+		fix:      "See the failing build step above in the log excerpt, fix that command or what it depends on, then redeploy.",
+		patterns: []string{"process \"/bin/sh", "did not complete successfully", "executor failed running"},
 	},
 	{
 		code:     CodePortNotListening,

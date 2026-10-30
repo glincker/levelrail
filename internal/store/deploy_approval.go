@@ -31,6 +31,9 @@ const (
 	DeployApprovalStatusApproved = "approved"
 	DeployApprovalStatusRejected = "rejected"
 	DeployApprovalStatusExpired  = "expired"
+	// DeployApprovalStatusApproving is held by one approver while the change
+	// applies, so a racing approve, reject or expiry cannot land on the row.
+	DeployApprovalStatusApproving = "approving"
 )
 
 // DeployApproval is one pending-or-decided two-person approval gate on a
@@ -62,6 +65,11 @@ type DeployApproval struct {
 	RequestedByType string
 	RequestedBy     string
 	RequestedByName string
+	// RequesterUserID is the human behind the request, resolved when it was
+	// made; empty for an ownerless token. RequesterRecorded is false on rows
+	// from before the column existed.
+	RequesterUserID   string
+	RequesterRecorded bool
 
 	// ApprovedByType/ApprovedBy/ApprovedByName are empty until Status
 	// leaves pending; "ApprovedBy" is this row's decider whether the
@@ -114,12 +122,14 @@ func (db *DB) SaveDeployApproval(ctx context.Context, a DeployApproval) error {
 			id, service_name, source_service_name, environment_id, action, image, status,
 			requested_by_type, requested_by, requested_by_name,
 			approved_by_type, approved_by, approved_by_name, reason,
-			created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env,
+			requester_user_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, a.ID, a.ServiceName, a.SourceServiceName, a.EnvironmentID, a.Action, a.Image, a.Status,
 		a.RequestedByType, a.RequestedBy, a.RequestedByName,
 		a.ApprovedByType, a.ApprovedBy, a.ApprovedByName, a.Reason,
-		a.CreatedAt, a.ExpiresAt, a.DecidedAt, a.FreezeOverride, a.Pull, a.IncludeEnv, a.PromoteEnv)
+		a.CreatedAt, a.ExpiresAt, a.DecidedAt, a.FreezeOverride, a.Pull, a.IncludeEnv, a.PromoteEnv,
+		sql.NullString{String: a.RequesterUserID, Valid: a.RequesterRecorded})
 	if err != nil {
 		return fmt.Errorf("store: save deploy approval %q: %w", a.ID, err)
 	}
@@ -191,11 +201,56 @@ func (db *DB) DecideDeployApproval(ctx context.Context, id, newStatus, approvedB
 	return n > 0, nil
 }
 
+// ClaimDeployApproval moves a pending, unexpired approval to approving for one
+// decider; only the caller that gets ok=true may apply the gated change.
+// claimedAt is stored in decided_at and identifies this claim later.
+func (db *DB) ClaimDeployApproval(ctx context.Context, id, approvedByType, approvedBy, approvedByName, claimedAt string) (bool, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_approvals
+		SET status = ?, approved_by_type = ?, approved_by = ?, approved_by_name = ?, decided_at = ?
+		WHERE id = ? AND status = ? AND expires_at > ?
+	`, DeployApprovalStatusApproving, approvedByType, approvedBy, approvedByName, claimedAt,
+		id, DeployApprovalStatusPending, claimedAt)
+	return deployApprovalAffected(res, err, "claim deploy approval", id)
+}
+
+// FinishDeployApproval marks this claim approved once its change applied.
+func (db *DB) FinishDeployApproval(ctx context.Context, id, claimedAt, decidedAt string) (bool, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_approvals SET status = ?, decided_at = ?
+		WHERE id = ? AND status = ? AND decided_at = ?
+	`, DeployApprovalStatusApproved, decidedAt, id, DeployApprovalStatusApproving, claimedAt)
+	return deployApprovalAffected(res, err, "finish deploy approval", id)
+}
+
+// ReleaseDeployApproval returns this claim to pending with no decider, after
+// its apply failed or its claimer vanished, so someone can decide it again.
+func (db *DB) ReleaseDeployApproval(ctx context.Context, id, claimedAt string) (bool, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_approvals
+		SET status = ?, approved_by_type = '', approved_by = '', approved_by_name = '', decided_at = ''
+		WHERE id = ? AND status = ? AND decided_at = ?
+	`, DeployApprovalStatusPending, id, DeployApprovalStatusApproving, claimedAt)
+	return deployApprovalAffected(res, err, "release deploy approval", id)
+}
+
+func deployApprovalAffected(res sql.Result, err error, op, id string) (bool, error) {
+	if err != nil {
+		return false, fmt.Errorf("store: %s %q: %w", op, id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: %s %q: %w", op, id, err)
+	}
+	return n > 0, nil
+}
+
 const deployApprovalSelect = `
 	SELECT id, service_name, source_service_name, environment_id, action, image, status,
 		requested_by_type, requested_by, requested_by_name,
 		approved_by_type, approved_by, approved_by_name, reason,
-		created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env
+		created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env,
+		requester_user_id
 	FROM deploy_approvals
 `
 
@@ -204,11 +259,14 @@ const deployApprovalSelect = `
 // for the same GetX/ListX split.
 func scanDeployApproval(s rowScanner) (DeployApproval, error) {
 	var a DeployApproval
+	var requester sql.NullString
 	err := s.Scan(
 		&a.ID, &a.ServiceName, &a.SourceServiceName, &a.EnvironmentID, &a.Action, &a.Image, &a.Status,
 		&a.RequestedByType, &a.RequestedBy, &a.RequestedByName,
 		&a.ApprovedByType, &a.ApprovedBy, &a.ApprovedByName, &a.Reason,
 		&a.CreatedAt, &a.ExpiresAt, &a.DecidedAt, &a.FreezeOverride, &a.Pull, &a.IncludeEnv, &a.PromoteEnv,
+		&requester,
 	)
+	a.RequesterUserID, a.RequesterRecorded = requester.String, requester.Valid
 	return a, err
 }

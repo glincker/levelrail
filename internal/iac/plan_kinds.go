@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
@@ -55,6 +56,10 @@ func mergeEnv(live, desired map[string]string) map[string]string {
 }
 
 func (p *planner) planProject(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "projects") || p.deniedItem(r, "projects/"+r.Name) {
 		return
 	}
@@ -82,6 +87,10 @@ func (p *planner) planProject(r *Resource) {
 }
 
 func (p *planner) planEnvironment(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "environments/"+r.Scope) || p.deniedItem(r, r.Key()) {
 		return
 	}
@@ -132,6 +141,10 @@ func (p *planner) planEnvironment(r *Resource) {
 }
 
 func (p *planner) planTag(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "tags") {
 		return
 	}
@@ -146,6 +159,10 @@ func (p *planner) planTag(r *Resource) {
 }
 
 func (p *planner) planDatabase(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "databases") {
 		return
 	}
@@ -154,6 +171,8 @@ func (p *planner) planDatabase(r *Resource) {
 		p.fail(r, "project %q does not exist and is not declared in the files", project)
 		return
 	}
+	wantPooler, poolerDeclared := r.Fields["pooler"].(bool)
+	wantPool, wantMax := intField(r.Fields, "pooler_pool_size"), intField(r.Fields, "pooler_max_client_conn")
 	live, ok := p.st.databases[r.Name]
 	if !ok {
 		p.add(r, ActionCreate, addAll(r.Fields, nil), nil, func(ctx context.Context, x *executor) error {
@@ -161,7 +180,13 @@ func (p *planner) planDatabase(r *Resource) {
 			if err := x.do(ctx, http.MethodPost, "/api/v1/databases", body, nil); err != nil {
 				return err
 			}
-			return x.setDatabaseProject(ctx, r.Name, project)
+			if err := x.setDatabaseProject(ctx, r.Name, project); err != nil {
+				return err
+			}
+			if wantPooler {
+				return x.setDatabasePooler(ctx, r.Name, true, wantPool, wantMax)
+			}
+			return nil
 		})
 		return
 	}
@@ -173,17 +198,45 @@ func (p *planner) planDatabase(r *Resource) {
 		p.fail(r, "version cannot change through apply (live %s, declared %s)", live.Version, v)
 		return
 	}
-	if project == "" || p.st.projectsByID[live.ProjectID].Name == project {
+	var ch []FieldChange
+	projectChanged := project != "" && p.st.projectsByID[live.ProjectID].Name != project
+	if projectChanged {
+		ch = append(ch, FieldChange{Path: "project", Op: OpChange, Old: p.st.projectsByID[live.ProjectID].Name, New: project})
+	}
+	poolerChanged := poolerDeclared && wantPooler != live.Pooler
+	if poolerChanged {
+		ch = append(ch, FieldChange{Path: "pooler.enabled", Op: OpChange, Old: strconv.FormatBool(live.Pooler), New: strconv.FormatBool(wantPooler)})
+	}
+	if poolerDeclared && wantPooler && wantPool != live.PoolSize {
+		poolerChanged = true
+		ch = append(ch, FieldChange{Path: "pooler.pool_size", Op: OpChange, Old: strconv.Itoa(live.PoolSize), New: strconv.Itoa(wantPool)})
+	}
+	if poolerDeclared && wantPooler && wantMax != live.MaxConn {
+		poolerChanged = true
+		ch = append(ch, FieldChange{Path: "pooler.max_client_conn", Op: OpChange, Old: strconv.Itoa(live.MaxConn), New: strconv.Itoa(wantMax)})
+	}
+	if len(ch) == 0 {
 		p.add(r, ActionNoop, nil, nil, nil)
 		return
 	}
-	ch := []FieldChange{{Path: "project", Op: OpChange, Old: p.st.projectsByID[live.ProjectID].Name, New: project}}
 	p.add(r, ActionUpdate, ch, nil, func(ctx context.Context, x *executor) error {
-		return x.setDatabaseProject(ctx, r.Name, project)
+		if projectChanged {
+			if err := x.setDatabaseProject(ctx, r.Name, project); err != nil {
+				return err
+			}
+		}
+		if poolerChanged {
+			return x.setDatabasePooler(ctx, r.Name, wantPooler, wantPool, wantMax)
+		}
+		return nil
 	})
 }
 
 func (p *planner) planDomain(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	app := stringField(r.Fields, "app")
 	if p.deniedItem(r, resourceKey(KindApp, "", app)) {
 		return
@@ -213,6 +266,10 @@ func (p *planner) planDomain(r *Resource) {
 }
 
 func (p *planner) planLB(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, r.Key()) || p.deniedItem(r, resourceKey(KindApp, "", r.Name)) {
 		return
 	}
@@ -242,6 +299,10 @@ func (p *planner) planLB(r *Resource) {
 }
 
 func (p *planner) planPipeline(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "pipelines/"+r.Scope) {
 		return
 	}

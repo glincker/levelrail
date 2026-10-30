@@ -69,7 +69,7 @@ func TestLoadBalancer_SetGetDeleteLifecycle(t *testing.T) {
 
 	rec := lbDo(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/loadbalancer", "")
 	var res loadBalancerResource
-	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil || res.Configured || len(res.Algorithms) != 6 {
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil || res.Configured || len(res.Algorithms) != len(loadbalancer.Algorithms()) {
 		t.Fatalf("unconfigured GET = %d %s", rec.Code, rec.Body.String())
 	}
 

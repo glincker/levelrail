@@ -22,6 +22,7 @@ import {
   useSetupGuide,
 } from '../../queries/setupGuide'
 import { CreateResourceWizard } from '../CreateResourceWizard'
+import { RuntimeSettingsReview } from './RuntimeSettingsReview'
 import { SampleAppButton } from './SampleAppButton'
 import { StepCard } from './StepCard'
 
@@ -179,6 +180,8 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
           description={t('summary.allDoneBody')}
         />
       ) : null}
+
+      <RuntimeSettingsReview />
 
       <section className="space-y-2">
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">

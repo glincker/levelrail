@@ -23,10 +23,12 @@ func databaseControllerName(dbName string) string {
 
 // databaseResource NodeID is response-only on update; placement changes go through PUT .../node.
 type databaseResource struct {
-	Name    string `json:"name"`
-	Engine  string `json:"engine"`
-	Version string `json:"version"`
-	NodeID  string `json:"node_id,omitempty"`
+	// ManagedByStack is response-only: the owning stack, omitted when none.
+	ManagedByStack string `json:"managed_by_stack,omitempty"`
+	Name           string `json:"name"`
+	Engine         string `json:"engine"`
+	Version        string `json:"version"`
+	NodeID         string `json:"node_id,omitempty"`
 	// NodeName and NodeIsLocal are response-only display fields, see
 	// appResource.
 	NodeName    string `json:"node_name,omitempty"`
@@ -62,24 +64,32 @@ type databaseResource struct {
 	Suspended bool `json:"suspended,omitempty"`
 	// TLSEnabled is computed on read and not settable, since TLS activates automatically at creation.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
+	// PoolerEnabled is response-only; set it via POST and DELETE .../pooler.
+	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
+	// PoolerPoolSize and PoolerMaxClientConn are response-only per-database overrides.
+	PoolerPoolSize      int `json:"pooler_pool_size,omitempty"`
+	PoolerMaxClientConn int `json:"pooler_max_client_conn,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 	return databaseResource{
-		Name:               d.Name,
-		Engine:             d.Engine,
-		Version:            d.Version,
-		NodeID:             d.NodeID,
-		ProjectID:          d.ProjectID,
-		BackupTargetID:     d.BackupTargetID,
-		BackupSchedule:     d.BackupSchedule,
-		BackupRetain:       d.BackupRetain,
-		BackupRetainDays:   d.BackupRetainDays,
-		PubliclyAccessible: d.PubliclyAccessible,
-		PublicPort:         d.PublicPort,
-		PublicBindAddress:  d.PublicBindAddress,
-		Resources:          d.Resources,
-		Suspended:          d.Suspended,
+		Name:                d.Name,
+		Engine:              d.Engine,
+		Version:             d.Version,
+		NodeID:              d.NodeID,
+		ProjectID:           d.ProjectID,
+		BackupTargetID:      d.BackupTargetID,
+		BackupSchedule:      d.BackupSchedule,
+		BackupRetain:        d.BackupRetain,
+		BackupRetainDays:    d.BackupRetainDays,
+		PubliclyAccessible:  d.PubliclyAccessible,
+		PublicPort:          d.PublicPort,
+		PublicBindAddress:   d.PublicBindAddress,
+		Resources:           d.Resources,
+		Suspended:           d.Suspended,
+		PoolerEnabled:       d.PoolerEnabled,
+		PoolerPoolSize:      d.PoolerPoolSize,
+		PoolerMaxClientConn: d.PoolerMaxClientConn,
 	}
 }
 
@@ -143,9 +153,17 @@ type databaseListResource struct {
 }
 
 // Engines are checked against the embedded registry, so adding an engine needs no change here.
+// validDatabaseName keeps a database name safe to embed in container names, DNS labels and engine tooling.
+func validDatabaseName(name string) bool {
+	return len(name) <= 63 && gitSourceDatabaseNamePattern.MatchString(name)
+}
+
 func validateDatabaseResource(d databaseResource) error {
 	if d.Name == "" {
 		return errors.New("name is required")
+	}
+	if !validDatabaseName(d.Name) {
+		return errors.New("name must be 1-63 characters: lowercase letters, digits and hyphens, starting with a letter")
 	}
 	supported, err := store.IsSupportedEngine(d.Engine)
 	if err != nil {
@@ -182,6 +200,29 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	dbs = visibleDBs
+	match, err := rt.labelFilter(r, store.LabelKindDatabase)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if match != nil {
+		labelled := dbs[:0:0]
+		for _, d := range dbs {
+			if match(d.Name) {
+				labelled = append(labelled, d)
+			}
+		}
+		dbs = labelled
+	}
+	if project := r.URL.Query().Get("project"); project != "" {
+		inProject := dbs[:0:0]
+		for _, d := range dbs {
+			if d.ProjectID == project {
+				inProject = append(inProject, d)
+			}
+		}
+		dbs = inProject
+	}
 	if dbs, err = rt.filterDatabasesByEnvironment(r, dbs); err != nil {
 		rt.internalError(w, "api: list databases: environment filter", err)
 		return
@@ -202,9 +243,11 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 
 	placement := rt.placementResolver(r.Context())
 	pending := rt.pendingDatabases(r.Context())
+	owners := rt.loadStackOwners(r.Context())
 	out := make([]databaseListResource, 0, len(dbs))
 	for _, d := range dbs {
 		res := toDatabaseResource(d)
+		res.ManagedByStack = owners.of("Database", "Database/"+d.Name)
 		placement.stampDatabase(&res)
 		res.TLSEnabled = tlsStatuses[d.Name]
 		if pending[d.Name] {
@@ -272,6 +315,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	}
 	req.ExistingVolume = ""
 	req.ProvisionState = provisionStatePending
+	rt.enableTLSAtCreate(r.Context(), req.Name, req.Engine)
 
 	if req.BackupSchedule != "" {
 		if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), req.Name, req.BackupTargetID, req.BackupSchedule, req.BackupRetain, req.BackupRetainDays); err != nil {
@@ -350,7 +394,9 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toDatabaseResourceWithStatus(r.Context(), *d))
+	res := rt.toDatabaseResourceWithStatus(r.Context(), *d)
+	res.ManagedByStack = rt.loadStackOwners(r.Context()).of("Database", "Database/"+d.Name)
+	writeJSON(w, http.StatusOK, res)
 }
 
 // The data volume is kept on delete, so a mistaken delete never destroys data.
@@ -381,7 +427,7 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID)
+	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID, true)
 	if !ok {
 		return
 	}

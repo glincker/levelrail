@@ -66,9 +66,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -286,6 +288,13 @@ type Controller struct {
 	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
 	lastDial sync.Map
 
+	// listing shares one local container listing across a single Reconcile.
+	listing atomic.Pointer[containerListing]
+	// inspected holds the local service containers read in one call at the start of a Reconcile.
+	inspected atomic.Pointer[docker.InspectSet]
+	// attempts memoizes each service's deploy attempts for a single Reconcile.
+	attempts atomic.Pointer[attemptMemo]
+
 	serverName     string
 	requestStats   bool
 	firewall       bool
@@ -297,9 +306,10 @@ type Controller struct {
 	adminListen          string
 	storageDir           string
 
-	hardening *ingress.Hardening
-	inherited *ingress.InheritedSockets
-	holds     *ingress.HoldTracker
+	hardening    *ingress.Hardening
+	abuseApplied abuseApplied
+	inherited    *ingress.InheritedSockets
+	holds        *ingress.HoldTracker
 
 	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
 
@@ -713,10 +723,16 @@ func (c *Controller) Name() string { return "ingress" }
 // an error.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	c.issues.reset()
+	c.listing.Store(&containerListing{})
+	defer c.listing.Store(nil)
+	c.attempts.Store(&attemptMemo{byService: map[string][]store.DeployAttempt{}})
+	defer c.attempts.Store(nil)
 	services, err := c.store.ListDesiredServices(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list desired services: %w", err)
 	}
+	c.inspected.Store(docker.FetchInspectSet(ctx, c.runtime, c.localTargets(services)))
+	defer c.inspected.Store(nil)
 	staticSites, err := c.store.ListStaticSites(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list static sites: %w", err)
@@ -785,7 +801,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancer admin states: %w", err)
 	}
-	readyByService, err := c.applicationReadyByService(ctx, services)
+	readyByService, readyAt, err := c.applicationReadyByService(ctx, services)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get application readiness: %w", err)
 	}
@@ -807,11 +823,22 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
 	}
+	derived, primaryHosts := splitDerivedServices(services, envDomainSets)
 	for _, svc := range services {
 		if store.IsCanaryService(svc.Name) {
 			continue
 		}
 		configuredHosts := routedDomains(svc, envDomainSets)
+		if derived[svc.Name] {
+			// A per-deploy preview service must never claim a host its
+			// primary app owns, whatever the service list order is.
+			if kept := withoutHosts(configuredHosts, primaryHosts); len(kept) != len(configuredHosts) {
+				if len(kept) == 0 {
+					continue
+				}
+				configuredHosts = kept
+			}
+		}
 		hosts := configuredHosts
 		if len(hosts) == 0 {
 			// No operator-configured domain: fall back to a zero-config
@@ -915,7 +942,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				remoteBlocks = append(remoteBlocks, remoteBlock{Service: svc.Name, NodeID: svc.NodeID, Hosts: activeHosts, Why: why})
 			}
 		} else {
-			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
+			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name] && c.readyForNewestAttempt(ctx, svc.Name, readyAt[svc.Name]))
 		}
 		if !ok {
 			// No backend to bypass to: the gated hosts still get the page.
@@ -936,6 +963,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		if lb == nil {
 			lb = c.canaryRoute(ctx, dial, canaries[svc.Name], readyByService)
+		}
+		if lb == nil && c.isLocalNode(svc.NodeID) {
+			if _, balanced := lbConfigs[svc.Name]; !balanced {
+				lb = c.failoverRoute(ctx, svc, dial)
+			}
 		}
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
@@ -971,6 +1003,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides, sleeping); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
+	routes = c.applyAbusePolicies(ctx, routes, claimedHosts, settings)
 	if routes, err = c.applyAuthGates(ctx, routes); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain auth gates: %w", err)
 	}
@@ -1334,19 +1367,19 @@ func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS0
 func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService, targetReady bool) (string, bool) {
 	target := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 
-	state, err := c.runtime.InspectByName(ctx, target)
+	state, err := c.inspectLocal(ctx, target)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, keeping the last known backend",
 			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
 		if dial, ok := c.lastDial.Load(svc.Name); ok {
 			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
 		}
-	} else if dial, ok := dialAddr(state); ok && targetReady {
+	} else if dial, ok := dialAddr(state, svc.Port); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
 
-	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target); ok {
+	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, svc.Port, target, warmingImageID(svc, state)); ok {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
@@ -1354,6 +1387,35 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 	c.logger.DebugContext(ctx, "ingress: no ready backend for service, skipping",
 		slog.String("service", svc.Name), slog.String("container", target))
 	return "", false
+}
+
+// passedReadiness reports whether state is a container that already
+// served: it runs a succeeded image and predates the newest deploy
+// attempt, so the current deploy did not create it. The Ready condition can
+// still belong to a failed retry of an abandoned release right after a
+// rollback, and the rollback target must not lose traffic to an older
+// release meanwhile. A container the newest deploy just created never
+// qualifies, so restarts and same-tag redeploys still wait for Ready.
+func (c *Controller) passedReadiness(ctx context.Context, serviceName string, state *docker.ContainerState) bool {
+	if state == nil || state.Image == "" || state.Created.IsZero() {
+		return false
+	}
+	attempts, ok := c.deployAttempts(ctx, serviceName)
+	if !ok || len(attempts) == 0 || !state.Created.Before(attempts[0].StartedAt) {
+		return false
+	}
+	// A rollback can restart a held container in place: same Created, fresh process.
+	if insp, ok := c.runtime.(docker.ExitStateInspector); ok {
+		if es, err := insp.InspectExitState(ctx, state.Name); err == nil && es != nil && !es.StartedAt.IsZero() && !es.StartedAt.Before(attempts[0].StartedAt) {
+			return false
+		}
+	}
+	for _, a := range attempts {
+		if a.Status == store.DeployAttemptStatusSucceeded && docker.SameImageRef(a.Image, state.Image) {
+			return true
+		}
+	}
+	return false
 }
 
 // streamRoutes builds one ingress.StreamRoute per app stream
@@ -1407,6 +1469,21 @@ func (c *Controller) dialForStreamPort(ctx context.Context, svc *store.DesiredSe
 			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
 		return "", false
 	}
+	if dial, ok := streamDial(state, containerPort); ok {
+		return dial, true
+	}
+	// Same fallback as HTTP routes: keep the stream on the serving release
+	// while the desired one is down or not yet publishing the port.
+	prev, _ := c.previousReleases(ctx, svc.Name, target) // a list error just means no fallback
+	for _, cs := range prev {
+		if dial, ok := streamDial(&cs, containerPort); ok {
+			return dial, true
+		}
+	}
+	return "", false
+}
+
+func streamDial(state *docker.ContainerState, containerPort int) (string, bool) {
 	if state == nil || !state.Running {
 		return "", false
 	}
@@ -1418,62 +1495,142 @@ func (c *Controller) dialForStreamPort(ctx context.Context, svc *store.DesiredSe
 	return "", false
 }
 
-func dialAddr(state *docker.ContainerState) (string, bool) {
-	if state == nil || !state.Running || len(state.Ports) == 0 {
+func dialAddr(state *docker.ContainerState, port int) (string, bool) {
+	if state == nil || !state.Running {
 		return "", false
 	}
-	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), true
+	p, ok := docker.PrimaryPort(state.Ports, port)
+	if !ok {
+		return "", false
+	}
+	return "127.0.0.1:" + strconv.Itoa(p.HostPort), true
 }
 
 // dialPreviousRelease finds another running, ported container for
 // serviceName besides exclude, to keep serving while exclude isn't ready.
-func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude string) (string, bool) {
-	containers, err := c.runtime.ListByPrefix(ctx, serviceName+"-")
+func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName string, port int, exclude, preferImageID string) (string, bool) {
+	prev, err := c.previousReleasesPreferring(ctx, serviceName, exclude, preferImageID)
 	if err != nil {
-		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
-			slog.String("service", serviceName), slog.String("error", err.Error()))
 		if dial, ok := c.lastDial.Load(serviceName); ok {
 			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
 		}
 		return "", false
 	}
-	var best *docker.ContainerState
-	for i := range containers {
-		cs := &containers[i]
-		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 {
-			continue
-		}
-		if best == nil || cs.Created.After(best.Created) {
-			best = cs
-		}
-	}
-	if best == nil {
+	if len(prev) == 0 {
 		return "", false
 	}
-	return dialAddr(best)
+	return dialAddr(&prev[0], port)
+}
+
+// previousReleases returns serviceName's running, ported containers other
+// than exclude, best fallback first: last ready release, then newest.
+func (c *Controller) previousReleases(ctx context.Context, serviceName, exclude string) ([]docker.ContainerState, error) {
+	return c.previousReleasesPreferring(ctx, serviceName, exclude, "")
+}
+
+// previousReleasesPreferring is previousReleases with a held release running
+// preferImageID ranked first, so a warming rollback's content keeps serving.
+func (c *Controller) previousReleasesPreferring(ctx context.Context, serviceName, exclude, preferImageID string) ([]docker.ContainerState, error) {
+	containers, err := c.listLocal(ctx, serviceName+"-")
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
+			slog.String("service", serviceName), slog.String("error", err.Error()))
+		return nil, err
+	}
+	return c.rankReleasesPreferring(ctx, serviceName, exclude, preferImageID, containers), nil
+}
+
+// rankReleases filters to fallback candidates and orders them. The
+// "name-" prefix also matches sibling services (per-deploy preview
+// services), which must never take over the primary route.
+func (c *Controller) rankReleases(ctx context.Context, serviceName, exclude string, containers []docker.ContainerState) []docker.ContainerState {
+	return c.rankReleasesPreferring(ctx, serviceName, exclude, "", containers)
+}
+
+func (c *Controller) rankReleasesPreferring(ctx context.Context, serviceName, exclude, preferImageID string, containers []docker.ContainerState) []docker.ContainerState {
+	var out []docker.ContainerState
+	for _, cs := range containers {
+		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 || !application.OwnsContainer(serviceName, cs.Name) {
+			continue
+		}
+		out = append(out, cs)
+	}
+	if len(out) < 2 {
+		return out
+	}
+	readyRank := c.readyImageRanks(ctx, serviceName)
+	excludeRelease := application.ReleaseKey(serviceName, exclude)
+	rank := func(cs docker.ContainerState) int {
+		r, ready := readyRank[docker.CanonicalImageRef(cs.Image)]
+		if !ready || cs.Image == "" {
+			return len(readyRank) + 2
+		}
+		// Same content that already passed readiness, from another release than the warming target.
+		if preferImageID != "" && cs.ImageID == preferImageID && application.ReleaseKey(serviceName, cs.Name) != excludeRelease {
+			return 0
+		}
+		return r + 1
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if ri, rj := rank(out[i]), rank(out[j]); ri != rj {
+			return ri < rj
+		}
+		if !out[i].Created.Equal(out[j].Created) {
+			return out[i].Created.After(out[j].Created)
+		}
+		return out[i].Name < out[j].Name
+	})
+	return out
+}
+
+// attemptLister is the optional store surface that tells which releases
+// passed readiness; stores without it fall back to newest-created.
+type attemptLister interface {
+	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
+}
+
+// readyImageRanks maps each succeeded deploy image to its recency rank
+// (0 is the latest success).
+func (c *Controller) readyImageRanks(ctx context.Context, serviceName string) map[string]int {
+	ranks := map[string]int{}
+	attempts, ok := c.deployAttempts(ctx, serviceName)
+	if !ok {
+		return ranks
+	}
+	for _, a := range attempts {
+		if a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" {
+			continue
+		}
+		key := docker.CanonicalImageRef(a.Image)
+		if _, seen := ranks[key]; !seen {
+			ranks[key] = len(ranks)
+		}
+	}
+	return ranks
 }
 
 // applicationReadyByService batches the application controller's Ready
 // condition per service, once per pass rather than once per dial.
-func (c *Controller) applicationReadyByService(ctx context.Context, services []store.DesiredService) (map[string]bool, error) {
+func (c *Controller) applicationReadyByService(ctx context.Context, services []store.DesiredService) (ready map[string]bool, readyAt map[string]time.Time, err error) {
 	names := make([]string, len(services))
 	for i, svc := range services {
 		names[i] = application.ControllerName(svc.Name)
 	}
 	conditions, err := c.store.GetConditionsForControllers(ctx, names)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	ready := make(map[string]bool, len(services))
+	ready = make(map[string]bool, len(services))
+	readyAt = make(map[string]time.Time, len(services))
 	for _, svc := range services {
 		for _, cond := range conditions[application.ControllerName(svc.Name)] {
 			if cond.Type == reconcile.ConditionTypeReady && cond.Status == reconcile.ConditionTrue {
-				ready[svc.Name] = true
+				ready[svc.Name], readyAt[svc.Name] = true, cond.LastTransitionTime
 				break
 			}
 		}
 	}
-	return ready, nil
+	return ready, readyAt, nil
 }
 
 // domainBasicAuthByDomain returns every store.DomainBasicAuth row keyed
@@ -1748,4 +1905,43 @@ func fallbackLifetimeString(d time.Duration) string {
 		return ""
 	}
 	return d.String()
+}
+
+// splitDerivedServices marks services named "<other service>-<suffix>"
+// (per-deploy preview services) and collects the hosts every other service
+// is configured for.
+func splitDerivedServices(services []store.DesiredService, sets map[string]map[string][]string) (derived map[string]bool, primaryHosts map[string]bool) {
+	names := make(map[string]bool, len(services))
+	for _, svc := range services {
+		names[svc.Name] = true
+	}
+	derived = map[string]bool{}
+	primaryHosts = map[string]bool{}
+	for _, svc := range services {
+		for i := len(svc.Name) - 1; i > 0; i-- {
+			if svc.Name[i] == '-' && names[svc.Name[:i]] {
+				derived[svc.Name] = true
+				break
+			}
+		}
+	}
+	for _, svc := range services {
+		if derived[svc.Name] {
+			continue
+		}
+		for _, h := range routedDomains(svc, sets) {
+			primaryHosts[h] = true
+		}
+	}
+	return derived, primaryHosts
+}
+
+func withoutHosts(hosts []string, drop map[string]bool) []string {
+	var out []string
+	for _, h := range hosts {
+		if !drop[h] {
+			out = append(out, h)
+		}
+	}
+	return out
 }

@@ -1,8 +1,7 @@
 import { NewAppPreflight } from './PreflightPanel'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
@@ -25,10 +24,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { useCreateApp } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
+import { getProjectScope } from '../lib/projectScope'
 import { useFormDraft } from '../hooks/useFormDraft'
+import { useAppForm } from '../hooks/useAppForm'
 import {
   HEALTH_CHECK_DEFAULT_PATH,
   healthCheckFrom,
@@ -40,6 +42,7 @@ import {
 } from '../lib/createResourcePlacement'
 import { CreateFormShell } from './CreateFormShell'
 import {
+  AUTO_NODE_VALUE,
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
   NodeSelectField,
@@ -141,11 +144,11 @@ const createAppSchema = z
 type CreateAppFormInput = z.input<typeof createAppSchema>
 type CreateAppFormOutput = z.output<typeof createAppSchema>
 
-const DEFAULT_VALUES: CreateAppFormInput = {
+const BASE_VALUES: CreateAppFormInput = {
   name: '',
   image: '',
   port: '',
-  node: LOCAL_NODE_VALUE,
+  node: AUTO_NODE_VALUE,
   project: NO_PROJECT_VALUE,
   strategy: STRATEGY_DEFAULT_VALUE,
   replicas: '',
@@ -155,6 +158,11 @@ const DEFAULT_VALUES: CreateAppFormInput = {
   // to turn off for the ones that don't implement it.
   healthCheckEnabled: true,
   healthCheckPath: HEALTH_CHECK_DEFAULT_PATH,
+}
+
+// New apps start in the project picked in the scope picker.
+function initialValues(): CreateAppFormInput {
+  return { ...BASE_VALUES, project: getProjectScope() || NO_PROJECT_VALUE }
 }
 
 // The name/image/port(/node/health) field set and its submit logic,
@@ -206,6 +214,12 @@ export function CreateAppFields({
   // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
   // fresh open already gets a fresh useState(false) here.
   const [showAdvanced, setShowAdvanced] = useState(false)
+  // With several nodes the choice matters, so it is not hidden.
+  const multiNode = nodes.length > 1
+  const form = useAppForm<CreateAppFormInput, CreateAppFormOutput>(
+    createAppSchema,
+    { defaultValues: initialValues() },
+  )
   const {
     control,
     register,
@@ -215,14 +229,11 @@ export function CreateAppFields({
     watch,
     setValue,
     getValues,
-  } = useForm<CreateAppFormInput, unknown, CreateAppFormOutput>({
-    resolver: zodResolver(createAppSchema),
-    defaultValues: DEFAULT_VALUES,
-  })
+  } = form
 
   useEffect(() => {
     if (!open) {
-      reset(DEFAULT_VALUES)
+      reset(initialValues())
       createApp.reset()
     }
     // Only reacting to the dialog's open transition, not to reset/
@@ -236,7 +247,7 @@ export function CreateAppFields({
       open,
       watch,
       reset,
-      defaultValues: DEFAULT_VALUES,
+      defaultValues: initialValues(),
     })
   const healthCheckEnabled = watch('healthCheckEnabled')
 
@@ -270,7 +281,7 @@ export function CreateAppFields({
         // advanced and submitting "Local node" (the field's own default)
         // still counts as an explicit choice here, sent as '', so it's
         // never silently overridden by that auto-placement.
-        node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
+        node_id: resolveSubmittedNodeId(showAdvanced || multiNode, nodeId),
       },
       {
         onSuccess: buildCreateResourceSuccessHandler({
@@ -292,6 +303,19 @@ export function CreateAppFields({
       onDiscardDraft={discardDraft}
       onDismissDraftNotice={dismissDraftNotice}
     >
+      <FormErrorSummary
+        form={form}
+        fields={{
+          name: { label: t('fields.name'), id: 'app-name' },
+          image: { label: t('fields.image'), id: 'app-image' },
+          port: { label: t('fields.port'), id: 'app-port' },
+          healthCheckPath: {
+            label: t('fields.healthPath'),
+            id: 'app-health-path',
+          },
+          replicas: { label: t('fields.replicas'), id: 'app-replicas' },
+        }}
+      />
       <div className="space-y-4">
         <FieldSectionLabel>{t('fields.basics')}</FieldSectionLabel>
         <Field>
@@ -386,6 +410,23 @@ export function CreateAppFields({
         ) : null}
       </div>
 
+      {multiNode ? (
+        <Controller
+          control={control}
+          name="node"
+          render={({ field }) => (
+            <NodeSelectField
+              idPrefix="app"
+              nodes={nodes}
+              withAuto
+              value={field.value ?? AUTO_NODE_VALUE}
+              onValueChange={field.onChange}
+              error={[formState.errors.node]}
+            />
+          )}
+        />
+      ) : null}
+
       {nodes.length > 0 || projects.length > 0 ? (
         <button
           type="button"
@@ -452,19 +493,21 @@ export function CreateAppFields({
             </Field>
           </div>
 
-          <Controller
-            control={control}
-            name="node"
-            render={({ field }) => (
-              <NodeSelectField
-                idPrefix="app"
-                nodes={nodes}
-                value={field.value ?? LOCAL_NODE_VALUE}
-                onValueChange={field.onChange}
-                error={[formState.errors.node]}
-              />
-            )}
-          />
+          {multiNode ? null : (
+            <Controller
+              control={control}
+              name="node"
+              render={({ field }) => (
+                <NodeSelectField
+                  idPrefix="app"
+                  nodes={nodes}
+                  value={field.value ?? LOCAL_NODE_VALUE}
+                  onValueChange={field.onChange}
+                  error={[formState.errors.node]}
+                />
+              )}
+            />
+          )}
 
           <Controller
             control={control}

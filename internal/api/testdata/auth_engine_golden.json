@@ -3,14 +3,18 @@
     "Label": "create rejects empty name",
     "Status": 400,
     "Body": {
-      "error": "name is required"
+      "code": "validation_failed",
+      "error": "name is required",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
     "Label": "create rejects unknown ability",
     "Status": 400,
     "Body": {
-      "error": "unknown ability \"nope\""
+      "code": "validation_failed",
+      "error": "unknown ability \"nope\"",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
@@ -84,14 +88,18 @@
     "Label": "read token cannot write",
     "Status": 403,
     "Body": {
-      "error": "token lacks the required ability (needs write)"
+      "code": "forbidden",
+      "error": "token lacks the required ability (needs write)",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
     "Label": "garbage token",
     "Status": 401,
     "Body": {
-      "error": "invalid token"
+      "code": "unauthorized",
+      "error": "invalid token",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
@@ -103,14 +111,18 @@
     "Label": "revoked token",
     "Status": 401,
     "Body": {
-      "error": "token revoked"
+      "code": "unauthorized",
+      "error": "token revoked",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
     "Label": "revoke unknown",
     "Status": 404,
     "Body": {
-      "error": "token not found"
+      "code": "not_found",
+      "error": "token not found",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
@@ -162,7 +174,9 @@
     "Label": "device poll pending",
     "Status": 400,
     "Body": {
-      "error": "authorization_pending"
+      "code": "validation_failed",
+      "error": "authorization_pending",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
@@ -191,7 +205,9 @@
     "Label": "device approve unknown",
     "Status": 404,
     "Body": {
-      "error": "no pending device login with this code"
+      "code": "not_found",
+      "error": "no pending device login with this code",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
@@ -221,7 +237,9 @@
     "Label": "device poll redeemed",
     "Status": 400,
     "Body": {
-      "error": "expired_token"
+      "code": "validation_failed",
+      "error": "expired_token",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
@@ -250,14 +268,18 @@
     "Label": "device poll denied",
     "Status": 400,
     "Body": {
-      "error": "access_denied"
+      "code": "validation_failed",
+      "error": "access_denied",
+      "request_id": "\u003crequest_id\u003e"
     }
   },
   {
     "Label": "device poll unknown code",
     "Status": 400,
     "Body": {
-      "error": "expired_token"
+      "code": "validation_failed",
+      "error": "expired_token",
+      "request_id": "\u003crequest_id\u003e"
     }
   }
 ]

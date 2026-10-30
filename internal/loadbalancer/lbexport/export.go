@@ -144,7 +144,7 @@ func buildALB(name string, in ExportInput) alb {
 		warn("weighted: ALB target group weights are set on the listener forward action or via weighted_random, per-target weights %v are not exported", cfg.Weights)
 	case loadbalancer.AlgoCookie:
 		a.Sticky, a.StickySecs = true, 86400
-	case loadbalancer.AlgoIPHash, loadbalancer.AlgoURIHash:
+	case loadbalancer.AlgoIPHash, loadbalancer.AlgoClientIPHash, loadbalancer.AlgoURIHash:
 		warn("%s has no ALB equivalent, exported as round_robin", cfg.Algorithm)
 	}
 	if cfg.UpstreamTLS != nil {

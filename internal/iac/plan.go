@@ -31,9 +31,11 @@ type Change struct {
 	Kept     []FieldChange `json:"kept,omitempty"`
 	Warnings []string      `json:"warnings,omitempty"`
 	Reason   string        `json:"reason,omitempty"`
-	Denied   bool          `json:"denied,omitempty"`
-	File     string        `json:"file,omitempty"`
-	Line     int           `json:"line,omitempty"`
+	// DependsOn lists the resources this item reads from, applied first.
+	DependsOn []string `json:"dependsOn,omitempty"`
+	Denied    bool     `json:"denied,omitempty"`
+	File      string   `json:"file,omitempty"`
+	Line      int      `json:"line,omitempty"`
 }
 
 // Key is the change's stable identity.

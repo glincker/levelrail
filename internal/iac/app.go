@@ -2,6 +2,7 @@ package iac
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -61,9 +62,37 @@ type appFields struct {
 	Project     string            `json:"project,omitempty"`
 	Environment string            `json:"environment,omitempty"`
 	Tags        []string          `json:"tags,omitempty"`
+	// Connections maps an env var to "database.field"; never a value.
+	Connections map[string]string    `json:"connections,omitempty"`
+	Jobs        map[string]jobFields `json:"jobs,omitempty"`
+	// Volumes maps a logical volume name to its mount path; named volumes only.
+	Volumes map[string]string `json:"volumes,omitempty"`
+	// PublishedPorts is nil when undeclared, so live ports stay unmanaged; an empty list clears them.
+	PublishedPorts *[]spec.PublishedPort `json:"publishedPorts,omitempty"`
+	Restart        string                `json:"restart,omitempty"`
 }
 
-var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true}
+// normPorts spells out the protocol and sorts, so live and declared lists compare equal.
+func normPorts(in []spec.PublishedPort) []spec.PublishedPort {
+	out := make([]spec.PublishedPort, 0, len(in))
+	for _, p := range in {
+		p.Protocol = p.EffectiveProtocol()
+		out = append(out, p)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.HostPort != b.HostPort {
+			return a.HostPort < b.HostPort
+		}
+		if a.Protocol != b.Protocol {
+			return a.Protocol < b.Protocol
+		}
+		return a.ContainerPort < b.ContainerPort
+	})
+	return out
+}
+
+var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true, "connections": true, "volumes": true}
 
 func memoryString(b int64) string {
 	const mi = 1024 * 1024
@@ -215,6 +244,29 @@ func appFromWire(a wireApp, names idNames) appFields {
 	if a.HostPort != nil {
 		f.HostPort = *a.HostPort
 	}
+	if len(a.PublishedPorts) > 0 {
+		ports := normPorts(a.PublishedPorts)
+		f.PublishedPorts = &ports
+	}
+	if a.Health != nil {
+		f.Restart = a.Health.Restart
+	}
+	for _, v := range a.Volumes {
+		n, _ := v["name"].(string)
+		path, _ := v["container_path"].(string)
+		if n != "" && path != "" {
+			if f.Volumes == nil {
+				f.Volumes = map[string]string{}
+			}
+			f.Volumes[n] = path
+		}
+	}
+	if len(a.DatabaseEnv) > 0 {
+		f.Connections = make(map[string]string, len(a.DatabaseEnv))
+		for k, ref := range a.DatabaseEnv {
+			f.Connections[k] = ref.Database + "." + ref.Field
+		}
+	}
 	if a.Hooks != nil && (a.Hooks.PreDeploy != "" || a.Hooks.PostDeploy != "") {
 		f.Hooks = &hookFields{PreDeploy: a.Hooks.PreDeploy, PostDeploy: a.Hooks.PostDeploy}
 	}
@@ -232,9 +284,6 @@ func nonEmptyMap(m map[string]string) map[string]string {
 // or update can warn instead of silently dropping them.
 func unsupportedApp(a wireApp) []string {
 	var out []string
-	if len(a.Volumes) > 0 {
-		out = append(out, "volumes")
-	}
 	if len(a.BindMounts) > 0 {
 		out = append(out, "bind mounts")
 	}

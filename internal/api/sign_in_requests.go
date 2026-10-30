@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -40,6 +41,11 @@ type revealLoginCodeResponse struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
+const msgRootApprovalWindow = "a root token can approve a sign-in only for the setup admin shortly after setup; use a signed-in session or a token with " + AbilitySignInApprove
+
+// rootApproverPrefix marks a decision made by a root token, which never earns the browser a trusted device.
+const rootApproverPrefix = "root_token:"
+
 const msgNeedsSignInApprove = "token lacks the required ability (needs " + AbilitySignInApprove +
 	"; mint one from a signed-in dashboard session, or use the dashboard)"
 
@@ -74,6 +80,49 @@ func (rt *Router) signInOwner(w http.ResponseWriter, r *http.Request, approve bo
 		return "", signInActor{}, false
 	}
 	return rec.OwnerUserID, signInActor{kind: "token", id: rec.ID, name: rec.Name}, true
+}
+
+// signInDecider is signInOwner for approving or denying a waiting browser. It
+// also lets an unscoped, non-agent root token decide its own owner's
+// approvals, only for the setup admin inside the first-login window (the
+// headless first run), never reveal codes. rootOnly marks that case so the
+// password shortcut stays off it and the approval earns no trusted device.
+func (rt *Router) signInDecider(w http.ResponseWriter, r *http.Request) (string, signInActor, bool, bool) {
+	if _, hasSession := rt.currentSessionUserID(r); !hasSession {
+		if _, pinned := rt.currentPinnedSession(r); !pinned {
+			if rec, ok := r.Context().Value(tokenIdentityKey{}).(*store.APIToken); ok && !hasSignInApprove(rec.Abilities) &&
+				slices.Contains(rec.Abilities, AbilityRoot) && rec.OwnerUserID != "" && rec.AgentName == "" {
+				if !rt.tokenIsUnscoped(r.Context(), rec.ID) {
+					writeError(w, http.StatusForbidden, msgNeedsSignInApprove)
+					return "", signInActor{}, false, false
+				}
+				ownerUser, err := rt.auth.GetUserByID(r.Context(), rec.OwnerUserID)
+				if err != nil || !rt.inFirstLoginWindow(*ownerUser) {
+					writeError(w, http.StatusForbidden, msgRootApprovalWindow)
+					return "", signInActor{}, false, false
+				}
+				return rec.OwnerUserID, signInActor{kind: "token", id: rec.ID, name: rec.Name}, true, true
+			}
+		}
+	}
+	owner, actor, ok := rt.signInOwner(w, r, true)
+	return owner, actor, false, ok
+}
+
+// tokenIsUnscoped is true only when no team, project or stack limit applies;
+// a failed lookup counts as scoped.
+func (rt *Router) tokenIsUnscoped(ctx context.Context, tokenID string) bool {
+	if db := rt.teamDB(); db != nil {
+		if s, err := db.GetAPITokenScope(ctx, tokenID); err != nil || s != nil {
+			return false
+		}
+	}
+	if ss := rt.tokenStackScopes(); ss != nil {
+		if s, err := ss.GetAPITokenStackScope(ctx, tokenID); err != nil || s != nil {
+			return false
+		}
+	}
+	return true
 }
 
 // handleListSignInRequests handles GET /api/v1/auth/sign-in-requests: the

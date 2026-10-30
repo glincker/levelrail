@@ -17,7 +17,7 @@
     "nameHint": "Lowercase letters, digits and dashes, starting with a letter. Leave empty to let the agent report its hostname.",
     "nameInvalid": "Use lowercase letters, digits and dashes, starting with a letter.",
     "addrLabel": "Control plane address",
-    "addrHint": "Host and port the new machine can reach this control plane on, port 9443 by default. Pre-filled from this browser's address, change it for NAT or a separate public address.",
+    "addrHint": "Host and port the new machine can reach this control plane on, port 9443 by default. Pre-filled with the advertise address the agent certificate covers (APP_AGENT_ADVERTISE_HOST). A different name fails the TLS check.",
     "meshLabel": "Join the mesh",
     "meshHint": "Connect the node to the WireGuard mesh so apps and databases can reach each other across machines. Needs mesh networking enabled on the control plane.",
     "generate": "Generate join token",
@@ -27,15 +27,39 @@
     "singleUse": "Single use. This token will not be shown again and expires at {{time}}.",
     "dockerLabel": "Run with Docker",
     "dockerHint": "Recommended. Runs the agent as a container on the new machine.",
+    "runtime": {
+      "docker": "Docker",
+      "podman": "Podman",
+      "binary": "Agent binary"
+    },
+    "podmanLabel": "Run with Podman",
+    "podmanHint": "Rootful Podman. The agent mounts /run/podman/podman.sock, so the socket must be enabled first (command below).",
+    "podmanSocketLabel": "Podman prerequisite (run once on the new machine)",
     "binaryLabel": "Or run the agent binary",
     "binaryHint": "For a machine without Docker run access for the agent container, or when you manage the service yourself.",
     "tokenLabel": "Join token",
     "fallbackLabel": "Enrollment command",
     "fallbackHint": "This control plane did not return ready-made commands, so this one is built from the address above.",
-    "afterRun": "There is no live status check here. Once the agent connects, the node appears in the node list.",
+    "afterRun": "There is no live status check here. Once the agent connects, the node appears in the node list. Give the node a name to follow it live.",
     "copy": "Copy",
     "copied": "Copied",
-    "done": "Done"
+    "done": "Done",
+    "providerLabel": "Where does it run?",
+    "providerAuto": "Auto-detect (recommended)",
+    "providerHint": "Auto-detect reads the cloud's metadata service on the node. For a home server or a provider without one, pick it here and type the region and zone.",
+    "regionLabel": "Region (optional)",
+    "zoneLabel": "Zone (optional)",
+    "domainInvalid": "Use letters, digits, dots, dashes and underscores, up to 63 characters.",
+    "providers": {
+      "aws": "Amazon EC2",
+      "gcp": "Google Cloud",
+      "azure": "Microsoft Azure",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean",
+      "home": "Home server",
+      "other": "Other VPS"
+    },
+    "afterRunLive": "Run the command on the new machine. Progress appears below as soon as the agent contacts this control plane."
   },
   "move": {
     "trigger": "Move",
@@ -202,7 +226,8 @@
     "unknownHint": "This placement points at node {{id}}, which no longer exists.",
     "moveHere": "Move to this server",
     "movedHere": "Now placed on this server.",
-    "moveFailed": "Could not move it to this server."
+    "moveFailed": "Could not move it to this server.",
+    "domainWarnings": "Failure domain warnings"
   },
   "allocation": {
     "title": "Capacity",
@@ -686,6 +711,12 @@
     }
   },
   "detail": {
+    "placed": {
+      "title": "Running on this node",
+      "apps": "Apps",
+      "databases": "Databases",
+      "none": "Nothing is placed on this node yet."
+    },
     "back": "Back to nodes",
     "retry": "Try again",
     "banner": {
@@ -726,5 +757,73 @@
       "buildsTipLabel": "What accepts build workloads does",
       "buildsTip": "Sets whether new builds prefer this node. It does not move apps or databases already running here, and it does not guarantee builds never run here: if no node that accepts builds is currently healthy, a build still runs on the primary node rather than failing."
     }
+  },
+  "onboarding": {
+    "title": "Joining {{name}}",
+    "steps": {
+      "token": "Join token created",
+      "contacted": "Agent contacted the control plane",
+      "connected": "Connected over mTLS",
+      "preflight": "Preflight checks"
+    },
+    "waiting": "Waiting for the agent to contact the control plane. This page updates by itself.",
+    "waitingFacts": "The agent is connected and is collecting its preflight facts.",
+    "detected": "Detected from {{source}}: provider {{provider}}, region {{region}}, zone {{zone}}.",
+    "notDetected": "No provider, region or zone was detected. Set them on the node page, or rerun the agent with the labels from the join form.",
+    "applied": "Labels on this node: provider {{provider}}, region {{region}}, zone {{zone}}.",
+    "source": {
+      "metadata": "cloud metadata",
+      "env": "the join command"
+    },
+    "none": "none",
+    "stale": "The agent stopped reporting, so these results may be out of date.",
+    "recheck": "Re-check",
+    "summary": "{{pass}} passed, {{warn}} warnings, {{fail}} failed, {{unknown}} unverified",
+    "fix": "Fix",
+    "fixViaCli": "Fix via CLI",
+    "runOnNode": "Run on the node",
+    "status": {
+      "pass": "Passed",
+      "warn": "Warning",
+      "fail": "Failed",
+      "unknown": "Unverified"
+    },
+    "checks": {
+      "control_plane": "Control plane reachable",
+      "docker": "Docker",
+      "architecture": "Architecture",
+      "disk": "Disk space",
+      "clock": "Clock skew",
+      "wireguard": "Kernel WireGuard",
+      "mesh_port": "Mesh port",
+      "firewall": "Firewall and security group"
+    }
+  },
+  "domains": {
+    "title": "Capacity by failure domain",
+    "description": "Reported CPU, memory and free disk per provider, region and zone. Beta: capacity comes from what each node reports.",
+    "tabs": {
+      "providers": "Providers",
+      "regions": "Regions",
+      "zones": "Zones"
+    },
+    "nodes": "{{online}} of {{total}} nodes online",
+    "workloads_one": "{{count}} workload",
+    "workloads_other": "{{count}} workloads",
+    "capacity": "{{cores}} cores, {{memory}} GiB memory, {{disk}} GiB free disk",
+    "unverified_one": "({{count}} node has not reported its capacity)",
+    "unverified_other": "({{count}} nodes have not reported their capacity)",
+    "unlabeled_one": "{{count}} of {{total}} nodes has no provider, region or zone label.",
+    "unlabeled_other": "{{count}} of {{total}} nodes have no provider, region or zone label.",
+    "noLabels": "No node has a provider, region or zone label yet. Add a node with auto-detect, or label an existing one on its page.",
+    "risksTitle": "Replicas in one failure domain",
+    "loadFailed": "Could not load the domain overview.",
+    "retry": "Try again"
+  },
+  "offlineApp": {
+    "title": "Node {{node}} is offline, unseen for {{since}}",
+    "titleUnknown": "Node {{node}} is offline",
+    "body": "Containers keep running on it, but ingress through the mesh is down and this app cannot be changed until the node returns.",
+    "view": "View node"
   }
 }

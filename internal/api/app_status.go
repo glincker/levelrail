@@ -46,4 +46,6 @@ type appListResource struct {
 	EnvironmentName string `json:"environment_name,omitempty"`
 	// Sleep is set only for apps with sleep-when-idle on.
 	Sleep *appListSleep `json:"sleep,omitempty"`
+	// ManagedByStack names the stack owning this app, omitted when none.
+	ManagedByStack string `json:"managed_by_stack,omitempty"`
 }

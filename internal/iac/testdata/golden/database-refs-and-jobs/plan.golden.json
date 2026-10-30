@@ -1,0 +1,153 @@
+{
+  "changes": [
+    {
+      "kind": "Database",
+      "name": "main",
+      "action": "create",
+      "fields": [
+        {
+          "path": "engine",
+          "op": "add",
+          "new": "postgres"
+        },
+        {
+          "path": "version",
+          "op": "add",
+          "new": "16"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "App",
+      "name": "web",
+      "action": "update",
+      "fields": [
+        {
+          "path": "connections.DATABASE_URL",
+          "op": "add",
+          "new": "main.url"
+        },
+        {
+          "path": "connections.DB_PASSWORD",
+          "op": "add",
+          "new": "main.password"
+        },
+        {
+          "path": "jobs.cleanup.schedule",
+          "op": "change",
+          "old": "0 * * * *",
+          "new": "*/30 * * * *"
+        },
+        {
+          "path": "jobs.nightly.catchUp",
+          "op": "add",
+          "new": "skip"
+        },
+        {
+          "path": "jobs.nightly.command",
+          "op": "add",
+          "new": "[\"node\",\"scripts/nightly.js\"]"
+        },
+        {
+          "path": "jobs.nightly.concurrency",
+          "op": "add",
+          "new": "forbid"
+        },
+        {
+          "path": "jobs.nightly.enabled",
+          "op": "add",
+          "new": "true"
+        },
+        {
+          "path": "jobs.nightly.mode",
+          "op": "add",
+          "new": "fresh"
+        },
+        {
+          "path": "jobs.nightly.schedule",
+          "op": "add",
+          "new": "0 3 * * *"
+        },
+        {
+          "path": "jobs.nightly.timeout",
+          "op": "add",
+          "new": "10m"
+        }
+      ],
+      "kept": [
+        {
+          "path": "env.DATABASE_URL",
+          "op": "keep",
+          "old": "(hidden)"
+        },
+        {
+          "path": "jobs.manual",
+          "op": "keep",
+          "old": "0 4 * * *"
+        }
+      ],
+      "warnings": [
+        "env DATABASE_URL is also set directly on the live app; remove that value so only the database connection supplies it",
+        "job from-spec is declared in the app's app.yaml and is left as it is; declare it in one place"
+      ],
+      "dependsOn": [
+        "Database/cache",
+        "Database/main"
+      ],
+      "file": "docs.yaml",
+      "line": 8
+    },
+    {
+      "kind": "App",
+      "name": "worker",
+      "action": "create",
+      "fields": [
+        {
+          "path": "bindAddress",
+          "op": "add",
+          "new": "private"
+        },
+        {
+          "path": "connections.DATABASE_URL",
+          "op": "add",
+          "new": "main.url"
+        },
+        {
+          "path": "image",
+          "op": "add",
+          "new": "ghcr.io/acme/worker:1"
+        },
+        {
+          "path": "port",
+          "op": "add",
+          "new": "8080"
+        },
+        {
+          "path": "replicas",
+          "op": "add",
+          "new": "1"
+        },
+        {
+          "path": "strategy",
+          "op": "add",
+          "new": "blue-green"
+        }
+      ],
+      "dependsOn": [
+        "Database/main"
+      ],
+      "file": "docs.yaml",
+      "line": 34
+    }
+  ],
+  "summary": {
+    "create": 2,
+    "update": 1,
+    "delete": 0,
+    "noop": 0,
+    "error": 0
+  },
+  "hash": "1f9e2bf4ebc04596"
+}

@@ -35,7 +35,8 @@
   "badges": {
     "attention": "{{count}} need attention",
     "port": "port {{port}}",
-    "deployed": "Deployed"
+    "deployed": "Deployed",
+    "nodeOffline": "Host node offline since"
   },
   "setup": {
     "title": "Recommended setup",

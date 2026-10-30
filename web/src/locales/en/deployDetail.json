@@ -154,6 +154,15 @@
   },
   "rollout": {
     "title": "Roll out timeline",
+    "counts": {
+      "title": "Rolling update progress",
+      "wave": "Wave {{wave}} of {{waves}}",
+      "ready": "Ready",
+      "updated": "Updated",
+      "unavailable": "Unavailable",
+      "surge": "Surge",
+      "policy": "Max surge {{surge}}, max unavailable {{unavailable}}, min available {{min}}"
+    },
     "stageStatus": {
       "pending": "Pending",
       "running": "Running",

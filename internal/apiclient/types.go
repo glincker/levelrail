@@ -40,6 +40,7 @@ type ServiceHealth struct {
 	Readiness    *ServiceProbe `json:"readiness,omitempty"`
 	Liveness     *ServiceProbe `json:"liveness,omitempty"`
 	ReadyTimeout int64         `json:"ready_timeout,omitempty"`
+	Restart      string        `json:"restart,omitempty"`
 }
 
 // ServiceHooks mirrors internal/api's appResource.Hooks field
@@ -96,6 +97,9 @@ type AppResource struct {
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
 	// and update, like Resources/Health above.
 	Hooks *ServiceHooks `json:"hooks,omitempty"`
+	// PublishedPorts mirrors internal/api's appResource.PublishedPorts:
+	// ports bound straight on the host (UDP), settable on create.
+	PublishedPorts []PublishedPort `json:"published_ports,omitempty"`
 	// NodeID mirrors internal/api's appResource.NodeID: response-only on
 	// update, but settable at create time as an explicit placement
 	// override (omitted entirely lets the server auto-place via simple
@@ -349,6 +353,8 @@ type DeployTriggerRequest struct {
 	Rollback       bool   `json:"rollback,omitempty"`
 	OverrideFreeze bool   `json:"override_freeze,omitempty"`
 	OverrideReason string `json:"override_reason,omitempty"`
+	// QueueWhileOffline records the change as pending when the app's node is offline.
+	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 }
 
 // DeployTriggerResult mirrors internal/api's deployTriggerResult
@@ -360,6 +366,8 @@ type DeployTriggerRequest struct {
 type DeployTriggerResult struct {
 	*AppResource
 	PendingApproval *DeployApprovalResource `json:"pending_approval,omitempty"`
+	// DeployID is the attempt this trigger created; empty from older servers.
+	DeployID string `json:"deploy_id,omitempty"`
 }
 
 // DeployApprovalResource mirrors internal/api's deployApprovalResource
@@ -404,11 +412,26 @@ type DeployApprovalDecisionResult struct {
 	App      AppResource            `json:"app"`
 }
 
+// PublishedPort is one host-published port, protocol tcp or udp.
+type PublishedPort struct {
+	ContainerPort int    `json:"container_port"`
+	HostPort      int    `json:"host_port"`
+	Protocol      string `json:"protocol,omitempty"`
+}
+
 // ComposeDeployResult mirrors internal/api's composeDeployResponse
 // (internal/api/apps_compose.go).
 type ComposeDeployResult struct {
-	AppID    string        `json:"app_id"`
-	Services []AppResource `json:"services"`
+	AppID    string          `json:"app_id"`
+	Services []AppResource   `json:"services"`
+	Notices  []ComposeNotice `json:"notices,omitempty"`
+}
+
+// ComposeNotice mirrors internal/api's composeNoticeResult: a compose key
+// that parsed but is not applied as Docker Compose would.
+type ComposeNotice struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
 }
 
 // ConditionResource mirrors internal/reconcile.Condition, the wire shape
@@ -424,6 +447,16 @@ type ConditionResource struct {
 	Reason             string    `json:"Reason"`
 	Message            string    `json:"Message"`
 	LastTransitionTime time.Time `json:"LastTransitionTime"`
+}
+
+// AppStatus mirrors internal/api's appStatusResource. The outcome fields
+// are empty for an app with no deploys or an older server.
+type AppStatus struct {
+	Conditions               []ConditionResource `json:"conditions"`
+	DeployID                 string              `json:"deploy_id,omitempty"`
+	Outcome                  string              `json:"outcome,omitempty"`
+	OutcomeReason            string              `json:"outcome_reason,omitempty"`
+	RolloutCrashLoopRestarts int                 `json:"rollout_crash_loop_restarts,omitempty"`
 }
 
 // NetworkResource mirrors internal/api's networkResource
@@ -1317,6 +1350,9 @@ type TriggerRestoreRequest struct {
 // PITRStatusResource mirrors internal/api's pitrStatusResource
 // (internal/api/pitr.go): GET /api/v1/databases/{name}/pitr.
 type PITRStatusResource struct {
+	Engine string `json:"engine,omitempty"`
+	// RestoreMode is "in_place" (Postgres) or "new_database" (MySQL, MariaDB).
+	RestoreMode   string `json:"restore_mode,omitempty"`
 	Enabled       bool   `json:"enabled"`
 	EnabledAt     string `json:"enabled_at,omitempty"`
 	HasBaseBackup bool   `json:"has_base_backup"`
@@ -1375,6 +1411,7 @@ type PITRRestoreHistoryResource struct {
 type TriggerPITRRestoreRequest struct {
 	BaseBackupID string `json:"base_backup_id"`
 	TargetTime   string `json:"target_time"`
+	RestoreAs    string `json:"restore_as,omitempty"`
 }
 
 // VolumeBackupScheduleResource mirrors internal/api's
@@ -1593,6 +1630,8 @@ type DatabaseResource struct {
 	// database's connection string (DATABASE_URL/REDIS_URL, injected
 	// into consuming app containers) is TLS-encrypted.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
+	// PoolerEnabled mirrors databaseResource.PoolerEnabled; toggle via .../pooler.
+	PoolerEnabled bool `json:"pooler_enabled,omitempty"`
 }
 
 // DatabaseEngineResource mirrors internal/api's databaseEngineResource
@@ -1639,10 +1678,12 @@ type ServiceTemplateListItem struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
 	Slogan                 string `json:"slogan"`
+	Description            string `json:"description,omitempty"`
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
+	Verified               bool   `json:"verified"`
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
@@ -1656,6 +1697,7 @@ type ServiceTemplateDetail struct {
 	ID                     string               `json:"id"`
 	Name                   string               `json:"name"`
 	Slogan                 string               `json:"slogan"`
+	Description            string               `json:"description,omitempty"`
 	Category               string               `json:"category"`
 	DocumentationURL       string               `json:"documentation_url"`
 	Compose                string               `json:"compose"`
@@ -1728,6 +1770,7 @@ type CustomTemplateDetail struct {
 type SetSecretRequest struct {
 	Value           string `json:"value"`
 	OverwriteLocked bool   `json:"overwrite_locked"`
+	BuildTime       *bool  `json:"build_time,omitempty"`
 }
 
 // SecretKeyResource mirrors internal/api's secretKeyResource
@@ -1737,8 +1780,14 @@ type SetSecretRequest struct {
 type SecretKeyResource struct {
 	Key       string `json:"key"`
 	Locked    bool   `json:"locked"`
+	BuildTime bool   `json:"build_time"`
 	UpdatedAt string `json:"updated_at"`
 	Stale     bool   `json:"stale"`
+}
+
+// SetSecretBuildTimeRequest mirrors internal/api's setSecretBuildTimeRequest.
+type SetSecretBuildTimeRequest struct {
+	BuildTime bool `json:"build_time"`
 }
 
 // SetSecretLockRequest mirrors internal/api's setSecretLockRequest
@@ -1844,11 +1893,17 @@ type GitSourceResource struct {
 	// via SetPreviewPostPRComments (preview-settings, same route as
 	// PreviewEnabled).
 	PostPRComments bool `json:"post_pr_comments"`
+	// PRCommentCommands and PRCommentCommandsForks mirror the store fields,
+	// set via SetPRCommentCommands.
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
 	// fields of the same names, set via SetGitDeploySettings.
 	DeployPaths       []string `json:"deploy_paths"`
 	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
 	ReportStatus      bool     `json:"report_status"`
+	WaitForCI         bool     `json:"wait_for_ci"`
+	CIRequiredChecks  []string `json:"ci_required_checks"`
 	CreatedAt         string   `json:"created_at"`
 	UpdatedAt         string   `json:"updated_at"`
 }
@@ -1858,6 +1913,8 @@ type GitDeploySettings struct {
 	DeployPaths       []string `json:"deploy_paths"`
 	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
 	ReportStatus      bool     `json:"report_status"`
+	WaitForCI         bool     `json:"wait_for_ci"`
+	CIRequiredChecks  []string `json:"ci_required_checks"`
 }
 
 // SetGitDeploySettingsRequest mirrors internal/api's
@@ -1866,6 +1923,8 @@ type SetGitDeploySettingsRequest struct {
 	DeployPaths       *[]string `json:"deploy_paths,omitempty"`
 	DeployPathsIgnore *[]string `json:"deploy_paths_ignore,omitempty"`
 	ReportStatus      *bool     `json:"report_status,omitempty"`
+	WaitForCI         *bool     `json:"wait_for_ci,omitempty"`
+	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest
@@ -1967,15 +2026,41 @@ type AppScheduleResource struct {
 	Timezone    string     `json:"timezone"`
 	Enabled     bool       `json:"enabled"`
 	NextRunAt   *time.Time `json:"next_run_at,omitempty"`
+	RunAt       *time.Time `json:"run_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // SetAppScheduleRequest mirrors internal/api's setAppScheduleRequest.
 // Enabled defaults to true server-side when nil.
 type SetAppScheduleRequest struct {
-	Cron     string `json:"cron"`
+	Cron     string `json:"cron,omitempty"`
+	RunAt    string `json:"run_at,omitempty"`
 	Branch   string `json:"branch"`
 	Timezone string `json:"timezone,omitempty"`
 	Enabled  *bool  `json:"enabled,omitempty"`
+}
+
+// ScheduledDeployRequest mirrors internal/api's createScheduledDeployRequest.
+type ScheduledDeployRequest struct {
+	RunAt string `json:"run_at"`
+	Image string `json:"image,omitempty"`
+	Ref   string `json:"ref,omitempty"`
+}
+
+// ScheduledDeploy mirrors internal/api's scheduledDeployResource.
+type ScheduledDeploy struct {
+	ID          string     `json:"id"`
+	ServiceName string     `json:"service_name"`
+	Kind        string     `json:"kind"`
+	Image       string     `json:"image,omitempty"`
+	Ref         string     `json:"ref,omitempty"`
+	RunAt       time.Time  `json:"run_at"`
+	Status      string     `json:"status"`
+	Reason      string     `json:"reason,omitempty"`
+	ApprovalID  string     `json:"approval_id,omitempty"`
+	CreatedBy   string     `json:"created_by,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 }
 
 // AppScheduleHistoryEntry mirrors internal/api's appScheduleHistoryResource
@@ -2262,6 +2347,8 @@ type BackupTargetResource struct {
 	CreatedAt string `json:"created_at"`
 	// EncryptDumps is true when new database dumps are age-sealed.
 	EncryptDumps bool `json:"encrypt_dumps"`
+	// LocalRoot is the control plane APP_BACKUP_LOCAL_ROOT, set for local targets only.
+	LocalRoot string `json:"local_root,omitempty"`
 }
 
 // BackupTargetEncryptionResource mirrors internal/api's backupTargetEncryptionResource.
@@ -2849,14 +2936,20 @@ type PreviewEphemeralDatabaseResource struct {
 type SetPreviewSettingsRequest struct {
 	Enabled        *bool `json:"enabled,omitempty"`
 	PostPRComments *bool `json:"post_pr_comments,omitempty"`
+	// PRCommentCommands and PRCommentCommandsForks gate /levelrail pull
+	// request comment commands.
+	PRCommentCommands      *bool `json:"pr_comment_commands,omitempty"`
+	PRCommentCommandsForks *bool `json:"pr_comment_commands_forks,omitempty"`
 }
 
 // PreviewSettingsResource mirrors internal/api's previewSettingsResource:
 // the resulting state of both preview-settings toggles after a
 // SetPreviewSettingsRequest is applied.
 type PreviewSettingsResource struct {
-	Enabled        bool `json:"enabled"`
-	PostPRComments bool `json:"post_pr_comments"`
+	Enabled                bool `json:"enabled"`
+	PostPRComments         bool `json:"post_pr_comments"`
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 }
 
 // SweepPreviewEnvironmentsResult mirrors internal/api's
@@ -3026,6 +3119,10 @@ type NodeResource struct {
 	Agent *NodeAgentResource `json:"agent,omitempty"`
 	// Failure is set while the node has a live failure state.
 	Failure *NodeFailureSummary `json:"failure,omitempty"`
+	// PlacedApps, PlacedDatabases and Labels are set by the single-node fetch.
+	PlacedApps      []string          `json:"placed_apps,omitempty"`
+	PlacedDatabases []string          `json:"placed_databases,omitempty"`
+	Labels          map[string]string `json:"labels,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
@@ -3128,6 +3225,7 @@ type SystemStatusResource struct {
 	DataDirFreeBytes    int64  `json:"data_dir_free_bytes,omitempty"`
 	DockerConnected     bool   `json:"docker_connected"`
 	DockerError         string `json:"docker_error,omitempty"`
+	EngineKind          string `json:"engine_kind,omitempty"`
 }
 
 // DoctorCheckResource mirrors internal/api's doctorCheckResource: one
@@ -3807,9 +3905,12 @@ type DeployAttemptResource struct {
 	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *DeployFailure `json:"failure,omitempty"`
-	// Outcome is set by GetDeploy only: in_progress, healthy, failed,
-	// canceled, superseded or blocked.
-	Outcome string `json:"outcome,omitempty"`
+	// Outcome is in_progress, healthy, failed, canceled, superseded or
+	// blocked; OutcomeReason is the one-line why.
+	Outcome       string `json:"outcome,omitempty"`
+	OutcomeReason string `json:"outcome_reason,omitempty"`
+	// RolloutCrashLoopRestarts is the server's crash-loop failure threshold.
+	RolloutCrashLoopRestarts int `json:"rollout_crash_loop_restarts,omitempty"`
 	// Phase is the stored attempt status when GetDeploy reports a derived
 	// Status (building, rolling_out, failed).
 	Phase string `json:"phase,omitempty"`
@@ -3847,9 +3948,10 @@ type CancelSupersededResource struct {
 
 // RollbackToRequest is the optional body of POST .../deploys/{id}/rollback.
 type RollbackToRequest struct {
-	Confirm        bool   `json:"confirm,omitempty"`
-	OverrideFreeze bool   `json:"override_freeze,omitempty"`
-	OverrideReason string `json:"override_reason,omitempty"`
+	QueueWhileOffline bool   `json:"queue_while_offline,omitempty"`
+	Confirm           bool   `json:"confirm,omitempty"`
+	OverrideFreeze    bool   `json:"override_freeze,omitempty"`
+	OverrideReason    string `json:"override_reason,omitempty"`
 }
 
 // FreezeWindowResource mirrors internal/api's freezeWindowResource.
@@ -4391,8 +4493,25 @@ type StaticSiteResource struct {
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
-	Error string `json:"error"`
-	Code  string `json:"code,omitempty"`
+	Error     string          `json:"error"`
+	Code      string          `json:"code,omitempty"`
+	RequestID string          `json:"request_id,omitempty"`
+	Fix       json.RawMessage `json:"fix,omitempty"`
+}
+
+// fixText flattens the fix field, a plain string or an object with a label.
+func (b apiErrorBody) fixText() string {
+	var s string
+	if json.Unmarshal(b.Fix, &s) == nil {
+		return s
+	}
+	var o struct {
+		Label string `json:"label"`
+	}
+	if json.Unmarshal(b.Fix, &o) == nil {
+		return o.Label
+	}
+	return ""
 }
 
 // APIError is returned by Client methods for a non-2xx HTTP response: a
@@ -4415,6 +4534,9 @@ type APIError struct {
 	// Code is the machine-readable reason some refusals carry, such as
 	// step_up_required or step_up_code_required.
 	Code string
+	// RequestID and Fix are the server's correlation id and suggested remedy, when sent.
+	RequestID string
+	Fix       string
 }
 
 // Error renders the server message, appending a retry hint when RetryAfter is set.

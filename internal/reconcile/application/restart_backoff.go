@@ -3,9 +3,17 @@ package application
 import (
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 )
 
-const reasonCrashLoopBackOff = "CrashLoopBackOff"
+const reasonCrashLoopBackOff = deploysafety.ReasonCrashLoopBackOff
+
+// reasonSuperseded marks a pass cut short because desired state changed.
+const reasonSuperseded = "Superseded"
+
+// reasonRetainedDeployStopped marks a retained deploy URL that stopped retrying.
+const reasonRetainedDeployStopped = "RetainedDeployStopped"
 
 type backoffEntry struct {
 	restarts  int

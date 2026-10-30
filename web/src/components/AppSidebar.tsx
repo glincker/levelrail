@@ -1,8 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
-import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { CatchBoundary, Link, useRouterState } from '@tanstack/react-router'
 import {
   Sidebar,
   SidebarContent,
@@ -13,17 +10,15 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
-import { useAuthUsername } from '../hooks/useAuthUsername'
-import { useLogout } from '../queries/auth'
-import { updatesQueryOptions } from '../queries/updates'
+import { AccountMenu } from './shell/AccountMenu'
 import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
 import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
+import { SidebarVersionLink } from './shell/SidebarVersionLink'
 import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
@@ -74,10 +69,6 @@ function warmScopedSidebars() {
 // duplicated across a parent chooser and per-mode components.
 export function AppSidebar() {
   const brand = useBrand()
-  const { t } = useTranslation()
-  const username = useAuthUsername()
-  const logout = useLogout()
-  const version = useQuery(updatesQueryOptions()).data?.current_version
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = appScopeName(pathname)
   const scopedDatabaseName = databaseScopeName(pathname)
@@ -101,32 +92,38 @@ export function AppSidebar() {
                 <BrandMarkGlyph svgWrapperClassName="flex size-7 items-center justify-center [&_svg]:size-full" />
                 <SidebarStatusBadge />
               </span>
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate text-sm font-semibold">
-                  {brand.ShortName || brand.Name}
-                </span>
-                <span className="truncate text-[11px] text-sidebar-foreground/60">
-                  {version
-                    ? `${t('shell.account.controlPlane')} v${version.replace(/^v/, '').split(/[-+]/)[0]}`
-                    : t('shell.account.controlPlane')}
-                </span>
+              <span className="truncate text-sm font-semibold">
+                {brand.ShortName || brand.Name}
               </span>
             </SidebarMenuButton>
+            <SidebarVersionLink />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
+      {/* A missing app or database makes the scoped nav throw; without this the
+          root boundary replaced the whole shell with the error card. */}
       <SidebarContent className="[view-transition-name:nav-panel]">
         {scopedAppName ? (
-          <Suspense fallback={null}>
-            <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
-          </Suspense>
+          <CatchBoundary
+            getResetKey={() => pathname}
+            errorComponent={GlobalNav}
+          >
+            <Suspense fallback={null}>
+              <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
+            </Suspense>
+          </CatchBoundary>
         ) : scopedDatabaseName ? (
-          <Suspense fallback={null}>
-            <DatabaseScopedSidebar
-              name={decodeURIComponent(scopedDatabaseName)}
-            />
-          </Suspense>
+          <CatchBoundary
+            getResetKey={() => pathname}
+            errorComponent={GlobalNav}
+          >
+            <Suspense fallback={null}>
+              <DatabaseScopedSidebar
+                name={decodeURIComponent(scopedDatabaseName)}
+              />
+            </Suspense>
+          </CatchBoundary>
         ) : isSettingsScoped ? (
           <Suspense fallback={null}>
             <SettingsScopedSidebar />
@@ -138,27 +135,8 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2 px-1 py-1 group-data-[collapsible=icon]:flex-col">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground">
-              {(username ?? '?').charAt(0).toUpperCase()}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-xs font-medium group-data-[collapsible=icon]:hidden">
-              {username}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-6 shrink-0"
-              aria-label={t('shell.account.signOut')}
-              title={t('shell.account.signOut')}
-              disabled={logout.isPending}
-              onClick={() => {
-                logout.mutate()
-              }}
-            >
-              <SignOutIcon className="size-3.5" />
-            </Button>
+          <SidebarMenuItem>
+            <AccountMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

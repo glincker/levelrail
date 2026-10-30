@@ -1,6 +1,12 @@
 package compose
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
 
 // NoticeLevel distinguishes a purely informational Notice from an
 // operator-facing Warning about a semantic gap. Neither ever fails
@@ -18,17 +24,17 @@ const (
 type Notice struct {
 	Level   NoticeLevel
 	Message string
+	// Service, Key and Alternative are set for an ignored-key warning.
+	Service     string
+	Key         string
+	Alternative string
 }
 
 // Notices reports every non-blocking observation across f:
 //
-//   - restart: (NoticeLevelNote): Levelrail's reconciler, not Docker's
-//     native restart policy, is the sole authority on keeping a
-//     container running (see docker.ContainerSpec's own doc comment on
-//     why every container it creates gets Docker's "no" restart
-//     policy). A declared restart: policy other than "no" parses but
-//     has no effect, so this is surfaced as a note rather than
-//     fabricating a translation that wouldn't be true.
+//   - restart: (NoticeLevelNote): an explicit "no" or "on-failure[:N]"
+//     runs the service to completion (exit 0 is done, not restarted);
+//     an unrecognized value (on-failure:abc too) is warned about and ignored.
 //   - networks: (NoticeLevelWarning): every service in an app already
 //     shares one flat Docker network (internal/reconcile/application's
 //     NetworkName, one per app, not per compose network), so a compose
@@ -43,11 +49,8 @@ func (f *File) Notices() []Notice {
 	var notices []Notice
 	for _, name := range sortedServiceNames(f) {
 		svc := f.Services[name]
-		if svc.Restart != "" && svc.Restart != "no" {
-			notices = append(notices, Notice{
-				Level:   NoticeLevelNote,
-				Message: fmt.Sprintf("service %q: restart: %q is parsed but not applied; Levelrail's reconciler keeps containers running, not Docker's native restart policy", name, svc.Restart),
-			})
+		if n, ok := restartNotice(name, svc.Restart); ok {
+			notices = append(notices, n)
 		}
 	}
 	if f.declaresCustomNetworks() {
@@ -61,6 +64,9 @@ func (f *File) Notices() []Notice {
 			Level:   NoticeLevelNote,
 			Message: "depends_on: is enforced as start order (a dependency's container must be running before its dependent is created); add condition: service_healthy to also wait for the dependency's readiness check",
 		})
+	}
+	for _, u := range f.Unsupported {
+		notices = append(notices, Notice{Level: NoticeLevelWarning, Message: u.Message(), Service: u.Service, Key: u.Key, Alternative: u.Alternative})
 	}
 	return notices
 }
@@ -87,4 +93,20 @@ func (f *File) declaresDependsOn() bool {
 		}
 	}
 	return false
+}
+
+// restartNotice explains what an explicit restart: value does here. always and
+// unless-stopped match the platform's own keep-running default, so they need none.
+func restartNotice(service, raw string) (Notice, bool) {
+	policy, err := spec.ParseRestartPolicy(raw)
+	switch {
+	case err != nil:
+		return Notice{Level: NoticeLevelWarning, Message: fmt.Sprintf("service %q: restart: %q is not a recognized policy and is ignored; the service is kept running like restart: always", service, raw)}, true
+	case policy == "" || policy == store.RestartPolicyAlways || policy == store.RestartPolicyUnlessStopped:
+		return Notice{}, false
+	case strings.HasPrefix(policy, store.RestartPolicyOnFailure+":"):
+		return Notice{Level: NoticeLevelNote, Message: fmt.Sprintf("service %q: restart: %q runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff (N is accepted and ignored, there is no retry cap)", service, raw)}, true
+	default:
+		return Notice{Level: NoticeLevelNote, Message: fmt.Sprintf("service %q: restart: %q runs it to completion: exit code 0 marks it done and it is not restarted; a nonzero exit is restarted with crash backoff", service, raw)}, true
+	}
 }

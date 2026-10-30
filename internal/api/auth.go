@@ -321,13 +321,17 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				return
 			}
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+pinned.userID); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "session:"+pinned.userID); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
 			}
 			gated := func(w http.ResponseWriter, r *http.Request) {
 				if rt.aiControlRejectsPinned(w, r, pinned.userID, required) {
+					return
+				}
+				var stackOK bool
+				if r, stackOK = rt.gateStackToken(w, r, pinned.userID); !stackOK {
 					return
 				}
 				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
@@ -352,7 +356,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 
 		if userID, ok := rt.currentSessionUserID(r); ok {
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+userID); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "session:"+userID); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -385,7 +389,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		token, ok := bearerToken(r)
 		if !ok {
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "ip:"+clientIP(r)); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "ip:"+clientIP(r)); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -398,7 +402,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		// before the lookup below, so a leaked token gets throttled even
 		// while repeatedly hitting an already-revoked or expired record.
 		if rt.apiRateLimit != nil {
-			if allowed, retryAfter := rt.apiRateLimit.allow(required, "token:"+hashToken(token)); !allowed {
+			if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "token:"+hashToken(token)); !allowed {
 				writeRateLimited(w, retryAfter)
 				return
 			}
@@ -433,6 +437,10 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		}
 		r = rt.noteAITurnRequest(r, rec, required)
 		if rt.aiControlRejects(w, r, rec, required) {
+			return
+		}
+		var stackOK bool
+		if r, stackOK = rt.gateStackToken(w, r, rec.ID); !stackOK {
 			return
 		}
 		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)
@@ -495,7 +503,7 @@ func (rt *Router) pinnedOriginUsable(ctx context.Context, pinned session) bool {
 // plain AbilityRead request never reaches the auditWorthy branch at
 // all, so it never pays for that lookup.
 func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, actorType, actorID, tokenName string, next http.HandlerFunc) {
-	if !auditWorthy(required) && !sensitiveReadRoute(r) {
+	if !auditWorthy(required) && !rt.sensitiveReadAudited(r) {
 		next(w, r)
 		return
 	}
@@ -573,6 +581,18 @@ func (rt *Router) callerPrincipal(r *http.Request) (principalType, principalID s
 // resolves to a live session. Factored out of requireAuth so
 // requireAbility can check it without duplicating the cookie-lookup
 // dance.
+// requireSessionOrPinned is requireAuth for routes that only act on the
+// caller's own session cookie, so a session-link (pinned) session may use it.
+func (rt *Router) requireSessionOrPinned(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, pinned := rt.currentPinnedSession(r); !pinned && !rt.hasValidSession(r) {
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+		next(w, r)
+	}
+}
+
 func (rt *Router) hasValidSession(r *http.Request) bool {
 	_, ok := rt.currentSessionUserID(r)
 	return ok

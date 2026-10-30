@@ -1,5 +1,6 @@
 import type { AppListEntry } from '../types/appDetail'
 import type { AppNetwork } from '../queries/appNetwork'
+import type { AppUrls } from '../queries/appUrls'
 
 export const APP_POLL_INTERVAL_MS = 3_000
 export const APP_POLL_BUDGET_MS = 10 * 60_000
@@ -64,4 +65,51 @@ export function liveUrl(
     return `http://${hostname}:${network.host_port}`
   }
   return undefined
+}
+
+/** directUrl is the plain IP:port address the API reports as reachable, public ones first. */
+export function directUrl(urls: AppUrls | undefined): string | undefined {
+  const open = (urls?.addresses ?? []).filter(
+    (a) => a.url && a.reachable_hint === 'reachable',
+  )
+  return (
+    open.find((a) => a.kind === 'public')?.url ??
+    open.find((a) => a.kind === 'lan')?.url
+  )
+}
+
+export type AddressKind = 'domain' | 'direct' | 'http' | 'fallback' | 'host'
+
+export interface FirstAppAddress {
+  url: string
+  kind: AddressKind
+  /** True when the https name is opened before its certificate exists. */
+  certWarning: boolean
+}
+
+/** firstAppAddress picks one openable address: domain, direct, plain-http route, then the https name. */
+export function firstAppAddress(
+  app: AppListEntry,
+  network: AppNetwork | undefined,
+  urls: AppUrls | undefined,
+  hostname: string,
+  httpsIssued: boolean,
+): FirstAppAddress | undefined {
+  const [domain] = app.domains ?? []
+  if (domain) {
+    return { url: `https://${domain}`, kind: 'domain', certWarning: false }
+  }
+  if (httpsIssued && network?.fallback_url) {
+    return { url: network.fallback_url, kind: 'fallback', certWarning: false }
+  }
+  const direct = directUrl(urls)
+  if (direct) return { url: direct, kind: 'direct', certWarning: false }
+  if (urls?.http_fallback_url) {
+    return { url: urls.http_fallback_url, kind: 'http', certWarning: false }
+  }
+  if (network?.fallback_url) {
+    return { url: network.fallback_url, kind: 'fallback', certWarning: true }
+  }
+  const url = liveUrl(app, network, hostname)
+  return url ? { url, kind: 'host', certWarning: false } : undefined
 }

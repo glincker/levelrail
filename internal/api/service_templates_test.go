@@ -143,3 +143,37 @@ func TestServiceTemplateDetailRoute_RequireAuth(t *testing.T) {
 		t.Errorf("status = %d, want %d for an unauthenticated request", rec.Code, http.StatusUnauthorized)
 	}
 }
+
+func TestHandleGetServiceTemplate_Description(t *testing.T) {
+	var want catalog.Template
+	for _, tpl := range catalog.Templates {
+		if tpl.Manifest != nil && tpl.Description != "" {
+			want = tpl
+			break
+		}
+	}
+	if want.ID == "" {
+		t.Fatal("no manifest template with a description")
+	}
+	if want.Description != want.Slogan {
+		t.Fatalf("manifest description %q should keep matching slogan %q", want.Description, want.Slogan)
+	}
+
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/service-templates/"+want.ID, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got struct {
+		Slogan      string `json:"slogan"`
+		Description string `json:"description"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Description != want.Description || got.Slogan != want.Slogan {
+		t.Errorf("got slogan %q description %q", got.Slogan, got.Description)
+	}
+}

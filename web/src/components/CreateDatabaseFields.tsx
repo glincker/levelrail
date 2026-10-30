@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 import { TONE } from '@/components/kit/tone'
 import { useEffect, useState } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
+import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
@@ -32,16 +32,20 @@ import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { useFormDraft } from '../hooks/useFormDraft'
+import { useAppForm } from '../hooks/useAppForm'
 import {
   buildCreateResourceSuccessHandler,
   resolveSubmittedNodeId,
   resolveSubmittedProjectId,
 } from '../lib/createResourcePlacement'
 import { CreateFormShell } from './CreateFormShell'
+import { getProjectScope } from '../lib/projectScope'
 import { PostgresFlavorField } from './PostgresFlavorField'
 import { withFlavor, type PostgresFlavor } from '@/lib/databaseCatalog'
 import {
+  AUTO_NODE_VALUE,
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
   NodeSelectField,
@@ -186,13 +190,20 @@ export function CreateDatabaseFields({
   // database needs, so it starts collapsed. Not reset on close, same
   // reasoning as CreateAppFields.tsx's identical toggle.
   const [showAdvanced, setShowAdvanced] = useState(false)
+  // With several nodes the choice matters, so it is not hidden.
+  const multiNode = nodes.length > 1
   const defaultValues: CreateDatabaseFormInput = {
     name: '',
     engine: engine ?? engines[0]?.id ?? '',
     version: '',
-    node: LOCAL_NODE_VALUE,
-    project: NO_PROJECT_VALUE,
+    node: AUTO_NODE_VALUE,
+    project: getProjectScope() || NO_PROJECT_VALUE,
   }
+  const { t: tc } = useTranslation('common')
+  const form = useAppForm<CreateDatabaseFormInput, CreateDatabaseFormOutput>(
+    createDatabaseSchema,
+    { defaultValues },
+  )
   const {
     control,
     register,
@@ -202,10 +213,7 @@ export function CreateDatabaseFields({
     watch,
     setValue,
     getValues,
-  } = useForm<CreateDatabaseFormInput, unknown, CreateDatabaseFormOutput>({
-    resolver: zodResolver(createDatabaseSchema),
-    defaultValues,
-  })
+  } = form
   const watchedEngine = watch('engine')
   const watchedVersion = watch('version')
 
@@ -285,7 +293,7 @@ export function CreateDatabaseFields({
         // panel, the same reasoning CreateAppFields' own onSubmit
         // comment gives: node_id left undefined otherwise lets the
         // server auto-place this database via simple spread scheduling.
-        node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
+        node_id: resolveSubmittedNodeId(showAdvanced || multiNode, nodeId),
       },
       { onSuccess },
     )
@@ -306,6 +314,20 @@ export function CreateDatabaseFields({
       onDiscardDraft={discardDraft}
       onDismissDraftNotice={dismissDraftNotice}
     >
+      <FormErrorSummary
+        form={form}
+        fields={{
+          name: { label: tc('formErrorSummary.name'), id: 'database-name' },
+          engine: {
+            label: tc('formErrorSummary.engine'),
+            id: 'database-engine',
+          },
+          version: {
+            label: tc('formErrorSummary.version'),
+            id: 'database-version',
+          },
+        }}
+      />
       {CREDENTIALED_ENGINES.has(watchedEngine) &&
       systemStatus.data?.secrets_configured === false ? (
         <div
@@ -410,6 +432,23 @@ export function CreateDatabaseFields({
             }}
           />
         ) : null}
+
+        {multiNode ? (
+          <Controller
+            control={control}
+            name="node"
+            render={({ field }) => (
+              <NodeSelectField
+                idPrefix="database"
+                nodes={nodes}
+                withAuto
+                value={field.value ?? AUTO_NODE_VALUE}
+                onValueChange={field.onChange}
+                error={[formState.errors.node]}
+              />
+            )}
+          />
+        ) : null}
       </div>
 
       {nodes.length > 0 || projects.length > 0 ? (
@@ -427,19 +466,21 @@ export function CreateDatabaseFields({
 
       {showAdvanced ? (
         <div className="space-y-4 rounded-lg border border-dashed border-border p-3">
-          <Controller
-            control={control}
-            name="node"
-            render={({ field }) => (
-              <NodeSelectField
-                idPrefix="database"
-                nodes={nodes}
-                value={field.value ?? LOCAL_NODE_VALUE}
-                onValueChange={field.onChange}
-                error={[formState.errors.node]}
-              />
-            )}
-          />
+          {multiNode ? null : (
+            <Controller
+              control={control}
+              name="node"
+              render={({ field }) => (
+                <NodeSelectField
+                  idPrefix="database"
+                  nodes={nodes}
+                  value={field.value ?? LOCAL_NODE_VALUE}
+                  onValueChange={field.onChange}
+                  error={[formState.errors.node]}
+                />
+              )}
+            />
+          )}
 
           <Controller
             control={control}

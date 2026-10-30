@@ -1,0 +1,12 @@
+version: 1
+kind: Project
+metadata:
+  name: render-import
+spec: {}
+---
+version: 1
+kind: Environment
+metadata:
+  name: production
+spec:
+  project: render-import

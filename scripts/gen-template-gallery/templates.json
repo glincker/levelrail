@@ -36206,7 +36206,7 @@
   "category": "Database Tools",
   "docUrl": "https://valkey.io/docs/",
   "memoryMiB": 256,
-  "needsConfig": false,
+  "needsConfig": true,
   "services": [
    {
     "name": "valkey",
@@ -36229,6 +36229,15 @@
   "requirements": {
    "level": "standard",
    "findings": [
+    {
+     "code": "required_secrets",
+     "severity": "info",
+     "services": [
+      "valkey"
+     ],
+     "detail": "command[2]",
+     "message": "You must provide one or more secrets before it can deploy"
+    },
     {
      "code": "generated_secrets",
      "severity": "info",
@@ -37059,6 +37068,11 @@
    },
    {
     "service": "wakapi",
+    "key": "WAKAPI_DB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "wakapi",
     "key": "WAKAPI_DB_TYPE",
     "kind": "preset"
    },
@@ -37094,14 +37108,6 @@
      ],
      "detail": "POSTGRES_PASSWORD, POSTGRES_USER, WAKAPI_DB_PASSWORD, WAKAPI_DB_USER, WAKAPI_SECURITY_PASSWORD_SALT",
      "message": "Passwords and keys are generated at deploy time"
-    },
-    {
-     "code": "no_healthcheck",
-     "severity": "info",
-     "services": [
-      "db"
-     ],
-     "message": "No health check, so a deploy is judged by the process starting"
     },
     {
      "code": "persistent_data",

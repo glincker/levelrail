@@ -103,6 +103,7 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |
 | `autoscale` | `Autoscale` | no | none | Scales replicas on CPU, memory or request load between a minimum and maximum. Cannot be combined with `replicas`. See [`Autoscale`](#autoscale). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
+| `restart` | string | no | none | `"no"` or `on-failure` (also `on-failure:N`, N a non-negative integer that is accepted and ignored) runs the service to completion, the same as a compose `restart:`: exit code 0 marks it `Completed` and it is not restarted; a nonzero exit is restarted with crash backoff. `always` and `unless-stopped` keep the default. Any other value fails validation. A redeploy from app.yaml replaces the stored value, so keep `restart` in the file. Not supported by `apply` yet. |
 
 ### `Build`
 
@@ -114,7 +115,8 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `baseDirectory` | string | no | repo root | Subdirectory used as the build context, for a monorepo (`apps/web`). Must be relative and stay inside the repo. Rejected for `image` and `compose` (a compose file's own `context:` already scopes each service). |
 | `image` | string | conditional | none | Full registry reference such as `ghcr.io/org/app:v1.2.3`. Required when `type` is `image`, rejected otherwise. Nothing is built; the image is deployed as is. |
 | `registryCredential` | string | no | none | Name of a registry credential saved in Levelrail, used to pull `image` from a private registry. Empty means an unauthenticated pull. |
-| `args` | map of string to string | no | none | Dockerfile build-time `ARG` values, passed through to BuildKit as `--build-arg` equivalents. Only meaningful when `type` is `dockerfile`. |
+| `args` | map of string to string | no | none | Dockerfile build-time `ARG` values, passed through to BuildKit as `--build-arg` equivalents. Only meaningful when `type` is `dockerfile`. Values are plain text and end up in image history, so never put a secret in `args`. |
+| `secrets` | list of string | no | none | Names of app secrets mounted as BuildKit secrets with the same id, for `RUN --mount=type=secret,id=NAME`. Each name must be a valid variable name, unique, and already created under the app's secrets. A secret is usable only after it is enabled for build use (`apps secrets set --build-time`, or `apps secrets build-time`); otherwise the deploy fails. Preview (pull request) builds reject `secrets` unless `APP_PREVIEW_BUILD_SECRETS` is set to a true value on the control plane (default off). The value is never written to the image, but log masking only catches the exact value, not encoded forms, and anyone who can change the Dockerfile can read an enabled secret during the build. Only valid when `type` is `dockerfile`; the cap is `APP_BUILD_SECRETS_MAX` (default 20). |
 
 ### `Egress`
 
@@ -211,7 +213,7 @@ All fields are optional. Durations are Go duration strings such as `500ms`, `5s`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `algorithm` | string | `round_robin` (default), `least_conn`, `ip_hash`, `uri_hash`, `cookie` or `weighted`. |
+| `algorithm` | string | `round_robin` (default), `least_conn`, `ip_hash`, `client_ip_hash`, `uri_hash`, `cookie` or `weighted`. |
 | `cookie_name` | string | Sticky cookie name. Only with `algorithm: cookie`, default `lb`. |
 | `weights` | list of integer | 1 to 100 per replica, indexed by replica number. Only with `algorithm: weighted`. |
 | `active_health` | object | `path` (required, starts with `/`), `interval`, `timeout` (shorter than `interval`), `passes`, `fails`, `expect_status`. |
@@ -400,7 +402,22 @@ Checked by `(*Spec).Validate` in `internal/spec/validate.go` for anything the sc
 - `build.image` is required when `build.type` is `image` and rejected for any other type. `build.path` and `build.baseDirectory` are rejected for `image`, and `build.baseDirectory` is rejected for `compose`.
 - `build.baseDirectory` must be relative and must not escape the repository root.
 - `routes`, `headers` and `static` are only meaningful when `build.type` is `static`; see [Static site routing rules](/static-routing).
-- `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored.
+- `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored. `build.secrets` follows the same rule. A secret is only usable from `build.secrets` after it is enabled for builds, which is off by default: use the Build switch on the secret's row on the app Environment page (it asks for confirmation when turned on), or `apps secrets build-time`.
+
+Example of a build secret:
+
+```yaml
+services:
+  web:
+    build:
+      type: dockerfile
+      secrets: [NPM_TOKEN]
+```
+
+```dockerfile
+RUN --mount=type=secret,id=NPM_TOKEN \
+    NPM_TOKEN=$(cat /run/secrets/NPM_TOKEN) npm ci
+```
 
 **Port configuration**
 
@@ -446,6 +463,7 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 - No two volumes on the same service may share a name or the same `path`.
 - Each volume's `hostPath` (if a bind mount) must be an absolute path.
 - `hostPath` is rejected under protected system paths: `/`, `/etc`, `/root`, `/boot`, `/sys`, `/proc`, `/var/lib/docker`, `/var/run/docker.sock`, or `/var/run`. `/var/run/docker.sock` is excluded by design (it's a full container-escape-to-host-root vector; this feature doesn't grant that capability).
+- `hostPath` is also rejected when it is or sits inside a credential directory (`.ssh`, `.gnupg`, `.aws`, `.kube`, `.docker`), is a bare home directory such as `/home/deploy`, or is under `/var/log` or `/usr/local/etc`. Set `APP_BIND_ALLOWED_ROOTS` (colon-separated absolute directories, for example `/srv/apps:/mnt/nas`) on the control plane to allow bind mounts only inside those directories.
 - `readOnly: true` on a volume with `name` set (not `hostPath`) is rejected (no meaning for a named Docker volume).
 
 ### Additional guard: strict YAML parsing

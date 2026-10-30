@@ -132,6 +132,7 @@ var catalogBatch6Templates = []Template{
 		ID:                     "lobe-chat",
 		Name:                   "Lobe Chat",
 		Slogan:                 "A modern, open-source AI chat framework supporting many model providers.",
+		Description:            "Optional: set OPENAI_API_KEY (and OPENAI_BASE_URL for a compatible endpoint) to preconfigure a provider. Users can also add keys in the app's settings.",
 		Category:               "AI",
 		DocumentationURL:       "https://lobehub.com/docs/self-hosting/start",
 		RecommendedMemoryBytes: 536870912,
@@ -188,7 +189,9 @@ var catalogBatch6Templates = []Template{
   marimo:
     image: ghcr.io/marimo-team/marimo:latest-sql
     ports: ["8080:8080"]
-    command: ["marimo", "edit", "--token-password", "$SERVICE_PASSWORD_MARIMO", "--port", "8080", "--host", "0.0.0.0"]
+    environment:
+      MARIMO_TOKEN_PASSWORD: $SERVICE_PASSWORD_MARIMO
+    command: ["/bin/sh", "-c", "exec marimo edit --token-password \"$MARIMO_TOKEN_PASSWORD\" --port 8080 --host 0.0.0.0"]
     volumes:
       - marimo_data:/app
     healthcheck:
@@ -368,11 +371,13 @@ var catalogBatch6Templates = []Template{
       retries: 10
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass $SERVICE_PASSWORD_REDIS
+    environment:
+      REDIS_PASSWORD: $SERVICE_PASSWORD_REDIS
+    command: ["/bin/sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\""]
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $$SERVICE_PASSWORD_REDIS ping || exit 1"]
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep -q PONG || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -518,6 +523,7 @@ var catalogBatch6Templates = []Template{
 		ID:                     "cloudflare-ddns",
 		Name:                   "Cloudflare DDNS",
 		Slogan:                 "Keeps Cloudflare DNS records pointed at your current public IP address.",
+		Description:            "Required: CLOUDFLARE_API_TOKEN (a token with DNS edit rights for the zone) and DOMAINS (comma separated records to keep updated).",
 		Category:               "Infrastructure",
 		DocumentationURL:       "https://github.com/favonia/cloudflare-ddns",
 		RecommendedMemoryBytes: 33554432,

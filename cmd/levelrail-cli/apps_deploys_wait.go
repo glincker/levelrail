@@ -19,6 +19,8 @@ type deploysWaitResult struct {
 	Status   string                          `json:"status"`
 	Failure  *apiclient.DeployFailure        `json:"failure,omitempty"`
 	Deploy   apiclient.DeployAttemptResource `json:"deploy"`
+	// CrashLoop is the plain-language crash loop line, set when the failure is a container crash.
+	CrashLoop string `json:"crash_loop,omitempty"`
 }
 
 // runAppsDeploysWait implements "apps deploys wait <name> [deploy-id]".
@@ -40,6 +42,7 @@ func runAppsDeploysWait(prog string, args []string, stdout, stderr io.Writer, lo
 		return exitUsage
 	}
 	name, deployID := rest[0], "latest"
+	implicitLatest := len(rest) == 1
 	if len(rest) == 2 {
 		deployID = rest[1]
 	}
@@ -58,9 +61,21 @@ func runAppsDeploysWait(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
+	frozenReason := ""
+	if implicitLatest && res.Done && res.Deploy.Outcome == apiclient.DeployOutcomeHealthy {
+		frozenReason = activeFreezeReason(client, name)
+	}
 	out := deploysWaitResult{App: name, DeployID: res.Deploy.ID, Status: res.Deploy.Outcome, Failure: res.Deploy.Failure, Deploy: res.Deploy}
 	if !res.Done {
 		out.Status = "timeout"
+	}
+	if res.Done && out.Failure != nil && out.Failure.Code == failureCodeContainerCrashed {
+		conds, _ := client.GetDeployStatus(context.Background(), name)
+		out.CrashLoop = crashLoopLine(conds, true)
+	}
+	if frozenReason != "" {
+		out.Status = "blocked"
+		_, _ = fmt.Fprintf(stderr, "%s: deploys of %q are frozen (%s), so a deploy you just requested was likely refused; %s is the previous deploy, not a new one. Pass its id to wait on it anyway.\n", prog, name, frozenReason, res.Deploy.ID)
 	}
 	code := writeScheduledTaskResult(stdout, stderr, of, out, func() { printDeploysWaitHuman(stdout, out, timeout.String()) })
 	if code != exitOK {
@@ -76,14 +91,33 @@ func runAppsDeploysWait(prog string, args []string, stdout, stderr io.Writer, lo
 	}
 }
 
+// activeFreezeReason returns why name is inside a deploy freeze window now,
+// or "" when it is not or the lookup failed.
+func activeFreezeReason(client *Client, name string) string {
+	f, err := client.GetDeployFreeze(context.Background(), name)
+	if err != nil || !f.Status.Frozen {
+		return ""
+	}
+	if f.Status.Reason == "" {
+		return "freeze window active"
+	}
+	return f.Status.Reason
+}
+
 func printDeploysWaitHuman(w io.Writer, r deploysWaitResult, timeout string) {
 	if r.Status == "timeout" {
 		_, _ = fmt.Fprintf(w, "timed out after %s waiting for deploy %s of %q\n", timeout, r.DeployID, r.App)
 		return
 	}
 	_, _ = fmt.Fprintf(w, "deploy %s of %q: %s\n", r.DeployID, r.App, r.Status)
+	if r.Deploy.OutcomeReason != "" && r.Status != apiclient.DeployOutcomeHealthy {
+		_, _ = fmt.Fprintf(w, "reason: %s\n", r.Deploy.OutcomeReason)
+	}
 	if r.Failure != nil {
 		printDeployFailure(w, r.Failure)
+	}
+	if r.CrashLoop != "" {
+		_, _ = fmt.Fprintln(w, r.CrashLoop)
 	}
 }
 
@@ -95,7 +129,10 @@ Blocks until one deploy is healthy, failed, canceled, superseded or blocked
 (a freeze window or approval), then prints the final status and, when it did
 not succeed, the structured failure. Without deploy-id the newest deploy is
 resolved once and then followed by id, so a later deploy or restart cannot
-change the result.
+change the result. If the newest deploy is already healthy while a deploy
+freeze is active, the request that should have created a new deploy was
+probably refused (HTTP 423), so it exits blocked instead of reporting the old
+deploy; pass the deploy id to wait on that deploy regardless.
 
 Exit codes: 0 healthy, %[5]d failed, canceled, superseded or blocked, %[6]d
 timeout.

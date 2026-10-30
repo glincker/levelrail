@@ -141,7 +141,7 @@ In the dashboard, use the **Docker Compose** card. A multi-service app lists eve
 <Accordion title="How Compose is translated, and what fails validation">
 
 - **Magic variables.** `SERVICE_<KIND>_<KEY>` variables that need generated secrets are resolved and stored automatically. A compose file that bind-mounts a host directory needs the `root` ability on top of `deploy`.
-- **Ports and volumes** accept the short form (`"8080:80"`, `web-data:/data`) and the long mapping form, so an upstream `docker-compose.yml` usually pastes in unchanged. Port ranges, UDP, and `tmpfs` or `npipe` mounts have no equivalent and are rejected.
+- **Ports and volumes** accept the short form (`"8080:80"`, `web-data:/data`) and the long mapping form, so an upstream `docker-compose.yml` usually pastes in unchanged. UDP entries (`"53:53/udp"`) publish directly on the host, see [UDP published ports](/udp-ports). Port ranges and `tmpfs` or `npipe` mounts have no equivalent and are rejected.
 - **`depends_on`** (list or map form) enforces start order. A dependent container is not created until every service it names has a running container. This matches Compose's own default (`service_started`): it waits for the container to exist and run, not for its health check. A dependency must name a real sibling, and a cycle fails validation rather than deadlocking the reconciler.
 - **`pull_policy: always`** forces a fresh pull on every deploy, which suits mutable tags like `:latest`. The default is pull if absent.
 - **`restart:` and `networks:`** parse but have no effect, because the reconciler alone decides whether a container runs and every service in an app shares one network. They come back as non-blocking `notices`, as does anything else that cannot be translated, such as a health check with no readiness-probe equivalent.
@@ -307,10 +307,22 @@ Two related options:
 ### Save semantics
 
 <Warning>
-`PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with what the request body carries, the same as applying an `app.yaml`.
+`PUT /api/v1/apps/{name}` changes only the top-level fields the body carries. An omitted field keeps its stored value. An explicit empty value (`[]`, `{}`, `""`) or `null` clears it. Nested objects such as `health` or `resources` are replaced whole when sent.
 </Warning>
 
-A save keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, and the pinned image ID. `secret_env` and `vault_env` change only when the body carries them. Omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
+| Field | Omitted | `[]`, `{}` or `null` |
+| --- | --- | --- |
+| `image`, `port` | kept | rejected, except `port: 0` on a service stored without one |
+| `bind_address`, `strategy`, `replicas` | kept | reset to the default |
+| `host_port`, `published_ports`, `domains`, `env`, `labels`, `command` | kept | cleared |
+| `resources`, `health`, `hooks` | kept | cleared (a compose `restart` policy survives) |
+| `secret_env`, `vault_env` | kept | `[]` or `{}` clears, `null` keeps |
+
+A body with only `{"env": {"MODE": "dev"}}` changes the env and nothing else. A GET followed by an unchanged PUT is a no-op: the container is not recreated.
+
+Field names are matched the way Go's JSON decoder matches them (case-insensitive, with Unicode case folding), so a key spelled with a different case or a look-alike letter still counts as sent and is not filled from storage.
+
+A save also keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, dependencies, the pinned image ID, and `template_id`. `template_id` is response-only: a client cannot set or change it, it is recorded when an app is deployed from a catalog template. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
 
 Fields with their own endpoints cannot be moved by an ordinary edit: `node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, and `log_drain`. An edit can never silently move an app between nodes or projects.
 
@@ -578,6 +590,7 @@ In the dashboard, each row of the Apps list has an actions menu with Restart, St
 
 - **Input:** `command` is required. `args` is optional and never shell interpreted (raw argv). `timeout_seconds` may shorten but never extend the 30 second server ceiling.
 - **Output:** `stdout`, `stderr`, and `exit_code`, capped at 1 MiB (`truncated: true` past that). A nonzero exit code still returns HTTP 200, because the exec worked and the command failed.
+- **While restarting:** if the app has no running container (a restart or rollout), the call waits up to `APP_EXEC_WAIT_FOR_RUNNING_SECONDS` (default 30, `0` turns it off) for it to come back. Past that it answers 409 with a `Retry-After` header.
 - **Permission:** the `root` ability, not `deploy`. Exec can be switched off per app (it is on by default) with `levelrail-cli apps exec-access disable NAME`, and a disabled app answers 403.
 
 <Warning>

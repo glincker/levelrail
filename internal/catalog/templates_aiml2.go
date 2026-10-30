@@ -4,14 +4,14 @@ var aiml2Templates = []Template{
 	{
 		ID:                     "chroma",
 		Name:                   "Chroma",
-		Slogan:                 "A developer-friendly embedding database for AI applications, served over a simple HTTP API.",
+		Slogan:                 "A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host.",
 		Category:               "Database Tools",
 		DocumentationURL:       "https://docs.trychroma.com",
 		RecommendedMemoryBytes: 536870912,
 		Compose: `services:
   chroma:
     image: ghcr.io/chroma-core/chroma:1.0.0
-    ports: ["8000:8000"]
+    ports: ["8000"]
     environment:
       IS_PERSISTENT: "TRUE"
       PERSIST_DIRECTORY: /data
@@ -19,7 +19,7 @@ var aiml2Templates = []Template{
     volumes:
       - chroma_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/api/v2/heartbeat || wget -q -O /dev/null http://127.0.0.1:8000/api/v2/heartbeat || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000 && printf 'GET /api/v2/heartbeat HTTP/1.0\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q 200"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -29,7 +29,7 @@ var aiml2Templates = []Template{
 	{
 		ID:                     "milvus",
 		Name:                   "Milvus",
-		Slogan:                 "A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node.",
+		Slogan:                 "A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host.",
 		Category:               "Database Tools",
 		DocumentationURL:       "https://milvus.io/docs",
 		RecommendedMemoryBytes: 4294967296,
@@ -37,11 +37,12 @@ var aiml2Templates = []Template{
   milvus:
     image: milvusdb/milvus:v3.0.2
     command: ["milvus", "run", "standalone"]
-    ports: ["19530:19530", "9091:9091"]
+    ports: ["19530", "9091"]
     environment:
       ETCD_USE_EMBED: "true"
       ETCD_DATA_DIR: /var/lib/milvus/etcd
       COMMON_STORAGETYPE: local
+      DEPLOY_MODE: STANDALONE
     volumes:
       - milvus_data:/var/lib/milvus
     healthcheck:

@@ -22,6 +22,14 @@ func TestSpread(t *testing.T) {
 			want:  "b",
 		},
 		{
+			name: "empty node with unknown capacity beats a busy node with known headroom",
+			cands: []Candidate{
+				{ID: "node-a", Schedulable: true, Online: true},
+				{ID: "node-b", Schedulable: true, Online: true, Load: 2, Capacity: Capacity{CPUMilli: Measured(4000), MemoryBytes: Measured(8 << 30)}},
+			},
+			want: "node-a",
+		},
+		{
 			name:  "tie broken by id",
 			cands: []Candidate{{ID: "c", Schedulable: true, Online: true}, {ID: "b", Schedulable: true, Online: true}},
 			want:  "b",

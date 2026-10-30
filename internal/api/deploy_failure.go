@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -61,7 +62,32 @@ func rolloutFailureCondition(a store.DeployAttempt, conds []reconcile.Condition)
 			return &failure.Condition{Reason: c.Reason, Message: c.Message}
 		}
 	}
+	for _, c := range conds {
+		if c.Reason == application.ReasonCompletionTimeout && !c.LastTransitionTime.Before(*a.FinishedAt) && !completedSince(conds, c.LastTransitionTime) {
+			return &failure.Condition{Reason: c.Reason, Message: c.Message}
+		}
+	}
+	// A serving attempt already rolled out; a later crash loop is steady state, not this deploy's result.
+	if a.RolloutState == store.RolloutStateServing {
+		return nil
+	}
+	limit := failure.RolloutCrashLoopRestarts(os.LookupEnv)
+	for _, c := range conds {
+		if failure.IsRolloutCrashLoop(c.Reason, c.Message, limit) && !c.LastTransitionTime.Before(*a.FinishedAt) {
+			return &failure.Condition{Reason: c.Reason, Message: c.Message}
+		}
+	}
 	return nil
+}
+
+// completedSince lets a one-shot that finishes after its CompletionTimeout flip the rollout back to done.
+func completedSince(conds []reconcile.Condition, t time.Time) bool {
+	for _, c := range conds {
+		if c.Reason == application.ReasonCompleted && !c.LastTransitionTime.Before(t) {
+			return true
+		}
+	}
+	return false
 }
 
 // classifyAttempt classifies attempt with the full signal set: build or
@@ -78,7 +104,12 @@ func (rt *Router) classifyAttempt(ctx context.Context, a store.DeployAttempt, co
 	if attemptFailedDuringBuild(&a) {
 		in.LogLines = rt.diagnoseBuildLogs(ctx, a.ServiceName, a.ID)
 	} else if in.Status == store.DeployAttemptStatusFailed || in.Condition != nil {
-		in.LogLines = rt.diagnoseRecentLogs(ctx, a.ServiceName)
+		in.LogLines = rt.releaseLogLines(ctx, a)
+		// The stored stream mixes in the previous release's lines; the exit
+		// capture holds only the failing container's output.
+		if lines := rt.attemptExitLines(ctx, a); len(lines) > 0 {
+			in.LogLines = lines
+		}
 	}
 	if newest {
 		if c := rt.diagnoseCrashloop(ctx, a.ServiceName); c != nil {
@@ -90,6 +121,21 @@ func (rt *Router) classifyAttempt(ctx context.Context, a store.DeployAttempt, co
 		return nil, false
 	}
 	return &f, true
+}
+
+func (rt *Router) attemptExitLines(ctx context.Context, a store.DeployAttempt) []string {
+	if rt.deployExits == nil {
+		return nil
+	}
+	e, err := rt.deployExits.GetDeployExit(ctx, a.ServiceName, a.ID)
+	if err != nil || e == nil {
+		return nil
+	}
+	lines := make([]string, 0, len(e.LogTail))
+	for _, l := range e.LogTail {
+		lines = append(lines, l.Message)
+	}
+	return lines
 }
 
 // handleGetDeploy handles GET /api/v1/apps/{name}/deploys/{deployId}: one
@@ -131,7 +177,7 @@ func (rt *Router) handleGetDeploy(w http.ResponseWriter, r *http.Request) {
 	res := toDeployAttemptResource(a)
 	res.ChainPosition = rerunChainPositions(attempts)(a.ID)
 	rt.applyWait(ctx, &res, a, attempts)
-	res.Outcome = computeDeployOutcome(a, idx == 0, conds)
+	applyDeployOutcome(&res, a, idx == 0, conds)
 	res.Phase = res.Status
 	res.Status = presentedDeployStatus(a.Status, res.Outcome)
 	if f, ok := rt.classifyAttempt(ctx, a, conds, idx == 0); ok {
@@ -168,4 +214,17 @@ func (rt *Router) diagnoseFailure(attempt *store.DeployAttempt, conds []reconcil
 		return nil
 	}
 	return &f
+}
+
+// rolloutConditions loads the app's rollout conditions; a failed lookup only
+// loses the rollout half of an outcome, so it is logged and skipped.
+func (rt *Router) rolloutConditions(ctx context.Context, name string) []reconcile.Condition {
+	if rt.deploys == nil {
+		return nil
+	}
+	conds, err := rt.deploys.GetConditions(ctx, applicationControllerName(name))
+	if err != nil {
+		rt.logger.Warn("api: load rollout conditions failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+	return conds
 }

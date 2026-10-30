@@ -61,6 +61,9 @@ When a build fails because the Dockerfile path in the git source is wrong, the f
 ### dependency_install_failed
 A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the [build node](/build-node-routing).
 
+### build_step_failed
+A command in the build, such as a Dockerfile `RUN` line, exited with an error that is not a dependency install. Read the failing step in the excerpt and fix that command.
+
 ### compile_error
 The application code failed to compile (tsc, Next.js, go build, cargo, javac). The excerpt shows the compiler line with the file and position. Fix it, confirm it builds locally, then redeploy.
 
@@ -108,6 +111,9 @@ The host ran out of disk, or the build disk preflight found less free space than
 
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.
+
+### build_engine_unsupported
+The container engine has no BuildKit (Podman), so Dockerfile and Railpack source builds cannot run. Deploy a prebuilt image, or run Docker for source builds. See [container runtimes](/container-runtimes).
 
 ### git_host_unreachable
 The git host could not be reached and the commit is not in the source cache. Retryable: redeploy a known commit, roll back, or use **Deploy from cache**. See [Deploying through git host outages](/git-host-outages).

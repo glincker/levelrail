@@ -1,0 +1,15 @@
+id: rsshub
+name: RSSHub
+description: Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access.
+icon: rss
+category: Productivity
+documentation_url: https://docs.rsshub.app/deploy/
+recommended_memory_bytes: 536870912
+domains:
+  - service: rsshub
+    port: 1200
+    description: Public address of your RSSHub instance.
+healthcheck:
+  service: rsshub
+  port: 1200
+  path: /healthz

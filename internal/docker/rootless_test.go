@@ -98,3 +98,91 @@ func TestDetectRuntimeSocket_NilLookupEnv(t *testing.T) {
 		t.Errorf("Source = %v, want default", got.Source)
 	}
 }
+
+func TestDetectRuntimeSocket_DesktopPaths(t *testing.T) {
+	home := "/home/dev"
+	tests := []struct {
+		name     string
+		existing string
+		want     RuntimeKind
+	}{
+		{"docker desktop", home + "/.docker/run/docker.sock", RuntimeKindDockerDesktop},
+		{"colima", home + "/.colima/default/docker.sock", RuntimeKindColima},
+		{"orbstack", home + "/.orbstack/run/docker.sock", RuntimeKindOrbStack},
+		{"rancher desktop", home + "/.rd/docker.sock", RuntimeKindRancherDesktop},
+		{"podman rootful", "/run/podman/podman.sock", RuntimeKindPodman},
+		{"podman rootless via xdg", "/run/xdg/podman/podman.sock", RuntimeKindPodman},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := map[string]string{"HOME": home, "XDG_RUNTIME_DIR": "/run/xdg"}
+			got := detectRuntimeSocket(lookupFrom(env), func(p string) bool { return p == tt.existing })
+			if got.Kind != tt.want || got.Source != "detected" || got.Host != "unix://"+tt.existing {
+				t.Errorf("got %+v, want kind %s", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClassifySocket_Kinds(t *testing.T) {
+	tests := map[string]RuntimeKind{
+		"unix:///var/run/docker.sock":             RuntimeKindDocker,
+		"tcp://10.0.0.2:2375":                     RuntimeKindUnknown,
+		"unix:///tmp/custom.sock":                 RuntimeKindUnknown,
+		"unix:///run/user/1000/docker.sock":       RuntimeKindDocker,
+		"unix:///Users/a/.docker/run/docker.sock": RuntimeKindDockerDesktop,
+	}
+	for host, want := range tests {
+		if got := classifySocket(host, "x"); got.Kind != want {
+			t.Errorf("%s: kind %s, want %s", host, got.Kind, want)
+		}
+	}
+	if classifySocket("unix:///Users/a/.docker/run/docker.sock", "x").Rootless {
+		t.Error("docker desktop must not be rootless")
+	}
+}
+
+func TestRefineKind(t *testing.T) {
+	tests := []struct {
+		name string
+		path RuntimeKind
+		id   EngineIdentity
+		want RuntimeKind
+	}{
+		{"podman component", RuntimeKindDocker, EngineIdentity{Components: []string{"Podman Engine"}}, RuntimeKindPodman},
+		{"podman beats desktop path", RuntimeKindColima, EngineIdentity{PlatformName: "Podman Engine"}, RuntimeKindPodman},
+		{"docker desktop os", RuntimeKindDocker, EngineIdentity{OperatingSystem: "Docker Desktop"}, RuntimeKindDockerDesktop},
+		{"orbstack os", RuntimeKindUnknown, EngineIdentity{OperatingSystem: "OrbStack"}, RuntimeKindOrbStack},
+		{"specific path kept", RuntimeKindColima, EngineIdentity{PlatformName: "Docker Engine - Community"}, RuntimeKindColima},
+		{"unknown path, docker answer", RuntimeKindUnknown, EngineIdentity{PlatformName: "Docker Engine - Community"}, RuntimeKindDocker},
+		{"no signal keeps path", RuntimeKindUnknown, EngineIdentity{}, RuntimeKindUnknown},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RefineKind(tt.path, tt.id); got != tt.want {
+				t.Errorf("got %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSupportFor(t *testing.T) {
+	tests := []struct {
+		info RuntimeInfo
+		goos string
+		want SupportLevel
+	}{
+		{RuntimeInfo{Kind: RuntimeKindDocker}, "linux", SupportSupported},
+		{RuntimeInfo{Kind: RuntimeKindDocker, Rootless: true}, "linux", SupportBestEffort},
+		{RuntimeInfo{Kind: RuntimeKindDocker}, "darwin", SupportBestEffort},
+		{RuntimeInfo{Kind: RuntimeKindPodman}, "linux", SupportBestEffort},
+		{RuntimeInfo{Kind: RuntimeKindOrbStack}, "darwin", SupportBestEffort},
+		{RuntimeInfo{Kind: RuntimeKindUnknown}, "linux", SupportUnverified},
+	}
+	for _, tt := range tests {
+		got, reason := SupportFor(tt.info, tt.goos)
+		if got != tt.want || reason == "" {
+			t.Errorf("%+v on %s: %s %q, want %s", tt.info, tt.goos, got, reason, tt.want)
+		}
+	}
+}

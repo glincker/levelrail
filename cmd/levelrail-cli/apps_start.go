@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"io"
 )
 
 // Clears the suspended flag set by apps stop, so the reconciler restarts the container.
 func runAppsStart(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps start", "print the app as JSON to stdout and nothing else", stderr)
+	var queueOffline bool
+	fs.BoolVar(&queueOffline, "queue-while-offline", false, "if the app's node is offline, record the change as pending and apply it when the node returns (default: refuse)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsStartUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -23,7 +26,7 @@ func runAppsStart(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	started, err := client.StartApp(context.Background(), name)
+	started, err := appAction(context.Background(), client, name, "start", queueOffline, func() (apiclient.AppResource, error) { return client.StartApp(context.Background(), name) })
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("start app %q: %w", name, err))
 	}
@@ -45,6 +48,7 @@ func appsStartUsage(prog string) string {
 Starts an app previously stopped with "%[1]s apps stop <name>".
 
 Flags:
+  --queue-while-offline   if the app's node is offline, record the change as pending (default: refuse)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

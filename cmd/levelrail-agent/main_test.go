@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -144,5 +145,17 @@ func TestLoadOrEnroll_UnwritableIdentityDirFailsBeforeJoin(t *testing.T) {
 	_, err := loadOrEnroll(context.Background(), "127.0.0.1:1", filepath.Join(dir, "identity.json"), testLogger())
 	if err == nil || !strings.Contains(err.Error(), "join token was not used") {
 		t.Fatalf("loadOrEnroll() error = %v, want the preflight error", err)
+	}
+}
+
+func TestRequirePinOrOptOut(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	t.Setenv(envAllowUnpinnedEnroll, "")
+	if err := requirePinOrOptOut(logger); err == nil {
+		t.Fatal("unpinned enrollment must be refused by default")
+	}
+	t.Setenv(envAllowUnpinnedEnroll, "1")
+	if err := requirePinOrOptOut(logger); err != nil {
+		t.Fatalf("explicit opt-out should be allowed, got %v", err)
 	}
 }

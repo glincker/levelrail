@@ -8,12 +8,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Depends_on conditions from the long form. service_completed_successfully
-// has no one-shot job model here, so it is treated as service_started.
+// Depends_on conditions from the long form.
 const (
-	DependsOnConditionStarted = "service_started"
-	DependsOnConditionHealthy = "service_healthy"
-	dependsOnConditionDone    = "service_completed_successfully"
+	DependsOnConditionStarted   = "service_started"
+	DependsOnConditionHealthy   = "service_healthy"
+	DependsOnConditionCompleted = "service_completed_successfully"
 )
 
 type rawConditionFile struct {
@@ -23,13 +22,15 @@ type rawConditionFile struct {
 }
 
 // parseDependsOnConditions returns, per service, the dependencies declared
-// with condition: service_healthy. The list form carries no conditions.
-func parseDependsOnConditions(data []byte) (map[string][]string, error) {
+// with condition: service_healthy and with service_completed_successfully.
+// The list form carries no conditions.
+func parseDependsOnConditions(data []byte) (healthy, completed map[string][]string, err error) {
 	var raw rawConditionFile
 	if err := yaml.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("compose: parse depends_on: %w", err)
+		return nil, nil, fmt.Errorf("compose: parse depends_on: %w", err)
 	}
 	out := make(map[string][]string)
+	done := make(map[string][]string)
 	for svc, body := range raw.Services {
 		node := body.DependsOn
 		if node.Kind != yaml.MappingNode {
@@ -41,19 +42,22 @@ func parseDependsOnConditions(data []byte) (map[string][]string, error) {
 				Condition string `yaml:"condition"`
 			}
 			if err := node.Content[i+1].Decode(&cfg); err != nil {
-				return nil, fmt.Errorf("compose: service %q: depends_on.%s: %w", svc, dep, err)
+				return nil, nil, fmt.Errorf("compose: service %q: depends_on.%s: %w", svc, dep, err)
 			}
 			switch cfg.Condition {
-			case "", DependsOnConditionStarted, dependsOnConditionDone:
+			case "", DependsOnConditionStarted:
 			case DependsOnConditionHealthy:
 				out[svc] = append(out[svc], dep)
+			case DependsOnConditionCompleted:
+				done[svc] = append(done[svc], dep)
 			default:
-				return nil, fmt.Errorf("compose: service %q: depends_on.%s: unknown condition %q", svc, dep, cfg.Condition)
+				return nil, nil, fmt.Errorf("compose: service %q: depends_on.%s: unknown condition %q", svc, dep, cfg.Condition)
 			}
 		}
 		sort.Strings(out[svc])
+		sort.Strings(done[svc])
 	}
-	return out, nil
+	return out, done, nil
 }
 
 // ApplyProfiles drops every service whose profiles: list shares nothing

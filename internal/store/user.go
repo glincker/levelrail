@@ -11,7 +11,8 @@ import (
 
 // User is a real, individually-identified account
 // (migrations/0035_users.sql). PasswordHash is nil for an OAuth-only
-// user. IsFirstUser is display-only. Second factors live in the auth
+// user. IsFirstUser marks the setup admin and bounds the first-login trust
+// window; it grants nothing by itself. Second factors live in the auth
 // library. Abilities (migrations/0045_user_abilities.sql)
 // is the same shape and validation (internal/api's validateAbilities) as
 // APIToken.Abilities: a session now carries real, checkable scoping
@@ -23,8 +24,12 @@ type User struct {
 	PasswordHash *string
 	Abilities    []string
 	IsFirstUser  bool
-	CreatedAt    time.Time
-	LastLoginAt  *time.Time
+	// FirstLoginTrustUsed, SetupSessionID and SetupIP back trust on first use (ClaimFirstLoginTrust).
+	FirstLoginTrustUsed bool
+	SetupSessionID      string
+	SetupIP             string
+	CreatedAt           time.Time
+	LastLoginAt         *time.Time
 	// TeamID and TeamRole pick the team a new user joins; empty means the
 	// default team with a role matching Abilities.
 	TeamID   string
@@ -77,7 +82,7 @@ func (db *DB) CreateUser(ctx context.Context, u User) error {
 // userColumns is the shared SELECT column list every user-row reader
 // below uses, so scanUser's argument order never drifts from what a
 // given query actually asked for.
-const userColumns = `id, email, display_name, password_hash, abilities, is_first_user, created_at, last_login_at`
+const userColumns = `id, email, display_name, password_hash, abilities, is_first_user, created_at, last_login_at, first_login_trust_used, setup_session_id, setup_ip`
 
 // GetUserByID returns the user with this ID, or ErrUserNotFound.
 func (db *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
@@ -216,8 +221,9 @@ func scanUser(scan func(dest ...any) error) (*User, error) {
 		isFirst       int
 		createdAt     string
 		lastLoginNull sql.NullString
+		trustUsed     int
 	)
-	if err := scan(&u.ID, &u.Email, &u.DisplayName, &passwordHash, &abilitiesJSON, &isFirst, &createdAt, &lastLoginNull); err != nil {
+	if err := scan(&u.ID, &u.Email, &u.DisplayName, &passwordHash, &abilitiesJSON, &isFirst, &createdAt, &lastLoginNull, &trustUsed, &u.SetupSessionID, &u.SetupIP); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
@@ -230,6 +236,7 @@ func scanUser(scan func(dest ...any) error) (*User, error) {
 		return nil, fmt.Errorf("unmarshal abilities: %w", err)
 	}
 	u.IsFirstUser = isFirst != 0
+	u.FirstLoginTrustUsed = trustUsed != 0
 	parsedCreated, err := time.Parse(time.RFC3339Nano, createdAt)
 	if err != nil {
 		return nil, fmt.Errorf("parse created_at: %w", err)
@@ -240,6 +247,29 @@ func scanUser(scan func(dest ...any) error) (*User, error) {
 		return nil, fmt.Errorf("parse last_login_at: %w", err)
 	}
 	return &u, nil
+}
+
+// SetUserSetupSession records the session and address the setup admin registered from.
+func (db *DB) SetUserSetupSession(ctx context.Context, userID, sessionID, ip string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE users SET setup_session_id = ?, setup_ip = ? WHERE id = ? AND is_first_user = 1`, sessionID, ip, userID); err != nil {
+		return fmt.Errorf("store: set setup session for %q: %w", userID, err)
+	}
+	return nil
+}
+
+// ClaimFirstLoginTrust spends the one-time trust on first use and reports
+// whether this call won it. The flag is never cleared, so a revoked trusted
+// device cannot reopen it and concurrent logins cannot both win.
+func (db *DB) ClaimFirstLoginTrust(ctx context.Context, userID string) (bool, error) {
+	res, err := db.ExecContext(ctx, `UPDATE users SET first_login_trust_used = 1 WHERE id = ? AND is_first_user = 1 AND first_login_trust_used = 0`, userID)
+	if err != nil {
+		return false, fmt.Errorf("store: claim first login trust for %q: %w", userID, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: claim first login trust for %q: rows: %w", userID, err)
+	}
+	return n == 1, nil
 }
 
 // rowsAffectedOrNotFound translates "zero rows changed" into notFound,

@@ -24,6 +24,11 @@ type SelfUpgradePlan struct {
 	CannotApplyWhy string                `json:"cannot_apply_reason"`
 	Command        string                `json:"command"`
 	Steps          []string              `json:"steps"`
+	// Schema fields are absent when the database or the target manifest is unreadable.
+	DBSchemaVersion     *int     `json:"db_schema_version,omitempty"`
+	TargetSchemaVersion *int     `json:"target_schema_version,omitempty"`
+	PendingMigrations   *int     `json:"pending_migrations,omitempty"`
+	RollbackCommands    []string `json:"rollback_commands,omitempty"`
 }
 
 // SelfUpgradeStep is one step of an attempt's timeline.

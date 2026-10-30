@@ -35,7 +35,7 @@ func (rt *Router) handleListFailedDeploys(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: list failed deploys failed", err)
 		return
 	}
-	canSee, err := rt.appVisibilityFilter(r)
+	canSee, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: list failed deploys: visibility", err)
 		return
@@ -47,6 +47,7 @@ func (rt *Router) handleListFailedDeploys(w http.ResponseWriter, r *http.Request
 		}
 		res := toDeployAttemptResource(f.Attempt)
 		rt.attachFailure(&res, f.Attempt)
+		applyDeployOutcome(&res, f.Attempt, true, nil)
 		out = append(out, failedDeployResource{res, f.LastGoodImage})
 	}
 	writeJSON(w, http.StatusOK, pageQueryDefault(w, r, out, defaultFailedDeploysPage))

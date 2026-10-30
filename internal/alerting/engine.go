@@ -90,7 +90,9 @@ type Engine struct {
 
 	logArchive LogArchiveSource
 
-	exportHealth ExportHealthSource
+	exportHealth      ExportHealthSource
+	backupCopy        BackupCopySource
+	backupCopyDefault time.Duration
 
 	registryRefresh RegistryRefreshSource
 
@@ -202,6 +204,11 @@ func (e *Engine) SetRegistryRefresh(src RegistryRefreshSource) { e.registryRefre
 
 // SetExportHealth enables kind=export_behind rules.
 func (e *Engine) SetExportHealth(src ExportHealthSource) { e.exportHealth = src }
+
+// SetBackupCopy enables kind=backup_copy_behind rules; defaultLag applies when a rule sets no ForDuration.
+func (e *Engine) SetBackupCopy(src BackupCopySource, defaultLag time.Duration) {
+	e.backupCopy, e.backupCopyDefault = src, defaultLag
+}
 
 // SetRestoreDrills enables kind=restore_drill_failed rules.
 func (e *Engine) SetRestoreDrills(src RestoreDrillSource) { e.restoreDrills = src }
@@ -527,6 +534,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindBackupCopyBehind:
+			if e.backupCopy == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateBackupCopyBehind(ctx, e.backupCopy, e.backupCopyDefault, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRegistryRefreshFailing:
 			if e.registryRefresh == nil {
 				continue
@@ -727,7 +743,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

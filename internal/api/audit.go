@@ -84,8 +84,31 @@ const AuditActionSensitiveRead = "sensitive_read"
 
 var sensitiveReadPath = regexp.MustCompile(`^/api/v1/(apps|organizations|environments)/[^/]+(/previews/[^/]+)?/(env(/(bound|secrets|all))?|secrets|branch-env)$`)
 
+// Log, export and Loki reads gate at plain Read but can carry secrets or PII.
+// Matching is by path only, so a stream or download is audited once per request.
+var sensitiveContentReadPath = regexp.MustCompile(`^/api/v1/(` +
+	`(apps|databases|models)/[^/]+/logs(/(stream|download|signatures))?` +
+	`|apps/[^/]+/deploys/[^/]+/logs(/download)?` +
+	`|apps/[^/]+/pipeline-runs/[^/]+/logs(/stream)?` +
+	`|apps/[^/]+/env/export` +
+	`|dashboards/[^/]+/export` +
+	`|dns/zones/[^/]+/records/export` +
+	`|export` +
+	`)$`)
+
+// sensitiveLokiQueryPath is the Loki query surface, which Grafana also calls with POST.
+var sensitiveLokiQueryPath = regexp.MustCompile(`^/api/v1/loki(/loki/api/v1)?/query(_range)?$`)
+
 func sensitiveReadRoute(r *http.Request) bool {
-	return r.Method == http.MethodGet && sensitiveReadPath.MatchString(r.URL.Path)
+	switch r.Method {
+	case http.MethodGet:
+		return sensitiveReadPath.MatchString(r.URL.Path) ||
+			sensitiveContentReadPath.MatchString(r.URL.Path) ||
+			sensitiveLokiQueryPath.MatchString(r.URL.Path)
+	case http.MethodPost:
+		return sensitiveLokiQueryPath.MatchString(r.URL.Path)
+	}
+	return false
 }
 
 // auditActorName resolves the real display name behind an audited
@@ -133,7 +156,7 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 		CreatedAt:  store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
 	}
-	if required == AbilityRead && sensitiveReadRoute(r) {
+	if required == AbilityRead && rt.sensitiveReadAudited(r) {
 		entry.Action = AuditActionSensitiveRead
 	}
 	if actorType == "token" {

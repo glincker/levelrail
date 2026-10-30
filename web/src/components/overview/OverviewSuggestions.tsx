@@ -28,6 +28,7 @@ export function OverviewSuggestions({
   if (descriptors.length === 0) return null
   return (
     <div id={anchorId}>
+      {actions.confirmDialog}
       <SuggestionList
         items={toSuggestionItems(descriptors, actions, dismiss)}
       />

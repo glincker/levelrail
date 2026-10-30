@@ -1,12 +1,19 @@
 name: Nightly full suite
 
-# The thorough run ci.yml's PR/push lane skips (-race, no -short): the
-# safety net for concurrency bugs and the flaky-under-load tests, without
-# blocking every PR on it.
+# The thorough run ci.yml's PR/push lane skips (no -short, shuffled): Monday
+# to Saturday it runs the scoped cheap lanes, Sunday the full sweep with
+# -race and the docker lane. Every lane records its outcome instead of
+# failing the run, so a red lane can never put a red mark on a main commit;
+# the summary job reports once and keeps one open issue. See docs/ci.md.
 on:
   schedule:
-    - cron: '0 4 * * *'
+    - cron: '0 4 * * 1-6'
+    - cron: '0 4 * * 0'
   workflow_dispatch: {}
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -25,6 +32,7 @@ jobs:
       kit: ${{ steps.scope.outputs.kit }}
       install: ${{ steps.scope.outputs.install }}
       sweep: ${{ steps.scope.outputs.sweep }}
+      full: ${{ steps.mode.outputs.full }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -36,21 +44,30 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # Diff against the last GREEN scheduled run's commit, so a lane that
-      # failed or timed out is retried until it passes instead of being
-      # forgotten. Manual dispatch and a missing prior run both fall back
-      # to the full suite.
-      - name: Pick lanes from changes since the last nightly
+      - name: Pick daily or full sweep
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          CRON: ${{ github.event.schedule }}
+        run: |
+          full=false
+          if [ "$EVENT" != schedule ] || [ "$CRON" = '0 4 * * 0' ]; then full=true; fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+
+      # Daily runs diff against the commit of the last all-green run (its
+      # nightly-green artifact), so a lane that failed is retried until it
+      # passes. The full sweep and a missing marker run everything.
+      - name: Pick lanes from changes since the last green run
         id: scope
         env:
           GH_TOKEN: ${{ github.token }}
-          NIGHTLY_LIVE_ALWAYS: 'true'
+          FULL: ${{ steps.mode.outputs.full }}
         run: |
           base=ALL
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            base="$(gh api "repos/${{ github.repository }}/actions/workflows/nightly.yml/runs?event=schedule&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // "ALL"')"
+          if [ "$FULL" != true ]; then
+            base="$(gh api "repos/${{ github.repository }}/actions/artifacts?name=nightly-green&per_page=20" --jq '[.artifacts[] | select(.expired == false)][0].workflow_run.head_sha // "ALL"')"
           fi
-          scripts/nightly-scope.sh "$base" | tee scope.out >> "$GITHUB_OUTPUT"
+          NIGHTLY_FULL="$FULL" NIGHTLY_LIVE_ALWAYS="$FULL" scripts/nightly-scope.sh "$base" | tee scope.out >> "$GITHUB_OUTPUT"
           if grep -q '^matrix=\[\]$' scope.out && grep -q '^kit=false$' scope.out && grep -q '^install=false$' scope.out && grep -q '^sweep=false$' scope.out; then
             echo "has-commits=false" >> "$GITHUB_OUTPUT"
           else
@@ -58,14 +75,16 @@ jobs:
           fi
 
   # Same lanes as ci.yml plus -shuffle=on (order dependence) and no -short.
-  # -race runs on the race lane (concurrent packages) every night and on the
-  # api and docker lanes on Sundays; see scripts/nightly-scope.sh.
+  # -race and the docker lane run in the Sunday sweep only; see
+  # scripts/nightly-scope.sh. The test step records its outcome instead of
+  # failing the job, so the run stays green and the summary job reports.
   full-test:
     name: Full test suite (${{ matrix.lane }})
     needs: check-activity
     if: needs.check-activity.outputs.matrix != '[]'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    continue-on-error: true
+    timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
@@ -99,6 +118,9 @@ jobs:
         run: scripts/prepull-test-images.sh
 
       - name: go test
+        id: run
+        continue-on-error: true
+        timeout-minutes: 95
         env:
           GO_TEST_FLAGS: ${{ matrix.flags }}
           SHARD: ${{ matrix.shard }}
@@ -116,11 +138,30 @@ jobs:
           retention-days: 14
           overwrite: true
 
+      - name: Record result
+        if: always()
+        env:
+          RESULT_ID: full-${{ matrix.lane }}
+          OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          mkdir -p status
+          echo "$RESULT_ID $OUTCOME" > "status/$RESULT_ID.txt"
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: status-full-${{ matrix.lane }}
+          path: status/
+          retention-days: 7
+          overwrite: true
+
   kit-full:
     name: Kit full suite
     needs: check-activity
     if: needs.check-activity.outputs.kit == 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    continue-on-error: true
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -132,7 +173,27 @@ jobs:
           go-version-file: go.mod
 
       - name: go test (kit, race, shuffled)
+        id: run
+        continue-on-error: true
         run: go -C kit test -race -shuffle=on -timeout=10m ./...
+
+      - name: Record result
+        if: always()
+        env:
+          RESULT_ID: kit
+          OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          mkdir -p status
+          echo "$RESULT_ID $OUTCOME" > "status/$RESULT_ID.txt"
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: status-kit
+          path: status/
+          retention-days: 7
+          overwrite: true
 
   # Known-vulnerability scan of the dependency graph (reachable symbols only).
   # Nightly, not per PR: new advisories land independent of any diff.
@@ -141,6 +202,7 @@ jobs:
     needs: check-activity
     if: needs.check-activity.outputs.has-commits == 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    continue-on-error: true
     timeout-minutes: 15
     permissions:
       contents: read
@@ -156,6 +218,8 @@ jobs:
       # Fails on reachable findings that have a fixed version. Findings with
       # no upstream fix are listed in the log but do not turn the job red.
       - name: govulncheck
+        id: run
+        continue-on-error: true
         run: |
           go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -format=json ./... > govulncheck.json
           fixable="$(jq -s '[.[] | select(.finding) | .finding | select((.fixed_version // "") != "" and (.trace[0].function // "") != "") | .osv] | unique' govulncheck.json)"
@@ -163,6 +227,24 @@ jobs:
           echo "no fix available: $unfixable"
           echo "fixable: $fixable"
           [ "$(echo "$fixable" | jq length)" -eq 0 ]
+
+      - name: Record result
+        if: always()
+        env:
+          RESULT_ID: vuln
+          OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          mkdir -p status
+          echo "$RESULT_ID $OUTCOME" > "status/$RESULT_ID.txt"
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: status-vuln
+          path: status/
+          retention-days: 7
+          overwrite: true
 
   # Repeats the packages with a flake history, shuffled, with no reruns, so
   # an intermittent failure shows up here before it shows up on a PR.
@@ -289,6 +371,7 @@ jobs:
     needs: check-activity
     if: needs.check-activity.outputs.install == 'true'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    continue-on-error: true
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -307,4 +390,127 @@ jobs:
         run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail
 
       - name: Run install.sh in a systemd container
+        id: run
+        continue-on-error: true
         run: scripts/test-install-sh.sh '${{ matrix.image }}' ./levelrail-linux-amd64
+
+      - name: Record result
+        if: always()
+        env:
+          RESULT_ID: install-${{ strategy.job-index }}
+          OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          mkdir -p status
+          echo "$RESULT_ID $OUTCOME" > "status/$RESULT_ID.txt"
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: status-install-${{ strategy.job-index }}
+          path: status/
+          retention-days: 7
+          overwrite: true
+
+
+  # One report for the whole run: a job summary table plus a single open
+  # issue that is updated while red and closed when green. Only an all-green
+  # run leaves the nightly-green marker the next daily scope diffs against.
+  summary:
+    name: Nightly summary
+    needs: [check-activity, full-test, kit-full, vuln-scan, install-sh, flake-sweep, quarantined, flake-report]
+    if: always() && needs.check-activity.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MATRIX: ${{ needs.check-activity.outputs.matrix }}
+      KIT: ${{ needs.check-activity.outputs.kit }}
+      INSTALL: ${{ needs.check-activity.outputs.install }}
+      HAS_COMMITS: ${{ needs.check-activity.outputs.has-commits }}
+      FULL: ${{ needs.check-activity.outputs.full }}
+      EVENT: ${{ github.event_name }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Download lane results
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: '*'
+          path: results
+          merge-multiple: false
+
+      - name: Build the report
+        id: report
+        run: |
+          expected=()
+          while read -r lane; do
+            [ -n "$lane" ] && expected+=("full-$lane")
+          done < <(echo "$MATRIX" | jq -r '.[].lane')
+          [ "$KIT" = true ] && expected+=(kit)
+          [ "$HAS_COMMITS" = true ] && expected+=(vuln)
+          [ "$INSTALL" = true ] && expected+=(install-0 install-1)
+          failed=0
+          {
+            mode='daily, scoped'
+            [ "$FULL" = true ] && mode='full sweep'
+            echo "## Nightly ($mode)"
+            echo
+            echo "| Lane | Result |"
+            echo "| --- | --- |"
+            for id in "${expected[@]}"; do
+              f="results/status-$id/$id.txt"
+              outcome="no result (job did not finish)"
+              [ -f "$f" ] && outcome="$(cut -d' ' -f2- "$f")"
+              echo "| \`$id\` | $outcome |"
+              [ "$outcome" = success ] || failed=$((failed + 1))
+            done
+            echo
+            echo "Advisory, never fails the nightly: flake sweep, quarantined tests."
+            if [ "$failed" -gt 0 ]; then
+              echo
+              echo "### Failing tests"
+              for d in results/test-results-*; do
+                [ -s "$d/failed.txt" ] || continue
+                echo "**${d#results/test-results-}**"
+                head -n 20 "$d/failed.txt" | awk '{printf "- `%s` `%s`\n", $1, $2}'
+              done
+            fi
+          } > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          echo "failed=$failed" >> "$GITHUB_OUTPUT"
+
+      - name: Open, update or close the single nightly issue
+        if: env.EVENT == 'schedule'
+        env:
+          FAILED: ${{ steps.report.outputs.failed }}
+        run: |
+          label="nightly-failure"
+          gh label create "$label" --color b60205 --description "The scheduled nightly suite has a failing lane" 2>/dev/null || true
+          num="$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')"
+          if [ "$FAILED" -gt 0 ]; then
+            { cat report.md; echo; echo "Run: $RUN_URL"; } > body.md
+            if [ -n "$num" ]; then
+              gh issue comment "$num" --body-file body.md
+            else
+              gh issue create --title "Nightly suite failing" --label "$label" --body-file body.md
+            fi
+          elif [ -n "$num" ]; then
+            gh issue close "$num" --comment "Nightly is green again: $RUN_URL"
+          fi
+
+      - name: Write the green marker
+        if: steps.report.outputs.failed == '0'
+        run: echo "$GITHUB_SHA" > nightly-green.txt
+
+      - name: Upload green marker
+        if: steps.report.outputs.failed == '0'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: nightly-green
+          path: nightly-green.txt
+          retention-days: 14
+          overwrite: true

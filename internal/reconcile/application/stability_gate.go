@@ -18,6 +18,33 @@ type GateRecorder interface {
 	MarkRolloutFailureReason(ctx context.Context, serviceName, image, reason string) error
 }
 
+// CutoverChecker tells whether a recent deploy of an image still lacks its
+// cutover event. *store.DB satisfies it.
+type CutoverChecker interface {
+	DeployMissingCutover(ctx context.Context, serviceName, image string, since time.Time) (bool, error)
+}
+
+// recordAdoptedCutover covers a deploy whose target was already running (an
+// instant rollback to the live or held release): no container is created,
+// so without this the post-deploy watch never arms. Reading the store keeps
+// it restart safe and tolerates the attempt row landing after the first pass.
+func (c *Controller) recordAdoptedCutover(ctx context.Context, container string, desired *store.DesiredService) {
+	checker, ok := c.gateRecorder.(CutoverChecker)
+	if !ok {
+		return
+	}
+	window := c.safetyFor(ctx, desired).WatchWindow
+	if window <= 0 {
+		return
+	}
+	missing, err := checker.DeployMissingCutover(ctx, c.serviceName, desired.Image, time.Now().Add(-window))
+	if err != nil || !missing {
+		return
+	}
+	c.recordGate(ctx, desired, container, deploysafety.PhaseCutover, deploysafety.StatusPassed, "",
+		"traffic is on the release that was already running")
+}
+
 // DeploySafetySource returns an app's gate overrides. *store.DB satisfies it.
 type DeploySafetySource interface {
 	GetDeploySafetySettings(ctx context.Context, serviceName string) (store.DeploySafetySettings, error)
@@ -103,7 +130,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 		passes   = cfg.SuccessThreshold
 	)
 	if readiness != nil {
-		t, err := probeTarget(state, *readiness)
+		t, err := c.probeTarget(ctx, state, *readiness, desired.Port, desired.NodeID)
 		if err != nil {
 			return &gateError{reason: deploysafety.ReasonExitedDuringWindow, message: fmt.Sprintf("stability gate: %v", err)}
 		}
@@ -188,7 +215,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 			}
 			c.recordGate(ctx, desired, state.Name, deploysafety.PhaseStability, deploysafety.StatusFailed, reason, msg)
 			if obs.Running {
-				_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
+				_ = c.stopContainer(ctx, state.ID)
 			}
 			return &gateError{reason: reason, message: msg}
 		}
@@ -202,9 +229,13 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 }
 
 // noteImplicitReadiness puts a timeline note on a release that has no
-// explicit readiness probe, so the weaker check is visible, not silent.
+// explicit readiness probe, so the weaker check is visible, not silent. A
+// platform probe gets a note too: it is the check that replaced the image's own.
 func (c *Controller) noteImplicitReadiness(ctx context.Context, container string, desired *store.DesiredService, readiness *store.ServiceProbe) {
 	switch {
+	case readiness != nil && readiness.Platform:
+		c.recordGate(ctx, desired, container, deploysafety.PhaseReadiness, deploysafety.StatusInfo, "",
+			fmt.Sprintf("readiness is a %s probe on port %d run from outside the container", readiness.Kind(), desired.Port))
 	case readiness == nil:
 		c.recordGate(ctx, desired, container, deploysafety.PhaseReadiness, deploysafety.StatusInfo, "",
 			"no port or probe: readiness is only container running; add a port or a health check")
@@ -225,4 +256,39 @@ func gateFailureMessage(name, reason string, obs deploysafety.GateObservation, c
 	default:
 		return fmt.Sprintf("container %s did not reach %d consecutive readiness passes within its budget (last streak %d)", name, cfg.SuccessThreshold, obs.ConsecutivePasses)
 	}
+}
+
+// stabilityGateForNew runs the stability gate for a freshly created
+// container, and for any restart of one with no readiness probe: being
+// running is its only readiness, so an instant exit would otherwise pass.
+func (c *Controller) stabilityGateForNew(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, created bool) error {
+	// A one-shot is meant to exit inside the window; awaitCompletion already judged it.
+	if desired.RunsToCompletion() {
+		return nil
+	}
+	if !created && c.deployReadinessProbeFor(desired) != nil {
+		return nil
+	}
+	if !created {
+		return c.restartSettle(ctx, state.Name)
+	}
+	return c.stabilityGate(ctx, state, desired)
+}
+
+// restartSettle is a crash restart's whole gate: one live inspect after a
+// gate tick. A full stable window here would stall the reconcile loop.
+func (c *Controller) restartSettle(ctx context.Context, name string) error {
+	tick := c.gateTick
+	if tick <= 0 {
+		tick = defaultGateTick
+	}
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("restart settle for %s: %w", name, ctx.Err())
+	case <-time.After(tick):
+	}
+	if crash := c.exitedCrash(ctx, name); crash != nil {
+		return crash
+	}
+	return nil
 }

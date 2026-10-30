@@ -55,19 +55,27 @@ type outBuild struct {
 }
 
 type outService struct {
-	Build       outBuild          `yaml:"build"`
-	Domains     []string          `yaml:"domains,omitempty"`
-	Port        int               `yaml:"port,omitempty"`
-	HostPort    int               `yaml:"host_port,omitempty"`
-	BindAddress string            `yaml:"bind_address,omitempty"`
-	Health      *healthFields     `yaml:"health,omitempty"`
-	Resources   *resourceFields   `yaml:"resources,omitempty"`
-	Env         map[string]any    `yaml:"env,omitempty"`
-	Replicas    int               `yaml:"replicas,omitempty"`
-	Strategy    string            `yaml:"strategy,omitempty"`
-	Labels      map[string]string `yaml:"labels,omitempty"`
-	Hooks       *hookFields       `yaml:"hooks,omitempty"`
-	Command     []string          `yaml:"command,omitempty"`
+	Build          outBuild             `yaml:"build"`
+	Domains        []string             `yaml:"domains,omitempty"`
+	Port           int                  `yaml:"port,omitempty"`
+	HostPort       int                  `yaml:"host_port,omitempty"`
+	PublishedPorts []spec.PublishedPort `yaml:"published_ports,omitempty"`
+	Restart        string               `yaml:"restart,omitempty"`
+	BindAddress    string               `yaml:"bind_address,omitempty"`
+	Health         *healthFields        `yaml:"health,omitempty"`
+	Resources      *resourceFields      `yaml:"resources,omitempty"`
+	Env            map[string]any       `yaml:"env,omitempty"`
+	Replicas       int                  `yaml:"replicas,omitempty"`
+	Strategy       string               `yaml:"strategy,omitempty"`
+	Labels         map[string]string    `yaml:"labels,omitempty"`
+	Hooks          *hookFields          `yaml:"hooks,omitempty"`
+	Command        []string             `yaml:"command,omitempty"`
+	Volumes        []outVolume          `yaml:"volumes,omitempty"`
+}
+
+type outVolume struct {
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
 }
 
 type outAppSpec struct {
@@ -217,7 +225,10 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 	}
 	f := appFromWire(a, idNames{e.st})
 	svc := outService{Build: outBuild{Type: spec.BuildImage, Image: f.Image}, Domains: f.Domains, Port: f.Port, HostPort: f.HostPort,
-		Health: f.Health, Resources: f.Resources, Labels: f.Labels, Hooks: f.Hooks, Command: f.Command}
+		Health: f.Health, Resources: f.Resources, Labels: f.Labels, Hooks: f.Hooks, Command: f.Command, Restart: f.Restart}
+	if f.PublishedPorts != nil {
+		svc.PublishedPorts = *f.PublishedPorts
+	}
 	if f.BindAddress != bindaddr.Default {
 		svc.BindAddress = f.BindAddress
 	}
@@ -227,9 +238,16 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 	if f.Strategy != spec.StrategyBlueGreen {
 		svc.Strategy = f.Strategy
 	}
+	for _, n := range sortedKeys(f.Volumes) {
+		svc.Volumes = append(svc.Volumes, outVolume{Name: n, Path: f.Volumes[n]})
+	}
 	env := e.envValues(f.Env)
 	for _, n := range f.SecretEnv {
 		env[n] = map[string]string{"secretRef": n}
+	}
+	for k, ref := range f.Connections {
+		db, field := splitConnRef(ref)
+		env[k] = map[string]map[string]string{"from": {"database": db, "field": field}}
 	}
 	if len(env) > 0 {
 		svc.Env = env
@@ -324,6 +342,16 @@ func (e *exporter) databases() {
 		s := map[string]any{"engine": db.Engine}
 		putIf(s, "version", db.Version)
 		putIf(s, "project", project)
+		if db.Pooler {
+			pm := map[string]any{"enabled": true}
+			if db.PoolSize > 0 {
+				pm["pool_size"] = db.PoolSize
+			}
+			if db.MaxConn > 0 {
+				pm["max_client_conn"] = db.MaxConn
+			}
+			s["pooler"] = pm
+		}
 		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindDatabase, Metadata: outMeta{Name: name}, Spec: s})
 	}
 }

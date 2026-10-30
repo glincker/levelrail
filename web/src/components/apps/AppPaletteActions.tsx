@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
-import { useRestartApp, useStopApp } from '../../queries/apps'
 import { useRollbackToDeploy } from '../../queries/deployControl'
 import { useRollbackTargets } from '../../queries/deployGate'
 import {
@@ -11,8 +10,9 @@ import {
 } from '../../lib/paletteAction'
 import type { DeployTab } from '../overview/DeploySheet'
 import type { AppDetail } from '../../types/appDetail'
+import { useAppPower } from './useAppPower'
 
-type ConfirmAction = Exclude<AppPaletteAction, 'deploy'>
+type ConfirmAction = 'rollback'
 
 /** Opens the page's own confirm step for a ?action= link from the command palette. */
 export function AppPaletteActions({
@@ -27,8 +27,7 @@ export function AppPaletteActions({
   const { t } = useTranslation('common')
   const clear = useClearActionParam()
   const [active, setActive] = useState<ConfirmAction | null>(null)
-  const restart = useRestartApp()
-  const stop = useStopApp()
+  const power = useAppPower(app)
   const rollbackTo = useRollbackToDeploy(app.name)
   const { data: targets } = useRollbackTargets(app.name)
   const previous = targets?.find((target) => !target.live)
@@ -41,7 +40,8 @@ export function AppPaletteActions({
       action !== 'deploy' &&
       !(action === 'stop' && app.suspended)
     ) {
-      setActive(action)
+      if (action === 'rollback') setActive(action)
+      else power.ask(action)
     }
   }
 
@@ -68,60 +68,13 @@ export function AppPaletteActions({
     }
   }, [noPrevious, app.name, t])
 
-  const fail = (error: Error) => {
-    toast.add({ title: error.message, type: 'error' })
-  }
   const close = () => {
     setActive(null)
   }
 
   return (
     <>
-      <ConfirmDialog
-        open={active === 'restart'}
-        onOpenChange={(open) => !open && close()}
-        title={t('paletteAction.restartTitle', { name: app.name })}
-        description={t('paletteAction.restartDescription')}
-        consequences={[t('paletteAction.restartConsequence')]}
-        confirmLabel={t('paletteAction.restartConfirm')}
-        pendingLabel={t('paletteAction.pending')}
-        pending={restart.isPending}
-        onConfirm={() => {
-          restart.mutate(app.name, {
-            onSuccess: () => {
-              toast.add({
-                title: t('appActions.restarting'),
-                type: 'success',
-              })
-              close()
-            },
-            onError: fail,
-          })
-        }}
-      />
-      <ConfirmDialog
-        open={active === 'stop'}
-        onOpenChange={(open) => !open && close()}
-        title={t('paletteAction.stopTitle', { name: app.name })}
-        description={t('paletteAction.stopDescription')}
-        consequences={[t('paletteAction.stopConsequence')]}
-        confirmLabel={t('paletteAction.stopConfirm')}
-        pendingLabel={t('paletteAction.pending')}
-        tone="destructive"
-        pending={stop.isPending}
-        onConfirm={() => {
-          stop.mutate(app.name, {
-            onSuccess: () => {
-              toast.add({
-                title: `${t('appActions.stop')}: ${app.name}`,
-                type: 'success',
-              })
-              close()
-            },
-            onError: fail,
-          })
-        }}
-      />
+      {power.confirmDialog}
       <ConfirmDialog
         open={active === 'rollback' && !noPrevious}
         onOpenChange={(open) => !open && close()}

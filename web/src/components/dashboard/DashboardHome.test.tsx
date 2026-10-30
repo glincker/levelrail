@@ -7,7 +7,7 @@ import {
   within,
 } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { DashboardHome } from './DashboardHome'
@@ -95,7 +95,9 @@ function routeFetch(handlers: Record<string, unknown>) {
   )
 }
 
-function renderHome(apps: AppListEntry[]) {
+function renderHome(apps: AppListEntry[], tab: string | null = 'start') {
+  window.localStorage.clear()
+  if (tab) window.localStorage.setItem('dashboard.tab.v1', tab)
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <I18nextProvider i18n={testI18n}>
@@ -129,20 +131,68 @@ const SERIES = {
   points: [],
 }
 
+// Warm the lazy chunks so their first-use compile is not charged to a findBy.
+beforeAll(async () => {
+  await Promise.all([
+    import('./UsageDetailsBody'),
+    import('../RecentAlertsCard'),
+  ])
+})
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
 describe('DashboardHome', () => {
-  it('first run shows the single first-deploy path and the adaptive quick start', async () => {
+  it('lands on Metrics when apps exist and no tab was chosen', async () => {
+    routeFetch({})
+    renderHome([makeApp('web', true)], null)
+    expect(
+      await screen.findByRole('tab', { name: 'Metrics', selected: true }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Deploy sample app')).not.toBeInTheDocument()
+  })
+
+  it('keeps the last chosen tab over the apps default', async () => {
+    routeFetch({})
+    renderHome([makeApp('web', true)], 'start')
+    expect(
+      await screen.findByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
+  })
+
+  it('lands on Start with no apps and explains the empty Metrics tab', async () => {
+    routeFetch({})
+    renderHome([], null)
+    expect(
+      await screen.findByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Metrics' }))
+    expect(await screen.findByText('No metrics yet')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Deploy your first app' }),
+    )
+    expect(
+      screen.getByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
+  })
+
+  it('treats apps hidden by the scope filter as an existing install', async () => {
+    routeFetch({ '/api/v1/apps?limit=1': [{ name: 'web' }] })
+    renderHome([], null)
+    expect(
+      await screen.findByRole('tab', { name: 'Metrics', selected: true }),
+    ).toBeInTheDocument()
+  })
+
+  it('first run shows the single first-deploy path and no separate quick start list', async () => {
     routeFetch({})
     renderHome([])
     expect(
       await screen.findByRole('button', { name: 'Deploy sample app' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Import anything')).toBeInTheDocument()
-    expect(screen.getByText('Deploy a template')).toBeInTheDocument()
-    expect(screen.getByText('Connect Git')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Metrics' })).toBeInTheDocument()
+    expect(screen.queryByText('Quick start')).not.toBeInTheDocument()
     expect(screen.queryByText('Add a node')).not.toBeInTheDocument()
     expect(screen.getByText('What Acme does')).toBeInTheDocument()
     expect(
@@ -167,7 +217,7 @@ describe('DashboardHome', () => {
       'system/status': { docker_connected: true },
     })
     renderHome(apps)
-    expect(await screen.findByText('All systems normal')).toBeInTheDocument()
+    expect(await screen.findByText(/apps? healthy/)).toBeInTheDocument()
     expect(screen.getAllByText('1 / 1')).toHaveLength(2)
     expect(
       screen.getByRole('region', { name: 'Recommended next steps' }),
@@ -175,7 +225,6 @@ describe('DashboardHome', () => {
     expect(
       await screen.findByText(/Nothing needs you\. 1 of 1 apps/),
     ).toBeInTheDocument()
-    expect(screen.getByText('Your app is healthy')).toBeInTheDocument()
   })
 
   it('puts setup and hardening advice on one quiet line, not in incidents', async () => {
@@ -238,7 +287,7 @@ describe('DashboardHome', () => {
       'system/status': { docker_connected: true },
     })
     renderHome(apps)
-    expect(await screen.findByText('All systems normal')).toBeInTheDocument()
+    expect(await screen.findByText(/apps? healthy/)).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByText('2 recommendations')).toBeInTheDocument()
     })
@@ -329,9 +378,6 @@ describe('DashboardHome', () => {
       screen.queryByRole('button', { name: 'Open logs' }),
     ).not.toBeInTheDocument()
     expect(screen.getByText('1 thing needs attention')).toBeInTheDocument()
-    await waitFor(() => {
-      expect(screen.getByText('1 incident')).toBeInTheDocument()
-    })
   })
 })
 

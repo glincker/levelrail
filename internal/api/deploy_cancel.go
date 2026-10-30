@@ -105,6 +105,7 @@ func (rt *Router) writeAttempt(w http.ResponseWriter, r *http.Request, id string
 	res := toDeployAttemptResource(*a)
 	if attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), a.ServiceName); err == nil {
 		rt.applyWait(r.Context(), &res, *a, attempts)
+		applyDeployOutcome(&res, *a, len(attempts) > 0 && attempts[0].ID == a.ID, rt.rolloutConditions(r.Context(), a.ServiceName))
 	}
 	writeJSON(w, http.StatusOK, res)
 }

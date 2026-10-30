@@ -52,8 +52,8 @@ func (c *Controller) dialForRemoteService(ctx context.Context, svc store.Desired
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: inspecting remote service container failed, skipping for this pass",
 			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
-	} else if state != nil && state.Running && len(state.Ports) > 0 {
-		d, reason := meshDial(state.Ports[0], path.Address)
+	} else if primary, ok := primaryOf(state, svc.Port); ok {
+		d, reason := meshDial(primary, path.Address)
 		if reason != "" {
 			return "", reason, false
 		}
@@ -66,8 +66,9 @@ func (c *Controller) dialForRemoteService(ctx context.Context, svc store.Desired
 	if err != nil {
 		return "", "", false
 	}
-	if best := newestRunningPorted(containers, target); best != nil {
-		if d, reason := meshDial(best.Ports[0], path.Address); reason == "" {
+	if best := newestRunningPorted(containers, target, svc.Port); best != nil {
+		primary, _ := docker.PrimaryPort(best.Ports, svc.Port)
+		if d, reason := meshDial(primary, path.Address); reason == "" {
 			return d, "", true
 		}
 	}
@@ -88,11 +89,11 @@ func meshDial(p docker.PortBinding, meshAddr string) (dial, why string) {
 	return net.JoinHostPort(meshAddr, strconv.Itoa(p.HostPort)), ""
 }
 
-func newestRunningPorted(containers []docker.ContainerState, exclude string) *docker.ContainerState {
+func newestRunningPorted(containers []docker.ContainerState, exclude string, port int) *docker.ContainerState {
 	var best *docker.ContainerState
 	for i := range containers {
 		cs := &containers[i]
-		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 {
+		if _, ported := docker.PrimaryPort(cs.Ports, port); cs.Name == exclude || !cs.Running || !ported {
 			continue
 		}
 		if best == nil || cs.Created.After(best.Created) {
@@ -100,4 +101,11 @@ func newestRunningPorted(containers []docker.ContainerState, exclude string) *do
 		}
 	}
 	return best
+}
+
+func primaryOf(state *docker.ContainerState, port int) (docker.PortBinding, bool) {
+	if state == nil || !state.Running {
+		return docker.PortBinding{}, false
+	}
+	return docker.PrimaryPort(state.Ports, port)
 }

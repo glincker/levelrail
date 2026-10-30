@@ -38,7 +38,7 @@ The installer checks the host, installs Docker if it is missing, downloads the n
 Levelrail vX.Y.Z installed and running.
 
 Open the dashboard:
-  http://203.0.113.10:8080/login?setup=<token>
+  http://203.0.113.10:8080/login#setup=<token>
 
 IMPORTANT: back up /var/lib/levelrail-data/master.key somewhere safe.
 ```
@@ -64,7 +64,7 @@ To pin a release, set `LEVELRAIL_VERSION=v0.2.0-beta.14` before the command. You
 
 ## Sign in and deploy your first app
 
-Open the printed setup link, choose a password, and you are the admin. The setup token travels in the link's `#` fragment, so it never reaches the server logs or a referrer header. The first sign-in opens one screen, not an empty app list:
+Open the printed setup link, choose a password, and you are the admin. The setup token travels in the link's `#` fragment, so it never reaches the server logs or a referrer header. It is never written to the service log either; `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` prints it again. The first sign-in opens one screen, not an empty app list:
 
 1. **Your app's address** is shown before you deploy: with no domain set, an app gets `https://<app>.<dashed-ip>.sslip.io`.
 2. **Enable HTTPS** is one button that needs no DNS. Your admin email is prefilled as the certificate contact, and the dashboard gets a free `<dashed-ip>.sslip.io` address with a real certificate. After HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on. A banner on the dashboard keeps offering it until it is on.
@@ -79,6 +79,8 @@ Print a new setup token on the server:
 ```bash
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 ```
+
+The last line is the token itself. To create the first admin from a terminal instead of the browser, set `APP_SETUP_TOKEN` to it, set `APP_ADMIN_PASSWORD` (or answer the prompt), then run `levelrail-cli setup admin --api-url http://<server-ip>:8080`. It is refused once an admin exists.
 
 The dashboard port is in the systemd unit: `systemctl cat levelrail | grep APP_HTTP_ADDR`.
 
@@ -244,7 +246,7 @@ This sign-in comes from a new device, so it needs your approval.
      in the browser where you are signed in to the dashboard.
   2. Type this number when asked: 42
 
-Or run "levelrail-cli auth approve la_Kx3pQ --match 42" with a token that holds signin:approve.
+Or run "levelrail-cli auth approve la_Kx3pQ --match 42" with a token that holds signin:approve, or with your root device login.
 Faster: open the dashboard, copy the command from the "Connect your CLI" card and run it (levelrail-cli login --api-url <url> --code XXXX-XXXX).
 Waiting up to 3m0s. Press Ctrl+C to cancel.
 ```

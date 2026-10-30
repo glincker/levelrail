@@ -21,7 +21,7 @@ type canaryStartInput struct {
 func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_canary",
-		Description: "An app's canary: image, traffic share, stages, live error rate and p95 against stable, and how the last one ended. Read only.",
+		Description: "An app's canary: image, traffic share, stages, live error rate and p95 against stable, and how the last one ended.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.GetCanary(ctx, in.Name)
 		if err != nil {
@@ -32,7 +32,7 @@ func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "start_canary",
-		Description: "Run a new image beside an app with a share of traffic. With stages the control plane steps the share up and rolls back on an error rate or p95 breach against stable; without stages it is a manual canary at weight. One per app, single-replica image apps only.",
+		Description: "Run a new image beside an app with a share of traffic. With stages the share steps up and rolls back on an error rate or p95 breach; without, it stays at weight. One per app, single-replica image apps only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in canaryStartInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.StartCanaryWith(ctx, in.Name, apiclient.CanaryStartRequest{
 			Image: in.Image, Weight: in.Weight, Stages: in.Stages, Interval: in.Interval,

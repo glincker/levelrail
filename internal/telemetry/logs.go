@@ -285,6 +285,9 @@ func classifyLine(raw string) (structured bool, fieldsJSON string) {
 type LogTarget struct {
 	ResourceID  string
 	ContainerID string
+	// NodeID is empty for the control plane's own node; otherwise the
+	// container's logs are read through the NodeLogSource.
+	NodeID string
 	// Stopped marks an exited container: its output is fetched once
 	// (non-follow) so a short-lived or crashed container is not lost.
 	Stopped bool
@@ -301,12 +304,18 @@ type LogSource interface {
 	Logs(ctx context.Context, containerID string, follow bool, since time.Time) (<-chan docker.LogLine, <-chan error)
 }
 
+// NodeLogSource resolves the log source of a remote node.
+type NodeLogSource interface {
+	LogSourceFor(nodeID string) (LogSource, error)
+}
+
 // LogCollector streams logs from a caller-supplied set of targets and
 // writes what it receives to a Store, batching writes per
 // logBatchMaxLines/logBatchMaxWait, and, when a broadcaster is
 // configured, fans every line out live at the same time (see StreamOne).
 type LogCollector struct {
 	source      LogSource
+	nodes       NodeLogSource
 	store       *DB
 	broadcaster *LogBroadcaster
 	logger      *slog.Logger
@@ -386,6 +395,9 @@ func NewLogCollector(source LogSource, store *DB, broadcaster *LogBroadcaster, l
 	return &LogCollector{source: source, store: store, broadcaster: broadcaster, logger: logger, wake: make(chan struct{}, 1)}
 }
 
+// SetNodeSource lets targets with a NodeID stream from a remote node.
+func (lc *LogCollector) SetNodeSource(n NodeLogSource) { lc.nodes = n }
+
 // StreamOne follows target's log stream (Follow: true, from the current
 // point forward) until ctx is cancelled or the stream ends on its own
 // (the container stopped), batching lines per logBatchMaxLines/
@@ -396,7 +408,18 @@ func NewLogCollector(source LogSource, store *DB, broadcaster *LogBroadcaster, l
 // this package's two collectors have genuinely different shapes even
 // though they share a store and a retention pattern.
 func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
-	lines, errs := lc.source.Logs(ctx, target.ContainerID, !target.Stopped, lc.resumePoint(ctx, target.ResourceID, target.ContainerID))
+	src := lc.source
+	if target.NodeID != "" {
+		if lc.nodes == nil {
+			return fmt.Errorf("telemetry: no log source for node %q", target.NodeID)
+		}
+		remote, err := lc.nodes.LogSourceFor(target.NodeID)
+		if err != nil {
+			return fmt.Errorf("telemetry: log source for node %q: %w", target.NodeID, err)
+		}
+		src = remote
+	}
+	lines, errs := src.Logs(ctx, target.ContainerID, !target.Stopped, lc.resumePoint(ctx, target.ResourceID, target.ContainerID))
 
 	ticker := time.NewTicker(logBatchMaxWait)
 	defer ticker.Stop()

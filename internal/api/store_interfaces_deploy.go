@@ -81,4 +81,7 @@ type DeployApprovalStore interface {
 	GetDeployApproval(ctx context.Context, id string) (store.DeployApproval, error)
 	ListDeployApprovals(ctx context.Context, status, serviceName string) ([]store.DeployApproval, error)
 	DecideDeployApproval(ctx context.Context, id, newStatus, approvedByType, approvedBy, approvedByName, reason, decidedAt string) (bool, error)
+	ClaimDeployApproval(ctx context.Context, id, approvedByType, approvedBy, approvedByName, claimedAt string) (bool, error)
+	FinishDeployApproval(ctx context.Context, id, claimedAt, decidedAt string) (bool, error)
+	ReleaseDeployApproval(ctx context.Context, id, claimedAt string) (bool, error)
 }

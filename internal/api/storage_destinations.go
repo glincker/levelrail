@@ -59,6 +59,9 @@ type StorageDeps struct {
 	// Buckets enables /api/v1/storage/buckets; nil answers 501. BucketSweeper runs lifecycle rules on demand.
 	Buckets       BucketRowStore
 	BucketSweeper BucketSweepService
+
+	// AssetBuckets enables /api/v1/assets; nil answers 501.
+	AssetBuckets AssetBucketStore
 }
 
 // WithStorage enables the /api/v1/storage and /api/v1/log-archive routes.

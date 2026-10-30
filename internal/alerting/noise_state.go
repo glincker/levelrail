@@ -1,6 +1,7 @@
 package alerting
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -16,6 +17,8 @@ type NoiseConfig struct {
 	RateLimit           int
 	RateWindow          time.Duration
 	HistoryRetention    time.Duration
+	// HistoryRetentionFn, when set, supplies the live retention (0 keeps everything) instead of HistoryRetention.
+	HistoryRetentionFn func(ctx context.Context) time.Duration
 }
 
 // Defaults for NoiseConfig, overridable per environment in cmd/levelrail.

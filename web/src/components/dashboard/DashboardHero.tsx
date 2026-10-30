@@ -1,55 +1,32 @@
 import type { ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckCircleIcon,
-  PlusIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import { SkeletonLine, StatusPill, type Tone } from '@/components/kit'
-import { Button } from '@/components/ui/button'
-import type { AppsSummary } from '../../queries/appPages'
-import type { AttentionLevel } from '../../lib/attentionSummary'
-import { dayPeriod, heroSentence } from '../../lib/dashboardHome'
+import { dayPeriod } from '../../lib/dashboardHome'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { useBrand } from '../../hooks/useBrand'
 import { useMinuteNow } from '../../hooks/useMinuteNow'
-import { CreateResourceWizard } from '../CreateResourceWizard'
+import { sessionQueryOptions } from '../../queries/security'
+import { NewAppMenu } from '../NewAppMenu'
 import { PageTemplate } from '../shell/PageTemplate'
-import { useAttentionSummary } from '../shell/useAttentionSummary'
-
-const LEVEL_TONE: Record<AttentionLevel, Tone> = {
-  ok: 'success',
-  warning: 'warning',
-  critical: 'danger',
-}
 
 export function DashboardHero({
-  summary,
   banners,
   children,
 }: {
-  summary: AppsSummary
   banners?: ReactNode
   children: ReactNode
 }) {
-  const { t } = useTranslation()
   const { t: td } = useTranslation('dashboard')
   const brand = useBrand()
   const username = useAuthUsername()
+  const session = useQuery(sessionQueryOptions()).data
+  // Greet by first name when the account has a display name, else by login name.
+  const firstName = session?.display_name?.trim().split(/\s+/)[0] || username
   const now = useMinuteNow()
-  const { level, count, isLoading } = useAttentionSummary()
-  const sentence = heroSentence({
-    apps: summary.total,
-    failing: summary.failing,
-    attention: isLoading ? 0 : count,
-  })
   const period = dayPeriod(new Date(now).getHours())
-  const greeting = username
-    ? td('hero.greetingNamed', { context: period, name: username })
+  const greeting = firstName
+    ? td('hero.greetingNamed', { context: period, name: firstName })
     : td('hero.greeting', { context: period })
-  const label =
-    level === 'ok' ? td('status.ok') : td('status.incidents', { count })
-  const Icon = level === 'ok' ? CheckCircleIcon : WarningCircleIcon
 
   return (
     <PageTemplate
@@ -57,31 +34,7 @@ export function DashboardHero({
       titleSize="greeting"
       eyebrow={brand.Name}
       title={greeting}
-      description={td(`hero.sentence.${sentence.key}`, {
-        count: sentence.count,
-      })}
-      status={
-        isLoading ? (
-          <SkeletonLine width={120} className="h-6 rounded-full" />
-        ) : (
-          <StatusPill
-            tone={LEVEL_TONE[level]}
-            label={label}
-            live
-            icon={<Icon weight="fill" className="size-4" aria-hidden="true" />}
-          />
-        )
-      }
-      actions={
-        <CreateResourceWizard
-          trigger={
-            <Button size="sm">
-              <PlusIcon />
-              {t('shell.newApp')}
-            </Button>
-          }
-        />
-      }
+      actions={<NewAppMenu />}
       banners={banners}
     >
       {children}

@@ -1,0 +1,48 @@
+version: 1
+kind: App
+metadata:
+  name: api
+spec:
+  project: render-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/api:latest
+    port: 80
+    replicas: 2
+    health:
+      readiness:
+        path: /healthz
+    env:
+      JWT_SALT: {secretRef: JWT_SALT}
+      NODE_ENV: production
+      SESSION_SECRET: {secretRef: SESSION_SECRET}
+---
+version: 1
+kind: App
+metadata:
+  name: mailer
+spec:
+  project: render-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: ghcr.io/acme/mailer:1.2
+    port: 80
+    replicas: 1
+---
+version: 1
+kind: App
+metadata:
+  name: site
+spec:
+  project: render-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/site:latest
+    port: 80
+    replicas: 1

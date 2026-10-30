@@ -113,6 +113,46 @@ func scheduledTaskSchedulerInterval(logger *slog.Logger) time.Duration {
 	return d
 }
 
+// appScheduleOneShotCatchUp bounds how late a one-time scheduled deploy may
+// still fire after its run_at (default 24h); 0 disables the bound.
+func appScheduleOneShotCatchUp(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SCHEDULE_ONESHOT_CATCHUP")
+	if raw == "" {
+		return defaultAppScheduleOneShotCatchUp
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d < 0 {
+		logger.Warn("invalid APP_SCHEDULE_ONESHOT_CATCHUP, using the default", slog.String("value", raw))
+		return defaultAppScheduleOneShotCatchUp
+	}
+	return d
+}
+
+// scheduledDeployGrace is how late a one-shot scheduled deploy may still run
+// after its run_at (APP_SCHEDULED_DEPLOY_GRACE, default 5m); later is marked missed.
+func scheduledDeployGrace(logger *slog.Logger) time.Duration {
+	return envDurationOrDefault(logger, "APP_SCHEDULED_DEPLOY_GRACE", defaultScheduledDeployGrace)
+}
+
+// scheduledDeployStaleRun is how long a claimed scheduled deploy may sit in
+// running before it is closed as interrupted (APP_SCHEDULED_DEPLOY_STALE_RUN, default 30m).
+func scheduledDeployStaleRun(logger *slog.Logger) time.Duration {
+	return envDurationOrDefault(logger, "APP_SCHEDULED_DEPLOY_STALE_RUN", defaultScheduledDeployStaleRun)
+}
+
+func envDurationOrDefault(logger *slog.Logger, key string, def time.Duration) time.Duration {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return def
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d < 0 {
+		logger.Warn("invalid duration env, using the default", slog.String("key", key), slog.String("value", raw))
+		return def
+	}
+	return d
+}
+
 func appScheduleSchedulerInterval(logger *slog.Logger) time.Duration {
 	raw := os.Getenv("APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL")
 	if raw == "" {
@@ -432,34 +472,6 @@ func previewSweepInterval(logger *slog.Logger) time.Duration {
 		return defaultPreviewSweepInterval
 	}
 	return d
-}
-
-// Returns 0 when unset or invalid so api applies its default.
-func auditLogRetention(logger *slog.Logger) time.Duration {
-	raw := os.Getenv("APP_AUDIT_LOG_RETENTION_DAYS")
-	if raw == "" {
-		return 0
-	}
-	days, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil {
-		logger.Warn("invalid APP_AUDIT_LOG_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
-		return 0
-	}
-	return time.Duration(days) * 24 * time.Hour
-}
-
-// Returns 0 when unset or invalid so api applies its default.
-func webhookDeliveryRetention(logger *slog.Logger) time.Duration {
-	raw := os.Getenv("APP_WEBHOOK_DELIVERY_RETENTION_DAYS")
-	if raw == "" {
-		return 0
-	}
-	days, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil {
-		logger.Warn("invalid APP_WEBHOOK_DELIVERY_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
-		return 0
-	}
-	return time.Duration(days) * 24 * time.Hour
 }
 
 // positiveIntEnv returns the env var as a positive int, or 0 (the api

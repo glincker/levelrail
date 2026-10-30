@@ -174,7 +174,18 @@ func (rt *Router) handlePublishHeldBuild(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	held.NodeID = svc.NodeID
-	if err := rt.apps.SaveDesiredService(r.Context(), *held); err != nil {
+	appID := svc.AppID
+	if appID == "" {
+		appID = svc.Name
+	}
+	// Ports were admitted at hold time; another app may have taken one since.
+	portsRelease, portsOK := rt.admitPublishedPorts(w, r, appID, []store.DesiredService{*svc}, []store.DesiredService{*held})
+	if !portsOK {
+		return
+	}
+	err = rt.apps.SaveDesiredService(r.Context(), *held)
+	portsRelease()
+	if err != nil {
 		rt.internalError(w, "api: publish held build failed", err, slog.String("deploy_id", deployID))
 		return
 	}

@@ -51,8 +51,8 @@ vi.mock('./DomainEnvironmentTabs', () => ({
     <div>{children}</div>
   ),
 }))
-vi.mock('./DomainWizard', () => ({
-  DomainWizard: () => <div data-testid="wizard" />,
+vi.mock('./domains/DomainStepper', () => ({
+  DomainStepper: () => <div data-testid="wizard" />,
 }))
 vi.mock('./AutomaticDomainRow', () => ({ AutomaticDomainRow: () => null }))
 vi.mock('./DomainDnsCheck', () => ({

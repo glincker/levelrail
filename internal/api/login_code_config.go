@@ -8,6 +8,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -32,6 +33,8 @@ const (
 	envTrustedDeviceTTL              = "APP_AUTH_TRUSTED_DEVICE_TTL"
 	envNewDeviceApproval             = "APP_AUTH_NEW_DEVICE_APPROVAL"
 	envApproverSessionFreshness      = "APP_AUTH_APPROVER_SESSION_FRESH_FOR"
+	envFirstLoginTrustWindow         = "APP_FIRST_LOGIN_TRUST_WINDOW"
+	envFirstLoginSetupGrace          = "APP_FIRST_LOGIN_SETUP_SESSION_GRACE"
 	envLoginCodeMaxLive              = "APP_LOGIN_CODE_MAX_LIVE"
 	envLoginCodeEmailRate            = "APP_LOGIN_CODE_EMAILS_PER_ACCOUNT_PER_HOUR"
 	envDeviceApprovalRate            = "APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR"
@@ -49,6 +52,8 @@ const (
 	defaultLoginCodeMinResp          = 300 * time.Millisecond
 	defaultDeviceApprovalTTL         = 10 * time.Minute
 	defaultApproverFreshness         = 30 * time.Minute
+	defaultFirstLoginTrustWindow     = 30 * time.Minute
+	defaultFirstLoginSetupGrace      = 2 * time.Minute
 	defaultTrustedDeviceTTL          = 30 * 24 * time.Hour
 	maxTrustedDeviceTTL              = 90 * 24 * time.Hour
 
@@ -120,15 +125,19 @@ type codeLoginState struct {
 	// approverFreshness is how recently another session must have been used to
 	// count as someone who can approve a new browser.
 	approverFreshness time.Duration
-	trustTTL          time.Duration
-	byIP              *apiRateLimiter
-	byAccount         *apiRateLimiter
-	byOwner           *apiRateLimiter
-	global            *apiRateLimiter
-	redeemByIP        *apiRateLimiter
-	emailByUser       *apiRateLimiter
-	approvals         *apiRateLimiter
-	pepper            []byte
+	// firstLoginWindow bounds trust on first use after account creation; zero turns it off.
+	firstLoginWindow time.Duration
+	// firstLoginSetupGrace is how soon after creation a session still counts as the setup one.
+	firstLoginSetupGrace time.Duration
+	trustTTL             time.Duration
+	byIP                 *apiRateLimiter
+	byAccount            *apiRateLimiter
+	byOwner              *apiRateLimiter
+	global               *apiRateLimiter
+	redeemByIP           *apiRateLimiter
+	emailByUser          *apiRateLimiter
+	approvals            *apiRateLimiter
+	pepper               []byte
 
 	mu    sync.Mutex
 	plain map[string]pendingPlainCode
@@ -137,21 +146,23 @@ type codeLoginState struct {
 func newCodeLoginState() *codeLoginState {
 	accountRate := envInt(envLoginCodeAccountRate, defaultLoginCodeAcctRate)
 	return &codeLoginState{
-		ttl:               envDuration(envLoginCodeTTL, defaultLoginCodeTTL),
-		maxAttempts:       envInt(envLoginCodeMaxAttempts, defaultLoginCodeAttempts),
-		maxLive:           envInt(envLoginCodeMaxLive, defaultLoginCodeMaxLive),
-		minResponse:       envDuration(envLoginCodeMinResponse, defaultLoginCodeMinResp),
-		approvalTTL:       envDuration(envDeviceApprovalTTL, defaultDeviceApprovalTTL),
-		approverFreshness: envDuration(envApproverSessionFreshness, defaultApproverFreshness),
-		trustTTL:          min(envDuration(envTrustedDeviceTTL, defaultTrustedDeviceTTL), maxTrustedDeviceTTL),
-		byIP:              newAPIRateLimiter(envInt(envLoginCodeIPRate, defaultLoginCodeIPRate)),
-		byAccount:         newAPIRateLimiter(accountRate),
-		byOwner:           newAPIRateLimiter(accountRate),
-		global:            newAPIRateLimiter(envInt(envLoginCodeGlobalRate, defaultLoginCodeGlobal)),
-		redeemByIP:        newAPIRateLimiter(envInt(envLoginCodeRedeemRate, defaultLoginCodeRedeem)),
-		emailByUser:       newWindowRateLimiter(envInt(envLoginCodeEmailRate, defaultLoginCodeEmails), time.Hour),
-		approvals:         newWindowRateLimiter(envInt(envDeviceApprovalRate, defaultApprovalRate), time.Hour),
-		plain:             make(map[string]pendingPlainCode),
+		ttl:                  envDuration(envLoginCodeTTL, defaultLoginCodeTTL),
+		maxAttempts:          envInt(envLoginCodeMaxAttempts, defaultLoginCodeAttempts),
+		maxLive:              envInt(envLoginCodeMaxLive, defaultLoginCodeMaxLive),
+		minResponse:          envDuration(envLoginCodeMinResponse, defaultLoginCodeMinResp),
+		approvalTTL:          envDuration(envDeviceApprovalTTL, defaultDeviceApprovalTTL),
+		approverFreshness:    envDuration(envApproverSessionFreshness, defaultApproverFreshness),
+		firstLoginWindow:     envDurationOrOff(envFirstLoginTrustWindow, defaultFirstLoginTrustWindow),
+		firstLoginSetupGrace: envDuration(envFirstLoginSetupGrace, defaultFirstLoginSetupGrace),
+		trustTTL:             min(envDuration(envTrustedDeviceTTL, defaultTrustedDeviceTTL), maxTrustedDeviceTTL),
+		byIP:                 newAPIRateLimiter(envInt(envLoginCodeIPRate, defaultLoginCodeIPRate)),
+		byAccount:            newAPIRateLimiter(accountRate),
+		byOwner:              newAPIRateLimiter(accountRate),
+		global:               newAPIRateLimiter(envInt(envLoginCodeGlobalRate, defaultLoginCodeGlobal)),
+		redeemByIP:           newAPIRateLimiter(envInt(envLoginCodeRedeemRate, defaultLoginCodeRedeem)),
+		emailByUser:          newWindowRateLimiter(envInt(envLoginCodeEmailRate, defaultLoginCodeEmails), time.Hour),
+		approvals:            newWindowRateLimiter(envInt(envDeviceApprovalRate, defaultApprovalRate), time.Hour),
+		plain:                make(map[string]pendingPlainCode),
 	}
 }
 
@@ -345,4 +356,21 @@ func (rt *Router) codeLoginSettings(ctx context.Context) (store.CodeLoginSetting
 		s = store.CodeLoginSettings{Admins: envBoolDefault(envCodeLoginAdmins, false), Others: envBoolDefault(envCodeLoginOthers, true)}
 	}
 	return s, nil
+}
+
+// envDurationOrOff reads a Go duration; an explicit zero or negative value
+// means off, a missing one means def. An unparsable one (off, false,
+// disabled) also means off, with a warning: a shortcut the operator tried to
+// disable must never fall back to its default.
+func envDurationOrOff(name string, def time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return def
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		slog.Warn("api: unparsable duration setting, treating it as off", slog.String("env", name), slog.String("value", raw))
+		return 0
+	}
+	return max(d, 0)
 }

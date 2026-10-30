@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { useProjectScope } from './projectScope'
 
 const SCOPE_STORE_NAME = 'environment.scope.v1'
 const SEARCH_PARAM = 'environment'
@@ -93,6 +94,8 @@ function subscribe(listener: () => void): () => void {
 // Subscribes a component to scope changes; the value itself is read by the
 // query option factories through getEnvironmentScope().
 export function useEnvironmentScope(): string {
+  // Lists key on both scopes, so a project change must re-render the same consumers.
+  useProjectScope()
   return useSyncExternalStore(subscribe, getEnvironmentScope, () => '')
 }
 

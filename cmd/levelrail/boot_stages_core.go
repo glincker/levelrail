@@ -226,7 +226,8 @@ func (s *bootState) startAgentServer() error {
 	)
 	meshEndpoints := newMeshEndpointBook(logger)
 	hostReports := agent.NewHostReportStore()
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	onboardingReports := agent.NewOnboardingStore()
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithOnboardingSink(onboardingReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
 	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	migrationAgent := migrateagent.NewService(db, agentCA, migrateagent.ConfigFromEnv(), logger, nil)
@@ -248,6 +249,7 @@ func (s *bootState) startAgentServer() error {
 	s.agentRegistry = agentRegistry
 	s.meshEndpoints = meshEndpoints
 	s.hostReports = hostReports
+	s.onboardingReports = onboardingReports
 	s.agentServer = agentServer
 	s.migrationAgent = migrationAgent
 	return nil
@@ -270,8 +272,14 @@ func (s *bootState) loadSecretsAndNotifiers() {
 	setupNotificationChannelSecrets(ctx, logger, alertingDB, secretsManager)
 
 	// Always non-nil: email settings resolve on every send, so 'not configured' surfaces at send time.
+	failoverThreshold, failoverCooldown := emailFailoverFromEnv()
+	emailRecorder := newEmailDeliveryRecorder(db)
 	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv())).
-		WithRecorder(newEmailDeliveryRecorder(db)).
+		WithProviders(emailProvidersLoader(db, secretsManager, smtpConfigFromEnv())).
+		WithFailover(failoverThreshold, failoverCooldown).
+		WithProviderHealth(emailRecorder).
+		WithLogger(logger).
+		WithRecorder(emailRecorder).
 		WithRetry(emailEnvInt("APP_EMAIL_RETRY_ATTEMPTS"), time.Duration(emailEnvInt("APP_EMAIL_RETRY_BASE_MS"))*time.Millisecond)
 	installGitNetguard()
 	notifyClient := netguard.NewClient()

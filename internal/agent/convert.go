@@ -120,7 +120,57 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		NetworkName:  networkName(s.Network),
 		NetworkAlias: networkAlias(s.Network),
 		Entrypoint:   s.Entrypoint,
+		UsernsMode:   s.UsernsMode,
+		SecurityOpt:  s.SecurityOpt,
+		Devices:      s.Devices,
+		User:         s.User,
+		BindMounts:   bindMountsToPB(s.BindMounts),
+		Files:        fileMountsToPB(s.Files),
 	}
+}
+
+func fileMountsToPB(fs []docker.FileMount) []*agentpb.FileMount {
+	if len(fs) == 0 {
+		return nil
+	}
+	out := make([]*agentpb.FileMount, len(fs))
+	for i, f := range fs {
+		out[i] = &agentpb.FileMount{Path: f.Path, Mode: f.Mode, Content: f.Content}
+	}
+	return out
+}
+
+func fileMountsFromPB(fs []*agentpb.FileMount) []docker.FileMount {
+	if len(fs) == 0 {
+		return nil
+	}
+	out := make([]docker.FileMount, len(fs))
+	for i, f := range fs {
+		out[i] = docker.FileMount{Path: f.GetPath(), Mode: f.GetMode(), Content: f.GetContent()}
+	}
+	return out
+}
+
+func bindMountsToPB(bs []docker.BindMount) []*agentpb.BindMount {
+	if len(bs) == 0 {
+		return nil
+	}
+	out := make([]*agentpb.BindMount, len(bs))
+	for i, b := range bs {
+		out[i] = &agentpb.BindMount{HostPath: b.HostPath, ContainerPath: b.ContainerPath, ReadOnly: b.ReadOnly}
+	}
+	return out
+}
+
+func bindMountsFromPB(bs []*agentpb.BindMount) []docker.BindMount {
+	if len(bs) == 0 {
+		return nil
+	}
+	out := make([]docker.BindMount, len(bs))
+	for i, b := range bs {
+		out[i] = docker.BindMount{HostPath: b.GetHostPath(), ContainerPath: b.GetContainerPath(), ReadOnly: b.GetReadOnly()}
+	}
+	return out
 }
 
 func networkName(n *docker.NetworkAttachment) string {
@@ -179,6 +229,12 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		Labels:       s.Labels,
 		Network:      networkFromPB(s.NetworkName, s.NetworkAlias),
 		Entrypoint:   s.Entrypoint,
+		UsernsMode:   s.UsernsMode,
+		SecurityOpt:  s.SecurityOpt,
+		Devices:      s.Devices,
+		User:         s.User,
+		BindMounts:   bindMountsFromPB(s.BindMounts),
+		Files:        fileMountsFromPB(s.Files),
 	}
 }
 
@@ -190,9 +246,20 @@ func containerStateToPB(s *docker.ContainerState) *agentpb.ContainerState {
 		Id:      s.ID,
 		Name:    s.Name,
 		Image:   s.Image,
+		ImageId: s.ImageID,
 		Running: s.Running,
 		Ports:   portBindingsToPB(s.Ports),
+		Labels:  s.Labels,
+		Created: createdToPB(s.Created),
 	}
+}
+
+// createdToPB leaves the field unset for an unknown time, matching what an older agent sends.
+func createdToPB(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t)
 }
 
 func containerStateFromPB(s *agentpb.ContainerState) *docker.ContainerState {
@@ -200,11 +267,15 @@ func containerStateFromPB(s *agentpb.ContainerState) *docker.ContainerState {
 		return nil
 	}
 	return &docker.ContainerState{
-		ID:      s.Id,
-		Name:    s.Name,
-		Image:   s.Image,
-		Running: s.Running,
-		Ports:   portBindingsFromPB(s.Ports),
+		ID:            s.Id,
+		Name:          s.Name,
+		Image:         s.Image,
+		ImageID:       s.ImageId,
+		Created:       timestampFromPB(s.Created),
+		Running:       s.Running,
+		Ports:         portBindingsFromPB(s.Ports),
+		Labels:        s.Labels,
+		LabelsUnknown: len(s.Labels) == 0,
 	}
 }
 
@@ -213,9 +284,11 @@ func exitStateToPB(s *docker.ExitState) *agentpb.ExitState {
 		return nil
 	}
 	return &agentpb.ExitState{
-		Running:   s.Running,
-		OomKilled: s.OOMKilled,
-		ExitCode:  int32(s.ExitCode), //nolint:gosec // a container exit code is a uint8 on Linux, or a small negative sentinel
+		Running:    s.Running,
+		OomKilled:  s.OOMKilled,
+		ExitCode:   int32(s.ExitCode), //nolint:gosec // a container exit code is a uint8 on Linux, or a small negative sentinel
+		StartedAt:  createdToPB(s.StartedAt),
+		FinishedAt: createdToPB(s.FinishedAt),
 	}
 }
 
@@ -224,9 +297,11 @@ func exitStateFromPB(s *agentpb.ExitState) *docker.ExitState {
 		return nil
 	}
 	return &docker.ExitState{
-		Running:   s.Running,
-		OOMKilled: s.OomKilled,
-		ExitCode:  int(s.ExitCode),
+		Running:    s.Running,
+		OOMKilled:  s.OomKilled,
+		ExitCode:   int(s.ExitCode),
+		StartedAt:  timestampFromPB(s.StartedAt),
+		FinishedAt: timestampFromPB(s.FinishedAt),
 	}
 }
 

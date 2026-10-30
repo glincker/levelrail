@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 )
 
 // runAuthSessionLink mints a session link via POST /api/v1/auth/session-links. The server requires AbilityRoot.
@@ -23,6 +25,8 @@ func runAuthSessionLink(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("mint session link: %w", err))
 	}
 
+	created.URL = sessionLinkForClient(created.URL, client.BaseURL())
+
 	if err := renderResult(stdout, of.Format, of.Query, created, func() {
 		_, _ = fmt.Fprintln(stdout, created.URL)
 	}); err != nil {
@@ -30,6 +34,26 @@ func runAuthSessionLink(prog string, args []string, stdout, stderr io.Writer, lo
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// sessionLinkForClient makes the link point at the host the CLI talks to.
+// A server without a primary domain mints a localhost link, which is wrong
+// for anyone using a remote profile.
+func sessionLinkForClient(link, base string) string {
+	if strings.HasPrefix(link, "/") {
+		return strings.TrimRight(base, "/") + link
+	}
+	l, err := url.Parse(link)
+	b, berr := url.Parse(base)
+	if err != nil || berr != nil || b.Host == "" || !isLoopbackHost(l.Hostname()) || isLoopbackHost(b.Hostname()) {
+		return link
+	}
+	l.Scheme, l.Host = b.Scheme, b.Host
+	return l.String()
+}
+
+func isLoopbackHost(h string) bool {
+	return h == "localhost" || h == "127.0.0.1" || h == "::1"
 }
 
 func authSessionLinkUsage(prog string) string {

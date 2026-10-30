@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 	"strconv"
@@ -16,9 +18,37 @@ func (rt *Router) searchService() *search.Service {
 		if !ok {
 			return
 		}
-		rt.searchSvc = search.New(db, rt.logger, rt.searchProviders()...)
+		rt.searchSvc = search.New(searchReadDB(db), rt.logger, rt.searchProviders()...)
 	})
 	return rt.searchSvc
+}
+
+// searchReadDB sends the index's SELECTs to the read pool when the store has
+// one; writes and transactions stay on the writer connection.
+func searchReadDB(db search.DB) search.DB {
+	rd, ok := db.(searchReader)
+	if !ok {
+		return db
+	}
+	return searchReadDBConn{DB: db, rd: rd}
+}
+
+type searchReader interface {
+	ReadQueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	ReadQueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+type searchReadDBConn struct {
+	search.DB
+	rd searchReader
+}
+
+func (c searchReadDBConn) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return c.rd.ReadQueryContext(ctx, query, args...)
+}
+
+func (c searchReadDBConn) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	return c.rd.ReadQueryRowContext(ctx, query, args...)
 }
 
 func (rt *Router) markSearchDirty() {

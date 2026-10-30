@@ -17,6 +17,7 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/secrets", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListSecrets))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/secrets/{key}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteSecret))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/lock", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetSecretLock))
+	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/build-time", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetSecretBuildTime))
 
 	// Rotation policies hold schedule and progress only, never a value.
 	mux.HandleFunc("GET /api/v1/apps/{name}/secret-rotation", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListSecretRotation))
@@ -74,6 +75,11 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/ci/trusts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListCITrusts))
 	mux.HandleFunc("POST /api/v1/apps/{name}/ci/trusts", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateCITrust))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/ci/trusts/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteCITrust))
+	// One-shot scheduled deploys by id (scheduled_deploys.go): create and cancel need the deploy ability, reads need read.
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleCreateScheduledDeploy)))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledDeploys))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-deploys/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledDeploy))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-deploys/{id}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelScheduledDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/schedule/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppScheduleHistory))
 
 	// Git push webhook: deliberately unauthenticated because GitHub cannot present a session.

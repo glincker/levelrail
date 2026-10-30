@@ -24,12 +24,16 @@ type gitDeploySettings struct {
 	DeployPaths       []string `json:"deploy_paths"`
 	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
 	ReportStatus      bool     `json:"report_status"`
+	WaitForCI         bool     `json:"wait_for_ci"`
+	CIRequiredChecks  []string `json:"ci_required_checks"`
 }
 
 type setGitDeploySettingsRequest struct {
 	DeployPaths       *[]string `json:"deploy_paths,omitempty"`
 	DeployPathsIgnore *[]string `json:"deploy_paths_ignore,omitempty"`
 	ReportStatus      *bool     `json:"report_status,omitempty"`
+	WaitForCI         *bool     `json:"wait_for_ci,omitempty"`
+	CIRequiredChecks  *[]string `json:"ci_required_checks,omitempty"`
 }
 
 func toGitDeploySettings(gs store.GitSource) gitDeploySettings {
@@ -37,6 +41,8 @@ func toGitDeploySettings(gs store.GitSource) gitDeploySettings {
 		DeployPaths:       nonNilPaths(gs.DeployPaths),
 		DeployPathsIgnore: nonNilPaths(gs.DeployPathsIgnore),
 		ReportStatus:      gs.ReportStatus,
+		WaitForCI:         gs.WaitForCI,
+		CIRequiredChecks:  nonNilPaths(gs.CIRequiredChecks),
 	}
 }
 
@@ -59,8 +65,8 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil {
-		writeError(w, http.StatusBadRequest, "deploy_paths, deploy_paths_ignore or report_status is required")
+	if req.DeployPaths == nil && req.DeployPathsIgnore == nil && req.ReportStatus == nil && req.WaitForCI == nil && req.CIRequiredChecks == nil {
+		writeError(w, http.StatusBadRequest, "deploy_paths, deploy_paths_ignore, report_status, wait_for_ci or ci_required_checks is required")
 		return
 	}
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
@@ -82,8 +88,21 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 	if req.ReportStatus != nil {
 		next.ReportStatus = *req.ReportStatus
 	}
+	if req.WaitForCI != nil {
+		next.WaitForCI = *req.WaitForCI
+	}
+	if req.CIRequiredChecks != nil {
+		next.CIRequiredChecks = *req.CIRequiredChecks
+	}
 	if err := validateDeployPaths(next); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := validateCIChecks(next.CIRequiredChecks); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if (req.WaitForCI != nil || req.CIRequiredChecks != nil) && !rt.saveCIGate(w, r, name, next) {
 		return
 	}
 	if err := rt.gitSources.SetGitSourceDeploySettings(ctx, name, next.DeployPaths, next.DeployPathsIgnore, next.ReportStatus); err != nil {

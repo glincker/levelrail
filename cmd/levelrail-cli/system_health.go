@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 func runSystemHealth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -36,15 +37,24 @@ func runSystemHealth(prog string, args []string, stdout, stderr io.Writer, looku
 	return writeScheduledTaskResult(stdout, stderr, of, h, func() { printCPHealth(stdout, h) })
 }
 
+func readPoolLine(h apiclient.CPHealth) string {
+	if !h.DB.ReadPoolEnabled {
+		return "read queue:  read pool off, reads use the writer"
+	}
+	return fmt.Sprintf("read queue:  %d waits, %.0f ms total, %d of %d connections busy", h.DB.ReadWaitCount, h.DB.ReadWaitMS, h.DB.ReadInUse, h.DB.ReadPoolSize)
+}
+
 func printCPHealth(out io.Writer, h apiclient.CPHealth) {
 	_, _ = fmt.Fprintf(out, "status:      %s\n", h.Status)
 	_, _ = fmt.Fprintf(out, "goroutines:  %d\nheap:        %d MiB\n", h.Runtime.Goroutines, h.Runtime.HeapBytes>>20)
 	_, _ = fmt.Fprintf(out, "db latency:  p50 %.1f ms, p95 %.1f ms, p99 %.1f ms\n", h.DB.P50MS, h.DB.P95MS, h.DB.P99MS)
 	_, _ = fmt.Fprintf(out, "db queue:    %d waits, %.0f ms total\nwal:         %d MiB of %d MiB db\n", h.DB.WaitCount, h.DB.WaitMS, h.DB.WALBytes>>20, h.DB.DBBytes>>20)
+	_, _ = fmt.Fprintln(out, readPoolLine(h))
 	_, _ = fmt.Fprintf(out, "reconcile:   %d controllers, last pass %.0f ms, p95 %.0f ms, %.0f s since last pass\n", h.Reconcile.Controllers, h.Reconcile.LastPassMS, h.Reconcile.P95MS, h.Reconcile.LagSeconds)
 	_, _ = fmt.Fprintf(out, "streams:     %d of %d\n", h.Streams.Active, h.Streams.Cap)
 	fp := h.Footprint
 	_, _ = fmt.Fprintf(out, "footprint:   rss %d MiB, %d threads, cpu %.1f%%, metrics db %d MiB, memory limit %d MiB (%s)\n", fp.RSSBytes>>20, fp.Threads, fp.CPUPercent, fp.TelemetryBytes>>20, fp.MemoryLimit.LimitBytes>>20, fp.MemoryLimit.Source)
+	printIdleFootprint(out, h.Idle)
 	for _, l := range fp.Loops {
 		_, _ = fmt.Fprintf(out, "  loop %-28s every %6.0fs runs %-6d last %6.1f ms cost %.3f%%\n", l.Name, l.IntervalSecs, l.Runs, l.LastDuration, l.CostPercent)
 	}
@@ -61,5 +71,23 @@ func printCPHealth(out io.Writer, h apiclient.CPHealth) {
 			line += fmt.Sprintf("  fix: system health --fix %s", f.Fix)
 		}
 		_, _ = fmt.Fprintln(out, line)
+	}
+}
+
+func printIdleFootprint(out io.Writer, a footprint.Assessment) {
+	if a.Status == "" {
+		return
+	}
+	_, _ = fmt.Fprintf(out, "idle:        %s (%s), rss %d MiB, cpu %.2f%% over %.0f s, %d goroutines, %d open fds\n",
+		a.Status, a.Platform, a.Current.RSSBytes>>20, a.Current.CPUPercent, a.Current.CPUWindowSeconds, a.Current.Goroutines, a.Current.OpenFDs)
+	if a.Detail != "" {
+		_, _ = fmt.Fprintf(out, "  %s\n", a.Detail)
+	}
+	for _, c := range a.Checks {
+		mark := "ok  "
+		if !c.OK {
+			mark = "OVER"
+		}
+		_, _ = fmt.Fprintf(out, "  %s %-11s %8.2f %s (baseline %.2f, limit %.2f)\n", mark, c.Name, c.Current, c.Unit, c.Baseline, c.Limit)
 	}
 }

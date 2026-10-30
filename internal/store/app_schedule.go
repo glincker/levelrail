@@ -15,6 +15,9 @@ const (
 	AppScheduleHistoryFired         = "fired"
 	AppScheduleHistorySkippedFreeze = "skipped_freeze"
 	AppScheduleHistoryFailed        = "failed"
+	// AppScheduleHistorySkippedMissed marks a one-shot whose run_at passed
+	// by more than the catch-up window while the control plane was down.
+	AppScheduleHistorySkippedMissed = "skipped_missed"
 )
 
 const appScheduleHistoryIDPrefix = "ash_"
@@ -36,8 +39,12 @@ type AppSchedule struct {
 	// this schedule at least once; see that package's own doc comment for
 	// why this is persisted rather than kept only in memory.
 	NextFireAt *time.Time
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	// RunAt is set for a one-time deploy (Cron is then empty); CompletedAt
+	// is set once it has fired or been skipped, and the row is disabled.
+	RunAt       *time.Time
+	CompletedAt *time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // AppScheduleHistoryEntry is one recorded evaluation of a due schedule:
@@ -66,7 +73,7 @@ func NewAppScheduleHistoryID() (string, error) {
 // ErrAppScheduleNotFound if none is set.
 func (db *DB) GetAppSchedule(ctx context.Context, serviceName string) (*AppSchedule, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, cron, branch, timezone, enabled, next_fire_at, created_at, updated_at
+		SELECT service_name, cron, branch, timezone, enabled, next_fire_at, run_at, completed_at, created_at, updated_at
 		FROM app_schedules WHERE service_name = ?
 	`, serviceName)
 	s, err := scanAppSchedule(row.Scan)
@@ -81,9 +88,9 @@ func (db *DB) GetAppSchedule(ctx context.Context, serviceName string) (*AppSched
 
 func scanAppSchedule(scan func(dest ...any) error) (*AppSchedule, error) {
 	var s AppSchedule
-	var next sql.NullString
+	var next, runAt, completedAt sql.NullString
 	var created, updated string
-	if err := scan(&s.ServiceName, &s.Cron, &s.Branch, &s.Timezone, &s.Enabled, &next, &created, &updated); err != nil {
+	if err := scan(&s.ServiceName, &s.Cron, &s.Branch, &s.Timezone, &s.Enabled, &next, &runAt, &completedAt, &created, &updated); err != nil {
 		return nil, err
 	}
 	if next.Valid && next.String != "" {
@@ -92,6 +99,13 @@ func scanAppSchedule(scan func(dest ...any) error) (*AppSchedule, error) {
 			return nil, fmt.Errorf("parse next_fire_at: %w", err)
 		}
 		s.NextFireAt = &t
+	}
+	var err error
+	if s.RunAt, err = parseNullableTime(runAt, "run_at"); err != nil {
+		return nil, err
+	}
+	if s.CompletedAt, err = parseNullableTime(completedAt, "completed_at"); err != nil {
+		return nil, err
 	}
 	createdAt, err := time.Parse(time.RFC3339Nano, created)
 	if err != nil {
@@ -103,6 +117,17 @@ func scanAppSchedule(scan func(dest ...any) error) (*AppSchedule, error) {
 	}
 	s.CreatedAt, s.UpdatedAt = createdAt, updatedAt
 	return &s, nil
+}
+
+func parseNullableTime(v sql.NullString, col string) (*time.Time, error) {
+	if !v.Valid || v.String == "" {
+		return nil, nil
+	}
+	t, err := time.Parse(time.RFC3339Nano, v.String)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", col, err)
+	}
+	return &t, nil
 }
 
 // SetAppSchedule upserts serviceName's schedule. next_fire_at always
@@ -122,10 +147,50 @@ func (db *DB) SetAppSchedule(ctx context.Context, serviceName, cronExpr, branch,
 			timezone = excluded.timezone,
 			enabled = excluded.enabled,
 			next_fire_at = NULL,
+			run_at = NULL,
+			completed_at = NULL,
 			updated_at = excluded.updated_at
 	`, serviceName, cronExpr, branch, timezone, enabled, now, now)
 	if err != nil {
 		return fmt.Errorf("store: set app schedule for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
+// SetAppScheduleRunAt upserts serviceName's schedule as a one-time deploy
+// at runAt. It clears completed_at, so updating run_at re-arms a completed
+// one-shot. next_fire_at is set to runAt so the preview is exact at once.
+func (db *DB) SetAppScheduleRunAt(ctx context.Context, serviceName, branch, timezone string, runAt time.Time, enabled bool) error {
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	at := runAt.UTC().Format(time.RFC3339Nano)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO app_schedules (service_name, cron, branch, timezone, enabled, next_fire_at, run_at, completed_at, created_at, updated_at)
+		VALUES (?, '', ?, ?, ?, ?, ?, NULL, ?, ?)
+		ON CONFLICT(service_name) DO UPDATE SET
+			cron = '',
+			branch = excluded.branch,
+			timezone = excluded.timezone,
+			enabled = excluded.enabled,
+			next_fire_at = excluded.next_fire_at,
+			run_at = excluded.run_at,
+			completed_at = NULL,
+			updated_at = excluded.updated_at
+	`, serviceName, branch, timezone, enabled, at, at, now, now)
+	if err != nil {
+		return fmt.Errorf("store: set one-time app schedule for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
+// CompleteAppSchedule marks a one-time schedule consumed and disables it
+// so it never fires again. A later SetAppScheduleRunAt re-arms it.
+func (db *DB) CompleteAppSchedule(ctx context.Context, serviceName string, at time.Time) error {
+	ts := at.UTC().Format(time.RFC3339Nano)
+	_, err := db.ExecContext(ctx, `
+		UPDATE app_schedules SET completed_at = ?, enabled = 0, updated_at = ? WHERE service_name = ?
+	`, ts, ts, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: complete app schedule for %q: %w", serviceName, err)
 	}
 	return nil
 }
@@ -136,7 +201,7 @@ func (db *DB) SetAppSchedule(ctx context.Context, serviceName, cronExpr, branch,
 // internal/scheduledtask.ScheduleStore's own doc comment establishes.
 func (db *DB) ListEnabledAppSchedules(ctx context.Context) ([]AppSchedule, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT service_name, cron, branch, timezone, enabled, next_fire_at, created_at, updated_at
+		SELECT service_name, cron, branch, timezone, enabled, next_fire_at, run_at, completed_at, created_at, updated_at
 		FROM app_schedules WHERE enabled = 1
 	`)
 	if err != nil {

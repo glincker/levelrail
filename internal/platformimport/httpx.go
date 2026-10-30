@@ -102,6 +102,8 @@ func (p NetworkPolicy) control(_, address string, _ syscall.RawConn) error {
 type ClientOptions struct {
 	Policy   NetworkPolicy
 	Insecure bool
+	// Team scopes a Vercel source to one team id or slug, other platforms reject it.
+	Team string
 }
 
 // newHTTPClient builds a client that checks every dialed IP (including
@@ -146,17 +148,38 @@ func newRequester(baseURL string, o ClientOptions, secrets ...string) (*requeste
 	return &requester{hc: newHTTPClient(o), base: u.String(), headers: map[string]string{}, secrets: secrets}, nil
 }
 
-func (r *requester) redact(err error) error {
-	if err == nil {
-		return nil
-	}
-	msg := err.Error()
+func (r *requester) scrub(msg string) string {
 	for _, s := range r.secrets {
 		if s != "" {
 			msg = strings.ReplaceAll(msg, s, "[redacted]")
 		}
 	}
-	return errors.New(msg)
+	return msg
+}
+
+// redactedError keeps a sentinel matchable with errors.Is while its text carries no secret.
+type redactedError struct {
+	msg      string
+	sentinel error
+}
+
+func (e *redactedError) Error() string { return e.msg }
+func (e *redactedError) Unwrap() error { return e.sentinel }
+
+// redact strips the credentials from err. The status of an APIError and the blocked-address
+// sentinel survive so callers can tell a bad token from an unreachable host.
+func (r *requester) redact(err error) error {
+	if err == nil {
+		return nil
+	}
+	var api *APIError
+	if errors.As(err, &api) {
+		return &APIError{Status: api.Status, Body: r.scrub(api.Body)}
+	}
+	if errors.Is(err, ErrBlockedAddress) {
+		return &redactedError{msg: r.scrub(err.Error()), sentinel: ErrBlockedAddress}
+	}
+	return errors.New(r.scrub(err.Error()))
 }
 
 // APIError is a non-2xx reply from the source.

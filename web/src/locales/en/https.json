@@ -1,9 +1,11 @@
 {
   "card": {
     "title": "Free HTTPS, no DNS setup",
-    "description": "Serve this dashboard at {{domain}} over HTTPS with a real Let's Encrypt certificate. The hostname resolves to this server on its own, so there is nothing to configure at a registrar. Until it is enabled, opening that https address shows a browser certificate warning, which is expected.",
+    "description": "Serve this dashboard and your apps over HTTPS with a real Let's Encrypt certificate. Nothing to configure at a registrar.",
+    "compactHint": "Until it is on, browsers flag your addresses as not secure.",
+    "setUp": "Set up",
     "noPublicIp": "This server's public IP address is not known, so a zero-DNS hostname cannot be built. Set APP_PUBLIC_HOST to the IP on the control plane and restart it, or use your own domain below.",
-    "httpSignInNote": "Once HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on.",
+    "httpSignInNote": "After it is on, sign in over the https address.",
     "emailLabel": "Email for certificate notices",
     "emailHelp": "Any inbox you read works. Certificates are free and renew on their own: Let's Encrypt only emails you if one is about to expire and could not renew.",
     "stagingLabel": "Test with Let's Encrypt staging first",
@@ -86,7 +88,9 @@
   "network": {
     "off": "Automatic hostnames are turned off for this server.",
     "offAction": "Turn them on",
-    "noPublicHost": "No public IP is known for this server, so no automatic hostname can be built. Set APP_PUBLIC_HOST on the control plane."
+    "noPublicHost": "No public IP is known for this server, so no automatic hostname can be built. Set APP_PUBLIC_HOST on the control plane.",
+    "publishedPorts": "Published ports",
+    "portMapping": "{{host}} \u2192 {{container}}"
   },
   "wizard": {
     "ownDomainTitle": "Or use your own domain",
@@ -178,6 +182,17 @@
       "renewed": "Renewed {{date}}",
       "renewalFailed": "Last renewal failed {{date}}",
       "retrying": "Retrying {{date}}"
+    }
+  },
+  "portEditor": {
+    "publishedPorts": "Extra published ports",
+    "publishedPortsPlaceholder": "51820:51820/udp, 53/udp",
+    "publishedPortsHint": "HOST:CONTAINER/udp or /tcp, comma separated. Published on this server only.",
+    "errors": {
+      "syntax": "\"{{entry}}\" is not a port, use HOST:CONTAINER/udp",
+      "protocol": "\"{{entry}}\": protocol must be tcp or udp",
+      "range": "\"{{entry}}\": ports must be between 1 and 65535",
+      "duplicate": "\"{{entry}}\" is listed twice"
     }
   }
 }

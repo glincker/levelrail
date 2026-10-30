@@ -79,5 +79,20 @@
     "save": "Save",
     "saving": "Saving...",
     "saved": "Override saved for PR #{{number}}. It applies on the next deploy."
+  },
+  "prCommands": {
+    "title": "Pull request commands",
+    "description": "Let people with write access to the repository run /levelrail redeploy, rollback, status and preview redeploy from a pull request comment. Freezes, approvals and deploy policy still apply. Add the Issue comments event to the repository webhook.",
+    "enabledLabel": "Pull request comment commands enabled",
+    "forksTitle": "Allow commands on pull requests from forks",
+    "forksDescription": "Off unless you enable it. A fork pull request can come from anyone.",
+    "forksLabel": "Pull request comment commands on fork pull requests enabled",
+    "toast": {
+      "enabled": "Pull request comment commands enabled.",
+      "disabled": "Pull request comment commands disabled.",
+      "forksEnabled": "Commands on fork pull requests enabled.",
+      "forksDisabled": "Commands on fork pull requests disabled.",
+      "errorTitle": "Could not update pull request comment commands."
+    }
   }
 }

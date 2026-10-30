@@ -82,7 +82,7 @@ func (n *NoiseControl) ApplyStreak(prev, next Rule, now time.Time) Rule {
 func IsPlatformKind(k Kind) bool {
 	switch k {
 	case KindCertExpiry, KindPatchStatus, KindNodeDiskSpace, KindNodeHostGuardrail, KindNodeResourceUsage, KindNodeOffline,
-		KindNodeCertExpiring, KindControlPlaneBackupStale, KindLogArchiveStale, KindExportBehind, KindRegistryRefreshFailing, KindRestoreDrillFailed,
+		KindNodeCertExpiring, KindControlPlaneBackupStale, KindLogArchiveStale, KindExportBehind, KindBackupCopyBehind, KindRegistryRefreshFailing, KindRestoreDrillFailed,
 		KindCertExpiring, KindCertRenewalStalled, KindBudgetThreshold:
 		return true
 	default:
@@ -364,7 +364,11 @@ func (n *NoiseControl) Sweep(ctx context.Context, now time.Time, send SendFunc) 
 	n.mu.Lock()
 	due := n.groups.due(n.cfg.GroupWindow, now)
 	ended := n.flaps.sweep(now)
-	prune := n.cfg.HistoryRetention > 0 && now.Sub(n.lastPrune) >= time.Hour
+	retention := n.cfg.HistoryRetention
+	if n.cfg.HistoryRetentionFn != nil {
+		retention = n.cfg.HistoryRetentionFn(ctx)
+	}
+	prune := retention > 0 && now.Sub(n.lastPrune) >= time.Hour
 	if prune {
 		n.lastPrune = now
 	}
@@ -386,7 +390,7 @@ func (n *NoiseControl) Sweep(ctx context.Context, now time.Time, send SendFunc) 
 		n.deliver(ctx, sc, ev, EventFlapEnded, now, send)
 	}
 	if prune {
-		if _, err := n.store.PruneHistory(ctx, now.Add(-n.cfg.HistoryRetention)); err != nil {
+		if _, err := n.store.PruneHistory(ctx, now.Add(-retention)); err != nil {
 			n.logger.Warn("alerting: prune history failed", slog.String("error", err.Error()))
 		}
 	}

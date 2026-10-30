@@ -64,6 +64,12 @@
       "why": "If you lose your password or passkey, this is how you get back to your servers.",
       "cta": "Open security"
     },
+    "security_review": {
+      "title": "Review your security defaults",
+      "what": "Look over the protections that ship turned on, such as webhook replay protection and audit of sensitive reads, and change any that do not fit your setup.",
+      "why": "These defaults are safe for most installs. Reviewing them once means no protection is off by accident.",
+      "cta": "Review defaults"
+    },
     "public_address": {
       "title": "Set the dashboard address and turn on HTTPS",
       "what": "Pick the web address you open this dashboard on. The free option is the https address built from this server's IP, with a real certificate and no DNS setup.",
@@ -78,6 +84,7 @@
     },
     "first_app": {
       "title": "Deploy your first app",
+    "titleLive": "Your first app is running",
       "what": "Create an app from a repository, a container image or a template. The platform builds it, starts it and gives it an https address.",
       "why": "It proves the build, deploy and rollback loop works on this server.",
       "cta": "Create an app"
@@ -162,6 +169,7 @@
   },
   "first": {
     "title": "Deploy your first app",
+    "titleLive": "Your first app is running",
     "subtitle": "Pick a path. Each one ends with a running app and a link you can open.",
     "sample": {
       "title": "Sample app",
@@ -180,20 +188,27 @@
       "description": "Build from a repository. The name comes from the repo and the build is detected.",
       "cta": "Deploy a repo"
     },
+    "more": {
+      "import": "Moving from another platform? Import it",
+      "git": "Connect GitHub to deploy on every push"
+    },
     "url": {
       "preview": "With no domain set, an app gets an address like {{url}}."
     },
     "status": {
-      "live": "It is live",
       "liveDetail": "{{name}} passed its health check and is serving traffic.",
       "noAddress": "It has no public address yet. Add a domain on the app's Domains tab to reach it from the internet.",
       "failed": "{{name}} is not healthy",
       "diagnosing": "Diagnosing...",
       "deploying": "Deploying {{name}}",
       "deployingDetail": "{{status}}. Pulling the image, starting the container, and waiting for the health check to pass.",
+      "expectedWait": "This can take up to about two minutes while the certificate is issued.",
       "slow": "This is taking longer than usual. Large images take a while on a slow connection; the logs show what is happening.",
+      "certNote": "Your browser may warn about the certificate until HTTPS is on.",
+      "retry": "Retry deploy",
       "openApp": "Open app",
       "viewLogs": "View logs",
+      "goLive": "Add a domain",
       "done": "Go to the dashboard"
     }
   },

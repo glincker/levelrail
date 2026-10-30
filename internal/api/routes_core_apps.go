@@ -94,10 +94,11 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleTriggerDeploy)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/from-cache", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeployFromCache))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/status", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppStatus))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelDeploy))
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackToDeploy))
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackAndLock))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackToDeploy)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackAndLock)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/publish", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePublishHeldBuild))
 	mux.HandleFunc("GET /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPublishLock))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutPublishLock))
@@ -195,6 +196,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// WebSocket rather than SSE, which that file's own doc comment
 	// argues for at length.
 	mux.HandleFunc("GET /api/v1/apps/{name}/terminal", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleAppTerminal))
+	mux.HandleFunc("GET /api/v1/apps/{name}/tunnel", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleAppTunnel))
 
 	// Exec access opt-out: a second gate checked by exec and terminal on top of AbilityRoot.
 	// GET is AbilityRead; PUT is AbilityRoot, since re-enabling hands back a root capability.
@@ -225,6 +227,14 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deployments/summary", rt.requireAbility(AbilityRead, rt.handleDeploymentsSummary))
 	mux.HandleFunc("GET /api/v1/deployments/timeline", rt.requireAbility(AbilityRead, rt.handleDeploymentsTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(deploymentsStreamResource, rt.handleDeploymentsStream)))
+	// Per-deploy event timeline (deploy_timeline.go): the whole story of one
+	// deploy as ordered events, a live SSE view that ends when the deploy
+	// settles, and a two-deploy comparison. Settled timelines are frozen for
+	// replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to
+	// the apps the caller can read.
+	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline", rt.requireAbility(AbilityRead, rt.handleGetDeployTimeline))
+	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(timelineStreamResource, rt.handleDeployTimelineStream)))
+	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeployTimelines))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state
@@ -242,7 +252,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// AbilityRead like the comparison view above; the trigger itself is
 	// AbilityDeploy, matching POST .../deploys.
 	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePromotePreview))
-	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handlePromoteApp)))
 
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
 	// either a live tail (attempt still running) or a full persisted
@@ -346,6 +356,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
 	mux.HandleFunc("POST /api/v1/imports/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
 	mux.HandleFunc("POST /api/v1/git-sources/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
+	mux.HandleFunc("POST /api/v1/imports/repo/plan", rt.requireAbility(AbilityWrite, rt.handleImportRepoPlan))
+	mux.HandleFunc("POST /api/v1/imports/repo/apply", rt.requireAbility(AbilityWrite, rt.handleImportRepoApply))
 	mux.HandleFunc("POST /api/v1/git-sources/preview", rt.requireAbility(AbilityWrite, rt.handlePreviewRepo))
 
 	// Previously-built image tags for this app's repo, so the deploy

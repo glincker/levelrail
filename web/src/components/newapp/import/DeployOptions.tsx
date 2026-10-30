@@ -39,11 +39,13 @@ export function DeployOptions({
   branch,
   value,
   onChange,
+  hidePush = false,
 }: {
   analysis: ImportAnalysis
   branch: string
   value: DeployOptionsValue
   onChange: (next: DeployOptionsValue) => void
+  hidePush?: boolean
 }) {
   const { t } = useTranslation('newApp')
   const [jobsOpen, setJobsOpen] = useState(false)
@@ -64,28 +66,30 @@ export function DeployOptions({
         {t('deployOptions.title')}
       </legend>
 
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0">
-          <label
-            htmlFor="opt-push"
-            className="text-sm font-medium text-foreground"
-          >
-            {t('deployOptions.push.label', { branch: branch || 'main' })}
-          </label>
-          <p className="text-xs text-muted-foreground">
-            {value.deployOnPush
-              ? t('deployOptions.push.on')
-              : t('deployOptions.push.off')}
-          </p>
+      {hidePush ? null : (
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <label
+              htmlFor="opt-push"
+              className="text-sm font-medium text-foreground"
+            >
+              {t('deployOptions.push.label', { branch: branch || 'main' })}
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {value.deployOnPush
+                ? t('deployOptions.push.on')
+                : t('deployOptions.push.off')}
+            </p>
+          </div>
+          <Switch
+            id="opt-push"
+            checked={value.deployOnPush}
+            onCheckedChange={(v) => {
+              onChange({ ...value, deployOnPush: v })
+            }}
+          />
         </div>
-        <Switch
-          id="opt-push"
-          checked={value.deployOnPush}
-          onCheckedChange={(v) => {
-            onChange({ ...value, deployOnPush: v })
-          }}
-        />
-      </div>
+      )}
 
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">

@@ -115,19 +115,17 @@ func (rt *Router) handleMintSessionLink(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-// sessionLinkURL builds the link handleMintSessionLink hands back:
-// absolute against the primary domain when controlPlaneBaseURL can
-// resolve one, the same bare-path fallback passwordResetURL uses
-// otherwise (e.g. local/dev use, exactly where this feature's own
-// browser-automation use case is most likely to run with no domain
-// configured at all).
+// sessionLinkURL builds an absolute link. The primary domain is used only
+// when the request itself came over HTTPS; otherwise the request's own
+// scheme and host win, so plain-http instances never get an https link.
 func (rt *Router) sessionLinkURL(r *http.Request, token string) string {
 	const path = "/login?session_link="
-	base, err := rt.controlPlaneBaseURL(r.Context())
-	if err != nil {
-		return path + token
+	if rt.dashboardURL() == "" && requestIsHTTPS(r) {
+		if base, err := rt.controlPlaneBaseURL(r.Context()); err == nil {
+			return base + path + token
+		}
 	}
-	return base + path + token
+	return rt.mobileServerURL(r) + path + token
 }
 
 // errInvalidOrExpiredSessionLink covers every way a session-link token

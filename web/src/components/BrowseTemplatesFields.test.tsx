@@ -1,7 +1,11 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createInstance } from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import templatesEn from '../locales/en/templates.json'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
 
 // ServiceTemplateGrid's card links each template's name/logo to
@@ -38,14 +42,24 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
   } as unknown as Response
 }
 
+const testI18n = createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  resources: { en: { templates: templatesEn } },
+  defaultNS: 'templates',
+  interpolation: { escapeValue: false },
+})
+
 function renderFields() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
-    <QueryClientProvider client={queryClient}>
-      <BrowseTemplatesFields open onCreated={() => {}} />
-    </QueryClientProvider>,
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={queryClient}>
+        <BrowseTemplatesFields open onCreated={() => {}} />
+      </QueryClientProvider>
+    </I18nextProvider>,
   )
 }
 
@@ -88,5 +102,45 @@ describe('BrowseTemplatesFields', () => {
     ).toBeInTheDocument()
     expect(await screen.findByText('n8n')).toBeInTheDocument()
     expect(screen.getAllByText(/RAM recommended/)).toHaveLength(1)
+  })
+
+  it('opens the access details dialog after a one-click deploy', async () => {
+    const calls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : input.toString()
+        calls.push(`${init?.method ?? 'GET'} ${url}`)
+        if (url.endsWith('/service-templates/n8n/deploy')) {
+          return Promise.resolve(
+            fakeJsonResponse({
+              app_id: 'n8n-ab12c',
+              services: [{ name: 'n8n-ab12c', secret_env: [] }],
+            }),
+          )
+        }
+        if (url.endsWith('/service-templates')) {
+          return Promise.resolve(
+            fakeJsonResponse([
+              {
+                id: 'n8n',
+                name: 'n8n',
+                slogan: 'Build automations.',
+                category: 'Automation',
+                requires_configuration: false,
+              },
+            ]),
+          )
+        }
+        return Promise.resolve(fakeJsonResponse({}, 404))
+      }),
+    )
+    renderFields()
+    await userEvent.click(
+      await screen.findByRole('button', { name: templatesEn.card.deployNow }),
+    )
+    expect(
+      await screen.findByText(templatesEn.result.noCredentials),
+    ).toBeInTheDocument()
   })
 })

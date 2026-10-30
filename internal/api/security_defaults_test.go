@@ -192,6 +192,71 @@ func TestSensitiveRead_IsAudited(t *testing.T) {
 	}
 }
 
+func TestSensitiveReadRoute_Matrix(t *testing.T) {
+	cases := []struct {
+		method, path string
+		want         bool
+	}{
+		{"GET", "/api/v1/apps/web/logs", true},
+		{"GET", "/api/v1/apps/web/logs/stream", true},
+		{"GET", "/api/v1/apps/web/logs/download", true},
+		{"GET", "/api/v1/apps/web/deploys/d1/logs", true},
+		{"GET", "/api/v1/apps/web/deploys/d1/logs/download", true},
+		{"GET", "/api/v1/databases/db/logs", true},
+		{"GET", "/api/v1/databases/db/logs/stream", true},
+		{"GET", "/api/v1/loki/query_range", true},
+		{"POST", "/api/v1/loki/query", true},
+		{"GET", "/api/v1/loki/loki/api/v1/query_range", true},
+		{"GET", "/api/v1/export", true},
+		{"GET", "/api/v1/apps/web/env/export", true},
+		{"GET", "/api/v1/dashboards/d1/export", true},
+		{"GET", "/api/v1/dns/zones/example.com/records/export", true},
+		{"GET", "/api/v1/apps", false},
+		{"GET", "/api/v1/apps/web", false},
+		{"GET", "/api/v1/loki/labels", false},
+		{"POST", "/api/v1/apps/web/logs", false},
+	}
+	for _, c := range cases {
+		r := httptest.NewRequest(c.method, c.path, nil)
+		if got := sensitiveReadRoute(r); got != c.want {
+			t.Errorf("%s %s = %v, want %v", c.method, c.path, got, c.want)
+		}
+	}
+}
+
+func TestSensitiveContentReads_WriteAuditRow(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	paths := []string{
+		"/api/v1/apps/ghost/logs",
+		"/api/v1/apps/ghost/logs/download",
+		"/api/v1/databases/ghost/logs",
+		"/api/v1/export",
+		"/api/v1/apps/ghost/env/export",
+		"/api/v1/dashboards/ghost/export",
+		"/api/v1/dns/zones/ghost.test/records/export",
+		"/api/v1/loki/query_range",
+	}
+	for _, p := range paths {
+		postJSON(t, rt, cookie, http.MethodGet, p, "")
+	}
+	postJSON(t, rt, cookie, http.MethodGet, "/api/v1/apps", "")
+	counts := map[string]int{}
+	for _, e := range listAuditLog(t, rt, cookie) {
+		if e.Action == AuditActionSensitiveRead {
+			counts[e.Path]++
+		}
+		if e.Path == "/api/v1/apps" {
+			t.Errorf("plain app list was audited")
+		}
+	}
+	for _, p := range paths {
+		if counts[p] != 1 {
+			t.Errorf("%s audit rows = %d, want 1", p, counts[p])
+		}
+	}
+}
+
 func TestCredentialRoutes_ChargeWriteBudget(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

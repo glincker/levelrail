@@ -65,7 +65,7 @@ func peerIsTrustedProxy(r *http.Request) bool {
 	if err != nil {
 		return false
 	}
-	if ip.IsLoopback() {
+	if ip.IsLoopback() && loopbackTrusted() {
 		return true
 	}
 	for _, entry := range strings.Split(os.Getenv(envTrustedProxies), ",") {

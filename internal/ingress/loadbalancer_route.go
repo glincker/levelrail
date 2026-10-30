@@ -18,6 +18,8 @@ func NewLBRoute(cfg loadbalancer.Config, ups []loadbalancer.Upstream, weights []
 		lb.Policy = LBPolicyLeastConn
 	case loadbalancer.AlgoIPHash:
 		lb.Policy = LBPolicyIPHash
+	case loadbalancer.AlgoClientIPHash:
+		lb.Policy = LBPolicyClientIPHash
 	case loadbalancer.AlgoURIHash:
 		lb.Policy = LBPolicyURIHash
 	case loadbalancer.AlgoCookie:

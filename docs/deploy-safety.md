@@ -320,11 +320,18 @@ Global windows are managed through `PUT /api/v1/settings/deploy-freeze`
 Held deploys are checked every `APP_DEPLOY_HELD_RELEASE_INTERVAL`
 (default `30s`).
 
+## Stop grace
+
+When the reconciler stops an old container it sends `SIGTERM` and waits up to
+`APP_RECONCILE_STOP_GRACE` (default `10s`) before Docker sends `SIGKILL`. Raise it
+for apps that need longer to drain, for example `APP_RECONCILE_STOP_GRACE=45s`.
+An invalid or non-positive value logs a warning and keeps the default.
+
 ## Holding the previous release
 
 After a successful blue-green or rolling cutover the most recent previous
 release's running containers are kept for `APP_DEPLOY_PREVIOUS_RELEASE_HOLD`
-(default `3m`, `0` disables). The window is measured from the newest
+(default `3m`, `0` disables). That value is a floor: the release is kept for the longest of it, the app's drain timeout (default `15s`) and, when auto-rollback is on, the watch window (default `5m`), so a watch-triggered rollback still finds it running. With defaults and auto-rollback enabled, expect the hold to outlast 3 minutes. The window is measured from the newest
 release's first container, so scaling up does not extend it. Only one
 previous release is ever held: as soon as a newer previous release exists,
 older running releases are removed, so deploying five times in a minute
@@ -336,6 +343,14 @@ anything, since it stops the old release before starting the new one.
 
 `GET /api/v1/apps/{name}` reports `previous_release_held_until` (RFC3339)
 while a release is held, and `levelrail-cli apps status <name>` prints it.
+
+### How long it is held, and what you will see after a rollback
+
+The previous release is held for `max(APP_DEPLOY_PREVIOUS_RELEASE_HOLD, APP_DEPLOY_WATCH_WINDOW)` (plus the drain timeout floor). With defaults that is the 5 minute watch window, because the 3 minute hold is shorter. Setting the hold higher than the watch window extends it; setting it to `0` does not shorten it below the watch window while auto-rollback is on.
+
+A running previous release after a deploy, or a `levelrail-rollback/<service>:<attempt>` image tag in `docker images`, is expected. The tag is a local pin that keeps a rollback target's image from being pruned; it is a tag on an image, not a running container, and it is not a leak. Pins are retained on purpose so a rollback works without a pull.
+
+A pinned rollback image can also run as a retained deploy: for each of the last `APP_DEPLOY_URL_KEEP` (default `3`, `0` turns it off) successful deploys, a one-replica service named `<app>-<sha7>` runs that attempt's pinned image so the deployment can be opened at its own URL. Expect an extra `<app>-<sha7>-<hash>` container with a `levelrail-rollback/<app>:dep_...` image shortly after a deploy or rollback. It is stopped automatically by app sleep after `APP_DEPLOY_URL_IDLE_MINUTES` (default `5`) without traffic, and the journal shows `appsleep: app idle, stopped`. If it fails readiness `APP_DEPLOY_URL_MAX_UNREADY` times in a row (default `3`) the reconciler stops retrying and reports `RetainedDeployStopped`; resume it to retry. The syncer checks for new deploys every `APP_DEPLOY_URL_INTERVAL` (default `1m`).
 
 ## What visitors see during a deploy
 

@@ -1,3 +1,5 @@
+import type { AbuseCounters } from './abuse'
+
 // Wire types for GET /api/v1/apps/{name}/traffic
 // (internal/api/traffic_app.go's trafficResponse).
 
@@ -24,8 +26,16 @@ export interface TrafficReplica extends TrafficLatency {
   upstream_errors: number
 }
 
+export type RouteKind = 'page' | 'api' | 'asset'
+
+export interface TrafficKindTotal {
+  requests: number
+  error_rate_5xx: number
+}
+
 export interface TrafficRoute {
   route: string
+  kind?: RouteKind
   requests: number
   error_rate_4xx: number
   error_rate_5xx: number
@@ -60,6 +70,20 @@ export interface TrafficShield {
   by_reason: TrafficShieldReason[]
 }
 
+export interface TrafficErrorSpike {
+  start: string
+  end: string
+  requests: number
+  errors_5xx: number
+  peak_error_rate_5xx: number
+  baseline_error_rate_5xx: number
+  deploy_id?: string
+  deploy_at?: string
+  deploy_status?: string
+  deploy_image?: string
+  deploy_commit?: string
+}
+
 export interface TrafficDetail {
   app: string
   window: TrafficWindow
@@ -76,9 +100,12 @@ export interface TrafficDetail {
   replicas: TrafficReplica[]
   slow_routes: TrafficRoute[]
   top_routes: TrafficRoute[]
+  kind_totals?: Partial<Record<RouteKind, TrafficKindTotal>>
   samples: TrafficSample[]
   referrers: TrafficLabel[]
   countries: TrafficLabel[]
   slo?: TrafficSLO
   shield: TrafficShield
+  abuse: AbuseCounters
+  error_spikes: TrafficErrorSpike[]
 }

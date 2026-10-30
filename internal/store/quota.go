@@ -70,9 +70,12 @@ func (db *DB) QuotaScopeIDs(ctx context.Context, scope string) ([]string, error)
 	return out, rows.Err()
 }
 
-// A service reserves its memory and CPU once per replica.
+// A service reserves its memory and CPU once per replica. /dev/shm is tmpfs
+// charged to the memory cgroup, so it counts only when no memory limit bounds it.
 const (
-	quotaMemExpr = `COALESCE(json_extract(s.resources, '$.memory_bytes'), 0) * MAX(s.replicas, 1)`
+	quotaMemExpr = `(CASE WHEN COALESCE(json_extract(s.resources, '$.memory_bytes'), 0) > 0
+		THEN json_extract(s.resources, '$.memory_bytes')
+		ELSE COALESCE(json_extract(s.resources, '$.shm_size_bytes'), 0) END) * MAX(s.replicas, 1)`
 	quotaCPUExpr = `COALESCE(json_extract(s.resources, '$.nano_cpus'), 0) * MAX(s.replicas, 1)`
 )
 

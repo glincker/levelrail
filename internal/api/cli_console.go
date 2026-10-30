@@ -150,21 +150,23 @@ func (rt *Router) handleCLIConsoleSession(w http.ResponseWriter, r *http.Request
 		rt: rt, conn: conn, req: r, caller: caller, token: raw, cfg: st.cfg,
 		runner: &cliconsole.Runner{
 			Binary: bin, APIURL: apiURL, Experimental: experimentalEnvValue(),
-			Timeout: st.cfg.CommandTimeout, MaxOutputBytes: st.cfg.MaxOutputBytes, RunAsUser: st.cfg.RunAsUser,
+			Timeout: st.cfg.CommandTimeout, MaxOutputBytes: st.cfg.MaxOutputBytes, MaxLineBytes: st.cfg.MaxLineBytes,
+			RunAsUser: st.cfg.RunAsUser,
 		},
 	}
 	sess.serve(ctx, cancel)
 }
 
-// consoleTokenAbilities is the caller's own set minus the session-only
-// abilities a token can never carry.
+// consoleTokenAbilities never mints root or a sensitive ability: the console
+// is for reads and routine writes, so a leaked session token cannot reveal secrets.
 func consoleTokenAbilities(abilities []string) []string {
 	if slices.Contains(abilities, AbilityRoot) {
-		return []string{AbilityRoot}
+		return []string{AbilityRead, AbilityWrite, AbilityDeploy}
 	}
 	out := []string{}
 	for _, a := range abilities {
-		if a != AbilitySignInApprove && a != AbilitySecretsReveal {
+		switch a {
+		case AbilityRead, AbilityWrite, AbilityDeploy:
 			out = append(out, a)
 		}
 	}
@@ -260,7 +262,7 @@ func (rt *Router) auditCLIConsole(r *http.Request, caller cliConsoleCaller, line
 	entry := store.AuditEntry{
 		ID: id, ActorType: auditActorSession, ActorID: caller.userID,
 		ActorName: rt.auditActorName(ctx, auditActorSession, caller.userID, ""),
-		Ability:   AbilityRoot, Method: "RUN", Path: "cli-console: " + line, StatusCode: status,
+		Ability:   AbilityRoot, Method: "RUN", Path: "cli-console: " + cliconsole.SanitizeLine(line, 0), StatusCode: status,
 		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.UserAgent()), Action: action,
 	}

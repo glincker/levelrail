@@ -38,9 +38,13 @@ func printBackupTargetsTable(out io.Writer, targets []backupTargetResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tPROVIDER\tBUCKET\tREGION\tCREATED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tPROVIDER\tLOCATION\tREGION\tCREATED")
 	for _, t := range targets {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Provider, t.Bucket, t.Region, t.CreatedAt)
+		loc := t.Bucket
+		if t.LocalRoot != "" {
+			loc = t.LocalRoot + "/" + t.Bucket
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Provider, loc, t.Region, t.CreatedAt)
 	}
 	_ = tw.Flush()
 }

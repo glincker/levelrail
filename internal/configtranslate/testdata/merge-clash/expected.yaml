@@ -1,0 +1,33 @@
+version: 1
+services:
+  web:
+    build:
+      type: railpack
+    port: 8080
+    command:
+      - sh
+      - -c
+      - node server.js
+    env:
+      PORT: "8080"
+  web-vercel:
+    build:
+      type: railpack
+    port: 3000
+    jobs:
+      - name: api-tick
+        schedule: 0 * * * *
+        command:
+          - curl
+          - -fsS
+          - http://127.0.0.1:3000/api/tick
+        timezone: UTC
+        mode: exec
+  worker:
+    build:
+      type: railpack
+    port: 8080
+    command:
+      - sh
+      - -c
+      - node worker.js

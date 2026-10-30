@@ -227,7 +227,7 @@ func (c *Controller) discoverUpstreams(ctx context.Context, svc store.DesiredSer
 		case state == nil:
 			u.Note = "not created yet"
 		default:
-			u.Dial, u.Running, u.Note = upstreamDial(state, host, host != localUpstreamHost)
+			u.Dial, u.Running, u.Note = upstreamDial(state, svc.Port, host, host != localUpstreamHost)
 		}
 		out = append(out, u)
 	}
@@ -247,14 +247,14 @@ func anyRunning(ups []loadbalancer.UpstreamObservation) bool {
 	return false
 }
 
-func upstreamDial(state *docker.ContainerState, host string, remote bool) (dial string, running bool, note string) {
+func upstreamDial(state *docker.ContainerState, port int, host string, remote bool) (dial string, running bool, note string) {
 	if !state.Running {
 		return "", false, "container not running"
 	}
-	if len(state.Ports) == 0 {
-		return "", false, "no published port"
+	p, ok := docker.PrimaryPort(state.Ports, port)
+	if !ok {
+		return "", false, "no published tcp port"
 	}
-	p := state.Ports[0]
 	if remote && isLoopback(p.HostIP) {
 		return "", false, "published on loopback, set bind_address to public to balance across nodes"
 	}
@@ -272,14 +272,25 @@ func (c *Controller) previousReleaseUpstreams(ctx context.Context, rt docker.Run
 		c.logger.WarnContext(ctx, "ingress: listing previous release containers failed", slog.String("service", svc.Name), slog.String("error", err.Error()))
 		return nil
 	}
-	sort.Slice(states, func(i, j int) bool { return states[i].Name < states[j].Name })
+	// Only the held release (last ready one) keeps serving, not every old one.
+	older := make([]docker.ContainerState, 0, len(states))
+	for _, st := range states {
+		if !current[st.Name] {
+			older = append(older, st)
+		}
+	}
+	ranked := c.rankReleases(ctx, svc.Name, "", older)
 	var out []loadbalancer.UpstreamObservation
-	for _, s := range states {
-		st := s
-		if current[st.Name] || !application.OwnsContainer(svc.Name, st.Name) {
+	if len(ranked) == 0 {
+		return nil
+	}
+	held := application.ReleaseKey(svc.Name, ranked[0].Name)
+	sort.Slice(ranked, func(i, j int) bool { return ranked[i].Name < ranked[j].Name })
+	for _, st := range ranked {
+		if application.ReleaseKey(svc.Name, st.Name) != held {
 			continue
 		}
-		dial, running, _ := upstreamDial(&st, host, host != localUpstreamHost)
+		dial, running, _ := upstreamDial(&st, svc.Port, host, host != localUpstreamHost)
 		if !running {
 			continue
 		}

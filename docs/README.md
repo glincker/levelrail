@@ -59,6 +59,7 @@ Four main types, plus two Levelrail-specific categories:
 | [deploying-apps.md](/deploying-apps) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
 | [pages.md](/pages) | Deploy static HTML sites from git with no container, served by the embedded ingress with full TLS and domain routing |
 | [github-actions.md](/github-actions) | Deploy from a GitHub Actions workflow with the bundled composite Action |
+| [use-any-ci.md](/use-any-ci) | Build in any CI and deploy with the CLI: GitLab CI, CircleCI, Jenkins and Buildkite templates |
 | [git-integrations.md](/git-integrations) | Connect GitHub, GitLab, and Bitbucket, webhooks, and preview environments |
 | [pipelines.md](/pipelines) | Test, build, approve, and deploy with YAML pipelines: triggers, matrix, secrets, and approvals |
 
@@ -66,6 +67,7 @@ Four main types, plus two Levelrail-specific categories:
 
 | Doc | Covers |
 | --- | --- |
+| [cleanup-center.md](/cleanup-center) | Retention per data type, scheduled cleanup with preview mode, floors for security data, run history and export, and how to add a target |
 | [previews.md](/previews) | Preview environments per pull request: domain and DNS, resources, idle sleep, database strategy, TTL and cap, fork policy, basic auth gate |
 | [deploy-previews.md](/deploy-previews) | Opt-in thumbnails of each deploy, captured by a short-lived browser container: cost, privacy, retention and every `APP_PREVIEW_*` setting |
 | [supply-chain.md](/supply-chain) | SBOM per Dockerfile build, an optional vulnerability scan in a short-lived container and a release gate: cost, coverage, retention and every `APP_BUILD_ATTEST` and `APP_SCAN_*` setting |
@@ -110,6 +112,7 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [projects-and-organizations.md](/projects-and-organizations) | The optional organization/project/environment grouping hierarchy for apps and databases |
 | [service-topology-graph.md](/service-topology-graph) | A project's apps, databases, and shared volumes drawn as a diagram, with real derived edges |
+| [canvas.md](/canvas) | The beta Canvas editor: add apps and databases, connect them, review the plan, then apply; what it cannot do yet |
 | [identity-and-access.md](/identity-and-access) | Users, roles, abilities, IAM policies, invites, tokens, 2FA, OAuth, and audit logging |
 | [tags.md](/tags) | Label and organize apps with arbitrary tags for filtering and grouping |
 

@@ -441,23 +441,13 @@ type PruneVolumesResult struct {
 // mountedVolumeNames considers every container on the daemon, not just
 // this instance's own.
 func (c *Client) PruneAnonymousVolumes(ctx context.Context) (PruneVolumesResult, error) {
-	inUse, err := c.mountedVolumeNames(ctx)
+	dangling, err := c.ListDanglingAnonymousVolumes(ctx)
 	if err != nil {
 		return PruneVolumesResult{}, err
 	}
-
-	vols, err := c.cli.VolumeList(ctx, volume.ListOptions{})
-	if err != nil {
-		return PruneVolumesResult{}, fmt.Errorf("docker: list volumes: %w", err)
-	}
-
 	var result PruneVolumesResult
 	var firstErr error
-	for _, v := range vols.Volumes {
-		if v == nil || !isAnonymousVolumeName(v.Name) || inUse[v.Name] {
-			continue
-		}
-		size := volumeSize(v)
+	for _, v := range dangling {
 		if err := c.cli.VolumeRemove(ctx, v.Name, false); err != nil {
 			if firstErr == nil {
 				firstErr = fmt.Errorf("remove volume %s: %w", v.Name, err)
@@ -465,11 +455,40 @@ func (c *Client) PruneAnonymousVolumes(ctx context.Context) (PruneVolumesResult,
 			continue
 		}
 		result.Removed = append(result.Removed, v.Name)
-		if size > 0 {
-			result.ReclaimedBytes += uint64(size)
+		if v.SizeBytes > 0 {
+			result.ReclaimedBytes += uint64(v.SizeBytes)
 		}
 	}
 	return result, firstErr
+}
+
+// AnonymousVolume is an unnamed volume Docker created for an image VOLUME
+// directive that no container references any more.
+type AnonymousVolume struct {
+	Name      string
+	SizeBytes int64
+}
+
+// ListDanglingAnonymousVolumes is the read-only half of PruneAnonymousVolumes:
+// the same selection (anonymous name, mounted by no container in any state),
+// never a named volume, so a dry run shows exactly what a prune would remove.
+func (c *Client) ListDanglingAnonymousVolumes(ctx context.Context) ([]AnonymousVolume, error) {
+	inUse, err := c.mountedVolumeNames(ctx)
+	if err != nil {
+		return nil, err
+	}
+	vols, err := c.cli.VolumeList(ctx, volume.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list volumes: %w", err)
+	}
+	var out []AnonymousVolume
+	for _, v := range vols.Volumes {
+		if v == nil || !isAnonymousVolumeName(v.Name) || inUse[v.Name] {
+			continue
+		}
+		out = append(out, AnonymousVolume{Name: v.Name, SizeBytes: volumeSize(v)})
+	}
+	return out, nil
 }
 
 // mountedVolumeNames returns the set of volume names referenced by any

@@ -2,9 +2,9 @@
 # Decides which nightly lanes a diff needs, so a quiet or docs-only day runs nothing.
 # Usage: scripts/nightly-scope.sh <base-sha|ALL>
 # Prints GITHUB_OUTPUT-style lines: matrix (full-test include JSON), kit, install, sweep.
-# NIGHTLY_LIVE_ALWAYS=true keeps the docker lane (the full live suites, which
-# PRs only smoke-test) in the matrix on a day with no commits: upstream
-# images drift without one.
+# NIGHTLY_FULL=true is the weekly sweep: the docker and -race lanes join the matrix.
+# NIGHTLY_LIVE_ALWAYS=true keeps lanes running on a day with no commits:
+# upstream images drift without one.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
@@ -32,20 +32,23 @@ group_has() {
 }
 
 lanes=()
-# -race is 3x or more on every lane, so the nightly applies it only where
-# goroutines live (the race lane) and, weekly, on the big api and docker lanes.
+# Daily runs the cheap lanes without -race. The weekly sweep (NIGHTLY_FULL=true,
+# also manual dispatch) adds the docker lane and every -race lane: they were
+# about two thirds of the billable minutes and hit their timeouts most nights.
+full=false
+if [ "${NIGHTLY_FULL:-}" = true ] || [ "${NIGHTLY_RACE_ALL:-}" = true ]; then full=true; fi
 flags='-shuffle=on -timeout=40m'
-heavy_race=''
-if [ "${NIGHTLY_RACE_ALL:-}" = true ] || [ "$(date -u +%u)" = 7 ]; then
-	heavy_race='-race '
-fi
+if $full; then flags='-race -shuffle=on -timeout=75m'; fi
 if has ALL || [ "$pkgs" = "ALL" ] || has github.com/GLINCKER/levelrail/internal/api; then
-	for i in 1 2 3 4; do lanes+=("{\"lane\":\"api-$i\",\"group\":\"api\",\"shard\":\"$i/4\",\"flags\":\"${heavy_race}$flags\"}"); done
+	for i in 1 2 3 4; do lanes+=("{\"lane\":\"api-$i\",\"group\":\"api\",\"shard\":\"$i/4\",\"flags\":\"$flags\"}"); done
 fi
-{ [ "${NIGHTLY_LIVE_ALWAYS:-}" = true ] || group_has docker; } && lanes+=("{\"lane\":\"docker\",\"group\":\"docker\",\"shard\":\"\",\"flags\":\"${heavy_race}-shuffle=on -p 2 -timeout=45m\"}")
+if $full; then
+	lanes+=('{"lane":"docker","group":"docker","shard":"","flags":"-race -shuffle=on -p 2 -timeout=75m"}')
+	group_has race-a && lanes+=('{"lane":"race-a","group":"race-a","shard":"","flags":"-race -shuffle=on -timeout=60m"}')
+	group_has race-b && lanes+=('{"lane":"race-b","group":"race-b","shard":"","flags":"-race -shuffle=on -timeout=60m"}')
+fi
 group_has rest-heavy && lanes+=('{"lane":"rest-heavy","group":"rest-heavy","shard":"","flags":"-shuffle=on -timeout=40m"}')
 group_has rest-light && lanes+=('{"lane":"rest-light","group":"rest-light","shard":"","flags":"-shuffle=on -timeout=40m"}')
-group_has race && lanes+=('{"lane":"race","group":"race","shard":"","flags":"-race -shuffle=on -timeout=40m"}')
 
 matrix="[$(IFS=,; echo "${lanes[*]:-}")]"
 kit=false; install=false; sweep=false

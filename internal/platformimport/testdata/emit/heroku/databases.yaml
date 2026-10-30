@@ -1,0 +1,17 @@
+version: 1
+kind: Database
+metadata:
+  name: postgresql-round-1
+spec:
+  engine: postgres
+  version: "16"
+  project: heroku-import
+---
+version: 1
+kind: Database
+metadata:
+  name: redis-deep-2
+spec:
+  engine: redis
+  version: "7.4"
+  project: heroku-import

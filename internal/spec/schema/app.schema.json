@@ -33,6 +33,19 @@
         "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "host_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "bind_address": { "type": "string", "minLength": 1 },
+        "published_ports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["container_port", "host_port"],
+            "properties": {
+              "container_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "host_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "protocol": { "enum": ["tcp", "udp"] }
+            }
+          }
+        },
         "health": { "$ref": "#/$defs/health" },
         "resources": { "$ref": "#/$defs/resources" },
         "env": {
@@ -42,6 +55,7 @@
         "replicas": { "type": "integer", "minimum": 1 },
         "strategy": { "enum": ["rolling", "recreate", "blue-green", "canary"] },
         "canary": { "$ref": "#/$defs/canary" },
+        "rollout": { "$ref": "#/$defs/rollout" },
         "contexts": {
           "type": "object",
           "propertyNames": { "pattern": "^(deploy-preview|branch-deploy|branch:.+)$" },
@@ -65,6 +79,10 @@
           "items": { "$ref": "#/$defs/volume" }
         },
         "hooks": { "$ref": "#/$defs/hooks" },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/file" }
+        },
         "jobs": {
           "type": "array",
           "items": { "$ref": "#/$defs/job" }
@@ -82,7 +100,8 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
-        }
+        },
+        "restart": { "type": "string" }
       }
     },
     "contextConfig": {
@@ -145,6 +164,21 @@
         "notFound": { "type": "string", "minLength": 1 }
       }
     },
+    "rolloutValue": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "string", "pattern": "^([0-9]+|[0-9]{1,2}%|100%)$" }
+      ]
+    },
+    "rollout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_surge": { "$ref": "#/$defs/rolloutValue" },
+        "max_unavailable": { "$ref": "#/$defs/rolloutValue" },
+        "min_available": { "$ref": "#/$defs/rolloutValue" }
+      }
+    },
     "canary": {
       "type": "object",
       "additionalProperties": false,
@@ -197,7 +231,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "algorithm": { "enum": ["round_robin", "least_conn", "ip_hash", "uri_hash", "cookie", "weighted"] },
+        "algorithm": { "enum": ["round_robin", "least_conn", "ip_hash", "client_ip_hash", "uri_hash", "cookie", "weighted"] },
         "cookie_name": { "type": "string", "minLength": 1 },
         "weights": {
           "type": "array",
@@ -298,6 +332,17 @@
         "enabled": { "type": "boolean" }
       }
     },
+    "file": {
+      "type": "object",
+      "required": ["path", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "content": { "type": "string" },
+        "mode": { "type": "string", "pattern": "^0?[0-7]{3,4}$" },
+        "secret": { "type": "boolean" }
+      }
+    },
     "hooks": {
       "type": "object",
       "additionalProperties": false,
@@ -337,6 +382,11 @@
         "args": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "secrets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
         }
       }
     },

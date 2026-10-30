@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -92,8 +93,13 @@ func TestResourceAdvisor_OffByFlag(t *testing.T) {
 	}
 }
 
+// fixedHostMemory pins a roomy 16 GiB host at 25% use so findings never
+// depend on the machine running the tests.
+func fixedHostMemory() (int64, int64, error) { return 16 << 30, 12 << 30, nil }
+
 func TestResourceAdvisor_ScreenshotScenario(t *testing.T) {
 	rt, db, tdb := newTestRouterWithTelemetry(t)
+	rt.hostMemory = fixedHostMemory
 	cookie := loginTestSession(t, rt, db)
 	seedAdvisorScreenshot(t, db, tdb)
 
@@ -340,6 +346,7 @@ func TestBetaFeatures_ToggleFromSettings(t *testing.T) {
 
 func TestResourceAdvisor_AttentionItems(t *testing.T) {
 	rt, db, tdb := newTestRouterWithTelemetry(t)
+	rt.hostMemory = fixedHostMemory
 	cookie := loginTestSession(t, rt, db)
 	seedAdvisorScreenshot(t, db, tdb)
 	if _, err := rt.advisorFindings(context.Background()); err != nil {
@@ -384,5 +391,39 @@ func TestDatabaseLinks(t *testing.T) {
 				t.Errorf("%s: %s = %d, want %d", tc.name, k, got[k], v)
 			}
 		}
+	}
+}
+
+func TestResourceAdvisor_HostMemoryThreshold(t *testing.T) {
+	const gib = int64(1) << 30
+	tests := []struct {
+		name      string
+		total     int64
+		available int64
+		err       error
+		wantWarn  int
+	}{
+		{"well under the pressure line", 16 * gib, 12 * gib, nil, 0},
+		{"just under 90 percent", 100 * gib, 11 * gib, nil, 0},
+		{"at 90 percent", 100 * gib, 10 * gib, nil, 1},
+		{"nearly exhausted", 36 * gib, 3 * gib, nil, 1},
+		{"unreadable host memory", 0, 0, errors.New("no meminfo"), 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db, tdb := newTestRouterWithTelemetry(t)
+			rt.hostMemory = func() (int64, int64, error) { return tt.total, tt.available, tt.err }
+			cookie := loginTestSession(t, rt, db)
+			seedAdvisorScreenshot(t, db, tdb)
+			warns := 0
+			for _, f := range getAdvisorFindings(t, rt, cookie, "?severity=warn") {
+				if f.Kind == resourceadvisor.KindHostMemoryPressure {
+					warns++
+				}
+			}
+			if warns != tt.wantWarn {
+				t.Fatalf("host pressure findings = %d, want %d", warns, tt.wantWarn)
+			}
+		})
 	}
 }

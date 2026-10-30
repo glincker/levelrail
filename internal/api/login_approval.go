@@ -4,10 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/netip"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -38,6 +42,8 @@ type loginApprovalPollResponse struct {
 
 type loginApprovalDecision struct {
 	Match int `json:"match"`
+	// StepUp approves with the account password instead of the number, only for sign-ins from this computer.
+	StepUp *stepUpProof `json:"step_up,omitempty"`
 }
 
 // approvalSessions is the slice of the session engine the pause needs; a
@@ -81,7 +87,15 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 	if !rt.newDeviceApproval || rt.trustedDeviceFor(r, user.ID) || !rt.approvalRequiredFor(r.Context(), user.ID, method) {
 		return nil, nil
 	}
+	// Concurrent sign-ins see each other's not yet held sessions, so unserialized
+	// every one refuses first-login trust and the last slips through untrusted.
+	defer lockApprovalDecision(rt, user.ID)()
 	ctx := r.Context()
+	if rt.firstLoginTrusted(ctx, r, user, token, method) {
+		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionFirstLoginTrust, approvalAuditPrefix+"first_login#"+clientKindFromUserAgent(r.UserAgent()), http.StatusOK)
+		rt.trustDevice(w, r, user.ID)
+		return nil, nil
+	}
 	sessions := rt.approvalSessionEngine()
 	others, err := sessions.OtherSessionCount(ctx, user.ID, token, rt.codeLogin.approverFreshness)
 	if err != nil {
@@ -96,6 +110,10 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 	if err := sessions.RevokeChecked(ctx, token); err != nil {
 		return nil, fmt.Errorf("revoke unapproved session: %w", err)
 	}
+	if a, ok := rt.pendingApprovalForBrowser(r, user.ID); ok {
+		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionNewDeviceRequest, approvalAuditPrefix+a.ID+"#retry", http.StatusAccepted)
+		return &approvalHold{approval: a}, nil
+	}
 	if ok, retry := rt.codeLogin.approvals.allow(user.ID); !ok {
 		return &approvalHold{limited: true, retry: retry}, nil
 	}
@@ -104,6 +122,121 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 		return nil, err
 	}
 	return &approvalHold{approval: a}, nil
+}
+
+type approvalDecisionKey struct {
+	rt     *Router
+	userID string
+}
+
+type approvalDecisionLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+var (
+	approvalDecisionsMu sync.Mutex
+	approvalDecisions   = map[approvalDecisionKey]*approvalDecisionLock{}
+)
+
+// lockApprovalDecision serializes holdForApproval per account within this
+// process and returns the unlock; entries are dropped once nobody waits.
+func lockApprovalDecision(rt *Router, userID string) func() {
+	key := approvalDecisionKey{rt: rt, userID: userID}
+	approvalDecisionsMu.Lock()
+	l, ok := approvalDecisions[key]
+	if !ok {
+		l = &approvalDecisionLock{}
+		approvalDecisions[key] = l
+	}
+	l.refs++
+	approvalDecisionsMu.Unlock()
+	l.mu.Lock()
+	return func() {
+		l.mu.Unlock()
+		approvalDecisionsMu.Lock()
+		l.refs--
+		if l.refs == 0 {
+			delete(approvalDecisions, key)
+		}
+		approvalDecisionsMu.Unlock()
+	}
+}
+
+// pendingApprovalForBrowser finds the still-open approval this browser (or
+// CLI, by its binding cookie) already holds for userID, so a retried sign-in
+// keeps one request and one number instead of stacking new ones.
+func (rt *Router) pendingApprovalForBrowser(r *http.Request, userID string) (store.LoginApproval, bool) {
+	h, ok := cookieHash(r, approvalCookie)
+	if !ok {
+		return store.LoginApproval{}, false
+	}
+	a, err := rt.loginCodes.GetLoginApprovalByBrowser(r.Context(), h)
+	if err != nil || a.UserID != userID || a.Status != store.LoginApprovalPending || !time.Now().Before(a.ExpiresAt) {
+		return store.LoginApproval{}, false
+	}
+	return a, true
+}
+
+// inFirstLoginWindow reports whether user is the setup admin, still inside the
+// window after creation in which first-run shortcuts may apply.
+func (rt *Router) inFirstLoginWindow(user store.User) bool {
+	window := rt.codeLogin.firstLoginWindow
+	if window <= 0 || !user.IsFirstUser || user.CreatedAt.IsZero() {
+		return false
+	}
+	age := time.Since(user.CreatedAt)
+	return age >= 0 && age <= window
+}
+
+// firstLoginTrusted is the bounded trust on first use for a fresh install: the
+// setup admin's first password sign-in skips approval once, inside the window,
+// with no trusted browser and no session other than the one setup opened, and
+// only from that setup device (its session cookie or registering address).
+// Any doubt falls back to the normal approval flow.
+func (rt *Router) firstLoginTrusted(ctx context.Context, r *http.Request, user store.User, token, method string) bool {
+	if method != signInMethodPassword || user.FirstLoginTrustUsed || !rt.inFirstLoginWindow(user) {
+		return false
+	}
+	now := time.Now()
+	devices, err := rt.loginCodes.ListTrustedDevices(ctx, user.ID, now)
+	if err != nil || len(devices) > 0 {
+		return false
+	}
+	views, err := rt.libSessions.ListUserSessions(ctx, user.ID, token)
+	if err != nil {
+		return false
+	}
+	setupLive := false
+	for _, v := range views {
+		if v.Current {
+			continue
+		}
+		if user.SetupSessionID == "" || v.ID != user.SetupSessionID || v.CreatedAt.After(user.CreatedAt.Add(rt.codeLogin.firstLoginSetupGrace)) {
+			return false
+		}
+		setupLive = true
+	}
+	if setupLive && !rt.fromSetupDevice(ctx, r, user) {
+		return false
+	}
+	won, err := rt.auth.ClaimFirstLoginTrust(ctx, user.ID)
+	if err != nil {
+		rt.logger.Warn("api: claim first login trust failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
+		return false
+	}
+	return won
+}
+
+// fromSetupDevice reports whether the request carries the setup session or
+// comes from the address that registered the account.
+func (rt *Router) fromSetupDevice(ctx context.Context, r *http.Request, user store.User) bool {
+	if c, err := r.Cookie(sessionCookieName); err == nil && c.Value != "" {
+		if sid, ok := rt.libSessions.SessionIDFor(ctx, c.Value); ok && sid == user.SetupSessionID {
+			return true
+		}
+	}
+	return user.SetupIP != "" && clientIP(r) == user.SetupIP
 }
 
 // pauseForDeviceApproval is holdForApproval for the JSON sign-in routes.
@@ -223,7 +356,9 @@ func (rt *Router) handlePollLoginApproval(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: login approval: establish session failed", err, slog.String("user_id", a.UserID))
 		return
 	}
-	rt.trustDevice(w, r, user.ID)
+	if !strings.HasPrefix(a.DecidedBy, rootApproverPrefix) {
+		rt.trustDevice(w, r, user.ID)
+	}
 	writeJSON(w, http.StatusOK, loginApprovalPollResponse{Status: approvalPollApproved, Email: user.Email, DisplayName: user.DisplayName})
 }
 
@@ -239,7 +374,7 @@ func (rt *Router) handleDenyLoginApproval(w http.ResponseWriter, r *http.Request
 }
 
 func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, approve bool) {
-	owner, actor, ok := rt.signInOwner(w, r, true)
+	owner, actor, rootOnly, ok := rt.signInDecider(w, r)
 	if !ok {
 		return
 	}
@@ -249,7 +384,14 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 	mismatch := false
 	if approve {
 		var body loginApprovalDecision
-		if err := decodeJSONBody(r, &body); err != nil || body.Match < 10 || body.Match > 99 {
+		err := decodeJSONBody(r, &body)
+		byPassword := err == nil && body.Match == 0 && body.StepUp != nil && body.StepUp.Password != ""
+		var typeErr *json.UnmarshalTypeError
+		if errors.As(err, &typeErr) {
+			writeError(w, http.StatusBadRequest, "match must be a number: type the two digit number shown in the waiting browser")
+			return
+		}
+		if err != nil || (!byPassword && (body.Match < 10 || body.Match > 99)) {
 			writeError(w, http.StatusBadRequest, "match is required: type the two digit number shown in the waiting browser")
 			return
 		}
@@ -262,12 +404,31 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 			rt.internalError(w, "api: decide login approval: load failed", err)
 			return
 		}
-		if body.Match != approvalMatch(a.BrowserHash) {
+		switch {
+		case byPassword && rootOnly:
+			writeError(w, http.StatusForbidden, "a root token can approve only with the number shown in the waiting browser")
+			return
+		case byPassword:
+			if !isLoopbackSignIn(a.RequesterIP) {
+				writeError(w, http.StatusForbidden, "approving with a password is only allowed for sign-ins from this computer: type the number shown on the waiting device")
+				return
+			}
+			// A wrong password is refused without denying, so a typo cannot cancel a real sign-in.
+			if err := rt.verifyPasswordProof(r, owner, *body.StepUp); err != nil {
+				writeStepUpError(w, err)
+				return
+			}
+			auditPath += "#password"
+		case body.Match != approvalMatch(a.BrowserHash):
 			approve, mismatch = false, true
 			auditPath += "#mismatch"
 		}
 	}
-	decided, err := rt.loginCodes.DecideLoginApproval(ctx, id, owner, approve, actor.kind+":"+actor.id, time.Now())
+	decidedBy := actor.kind + ":" + actor.id
+	if rootOnly {
+		decidedBy = rootApproverPrefix + actor.id
+	}
+	decided, err := rt.loginCodes.DecideLoginApproval(ctx, id, owner, approve, decidedBy, time.Now())
 	if err != nil {
 		rt.internalError(w, "api: decide login approval failed", err)
 		return
@@ -286,4 +447,11 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// isLoopbackSignIn reports whether the sign-in came from this machine, the only source
+// where a password may stand in for the number on the waiting device.
+func isLoopbackSignIn(ip string) bool {
+	addr, err := netip.ParseAddr(strings.TrimSpace(ip))
+	return err == nil && addr.Unmap().IsLoopback()
 }

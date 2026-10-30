@@ -13,7 +13,6 @@ import { demoQueryOptions } from '../queries/demo'
 import { DemoChrome } from '../components/demo/DemoChrome'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
-import { CommandPalette } from '../components/CommandPalette'
 import { StageOverlay } from '../components/StageOverlay'
 import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
@@ -33,6 +32,12 @@ import { DomainMaintenanceBanner } from '../components/maintenance/DomainMainten
 import { Toaster } from '../components/ui/toast'
 
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
+// Palette code is deferred until first use to keep it out of the first-load budget.
+const CommandPalette = React.lazy(() =>
+  import('../components/CommandPalette').then((m) => ({
+    default: m.CommandPalette,
+  })),
+)
 
 // Router context carries the QueryClient so every route loader can call
 // queryClient.ensureQueryData / ensureInfiniteQueryData without importing
@@ -70,7 +75,17 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       getStoredUsername() === null &&
       !PUBLIC_ROUTE_PATHS.includes(location.pathname)
     ) {
-      redirect({ to: '/login', throw: true })
+      // Keep the full target so a deep link such as /deploy?repo=... survives sign-in.
+      // The hash (first-run #setup= token) rides along on its own, never inside ?redirect=.
+      redirect({
+        to: '/login',
+        hash: location.hash || undefined,
+        search:
+          location.pathname === '/'
+            ? {}
+            : { redirect: location.pathname + location.searchStr },
+        throw: true,
+      })
     }
   },
   // Primes brand (GET /api/v1/brand) once per navigation to a route this
@@ -113,6 +128,23 @@ function RootLayout() {
 function AppShell() {
   const username = useAuthUsername()
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)
+  const [paletteMounted, setPaletteMounted] = React.useState(false)
+  const openPalette = React.useCallback(() => {
+    setPaletteMounted(true)
+    setCommandPaletteOpen(true)
+  }, [])
+  // Before the palette chunk mounts, this catches the first Ctrl/Cmd+K; the palette owns the toggle after.
+  React.useEffect(() => {
+    if (paletteMounted) return
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        openPalette()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [paletteMounted, openPalette])
   const [stageOverlayOpen, setStageOverlayOpen] = React.useState(false)
   const openStageOverlay = React.useCallback(
     () => setStageOverlayOpen(true),
@@ -129,18 +161,22 @@ function AppShell() {
       <PreferencesApplier />
       <SkipLink />
       <AppSidebar />
-      <CommandPalette
-        open={commandPaletteOpen}
-        onOpenChange={setCommandPaletteOpen}
-        onShowShortcuts={openStageOverlay}
-      />
+      {paletteMounted && (
+        <React.Suspense fallback={null}>
+          <CommandPalette
+            open={commandPaletteOpen}
+            onOpenChange={setCommandPaletteOpen}
+            onShowShortcuts={openStageOverlay}
+          />
+        </React.Suspense>
+      )}
       <StageOverlay
         open={stageOverlayOpen}
         onOpenChange={setStageOverlayOpen}
       />
       <SidebarInset>
         <DemoChrome />
-        <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
+        <AppHeader onSearch={openPalette} />
         <ShellBanner />
         <RestartBanner />
         <LocalModeBanner />
@@ -153,7 +189,7 @@ function AppShell() {
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}
-          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 py-4 outline-none [view-transition-name:page-content] md:px-(--glinr-page-pad-x) md:py-6"
+          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 pt-4 pb-24 outline-none [view-transition-name:page-content] md:px-(--glinr-page-pad-x) md:py-6"
         >
           <div className="mx-auto w-full min-w-0 max-w-(--glinr-content-max) has-[[data-page-width=full]]:max-w-none has-[[data-page-width=wide]]:max-w-(--glinr-content-max-wide)">
             <div className="mb-4 empty:hidden"></div>

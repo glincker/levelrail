@@ -108,6 +108,14 @@ func applyOAuth(tcfg *theauth.Config, cfg Config, db *sql.DB) *oauthRuntime {
 // OAuthEnabled reports whether the library serves OAuth sign-in for this engine.
 func (e *Engine) OAuthEnabled() bool { return e.oauth != nil }
 
+// OAuthRedirectURI resolves the provider redirect URI the same way the library flow does.
+func (e *Engine) OAuthRedirectURI(r *http.Request, provider string) (string, error) {
+	if e.oauth == nil {
+		return OAuthRedirectResolver{}.Resolve(r, provider)
+	}
+	return e.oauth.redirect.Resolve(r, provider)
+}
+
 // InvalidateProvider drops the cached provider so a settings edit applies on the next request.
 func (e *Engine) InvalidateProvider(name string) {
 	e.auth.InvalidateProvider(name)

@@ -37,6 +37,7 @@ const containerHashLen = 8
 type RestartTracker struct {
 	mu       sync.Mutex
 	restarts map[string][]time.Time // resourceID -> restart timestamps, oldest first
+	byName   map[string][]time.Time // container name -> restart timestamps, oldest first
 	seen     map[string]bool        // container names whose first start has already been observed
 	recorder RestartRecorder        // optional: persists each restart as a metric sample, nil in every existing test in this package
 	logger   *slog.Logger
@@ -46,6 +47,7 @@ type RestartTracker struct {
 func NewRestartTracker() *RestartTracker {
 	return &RestartTracker{
 		restarts: make(map[string][]time.Time),
+		byName:   make(map[string][]time.Time),
 		seen:     make(map[string]bool),
 	}
 }
@@ -69,6 +71,7 @@ func (t *RestartTracker) Observe(resourceID, containerName string, at time.Time)
 		return
 	}
 	t.restarts[resourceID] = append(t.restarts[resourceID], at)
+	t.byName[containerName] = append(t.byName[containerName], at)
 	recorder := t.recorder
 	logger := t.logger
 	t.mu.Unlock()
@@ -100,12 +103,41 @@ func (t *RestartTracker) CountSince(resourceID string, since time.Time) int {
 	return count
 }
 
+// CountContainersSince is CountSince for specific containers, so a release's
+// watch is not charged for restarts of another release of the same service.
+func (t *RestartTracker) CountContainersSince(names []string, since time.Time) int {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	count := 0
+	for _, name := range names {
+		for _, ts := range t.byName[name] {
+			if ts.After(since) {
+				count++
+			}
+		}
+	}
+	return count
+}
+
 // Prune drops restart records older than olderThan, so this map doesn't
 // grow without bound over a long-running process. Call periodically
 // (Run does this once per resync), not per-evaluation.
 func (t *RestartTracker) Prune(olderThan time.Time) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	for name, times := range t.byName {
+		kept := times[:0]
+		for _, ts := range times {
+			if ts.After(olderThan) {
+				kept = append(kept, ts)
+			}
+		}
+		if len(kept) == 0 {
+			delete(t.byName, name)
+		} else {
+			t.byName[name] = kept
+		}
+	}
 	for id, times := range t.restarts {
 		kept := times[:0]
 		for _, ts := range times {
@@ -177,15 +209,32 @@ const maxRestartRetention = 24 * time.Hour
 func resolveResourceID(services []store.DesiredService, containerName string) (resourceID string, ok bool) {
 	for _, svc := range services {
 		suffix, hasPrefix := strings.CutPrefix(containerName, svc.Name+"-")
-		if !hasPrefix || len(suffix) != containerHashLen {
+		if !hasPrefix {
 			continue
 		}
-		if !isHexString(suffix) {
+		// Replicas 1 and up carry an extra "-rN" after the hash.
+		hash, replica, hasReplica := strings.Cut(suffix, "-r")
+		if len(hash) != containerHashLen || !isHexString(hash) {
+			continue
+		}
+		if hasReplica && !isDecimal(replica) {
 			continue
 		}
 		return "service:" + svc.Name, true
 	}
 	return "", false
+}
+
+func isDecimal(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func isHexString(s string) bool {

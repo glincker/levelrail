@@ -4,7 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { GearSixIcon } from '@phosphor-icons/react/dist/ssr'
 import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../hooks/useDeployProgress'
+import { useApp } from '../../../../queries/apps'
+import { useAppTimeline } from '../../../../queries/appTimeline'
+import { AppHistoryTimeline } from '../../../../components/deployTimeline/AppHistoryTimeline'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
+import { ScheduledDeploysList } from '../../../../components/deploy/ScheduledDeploysList'
 import { BuildLimitsCard } from '../../../../components/BuildLimitsCard'
 import { BuildTrendCard } from '../../../../components/BuildTrendCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,8 +47,17 @@ function DeploysSection() {
   const { attempts, conditions } = useDeployProgress(name)
   const [tab, setTab] = useState<DeployTab | null>(null)
 
+  const { data: app } = useApp(name)
+  const { data: activity } = useAppTimeline(name)
+
   return (
     <div className="space-y-6">
+      <AppHistoryTimeline
+        appName={name}
+        attempts={attempts}
+        activity={activity ?? []}
+        managedByStack={app.managed_by_stack}
+      />
       <DeployAttemptsList
         appName={name}
         attempts={attempts}
@@ -53,6 +66,7 @@ function DeploysSection() {
           setTab('existing-image')
         }}
       />
+      <ScheduledDeploysList appName={name} />
       <BuildTrendCard appName={name} />
       <BuildLimitsCard appName={name} />
       <Card>

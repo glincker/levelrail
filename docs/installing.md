@@ -41,7 +41,7 @@ Confirm these before you provision a server.
 | Item | Requirement |
 | --- | --- |
 | OS | Linux, `amd64` or `arm64`, with systemd. Tested in CI on Ubuntu 24.04 and Debian 12; other distros should work but are untested. Windows and non-Linux nodes are not supported. |
-| Docker | 24 or newer. `install.sh` installs it via `get.docker.com` if it is missing. |
+| Docker | 24 or newer. `install.sh` installs it via `get.docker.com` if it is missing. An existing Podman is accepted as best-effort with `--runtime podman`, see [Container runtimes](/container-runtimes). |
 | Access | Root, plus `curl`. |
 | Ports (control-plane node) | `80/tcp` and `443/tcp` inbound from the internet. Port 80 is required for Let's Encrypt HTTP-01. Optionally `443/udp` for HTTP/3. |
 | Ports (agent-only nodes) | None. The agent dials out and the control plane never initiates a connection. See [Multi-node](/multi-node). |
@@ -73,6 +73,8 @@ The script:
 
 Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
 
+Pass `--runtime auto|docker|podman|existing` (or set `LEVELRAIL_RUNTIME`) to choose the container runtime (default `auto`); see [Container runtimes](/container-runtimes).
+
 <Accordion title="If the install fails">
 
 | Message | What to do |
@@ -94,7 +96,7 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 
 <Steps>
 <Step title="Open the setup link">
-Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The public address is printed first, then private addresses. Container bridge addresses are hidden.
+Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The summary prints the token and these links only in an interactive terminal; in cloud-init or CI it points to `setup-token` instead. The public address is printed first, then private addresses. Container bridge addresses are hidden.
 
 **8080 is only the default.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
 </Step>
@@ -515,6 +517,8 @@ levelrail-cli status    # check Docker reachability and system config
 
 ## Upgrading
 
+To update only the CLI on your laptop, run `levelrail-cli update` (or `self-update`). `update --check --exit-code` exits 10 when a newer release exists, and the old binary stays beside the new one as `levelrail-cli.bak` for rollback. See [Updating the CLI](/cli-reference#updating).
+
 Pick the path that matches how you installed. The self-update (next section) is the safest, because it restores the database as well as the binary on failure.
 
 ### Check first, then upgrade
@@ -529,6 +533,12 @@ Pick the path that matches how you installed. The self-update (next section) is 
 | Control plane backup | Exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h). **Back up now** in the dashboard, or `levelrail-cli upgrade backup-now`, clears this blocker in one step |
 
 The CLI also takes a fresh [control plane backup](/control-plane-backup) unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
+
+### Preview the upgrade
+
+`levelrail-cli upgrade --dry-run` changes nothing and prints the target version, breaking changes, the database schema move (for example `database schema 3034 -> 3048 (14 migrations will run)`), the fact that a database backup is taken before the swap, and the exact rollback commands. On a host where the service does not listen on `localhost:8080`, set `APP_API_URL` first (the address in `APP_HTTP_ADDR` of the unit); `emergency-token` prints the full line for you.
+
+The one command that upgrades is `levelrail-cli upgrade --apply`.
 
 ### Upgrade with automatic rollback
 

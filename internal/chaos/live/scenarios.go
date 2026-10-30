@@ -87,6 +87,13 @@ func tally(res *chaos.Result, r bench.Result) {
 	if r.Event != nil {
 		res.ErrorWindowMS = r.Event.ErrorWindowMS
 	}
+	res.Set("p50_ms", r.Stats.P50MS)
+	res.Set("p95_ms", r.Stats.P95MS)
+	res.Set("p99_ms", r.Stats.P99MS)
+	res.Set("max_ms", r.Stats.MaxMS)
+	res.Set("achieved_rps", r.Stats.AchievedRPS)
+	res.Set("client_saturated", float64(r.Stats.Saturated))
+	res.Assert("load generator was not the bottleneck", r.Stats.Saturated == 0, fmt.Sprintf("%d requests shed by the client in-flight cap", r.Stats.Saturated))
 }
 
 func killContainer(ctx context.Context, res *chaos.Result) error {

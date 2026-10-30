@@ -14,6 +14,7 @@ import { PreviewSettingsCard } from '../../../components/PreviewSettingsCard'
 import { SupplyChainSettingsCard } from '../../../components/SupplyChainSettingsCard'
 import { SecretScanSettingsCard } from '../../../components/SecretScanSettingsCard'
 import { AutoRollbackCard } from '../../../components/AutoRollbackCard'
+import { PredeploySnapshotCard } from '../../../components/PredeploySnapshotCard'
 import { AutoRollbackSLOBurnCard } from '../../../components/AutoRollbackSLOBurnCard'
 import { CanaryCard } from '../../../components/CanaryCard'
 import { ImageAutoUpdateCard } from '../../../components/ImageAutoUpdateCard'
@@ -86,6 +87,9 @@ function DeploySettingsSection() {
         </CardHelp>
         <CardHelp card="autoRollback">
           <AutoRollbackCard appName={name} />
+        </CardHelp>
+        <CardHelp card="predeploySnapshot">
+          <PredeploySnapshotCard appName={name} />
         </CardHelp>
         <CardHelp card="sloBurn">
           <AutoRollbackSLOBurnCard appName={name} />

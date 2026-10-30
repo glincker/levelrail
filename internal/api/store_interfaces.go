@@ -229,6 +229,8 @@ type Store interface {
 	EdgeFirewallStore
 	GitSourceStore
 	AppScheduleStore
+	ScheduledDeployStore
+	PRCommentCommandStore
 	AppGitHubActionsStore
 	CIOIDCTrustStore
 	ImageAutoUpdateStore
@@ -236,6 +238,7 @@ type Store interface {
 	AppSleepStore
 	DataImportStore
 	MigrationHubStore
+	MigrationVerifyStore
 	MigrationChecklistStore
 	AppImportStore
 	LoginCodeStore
@@ -250,6 +253,8 @@ type Store interface {
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
+	EmailProviderStore
+	TrafficExportStore
 	ObservabilityStore
 	CloudflareTunnelStore
 	RegistryStore

@@ -58,6 +58,10 @@ func (f *fakeStore) ListPrunableDeployAttempts(context.Context, time.Time, int, 
 }
 func (f *fakeStore) DeleteDeployAttempts(context.Context, []string) error { return nil }
 
+func (f *fakeStore) PurgeInactiveAPITokens(context.Context, store.TokenPurgeKind, time.Time, int, bool) (int, error) {
+	return 0, nil
+}
+
 type fakeDocker struct{ pruned []string }
 
 func (d *fakeDocker) DiskUsage(context.Context) (docker.DiskUsage, error) {

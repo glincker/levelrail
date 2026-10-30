@@ -1,0 +1,24 @@
+name: shop
+services:
+  api:
+    image: ghcr.io/acme/api:1.4.2
+    container_name: shop-api
+    env_file:
+      - ./common.env
+      - path: ./override.env
+        required: false
+    environment:
+      - NODE_ENV=production
+    user: node
+    stop_grace_period: 30s
+    cpus: 1.5
+  redis:
+    image: redis:7-alpine
+    container_name: shop-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis:/data
+    restart: always
+volumes:
+  redis:
+    external: true

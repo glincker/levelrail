@@ -1,8 +1,10 @@
+import { lazy, Suspense, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
   CheckCircleIcon,
   GaugeIcon,
+  StackIcon,
   WarningCircleIcon,
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -28,6 +30,12 @@ import {
   type CPHealthFinding,
   type CPHealthFix,
 } from '../../queries/controlPlaneHealth'
+
+const FootprintCard = lazy(() =>
+  import('@/components/settings/FootprintCard').then((m) => ({
+    default: m.FootprintCard,
+  })),
+)
 
 const MIB = 1 << 20
 
@@ -61,14 +69,19 @@ function Metric({
   label,
   value,
   hint,
+  icon,
 }: {
   label: string
   value: string
   hint?: string
+  icon?: ReactNode
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+        {icon}
+        {label}
+      </p>
       <p className="text-lg font-medium tabular-nums">{value}</p>
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
@@ -100,6 +113,20 @@ function MetricsGrid({ h }: { h: CPHealth }) {
         hint={t('dbQueueHint', { ms: Math.round(h.db.wait_ms) })}
       />
       <Metric
+        label={t('readQueue')}
+        value={h.db.read_pool_enabled ? String(h.db.read_wait_count) : '-'}
+        hint={
+          h.db.read_pool_enabled
+            ? t('readQueueHint', {
+                ms: Math.round(h.db.read_wait_ms),
+                inUse: h.db.read_in_use,
+                size: h.db.read_pool_size,
+              })
+            : t('readPoolDisabled')
+        }
+        icon={<StackIcon aria-hidden className="size-3.5" />}
+      />
+      <Metric
         label={t('wal')}
         value={`${Math.round(h.db.wal_bytes / MIB)} MiB`}
         hint={t('walHint', { size: Math.round(h.db.db_bytes / MIB) })}
@@ -112,6 +139,19 @@ function MetricsGrid({ h }: { h: CPHealth }) {
           p95: h.reconcile.p95_ms.toFixed(0),
         })}
       />
+      {h.reconcile.queue && (
+        <Metric
+          label={t('reconcileQueue')}
+          value={t('reconcileQueueValue', {
+            inFlight: h.reconcile.queue.in_flight,
+            workers: h.reconcile.queue.workers,
+          })}
+          hint={t('reconcileQueueHint', {
+            depth: h.reconcile.queue.queue_depth,
+            wait: h.reconcile.queue.oldest_wait_seconds.toFixed(1),
+          })}
+        />
+      )}
       <Metric
         label={t('eventLag')}
         value={`${h.reconcile.lag_seconds.toFixed(0)} s`}
@@ -315,6 +355,11 @@ export function ControlPlaneHealthPage() {
               })}
             </section>
           )}
+          {data.idle_footprint ? (
+            <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+              <FootprintCard idle={data.idle_footprint} />
+            </Suspense>
+          ) : null}
           <IntegrityCard />
           <ReconcileGuardCard guard={data.reconcile.guard} />
           <Card>

@@ -494,6 +494,9 @@ const wizardAppYAMLPath = "app.yaml"
 // the API, per the wizard's own last answer.
 func runAppsCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
 	jsonOut := of.Format == outputJSON
+	if err := requireInput("apps create --interactive", "pass --name and the other create flags, or an app.yaml"); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
 	p := newWizardPrompter(stdin, stderr)
 	answers, err := runInteractiveWizard(p, detectLocalGit())
 	if err != nil {

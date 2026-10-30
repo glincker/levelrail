@@ -56,6 +56,8 @@ func renderCaddyfile(in ExportInput) (string, []string) {
 		w("\t\tlb_policy least_conn\n")
 	case loadbalancer.AlgoIPHash:
 		w("\t\tlb_policy ip_hash\n")
+	case loadbalancer.AlgoClientIPHash:
+		w("\t\tlb_policy client_ip_hash\n")
 	case loadbalancer.AlgoURIHash:
 		w("\t\tlb_policy uri_hash\n")
 	case loadbalancer.AlgoCookie:

@@ -30,6 +30,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsAIAssistant(prog, args[1:], stdout, stderr, lookupEnv)
 	case "updates":
 		return runSettingsUpdates(prog, args[1:], stdout, stderr, lookupEnv)
+	case "heartbeat":
+		return runSettingsHeartbeat(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-freeze":
 		return runSettingsDeployFreeze(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domain-automation":
@@ -38,6 +40,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsBetaFeatures(prog, args[1:], stdout, stderr, lookupEnv)
 	case "profile":
 		return runSettingsProfile(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runtime":
+		return runSettingsRuntime(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsUsage(prog))
@@ -51,6 +55,7 @@ func settingsUsage(prog string) string {
   %[1]s settings oauth set <provider> [flags]           enable/configure/disable one OAuth sign-in provider
   %[1]s settings email get [flags]                        show the current outbound email (SMTP/SES) settings
   %[1]s settings email set [flags]                        configure outbound email
+  %[1]s settings email branding get|set|preview [flags]   logo, accent color and footer for rich email
   %[1]s settings ingress get [flags]                      show the current ingress/ACME settings
   %[1]s settings ingress set [flags]                      configure the primary domain and ACME (Let's Encrypt) settings
   %[1]s settings edge get|set|fix [flags]                 request limits and trusted proxies (fix detects the proxy in front)
@@ -64,9 +69,11 @@ func settingsUsage(prog string) string {
   %[1]s settings domain-automation get|set [flags]        the add-a-domain-and-go-live policy
   %[1]s settings beta-features list|set <feature> on|off   gated features, switch one (saved at once)
   %[1]s settings profile get|set minimal|standard|suite   the server profile: which optional subsystems start
+  %[1]s settings heartbeat show|set|clear [flags]        dead-man ping to an external monitor
   %[1]s settings deploy-freeze show [flags]             show the fleet-wide deploy freeze windows
   %[1]s settings deploy-freeze set --cron EXPR --duration D [flags]   replace them with one window
   %[1]s settings deploy-freeze clear [flags]              clear the fleet-wide freeze windows
+  %[1]s settings runtime list|get|set|reset|apply [flags]   runtime-tunable security and networking settings (saved over env over default)
 
 Instance-wide configuration, gated at AbilityRoot server-side on every
 write. <provider> for "settings oauth set" is one of "google", "github",

@@ -50,3 +50,37 @@ func TestValidateHostPath_ExecutableDirsAndConfiguredDataDirs(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateHostPath_CredentialDirsAndHomeRoots(t *testing.T) {
+	for _, p := range []string{
+		"/home/ubuntu/.ssh", "/home/ubuntu/.ssh/authorized_keys", "/srv/x/.aws", "/opt/stack/.kube/config",
+		"/home", "/home/ubuntu", "/var/log", "/var/log/auth.log", "/usr/local/etc/app",
+	} {
+		if err := ValidateHostPath(p); err == nil {
+			t.Errorf("ValidateHostPath(%q) = nil, want rejected", p)
+		}
+	}
+	for _, p := range []string{"/home/deploy/uploads", "/opt/app-data", "/srv/media", "/home/deploy/sshfiles"} {
+		if err := ValidateHostPath(p); err != nil {
+			t.Errorf("ValidateHostPath(%q) = %v, want nil", p, err)
+		}
+	}
+}
+
+func TestValidateHostPath_AllowedRoots(t *testing.T) {
+	t.Setenv(EnvAllowedRoots, "/srv/apps:/mnt/nas")
+	for _, p := range []string{"/srv/apps/site", "/srv/apps", "/mnt/nas/media"} {
+		if err := ValidateHostPath(p); err != nil {
+			t.Errorf("ValidateHostPath(%q) = %v, want nil", p, err)
+		}
+	}
+	for _, p := range []string{"/opt/app-data", "/srv/appsx/data", "/srv/apps/../other"} {
+		if err := ValidateHostPath(p); err == nil {
+			t.Errorf("ValidateHostPath(%q) = nil, want outside allowed roots", p)
+		}
+	}
+	t.Setenv(EnvAllowedRoots, "/")
+	if err := ValidateHostPath("/srv/media"); err == nil {
+		t.Error("a root of / must not allow everything")
+	}
+}

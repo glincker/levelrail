@@ -2,6 +2,8 @@
 // compose_revisions.go, compose_preview.go) and template manifests
 // (internal/catalog/manifest.go).
 
+import type { PublishedPort } from './publishedPort'
+
 export type ComposePhase =
   'running' | 'progressing' | 'degraded' | 'failed' | 'stopped'
 
@@ -10,6 +12,7 @@ export interface ComposeStackService {
   name: string
   image: string
   port?: number
+  published_ports?: PublishedPort[]
   domains?: string[]
   depends_on?: string[]
   depends_on_healthy?: string[]

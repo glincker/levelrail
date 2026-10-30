@@ -30,7 +30,7 @@ const (
 )
 
 // DefaultThresholds are the alert levels, in percent of the monthly amount.
-var DefaultThresholds = []int{50, 80, 100}
+var DefaultThresholds = spendcap.DefaultThresholds
 
 // ErrNotFound is returned when a budget id matches nothing.
 var ErrNotFound = errors.New("costbudget: not found")
@@ -47,6 +47,7 @@ type Budget struct {
 	Thresholds  []int   `json:"thresholds"`
 	Action      string  `json:"action"`
 	ThrottleRPS int     `json:"throttle_rps"`
+	GuardMode   string  `json:"guard_mode"`
 }
 
 // Normalize fills defaults and returns the budget ready to validate or store.
@@ -55,6 +56,9 @@ func (b Budget) Normalize() Budget {
 	b.ScopeValue = strings.TrimSpace(b.ScopeValue)
 	if b.Action == "" {
 		b.Action = spendcap.ActionNone
+	}
+	if b.GuardMode == "" {
+		b.GuardMode = spendcap.GuardAlert
 	}
 	if len(b.Thresholds) == 0 {
 		b.Thresholds = append([]int(nil), DefaultThresholds...)
@@ -105,6 +109,12 @@ func (b Budget) Validate() error {
 	case spendcap.ActionNone, spendcap.ActionThrottle, spendcap.ActionPause:
 	default:
 		return errors.New("action must be none, throttle or pause")
+	}
+	if err := spendcap.ValidateGuardMode(b.GuardMode); err != nil {
+		return err
+	}
+	if b.GuardMode == spendcap.GuardBlockDeploys && b.Scope == ScopeTag {
+		return errors.New("block_deploys supports app and project budgets, not tag budgets")
 	}
 	if b.Action == spendcap.ActionThrottle && (b.ThrottleRPS < 1 || b.ThrottleRPS > spendcap.MaxThrottleRPS) {
 		return fmt.Errorf("throttle_rps must be 1 to %d", spendcap.MaxThrottleRPS)
@@ -188,6 +198,9 @@ func BreachFor(b Budget, st State, currency string) (Breach, bool) {
 		return Breach{}, false
 	}
 	text := fmt.Sprintf("budget %q (%s %s) has used %.0f%%: %.2f of %.2f %s", b.Name, b.Scope, b.ScopeValue, st.Pct, st.Spent, b.Monthly, currency)
+	if st.Enforced == "" && st.Pct >= 100 && b.GuardMode == spendcap.GuardBlockDeploys {
+		text += "; new deploys of the apps in scope are blocked until next month or until the budget is raised"
+	}
 	switch st.Enforced {
 	case spendcap.ActionPause:
 		text += "; the apps in scope are paused until next month or until the budget is raised"

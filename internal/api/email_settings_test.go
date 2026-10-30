@@ -19,28 +19,61 @@ import (
 // same pattern fakeBackupSecretsSetter (backup_targets_test.go) already
 // establishes for the structurally identical backup-target interface.
 type fakeEmailSecretsStore struct {
-	err    error
-	values map[string]string // envKey -> plaintext, keyed loosely (serviceName is always the same sentinel in practice)
+	err error
+	// values is keyed by envKey for the shared email-settings namespace and by service|envKey for any other.
+	values map[string]string
 }
 
 func newFakeEmailSecretsStore() *fakeEmailSecretsStore {
 	return &fakeEmailSecretsStore{values: map[string]string{}}
 }
 
-func (f *fakeEmailSecretsStore) SetValue(_ context.Context, _, envKey, plaintext string) error {
+func fakeEmailSlot(service, envKey string) string {
+	if service == store.EmailSettingsSecretsKey() {
+		return envKey
+	}
+	return service + "|" + envKey
+}
+
+func (f *fakeEmailSecretsStore) SetValue(_ context.Context, service, envKey, plaintext string) error {
 	if f.err != nil {
 		return f.err
 	}
-	f.values[envKey] = plaintext
+	f.values[fakeEmailSlot(service, envKey)] = plaintext
 	return nil
 }
 
-func (f *fakeEmailSecretsStore) Exists(_ context.Context, _, envKey string) (bool, error) {
+func (f *fakeEmailSecretsStore) Exists(_ context.Context, service, envKey string) (bool, error) {
 	if f.err != nil {
 		return false, f.err
 	}
-	_, ok := f.values[envKey]
+	_, ok := f.values[fakeEmailSlot(service, envKey)]
 	return ok, nil
+}
+
+func (f *fakeEmailSecretsStore) Resolve(_ context.Context, service, envKey string) (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	v, ok := f.values[fakeEmailSlot(service, envKey)]
+	if !ok {
+		return "", secrets.ErrValueNotFound
+	}
+	return v, nil
+}
+
+func (f *fakeEmailSecretsStore) DeleteValue(_ context.Context, service, envKey string) error {
+	delete(f.values, fakeEmailSlot(service, envKey))
+	return f.err
+}
+
+func (f *fakeEmailSecretsStore) DeleteAll(_ context.Context, service string) error {
+	for k := range f.values {
+		if strings.HasPrefix(k, service+"|") {
+			delete(f.values, k)
+		}
+	}
+	return f.err
 }
 
 func newTestRouterWithEmailSecrets(t *testing.T, secrets EmailSecretsStore) (*Router, *store.DB) {

@@ -133,7 +133,7 @@ func (db *DB) ListUpgradeSchedules(ctx context.Context, limit int) ([]UpgradeSch
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	rows, err := db.QueryContext(ctx, `SELECT `+upgradeScheduleColumns+` FROM upgrade_schedules
+	rows, err := db.reader().QueryContext(ctx, `SELECT `+upgradeScheduleColumns+` FROM upgrade_schedules
 		ORDER BY created_at DESC, id DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("store: list upgrade schedules: %w", err)

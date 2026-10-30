@@ -25,6 +25,7 @@ export type SettingsCardKey =
   | 'safety'
   | 'watch'
   | 'autoRollback'
+  | 'predeploySnapshot'
   | 'sloBurn'
   | 'canary'
   | 'freeze'

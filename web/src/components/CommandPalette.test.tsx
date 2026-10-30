@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import palette from '../locales/en/palette.json'
 import common from '../locales/en/common.json'
 import type { SearchHit } from '../queries/search'
+import { appListQueryOptions } from '../queries/apps'
 import { CommandPalette } from './CommandPalette'
 
 let experimentalOn: string[] = ['ai-chat']
@@ -69,6 +70,7 @@ const hit = (over: Partial<SearchHit> & Pick<SearchHit, 'kind' | 'title'>) => ({
 })
 
 let searchHits: SearchHit[] = []
+let templateRows: unknown[] = []
 let searchStatus = 200
 const fetchMock = vi.fn((url: string, init?: RequestInit) => {
   const json = (body: unknown, status = 200) =>
@@ -84,6 +86,7 @@ const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     }
     return json({ saved: [{ id: 's9', name: 'prod apis', query: 'env:prod' }] })
   }
+  if (url === '/api/v1/service-templates') return json(templateRows)
   if (url.startsWith('/api/v1/search/suggest')) return json({ suggestions: [] })
   if (url.startsWith('/api/v1/search/usage')) return json({}, 204)
   if (url.startsWith('/api/v1/search?')) {
@@ -113,6 +116,7 @@ function searchCalls(): string[] {
 beforeEach(() => {
   experimentalOn = ['ai-chat']
   searchHits = []
+  templateRows = []
   searchStatus = 200
   window.localStorage.clear()
   vi.stubGlobal('fetch', fetchMock)
@@ -385,5 +389,103 @@ describe('CommandPalette', () => {
     expect(window.localStorage.getItem('palette.recent')).toBe(
       JSON.stringify(['action-nodes']),
     )
+  })
+
+  it('ranks related pages for container and suggests a Portainer template', async () => {
+    templateRows = [
+      {
+        id: 'portainer',
+        name: 'Portainer',
+        slogan: 'Manage Docker containers',
+        category: 'tools',
+        documentation_url: '',
+        requires_configuration: false,
+      },
+    ]
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'container')
+    await screen.findByRole('option', { name: /Portainer/ })
+    const names = screen.getAllByRole('option').map((o) => o.textContent ?? '')
+    const registry = names.findIndex((n) => /Registry credentials/.test(n))
+    expect(registry).toBe(0)
+    expect(names.findIndex((n) => /Portainer/.test(n))).toBeGreaterThan(
+      registry,
+    )
+    expect(names.some((n) => /Go to Status/.test(n))).toBe(false)
+  })
+
+  it('puts Databases and Backups first when typing db', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'db')
+    const names = (await screen.findAllByRole('option')).map(
+      (o) => o.textContent ?? '',
+    )
+    expect(names[0]).toMatch(/Databases/)
+    expect(names.slice(0, 3).join('|')).toMatch(/Backups/)
+    expect(names.join('|')).toMatch(/Create database/)
+  })
+
+  it('shows a preview card for the highlighted item and follows ArrowDown', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'db')
+    const preview = await screen.findByRole('complementary', {
+      name: 'Preview',
+    })
+    expect(preview).toHaveTextContent('Managed databases')
+    expect(preview).toHaveTextContent('/databases')
+    await user.keyboard('{ArrowDown}')
+    expect(preview).not.toHaveTextContent('Managed databases')
+  })
+
+  it('shows a Deploy action for a template preview', async () => {
+    templateRows = [
+      {
+        id: 'portainer',
+        name: 'Portainer',
+        slogan: 'Manage Docker containers',
+        category: 'tools',
+        documentation_url: '',
+        requires_configuration: false,
+      },
+    ]
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'portainer')
+    await screen.findByRole('option', { name: /Portainer/ })
+    const preview = screen.getByRole('complementary', { name: 'Preview' })
+    expect(preview).toHaveTextContent('Template')
+    await user.click(screen.getByRole('button', { name: /Deploy/ }))
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/deploy',
+      search: { template: 'portainer' },
+    })
+  })
+
+  it('recommends create and import when there are no apps yet', () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    client.setQueryData(appListQueryOptions().queryKey, [])
+    render(
+      <QueryClientProvider client={client}>
+        <CommandPalette open onOpenChange={onOpenChange} />
+      </QueryClientProvider>,
+    )
+    expect(
+      screen.getByRole('option', { name: /Bring existing apps/ }),
+    ).toHaveTextContent(/Bring existing apps/)
+  })
+
+  it('drops the preview pane on narrow screens', () => {
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+    renderPalette()
+    expect(screen.queryByRole('complementary')).toBeNull()
   })
 })

@@ -85,7 +85,7 @@ func (db *DB) GetDatabaseDataImport(ctx context.Context, name string) (DatabaseD
 
 // ListDatabaseDataImports returns every copy row.
 func (db *DB) ListDatabaseDataImports(ctx context.Context) ([]DatabaseDataImport, error) {
-	rows, err := db.QueryContext(ctx, dataImportSelect+` ORDER BY database_name`)
+	rows, err := db.reader().QueryContext(ctx, dataImportSelect+` ORDER BY database_name`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list data imports: %w", err)
 	}

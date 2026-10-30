@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -86,6 +88,9 @@ func (rt *Router) teardownOnce(ctx context.Context, name, nodeID string, purge b
 	}
 	if purge {
 		names := databaseVolumeNames(name)
+		if !rt.isLocalNode(nodeID) {
+			return removeRemoteVolumes(ctx, runtime, names)
+		}
 		rt.purgeVolumes(ctx, "database/"+name, names)
 	}
 	return nil
@@ -108,6 +113,22 @@ func (rt *Router) RetryDatabaseTeardowns(ctx context.Context) error {
 		}
 		if err := rt.runDatabaseTeardown(ctx, j.Name, j.NodeID, j.Purge); err != nil {
 			errs = append(errs, fmt.Errorf("database %q: %w", j.Name, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// removeRemoteVolumes deletes volumes on a remote node through its agent. A failure
+// is returned so the teardown job retries; a volume that is already gone is fine.
+func removeRemoteVolumes(ctx context.Context, rt docker.Runtime, names []string) error {
+	remover, ok := rt.(docker.VolumeRemover)
+	if !ok {
+		return errors.New("this node's agent cannot remove volumes; upgrade the agent or remove them on the node")
+	}
+	var errs []error
+	for _, n := range names {
+		if err := remover.RemoveVolume(ctx, n); err != nil && !strings.Contains(strings.ToLower(err.Error()), "no such volume") {
+			errs = append(errs, fmt.Errorf("remove volume %q: %w", n, err))
 		}
 	}
 	return errors.Join(errs...)

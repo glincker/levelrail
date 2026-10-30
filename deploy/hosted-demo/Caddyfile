@@ -1,0 +1,63 @@
+# Public front for a read-only demo on the same host. Replace demo.example.com.
+# The demo itself listens on 127.0.0.1:8080 only; Caddy is the only public listener.
+{
+	servers {
+		timeouts {
+			read_header 5s
+			read_body 10s
+			idle 60s
+		}
+	}
+}
+
+demo.example.com {
+	encode zstd gzip
+
+	request_body {
+		max_size 16KB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# Per-IP limit. Needs the caddy-ratelimit module (xcaddy build with
+	# github.com/mholt/caddy-ratelimit); drop this block to limit at a CDN instead.
+	rate_limit {
+		zone per_ip {
+			key {remote_host}
+			events 120
+			window 1m
+		}
+	}
+
+	# Logs carry no client address or cookies, and rotate quickly.
+	log {
+		output file /var/log/caddy/demo-access.log {
+			roll_size 10MiB
+			roll_keep 2
+			roll_keep_for 72h
+		}
+		format filter {
+			request>remote_ip delete
+			request>client_ip delete
+			request>headers>Cookie delete
+			request>headers>Authorization delete
+			request>headers>X-Forwarded-For delete
+			resp_headers>Set-Cookie delete
+		}
+	}
+
+	reverse_proxy 127.0.0.1:8080 {
+		flush_interval -1
+		transport http {
+			dial_timeout 2s
+			response_header_timeout 30s
+		}
+	}
+}

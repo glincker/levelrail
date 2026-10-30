@@ -1,0 +1,17 @@
+version: 1
+kind: Database
+metadata:
+  name: cache
+spec:
+  engine: redis
+  version: "7.4"
+  project: shop
+---
+version: 1
+kind: Database
+metadata:
+  name: main
+spec:
+  engine: postgres
+  version: "16"
+  project: shop

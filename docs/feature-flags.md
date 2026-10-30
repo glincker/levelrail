@@ -1,6 +1,5 @@
 ---
 title: "Feature flags"
-tag: "Beta"
 description: Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 "og:url": "https://docs.levelrail.com/feature-flags"
 ---
@@ -93,7 +92,7 @@ The evaluate response is only `key` and `enabled`, because apps may call it on e
 
 ## Not supported
 
-Rollout is a flat percentage by identifier, so you cannot target by user attribute such as plan. There is also no flag-specific history view: create, update and delete show up in the generic audit log (`GET /api/v1/audit-log`).
+Rollout is a flat percentage by identifier, so you cannot target by user attribute such as plan. A flag also has one value for the whole control plane, so there is no per-environment targeting: use a separate flag key per environment. There is also no flag-specific history view: create, update and delete show up in the generic audit log (`GET /api/v1/audit-log`).
 
 ## Next steps
 

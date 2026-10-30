@@ -19,7 +19,8 @@
     "LimitReachedAlertOnly": "Limit reached, alert only",
     "Throttled": "Throttled",
     "Paused": "Paused",
-    "EnforcementPending": "Applying"
+    "EnforcementPending": "Applying",
+    "DeploysBlocked": "New deploys blocked"
   },
   "usage": {
     "egress": "Egress",
@@ -34,11 +35,16 @@
       "none": "At 100 percent: alert only, the app keeps serving",
       "throttle": "At 100 percent: each client is limited to {{rps}} requests per second",
       "pause": "At 100 percent: the app is paused with a maintenance response"
+    },
+    "guard": {
+      "alert": "Deploys are never blocked by this budget",
+      "block_deploys": "At 100 percent: new deploys are refused until next month, a higher limit or a root override"
     }
   },
   "actions": {
     "edit": "Edit budget",
-    "remove": "Remove budget"
+    "remove": "Remove budget",
+    "preview": "Preview a pause"
   },
   "form": {
     "egress": "Monthly egress limit (GiB)",
@@ -88,6 +94,81 @@
   "toast": {
     "saved": "Budget saved",
     "removed": "Budget removed",
-    "errorTitle": "Budget request failed"
+    "errorTitle": "Budget request failed",
+    "overridden": "Deploys allowed for a short time"
+  },
+  "forecast": {
+    "projected": "Projected {{value}} by month end",
+    "overLimit": "(over the limit)"
+  },
+  "guard": {
+    "legend": "Deploys at the limit",
+    "alert": {
+      "label": "Keep deploying",
+      "help": "Reaching the limit only alerts and applies the action above."
+    },
+    "block_deploys": {
+      "label": "Block new deploys",
+      "help": "Refuse new deploys at 100 percent. The running release keeps serving. A root user can override."
+    },
+    "blocked": "New deploys of this app are refused until next month, until the limit is raised or until a root user allows them.",
+    "overridden": "Deploys are allowed until {{time}} by an override: {{reason}}",
+    "override": "Allow deploys"
+  },
+  "override": {
+    "title": "Allow deploys for a short time?",
+    "description": "A root override lets new deploys through while the limit stays reached. It expires on its own.",
+    "audited": "Your name and reason are recorded in the budget history.",
+    "expires": "The override ends after a short window, then the guard applies again.",
+    "reason": "Reason",
+    "reasonPlaceholder": "Why this deploy cannot wait",
+    "confirm": "Allow deploys",
+    "pending": "Allowing"
+  },
+  "preview": {
+    "title": "What a pause would do",
+    "description": "A preview of stopping every app in scope until the month ends. Nothing is changed.",
+    "noApps": "No apps are in scope.",
+    "replicas_one": "{{count}} replica",
+    "replicas_other": "{{count}} replicas",
+    "saves": "saves about {{value}}",
+    "total": "{{replicas}} replicas would stop, saving about {{value}} over the remaining {{days}} days.",
+    "noChanges": "A real pause is not available yet. This preview changes nothing.",
+    "close": "Close"
+  },
+  "alertRule": {
+    "name": "Spend cap alerts",
+    "create": "Alert me",
+    "creating": "Creating",
+    "created": "Alert rule created. Attach a notification channel to receive it."
+  },
+  "project": {
+    "title": "Spend",
+    "description": "A monthly cost cap for every app in this project, with a projection and an optional deploy guard.",
+    "empty": {
+      "title": "No spend cap on this project",
+      "body": "Set a monthly amount to get alerts as the project spends and, if you choose, block new deploys at the limit.",
+      "action": "Set a spend cap"
+    },
+    "form": {
+      "amount": "Monthly amount ({{currency}})",
+      "save": "Save spend cap",
+      "saving": "Saving",
+      "cancel": "Cancel",
+      "badAmount": "Enter an amount above zero."
+    },
+    "summary": "{{spent}} of {{limit}} this month",
+    "level": {
+      "over": "Over the limit",
+      "warn": "Alert level reached",
+      "forecast": "Heading over",
+      "ok": "Within budget"
+    },
+    "edit": "Edit",
+    "remove": "Remove",
+    "saved": "Spend cap saved",
+    "removed": "Spend cap removed",
+    "loadError": "Could not load the project spend cap.",
+    "resets": "Resets {{date}}"
   }
 }

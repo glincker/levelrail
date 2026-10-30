@@ -44,7 +44,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_firewall_exposure",
-		Description: "Published container ports reachable from outside, per node, with severity and a plain explanation. Docker bypasses ufw for these. Read-only; no MCP tool can apply a rule.",
+		Description: "Published container ports reachable from outside, per node, with severity and a plain explanation. Docker bypasses ufw for these. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, exposureSummary, error) {
 		report, err := client.GetExposure(ctx, "", false)
 		if err != nil {
@@ -55,7 +55,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "prune_system",
-		Description: "Remove every stopped container, dangling image, and unused volume or build cache the reconciler's current desired state doesn't need, fleet-wide. A routine day-2 cleanup action, same one 'levelrail-cli system-prune' runs; never touches a container, image, or volume any app or database still desires. Mutating.",
+		Description: "Remove stopped containers, dangling images and unused volumes and build cache fleet-wide. Never touches anything an app or database still desires.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemPruneResult, error) {
 		result, err := client.PruneSystem(ctx)
 		if err != nil {

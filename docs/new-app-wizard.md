@@ -34,7 +34,7 @@ In a monorepo with several buildable apps, an app picker appears. Choosing anoth
 ## Safety
 
 - Files are read through the provider API (GitHub, GitLab, Gitea) with the SSRF-guarded client. Nothing is cloned for the analysis, and a host without a supported file API is refused rather than cloned.
-- Reads are bounded: `APP_WIZARD_MAX_FILES` (default 24 files), `APP_WIZARD_MAX_FILE_BYTES` (default 262144 per file) and `APP_WIZARD_MAX_ENV_KEYS` (default 60 names). When the budget is reached the analysis says so.
+- Reads are bounded: `APP_WIZARD_MAX_FILES` (default 24 files), `APP_WIZARD_MAX_FILE_BYTES` (default 262144 per file) and `APP_WIZARD_MAX_ENV_KEYS` (default 60 names) `APP_WIZARD_MAX_PACKAGES` (default 60 workspace packages) and `APP_WIZARD_IMPORT_CONFIRM_ABOVE` (default 10: a monorepo import that creates more apps than this needs an explicit confirmation). When the budget is reached the analysis says so.
 - Only variable names are returned. Values from example env files, compose files and README text are never imported, and a name that looks like a secret is marked secret. A required variable stays blocking until you type a value.
 - The one-shot access token in the URL tab is used for this request only and is not stored by the analysis. Connect the repository through a provider app to keep deploys working after the first build.
 - Memory defaults can be tuned per runtime with `APP_WIZARD_MEMORY_MB_<RUNTIME>` (`NODE`, `PYTHON`, `GO`, `RUBY`, `PHP`, `ELIXIR`, `JAVA`, `STATIC`).

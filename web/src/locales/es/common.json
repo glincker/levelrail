@@ -28,7 +28,9 @@
     "settingsLinkHint": "Las opciones de compilación, ejecución, seguridad y automatización de esta aplicación están en un solo lugar.",
     "settingsLinkCta": "Abrir ajustes de despliegue",
     "rerunOf": "Reintento de {{id}}",
-    "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió"
+    "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió",
+    "current": "Actual",
+    "rollbackBadge": "Reversión"
   },
   "actions": {
     "copy": "Copiar",
@@ -147,6 +149,12 @@
     "rollbackStarted": "Revirtiendo \"{{name}}\".",
     "pending": "Trabajando...",
     "alreadyStopped": "{{name}} ya está detenida."
+  },
+  "unsavedGuard": {
+    "title": "¿Descartar los cambios sin guardar?",
+    "description": "Tienes ediciones sin guardar. Si sales ahora, se perderán.",
+    "keep": "Seguir editando",
+    "discard": "Descartar"
   },
   "confirmDialog": {
     "cancel": "Cancelar",
@@ -498,5 +506,80 @@
     "hide": "Ocultar",
     "region": "Código",
     "commandRegion": "Comando"
+  },
+  "notFound": {
+    "requested": "Solicitado: {{name}}",
+    "causes": "Puede que se haya renombrado o eliminado, o que pertenezca a un proyecto o entorno distinto del seleccionado en el selector de la cabecera.",
+    "didYouMean": "Quisiste decir",
+    "resources": {
+      "app": {
+        "title": "App no encontrada",
+        "list": "Volver a las apps",
+        "create": "Desplegar una app nueva"
+      },
+      "database": {
+        "title": "Base de datos no encontrada",
+        "list": "Volver a las bases de datos"
+      },
+      "domain": {
+        "title": "Dominio no encontrado",
+        "list": "Volver a los dominios"
+      },
+      "template": {
+        "title": "Plantilla no encontrada",
+        "list": "Volver a las plantillas"
+      },
+      "project": {
+        "title": "Proyecto no encontrado",
+        "list": "Volver a los proyectos"
+      },
+      "generic": {
+        "title": "Página no encontrada",
+        "list": "Volver al panel"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "Algo salió mal",
+      "body": "Esta página tuvo un error inesperado. Reintentar suele resolverlo. Si persiste, copia los detalles y repórtalo.",
+      "retry": "Reintentar",
+      "home": "Volver al panel"
+    },
+    "unreachable": {
+      "title": "No se puede contactar con el plano de control",
+      "body": "El servidor no respondió o devolvió un error. Tus apps siguen funcionando. Comprueba que el plano de control esté activo y reintenta.",
+      "retry": "Reintentar"
+    },
+    "details": "Detalles",
+    "copy": "Copiar detalles",
+    "copied": "Copiado",
+    "report": "Reportar un problema",
+    "requestId": "ID de solicitud: {{id}}",
+    "detailsHeader": "Informe de error"
+  },
+  "secretInput": {
+    "show": "Mostrar valor",
+    "hide": "Ocultar valor",
+    "existing": "Definido. Déjalo en blanco para conservar el valor actual."
+  },
+  "lbTraffic": {
+    "title": "Tráfico",
+    "empty": "Sin datos de tráfico todavía",
+    "emptyHint": "Las tasas aparecen cuando pasan solicitudes por el ingress.",
+    "rps": "{{value}} sol/s",
+    "errors": "{{value}} de errores",
+    "p50": "p50 {{value}} ms",
+    "p95": "p95 {{value}} ms",
+    "sparkline": "Solicitudes por segundo en los últimos {{minutes}} minutos para {{dial}}"
+  },
+  "formErrorSummary": {
+    "title_one": "{{count}} campo necesita atención",
+    "title_other": "{{count}} campos necesitan atención",
+    "name": "Nombre",
+    "engine": "Motor",
+    "version": "Versión",
+    "envKey": "Nombre de variable, fila {{row}}",
+    "envValue": "Valor de variable, fila {{row}}"
   }
 }

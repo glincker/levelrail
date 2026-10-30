@@ -476,3 +476,14 @@ func TestToDeployAttemptResource_CarriesCommitMetadata(t *testing.T) {
 		t.Fatalf("commit metadata not carried: %+v", res)
 	}
 }
+
+// The stored deploy error is served to terminals, so it must carry no control codes.
+func TestDeployErrorMessage_StripsControlCodes(t *testing.T) {
+	got := deployErrorMessage(errors.New("build failed\x1b[31m red\x1b[0m\x1b]0;title\x07\rtoken=hunter2\x07"))
+	if strings.ContainsAny(got, "\x1b\x07\r") {
+		t.Fatalf("deployErrorMessage() = %q, want no control codes", got)
+	}
+	if strings.Contains(got, "hunter2") || !strings.Contains(got, "build failed") {
+		t.Errorf("deployErrorMessage() = %q, want redacted readable text", got)
+	}
+}

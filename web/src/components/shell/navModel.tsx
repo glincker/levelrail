@@ -8,6 +8,7 @@ import {
   BugIcon,
   ClockCountdownIcon,
   CloudArrowUpIcon,
+  ImagesSquareIcon,
   CloudIcon,
   CpuIcon,
   DatabaseIcon,
@@ -72,12 +73,12 @@ export type GlobalTo =
   | '/projects'
   | '/databases'
   | '/backups'
+  | '/assets'
   | '/nodes'
   | '/resource-advisor'
   | '/usage'
   | '/costs'
   | '/resources'
-  | '/dashboards'
   | '/network'
   | '/network/proxy'
   | '/network/private'
@@ -156,12 +157,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         exact: true,
       },
       { id: 'status', label: 'Status', to: '/status', icon: <HeartbeatIcon /> },
-      {
-        id: 'dashboards',
-        label: 'Dashboards',
-        to: '/dashboards',
-        icon: <SquaresFourIcon />,
-      },
     ],
   },
   {
@@ -223,6 +218,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Backups',
         to: '/backups',
         icon: <CloudArrowUpIcon />,
+      },
+      {
+        id: 'assets',
+        label: 'Assets',
+        to: '/assets',
+        icon: <ImagesSquareIcon />,
       },
       {
         id: 'network-shares',
@@ -294,6 +295,8 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'network',
         label: 'Topology',
         to: '/network',
+        // Proxy and Private networks live under /network/*, so prefix matching lit two rows.
+        exact: true,
         icon: <ShareNetworkIcon />,
       },
       {

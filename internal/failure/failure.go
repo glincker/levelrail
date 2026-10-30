@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
@@ -74,6 +75,8 @@ type Input struct {
 type Options struct {
 	MaxLines int
 	MaxBytes int
+	// DocsBase prefixes guide links; empty keeps them as site-relative paths.
+	DocsBase string
 }
 
 // OptionsFromEnv reads Options from lookup, falling back to defaults.
@@ -81,7 +84,17 @@ func OptionsFromEnv(lookup func(string) (string, bool)) Options {
 	return Options{
 		MaxLines: envInt(lookup, EnvExcerptLines, defaultExcerptLines),
 		MaxBytes: envInt(lookup, EnvExcerptBytes, defaultExcerptBytes),
+		DocsBase: docsBase(),
 	}
+}
+
+// docsBase is the brand docs URL (env override included) without a trailing slash.
+func docsBase() string {
+	b, err := brand.LoadEmbedded()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimRight(b.DocsURL, "/")
 }
 
 func envInt(lookup func(string) (string, bool), key string, def int) int {
@@ -157,14 +170,14 @@ func Classify(in Input, opts Options) (Failure, bool) {
 		f.Code = CodeUnknown
 		f.Cause = unknownCause(in)
 		f.SuggestedFix = "Read the log excerpt and the full deploy log for the failing step, then retry the deploy."
-		f.DocsURL = docsURL(CodeUnknown)
+		f.DocsURL = docsURL(opts.DocsBase, CodeUnknown)
 		f.LogExcerpt = excerpt(lines, "", opts)
 		return f, true
 	}
 	f.Code = cl.code
-	f.Cause = cl.cause
-	f.SuggestedFix = cl.fix
-	f.DocsURL = docsURL(cl.code)
+	f.Cause = withDocs(cl.cause, opts.DocsBase)
+	f.SuggestedFix = withDocs(cl.fix, opts.DocsBase)
+	f.DocsURL = docsURL(opts.DocsBase, cl.code)
 	f.Retryable = cl.retryable
 	f.AlsoMatched = also
 	f.LogExcerpt = excerpt(lines, pattern, opts)
@@ -351,7 +364,7 @@ func excerpt(lines []string, pattern string, opts Options) string {
 	start := max(0, end-opts.MaxLines)
 	out := make([]string, 0, end-start)
 	for _, l := range lines[start:end] {
-		out = append(out, untrusted.Redact(untrusted.Clean(l)))
+		out = append(out, strings.ReplaceAll(untrusted.Redact(untrusted.Clean(l)), "build: build: ", "build: "))
 	}
 	return untrusted.Truncate(strings.Join(out, "\n"), opts.MaxBytes)
 }

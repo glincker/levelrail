@@ -23,6 +23,46 @@
       "errorTitle": "Could not update auto-rollback."
     }
   },
+  "predeploySnapshot": {
+    "title": "Pre-deploy database snapshot",
+    "infoTipLabel": "About pre-deploy snapshots",
+    "helpLabel": "Pre-deploy snapshot guide",
+    "modeAriaLabel": "Snapshot mode",
+    "targetAriaLabel": "Backup target for snapshots",
+    "targetAuto": "Default backup target",
+    "unavailable": "Pre-deploy snapshots are not available on this control plane.",
+    "modes": {
+      "off": "Off",
+      "on": "On",
+      "require": "Require"
+    },
+    "modeHints": {
+      "off": "No snapshot is taken before a deploy.",
+      "on": "Snapshot linked databases first. A failed snapshot is recorded and the deploy still goes ahead.",
+      "require": "Snapshot linked databases first. A failed snapshot blocks the deploy."
+    },
+    "toast": {
+      "saved": "Pre-deploy snapshot setting saved.",
+      "errorTitle": "Could not save the snapshot setting."
+    }
+  },
+  "rollbackWithData": {
+    "title": "Roll back with data",
+    "description": "Redeploys the release before this deploy and restores the databases from the snapshot taken just before it.",
+    "snapshotsLabel": "Snapshots taken before this deploy",
+    "takenAt": "Taken",
+    "warning": "Each linked database is restored into a new database and the app's links are swapped to the copies. The original databases are not changed, but writes made since this deploy stay behind in them.",
+    "loading": "Looking for snapshots...",
+    "reasonNoSnapshot": "No usable snapshot was taken before this deploy.",
+    "reasonProtected": "This app is in a protected environment. Use the plain rollback and restore the data by hand.",
+    "reasonLoadFailed": "Could not load the snapshots for this app.",
+    "cancel": "Cancel",
+    "confirm": "Roll back with data",
+    "working": "Rolling back...",
+    "started": "Rolling back with data.",
+    "menuLabel": "Roll back with data",
+    "menuHint": "Undo this deploy and restore its pre-deploy snapshot"
+  },
   "autoRollbackSloBurn": {
     "title": "Auto-rollback on SLO burn",
     "infoTipLabel": "About auto-rollback on SLO burn",
@@ -80,7 +120,11 @@
       "auto_rollback": "an automatic rollback",
       "git_push": "a git push to the server",
       "poll": "a poll, because a webhook was missed",
-      "upload": "a directory uploaded from the CLI"
+      "upload": "a directory uploaded from the CLI",
+      "restart": "a restart",
+      "start": "starting a stopped app",
+      "stop": "stopping the app",
+      "pr_comment": "a pull request comment"
     }
   },
   "imageAutoUpdate": {
@@ -155,6 +199,45 @@
       "errorTitle": "Canary action failed"
     }
   },
+  "templateUpgrade": {
+    "badge": "Template update available",
+    "blocked": "needs manual steps",
+    "apply": "Upgrade",
+    "applying": "Starting",
+    "confirmTitle": "Upgrade to the current template?",
+    "confirmBody": "Risk: {{risk}}. A fresh volume backup is required. The release is watched and rolled back automatically if it crash loops or fails.",
+    "envCount_one": "{{count}} env change",
+    "envCount_other": "{{count}} env changes",
+    "volumeCount_one": "{{count}} volume",
+    "volumeCount_other": "{{count}} volumes",
+    "status": {
+      "unchanged": "no change",
+      "changed": "changed",
+      "added": "new service",
+      "removed": "removed"
+    },
+    "run": {
+      "watching": "Upgrading, watching the new release",
+      "succeeded": "Upgrade finished and the app is healthy",
+      "rolled_back": "Upgrade failed and was rolled back",
+      "rollback_failed": "Upgrade failed and the rollback was refused",
+      "refused": "Upgrade was refused, nothing changed"
+    },
+    "risk": {
+      "none": "No changes",
+      "low": "Low risk",
+      "medium": "Medium risk",
+      "high": "High risk"
+    }
+  },
+  "pendingChanges": {
+    "title": "Changes waiting for a restart",
+    "detail": "{{count}} not applied yet",
+    "restart": "Restart to apply",
+    "redeploy": "Redeploy to apply",
+    "applying": "Applying",
+    "failed": "Could not apply changes"
+  },
   "envCompare": {
     "title": "Compare env with another app",
     "pick": "Compare against",
@@ -163,7 +246,15 @@
     "differs": "Differs:",
     "secret": "(secret)",
     "secretOneSide": "(secret on one side only)",
-    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only."
+    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only.",
+    "tableLabel": "Environment differences",
+    "colKey": "Key",
+    "colStatus": "Status",
+    "added": "Only here",
+    "removed": "Only there",
+    "changed": "Changed",
+    "missing": "not set",
+    "secretMasked": "Secret value, hidden"
   },
   "appSleep": {
     "title": "Sleep when idle",
@@ -289,13 +380,29 @@
   "ciDeploy": {
     "title": "Deploy from CI",
     "infoTipLabel": "About deploying from CI",
-    "description": "Trust a repository and ref, then paste the generated workflow. The job swaps its GitHub identity for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
-    "noTrusts": "No repository is trusted to deploy this app yet. Add one below.",
-    "repositoryLabel": "GitHub repository",
-    "repositoryPlaceholder": "owner/name",
+    "description": "Trust a pipeline and ref, then paste the setup for your CI. The job swaps its identity (GitHub, GitLab or CircleCI) for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
+    "noTrusts": "No pipeline is trusted to deploy this app yet. Add one below.",
+    "repositoryLabel": {
+      "github": "GitHub repository",
+      "gitlab": "GitLab project path",
+      "circleci": "CircleCI project ID"
+    },
+    "repositoryPlaceholder": {
+      "github": "owner/name",
+      "gitlab": "group/project",
+      "circleci": "Project Settings > Overview"
+    },
     "refLabel": "Allowed ref",
-    "environmentLabel": "Environment",
-    "environmentPlaceholder": "Any environment",
+    "environmentLabel": {
+      "github": "Environment",
+      "gitlab": "Environment",
+      "circleci": "Context ID"
+    },
+    "environmentPlaceholder": {
+      "github": "Any environment",
+      "gitlab": "Any protected environment",
+      "circleci": "Any context"
+    },
     "trust": "Trust",
     "removeTrust": "Stop trusting {{repository}}",
     "workflowTitle": "Generated workflow",
@@ -309,8 +416,29 @@
       "removeError": "Could not remove the trust.",
       "addressError": "Could not save the dashboard address.",
       "copied": "Workflow copied.",
-      "copyFailed": "Could not copy to the clipboard."
-    }
+      "copyFailed": "Could not copy to the clipboard.",
+      "trustedLoose": "Trusted, with a looser rule."
+    },
+    "providerLabel": "CI provider",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI"
+    },
+    "orgIdLabel": "CircleCI organization ID",
+    "orgIdPlaceholder": "Organization Settings > Overview",
+    "issuerLabel": "Self-managed issuer",
+    "issuerPlaceholder": "https://gitlab.com",
+    "issuerNote": "Leave the issuer empty for gitlab.com. A self-managed GitLab issuer can only be trusted by a root user, because whoever runs it can mint tokens.",
+    "issuerShown": "Issuer {{issuer}}",
+    "protectedOnly": "Only protected branches and tags",
+    "unprotectedWarning": "This trust accepts pipelines on unprotected branches and tags: any developer who can push a matching ref can deploy.",
+    "snippetTitle": {
+      "github": "Job steps",
+      "gitlab": "GitLab CI job",
+      "circleci": "CircleCI job steps"
+    },
+    "snippetNote": "Set LEVELRAIL_API_URL to the dashboard address. It is public, not a secret."
   },
   "buildHooks": {
     "title": "Build hooks",

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func TestRun_Status_DockerConnected(t *testing.T) {
@@ -73,5 +75,25 @@ func TestRun_Status_Help(t *testing.T) {
 	_, stderr := runCLIExpectOK(t, []string{"status", "-h"})
 	if !strings.Contains(stderr, "status") {
 		t.Errorf("stderr = %q, want usage text", stderr)
+	}
+}
+
+func TestPrintSystemStatusHumanNamesTheEngine(t *testing.T) {
+	var b strings.Builder
+	printSystemStatusHuman(&b, systemStatusResource{DockerConnected: true, EngineKind: "podman"})
+	if !strings.Contains(b.String(), "podman:") || strings.Contains(b.String(), "docker:") {
+		t.Fatalf("got %q", b.String())
+	}
+}
+
+func TestAttemptErrorTextPrefersClassifiedCause(t *testing.T) {
+	a := deployAttemptResource{}
+	a.Error = "rpc error: code = Unknown desc = boom"
+	if attemptErrorText(a) != a.Error {
+		t.Fatal("without a failure the raw error stays")
+	}
+	a.Failure = &apiclient.DeployFailure{Cause: "the image could not be pulled"}
+	if attemptErrorText(a) != "the image could not be pulled" {
+		t.Fatal("classified cause must win")
 	}
 }

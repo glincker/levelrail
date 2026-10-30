@@ -1,0 +1,7 @@
+{
+  "projects": {"p1": {"id": "p1", "name": "shop"}},
+  "envVars": {"p/p1": {"REGION": "eu"}},
+  "envs": {"e1": {"id": "e1", "project_id": "p1", "name": "production", "protected": false}},
+  "tags": {"t1": {"id": "t1", "name": "frontend"}},
+  "dbs": {"main-db": {"name": "main-db", "engine": "postgres", "version": "16", "project_id": "p1"}}
+}

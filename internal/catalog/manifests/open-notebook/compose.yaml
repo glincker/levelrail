@@ -1,0 +1,39 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2.6.5
+    # The image runs as uid 65532; mounting at its own home keeps the volume writable without root.
+    command: start --log info rocksdb:/home/nonroot/database.db
+    environment:
+      SURREAL_USER: root
+      SURREAL_PASS: ${DB_PASSWORD}
+    volumes:
+      - surreal_data:/home/nonroot
+    healthcheck:
+      test: ["CMD", "/surreal", "isready", "--endpoint", "http://127.0.0.1:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+  open_notebook:
+    image: lfnovo/open_notebook:1.15.0
+    ports: ["8502", "5055"]
+    environment:
+      API_URL: ${SERVICE_FQDN_OPEN_NOTEBOOK:-http://localhost:8502}
+      OPEN_NOTEBOOK_ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      OPEN_NOTEBOOK_PASSWORD: ${APP_PASSWORD}
+      SURREAL_URL: ws://surrealdb:8000/rpc
+      SURREAL_USER: root
+      SURREAL_PASSWORD: ${DB_PASSWORD}
+      SURREAL_NAMESPACE: open_notebook
+      SURREAL_DATABASE: open_notebook
+    volumes:
+      - notebook_data:/app/data
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5055/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s

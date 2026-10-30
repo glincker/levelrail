@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,9 +14,11 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -41,6 +44,9 @@ type deployTriggerRequest struct {
 	Rollback bool `json:"rollback,omitempty"`
 	// RerunOf is the deploy attempt of this app that this deploy retries.
 	RerunOf string `json:"rerun_of,omitempty"`
+	// QueueWhileOffline accepts the change for an offline node as a pending
+	// attempt instead of refusing it.
+	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 	freezeOverride
 	policyOverride
 }
@@ -57,6 +63,9 @@ type deployTriggerRequest struct {
 type deployTriggerResult struct {
 	*appResource
 	PendingApproval *deployApprovalResource `json:"pending_approval,omitempty"`
+	// DeployID is the attempt this trigger created, so a waiter follows it
+	// rather than whichever deploy is newest.
+	DeployID string `json:"deploy_id,omitempty"`
 }
 
 // handleTriggerDeploy handles POST /api/v1/apps/{name}/deploys. It
@@ -129,6 +138,9 @@ func validateImageReference(image string) error {
 // the attempt as a rollback to that deploy.
 func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing store.DesiredService, req deployTriggerRequest, rollbackTo string) {
 	name := existing.Name
+	if rt.refuseOfflineNode(r.Context(), w, existing, req.QueueWhileOffline) {
+		return
+	}
 	note, ok := rt.freezeGate(w, r, name, req.freezeOverride)
 	if !ok {
 		return
@@ -147,6 +159,9 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 			return
 		}
 		note = strings.TrimSpace(note + " " + policyNote)
+	}
+	if rollbackTo == "" && req.Rollback {
+		rollbackTo = req.Image
 	}
 	if rollbackTo != "" {
 		note = strings.TrimSpace(note + " RollbackTo: " + rollbackTo)
@@ -177,9 +192,34 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 
-	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf})
+	if req.QueueWhileOffline && rt.offlineNodeFor(r.Context(), existing) != nil {
+		updated, err := rt.setDesiredImage(r.Context(), existing, req.Image)
+		if err != nil {
+			rt.internalError(w, "api: queue deploy for offline node failed", err, slog.String("name", name))
+			return
+		}
+		rt.recordPendingAttempt(r.Context(), updated, req.Image, store.DeployAttemptSourceImage)
+		res := toAppResource(updated)
+		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
+		return
+	}
+
+	var snapshotIDs []string
+	if rollbackTo == "" {
+		var snapOK bool
+		if snapshotIDs, snapOK = rt.runPredeploySnapshots(r.Context(), w, existing); !snapOK {
+			return
+		}
+	}
+	var attemptID string
+	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf, attemptID: &attemptID})
+	rt.attachPredeploySnapshots(r.Context(), name, snapshotIDs, attemptID)
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
+		if errors.Is(err, docker.ErrImageNotFound) {
+			writeError(w, http.StatusUnprocessableEntity, "image pull failed: "+err.Error())
+			return
+		}
 		if req.Pull {
 			writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; retry without pull to use the cached image")
 			return
@@ -188,8 +228,30 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 
+	if rollbackTo != "" {
+		rt.recordOperatorRollback(r.Context(), name)
+	}
 	res := toAppResource(updated)
-	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
+	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res, DeployID: attemptID})
+}
+
+// recordOperatorRollback marks the newest attempt as an operator's choice so
+// the timeline shows it and a later crash of the superseded release cannot
+// override it.
+func (rt *Router) recordOperatorRollback(ctx context.Context, name string) {
+	if rt.deployGate == nil {
+		return
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, name)
+	if err != nil || len(attempts) == 0 {
+		return
+	}
+	if err := rt.deployGate.RecordGateEvent(ctx, store.DeployGateEvent{
+		DeployAttemptID: attempts[0].ID, ServiceName: name, Phase: deploysafety.PhaseRollback, Status: deploysafety.StatusInfo,
+		Reason: deploysafety.ReasonOperatorRollback, Message: "operator rollback accepted, automatic rollback will not override it", At: time.Now(),
+	}); err != nil {
+		rt.logger.Warn("api: record operator rollback failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
 }
 
 // executeConfirmedDeploy runs the actual desired-state change a deploy
@@ -207,18 +269,42 @@ type confirmedDeployOptions struct {
 	reason string
 	// rerunOf is the validated attempt this deploy retries, empty if none.
 	rerunOf string
+	// source overrides the attempt trigger; empty keeps the image default.
+	source string
+	// attemptID, when set, receives the id of the attempt the deploy saved.
+	attemptID *string
 }
 
 func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
+	// Read before Deploy, which records its own newest attempt.
+	recreate := rt.redeployNeedsRecreate(ctx, existing)
 	trigger := rt.imageTrigger(ctx, existing, opts.pull, opts.reason)
 	trigger.RerunOf = opts.rerunOf
+	if opts.attemptID != nil {
+		trigger.Store = attemptRecordingStore{deployTriggerImageStore{rt}, opts.attemptID}
+	}
+	if opts.source != "" {
+		trigger.Source = opts.source
+	}
 	updated, err := trigger.Deploy(ctx, existing, image)
 	if err != nil {
 		return store.DesiredService{}, err
 	}
+	// Same image means the same container name, so an exited container would be
+	// restarted with its old env behind the crash backoff. Recreate only when
+	// the app is broken or its env changed; a healthy unchanged app is left alone.
+	if updated.Image == existing.Image && recreate {
+		if err := rt.apps.RestartService(ctx, existing.Name); err != nil {
+			return store.DesiredService{}, fmt.Errorf("deploy: recreate %q for redeploy: %w", existing.Name, err)
+		}
+		if fresh, err := rt.apps.GetDesiredService(ctx, existing.Name); err == nil {
+			updated = *fresh
+		}
+	}
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(existing.Name), alerting.DeployOutcome{
 			AppName: existing.Name, Image: updated.Image, Succeeded: true,
+			ReleaseNotes: rt.releaseNotesForDeploy(ctx, existing.Name, ""),
 		})
 	}
 	return updated, nil
@@ -236,6 +322,21 @@ func (s deployTriggerImageStore) SaveDesiredService(ctx context.Context, svc sto
 
 func (s deployTriggerImageStore) SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error {
 	return s.rt.deployAttempts.SaveDeployAttempt(ctx, a)
+}
+
+// attemptRecordingStore remembers the id of the attempt it saved, so the
+// trigger response names it. A failed save leaves the id empty.
+type attemptRecordingStore struct {
+	deployTriggerImageStore
+	savedID *string
+}
+
+func (s attemptRecordingStore) SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error {
+	if err := s.deployTriggerImageStore.SaveDeployAttempt(ctx, a); err != nil {
+		return err
+	}
+	*s.savedID = a.ID
+	return nil
 }
 
 // SaveDeployTraceStep lets deploy.ImageTrigger write its trace through the
@@ -453,9 +554,10 @@ func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.Des
 		rt.logger.Error("api: record deploy attempt: finish failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
 	}
-	if rt.deployNotifier != nil {
+	if rt.deployNotifier != nil && source != store.DeployAttemptSourceRestart && source != store.DeployAttemptSourceStart {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(serviceName), alerting.DeployOutcome{
 			AppName: serviceName, Image: image, Succeeded: true,
+			ReleaseNotes: rt.releaseNotesForDeploy(ctx, serviceName, source),
 		})
 	}
 }
@@ -496,16 +598,134 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conditions, err := rt.deploys.GetConditions(r.Context(), applicationControllerName(name))
+	conditions, err := rt.appStatusConditions(r.Context(), *svc)
 	if err != nil {
 		rt.internalError(w, "api: deploy history failed", err, slog.String("name", name))
 		return
 	}
+	writeJSON(w, http.StatusOK, conditions)
+}
+
+// appStatusConditions is the one place the app's status conditions are
+// assembled, shared by the deploys and status routes.
+func (rt *Router) appStatusConditions(ctx context.Context, svc store.DesiredService) ([]reconcile.Condition, error) {
+	conditions, err := rt.deploys.GetConditions(ctx, applicationControllerName(svc.Name))
+	if err != nil {
+		return nil, err
+	}
 	// This app's own controller never sees CrossNodeIngress, reported
 	// under the ingress controller's own singleton name: see
 	// crossNodeIngressAppCondition's doc comment.
-	if cond := rt.crossNodeIngressAppCondition(r.Context(), *svc); cond != nil {
+	if cond := rt.crossNodeIngressAppCondition(ctx, svc); cond != nil {
 		conditions = append(conditions, *cond)
 	}
-	writeJSON(w, http.StatusOK, conditions)
+	return rt.markRestartRollingOut(ctx, svc, conditions), nil
+}
+
+// handleAppStatus handles GET /api/v1/apps/{name}/status: the same
+// conditions as the deploys route plus the newest deploy's outcome, computed
+// by applyDeployOutcome so clients never re-derive the crash-loop rule.
+func (rt *Router) handleAppStatus(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: app status: load app failed", err, slog.String("name", name))
+		return
+	}
+	conditions, err := rt.appStatusConditions(r.Context(), *svc)
+	if err != nil {
+		rt.internalError(w, "api: app status failed", err, slog.String("name", name))
+		return
+	}
+	out := appStatusResource{Conditions: conditions}
+	if rt.deployAttempts != nil {
+		attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), name)
+		if err != nil {
+			rt.logger.Warn("api: app status: list attempts failed", slog.String("error", err.Error()), slog.String("name", name))
+		} else if len(attempts) > 0 {
+			var res deployAttemptResource
+			applyDeployOutcome(&res, attempts[0], true, conditions)
+			out.DeployID = attempts[0].ID
+			out.Outcome = res.Outcome
+			out.OutcomeReason = res.OutcomeReason
+			out.RolloutCrashLoopRestarts = res.RolloutCrashLoopRestarts
+		}
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// appStatusResource is the GET /apps/{name}/status body; the outcome fields
+// match the deploy responses and are empty when the app has no deploys.
+type appStatusResource struct {
+	Conditions               []reconcile.Condition `json:"conditions"`
+	DeployID                 string                `json:"deploy_id,omitempty"`
+	Outcome                  string                `json:"outcome,omitempty"`
+	OutcomeReason            string                `json:"outcome_reason,omitempty"`
+	RolloutCrashLoopRestarts int                   `json:"rollout_crash_loop_restarts,omitempty"`
+}
+
+// markRestartRollingOut replaces a stored Ready=True while the newest attempt
+// is a restart that is not serving yet: that Ready belongs to the old container.
+func (rt *Router) markRestartRollingOut(ctx context.Context, svc store.DesiredService, conditions []reconcile.Condition) []reconcile.Condition {
+	if rt.deployAttempts == nil || svc.Suspended {
+		return conditions
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, svc.Name)
+	if err != nil || len(attempts) == 0 {
+		return conditions
+	}
+	newest := attempts[0]
+	if newest.Source != store.DeployAttemptSourceRestart || newest.Status != store.DeployAttemptStatusSucceeded || newest.RolloutState == store.RolloutStateServing {
+		return conditions
+	}
+	out := slices.Clone(conditions)
+	for i, c := range out {
+		if c.Type == reconcile.ConditionTypeReady && c.Status == reconcile.ConditionTrue {
+			out[i] = reconcile.Condition{Type: c.Type, Status: reconcile.ConditionFalse, Reason: "RollingOut", Message: "restart in progress: the new container has not passed readiness yet", LastTransitionTime: newest.StartedAt}
+		}
+	}
+	return out
+}
+
+// recreateSignals are the facts that make a same-image redeploy recreate the
+// container instead of leaving it alone.
+type recreateSignals struct {
+	containerStopped bool
+	latestFailed     bool
+	failingReason    string
+	envChanged       bool
+}
+
+var recreateFailureReasons = map[string]bool{
+	deploysafety.ReasonReadinessFailed:       true,
+	deploysafety.ReasonExitedDuringReadiness: true,
+	deploysafety.ReasonWatchCrashloop:        true,
+	"CrashLoopBackOff":                       true,
+	"ContainerCrashed":                       true,
+}
+
+func (s recreateSignals) needed() bool {
+	return s.containerStopped || s.latestFailed || recreateFailureReasons[s.failingReason] || s.envChanged
+}
+
+// redeployNeedsRecreate gathers the signals from existing status helpers. The
+// env signal is the env_dirty latch; there is no cheaper spec-drift check.
+func (rt *Router) redeployNeedsRecreate(ctx context.Context, existing store.DesiredService) bool {
+	sig := recreateSignals{envChanged: existing.EnvDirty}
+	if st, ok := rt.appRunState(ctx, existing.Name); ok && !st.Running {
+		sig.containerStopped = true
+	}
+	if rt.deploys != nil {
+		sig.failingReason, _ = rt.failingReadyCondition(ctx, existing.Name)
+	}
+	if rt.deployAttempts != nil {
+		if list, err := rt.deployAttempts.ListDeployAttempts(ctx, existing.Name); err == nil && len(list) > 0 {
+			sig.latestFailed = list[0].Status == store.DeployAttemptStatusFailed
+		}
+	}
+	return sig.needed()
 }

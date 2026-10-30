@@ -1,0 +1,7 @@
+{
+  "projects": {"p1": {"id": "p1", "name": "shop"}},
+  "tags": {"t1": {"id": "t1", "name": "frontend"}},
+  "apps": {
+    "web": {"name": "web", "image": "ghcr.io/acme/web:1.0.0", "port": 3000, "bind_address": "private", "strategy": "blue-green", "replicas": 1, "project_id": "p1", "tags": ["managed-by:shop-staging"], "env_dirty": false}
+  }
+}

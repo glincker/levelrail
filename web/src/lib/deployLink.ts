@@ -180,3 +180,68 @@ export function stringifySearch(
   }
   return out
 }
+
+/** Public page that forwards a deploy link to the visitor's own server. */
+export const DEPLOY_BUTTON_PAGE = 'https://levelrail.com/deploy'
+/** Badge served by the jsDelivr CDN from this repository, so README views do not reach the site. */
+export const DEPLOY_BUTTON_BADGE =
+  'https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-split.svg'
+
+export interface DeployButtonInput {
+  image: string
+  name?: string
+  port?: string
+  /** Comma or newline separated env var names; values are never part of a link. */
+  env?: string
+  health?: string
+  source?: string
+}
+
+export interface DeployButtonResult {
+  url: string | null
+  /** Field names that were present but invalid, so the form can flag them. */
+  invalid: string[]
+}
+
+/** Builds a README button URL from form fields using the same rules as parseDeployLink. */
+export function buildDeployButtonUrl(
+  input: DeployButtonInput,
+): DeployButtonResult {
+  const invalid: string[] = []
+  const q = new URLSearchParams()
+  const image = input.image.trim()
+  if (!isValidImageRef(image)) invalid.push('image')
+  else q.set('image', image)
+
+  const check = (
+    key: 'name' | 'port' | 'health' | 'source',
+    ok: (v: string) => boolean,
+  ) => {
+    const v = (input[key] ?? '').trim()
+    if (v === '') return
+    if (ok(v)) q.set(key, v)
+    else invalid.push(key)
+  }
+  check('name', isValidAppName)
+  check('port', isValidPort)
+  check('health', isValidHealthPath)
+  check('source', (v) => sourceHostOf(v) !== null)
+
+  const keys = (input.env ?? '')
+    .split(/[,\n]/)
+    .map((k) => k.trim())
+    .filter((k) => k !== '')
+  if (keys.length > 0) {
+    const unique = [...new Set(keys)]
+    if (unique.length > MAX_ENV_KEYS || !unique.every(isValidEnvKey)) {
+      invalid.push('env')
+    } else q.set('env', unique.join(','))
+  }
+  if (invalid.length > 0) return { url: null, invalid }
+  return { url: `${DEPLOY_BUTTON_PAGE}?${q.toString()}`, invalid }
+}
+
+/** Markdown snippet for a README. */
+export function deployButtonMarkdown(url: string): string {
+  return `[![Deploy to Levelrail](${DEPLOY_BUTTON_BADGE})](${url})`
+}

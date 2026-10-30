@@ -89,9 +89,9 @@ func runAppsApply(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		if !result.Applied {
-			_, _ = fmt.Fprintf(stdout, "nothing pending for app %q\n", name)
+			_, _ = fmt.Fprintf(stdout, "nothing pending for app %q: its saved env and config already match the running release. To force a fresh container anyway: %s apps restart %s\n", name, prog, name)
 			return
 		}
-		_, _ = fmt.Fprintf(stdout, "applying %d pending change(s) to app %q: restarting it (%s)\n", pendingChangeCount(pending), name, describePendingChanges(pending))
+		_, _ = fmt.Fprintf(stdout, "applying %d pending change(s) to app %q: restarting it (%s)\nwatch the rollout: %s deploys wait %s\n", pendingChangeCount(pending), name, describePendingChanges(pending), prog, name)
 	})
 }

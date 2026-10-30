@@ -1,0 +1,217 @@
+{
+  "changes": [
+    {
+      "kind": "Project",
+      "name": "shop",
+      "action": "create",
+      "file": "docs.yaml",
+      "line": 55
+    },
+    {
+      "kind": "Environment",
+      "name": "production",
+      "scope": "shop",
+      "action": "create",
+      "fields": [
+        {
+          "path": "protected",
+          "op": "add",
+          "new": "true"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 50
+    },
+    {
+      "kind": "Tag",
+      "name": "frontend",
+      "action": "create",
+      "file": "docs.yaml",
+      "line": 46
+    },
+    {
+      "kind": "Database",
+      "name": "main-db",
+      "action": "create",
+      "fields": [
+        {
+          "path": "engine",
+          "op": "add",
+          "new": "postgres"
+        },
+        {
+          "path": "project",
+          "op": "add",
+          "new": "shop"
+        },
+        {
+          "path": "version",
+          "op": "add",
+          "new": "16"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 41
+    },
+    {
+      "kind": "App",
+      "name": "web",
+      "action": "create",
+      "fields": [
+        {
+          "path": "bindAddress",
+          "op": "add",
+          "new": "private"
+        },
+        {
+          "path": "domains[app.example.com]",
+          "op": "add",
+          "new": "app.example.com"
+        },
+        {
+          "path": "domains[www.example.com]",
+          "op": "add",
+          "new": "www.example.com"
+        },
+        {
+          "path": "environment",
+          "op": "add",
+          "new": "production"
+        },
+        {
+          "path": "image",
+          "op": "add",
+          "new": "ghcr.io/acme/web:1.2.3"
+        },
+        {
+          "path": "port",
+          "op": "add",
+          "new": "3000"
+        },
+        {
+          "path": "project",
+          "op": "add",
+          "new": "shop"
+        },
+        {
+          "path": "replicas",
+          "op": "add",
+          "new": "1"
+        },
+        {
+          "path": "strategy",
+          "op": "add",
+          "new": "blue-green"
+        },
+        {
+          "path": "tags[frontend]",
+          "op": "add",
+          "new": "frontend"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 29
+    },
+    {
+      "kind": "Domain",
+      "name": "www.example.com",
+      "action": "create",
+      "fields": [
+        {
+          "path": "app",
+          "op": "add",
+          "new": "web"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 24
+    },
+    {
+      "kind": "LoadBalancer",
+      "name": "web",
+      "action": "create",
+      "fields": [
+        {
+          "path": "algorithm",
+          "op": "add",
+          "new": "least_conn"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 19
+    },
+    {
+      "kind": "Pipeline",
+      "name": "ci",
+      "scope": "web",
+      "action": "create",
+      "fields": [
+        {
+          "path": "enabled",
+          "op": "add",
+          "new": "true"
+        },
+        {
+          "path": "yaml",
+          "op": "add",
+          "new": "version: 1 ..."
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 6
+    },
+    {
+      "kind": "AlertRule",
+      "name": "high-cpu",
+      "scope": "web",
+      "action": "create",
+      "fields": [
+        {
+          "path": "channel",
+          "op": "add",
+          "new": "ops"
+        },
+        {
+          "path": "comparator",
+          "op": "add",
+          "new": "\u003e"
+        },
+        {
+          "path": "enabled",
+          "op": "add",
+          "new": "true"
+        },
+        {
+          "path": "for",
+          "op": "add",
+          "new": "5m"
+        },
+        {
+          "path": "metric",
+          "op": "add",
+          "new": "cpu_percent"
+        },
+        {
+          "path": "threshold",
+          "op": "add",
+          "new": "90"
+        },
+        {
+          "path": "type",
+          "op": "add",
+          "new": "threshold"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    }
+  ],
+  "summary": {
+    "create": 9,
+    "update": 0,
+    "delete": 0,
+    "noop": 0,
+    "error": 0
+  },
+  "hash": "3f062278d7321342"
+}

@@ -16,17 +16,29 @@ import { useTrafficDetail } from '../../queries/trafficDetail'
 import { deployMarkers } from '../../lib/chartMarkers'
 import type { ChartMarker } from '../../lib/metricChart'
 import type { DeployAttempt } from '../../types/deployAttempt'
+import type { AbuseCounters } from '../../types/abuse'
 import type { TrafficDetail, TrafficWindow } from '../../types/trafficDetail'
 import { formatMs, formatPercent, formatRate } from './format'
+import { AbuseDefenseCard } from './AbuseDefenseCard'
+import { ErrorSpikesCard } from './ErrorSpikesCard'
 import { ShieldBlockedCard } from './ShieldBlockedCard'
 import {
   AudienceTable,
   ReplicaTable,
   SampleList,
   SlowRouteTable,
+  TopRoutesCard,
 } from './TrafficTables'
 
 const WINDOWS: TrafficWindow[] = ['5m', '1h', '24h', '7d']
+
+const NO_ABUSE: AbuseCounters = {
+  allowed: 0,
+  would_block: 0,
+  blocked: 0,
+  fail_open: 0,
+  by_reason: [],
+}
 
 function Kpi({
   label,
@@ -178,6 +190,8 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
 
       {isPending ? <Skeleton className="h-28 w-full" /> : null}
 
+      <AbuseDefenseCard app={app} counters={data?.abuse ?? NO_ABUSE} />
+
       {data && !data.has_traffic ? (
         <EmptyState
           icon={<ChartLineUpIcon className="size-5" />}
@@ -220,6 +234,7 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
             />
           </div>
           <SloCard app={app} slo={data.slo} />
+          <ErrorSpikesCard spikes={data.error_spikes ?? []} />
           <ShieldBlockedCard app={app} shield={data.shield} />
           {range ? (
             <>
@@ -250,7 +265,10 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
             </>
           ) : null}
           <ReplicaTable rows={data.replicas} />
-          <SlowRouteTable rows={data.top_routes ?? []} top />
+          <TopRoutesCard
+            rows={data.top_routes ?? []}
+            totals={data.kind_totals}
+          />
           <SlowRouteTable rows={data.slow_routes} />
           <div className="grid gap-4 lg:grid-cols-2">
             <AudienceTable kind="referrers" rows={data.referrers} />

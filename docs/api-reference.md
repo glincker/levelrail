@@ -117,6 +117,7 @@ System endpoints for:
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/rollback | AbilityWrite | handleSelfUpgradeAttemptRollback |
 | POST | /api/v1/system/proxy-integration/install | AbilityRoot | handleInstallProxy |
 | GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
+| GET | /api/v1/system/footprint | AbilityRead | handleGetIdleFootprint |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -135,9 +136,8 @@ Endpoints for:
 | POST | /api/v1/auth/login | Public | handleLogin |
 | POST | /api/v1/auth/register | Public (setup token) | handleRegister |
 | GET | /api/v1/auth/setup-status | Public | handleSetupStatus |
-| POST | /api/v1/auth/logout | Session | handleLogout |
+| POST | /api/v1/auth/logout | Public | handleLogout |
 | PUT | /api/v1/auth/password | Session | handleChangePassword |
-| GET | /api/v1/auth/session | Session | handleGetSession |
 | POST | /api/v1/auth/sessions/revoke-others | Session | handleRevokeOtherSessions |
 | POST | /api/v1/auth/users | AbilityRoot | handleCreateUser |
 | GET | /api/v1/users | AbilityRead | handleListUsers |
@@ -289,6 +289,24 @@ Endpoints for:
 | PUT | /api/v1/settings/google-cloud-dns | AbilityRoot | handleUpdateGoogleCloudDNSSettings |
 | DELETE | /api/v1/settings/google-cloud-dns | AbilityRoot | handleDisconnectGoogleCloudDNS |
 | POST | /api/v1/settings/google-cloud-dns/test | AbilityRoot | handleTestGoogleCloudDNS |
+| GET | /api/v1/settings/traffic-export/sinks | AbilityRead | handleListTrafficExportSinks |
+| POST | /api/v1/settings/traffic-export/sinks | AbilityRoot | handleCreateTrafficExportSink |
+| GET | /api/v1/settings/traffic-export/sinks/{id} | AbilityRead | handleGetTrafficExportSink |
+| PUT | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleUpdateTrafficExportSink |
+| DELETE | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleDeleteTrafficExportSink |
+| POST | /api/v1/settings/traffic-export/sinks/{id}/test | AbilityRoot | handleTestTrafficExportSink |
+| GET | /api/v1/settings/traffic-export/status | AbilityRead | handleTrafficExportStatus |
+| GET | /api/v1/settings/runtime | AbilityRead | handleListRuntimeSettings |
+| GET | /api/v1/settings/runtime/onboarding | AbilityRead | handleGetRuntimeOnboarding |
+| GET | /api/v1/settings/runtime/{key} | AbilityRead | handleGetRuntimeSetting |
+| PUT | /api/v1/settings/runtime/{key} | AbilityRoot | handleSetRuntimeSetting |
+| DELETE | /api/v1/settings/runtime/{key} | AbilityRoot | handleResetRuntimeSetting |
+| POST | /api/v1/settings/runtime/apply | AbilityRoot | handleApplyRuntimeSettings |
+| POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
+| POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
+| GET | /api/v1/auth/session | Public | handleAuthSession |
+| GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
+| PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -631,6 +649,24 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/forms/{form}/fields | AbilityRead | handleGetFormFields |
 | PUT | /api/v1/apps/{name}/forms/{form}/fields | AbilityDeploy | handleSetFormFields |
 | POST | /api/v1/apps/{name}/forms/{form}/test | AbilityDeploy | handleSendFormTest |
+| POST | /api/v1/apps/{name}/budget/dry-run | AbilityRead | handleAppSpendDryRun |
+| POST | /api/v1/apps/{name}/budget/override | AbilityRoot | handleSpendOverride |
+| GET | /api/v1/apps/{name}/abuse | AbilityRead | handleGetAppAbuse |
+| PUT | /api/v1/apps/{name}/abuse | AbilityWriteSensitive | handlePutAppAbuse |
+| POST | /api/v1/apps/{name}/abuse/dry-run | AbilityReadSensitive | handleAbuseDryRun |
+| POST | /api/v1/apps/{name}/scheduled-deploys | AbilityDeploy | handleCreateScheduledDeploy |
+| GET | /api/v1/apps/{name}/scheduled-deploys | AbilityRead | handleListScheduledDeploys |
+| GET | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityRead | handleGetScheduledDeploy |
+| DELETE | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityDeploy | handleCancelScheduledDeploy |
+| GET | /api/v1/apps/{name}/status | AbilityRead | handleAppStatus |
+| GET | /api/v1/apps/{name}/files | AbilityRead | handleListAppFiles |
+| PUT | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleSetAppFile |
+| DELETE | /api/v1/apps/{name}/files | AbilityWriteSensitive | handleDeleteAppFile |
+| GET | /api/v1/apps/{name}/template-upgrade | AbilityRead | handleGetTemplateUpgrade |
+| GET | /api/v1/apps/{name}/tunnel | AbilityRoot | handleAppTunnel |
+| POST | /api/v1/apps/{name}/template-upgrade | AbilityDeploy | handleApplyTemplateUpgrade |
+| GET | /api/v1/apps/{name}/template-upgrade/run | AbilityRead | handleGetTemplateUpgradeRun |
+| GET | /api/v1/apps/{name}/rollout | AbilityRead | handleGetRollout |
 
 </Accordion>
 
@@ -682,6 +718,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/webhook/register | AbilityWriteSensitive | handleRegisterGitSourceWebhook |
 | POST | /api/v1/apps/{name}/secrets/{key}/rotate | AbilityWriteSensitive | handleRotateSecretValue |
 | POST | /api/v1/webhooks/functions/{name} | Public | handleFunctionWebhook |
+| POST | /api/v1/apps/{name}/secrets/{key}/build-time | AbilityWriteSensitive | handleSetSecretBuildTime |
 
 ## Telemetry
 
@@ -824,6 +861,9 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/provision/discard | AbilityWrite | handleDiscardPendingDatabase |
 | PUT | /api/v1/databases/{name}/pending-settings | AbilityWrite | handleUpdatePendingDatabase |
 | POST | /api/v1/databases/{name}/credentials/reveal | AbilityRoot | handleRevealDatabaseCredentials |
+| GET | /api/v1/databases/{name}/pooler | AbilityRead | handleGetDatabasePooler |
+| POST | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleEnableDatabasePooler |
+| DELETE | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleDisableDatabasePooler |
 
 ## Projects / Organizations / Environments
 
@@ -939,6 +979,8 @@ Endpoints for:
 | PUT | /api/v1/nodes/{id}/failure-policy | AbilityRoot | handleSetNodeFailurePolicy |
 | POST | /api/v1/nodes/{id}/failure/lost | AbilityRoot | handleMarkNodeLost |
 | POST | /api/v1/nodes/{id}/failure/resolve | AbilityRoot | handleResolveNodeFailure |
+| GET | /api/v1/nodes/domains | AbilityRoot | handleNodeDomains |
+| GET | /api/v1/nodes/{id}/onboarding | AbilityRoot | handleGetNodeOnboarding |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1059,6 +1101,17 @@ Endpoints for:
 | GET | /api/v1/settings/email/deliveries | AbilityRoot | handleListEmailDeliveries |
 | GET | /api/v1/settings/email/deliveries/{id} | AbilityRoot | handleGetEmailDelivery |
 | POST | /api/v1/settings/vault/rotate-credential | AbilityRoot | handleRotateVaultCredential |
+| GET | /api/v1/settings/email/providers | AbilityRead | handleListEmailProviders |
+| POST | /api/v1/settings/email/providers | AbilityRoot | handleCreateEmailProvider |
+| GET | /api/v1/settings/email/providers/{id} | AbilityRead | handleGetEmailProvider |
+| PUT | /api/v1/settings/email/providers/{id} | AbilityRoot | handleUpdateEmailProvider |
+| DELETE | /api/v1/settings/email/providers/{id} | AbilityRoot | handleDeleteEmailProvider |
+| POST | /api/v1/settings/email/providers/{id}/test | AbilityRoot | handleTestEmailProvider |
+| POST | /api/v1/settings/email/providers/{id}/promote | AbilityRoot | handlePromoteEmailProvider |
+| POST | /api/v1/settings/email/providers/{id}/secrets/{field}/reveal | AbilityRoot | handleRevealEmailSecret |
+| GET | /api/v1/settings/email/branding | AbilityRead | handleGetEmailBranding |
+| PUT | /api/v1/settings/email/branding | AbilityRoot | handleUpdateEmailBranding |
+| POST | /api/v1/settings/email/branding/preview | AbilityRoot | handlePreviewEmailBranding |
 
 </Accordion>
 
@@ -1190,6 +1243,9 @@ Endpoints for:
 | GET | /api/v1/backups/coverage | AbilityRead | handleBackupCoverage |
 | POST | /api/v1/backups/protect-all | AbilityWriteSensitive | handleProtectAll |
 | POST | /api/v1/backups/encryption-key/ack | AbilityWriteSensitive | handleAckBackupEncryptionKey |
+| GET | /api/v1/backups/copy-settings | AbilityRead | handleGetBackupCopySettings |
+| PUT | /api/v1/backups/copy-settings | AbilityWriteSensitive | handleSetBackupCopySettings |
+| GET | /api/v1/backups/copies | AbilityRead | handleListBackupCopies |
 
 ## App Volume Backups / Restore
 
@@ -1217,6 +1273,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityRead | handleGetVolumeBackupPolicy |
 | PUT | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityWriteSensitive | handleSetVolumeBackupPolicy |
 | POST | /api/v1/apps/{name}/volumes/{volume}/restore-to | AbilityWriteSensitive | handleVolumeRestoreTo |
+| GET | /api/v1/apps/{name}/volumes/{volume}/files | AbilityReadSensitive | handleListVolumeFiles |
+| GET | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityReadSensitive | handleDownloadVolumeFile |
+| PUT | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handlePutVolumeFile |
+| DELETE | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handleDeleteVolumeFile |
+| POST | /api/v1/apps/{name}/volumes/{volume}/files/restore | AbilityWrite | handleRestoreVolumeFile |
 
 ## App Storage / Database Attach
 
@@ -1888,6 +1949,82 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
 | DELETE | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
 | GET | /api/v1/function-kv/keys | Public | handleFunctionKVKeys |
+| POST | /api/v1/migration/coolify/exit-report | AbilityWriteSensitive | handleCoolifyExitReport |
+| GET | /api/v1/migration/apps/sessions/{id}/exit-report | AbilityRead | handleAppImportExitReport |
+| POST | /api/v1/migration/apps/test | AbilityWriteSensitive | handleAppImportTest |
+| GET | /api/v1/migration/apps/sessions/{id}/progress | AbilityRead | handleAppImportProgress |
+| GET | /api/v1/migration/apps/sessions/{id}/events | AbilityRead | handleAppImportEvents |
+| POST | /api/v1/migration/apps/sessions/{id}/probe | AbilityWriteSensitive | handleAppImportProbe |
+| GET | /api/v1/migration/apps/sessions/{id}/retire | AbilityRead | handleAppImportRetire |
+| POST | /api/v1/migration/apps/sessions/{id}/retire | AbilityWriteSensitive | handleAppImportRetire |
+| POST | /api/v1/migration/exit-report | AbilityWriteSensitive | handleCoolifyExitReport |
+| GET | /api/v1/deployments/{id}/timeline | AbilityRead | handleGetDeployTimeline |
+| GET | /api/v1/deployments/{id}/timeline/stream | AbilityRead | handleDeployTimelineStream |
+| GET | /api/v1/deployments/{id}/timeline/compare | AbilityRead | handleCompareDeployTimelines |
+| GET | /api/v1/benchmarks | AbilityRead | handleListBenchmarks |
+| POST | /api/v1/benchmarks | AbilityWrite | handleUploadBenchmark |
+| GET | /api/v1/benchmarks/compare | AbilityRead | handleCompareBenchmarks |
+| GET | /api/v1/benchmarks/{id} | AbilityRead | handleGetBenchmark |
+| DELETE | /api/v1/benchmarks/{id} | AbilityRoot | handleDeleteBenchmark |
+| GET | /api/v1/costs/app-caps | AbilityRead | handleListSpendCaps |
+| POST | /api/v1/costs/budgets/{id}/dry-run | AbilityRead | handleCostBudgetDryRun |
+| POST | /api/v1/migrations/verify | AbilityRoot | handleMigrationVerify |
+| GET | /api/v1/migrations/verify/latest | AbilityRead | handleLatestMigrationVerify |
+| POST | /api/v1/imports/repo/plan | AbilityWrite | handleImportRepoPlan |
+| POST | /api/v1/imports/repo/apply | AbilityWrite | handleImportRepoApply |
+| GET | /api/v1/cleanup | AbilityRead | handleGetCleanup |
+| GET | /api/v1/cleanup/runs | AbilityRead | handleListCleanupRuns |
+| POST | /api/v1/cleanup/{id}/preview | AbilityRoot | handlePreviewCleanup |
+| POST | /api/v1/cleanup/{id}/run | AbilityRoot | handleRunCleanup |
+| PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
+| POST | /api/v1/imports/platform/databases/{name}/hosted/preflight | AbilityWriteSensitive | handleHostedPreflight |
+| POST | /api/v1/imports/platform/databases/{name}/hosted/run | AbilityWriteSensitive | handleHostedRun |
+| GET | /api/v1/stacks | AbilityRead | handleListStacks |
+| POST | /api/v1/stacks | AbilityWrite | handleCreateStack |
+| GET | /api/v1/stacks/{name} | AbilityRead | handleGetStack |
+| PATCH | /api/v1/stacks/{name} | AbilityRoot | handleUpdateStackSettings |
+| DELETE | /api/v1/stacks/{name} | AbilityWrite | handleDeleteStack |
+| POST | /api/v1/stacks/{name}/plan | AbilityRead | handleStackPlan |
+| POST | /api/v1/stacks/{name}/apply | AbilityWrite | handleStackApply |
+| GET | /api/v1/stacks/{name}/revisions | AbilityRead | handleStackRevisions |
+| GET | /api/v1/stacks/{name}/revisions/{n} | AbilityRead | handleStackRevision |
+| GET | /api/v1/stacks/{name}/revisions/{n}/diff | AbilityRead | handleStackDiff |
+| POST | /api/v1/stacks/{name}/revisions/{n}/rollback | AbilityWrite | handleStackRollback |
+| PUT | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackPin |
+| DELETE | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackUnpin |
+| POST | /api/v1/stacks/{name}/unlock | AbilityRoot | handleStackUnlock |
+| POST | /api/v1/stacks/{name}/revisions/{n}/approve | AbilityRoot | handleStackApprove |
+| POST | /api/v1/stacks/{name}/revisions/{n}/reject | AbilityRoot | handleStackReject |
+| POST | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleCreateStackTrust |
+| GET | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleListStackTrusts |
+| DELETE | /api/v1/stacks/{name}/oidc-trusts/{id} | AbilityRoot | handleDeleteStackTrust |
+| POST | /api/v1/ci/stack-oidc-exchange | Public | handleStackOIDCExchange |
+| GET | /api/v1/assets/buckets | AbilityRead | handleListAssetBuckets |
+| POST | /api/v1/assets/buckets | AbilityWriteSensitive | handleCreateAssetBucket |
+| GET | /api/v1/assets/buckets/{id} | AbilityRead | handleGetAssetBucket |
+| PATCH | /api/v1/assets/buckets/{id} | AbilityWriteSensitive | handleUpdateAssetBucket |
+| DELETE | /api/v1/assets/buckets/{id} | AbilityWriteSensitive | handleDeleteAssetBucket |
+| POST | /api/v1/assets/buckets/{id}/probe | AbilityWriteSensitive | handleProbeAssetBucket |
+| GET | /api/v1/assets/buckets/{id}/usage | AbilityRead | handleAssetUsage |
+| GET | /api/v1/assets/buckets/{id}/assets | AbilityReadSensitive | handleListAssets |
+| GET | /api/v1/assets/buckets/{id}/urls | AbilityReadSensitive | handleAssetURLs |
+| POST | /api/v1/assets/buckets/{id}/uploads | AbilityWrite | handleRequestAssetUpload |
+| POST | /api/v1/assets/buckets/{id}/uploads/confirm | AbilityWrite | handleConfirmAssetUpload |
+| PUT | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleUploadAsset |
+| DELETE | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleDeleteAsset |
+| GET | /api/v1/stack-templates | AbilityRead | handleListStackTemplates |
+| GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
+| POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
+| POST | /api/v1/import/k8s | AbilityWrite | handleImportK8s |
+| POST | /api/v1/control-plane/rehydrate/plan | AbilityRoot | handleRehydratePlan |
+| POST | /api/v1/control-plane/rehydrate/run | AbilityRoot | handleRehydrateRun |
+| GET | /api/v1/control-plane/rehydrate/report | AbilityRoot | handleRehydrateReport |
+| GET | /api/v2/apps | AbilityRead | handleList |
+| GET | /api/v2/apps/{name} | AbilityRead | handleGet |
+| GET | /api/v2/databases | AbilityRead | handleList |
+| GET | /api/v2/databases/{name} | AbilityRead | handleGet |
+| GET | /api/v2/nodes | AbilityRoot | handleList |
+| GET | /api/v2/nodes/{name} | AbilityRoot | handleGet |
 
 ## See also
 

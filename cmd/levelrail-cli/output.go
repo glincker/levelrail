@@ -17,14 +17,15 @@ import (
 // Distinct exit codes so scripts and agents can branch on why a call failed without parsing stderr.
 const (
 	exitOK            = 0
-	exitUsage         = 1 // unknown command, missing positional argument, bad flag syntax
-	exitCheckFailed   = 1 // "control-plane-backups verify": the call worked but a check failed
-	exitValidation    = 2 // well-formed flags/file, but the request they describe is invalid
-	exitNetwork       = 3 // could not reach the API at all (connection refused, DNS, timeout)
-	exitAPIError      = 4 // the API was reached and returned a non-2xx response
-	exitDeployFailed  = 5 // "apps wait": every API call succeeded, but the deploy itself converged as a failure
-	exitDeployTimeout = 6 // "apps wait": gave up before the deploy converged either way
-	exitNotLive       = 7 // "go-live --wait": every call worked, but the domain is not live yet
+	exitUsage         = 1  // unknown command, missing positional argument, bad flag syntax
+	exitCheckFailed   = 1  // "control-plane-backups verify": the call worked but a check failed
+	exitValidation    = 2  // well-formed flags/file, but the request they describe is invalid
+	exitNetwork       = 3  // could not reach the API at all (connection refused, DNS, timeout)
+	exitAPIError      = 4  // the API was reached and returned a non-2xx response
+	exitDeployFailed  = 5  // "apps wait": every API call succeeded, but the deploy itself converged as a failure
+	exitDeployTimeout = 6  // "apps wait": gave up before the deploy converged either way
+	exitNotLive       = 7  // "go-live --wait": every call worked, but the domain is not live yet
+	exitUpdateAvail   = 10 // "update --check --exit-code": the check worked and a newer release exists
 )
 
 // errors.As unwraps wrapped errors, so classification survives any added context.
@@ -87,13 +88,19 @@ func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) 
 			return outputJSON, nil
 		}
 		return outputTable, nil
-	case string(outputJSON), string(outputTable), string(outputText):
+	case string(outputJSON), string(outputTable), string(outputText), string(outputYAML), string(outputWide), string(outputName):
 		if jsonOut && outputFlag != string(outputJSON) {
 			return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
 		}
 		return outputFormat(outputFlag), nil
 	default:
-		return "", newValidationError("invalid --output %q, want json, table, or text", outputFlag)
+		if isSpecFormat(outputFormat(outputFlag)) {
+			if jsonOut {
+				return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
+			}
+			return outputFormat(outputFlag), nil
+		}
+		return "", newValidationError("invalid --output %q, want json, yaml, table, wide, text, name, custom-columns=... or jsonpath=...", outputFlag)
 	}
 }
 
@@ -144,9 +151,19 @@ func renderResult(stdout io.Writer, format outputFormat, query string, data any,
 	}
 
 	switch {
-	case format == outputTable && query == "":
+	case format == outputTable && query == "", format == outputWide && query == "":
 		renderTable()
 		return nil
+	case format == outputWide:
+		return writeQueriedTable(stdout, value)
+	case format == outputYAML:
+		return writeYAMLValue(stdout, value)
+	case format == outputName:
+		return writeNameValue(stdout, value)
+	case strings.HasPrefix(string(format), outputColumnsPrefix):
+		return writeCustomColumns(stdout, strings.TrimPrefix(string(format), outputColumnsPrefix), value)
+	case strings.HasPrefix(string(format), outputPathPrefix):
+		return writeJSONPath(stdout, strings.TrimPrefix(string(format), outputPathPrefix), value)
 	case format == outputTable:
 		return writeQueriedTable(stdout, value)
 	case format == outputText:
@@ -280,6 +297,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.HostPort != nil {
 		_, _ = fmt.Fprintf(out, "host port: %d (pinned)\n", *a.HostPort)
 	}
+	if len(a.PublishedPorts) > 0 {
+		_, _ = fmt.Fprintf(out, "published: %s\n", formatPublishedPorts(a.PublishedPorts))
+	}
 	if len(a.Domains) > 0 {
 		_, _ = fmt.Fprintf(out, "domains:  %v\n", a.Domains)
 	}
@@ -337,6 +357,10 @@ func printAppsTable(out io.Writer, apps []appResource) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT\tNODE\tENV")
 	for _, a := range apps {
+		port := fmt.Sprintf("%d", a.Port)
+		if len(a.PublishedPorts) > 0 {
+			port += " +" + formatPublishedPorts(a.PublishedPorts)
+		}
 		node := a.NodeID
 		if node == "" {
 			node = "(local)"
@@ -345,7 +369,7 @@ func printAppsTable(out io.Writer, apps []appResource) {
 		if a.EnvDirty {
 			env = "pending restart"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\n", a.Name, a.Image, a.Port, node, env)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", a.Name, a.Image, port, node, env)
 	}
 	_ = tw.Flush()
 }
@@ -388,7 +412,7 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 			reason = a.WaitReason
 		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, dashIfEmpty(a.Trigger), dashIfEmpty(a.Branch), dashIfEmpty(a.Author), a.Error)
+			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, dashIfEmpty(a.Trigger), dashIfEmpty(a.Branch), dashIfEmpty(a.Author), attemptErrorText(a))
 	}
 	_ = tw.Flush()
 }
@@ -682,12 +706,30 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 	_ = tw.Flush()
 }
 
+// attemptErrorText prefers the classified failure cause over the raw error, which can be gRPC text.
+func attemptErrorText(a deployAttemptResource) string {
+	if a.Failure != nil && a.Failure.Cause != "" {
+		return a.Failure.Cause
+	}
+	return a.Error
+}
+
+// engineLabel names the engine for the status line; unknown keeps the old wording.
+func engineLabel(kind string) string {
+	switch kind {
+	case "", "docker", "unknown":
+		return "docker"
+	}
+	return kind
+}
+
 // Docker is printed first: it is the one prerequisite everything else depends on.
 func printSystemStatusHuman(out io.Writer, s systemStatusResource) {
+	label := engineLabel(s.EngineKind) + ":"
 	if s.DockerConnected {
-		_, _ = fmt.Fprintln(out, "docker:              connected")
+		_, _ = fmt.Fprintf(out, "%-20s connected\n", label)
 	} else if s.DockerError != "" {
-		_, _ = fmt.Fprintf(out, "docker:              UNREACHABLE (%s)\n", s.DockerError)
+		_, _ = fmt.Fprintf(out, "%-20s UNREACHABLE (%s)\n", label, s.DockerError)
 	} else {
 		_, _ = fmt.Fprintln(out, "docker:              unknown (no Docker reachability check configured)")
 	}
@@ -829,6 +871,16 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
 	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
 	printNodeCertHuman(out, n)
+	if len(n.Labels) > 0 {
+		keys := make([]string, 0, len(n.Labels))
+		for k := range n.Labels {
+			keys = append(keys, k+"="+n.Labels[k])
+		}
+		sort.Strings(keys)
+		_, _ = fmt.Fprintf(out, "labels:                  %s\n", strings.Join(keys, ", "))
+	}
+	_, _ = fmt.Fprintf(out, "apps:                    %s\n", listOrNone(n.PlacedApps))
+	_, _ = fmt.Fprintf(out, "databases:               %s\n", listOrNone(n.PlacedDatabases))
 	if n.AlertStatus != nil {
 		_, _ = fmt.Fprintf(out, "alert status:\n")
 		_, _ = fmt.Fprintf(out, "  patch status:          %s\n", n.AlertStatus.PatchStatus)
@@ -875,4 +927,18 @@ func nodeStatusHint(n nodeResource) string {
 		return "enrolled but its agent never connected (the join token is already used). Run `nodes delete " + n.ID + "`, then re-enrol with a new join token; check the agent logs on the host."
 	}
 	return ""
+}
+
+// formatPublishedPorts renders host ports the way operators write them,
+// "53/udp, 8080/tcp", an empty protocol reading as tcp.
+func formatPublishedPorts(ports []publishedPort) string {
+	parts := make([]string, 0, len(ports))
+	for _, p := range ports {
+		proto := p.Protocol
+		if proto == "" {
+			proto = "tcp"
+		}
+		parts = append(parts, fmt.Sprintf("%d/%s", p.HostPort, proto))
+	}
+	return strings.Join(parts, ", ")
 }

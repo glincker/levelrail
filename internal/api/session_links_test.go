@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -285,5 +286,87 @@ func TestConsumeSessionLink_GETIsMethodNotAllowed(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "POST") {
 		t.Errorf("body = %s, want a message pointing at POST", rec.Body.String())
+	}
+}
+
+// The consumed session cookie must be accepted by the next request on
+// both transports: Secure only over TLS (a Secure cookie is dropped by
+// browsers on plain http LAN origins), always HttpOnly, Lax and Path "/".
+func TestSessionLink_ConsumedCookieAttributes(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		tls        bool
+		wantSecure bool
+	}{{"plain http", false, false}, {"tls", true, true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			tok := seedRootAPIToken(t, db, "sl-attr-"+strings.ReplaceAll(tc.name, " ", "-"), []string{AbilityRoot})
+			minted, rec := mintSessionLink(t, rt, nil, tok)
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("mint: %d %s", rec.Code, rec.Body.String())
+			}
+			body, _ := json.Marshal(map[string]string{"token": minted.Token})
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/session-links/consume", strings.NewReader(string(body)))
+			if tc.tls {
+				req = httptest.NewRequest(http.MethodPost, "https://example.test/api/v1/auth/session-links/consume", strings.NewReader(string(body)))
+				req.TLS = &tls.ConnectionState{}
+			}
+			out := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(out, req)
+			if out.Code != http.StatusOK {
+				t.Fatalf("consume: %d %s", out.Code, out.Body.String())
+			}
+			c := sessionCookieFromRecorder(t, out)
+			if c.Secure != tc.wantSecure || !c.HttpOnly || c.SameSite != http.SameSiteLaxMode || c.Path != "/" || c.Domain != "" {
+				t.Errorf("cookie = %+v, want Secure=%v HttpOnly Lax Path=/ no Domain", c, tc.wantSecure)
+			}
+			next := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(next, authedRequest(t, c, http.MethodGet, "/api/v1/auth/session", ""))
+			if next.Code != http.StatusOK {
+				t.Errorf("next request with cookie: %d %s", next.Code, next.Body.String())
+			}
+		})
+	}
+}
+
+func TestSessionLinkURL_FollowsRequestScheme(t *testing.T) {
+	cases := []struct {
+		name   string
+		tls    bool
+		prefix string
+	}{
+		{"plain http", false, "http://203.0.113.9:8080/login?session_link="},
+		{"direct tls", true, "https://203.0.113.9:8080/login?session_link="},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, _ := newTestRouter(t)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/session-links", nil)
+			req.Host = "203.0.113.9:8080"
+			if tc.tls {
+				req.TLS = &tls.ConnectionState{}
+			}
+			if got := rt.sessionLinkURL(req, "tok"); got != tc.prefix+"tok" {
+				t.Errorf("sessionLinkURL() = %q, want %q", got, tc.prefix+"tok")
+			}
+		})
+	}
+}
+
+func TestSessionLink_PinnedSessionCanLogOut(t *testing.T) {
+	rt, db := newTestRouter(t)
+	plain := seedRootAPIToken(t, db, "tok_logout", []string{AbilityRoot})
+	minted, _ := mintSessionLink(t, rt, nil, plain)
+	cookie := sessionCookieFromRecorder(t, consumeSessionLinkRequest(t, rt, minted.Token))
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/logout", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("logout status = %d, want %d", rec.Code, http.StatusNoContent)
+	}
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("after logout status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }

@@ -6,6 +6,7 @@
 #   rest    everything else
 #   rest-heavy / rest-light   rest split by scripts/ci-heavy-packages.txt (nightly)
 #   race    non-api, non-docker packages that start goroutines or use sync/atomic/chan
+#   race-a / race-b   race split by package index parity (the weekly sweep, so neither half nears its timeout)
 #
 # The docker group runs in its own job with bounded -p so heavy live tests
 # (Postgres, MinIO, BuildKit) can't OOM the runner by starting together.
@@ -49,6 +50,7 @@ is_concurrent() {
 	grep -qE '\bgo (func|[A-Za-z_.]+\()|sync\.|atomic\.|\bchan\b' "${files[@]}"
 }
 
+n=0
 go list -e -f '{{.ImportPath}} {{.Dir}}' "$@" | while read -r pkg dir; do
 	if [ "$pkg" = "$api_pkg" ]; then
 		if [ "$group" = "api" ]; then echo "$pkg"; fi
@@ -61,6 +63,13 @@ go list -e -f '{{.ImportPath}} {{.Dir}}' "$@" | while read -r pkg dir; do
 	rest-heavy) if ! uses_docker "$dir" && is_heavy "$pkg"; then echo "$pkg"; fi ;;
 	rest-light) if ! uses_docker "$dir" && ! is_heavy "$pkg"; then echo "$pkg"; fi ;;
 	race) if ! uses_docker "$dir" && is_concurrent "$dir"; then echo "$pkg"; fi ;;
+	race-a | race-b)
+		if ! uses_docker "$dir" && is_concurrent "$dir"; then
+			n=$((n + 1))
+			# a is odd positions, b is even; the subshell keeps n across iterations
+			if { [ "$group" = race-a ] && [ $((n % 2)) -eq 1 ]; } || { [ "$group" = race-b ] && [ $((n % 2)) -eq 0 ]; }; then echo "$pkg"; fi
+		fi
+		;;
 	*)
 		echo "unknown group: $group" >&2
 		exit 2

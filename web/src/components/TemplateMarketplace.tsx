@@ -54,6 +54,7 @@ export function TemplateMarketplace({
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>(ALL_CATEGORIES)
   const [sort, setSort] = useState<TemplateSort>('relevance')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [density, setDensity] = useTemplateDensity()
   const templatesQuery = useServiceTemplates()
   const customTemplatesQuery = useCustomTemplates()
@@ -81,8 +82,12 @@ export function TemplateMarketplace({
   const categoryCounts = useMemo(() => countCategories(templates), [templates])
   const visible = useMemo(
     () =>
-      sortTemplates(filterTemplates(templates, search, category), sort, search),
-    [templates, search, category, sort],
+      sortTemplates(
+        filterTemplates(templates, search, category, verifiedOnly),
+        sort,
+        search,
+      ),
+    [templates, search, category, sort, verifiedOnly],
   )
   const starterKits = useMemo(
     () => templates.filter((tpl) => tpl.category === STARTER_KITS_CATEGORY),
@@ -90,11 +95,12 @@ export function TemplateMarketplace({
   )
 
   const searching = search.trim() !== ''
-  const hasFilters = searching || category !== ALL_CATEGORIES
+  const hasFilters = searching || category !== ALL_CATEGORIES || verifiedOnly
   const showFeatured = !searching && category === ALL_CATEGORIES
   const clearFilters = () => {
     setSearch('')
     setCategory(ALL_CATEGORIES)
+    setVerifiedOnly(false)
   }
 
   if (templatesQuery.isLoading) return <LoadingGrid />
@@ -132,6 +138,8 @@ export function TemplateMarketplace({
             onSearch={setSearch}
             sort={sort}
             onSort={setSort}
+            verifiedOnly={verifiedOnly}
+            onVerifiedOnly={setVerifiedOnly}
             density={density}
             onDensity={setDensity}
             categoryCounts={categoryCounts}
@@ -180,7 +188,7 @@ export function TemplateMarketplace({
             <TemplateGrid
               templates={visible}
               density={density}
-              resetKey={`${search}|${category}|${sort}`}
+              resetKey={`${search}|${category}|${sort}|${verifiedOnly}`}
               onSelect={onSelect}
               onDeployNow={onDeployNow}
               deployingId={deployingId}

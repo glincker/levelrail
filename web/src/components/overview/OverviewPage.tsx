@@ -5,6 +5,7 @@ import {
   CopyIcon,
   RocketLaunchIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useAppStatus } from '../../queries/appStatus'
 import { useGitSource } from '../../queries/gitSources'
 import { useIsStaticSite } from '../../queries/staticSites'
 import { DropDeployCard } from '../dropdeploy/DropDeployCard'
@@ -27,6 +28,7 @@ import { useSetupDismissed } from './useSetupDismissed'
 import { computeOverviewLayout, type OverviewSection } from './overviewLayout'
 import { computeSetup } from './suggestions'
 import { AppAccessCard } from '../AppAccessCard'
+import { AppAccessDetails } from '../templates/AppAccessDetails'
 import { useAppUrls } from '../../queries/appUrls'
 import { pickOpenUrl } from '../appAccessRows'
 import { useAppTraffic } from '../../queries/appTraffic'
@@ -57,6 +59,7 @@ export function OverviewPage({
   const git = useGitSource(app.name)
   const isStatic = useIsStaticSite(app.name)
   const uploadAttempt = git.data ? undefined : latestUpload(attempts)
+  const appStatus = useAppStatus(app.name).data
   const suggestions = useOverviewSuggestions(app, reading, latest, conditions)
   const setup = useSetupDismissed(app.name)
   const { data: traffic } = useAppTraffic(app.name)
@@ -133,7 +136,12 @@ export function OverviewPage({
         anchorId="overview-attention"
       />
     ),
-    access: <AppAccessCard appName={app.name} />,
+    access: (
+      <div className="space-y-6">
+        <AppAccessCard appName={app.name} />
+        <AppAccessDetails app={app} />
+      </div>
+    ),
     kpis: (
       <section
         aria-label="Live traffic and resources"
@@ -183,6 +191,7 @@ export function OverviewPage({
 
   return (
     <div className="space-y-6">
+      {actions.confirmDialog}
       <OverviewHero
         app={app}
         conditions={conditions}
@@ -190,6 +199,11 @@ export function OverviewPage({
         attempts={attempts}
         url={openUrl}
         attentionCount={suggestions.attention.length}
+        serverOutcome={
+          appStatus?.outcome
+            ? { outcome: appStatus.outcome, reason: appStatus.outcome_reason }
+            : undefined
+        }
         onDeploy={setDeployTab}
       />
       {pairing ? (

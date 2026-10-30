@@ -29,6 +29,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesTunnel(prog, rest, stdout, stderr, lookupEnv)
 	case "adopt":
 		return runDatabasesAdopt(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
+	case "import-hosted":
+		return runDatabasesImportHosted(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
 	case "probe":
 		return runDatabasesProbe(prog, rest, stdout, stderr, lookupEnv)
 	case "list":
@@ -67,6 +69,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesClearNode(prog, rest, stdout, stderr, lookupEnv)
 	case "public-access":
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
+	case "pooler":
+		return runDatabasesPooler(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
 		return runDatabasesRotatePassword(prog, rest, stdout, stderr, lookupEnv)
 	case "credentials":
@@ -121,6 +125,7 @@ func databasesUsage(prog string) string {
   %[1]s databases link <name> <app> [--env-var VAR] [--field F] [flags]  connect an app: injects the connection env var
   %[1]s databases links <name> [flags]  list the apps connected to a database
   %[1]s databases probe <name> [flags]  re-check an external database's connectivity
+  %[1]s databases import-hosted <name> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--create-missing-roles] [--dry-run] [flags]  copy a hosted Postgres (Heroku) into this database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
   %[1]s databases status <name> [flags]   show a database's current reconcile conditions

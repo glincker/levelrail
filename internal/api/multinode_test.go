@@ -275,6 +275,10 @@ func TestJoinToken_CommandsAndTTL(t *testing.T) {
 		!strings.Contains(resp.JoinCommands.Docker, "NET_ADMIN") || !strings.Contains(resp.JoinCommands.Binary, "APP_NODE_NAME=w2") {
 		t.Fatalf("commands = %+v", resp.JoinCommands)
 	}
+	if p := resp.JoinCommands.Podman; !strings.Contains(p, "podman run") || !strings.Contains(p, "/run/podman/podman.sock") ||
+		!strings.Contains(p, "APP_CONTROL_PLANE_ADDR=cp.example.com:9443") || !strings.Contains(p, "NET_ADMIN") {
+		t.Fatalf("podman command = %q", p)
+	}
 	if ttl := time.Until(resp.ExpiresAt); ttl > 3*time.Minute || ttl < 2*time.Minute {
 		t.Fatalf("ttl = %s, want about 3m", ttl)
 	}
@@ -320,5 +324,38 @@ func TestPairStatus(t *testing.T) {
 		if got, _ := pairStatus(tt.ab, tt.ba); got != tt.want {
 			t.Errorf("pairStatus(%s, %s) = %s, want %s", tt.ab.State, tt.ba.State, got, tt.want)
 		}
+	}
+}
+
+func TestGetNode_AcceptsNameAndListsLabels(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedNode(t, db, "n_b", "worker-b")
+	if err := db.SetNodeLabels(context.Background(), "n_b", map[string]string{"disk": "ssd"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"n_b", "worker-b"} {
+		rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/"+key, "")
+		var got nodeResource
+		if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &got) != nil {
+			t.Fatalf("GET %s = %d %s", key, rec.Code, rec.Body.String())
+		}
+		if got.ID != "n_b" || got.Labels["disk"] != "ssd" {
+			t.Fatalf("node = %+v", got)
+		}
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/no-such", ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("unknown = %d, want 404", rec.Code)
+	}
+}
+
+func TestToNodeResource_FallsBackToMeshAddressAndEnrollTime(t *testing.T) {
+	created := time.Now().Add(-time.Hour)
+	res := toNodeResource(store.Node{ID: "x", Status: store.NodeStatusOnline, MeshAddress: "10.77.0.3", CreatedAt: created})
+	if res.Address != "10.77.0.3" || res.JoinedAt == nil || !res.JoinedAt.Equal(created) {
+		t.Fatalf("address=%q joined=%v", res.Address, res.JoinedAt)
+	}
+	pending := toNodeResource(store.Node{ID: "y", Status: store.NodeStatusPending, CreatedAt: created})
+	if pending.JoinedAt != nil {
+		t.Fatal("a pending node has not joined yet")
 	}
 }

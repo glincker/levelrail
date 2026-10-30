@@ -1,0 +1,80 @@
+version: 1
+kind: App
+metadata:
+  name: clock
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/clock:latest
+    port: 8080
+    command:
+      - sh
+      - -c
+      - bundle exec clockwork clock.rb
+    env:
+      CACHE_URL: {from: {database: cache, field: url}}
+      DATABASE_URL: {from: {database: main, field: url}}
+      LOG_LEVEL: info
+      RAILS_ENV: production
+      SECRET_KEY_BASE: {secretRef: SECRET_KEY_BASE}
+      STRIPE_KEY: {secretRef: STRIPE_KEY}
+---
+version: 1
+kind: App
+metadata:
+  name: web
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/web:latest
+    port: 8080
+    replicas: 2
+    command:
+      - sh
+      - -c
+      - bundle exec puma -C config/puma.rb
+    health:
+      readiness:
+        path: /up
+    hooks:
+      preDeploy: bundle exec rake db:migrate
+      postDeploy: bundle exec rake db:seed
+    env:
+      CACHE_URL: {from: {database: cache, field: url}}
+      DATABASE_URL: {from: {database: main, field: url}}
+      LOG_LEVEL: info
+      PORT: "8080"
+      RAILS_ENV: production
+      SECRET_KEY_BASE: {secretRef: SECRET_KEY_BASE}
+      STRIPE_KEY: {secretRef: STRIPE_KEY}
+---
+version: 1
+kind: App
+metadata:
+  name: worker
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/worker:latest
+    port: 8080
+    replicas: 1
+    command:
+      - sh
+      - -c
+      - bundle exec sidekiq
+    env:
+      CACHE_URL: {from: {database: cache, field: url}}
+      DATABASE_URL: {from: {database: main, field: url}}
+      LOG_LEVEL: info
+      RAILS_ENV: production
+      SECRET_KEY_BASE: {secretRef: SECRET_KEY_BASE}
+      STRIPE_KEY: {secretRef: STRIPE_KEY}

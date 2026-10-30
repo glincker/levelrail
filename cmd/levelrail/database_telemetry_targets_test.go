@@ -115,7 +115,7 @@ func TestDatabaseLogTargets_OnlyRunningContainersIncluded(t *testing.T) {
 		"db-cache": {ID: "container-cache", Name: "db-cache", Running: true},
 	}}
 
-	targets, err := databaseLogTargets(ctx, db, runtime)
+	targets, err := databaseLogTargets(ctx, db, runtime, agent.NewRegistry(), dynamicSourceDeps{}, slog.Default())
 	if err != nil {
 		t.Fatalf("databaseLogTargets() error = %v", err)
 	}
@@ -124,5 +124,34 @@ func TestDatabaseLogTargets_OnlyRunningContainersIncluded(t *testing.T) {
 	}
 	if targets[0].ResourceID != "database:cache" || targets[0].ContainerID != "container-cache" {
 		t.Errorf("targets[0] = %+v, want ResourceID=database:cache ContainerID=container-cache", targets[0])
+	}
+}
+
+func TestDatabaseLogTargets_RemoteNodeStreamsViaItsTransportAndOfflineIsSkipped(t *testing.T) {
+	db := openCredentialsTestDB(t)
+	ctx := context.Background()
+	for _, d := range []store.DesiredDatabase{
+		{Name: "far", Engine: store.EngineRedis, Version: "7", NodeID: "n2"},
+		{Name: "gone", Engine: store.EngineRedis, Version: "7", NodeID: "n3"},
+	} {
+		if err := db.SaveDesiredDatabase(ctx, d); err != nil {
+			t.Fatalf("seed database %s: %v", d.Name, err)
+		}
+		if err := db.UpdateDatabaseNode(ctx, d.Name, d.NodeID); err != nil {
+			t.Fatalf("place database %s: %v", d.Name, err)
+		}
+	}
+	remote := &fakeInspectRuntime{byName: map[string]*docker.ContainerState{
+		"db-far": {ID: "remote-far", Name: "db-far", Running: true},
+	}}
+	registry := agent.NewRegistry()
+	registry.Register("n2", agent.Local{Runtime: remote})
+
+	targets, err := databaseLogTargets(ctx, db, &fakeInspectRuntime{}, registry, dynamicSourceDeps{}, slog.Default())
+	if err != nil {
+		t.Fatalf("an offline node must not fail the whole listing: %v", err)
+	}
+	if len(targets) != 1 || targets[0].NodeID != "n2" || targets[0].ContainerID != "remote-far" {
+		t.Fatalf("targets = %+v, want only the n2 database tagged with its node", targets)
 	}
 }

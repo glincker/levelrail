@@ -12,6 +12,7 @@ type Evaluation struct {
 	Name       string      `json:"name"`
 	Zone       string      `json:"zone,omitempty"`
 	Region     string      `json:"region,omitempty"`
+	Provider   string      `json:"provider,omitempty"`
 	Eligible   bool        `json:"eligible"`
 	Reason     string      `json:"reason,omitempty"`
 	Capacity   bool        `json:"capacity_blocked,omitempty"`
@@ -83,6 +84,10 @@ func betterThan(a, b Evaluation) bool {
 	case a.Headroom != nil && b.Headroom != nil && *a.Headroom != *b.Headroom:
 		return *a.Headroom > *b.Headroom
 	case (a.Headroom == nil) != (b.Headroom == nil):
+		// Unknown capacity must not lose to a busy node: an empty one wins.
+		if (a.Load == 0) != (b.Load == 0) {
+			return a.Load == 0
+		}
 		return a.Headroom != nil
 	case a.Load != b.Load:
 		return a.Load < b.Load

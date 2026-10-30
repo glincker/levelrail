@@ -7,9 +7,14 @@
 // resource's other fields have different write (and read) paths"
 // reasoning tokens.go's plaintext-once token establishes elsewhere.
 
-export type BackupProvider = 'aws' | 'r2' | 'custom'
+export type BackupProvider = 'aws' | 'r2' | 'custom' | 'local'
 
-export const BACKUP_PROVIDERS: BackupProvider[] = ['aws', 'r2', 'custom']
+export const BACKUP_PROVIDERS: BackupProvider[] = [
+  'aws',
+  'r2',
+  'custom',
+  'local',
+]
 
 export interface BackupTarget {
   id: string
@@ -23,6 +28,8 @@ export interface BackupTarget {
   created_at: string
   // True when new database dumps to this target are age-sealed.
   encrypt_dumps: boolean
+  // Read-only APP_BACKUP_LOCAL_ROOT, set for local targets only.
+  local_root?: string
 }
 
 export interface BackupTargetEncryption {
@@ -41,6 +48,7 @@ export interface CreateBackupTargetRequest {
   endpoint?: string
   region?: string
   bucket: string
+  // Empty for the local type, which has no credentials.
   access_key_id: string
   secret_access_key: string
   // Omit to use the server default (on when a backup key exists).

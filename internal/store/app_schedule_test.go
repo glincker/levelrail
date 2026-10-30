@@ -150,3 +150,38 @@ func TestRecordAndListAppScheduleHistory(t *testing.T) {
 		t.Fatalf("ListAppScheduleHistory() with limit=2 returned %d entries, want 2", len(limited))
 	}
 }
+
+func TestSetAppScheduleRunAt_CompleteAndRearm(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	at := time.Now().Add(time.Hour).UTC().Truncate(time.Second)
+
+	if err := db.SetAppScheduleRunAt(ctx, "web", "main", "UTC", at, true); err != nil {
+		t.Fatalf("SetAppScheduleRunAt() error = %v", err)
+	}
+	got, err := db.GetAppSchedule(ctx, "web")
+	if err != nil || got.RunAt == nil || !got.RunAt.Equal(at) || got.NextFireAt == nil || got.Cron != "" {
+		t.Fatalf("GetAppSchedule() = %+v, %v, want a one-shot armed at run_at", got, err)
+	}
+
+	if err := db.CompleteAppSchedule(ctx, "web", time.Now()); err != nil {
+		t.Fatalf("CompleteAppSchedule() error = %v", err)
+	}
+	if got, _ = db.GetAppSchedule(ctx, "web"); got.CompletedAt == nil || got.Enabled {
+		t.Fatalf("after complete = %+v, want completed and disabled", got)
+	}
+
+	if err := db.SetAppScheduleRunAt(ctx, "web", "main", "UTC", at.Add(time.Hour), true); err != nil {
+		t.Fatalf("re-arm error = %v", err)
+	}
+	if got, _ = db.GetAppSchedule(ctx, "web"); got.CompletedAt != nil || !got.Enabled {
+		t.Fatalf("after re-arm = %+v, want completed_at cleared and enabled", got)
+	}
+
+	if err := db.SetAppSchedule(ctx, "web", "0 3 * * *", "main", "UTC", true); err != nil {
+		t.Fatalf("SetAppSchedule() error = %v", err)
+	}
+	if got, _ = db.GetAppSchedule(ctx, "web"); got.RunAt != nil || got.Cron == "" {
+		t.Fatalf("after switching to cron = %+v, want run_at cleared", got)
+	}
+}

@@ -143,28 +143,9 @@ func (r *VerifyRunner) runVerify(ctx context.Context, backupHistoryID, engine st
 		return verifyResult{}, fmt.Errorf("backup %q has status %q, not %q: refusing to verify an attempt that did not succeed", backupHistoryID, h.Status, store.BackupStatusSucceeded)
 	}
 
-	target, err := r.Store.GetBackupTarget(ctx, h.TargetID)
+	dest, err := resolveCopyDestination(ctx, r.Store, r.Secrets, h.TargetID)
 	if err != nil {
-		return verifyResult{}, fmt.Errorf("get backup target %q: %w", h.TargetID, err)
-	}
-
-	secretsKey := store.BackupTargetSecretsKey(h.TargetID)
-	accessKeyID, err := r.Secrets.Resolve(ctx, secretsKey, "access_key_id")
-	if err != nil {
-		return verifyResult{}, fmt.Errorf("resolve access key id for target %q: %w", h.TargetID, err)
-	}
-	secretAccessKey, err := r.Secrets.Resolve(ctx, secretsKey, "secret_access_key")
-	if err != nil {
-		return verifyResult{}, fmt.Errorf("resolve secret access key for target %q: %w", h.TargetID, err)
-	}
-
-	dest := Destination{
-		Provider:        target.Provider,
-		Endpoint:        target.Endpoint,
-		Region:          target.Region,
-		Bucket:          target.Bucket,
-		AccessKeyID:     accessKeyID,
-		SecretAccessKey: secretAccessKey,
+		return verifyResult{}, err
 	}
 
 	stream, err := r.Downloader.Download(ctx, dest, h.ObjectKey)

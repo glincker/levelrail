@@ -42,6 +42,7 @@ type JanitorItem struct {
 	Name      string `json:"name"`
 	Detail    string `json:"detail,omitempty"`
 	SizeBytes int64  `json:"size_bytes"`
+	Count     int    `json:"count,omitempty"`
 	Action    string `json:"action"`
 }
 

@@ -13,6 +13,9 @@ const (
 	Coolify  Platform = "coolify"
 	Dokploy  Platform = "dokploy"
 	CapRover Platform = "caprover"
+	Heroku   Platform = "heroku"
+	Vercel   Platform = "vercel"
+	Render   Platform = "render"
 	Compose  Platform = "compose"
 	Dokku    Platform = "dokku"
 	// Docker is a docker inspect snapshot of one host, no platform API.
@@ -42,6 +45,8 @@ type Env struct {
 	Key    string
 	Value  string
 	Secret bool
+	// BuildTime marks a variable the source only exposes during the image build.
+	BuildTime bool
 }
 
 // Volume is a persistent mount.
@@ -105,6 +110,25 @@ type App struct {
 	Notes       []Note
 }
 
+// BackupSchedule is one scheduled database backup on the source.
+type BackupSchedule struct {
+	Schedule string
+	Enabled  bool
+	// Remote is true when the source also uploads the backup to S3.
+	Remote bool
+}
+
+// Server is a host the source platform deploys to.
+type Server struct {
+	Name    string
+	Address string
+	// Proxy names the reverse proxy the source runs there, empty when none.
+	Proxy string
+	// BuildServer is true when the source uses the host only to build images.
+	BuildServer bool
+	Reachable   bool
+}
+
 // Database is a managed database in the source platform.
 type Database struct {
 	SourceID string
@@ -116,10 +140,20 @@ type Database struct {
 	// database an in-network hostname apps connect to.
 	Environment  string
 	InternalHost string
+	// Server, User, DBName, Public and PublicPort describe how the source
+	// exposes the database. No credential is ever read here.
+	Server     string
+	User       string
+	DBName     string
+	Public     bool
+	PublicPort int
+	Backups    []BackupSchedule
 }
 
 // Note is a per-item caveat found while reading the source.
 type Note struct {
+	// Area groups notes in the exit report, such as "webhook" or "command". Empty means general.
+	Area   string
 	Reason string
 	Manual string
 }
@@ -147,4 +181,7 @@ type Discovery struct {
 	Apps        []App
 	Databases   []Database
 	Unsupported []Unsupported
+	Servers     []Server
+	// Warnings are source reads that failed softly, so the plan lacks that detail.
+	Warnings []string
 }

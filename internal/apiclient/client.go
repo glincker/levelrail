@@ -45,6 +45,8 @@ type Client struct {
 	hc        *http.Client
 	userAgent string
 	noAuthFix string
+	retry     RetryPolicy
+	sleep     func(context.Context, time.Duration) error
 }
 
 // Option configures a Client at construction time. See WithUserAgent.
@@ -93,21 +95,53 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 // (ListNodesFiltered) that needs a response header such as
 // X-Total-Count alongside the decoded body.
 func (c *Client) doHeaders(ctx context.Context, method, path string, body, out any) (http.Header, error) {
-	var reqBody io.Reader
+	var payload []byte
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("encode request body: %w", err)
 		}
-		reqBody = bytes.NewReader(b)
+		payload = b
+	}
+	sleep := c.sleep
+	if sleep == nil {
+		sleep = sleepCtx
+	}
+	var waited time.Duration
+	for attempt := 0; ; attempt++ {
+		h, err := c.doOnce(ctx, method, path, payload, out)
+		var apiErr *APIError
+		if err == nil || !errors.As(err, &apiErr) || attempt >= c.retry.MaxRetries ||
+			(apiErr.StatusCode != http.StatusTooManyRequests && apiErr.StatusCode != http.StatusServiceUnavailable) ||
+			!retrySafe(method, idempotencyKeyFrom(ctx)) {
+			return h, err
+		}
+		delay := c.retry.retryDelay(apiErr.RetryAfter, attempt)
+		if waited+delay > c.retry.MaxWait {
+			return h, err
+		}
+		if serr := sleep(ctx, delay); serr != nil {
+			return h, err
+		}
+		waited += delay
+	}
+}
+
+func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte, out any) (http.Header, error) {
+	var reqBody io.Reader
+	if payload != nil {
+		reqBody = bytes.NewReader(payload)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
 	}
-	if body != nil {
+	if payload != nil {
 		req.Header.Set(headerContentType, contentTypeJSON)
+	}
+	if key := idempotencyKeyFrom(ctx); key != "" {
+		req.Header.Set(headerIdempotencyKey, key)
 	}
 	if c.token != "" {
 		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
@@ -128,7 +162,7 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 		// can tell "never reached the server" apart from "the server
 		// answered with an error" via errors.As, and pick a different
 		// exit code / tool-error shape for each.
-		return nil, fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
+		return nil, fmt.Errorf("request %s %s: %w%s", method, c.baseURL+path, err, connectHint(err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
@@ -153,7 +187,7 @@ func decodeResponse(resp *http.Response, out any) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var coded apiErrorBody
 		_ = json.Unmarshal(data, &coded)
-		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code}
+		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText()}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
@@ -182,21 +216,20 @@ func ExtractErrorMessage(data []byte) string {
 	return trimmed
 }
 
-// retryAfterHeader parses a Retry-After response header as a delay,
-// seconds form only (the only form this control plane ever sends,
-// internal/api/api_rate_limit.go's own writeRateLimited): 0 if absent or
-// not a plain non-negative integer, so a caller checking APIError.RetryAfter
-// only sees a real value when the server actually sent one it can trust.
+// retryAfterHeader parses Retry-After as a delay, in seconds or HTTP-date form:
+// 0 if absent, malformed or already past, so a caller only sees a value it can trust.
 func retryAfterHeader(h http.Header) time.Duration {
-	raw := h.Get("Retry-After")
+	raw := strings.TrimSpace(h.Get("Retry-After"))
 	if raw == "" {
 		return 0
 	}
-	seconds, err := strconv.Atoi(raw)
-	if err != nil || seconds < 0 {
-		return 0
+	if seconds, err := strconv.Atoi(raw); err == nil {
+		return time.Duration(max(seconds, 0)) * time.Second
 	}
-	return time.Duration(seconds) * time.Second
+	if t, err := http.ParseTime(raw); err == nil {
+		return max(time.Until(t), 0)
+	}
+	return 0
 }
 
 // CreateApp calls POST /api/v1/apps.
@@ -535,6 +568,35 @@ func (c *Client) ClearAppEgressPolicy(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, nil)
 }
 
+// ListAppFiles calls GET /api/v1/apps/{name}/files. Secret files come back
+// redacted: path and mode only.
+func (c *Client) ListAppFiles(ctx context.Context, name string) (AppFilesResource, error) {
+	var out AppFilesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/files", nil, &out)
+	return out, err
+}
+
+// SetAppFile calls PUT /api/v1/apps/{name}/files, adding or replacing one
+// file; apply restarts the app so the change is live now.
+func (c *Client) SetAppFile(ctx context.Context, name string, req SetAppFileRequest, apply bool) (AppFilesResource, error) {
+	var out AppFilesResource
+	suffix := ""
+	if apply {
+		suffix = "?apply=restart"
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/files"+suffix, req, &out)
+	return out, err
+}
+
+// DeleteAppFile calls DELETE /api/v1/apps/{name}/files?path=.
+func (c *Client) DeleteAppFile(ctx context.Context, name, filePath string, apply bool) error {
+	q := "?path=" + url.QueryEscape(filePath)
+	if apply {
+		q += "&apply=restart"
+	}
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/files"+q, nil, nil)
+}
+
 // SetAppVolumes calls PUT /api/v1/apps/{name}/volumes: attaches (or
 // removes) a named Docker volume outside a redeploy, replacing name's
 // whole desired volume list with req.Volumes.
@@ -705,6 +767,14 @@ func (c *Client) RestartApp(ctx context.Context, name string) (AppResource, erro
 	return out, err
 }
 
+// AppActionQueued calls POST /api/v1/apps/{name}/{action} (restart, start or
+// stop) with queue_while_offline set, so an offline node records it as pending.
+func (c *Client) AppActionQueued(ctx context.Context, name, action string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/"+action+"?queue_while_offline=true", nil, &out)
+	return out, err
+}
+
 // StopApp calls POST /api/v1/apps/{name}/stop: marks the service
 // suspended, so the reconciler stops (and leaves stopped) its container
 // on the next pass, without touching desired state otherwise.
@@ -758,6 +828,15 @@ func (c *Client) DeleteAppResult(ctx context.Context, name string) (DeleteAppRes
 func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]ConditionResource, error) {
 	var out []ConditionResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys", nil, &out)
+	return out, err
+}
+
+// GetAppStatus calls GET /api/v1/apps/{name}/status: the same conditions as
+// GetDeployStatus plus the server's outcome for the newest deploy. Servers
+// without the route answer 404 and callers fall back to GetDeployStatus.
+func (c *Client) GetAppStatus(ctx context.Context, name string) (AppStatus, error) {
+	var out AppStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/status", nil, &out)
 	return out, err
 }
 
@@ -1694,9 +1773,9 @@ func (c *Client) ListBaseBackups(ctx context.Context, name string) ([]BaseBackup
 // TriggerPITRRestore calls POST /api/v1/databases/{name}/pitr-restore:
 // starts a real point-in-time restore to targetTime, replaying archived
 // WAL forward from baseBackupID.
-func (c *Client) TriggerPITRRestore(ctx context.Context, name, baseBackupID, targetTime string) (PITRRestoreHistoryResource, error) {
+func (c *Client) TriggerPITRRestore(ctx context.Context, name, baseBackupID, targetTime, restoreAs string) (PITRRestoreHistoryResource, error) {
 	var out PITRRestoreHistoryResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr-restore", TriggerPITRRestoreRequest{BaseBackupID: baseBackupID, TargetTime: targetTime}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr-restore", TriggerPITRRestoreRequest{BaseBackupID: baseBackupID, TargetTime: targetTime, RestoreAs: restoreAs}, &out)
 	return out, err
 }
 
@@ -1880,6 +1959,18 @@ func (c *Client) SetSecret(ctx context.Context, name, key, value string, overwri
 	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked}, nil)
 }
 
+// SetSecretWithBuildTime is SetSecret plus an explicit build_time flag
+// (whether build.secrets may mount the secret).
+func (c *Client) SetSecretWithBuildTime(ctx context.Context, name, key, value string, overwriteLocked, buildTime bool) error {
+	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked, BuildTime: &buildTime}, nil)
+}
+
+// SetSecretBuildTime calls POST /api/v1/apps/{name}/secrets/{key}/build-time:
+// opts an existing secret in or out of build.secrets.
+func (c *Client) SetSecretBuildTime(ctx context.Context, name, key string, buildTime bool) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/build-time", SetSecretBuildTimeRequest{BuildTime: buildTime}, nil)
+}
+
 // ListSecrets calls GET /api/v1/apps/{name}/secrets: every known secret
 // key for the app with its locked state, never a value.
 func (c *Client) ListSecrets(ctx context.Context, name string) ([]SecretKeyResource, error) {
@@ -2051,6 +2142,31 @@ func (c *Client) ListAppScheduleHistory(ctx context.Context, name string, limit 
 	}
 	var out []AppScheduleHistoryEntry
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// CreateScheduledDeploy calls POST /api/v1/apps/{name}/scheduled-deploys.
+func (c *Client) CreateScheduledDeploy(ctx context.Context, name string, req ScheduledDeployRequest) (ScheduledDeploy, error) {
+	var out ScheduledDeploy
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/scheduled-deploys", req, &out)
+	return out, err
+}
+
+// ListScheduledDeploys calls GET /api/v1/apps/{name}/scheduled-deploys; status is an optional comma list.
+func (c *Client) ListScheduledDeploys(ctx context.Context, name, status string) ([]ScheduledDeploy, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/scheduled-deploys"
+	if status != "" {
+		path += "?status=" + url.QueryEscape(status)
+	}
+	var out []ScheduledDeploy
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// CancelScheduledDeploy calls DELETE /api/v1/apps/{name}/scheduled-deploys/{id}.
+func (c *Client) CancelScheduledDeploy(ctx context.Context, name, id string) (ScheduledDeploy, error) {
+	var out ScheduledDeploy
+	err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/scheduled-deploys/"+PathEscape(id), nil, &out)
 	return out, err
 }
 
@@ -3024,6 +3140,15 @@ func (c *Client) SetPreviewEnabled(ctx context.Context, appName string, enabled 
 func (c *Client) SetPreviewPostPRComments(ctx context.Context, appName string, enabled bool) (PreviewSettingsResource, error) {
 	var out PreviewSettingsResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewSettingsRequest{PostPRComments: &enabled}, &out)
+	return out, err
+}
+
+// SetPRCommentCommands calls PUT /api/v1/apps/{name}/preview-settings with
+// only the pull request comment command toggles; a nil pointer leaves that
+// toggle unchanged.
+func (c *Client) SetPRCommentCommands(ctx context.Context, appName string, commands, forks *bool) (PreviewSettingsResource, error) {
+	var out PreviewSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewSettingsRequest{PRCommentCommands: commands, PRCommentCommandsForks: forks}, &out)
 	return out, err
 }
 
@@ -4186,6 +4311,79 @@ func (c *Client) UpdateDashboardURL(ctx context.Context, req DashboardURLResourc
 	return out, err
 }
 
+// RuntimeSettingResource mirrors one entry of /api/v1/settings/runtime. Value and
+// Default are typed by the setting's kind (bool, string, []string or number).
+type RuntimeSettingResource struct {
+	Key            string `json:"key"`
+	Category       string `json:"category"`
+	Kind           string `json:"kind"`
+	Title          string `json:"title"`
+	Description    string `json:"description"`
+	Default        any    `json:"default"`
+	Value          any    `json:"value"`
+	Source         string `json:"source"`
+	Env            string `json:"env"`
+	Apply          string `json:"apply"`
+	Risk           string `json:"risk"`
+	Onboarding     bool   `json:"onboarding"`
+	PendingRestart bool   `json:"pending_restart"`
+	UpdatedAt      string `json:"updated_at"`
+	UpdatedBy      string `json:"updated_by"`
+}
+
+// RuntimeSettingsRestart reports whether the control plane can restart itself and has a restart pending.
+type RuntimeSettingsRestart struct {
+	Supported      bool `json:"supported"`
+	PendingRestart bool `json:"pending_restart"`
+}
+
+// RuntimeSettingsListResource mirrors the body of GET /api/v1/settings/runtime.
+type RuntimeSettingsListResource struct {
+	Settings []RuntimeSettingResource `json:"settings"`
+	Restart  RuntimeSettingsRestart   `json:"restart"`
+}
+
+// RuntimeSettingWrite is the PUT body. ConfirmWeakening is only set for settings whose risk is weakens_security.
+type RuntimeSettingWrite struct {
+	Value            any  `json:"value"`
+	ConfirmWeakening bool `json:"confirm_weakening,omitempty"`
+}
+
+// GetRuntimeSettings calls GET /api/v1/settings/runtime.
+func (c *Client) GetRuntimeSettings(ctx context.Context) (RuntimeSettingsListResource, error) {
+	var out RuntimeSettingsListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/runtime", nil, &out)
+	return out, err
+}
+
+// GetRuntimeSetting calls GET /api/v1/settings/runtime/{key}.
+func (c *Client) GetRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	return out, err
+}
+
+// PutRuntimeSetting calls PUT /api/v1/settings/runtime/{key}.
+func (c *Client) PutRuntimeSetting(ctx context.Context, key string, req RuntimeSettingWrite) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/runtime/"+url.PathEscape(key), req, &out)
+	return out, err
+}
+
+// DeleteRuntimeSetting calls DELETE /api/v1/settings/runtime/{key}, dropping the saved value.
+func (c *Client) DeleteRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	return out, err
+}
+
+// ApplyRuntimeSettings calls POST /api/v1/settings/runtime/apply.
+func (c *Client) ApplyRuntimeSettings(ctx context.Context) (map[string]any, error) {
+	out := map[string]any{}
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/runtime/apply", nil, &out)
+	return out, err
+}
+
 // GetSetupStatus calls GET /api/v1/auth/setup-status.
 func (c *Client) GetSetupStatus(ctx context.Context) (SetupStatusResource, error) {
 	var out SetupStatusResource
@@ -4450,3 +4648,143 @@ func (c *Client) DiscardMajorUpgradeSnapshot(ctx context.Context, name, id strin
 
 // BaseURL returns the control plane origin this client talks to.
 func (c *Client) BaseURL() string { return c.baseURL }
+
+// CleanupUsage is the measured reclaimable data for one cleanup target.
+type CleanupUsage struct {
+	Rows   int64  `json:"rows"`
+	Bytes  int64  `json:"bytes"`
+	Oldest string `json:"oldest,omitempty"`
+}
+
+// CleanupRunResource is one entry in the cleanup run history.
+type CleanupRunResource struct {
+	ID         int64  `json:"id"`
+	Target     string `json:"target"`
+	StartedAt  string `json:"started_at"`
+	FinishedAt string `json:"finished_at,omitempty"`
+	Days       int    `json:"days"`
+	DryRun     bool   `json:"dry_run"`
+	Rows       int64  `json:"rows"`
+	Bytes      int64  `json:"bytes"`
+	Trigger    string `json:"trigger"`
+	Actor      string `json:"actor,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+// CleanupTargetResource is one cleanup target as listed by GET /api/v1/cleanup.
+type CleanupTargetResource struct {
+	ID          string              `json:"id"`
+	Category    string              `json:"category"`
+	Title       string              `json:"title"`
+	Description string              `json:"description"`
+	PolicyKey   string              `json:"policy_key"`
+	Days        int                 `json:"days"`
+	Source      string              `json:"source,omitempty"`
+	Mode        string              `json:"mode"`
+	Origin      string              `json:"origin"`
+	Destructive bool                `json:"destructive"`
+	Floor       int                 `json:"floor"`
+	Usage       CleanupUsage        `json:"usage"`
+	LastRun     *CleanupRunResource `json:"last_run,omitempty"`
+	NextRun     string              `json:"next_run,omitempty"`
+}
+
+// CleanupScheduler reports whether the cleanup scheduler runs and how often.
+type CleanupScheduler struct {
+	Enabled  bool   `json:"enabled"`
+	Interval string `json:"interval"`
+}
+
+// CleanupListResource is the body of GET /api/v1/cleanup.
+type CleanupListResource struct {
+	Targets   []CleanupTargetResource `json:"targets"`
+	Scheduler CleanupScheduler        `json:"scheduler"`
+}
+
+// CleanupImpact is the body of POST /api/v1/cleanup/{id}/preview.
+type CleanupImpact struct {
+	Rows  int64 `json:"rows"`
+	Bytes int64 `json:"bytes"`
+}
+
+// CleanupRunResult is the body of POST /api/v1/cleanup/{id}/run.
+type CleanupRunResult struct {
+	Target        string `json:"target"`
+	Days          int    `json:"days"`
+	DryRun        bool   `json:"dry_run"`
+	Rows          int64  `json:"rows"`
+	Bytes         int64  `json:"bytes"`
+	MoreRemaining bool   `json:"more_remaining,omitempty"`
+	Error         string `json:"error,omitempty"`
+}
+
+// CleanupRunsPage is the body of GET /api/v1/cleanup/runs.
+type CleanupRunsPage struct {
+	Runs       []CleanupRunResource `json:"runs"`
+	NextCursor string               `json:"next_cursor,omitempty"`
+}
+
+// CleanupRunsQuery filters ListCleanupRuns. Empty fields are not sent.
+type CleanupRunsQuery struct {
+	Target string
+	Since  string
+}
+
+type cleanupDaysRequest struct {
+	Days *int `json:"days,omitempty"`
+}
+
+type cleanupRunRequest struct {
+	Days   *int `json:"days,omitempty"`
+	DryRun bool `json:"dry_run,omitempty"`
+}
+
+type cleanupModeRequest struct {
+	Mode string `json:"mode"`
+}
+
+// GetCleanup calls GET /api/v1/cleanup.
+func (c *Client) GetCleanup(ctx context.Context) (CleanupListResource, error) {
+	var out CleanupListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/cleanup", nil, &out)
+	return out, err
+}
+
+// PreviewCleanup calls POST /api/v1/cleanup/{id}/preview. A nil days uses the target's policy.
+func (c *Client) PreviewCleanup(ctx context.Context, id string, days *int) (CleanupImpact, error) {
+	var out CleanupImpact
+	err := c.do(ctx, http.MethodPost, "/api/v1/cleanup/"+url.PathEscape(id)+"/preview", cleanupDaysRequest{Days: days}, &out)
+	return out, err
+}
+
+// RunCleanup calls POST /api/v1/cleanup/{id}/run. A dry run records what would be deleted and writes nothing.
+func (c *Client) RunCleanup(ctx context.Context, id string, days *int, dryRun bool) (CleanupRunResult, error) {
+	var out CleanupRunResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/cleanup/"+url.PathEscape(id)+"/run", cleanupRunRequest{Days: days, DryRun: dryRun}, &out)
+	return out, err
+}
+
+// SetCleanupMode calls PUT /api/v1/cleanup/{id}/mode with off, preview or on.
+func (c *Client) SetCleanupMode(ctx context.Context, id, mode string) (CleanupTargetResource, error) {
+	var out CleanupTargetResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/cleanup/"+url.PathEscape(id)+"/mode", cleanupModeRequest{Mode: mode}, &out)
+	return out, err
+}
+
+// ListCleanupRuns calls GET /api/v1/cleanup/runs with the filters that are set.
+func (c *Client) ListCleanupRuns(ctx context.Context, q CleanupRunsQuery) (CleanupRunsPage, error) {
+	v := url.Values{}
+	if q.Target != "" {
+		v.Set("target", q.Target)
+	}
+	if q.Since != "" {
+		v.Set("since", q.Since)
+	}
+	path := "/api/v1/cleanup/runs"
+	if enc := v.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out CleanupRunsPage
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}

@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic reset of the Levelrail hosted demo
+
+[Timer]
+# Keep in step with APP_DEMO_RESET_INTERVAL in the env file.
+OnCalendar=*:0/30
+RandomizedDelaySec=0
+Persistent=false
+
+[Install]
+WantedBy=timers.target

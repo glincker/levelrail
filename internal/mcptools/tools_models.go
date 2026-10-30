@@ -115,7 +115,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_model",
-		Description: "Deploy an AI model container on a GPU node. Asynchronous: watch get_model until the status reason is ModelLoaded. The response has the OpenAI compatible base URL and a one time API key (rotate_model_api_key issues a new one).",
+		Description: "Deploy a model container on a GPU node. Asynchronous: watch get_model until ModelLoaded. Returns the OpenAI compatible base URL and a one time API key (see rotate_model_api_key).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployModelInput) (*mcp.CallToolResult, apiclient.CreateModelResponse, error) {
 		out, err := client.CreateModel(ctx, apiclient.CreateModelRequest{
 			Name: in.Name, Engine: in.Engine, Model: in.Model, NodeID: in.NodeID, GPUCount: in.GPUCount,
@@ -183,7 +183,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_usage",
-		Description: "Gateway usage of a model over a window: requests, status classes, rate-limited count, tokens, latency, hourly series and per key breakdown. Tokens cover only responses with a usage object.",
+		Description: "Gateway usage of a model over a window: requests, status classes, rate limits, tokens, latency, hourly series and per key breakdown.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelUsageInput) (*mcp.CallToolResult, apiclient.ModelUsageReport, error) {
 		var since time.Duration
 		if in.Since != "" {

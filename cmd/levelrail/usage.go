@@ -25,7 +25,7 @@ Commands:
   version            print the version
   healthcheck        probe the running control plane (--ready for readiness)
   demo               seed, serve or check the read-only demo instance (seed, serve, check)
-  setup-token        print the first-run setup token
+  setup-token        print the first-run setup token (--plain: token only)
   recover-admin      reset an administrator account
   emergency-token    mint a short-lived emergency access token
   approve-signin     approve a waiting new-browser sign-in from the host (<request id> --match <number>)
@@ -36,7 +36,7 @@ Commands:
   rollback           roll the binary back to the previous release
   self-upgrade       upgrade this binary in place
   restore-point      restore a pre-upgrade restore point (binary, unit file, database if needed)
-  upgrade-note       show release notes for the pending upgrade
+  upgrade-note       record a manual binary swap in upgrade history
   retain             manage retained releases
   migrate-check      check pending schema migrations
 

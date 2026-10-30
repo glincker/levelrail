@@ -60,7 +60,7 @@ Positioning, not a ranking. Every project below is useful, and the full comparis
     Operators running roughly 3 to 50 services on 1 to 10 Linux machines who do not want to run Kubernetes.
   </Accordion>
   <Accordion title="Is it a Kubernetes alternative?">
-    No. There is no bin-packing scheduler, autoscaling or CRD ecosystem. It borrows the reconciler pattern without the runtime.
+    No. There is no bin-packing scheduler or CRD ecosystem. Replica [autoscaling](/autoscaling) on CPU, memory or request load is built in (beta), and the reconciler pattern runs without the Kubernetes runtime.
   </Accordion>
   <Accordion title="How mature is it?">
     Pre-release and moving fast. The case studies page lists what has been measured and what has not.

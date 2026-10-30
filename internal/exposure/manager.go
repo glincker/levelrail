@@ -82,9 +82,22 @@ func (m *Manager) ReadChain(ctx context.Context) Chain {
 	}
 	out, err := m.run(ctx, "iptables", "-w", "-S", dockerUserChain)
 	if err != nil {
+		if isMissingChain(out) {
+			return Chain{NoChain: true, Reason: noChainReason}
+		}
 		return Chain{Reason: "could not read the DOCKER-USER chain: " + oneLine(out, err)}
 	}
 	return ParseChain(string(out))
+}
+
+// noChainReason keeps the "uses nftables" wording the exposure controller
+// matches on to log this once at info level.
+const noChainReason = "the DOCKER-USER chain does not exist here: this engine uses nftables (for example Podman with netavark), so iptables allow-lists cannot be applied"
+
+// isMissingChain recognises iptables and iptables-nft saying the chain is absent.
+func isMissingChain(out []byte) bool {
+	s := strings.ToLower(string(out))
+	return strings.Contains(s, "no chain/target/match") || strings.Contains(s, "no such chain")
 }
 
 func oneLine(out []byte, err error) string {
@@ -163,8 +176,10 @@ func (m *Manager) specs(r Restriction) []ruleSpec {
 	return append(out, ruleSpec{"", targetDrop})
 }
 
-func (m *Manager) insertArgs(r Restriction, s ruleSpec) []string {
-	args := []string{"-w", "-I", dockerUserChain, "1", "-p", r.Protocol,
+// insertArgs inserts s at 1-based position pos, so a rule set lands in order
+// at the top of the chain.
+func (m *Manager) insertArgs(r Restriction, s ruleSpec, pos int) []string {
+	args := []string{"-w", "-I", dockerUserChain, strconv.Itoa(pos), "-p", r.Protocol,
 		"-m", "conntrack", "--ctorigdstport", strconv.Itoa(r.Port), "--ctdir", "ORIGINAL"}
 	if s.source != "" {
 		args = append(args, "-s", s.source)
@@ -180,8 +195,8 @@ func (m *Manager) Plan(r Restriction) (Plan, error) {
 	}
 	specs := m.specs(r)
 	var cmds []string
-	for i := len(specs) - 1; i >= 0; i-- {
-		cmds = append(cmds, "iptables "+strings.Join(m.insertArgs(r, specs[i]), " "))
+	for i, sp := range specs {
+		cmds = append(cmds, "iptables "+strings.Join(m.insertArgs(r, sp, i+1), " "))
 	}
 	return Plan{
 		Commands: cmds,
@@ -224,7 +239,32 @@ func (m *Manager) deleteRules(ctx context.Context, rules []ChainRule) error {
 	return nil
 }
 
+// taggedPositions returns the 1-based chain positions of the rules carrying tag.
+func taggedPositions(c Chain, tag string) []int {
+	var out []int
+	for i, r := range c.Rules {
+		if r.Comment == tag {
+			out = append(out, i+1)
+		}
+	}
+	return out
+}
+
+// deletePositions deletes rules by chain position, highest first so the
+// remaining positions stay valid, and reports every failure.
+func (m *Manager) deletePositions(ctx context.Context, positions []int) error {
+	var errs []error
+	for _, pos := range slices.Backward(positions) {
+		if out, err := m.run(ctx, "iptables", "-w", "-D", dockerUserChain, strconv.Itoa(pos)); err != nil {
+			errs = append(errs, fmt.Errorf("exposure: delete rule %d: %s: %w", pos, oneLine(out, err), err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // Apply installs the restriction idempotently and reports whether anything changed.
+// The new rules go in above the old ones before the old ones are deleted, so the
+// port always has a complete rule set in front of it.
 func (m *Manager) Apply(ctx context.Context, r Restriction) (changed bool, err error) {
 	r, err = m.Normalize(r)
 	if err != nil {
@@ -234,21 +274,40 @@ func (m *Manager) Apply(ctx context.Context, r Restriction) (changed bool, err e
 	if !chain.Readable {
 		return false, fmt.Errorf("exposure: cannot apply: %s", chain.Reason)
 	}
-	have := m.tagged(chain, m.tag(r.Protocol, r.Port))
+	tag := m.tag(r.Protocol, r.Port)
+	have := m.tagged(chain, tag)
 	want := m.specs(r)
 	if inSync(have, want) {
 		return false, nil
 	}
-	if err := m.deleteRules(ctx, have); err != nil {
-		return true, err
-	}
-	for i := len(want) - 1; i >= 0; i-- {
-		if out, err := m.run(ctx, "iptables", m.insertArgs(r, want[i])...); err != nil {
-			_ = m.Remove(ctx, r.Port, r.Protocol)
-			return true, fmt.Errorf("exposure: insert rule for %d/%s: %s: %w", r.Port, r.Protocol, oneLine(out, err), err)
+	n := len(want)
+	// A complete new set already sits on top when an earlier pass was cut short
+	// before its cleanup, so only the leftovers need to go.
+	if len(have) < n || !inSync(have[:n], want) {
+		for i, sp := range want {
+			if out, err := m.run(ctx, "iptables", m.insertArgs(r, sp, i+1)...); err != nil {
+				// Drop what this pass added; the previous rules are still below it.
+				rollback := make([]int, i)
+				for j := range rollback {
+					rollback[j] = j + 1
+				}
+				err = fmt.Errorf("exposure: insert rule for %d/%s: %s: %w", r.Port, r.Protocol, oneLine(out, err), err)
+				if rbErr := m.deletePositions(ctx, rollback); rbErr != nil {
+					err = errors.Join(err, rbErr)
+				}
+				return true, err
+			}
+		}
+		chain = m.ReadChain(ctx)
+		if !chain.Readable {
+			return true, fmt.Errorf("exposure: new rules are in place but stale ones were not removed: %s", chain.Reason)
+		}
+		have = m.tagged(chain, tag)
+		if len(have) < n || !inSync(have[:n], want) {
+			return true, fmt.Errorf("exposure: new rules for %d/%s are in place but the chain changed underneath, stale rules were left for the next pass", r.Port, r.Protocol)
 		}
 	}
-	return true, nil
+	return true, m.deletePositions(ctx, taggedPositions(chain, tag)[n:])
 }
 
 // Remove deletes the rules this manager tagged for a port, and nothing else.
@@ -276,6 +335,10 @@ func (m *Manager) Sync(ctx context.Context, want []Restriction) SyncResult {
 	var res SyncResult
 	chain := m.ReadChain(ctx)
 	if !chain.Readable {
+		// Nothing to enforce means a missing chain is not worth reporting.
+		if chain.NoChain && len(want) == 0 {
+			return res
+		}
 		res.Errors = append(res.Errors, chain.Reason)
 		return res
 	}

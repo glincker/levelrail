@@ -1,0 +1,116 @@
+name: Stack
+on:
+  pull_request:
+    paths: ['stacks/**']
+  push:
+    branches: [main]
+    paths: ['stacks/**']
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Pending production revision to approve'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Plan must get the same secrets as apply: secret names are part of the plan hash.
+      # Pull requests need STAGING_DATABASE_URL as a repository secret. Fork PRs get none.
+      # Pin the action to a release tag or commit SHA instead of a branch.
+      - uses: glincker/levelrail/integrations/github-action/stack@v0.8.6
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        with:
+          stack: staging
+          path: stacks/staging
+          mode: plan
+          version: v0.8.6 # the version your server runs, never latest
+          api-url: ${{ secrets.LEVELRAIL_API_URL }}
+          # Plan-only stack token (stack: staging, stack_verbs: [plan]) as a repository secret.
+          # Anyone who can push a branch can read it from an edited workflow, so it must not apply.
+          token: ${{ secrets.LEVELRAIL_PLAN_TOKEN }}
+          comment: 'true'
+          secrets: |
+            DATABASE_URL=DATABASE_URL
+
+  apply-staging:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Pin the action to a release tag or commit SHA instead of a branch.
+      - uses: glincker/levelrail/integrations/github-action/stack@v0.8.6
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        with:
+          stack: staging
+          path: stacks/staging
+          mode: apply
+          version: v0.8.6 # the version your server runs, never latest
+          api-url: ${{ secrets.LEVELRAIL_API_URL }}
+          # Apply stack token for this stack, stored as a secret of this job's environment
+          # (not the repository), so pull request jobs never receive it.
+          token: ${{ secrets.LEVELRAIL_APPLY_TOKEN }}
+          secrets: |
+            DATABASE_URL=DATABASE_URL
+
+  apply-prod:
+    needs: apply-staging
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Add required reviewers to the production environment: that is the approval gate.
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A stack with require_approval ends this job as status pending_approval (success).
+      # Approve it with the approve-prod job below.
+      # Pin the action to a release tag or commit SHA instead of a branch.
+      - uses: glincker/levelrail/integrations/github-action/stack@v0.8.6
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        with:
+          stack: production
+          path: stacks/production
+          mode: apply
+          version: v0.8.6 # the version your server runs, never latest
+          api-url: ${{ secrets.LEVELRAIL_API_URL }}
+          # Apply stack token for this stack, stored as a secret of this job's environment
+          # (not the repository), so pull request jobs never receive it.
+          token: ${{ secrets.LEVELRAIL_APPLY_TOKEN }}
+          secrets: |
+            DATABASE_URL=DATABASE_URL
+
+  approve-prod:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Approvers only. Required reviewers on this environment gate the root token and the secret.
+    environment: production
+    steps:
+      - name: Install levelrail-cli
+        env:
+          LEVELRAIL_VERSION: v0.8.6 # the version your server runs, never latest
+          LEVELRAIL_CLI_INSTALL_DIR: ${{ runner.temp }}/levelrail-cli-bin
+        run: |
+          curl -fsSL https://levelrail.com/install-cli.sh | sh
+          echo "$LEVELRAIL_CLI_INSTALL_DIR" >> "$GITHUB_PATH"
+      - name: Approve revision
+        env:
+          APP_EXPERIMENTAL: iac
+          LEVELRAIL_API_URL: ${{ secrets.LEVELRAIL_API_URL }}
+          # Root token. The CI write token cannot approve, and the requester cannot approve their own revision.
+          LEVELRAIL_TOKEN: ${{ secrets.LEVELRAIL_ROOT_TOKEN }}
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          REVISION: ${{ inputs.revision }}
+        # Secrets are never stored with a pending revision, so the approver re-supplies them.
+        # If live state changed, approve returns 409: re-run apply-prod to request a fresh approval.
+        run: levelrail-cli stack approve production "$REVISION" --secret DATABASE_URL=env:DATABASE_URL

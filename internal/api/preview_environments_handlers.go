@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -246,6 +247,10 @@ func (rt *Router) handleTeardownPreviewEnvironment(w http.ResponseWriter, r *htt
 type setPreviewSettingsRequest struct {
 	Enabled        *bool `json:"enabled,omitempty"`
 	PostPRComments *bool `json:"post_pr_comments,omitempty"`
+	// PRCommentCommands and PRCommentCommandsForks gate /levelrail pull
+	// request comment commands (pr_comment_commands.go). Both default to off.
+	PRCommentCommands      *bool `json:"pr_comment_commands,omitempty"`
+	PRCommentCommandsForks *bool `json:"pr_comment_commands_forks,omitempty"`
 }
 
 // previewSettingsResource is PUT /api/v1/apps/{name}/preview-settings's
@@ -254,8 +259,10 @@ type setPreviewSettingsRequest struct {
 // from the store rather than echoed back, so a request that only touches
 // one field still reports the other's real current value.
 type previewSettingsResource struct {
-	Enabled        bool `json:"enabled"`
-	PostPRComments bool `json:"post_pr_comments"`
+	Enabled                bool `json:"enabled"`
+	PostPRComments         bool `json:"post_pr_comments"`
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 }
 
 // handleSetPreviewEnabled handles PUT
@@ -270,8 +277,8 @@ func (rt *Router) handleSetPreviewEnabled(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Enabled == nil && req.PostPRComments == nil {
-		writeError(w, http.StatusBadRequest, "enabled or post_pr_comments is required")
+	if req.Enabled == nil && req.PostPRComments == nil && req.PRCommentCommands == nil && req.PRCommentCommandsForks == nil {
+		writeError(w, http.StatusBadRequest, "enabled, post_pr_comments, pr_comment_commands or pr_comment_commands_forks is required")
 		return
 	}
 
@@ -294,6 +301,27 @@ func (rt *Router) handleSetPreviewEnabled(w http.ResponseWriter, r *http.Request
 		}
 	}
 
+	for _, c := range []struct {
+		val *bool
+		set func(context.Context, string, bool) error
+		key string
+	}{
+		{req.PRCommentCommands, rt.prCommentCommands.SetGitSourcePRCommentCommands, "pr_comment_commands"},
+		{req.PRCommentCommandsForks, rt.prCommentCommands.SetGitSourcePRCommentCommandsForks, "pr_comment_commands_forks"},
+	} {
+		if c.val == nil {
+			continue
+		}
+		if err := c.set(ctx, name, *c.val); errors.Is(err, store.ErrGitSourceNotFound) {
+			writeError(w, http.StatusNotFound, "no git source connected for this app")
+			return
+		} else if err != nil {
+			rt.internalError(w, "api: set "+c.key+" failed", err, slog.String("name", name))
+			return
+		}
+		rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: appEventPRCommand, Title: "Pull request commands setting changed", Detail: fmt.Sprintf("%s=%t", c.key, *c.val)})
+	}
+
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
 	if err != nil {
 		rt.internalError(w, "api: set preview settings: reload git source failed", err, slog.String("name", name))
@@ -301,5 +329,5 @@ func (rt *Router) handleSetPreviewEnabled(w http.ResponseWriter, r *http.Request
 	}
 
 	rt.logger.Info("api: preview settings updated", slog.String("name", name), slog.Bool("enabled", gs.PreviewEnabled), slog.Bool("post_pr_comments", gs.PostPRComments))
-	writeJSON(w, http.StatusOK, previewSettingsResource{Enabled: gs.PreviewEnabled, PostPRComments: gs.PostPRComments})
+	writeJSON(w, http.StatusOK, previewSettingsResource{Enabled: gs.PreviewEnabled, PostPRComments: gs.PostPRComments, PRCommentCommands: gs.PRCommentCommands, PRCommentCommandsForks: gs.PRCommentCommandsForks})
 }

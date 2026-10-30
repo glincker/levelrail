@@ -3,6 +3,7 @@ import {
   ArrowsClockwiseIcon,
   ChartPieSliceIcon,
   CookieIcon,
+  FingerprintIcon,
   HashIcon,
   LinkSimpleIcon,
   ScalesIcon,
@@ -36,6 +37,12 @@ const META: Record<LoadBalancerAlgorithm, Meta> = {
     icon: HashIcon,
     useWhen: 'You need clients to stay put without cookies.',
     tradeoff: 'Clients behind one proxy or CDN all land on one replica.',
+    lines: [0, 3, 0],
+  },
+  client_ip_hash: {
+    icon: FingerprintIcon,
+    useWhen: 'You want IP stickiness behind a CDN or proxy.',
+    tradeoff: 'Needs APP_INGRESS_TRUSTED_PROXIES, else it matches IP hash.',
     lines: [0, 3, 0],
   },
   uri_hash: {

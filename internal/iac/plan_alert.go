@@ -49,6 +49,10 @@ func alertBody(r *Resource, channelID string) map[string]any {
 }
 
 func (p *planner) planAlert(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "alerts/"+r.Scope) || p.deniedItem(r, "channels") {
 		return
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
@@ -96,6 +97,28 @@ func (l Local) Stats(ctx context.Context, containerID string) (docker.ContainerS
 		return docker.ContainerStats{}, ErrStatsUnsupported
 	}
 	return inspector.Stats(ctx, containerID)
+}
+
+// Logs forwards to the wrapped runtime, which embedding would otherwise hide.
+func (l Local) Logs(ctx context.Context, containerID string, follow bool, since time.Time) (<-chan docker.LogLine, <-chan error) {
+	if reader, ok := l.Runtime.(docker.LogReader); ok {
+		return reader.Logs(ctx, containerID, follow, since)
+	}
+	out := make(chan docker.LogLine)
+	errCh := make(chan error, 1)
+	errCh <- ErrLogsUnsupported
+	close(out)
+	close(errCh)
+	return out, errCh
+}
+
+// RemoveVolume forwards to the wrapped runtime.
+func (l Local) RemoveVolume(ctx context.Context, name string) error {
+	remover, ok := l.Runtime.(docker.VolumeRemover)
+	if !ok {
+		return ErrVolumeRemoveUnsupported
+	}
+	return remover.RemoveVolume(ctx, name)
 }
 
 // ErrNodeNotRegistered is Registry.Get's failure mode for an unknown

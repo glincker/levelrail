@@ -95,8 +95,21 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bodyKey := webhookBodyKey(provider+"|"+eventType, name, body)
+	if rt.webhookReplayEnabled(r.Context()) && !rt.webhookBodies.claim(bodyKey, time.Now(), rt.webhookReplayWindow(r.Context())) {
+		rt.logger.Warn("api: git push webhook: replayed body ignored", slog.String("name", name), slog.String("provider", provider))
+		rt.saveWebhookDeliveryIDs(r.Context(), name, provider, eventType, headerFields, true, true, http.StatusOK, body, "", webhookNoteReplayedBody, deliveryID, "")
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, "%s\n", webhookNoteReplayedBody)
+		return
+	}
+
 	pctx, outcome := withWebhookOutcome(r.Context())
 	status, message := rt.processGitPushWebhookPayload(pctx, name, *gs, body, r.Header)
+	// Only a delivery that started a deploy keeps its claim; rejected or ignored ones stay retryable.
+	if status >= http.StatusBadRequest || outcome.AttemptID == "" {
+		rt.webhookBodies.release(bodyKey)
+	}
 	deliveryErr, deliveryNote := "", ""
 	if status >= http.StatusBadRequest {
 		deliveryErr = message
@@ -145,6 +158,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, "ping event acknowledged\n"
 	}
 
+	if webhook.IsIssueCommentEvent(header) {
+		return rt.handleIssueCommentWebhook(ctx, name, gs, body)
+	}
+
 	ev, err := webhook.ParsePushEventForProvider(body, header.Get(webhook.HeaderBitbucketEventKey))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
@@ -179,6 +196,9 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	rt.noteGitHead(ctx, name, ev.After)
 	if status, msg, handled := rt.admitGitPush(ctx, name, ev); handled {
 		return status, msg
+	}
+	if msg := rt.gateOnCI(ctx, name, gs, ev.After); msg != "" {
+		return http.StatusOK, msg
 	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
 	defer release()

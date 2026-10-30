@@ -4,6 +4,8 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { WakeTiming } from './appSleep'
+import { useEnvironmentScope } from '../lib/environmentScope'
+import { currentScope, scopeKey, scopeUrl } from '../lib/scopeQuery'
 
 export interface SleepFleetApp {
   name: string
@@ -23,10 +25,11 @@ export interface SleepFleet {
 export const sleepFleetKey = ['sleep-fleet'] as const
 
 export function sleepFleetQueryOptions() {
+  const scope = currentScope()
   return queryOptions({
-    queryKey: sleepFleetKey,
+    queryKey: [...sleepFleetKey, ...scopeKey(scope)] as const,
     queryFn: async (): Promise<SleepFleet> => {
-      const res = await fetch('/api/v1/sleep')
+      const res = await fetch(scopeUrl('/api/v1/sleep', scope))
       if (!res.ok) {
         throw new ApiError(
           res.status,
@@ -43,5 +46,6 @@ export function sleepFleetQueryOptions() {
 }
 
 export function useSleepFleet() {
+  useEnvironmentScope()
   return useQuery(sleepFleetQueryOptions())
 }

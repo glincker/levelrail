@@ -3,8 +3,13 @@ import {
   ArrowCircleUpIcon,
   BroomIcon,
   BuildingsIcon,
+  StackSimpleIcon,
+  SquaresFourIcon,
+  ChartBarIcon,
   ChartLineIcon,
+  ClipboardTextIcon,
   ClockCounterClockwiseIcon,
+  SlidersHorizontalIcon,
   CloudArrowUpIcon,
   CloudCheckIcon,
   CodeIcon,
@@ -30,6 +35,7 @@ import {
   LockKeyIcon,
   PlugsConnectedIcon,
   RobotIcon,
+  ShareNetworkIcon,
   ShieldCheckIcon,
   ShieldIcon,
   StackIcon,
@@ -87,6 +93,18 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/environments',
         icon: StackIcon,
         feature: 'global-environments',
+      },
+      {
+        id: 'stacks',
+        to: '/settings/stacks',
+        icon: StackSimpleIcon,
+        feature: 'iac',
+      },
+      {
+        id: 'stack-templates',
+        to: '/settings/stack-templates',
+        icon: SquaresFourIcon,
+        feature: 'iac',
       },
       {
         id: 'import-platform',
@@ -171,6 +189,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'security-center',
         to: '/security',
         icon: ShieldCheckIcon,
+      },
+      {
+        id: 'security-runtime',
+        to: '/settings/security-runtime',
+        icon: SlidersHorizontalIcon,
       },
       {
         id: 'vault',
@@ -260,6 +283,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: DatabaseIcon,
       },
       {
+        id: 'dr-report',
+        to: '/settings/dr-report',
+        icon: ClipboardTextIcon,
+      },
+      {
         id: 'database-upgrades',
         to: '/settings/database-upgrades',
         icon: DatabaseIcon,
@@ -278,6 +306,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'event-webhooks',
         to: '/settings/event-webhooks',
         icon: WebhooksLogoIcon,
+      },
+      {
+        id: 'traffic-export',
+        to: '/settings/traffic-export',
+        icon: ShareNetworkIcon,
       },
       {
         id: 'email',
@@ -390,8 +423,8 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: StackIcon,
       },
       {
-        id: 'janitor',
-        to: '/settings/janitor',
+        id: 'cleanup',
+        to: '/settings/cleanup',
         icon: BroomIcon,
       },
       {
@@ -414,6 +447,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'control-plane-health',
         to: '/settings/control-plane-health',
         icon: GaugeIcon,
+      },
+      {
+        id: 'benchmarks',
+        to: '/settings/benchmarks',
+        icon: ChartBarIcon,
       },
     ],
   },

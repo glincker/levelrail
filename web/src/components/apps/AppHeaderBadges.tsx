@@ -15,6 +15,7 @@ import { appSleepQueryOptions } from '../../queries/appSleep'
 import { AsleepFor } from '../AsleepFor'
 import { useAppNetwork } from '../../queries/appNetwork'
 import { useDeployAttempts } from '../../queries/deployAttempts'
+import { nodeDetailQueryOptions } from '../../queries/nodes'
 import type { AppDetail } from '../../types/appDetail'
 
 // Below sm only the icon shows; the text stays reachable via title and sr-only.
@@ -42,7 +43,7 @@ export function AppHeaderBadges({
   app,
   attentionCount = 0,
 }: {
-  app: Pick<AppDetail, 'name' | 'node_id'>
+  app: Pick<AppDetail, 'name' | 'node_id' | 'node_name' | 'node_offline'>
   attentionCount?: number
 }) {
   const { t } = useTranslation('appAccess')
@@ -53,6 +54,12 @@ export function AppHeaderBadges({
     retry: false,
   })
   const asleepSince = sleep?.sleeping ? sleep.since : undefined
+  const { data: hostNode } = useQuery({
+    ...nodeDetailQueryOptions(app.node_id ?? ''),
+    enabled: Boolean(app.node_offline && app.node_id),
+    retry: false,
+  })
+  const offlineSince = hostNode?.offline_since ?? hostNode?.last_seen_at
   const { data: network } = useAppNetwork(app.name)
   const { data: attempts } = useDeployAttempts(app.name)
   const lastOk = attempts?.find((a) => a.status === 'succeeded')
@@ -72,6 +79,22 @@ export function AppHeaderBadges({
             {t('badges.attention', { count: attentionCount })}
           </Chip>
         </a>
+      ) : null}
+      {app.node_offline && app.node_id ? (
+        <Link to="/nodes/$id" params={{ id: app.node_id }}>
+          <Badge variant="warning" title={t('badges.nodeOffline')}>
+            <HardDrivesIcon aria-hidden="true" />
+            <span>
+              {t('badges.nodeOffline')}
+              {offlineSince ? (
+                <>
+                  {' '}
+                  <RelativeTime at={offlineSince} live />
+                </>
+              ) : null}
+            </span>
+          </Badge>
+        </Link>
       ) : null}
       {asleepSince ? (
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>
@@ -94,9 +117,14 @@ export function AppHeaderBadges({
         </Link>
       ) : null}
       {app.node_id ? (
-        <Chip label={app.node_id} icon={<HardDrivesIcon aria-hidden="true" />}>
-          {app.node_id}
-        </Chip>
+        <Link to="/nodes/$id" params={{ id: app.node_id }}>
+          <Chip
+            label={app.node_name ?? app.node_id}
+            icon={<HardDrivesIcon aria-hidden="true" />}
+          >
+            {app.node_name ?? app.node_id}
+          </Chip>
+        </Link>
       ) : null}
       {lastOk?.finished_at ? (
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>

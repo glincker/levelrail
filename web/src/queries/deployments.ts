@@ -20,6 +20,7 @@ import {
 } from '../lib/deploymentFilters'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { getEnvironmentScope } from '../lib/environmentScope'
+import { getProjectScope } from '../lib/projectScope'
 import { applyTriggerDeployResult, triggerDeploy } from './deploys'
 import type { TriggerDeployResult } from './deploys'
 import { postJson } from './deployControl'
@@ -33,8 +34,10 @@ const LOG_TAIL_LINES = 12
 export const deploymentKeys = {
   all: ['deployments'] as const,
   lists: () => [...deploymentKeys.all, 'list'] as const,
-  list: (f: DeploymentFilters) =>
-    [...deploymentKeys.lists(), serverFilters(f)] as const,
+  list: (f: DeploymentFilters, project = '') =>
+    project === ''
+      ? ([...deploymentKeys.lists(), serverFilters(f)] as const)
+      : ([...deploymentKeys.lists(), serverFilters(f), { project }] as const),
   lane: () => [...deploymentKeys.all, 'lane'] as const,
   summary: () => [...deploymentKeys.all, 'summary'] as const,
   logTail: (app: string, id: string) =>
@@ -55,8 +58,9 @@ async function getJson<T>(url: string, what: string): Promise<T> {
 export function fetchDeploymentPage(
   filters: DeploymentFilters,
   cursor: string,
+  project = '',
 ): Promise<DeploymentListPage> {
-  const params = toApiParams(filters, cursor, PAGE_SIZE)
+  const params = toApiParams(filters, cursor, PAGE_SIZE, project)
   return getJson<DeploymentListPage>(
     `/api/v1/deployments?${params.toString()}`,
     'list deployments',
@@ -67,9 +71,11 @@ export function deploymentsInfiniteOptions(base: DeploymentFilters) {
   const filters = base.environment
     ? base
     : { ...base, environment: getEnvironmentScope() }
+  const project = getProjectScope()
   return infiniteQueryOptions({
-    queryKey: deploymentKeys.list(filters),
-    queryFn: ({ pageParam }) => fetchDeploymentPage(filters, pageParam),
+    queryKey: deploymentKeys.list(filters, project),
+    queryFn: ({ pageParam }) =>
+      fetchDeploymentPage(filters, pageParam, project),
     initialPageParam: '',
     getNextPageParam: (last) => last.next_cursor || undefined,
   })

@@ -47,7 +47,12 @@ function defaultsFor(t: ProjectTemplate): Record<string, string> {
  * validated app.yaml (plus a pipeline file for the build and test starter) to
  * commit to the repository. Nothing is created on the server.
  */
-export function StarterTemplatesDialog() {
+export function StarterTemplatesDialog({
+  variant = 'button',
+}: {
+  /** `row` renders the trigger as a compact list row for the Other ways card. */
+  variant?: 'button' | 'row'
+}) {
   const { t } = useTranslation('newApp')
   const templates = useProjectTemplates()
   const render = useRenderProjectTemplate()
@@ -90,10 +95,34 @@ export function StarterTemplatesDialog() {
 
   return (
     <Dialog>
-      <DialogTrigger render={<Button type="button" variant="outline" />}>
-        <RocketLaunchIcon aria-hidden="true" />
-        {t('starter.open')}
-      </DialogTrigger>
+      {variant === 'row' ? (
+        <DialogTrigger
+          render={
+            <button
+              type="button"
+              className="flex w-full items-start gap-2.5 rounded-lg border border-border p-2 text-left transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            />
+          }
+        >
+          <RocketLaunchIcon
+            className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">
+              {t('starter.open')}
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              {t('starter.openHint')}
+            </span>
+          </span>
+        </DialogTrigger>
+      ) : (
+        <DialogTrigger render={<Button type="button" variant="outline" />}>
+          <RocketLaunchIcon aria-hidden="true" />
+          {t('starter.open')}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('starter.title')}</DialogTitle>

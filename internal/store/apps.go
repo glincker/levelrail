@@ -84,7 +84,7 @@ func scanApp(row *sql.Row) (App, error) {
 // ListApps returns every app, ordered by name, the same "predictable
 // listing order" convention ListDesiredServices already uses.
 func (db *DB) ListApps(ctx context.Context) ([]App, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT id, name, project_id, created_at, updated_at
 		FROM apps
 		ORDER BY name

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
+import { RuntimeBadges } from './RuntimeBadges'
 import { HelpLink } from '@/components/HelpLink'
 import type { DoctorCheck } from '../queries/systemDoctor'
 
@@ -208,12 +209,22 @@ export function getCheckCta(check: DoctorCheck): CheckCta | null {
       if (check.status === 'warn') {
         return {
           message:
-            'Rootless Docker and Podman support is best-effort: verify bind-mount ownership and UID mapping for your workload before relying on it in production.',
+            'This runtime is best-effort here. If it is the wrong engine, set APP_CONTAINER_RUNTIME_SOCKET to the right socket (for Podman, enable podman.socket first), and verify bind-mount ownership and UID mapping before relying on it in production.',
           action: (
-            <HelpLink
-              path="/security#rootless-and-podman"
-              label="Rootless and Podman support"
-              variant="inline"
+            <RuntimeBadges
+              kind={check.engine_kind}
+              level={check.support_level}
+            />
+          ),
+        }
+      }
+      if (check.engine_kind) {
+        return {
+          message: 'Rootful Docker Engine on Linux is the supported setup.',
+          action: (
+            <RuntimeBadges
+              kind={check.engine_kind}
+              level={check.support_level}
             />
           ),
         }

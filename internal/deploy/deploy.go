@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -173,6 +174,9 @@ type Request struct {
 	Commit func() error
 	// NoCache disables BuildKit's layer cache for a dockerfile build.
 	NoCache bool
+	// Preview marks a pull request preview build, which may not use
+	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
+	Preview bool
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -205,8 +209,9 @@ type Pipeline struct {
 	autoscale     AutoscaleStore    // nil is valid: the autoscale: block is then ignored
 
 	autoscaleCeiling int
-	canaryPolicies   CanaryPolicyStore // nil is valid: strategy: canary and canary: are then ignored
-	jobs             JobStore          // nil is valid: the jobs: list is then ignored
+	canaryPolicies   CanaryPolicyStore  // nil is valid: strategy: canary and canary: are then ignored
+	rolloutPolicies  RolloutPolicyStore // nil is valid: rollout: is then ignored
+	jobs             JobStore           // nil is valid: the jobs: list is then ignored
 
 	buildCache BuildCacheProvider // nil is valid: builds use only the local and registry caches
 
@@ -214,13 +219,16 @@ type Pipeline struct {
 	inspector    docker.ImageInspector // nil skips recording a build's local image ID
 	registryAuth RegistryAuthSource    // nil resolves private images without credentials
 	ordered      OrderedStore          // nil disables the stale-deploy guard
+	ports        PortAdmitter          // nil skips host port admission (tests, demo)
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
 
-	buildSecrets BuildSecretSource // nil is valid: builds mount no package registry secrets
+	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy
+	buildSecrets      BuildSecretSource // nil is valid: builds mount no package registry secrets
 
 	attest      bool            // request BuildKit SBOM and provenance on Dockerfile builds
 	supplyChain SupplyChainHook // nil skips SBOM storage and the scan gate
 	secretScan  SecretScanHook  // nil skips deploy-time secret scanning
+	spendGuard  SpendGuardHook  // nil skips the block_deploys spend cap guard
 
 	locks PublishLocks // nil is valid: no publish lock is ever consulted
 }
@@ -253,6 +261,9 @@ func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline 
 // build.ProgressEvent and build.SlogProgress. A static deploy never
 // invokes it: there is no build step to report progress on.
 func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
+	if err := p.checkSpendGuard(ctx, req); err != nil {
+		return "", err
+	}
 	if err := p.scanSecrets(ctx, req); err != nil {
 		return "", err
 	}
@@ -312,7 +323,11 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
 	}
-	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, &buildReq, progress)
+	if err := checkPreviewBuildSecrets(req.Preview, req.Service.Build.Secrets); err != nil {
+		cacheDone()
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, req.Service.Build.Secrets, &buildReq, progress)
 	if err != nil {
 		cacheDone()
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
@@ -320,7 +335,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 	res, err := p.builder.Build(ctx, buildReq, progress)
 	cacheDone()
 	if err != nil {
-		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
+		return "", buildFailure(req.ServiceName, err)
 	}
 
 	return p.finishDeploy(ctx, req, res)
@@ -361,7 +376,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		if errors.As(err, &unsupported) {
 			return "", fmt.Errorf("deploy: service %q: railpack %s", req.ServiceName, unsupported.Detail())
 		}
-		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
+		return "", buildFailure(req.ServiceName, err)
 	}
 
 	return p.finishDeploy(ctx, req, res)
@@ -406,7 +421,7 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 
 // saveLiveConfig writes the per-app blocks that only apply once a release is live.
 func (p *Pipeline) saveLiveConfig(ctx context.Context, req Request) error {
-	for _, save := range []func(context.Context, Request) error{p.saveLoadBalancer, p.saveSpendCap, p.saveAutoscale, p.saveCanaryPolicy, p.saveJobs} {
+	for _, save := range []func(context.Context, Request) error{p.saveLoadBalancer, p.saveSpendCap, p.saveAutoscale, p.saveCanaryPolicy, p.saveRolloutPolicy, p.saveJobs} {
 		if err := save(ctx, req); err != nil {
 			return err
 		}
@@ -538,4 +553,13 @@ func (p *Pipeline) validateEnv(ctx context.Context, serviceName string, env map[
 		}
 	}
 	return nil
+}
+
+// buildFailure adds the build: prefix only when the builder error lacks one,
+// so the journal never reads "build: build:".
+func buildFailure(service string, err error) error {
+	if strings.HasPrefix(err.Error(), "build:") {
+		return fmt.Errorf("deploy: service %q: %w", service, err)
+	}
+	return fmt.Errorf("deploy: service %q: build: %w", service, err)
 }

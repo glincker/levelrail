@@ -106,6 +106,10 @@ const sizes: NodeProviderSizeResource[] = [
   },
 ]
 
+vi.mock('../queries/meshSettings', () => ({
+  useMeshSettings: () => ({ data: undefined }),
+}))
+
 const createNodeProvisionMutate = vi.fn()
 vi.mock('../queries/nodeProvision', () => ({
   useNodeProviders: () => ({ data: providers, isLoading: false }),

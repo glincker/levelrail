@@ -46,6 +46,11 @@ type PlanOptions struct {
 	TakenApps    map[string]bool
 	// ExistingDatabases maps a database name to "engine:version".
 	ExistingDatabases map[string]string
+	// DBVersions is the engine version the user chose per engine, and
+	// LatestDBVersions the newest catalog version per engine. Both fill in
+	// databases whose source reports no version.
+	DBVersions       map[string]string
+	LatestDBVersions map[string]string
 }
 
 // HealthPlan is an HTTP readiness probe.
@@ -86,6 +91,16 @@ type AppPlan struct {
 	GitBranch   string            `json:"git_branch,omitempty"`
 	BuildMethod string            `json:"build_method,omitempty"`
 	BuildPath   string            `json:"build_path,omitempty"`
+	Crons       []CronPlan        `json:"crons,omitempty"`
+	// UnreadSecrets names secret variables the source would not reveal.
+	UnreadSecrets []string `json:"-"`
+}
+
+// CronPlan is a scheduled command that becomes a scheduled job on the new app.
+type CronPlan struct {
+	Name     string `json:"name"`
+	Schedule string `json:"schedule"`
+	Command  string `json:"command"`
 }
 
 // DatabasePlan is one managed database create request (empty, no data).
@@ -210,6 +225,7 @@ func BuildPlan(d *Discovery, o PlanOptions) *Plan {
 	if len(p.Databases) > 0 {
 		p.Report.Notes = append(p.Report.Notes, DataNote)
 	}
+	p.Report.Notes = append(p.Report.Notes, d.Warnings...)
 	sort.SliceStable(p.Report.Items, func(i, j int) bool { return p.Report.Items[i].Kind < p.Report.Items[j].Kind })
 	return p
 }
@@ -298,7 +314,10 @@ func (p *Plan) planApp(platform Platform, a App, o PlanOptions, taken map[string
 		plan.Health = &HealthPlan{Path: a.Health.Path, IntervalSeconds: a.Health.IntervalSeconds, TimeoutSeconds: a.Health.TimeoutSeconds, Failures: a.Health.Retries}
 	}
 	for _, c := range a.Crons {
-		attention(fmt.Sprintf("cron job %q (%s) is not imported", c.Name, c.Schedule), "create a scheduled task running: "+c.Command)
+		plan.Crons = append(plan.Crons, CronPlan{Name: SanitizeJobName(c.Name), Schedule: NormalizeSchedule(c.Schedule), Command: c.Command})
+	}
+	if len(plan.Crons) > 0 {
+		item.Reasons = append(item.Reasons, fmt.Sprintf("%d cron job(s) become scheduled jobs", len(plan.Crons)))
 	}
 	for _, n := range a.Notes {
 		attention(n.Reason, n.Manual)
@@ -330,6 +349,7 @@ func splitEnv(plan *AppPlan, env []Env, attention func(string, string)) {
 	}
 	if len(empty) > 0 {
 		sort.Strings(empty)
+		plan.UnreadSecrets = empty
 		attention("secret variables with no readable value were skipped: "+strings.Join(empty, ", "), "set them with the secrets command")
 	}
 	if len(plan.Env) == 0 {
@@ -342,6 +362,9 @@ func splitEnv(plan *AppPlan, env []Env, attention func(string, string)) {
 
 func (p *Plan) planDatabase(db Database, o PlanOptions, taken map[string]bool) {
 	item := Item{Kind: "database", SourceID: db.SourceID, SourceName: db.Name}
+	if db.Version == "" {
+		db.Version, item.Reasons = chooseDBVersion(db, o)
+	}
 	if db.Engine == "" || db.Version == "" {
 		item.Status = StatusUnsupported
 		item.Reasons = []string{"could not determine the engine or version"}

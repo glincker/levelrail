@@ -6,49 +6,58 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/cleanup"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
-// defaultAuditLogRetention is how long an audit_log row survives before
-// PurgeOldAuditEntries removes it. Overridable via
-// APP_AUDIT_LOG_RETENTION_DAYS (cmd/levelrail/main.go's
-// auditLogRetention, WithAuditLogRetention), the project's "no hardcoded
-// thresholds" rule.
+// defaultAuditLogRetention mirrors the registered default of retention.audit_log_days
+// (env APP_AUDIT_LOG_RETENTION_DAYS).
 const defaultAuditLogRetention = 90 * 24 * time.Hour
 
-func (rt *Router) effectiveAuditLogRetention() time.Duration {
+// auditWindows resolves the general and security windows from the runtime settings (saved, then env,
+// then default). Zero means keep forever. The explicit router option wins for the general window.
+func (rt *Router) auditWindows(ctx context.Context) (general, security time.Duration) {
+	gDays, sDays := cleanup.AuditWindows(
+		rt.runtimeSettings.Int(ctx, runtimesettings.KeyAuditLogDays),
+		rt.runtimeSettings.Int(ctx, runtimesettings.KeyAuditSecurityDays))
+	general, security = time.Duration(gDays)*24*time.Hour, time.Duration(sDays)*24*time.Hour
 	if rt.auditLogRetention > 0 {
-		return rt.auditLogRetention
+		general = rt.auditLogRetention
+		if security > 0 {
+			security = max(security, general)
+		}
 	}
-	return defaultAuditLogRetention
+	return general, security
 }
 
-// PurgeOldAuditEntries deletes every audit_log row older than
-// effectiveAuditLogRetention, returning how many rows were removed.
+func (rt *Router) effectiveAuditLogRetention(ctx context.Context) time.Duration {
+	general, _ := rt.auditWindows(ctx)
+	return general
+}
+
+// PurgeOldAuditEntries deletes audit_log rows past their windows, returning how many rows were removed.
+// A general window of zero keeps everything.
 func (rt *Router) PurgeOldAuditEntries(ctx context.Context) (int64, error) {
 	now := time.Now().UTC()
-	cutoff := now.Add(-rt.effectiveAuditLogRetention())
+	general, security := rt.auditWindows(ctx)
 	rt.pruneIdempotency(ctx)
+	if general == 0 {
+		return 0, nil
+	}
+	cutoff := now.Add(-general)
 	if tiered, ok := rt.auditLog.(tieredAuditPurger); ok {
-		return tiered.DeleteAuditEntriesTiered(ctx, cutoff, now.Add(-rt.effectiveSecurityAuditRetention()))
+		var securityCutoff time.Time
+		if security > 0 {
+			securityCutoff = now.Add(-security)
+		}
+		return tiered.DeleteAuditEntriesTiered(ctx, cutoff, securityCutoff)
 	}
 	return rt.auditLog.DeleteAuditEntriesOlderThan(ctx, cutoff)
 }
 
-const (
-	envAuditSecurityRetentionDays     = "APP_AUDIT_LOG_SECURITY_RETENTION_DAYS"
-	defaultAuditSecurityRetentionDays = 365
-)
-
 type tieredAuditPurger interface {
 	DeleteAuditEntriesTiered(ctx context.Context, cutoff, securityCutoff time.Time) (int64, error)
-}
-
-// effectiveSecurityAuditRetention is how long sign-in, step-up, token and
-// policy rows survive; it is never shorter than the general retention.
-func (rt *Router) effectiveSecurityAuditRetention() time.Duration {
-	days := envInt(envAuditSecurityRetentionDays, defaultAuditSecurityRetentionDays)
-	return max(time.Duration(days)*24*time.Hour, rt.effectiveAuditLogRetention())
 }
 
 // RunAuditLogSweeper calls PurgeOldAuditEntries on interval until ctx is

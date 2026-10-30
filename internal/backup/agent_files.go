@@ -51,6 +51,8 @@ func (d Destination) agentPath(key string) string {
 // Routed sends operations for an agent destination to the node and everything else to the S3 implementations.
 type Routed struct {
 	Files NodeFiles
+	// LocalRoot confines local:// targets; empty disables them.
+	LocalRoot string
 }
 
 func (r Routed) files(d Destination) (NodeFiles, string, error) {
@@ -63,6 +65,9 @@ func (r Routed) files(d Destination) (NodeFiles, string, error) {
 
 // Upload implements Uploader.
 func (r Routed) Upload(ctx context.Context, dest Destination, key string, rd io.Reader, size int64) error {
+	if dest.IsLocal() {
+		return r.localUpload(dest, key, rd)
+	}
 	if !dest.IsAgent() {
 		return S3Uploader{}.Upload(ctx, dest, key, rd, size)
 	}
@@ -78,6 +83,9 @@ func (r Routed) Upload(ctx context.Context, dest Destination, key string, rd io.
 
 // Download implements Downloader.
 func (r Routed) Download(ctx context.Context, dest Destination, key string) (io.ReadCloser, error) {
+	if dest.IsLocal() {
+		return r.localDownload(dest, key)
+	}
 	if !dest.IsAgent() {
 		return S3Downloader{}.Download(ctx, dest, key)
 	}
@@ -94,6 +102,9 @@ func (r Routed) Download(ctx context.Context, dest Destination, key string) (io.
 
 // Delete implements Deleter.
 func (r Routed) Delete(ctx context.Context, dest Destination, key string) error {
+	if dest.IsLocal() {
+		return r.localDelete(dest, key)
+	}
 	if !dest.IsAgent() {
 		return S3Deleter{}.Delete(ctx, dest, key)
 	}
@@ -109,6 +120,9 @@ func (r Routed) Delete(ctx context.Context, dest Destination, key string) error 
 
 // List implements Lister; keys come back relative to the destination directory, like S3 keys.
 func (r Routed) List(ctx context.Context, dest Destination, prefix string) ([]RemoteObject, error) {
+	if dest.IsLocal() {
+		return r.localList(dest, prefix)
+	}
 	if !dest.IsAgent() {
 		return S3Lister{}.List(ctx, dest, prefix)
 	}
@@ -129,6 +143,9 @@ func (r Routed) List(ctx context.Context, dest Destination, prefix string) ([]Re
 
 // Test implements Tester with a write, read back and delete of a tiny object.
 func (r Routed) Test(ctx context.Context, dest Destination) error {
+	if dest.IsLocal() {
+		return r.localTest(dest)
+	}
 	if !dest.IsAgent() {
 		return S3Tester{}.Test(ctx, dest)
 	}

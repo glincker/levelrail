@@ -4,12 +4,17 @@ import {
   ArrowClockwiseIcon,
   CopyIcon,
   DotsThreeIcon,
+  KeyIcon,
+  LinkIcon,
   PauseIcon,
   PlayIcon,
   RocketLaunchIcon,
+  SpinnerIcon,
   TrashIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { ActionMenu } from '@/components/kit'
+import { AppAccessDetailsDialog } from '../templates/AppAccessDetails'
+import { hasTemplateAccess } from '../templates/templateAccess'
 import { Button } from '@/components/ui/button'
 import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
@@ -24,6 +29,8 @@ import {
 import type { DeployTab } from '../overview/DeploySheet'
 import type { AppDetail } from '../../types/appDetail'
 import { useAppAsleep, useAppSleepActions } from '../../queries/appSleep'
+import { useGitSource } from '../../queries/gitSources'
+import { DeployLinkDialog } from '../newapp/DeployLinkDialog'
 
 // One primary action, Restart beside it, everything else behind the overflow
 // menu so Delete never carries the same visual weight as Deploy.
@@ -41,6 +48,11 @@ export function AppActionBar({
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [cloneOpen, setCloneOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [accessOpen, setAccessOpen] = useState(false)
+  const { t: tt } = useTranslation('templates')
+  const gitSource = useGitSource(app.name).data
+  const { t: tn } = useTranslation('newApp')
   const { t: tm } = useTranslation('maintenance')
   const inMaintenance = useAppInMaintenance(app.name)
   const deployButton = (
@@ -71,13 +83,17 @@ export function AppActionBar({
         disabled={actions.restarting}
         onClick={actions.restart}
       >
-        <ArrowClockwiseIcon aria-hidden="true" />
-        <span className="max-md:sr-only">
-          {actions.restarting
-            ? t('appActions.restarting', { defaultValue: 'Restarting...' })
-            : t('appActions.restart', { defaultValue: 'Restart' })}
-        </span>
+        {actions.restarting || actions.slowRestart ? (
+          <SpinnerIcon
+            aria-hidden="true"
+            className="animate-spin motion-reduce:animate-none"
+          />
+        ) : (
+          <ArrowClockwiseIcon aria-hidden="true" />
+        )}
+        <span className="max-md:sr-only">{actions.restartLabel}</span>
       </Button>
+      {actions.confirmDialog}
       <ActionMenu
         trigger={
           <Button
@@ -106,7 +122,9 @@ export function AppActionBar({
               ? t('appActions.wake', { defaultValue: 'Wake now' })
               : app.suspended
                 ? t('appActions.start', { defaultValue: 'Start' })
-                : t('appActions.stop', { defaultValue: 'Stop' }),
+                : actions.stopping
+                  ? t('appPower.stopping')
+                  : t('appActions.stop', { defaultValue: 'Stop' }),
             icon: app.suspended ? <PlayIcon /> : <PauseIcon />,
             disabled: asleep ? wake.isPending : actions.togglingRunning,
             onSelect: asleep ? () => wake.mutate() : actions.toggleRunning,
@@ -127,6 +145,30 @@ export function AppActionBar({
               setCloneOpen(true)
             },
           },
+          ...(hasTemplateAccess(app)
+            ? [
+                {
+                  id: 'access-details',
+                  label: tt('access.open'),
+                  icon: <KeyIcon />,
+                  onSelect: () => {
+                    setAccessOpen(true)
+                  },
+                },
+              ]
+            : []),
+          ...(gitSource
+            ? [
+                {
+                  id: 'deploy-link',
+                  label: tn('deployLinkDialog.action'),
+                  icon: <LinkIcon />,
+                  onSelect: () => {
+                    setLinkOpen(true)
+                  },
+                },
+              ]
+            : []),
           {
             id: 'delete',
             label: t('appActions.delete', { defaultValue: 'Delete...' }),
@@ -155,6 +197,20 @@ export function AppActionBar({
           hideTrigger: true,
         }}
       />
+      <AppAccessDetailsDialog
+        app={app}
+        open={accessOpen}
+        onOpenChange={setAccessOpen}
+      />
+      {linkOpen && gitSource ? (
+        <DeployLinkDialog
+          open
+          onOpenChange={setLinkOpen}
+          repo={gitSource.repo_url}
+          branch={gitSource.branch}
+          name={app.name}
+        />
+      ) : null}
       <DeleteAppDialog
         name={app.name}
         control={{

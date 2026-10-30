@@ -21,6 +21,7 @@ type serviceTemplateListItem struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
 	Slogan                 string `json:"slogan"`
+	Description            string `json:"description,omitempty"`
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
@@ -38,6 +39,8 @@ type serviceTemplateListItem struct {
 	// NeedsDatabase and HasVolume are card hints read from the Compose body.
 	NeedsDatabase bool `json:"needs_database,omitempty"`
 	HasVolume     bool `json:"has_volume,omitempty"`
+	// Verified marks a template that passed the last committed live smoke run.
+	Verified bool `json:"verified"`
 }
 
 var templateDatabaseImage = regexp.MustCompile(`(?m)^\s*image:\s*["']?(?:[\w.\-]+/)*(postgres|postgis|mysql|mariadb|mongo|redis|valkey|clickhouse|timescaledb)\b`)
@@ -55,6 +58,7 @@ type serviceTemplateDetail struct {
 	ID                     string               `json:"id"`
 	Name                   string               `json:"name"`
 	Slogan                 string               `json:"slogan"`
+	Description            string               `json:"description,omitempty"`
 	Category               string               `json:"category"`
 	DocumentationURL       string               `json:"documentation_url"`
 	Compose                string               `json:"compose"`
@@ -76,6 +80,7 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			ID:                     tpl.ID,
 			Name:                   tpl.Name,
 			Slogan:                 tpl.Slogan,
+			Description:            tpl.Description,
 			Category:               tpl.Category,
 			DocumentationURL:       tpl.DocumentationURL,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
@@ -85,6 +90,7 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			Installable:            tpl.Manifest != nil,
 			NeedsDatabase:          needsDB,
 			HasVolume:              hasVol,
+			Verified:               catalog.IsVerified(tpl.ID),
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -120,6 +126,7 @@ type templateView struct {
 	ID                     string
 	Name                   string
 	Slogan                 string
+	Description            string
 	Category               string
 	DocumentationURL       string
 	Compose                string
@@ -144,6 +151,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			ID:                     tpl.ID,
 			Name:                   tpl.Name,
 			Slogan:                 tpl.Slogan,
+			Description:            tpl.Description,
 			Category:               tpl.Category,
 			DocumentationURL:       tpl.DocumentationURL,
 			Compose:                tpl.Compose,

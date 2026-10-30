@@ -3,11 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -416,5 +419,56 @@ func TestHandleAutoRollbackSLOBurn_GetDefaultOffAndSetModes(t *testing.T) {
 func TestApplicationControllerName(t *testing.T) {
 	if got, want := applicationControllerName("web"), "application/web"; got != want {
 		t.Errorf("applicationControllerName(%q) = %q, want %q", "web", got, want)
+	}
+}
+
+type missingImageResolver struct{}
+
+func (missingImageResolver) ResolveImage(_ context.Context, ref string, _ *docker.RegistryAuth, _ bool) (docker.ResolvedImage, error) {
+	return docker.ResolvedImage{}, fmt.Errorf("%w: %q", docker.ErrImageNotFound, ref)
+}
+
+func TestHandleTriggerDeploy_MissingImageFailsPull(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithDeploySafety(db, missingImageResolver{}))
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:nope"}`))
+	if rec.Code != http.StatusUnprocessableEntity || !strings.Contains(rec.Body.String(), "image pull failed") {
+		t.Fatalf("status = %d body = %s, want 422 image pull failed", rec.Code, rec.Body.String())
+	}
+	if attempts, _ := db.ListDeployAttempts(ctx, "web"); len(attempts) != 0 {
+		t.Fatalf("a failed pull must not record a deploy attempt, got %d", len(attempts))
+	}
+}
+
+func TestHandleTriggerDeploy_ReturnsCreatedAttemptID(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d %s", rec.Code, rec.Body.String())
+	}
+	var got struct {
+		DeployID string `json:"deploy_id"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil || len(attempts) != 1 {
+		t.Fatalf("attempts = %v %v", attempts, err)
+	}
+	if got.DeployID == "" || got.DeployID != attempts[0].ID {
+		t.Errorf("deploy_id = %q, want the created attempt %q", got.DeployID, attempts[0].ID)
 	}
 }

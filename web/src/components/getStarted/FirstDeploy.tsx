@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  ArrowRightIcon,
   GitBranchIcon,
   RocketLaunchIcon,
   SquaresFourIcon,
@@ -35,11 +37,17 @@ function PathCard({
 }) {
   return (
     <Card>
-      <CardContent className="flex h-full flex-col gap-2">
-        <span aria-hidden="true">{icon}</span>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="flex-1 text-xs text-muted-foreground">{description}</p>
-        <div>{action}</div>
+      <CardContent className="flex h-full items-center gap-3 sm:flex-col sm:items-stretch sm:gap-2">
+        <span aria-hidden="true" className="shrink-0">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="text-sm font-medium text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+        <div className="shrink-0 sm:shrink [&_button]:min-h-11 sm:[&_button]:min-h-0">
+          {action}
+        </div>
       </CardContent>
     </Card>
   )
@@ -95,8 +103,9 @@ export function FirstDeploy({
     createApp.error.status === HTTP_CONFLICT
   const createError =
     createApp.error && !conflict ? createApp.error.message : ''
+  const live = Boolean(app) && phase === 'live'
   const preview = https?.suggested_domain
-    ? `https://${SAMPLE_APP.name}.${https.suggested_domain}`
+    ? `${https.state === 'issued' ? 'https' : 'http'}://${SAMPLE_APP.name}.${https.suggested_domain}`
     : ''
 
   return (
@@ -107,18 +116,20 @@ export function FirstDeploy({
             aria-hidden="true"
             className="size-6 text-primary"
           />
-          {t('first.title')}
+          {live ? t('first.titleLive') : t('first.title')}
         </h1>
-        <p className="max-w-prose text-sm text-muted-foreground">
-          {t('first.subtitle')}
-        </p>
+        {live ? null : (
+          <p className="max-w-prose text-sm text-muted-foreground">
+            {t('first.subtitle')}
+          </p>
+        )}
       </header>
 
       {app ? (
         <FirstAppStatus app={app} phase={phase} onDone={onDone} />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
             <PathCard
               icon={<RocketLaunchIcon className="size-5 text-primary" />}
               title={t('first.sample.title')}
@@ -173,6 +184,22 @@ export function FirstDeploy({
               }
             />
           </div>
+          <p className="flex flex-wrap items-center gap-x-4 text-xs text-muted-foreground sm:gap-y-1">
+            <Link
+              to="/settings/import-platform"
+              className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-2 sm:min-h-0 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {t('first.more.import')}
+              <ArrowRightIcon aria-hidden="true" className="size-3" />
+            </Link>
+            <Link
+              to="/settings/github-app"
+              className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-2 sm:min-h-0 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {t('first.more.git')}
+              <ArrowRightIcon aria-hidden="true" className="size-3" />
+            </Link>
+          </p>
           {createError ? (
             <p role="alert" className="text-xs text-destructive">
               {createError}
@@ -186,7 +213,11 @@ export function FirstDeploy({
         </>
       )}
 
-      {isRoot ? <EnableHttpsCard /> : null}
+      {isRoot ? (
+        <div id="enable-https">
+          <EnableHttpsCard compact />
+        </div>
+      ) : null}
     </div>
   )
 }

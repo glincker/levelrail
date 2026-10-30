@@ -21,6 +21,7 @@ export type DeployAttemptStatus =
   | 'superseded'
   | 'queued'
   | 'canceled'
+  | 'pending'
 
 // Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
 // an unattended git-push build, 'manual' for a dashboard-triggered
@@ -38,9 +39,13 @@ export type DeployAttemptSource =
   | 'clone'
   | 'schedule'
   | 'auto_rollback'
+  | 'restart'
+  | 'start'
+  | 'stop'
   | 'git_push'
   | 'poll'
   | 'upload'
+  | 'pr_comment'
 
 export interface DeployAttempt {
   /** 'held' is a finished build the app's publish lock kept off the live site. */
@@ -71,7 +76,18 @@ export interface DeployAttempt {
   /** URL of this deploy's preview thumbnail, when one was captured. */
   preview_image_url?: string
   /** What the controller last saw running: 'serving' or 'mismatch'. */
-  rollout_state?: 'serving' | 'mismatch'
+  /** True for the one deploy serving the app now; set by the server. */
+  live?: boolean
+  /** Server classification, e.g. "rollback" for a redeploy of an earlier image. */
+  trigger?: string
+  rollout_state?: 'serving' | 'mismatch' | 'superseded'
+  /** The server's computed deploy outcome; absent on older servers. */
+  outcome?:
+    'in_progress' | 'healthy' | 'failed' | 'canceled' | 'superseded' | 'blocked'
+  /** One-line why behind outcome. */
+  outcome_reason?: string
+  /** Restart count at which a never-serving rollout counts as failed. */
+  rollout_crash_loop_restarts?: number
   running_image_id?: string
   sequence?: number
   /** Why the attempt was held, superseded, or allowed through a freeze. */

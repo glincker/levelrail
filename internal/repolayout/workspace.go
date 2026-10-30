@@ -2,14 +2,27 @@ package repolayout
 
 import (
 	"encoding/json"
+	"os"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/kit/pathfilter"
 )
 
-const maxPackages = 60
+// EnvMaxPackages caps how many workspace packages one analysis returns.
+const EnvMaxPackages = "APP_WIZARD_MAX_PACKAGES"
+
+const defaultMaxPackages = 60
+
+// PackageCap is the effective package cap, read from the environment on each call.
+func PackageCap() int {
+	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(EnvMaxPackages))); err == nil && v > 0 {
+		return v
+	}
+	return defaultMaxPackages
+}
 
 // Package is one workspace member that can run as its own service.
 type Package struct {
@@ -145,9 +158,15 @@ func cleanGoUse(s string) string {
 // findPackages expands workspace globs against the file list. A directory is a
 // package when it holds a manifest and matches a positive glob.
 func findPackages(files []string, present map[string]bool, read Reader) []Package {
+	pkgs, _ := findPackagesTotal(files, present, read)
+	return pkgs
+}
+
+// findPackagesTotal also returns how many packages matched before the cap.
+func findPackagesTotal(files []string, present map[string]bool, read Reader) ([]Package, int) {
 	globs, tool := workspaceGlobs(present, read)
 	if len(globs) == 0 {
-		return []Package{}
+		return []Package{}, 0
 	}
 	dirs := map[string]bool{}
 	for _, f := range files {
@@ -163,8 +182,9 @@ func findPackages(files []string, present map[string]bool, read Reader) []Packag
 		}
 	}
 	sort.Strings(matched)
-	if len(matched) > maxPackages {
-		matched = matched[:maxPackages]
+	total := len(matched)
+	if limit := PackageCap(); total > limit {
+		matched = matched[:limit]
 	}
 
 	names := map[string]string{}
@@ -194,7 +214,7 @@ func findPackages(files []string, present map[string]bool, read Reader) []Packag
 		p.WatchPaths = append(p.WatchPaths, shared...)
 		pkgs = append(pkgs, p)
 	}
-	return pkgs
+	return pkgs, total
 }
 
 // inWorkspace applies positive globs, then "!" exclusions, in order.

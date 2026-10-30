@@ -31,6 +31,7 @@ var bodyRefAuthzAllowlist = map[string]string{ //nolint:gosec // reasons, not cr
 	"handleIaCExport":           "runs through loopbackDoer, so every read re-enters the API with the caller's credentials",
 	"handleStepUp":              "a step-up grant confers no access; the protected route still authorizes the app",
 	"handleStepUpPasskeyFinish": "a step-up grant confers no access; the protected route still authorizes the app",
+	"handleCIOIDCExchange":      "unauthenticated by design; the app name only selects trusts, and a token is minted only after the CI provider JWT verifies against a trust of that app",
 	"parseDeploymentQuery":      "pure parser; handleListDeployments intersects the filter with visibleAppNames",
 }
 
@@ -55,6 +56,20 @@ func TestBodyResourceRefsAreAuthorized(t *testing.T) {
 		}
 		parsed = append(parsed, af)
 	}
+	missing, seen := bodyRefViolations(parsed)
+	for _, k := range missing {
+		t.Errorf("%s reads a resource reference from the body or query without an authorize helper; call rt.authorizeRefs or allowlist it with a reason", k)
+	}
+	for k := range bodyRefAuthzAllowlist {
+		if !seen[k] {
+			t.Errorf("allowlist entry %s no longer reads a resource reference; remove it", k)
+		}
+	}
+}
+
+// bodyRefViolations returns the functions that read a resource reference
+// without an authorize call and are not allowlisted, plus every reader seen.
+func bodyRefViolations(parsed []*ast.File) ([]string, map[string]bool) {
 	shaped := resourceShapedTypes(parsed)
 	decoders := map[string]bool{}
 	funcs := map[string]*ast.FuncDecl{}
@@ -67,7 +82,7 @@ func TestBodyResourceRefsAreAuthorized(t *testing.T) {
 	}
 	authorizing := authorizingFuncs(funcs)
 	for _, fd := range funcs {
-		if decodesShaped(fd, shaped, nil) && returnsShaped(fd, shaped) && !authorizing[fd.Name.Name] {
+		if decodesShaped(fd, shaped, nil) && (returnsShaped(fd, shaped) || fillsShaped(fd, shaped)) && !authorizing[fd.Name.Name] {
 			decoders[fd.Name.Name] = true
 		}
 	}
@@ -90,14 +105,21 @@ func TestBodyResourceRefsAreAuthorized(t *testing.T) {
 		missing = append(missing, k)
 	}
 	sort.Strings(missing)
-	for _, k := range missing {
-		t.Errorf("%s reads a resource reference from the body or query without an authorize helper; call rt.authorizeRefs or allowlist it with a reason", k)
+	return missing, seen
+}
+
+// fillsShaped reports a helper that takes a pointer to a shaped request
+// struct, so a decoder that fills it in place counts like one that returns it.
+func fillsShaped(fd *ast.FuncDecl, shaped map[string]bool) bool {
+	if fd.Type.Params == nil {
+		return false
 	}
-	for k := range bodyRefAuthzAllowlist {
-		if !seen[k] {
-			t.Errorf("allowlist entry %s no longer reads a resource reference; remove it", k)
+	for _, p := range fd.Type.Params.List {
+		if star, ok := p.Type.(*ast.StarExpr); ok && shaped[baseTypeName(star.X)] {
+			return true
 		}
 	}
+	return false
 }
 
 func funcKey(fd *ast.FuncDecl) string {
@@ -320,4 +342,37 @@ func callName(call *ast.CallExpr) string {
 		}
 	}
 	return ""
+}
+
+func TestBodyRefGuardFlagsNewDecodeAppUpdateCaller(t *testing.T) {
+	const src = `package api
+
+type appResource struct {
+	Node string ` + "`json:\"node_id\"`" + `
+}
+
+func decodeAppUpdate(w int, r int, req *appResource) bool {
+	return decodeReq(w, r, req)
+}
+
+func handleMoveApp(w int, r int) {
+	var req appResource
+	decodeAppUpdate(w, r, &req)
+	_ = req.Node
+}
+
+func handleSafeMove(w int, r int) {
+	var req appResource
+	decodeAppUpdate(w, r, &req)
+	authorizeRefs(req.Node)
+}
+`
+	af, err := parser.ParseFile(token.NewFileSet(), "fixture.go", src, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing, _ := bodyRefViolations([]*ast.File{af})
+	if len(missing) != 1 || missing[0] != "handleMoveApp" {
+		t.Fatalf("missing = %v, want only handleMoveApp", missing)
+	}
 }

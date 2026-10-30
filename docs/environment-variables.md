@@ -35,6 +35,12 @@ Each process reads these variables once at startup, so a change only takes effec
 
 Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variables fall back to their default when the value is unset or invalid; the exceptions are called out in the tables.
 
+## Sessions and cookies
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_COOKIE_SECURE` | unset (Secure only when the dashboard URL is `https://`) | Set to `true` to always mark the session cookie Secure. Use it when a proxy terminates TLS in front of an `http://` dashboard URL. Control plane. |
+
 ## Builds and build cache
 
 The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache on top of that. See [Build node routing](/build-node-routing) for dedicated build nodes.
@@ -105,6 +111,8 @@ Each of these sets how often a background loop wakes to check for work. Five-fie
 | `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL` | `1m` | How often the scheduler checks for scheduled tasks that are due. Control plane. |
 | `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` | `5m` | How often pending deploy approvals are checked against their 24 hour expiry. See [Chat deploy approvals](/chat-deploy-approvals). Control plane. |
 | `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | `168h` (7 days) | History window used when computing app resource recommendations. Control plane. |
+| `APP_RECONCILE_WORKERS` | `1` | How many apps may reconcile at once, so one slow or failing app does not delay the others. `1` keeps the sequential pass; `4` or `8` is recommended with many apps. Above 1, each app reconcile is cut after `APP_RECONCILE_KEY_TIMEOUT` (default `10m`) and retried. Control plane. |
+| `APP_RECONCILE_READINESS_REQUEUE` | `2s` | Go duration. Delay before a not-yet-ready app is checked again. Only used when `APP_RECONCILE_WORKERS` is above 1. Control plane. |
 
 For the invalid-value behavior of the first three, see the note at the end of this page.
 
@@ -121,7 +129,10 @@ These tune the scheduled off-box copy of the control plane's own state and its r
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](/managing-databases#point-in-time-restore-postgres-only). |
+| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](/managing-databases#point-in-time-restore). |
+| `APP_PITR_BINLOG_EXPIRE_SECONDS` | `604800` (7 days) | How long a MySQL or MariaDB database keeps closed binary log files on its own host. Shipped copies in the backup target are pruned by base backup retention instead. Positive integer. Control plane. |
+| `APP_PITR_MYSQL_TOOLS_IMAGE` | `percona/percona-server:8.4` | Image a MySQL point-in-time restore starts briefly to run `mysqlbinlog`, which the official MySQL image does not ship. MariaDB restores do not use it. Control plane. |
+| `APP_PREVIEW_BUILD_SECRETS` | unset (off) | Set to a true value to let preview (pull request) builds use `build.secrets`. Off by default because a pull request can change the Dockerfile and read the secret. Read on every build. Control plane. |
 
 ## Log archive
 
@@ -131,6 +142,15 @@ The archiver's other settings are on [Log archive](/log-archive). These two boun
 | --- | --- | --- |
 | `APP_LOG_ARCHIVE_MAX_WINDOWS_PER_RUN` | `24` | Maximum number of one-hour windows archived in a single scheduled run. Integer. |
 | `APP_LOG_ARCHIVE_MAX_BACKFILL` | `24h` | How far back a run may reach when it catches up on missed windows. Duration. |
+
+## Backup copies
+
+See [Backup copies](/backup-copies). Control plane.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_BACKUP_COPY_LAG_ALERT` | `1h` | Time a backup may go without a second copy before `backup_copy_behind` fires. Duration. |
+| `APP_BACKUP_COPY_CONCURRENCY` | `2` | Copies running at once. Positive integer. |
 
 ## Data export
 
@@ -269,3 +289,12 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 ### Still stuck
 
 For help with specific variables, refer to the table for that variable's scope (Control plane, Agent, or CLI) and component. Variables are only read at startup, so restart the relevant service after making changes.
+
+## Volume files
+
+See [Volume files](/volume-files). Control plane and agent.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_VOLUME_FILE_MAX_UPLOAD_MB` | `64` | Largest file accepted by a volume file upload or single-file restore. Positive integer. |
+| `APP_VOLUME_FILE_LIST_LIMIT` | `1000` | Most entries returned for one volume directory. Positive integer. |

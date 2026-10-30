@@ -20,6 +20,25 @@ type appFilterStore interface {
 	ListAppNamesFiltered(ctx context.Context, f store.AppListFilter) ([]string, error)
 }
 
+// appHeadStore is the optional light-projection surface; *store.DB has it.
+type appHeadStore interface {
+	ListServiceHeads(ctx context.Context, f store.AppListFilter) ([]store.DesiredService, error)
+}
+
+// listAppHeads returns services with only the fields status bucketing,
+// summaries and coverage need, falling back to the full load for stores
+// without the projection.
+func listAppHeads(ctx context.Context, apps any, f store.AppListFilter) ([]store.DesiredService, error) {
+	if hs, ok := apps.(appHeadStore); ok {
+		return hs.ListServiceHeads(ctx, f)
+	}
+	if fs, ok := apps.(appFilterStore); ok {
+		svcs, _, err := fs.ListDesiredServicesFiltered(ctx, f)
+		return svcs, err
+	}
+	return nil, errNoFilteredList
+}
+
 func parseAppListFilter(r *http.Request) store.AppListFilter {
 	q := r.URL.Query()
 	f := store.AppListFilter{
@@ -85,6 +104,15 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := parseAppListFilter(r)
+	match, err := rt.labelFilter(r, store.LabelKindApp)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if match != nil {
+		prev := canRead
+		canRead, filtered = func(n string) bool { return prev(n) && match(n) }, true
+	}
 	if bucket := r.URL.Query().Get("status"); bucket != "" {
 		canRead, filtered, err = rt.restrictToStatus(r.Context(), fs, f, bucket, canRead)
 		if err != nil {
@@ -146,6 +174,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	placement := rt.placementResolver(r.Context())
+	owners := rt.loadStackOwners(r.Context())
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
@@ -160,6 +189,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 			appResource:     resource,
 			Status:          summarizeAppConditions(conditions),
 			EnvironmentName: envNames[s.EnvironmentID],
+			ManagedByStack:  owners.of("App", "App/"+s.Name),
 		}
 		if sl, ok := sleepRows[s.Name]; ok {
 			item.Sleep = &sl
@@ -231,7 +261,7 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 	}
 	f := parseAppListFilter(r)
 	f.Limit, f.Offset = 0, 0
-	svcs, _, err := fs.ListDesiredServicesFiltered(r.Context(), f)
+	svcs, err := listAppHeads(r.Context(), fs, f)
 	if err != nil {
 		rt.internalError(w, "api: apps summary failed", err)
 		return

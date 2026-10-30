@@ -32,6 +32,7 @@ const (
 	DeploymentTriggerAPI      = "api"
 	DeploymentTriggerPreview  = "preview"
 	DeploymentTriggerSchedule = "schedule"
+	DeploymentTriggerRestart  = "restart"
 )
 
 // Deployment is one deploy attempt joined with its derived status,
@@ -56,9 +57,11 @@ type DeploymentFilter struct {
 	Branch      string
 	Triggers    []string
 	Environment string
-	Since       time.Time
-	Until       time.Time
-	Query       string
+	// Project keeps only deployments of apps in this project id.
+	Project string
+	Since   time.Time
+	Until   time.Time
+	Query   string
 	// Live keeps only the release currently serving its app.
 	Live bool
 	// PR keeps only previews of this pull request number.
@@ -81,7 +84,9 @@ const (
 				AND m.started_at > e.started_at AND m.started_at < %[1]s.started_at)
 		ORDER BY e.started_at DESC LIMIT 1)`
 
-	rollbackAttemptSQL = `(%[1]s.source = 'auto_rollback' OR (%[1]s.source = 'image' AND ` + rollbackTargetSQL + ` IS NOT NULL))`
+	// Only an operator rollback (its reason carries RollbackTo) or an auto rollback is a
+	// rollback; a manual deploy of an older tag stays manual.
+	rollbackAttemptSQL = `(%[1]s.source = 'auto_rollback' OR %[1]s.reason LIKE '%%RollbackTo:%%')`
 
 	deploymentFromSQL = `FROM deploy_attempts d
 		JOIN desired_services s ON s.name = d.service_name
@@ -194,11 +199,13 @@ func deploymentTriggerSQL(triggers []string) string {
 		case DeploymentTriggerRollback:
 			ors = append(ors, rollbackAttemptForD)
 		case DeploymentTriggerManual:
-			ors = append(ors, "(d.source IN ('manual','clone','compose') OR (d.source = 'image' AND "+rollbackTargetForD+" IS NULL))")
+			ors = append(ors, "(d.source IN ('manual','clone','compose') OR (d.source = 'image' AND NOT "+rollbackAttemptForD+"))")
 		case DeploymentTriggerAPI:
 			ors = append(ors, "d.source = 'promote'")
 		case DeploymentTriggerSchedule:
 			ors = append(ors, "d.source = '"+DeployAttemptSourceSchedule+"'")
+		case DeploymentTriggerRestart:
+			ors = append(ors, "d.source = '"+DeployAttemptSourceRestart+"'")
 		default:
 			ors = append(ors, "0")
 		}
@@ -261,6 +268,10 @@ func deploymentWhere(f DeploymentFilter, withCursor bool) (string, []any, error)
 		conds = append(conds, "(env.name = ? OR env.id = ?)")
 		args = append(args, f.Environment, f.Environment)
 	}
+	if f.Project != "" {
+		conds = append(conds, "s.project_id = ?")
+		args = append(args, f.Project)
+	}
 	if len(f.Triggers) > 0 {
 		conds = append(conds, deploymentTriggerSQL(f.Triggers))
 	}
@@ -292,7 +303,7 @@ func deploymentWhere(f DeploymentFilter, withCursor bool) (string, []any, error)
 }
 
 // DeploymentTrigger classifies a stored source; hasRollbackTarget is
-// whether an image deploy re-deployed an image that already succeeded.
+// whether the attempt was an operator rollback (its reason says so).
 func DeploymentTrigger(source string, hasRollbackTarget bool, prNumber int) string {
 	if prNumber > 0 {
 		return DeploymentTriggerPreview
@@ -306,6 +317,8 @@ func DeploymentTrigger(source string, hasRollbackTarget bool, prNumber int) stri
 		return DeploymentTriggerAPI
 	case DeployAttemptSourceSchedule:
 		return DeploymentTriggerSchedule
+	case DeployAttemptSourceRestart:
+		return DeploymentTriggerRestart
 	case DeployAttemptSourceImage:
 		if hasRollbackTarget {
 			return DeploymentTriggerRollback
@@ -328,7 +341,7 @@ func (db *DB) ListDeployments(ctx context.Context, f DeploymentFilter) ([]Deploy
 	cols := "d." + strings.ReplaceAll(deployAttemptColumns, ", ", ", d.")
 	q := `SELECT ` + cols + `, ` + deploymentStatusSQL + `,
 		COALESCE(env.name, ''), COALESCE(g.branch, ''), COALESCE(pv.pr_number, 0), ` + isLiveSQL + `, COALESCE((` + rolledByExpr() + `), ''),
-		CASE WHEN d.source IN ('image','auto_rollback') THEN COALESCE(` + rollbackTargetForD + `, '') ELSE '' END,
+		CASE WHEN ` + rollbackAttemptForD + ` THEN COALESCE(` + rollbackTargetForD + `, '') ELSE '' END,
 		CASE WHEN d.status = 'superseded' THEN COALESCE(NULLIF(d.superseded_by, ''), (SELECT n.id FROM deploy_attempts n
 			WHERE n.service_name = d.service_name AND n.started_at > d.started_at
 			ORDER BY n.started_at ASC LIMIT 1), '') ELSE '' END ` +
@@ -355,7 +368,7 @@ func (db *DB) ListDeployments(ctx context.Context, f DeploymentFilter) ([]Deploy
 		if d.Attempt.Branch == "" && a.Source == DeployAttemptSourceWebhook {
 			d.Attempt.Branch = configBranch
 		}
-		d.Trigger = DeploymentTrigger(a.Source, d.RollbackOf != "", d.PRNumber)
+		d.Trigger = DeploymentTrigger(a.Source, strings.Contains(a.Reason, "RollbackTo:"), d.PRNumber)
 		out = append(out, d)
 	}
 	if err := rows.Err(); err != nil {

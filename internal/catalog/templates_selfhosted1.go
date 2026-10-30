@@ -26,7 +26,7 @@ var selfhosted1Templates = []Template{
 	{
 		ID:                     "victoriametrics",
 		Name:                   "VictoriaMetrics",
-		Slogan:                 "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs.",
+		Slogan:                 "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.",
 		Category:               "Monitoring",
 		DocumentationURL:       "https://docs.victoriametrics.com",
 		RecommendedMemoryBytes: 536870912,
@@ -34,7 +34,7 @@ var selfhosted1Templates = []Template{
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.152.0
     command: ["-storageDataPath=/storage", "-retentionPeriod=12"]
-    ports: ["8428:8428"]
+    ports: ["8428"]
     volumes:
       - victoriametrics_data:/storage
     healthcheck:
@@ -197,7 +197,7 @@ var selfhosted1Templates = []Template{
     image: 2fauth/2fauth:8.0.2
     ports: ["8000:8000"]
     environment:
-      APP_KEY: base64:$SERVICE_REALBASE64_32_APPKEY
+      APP_KEY: $SERVICE_PASSWORD_32_APPKEY
       APP_URL: ${SERVICE_FQDN_2FAUTH:-http://localhost:8000}
       SITE_OWNER: admin@example.com
       DB_CONNECTION: sqlite
@@ -243,7 +243,9 @@ var selfhosted1Templates = []Template{
 		Compose: `services:
   copyparty:
     image: copyparty/ac:1.20.24
-    command: ["-a", "admin:$SERVICE_PASSWORD_ADMIN", "-v", "/w::rw,admin"]
+    environment:
+      ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    entrypoint: ["/bin/sh", "-c", "exec python3 -m copyparty -a \"admin:$ADMIN_PASSWORD\" -v /w::rw,admin"]
     ports: ["3923:3923"]
     volumes:
       - copyparty_files:/w

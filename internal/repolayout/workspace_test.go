@@ -138,3 +138,23 @@ func TestAffected(t *testing.T) {
 		})
 	}
 }
+
+func TestPackageCapFromEnv(t *testing.T) {
+	files := map[string]string{
+		"pnpm-workspace.yaml": "packages:\n  - 'apps/*'\n",
+		"apps/a/package.json": "{}", "apps/b/package.json": "{}", "apps/c/package.json": "{}",
+	}
+	present := map[string]bool{}
+	for k := range files {
+		present[k] = true
+	}
+	t.Setenv(EnvMaxPackages, "2")
+	pkgs, total := findPackagesTotal(keys(files), present, readerFrom(files))
+	if len(pkgs) != 2 || total != 3 {
+		t.Fatalf("got %d packages, total %d", len(pkgs), total)
+	}
+	t.Setenv(EnvMaxPackages, "bogus")
+	if PackageCap() != 60 {
+		t.Fatalf("bad value should fall back to the default, got %d", PackageCap())
+	}
+}

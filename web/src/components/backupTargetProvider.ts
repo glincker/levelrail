@@ -9,4 +9,5 @@ export const PROVIDER_LABEL: Record<BackupProvider, string> = {
   aws: 'AWS S3',
   r2: 'Cloudflare R2',
   custom: 'S3 compatible',
+  local: 'Local directory',
 }

@@ -20,6 +20,7 @@ import { useCallback } from 'react'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { isServerReturnPath, safeReturnPath } from '../lib/connectionState'
+import { setupTokenFromHash } from '../lib/setupTokenHash'
 import { setStoredUsername, clearStoredUsername } from '../lib/authStore'
 
 export interface AuthUser {
@@ -227,6 +228,16 @@ export function setupStatusQueryOptions() {
 // call-level onSuccess (passed to .mutate) is what switches it to the
 // second-step UI, this hook has no navigation to do until that second
 // step succeeds too.
+// A fragment such as an email-change token rides through login client side
+// only; the one-time first-run setup token is consumed on the login screen.
+function returnHash(hash: string): string {
+  if (hash.length < 2 || setupTokenFromHash(hash)) {
+    return ''
+  }
+  // eslint-disable-next-line no-control-regex
+  return /[\u0000-\u001f\u007f]/.test(hash) ? '' : hash
+}
+
 // Returns to the path a 401 bounced the user from (?redirect=), else home.
 // Exported for queries/passkeys.ts's own useLoginWithPasskey, which
 // reaches the same "signed in" end state through a different mutation.
@@ -241,8 +252,13 @@ export function goAfterLogin(
     window.location.assign(back)
     return
   }
+  const hash = returnHash(window.location.hash)
   if (back) {
-    void router.navigate({ href: back })
+    void router.navigate({ href: back + hash })
+    return
+  }
+  if (hash) {
+    void router.navigate({ href: '/' + hash })
     return
   }
   void navigate({ to: '/' })

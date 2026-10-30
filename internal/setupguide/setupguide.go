@@ -11,6 +11,7 @@ type StepID string
 const (
 	StepSecureAdmin    StepID = "secure_admin"
 	StepSignInRecovery StepID = "sign_in_recovery"
+	StepSecurityReview StepID = "security_review"
 	StepPublicAddress  StepID = "public_address"
 	StepGitProvider    StepID = "git_provider"
 	StepFirstApp       StepID = "first_app"
@@ -69,6 +70,7 @@ type Input struct {
 	// token holds signin:approve.
 	EmailConfigured      bool
 	SignInApprover       bool
+	SecurityReviewed     bool
 	DashboardURL         string
 	ServerAddress        string
 	BehindProxy          bool
@@ -137,6 +139,7 @@ type stepMeta struct {
 var catalog = []stepMeta{
 	{id: StepSecureAdmin, title: "Secure the admin account", minutes: 2, href: "/settings/security"},
 	{id: StepSignInRecovery, title: "Set up a way back in", minutes: 3, href: "/settings/security"},
+	{id: StepSecurityReview, title: "Review your security defaults", minutes: 2, href: "/settings/security-runtime"},
 	{id: StepPublicAddress, title: "Set the public dashboard address", minutes: 3, href: "/settings/general"},
 	{id: StepGitProvider, title: "Connect a Git provider", optional: true, minutes: 3, href: "/settings/github-app"},
 	{id: StepFirstApp, title: "Deploy your first app", minutes: 5, href: "/apps"},
@@ -182,6 +185,8 @@ func derive(id StepID, in Input) verdict {
 		return flag(in.SecuredAdmin)
 	case StepSignInRecovery:
 		return flag(in.EmailConfigured || in.SignInApprover)
+	case StepSecurityReview:
+		return flag(in.SecurityReviewed)
 	case StepPublicAddress:
 		switch {
 		case strings.HasPrefix(in.DashboardURL, "https://"):
