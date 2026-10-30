@@ -156,5 +156,6 @@ func (rt *Router) handlePublishIncident(w http.ResponseWriter, r *http.Request) 
 	if rt.statusView != nil {
 		rt.statusView.Invalidate()
 	}
+	rt.emitStatusIncidentEvent(r.Context(), inc.ID, true)
 	writeJSON(w, http.StatusOK, incidentPublishResource{ID: inc.ID, Published: true, PublishedAt: now})
 }

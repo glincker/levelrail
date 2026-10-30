@@ -3,6 +3,7 @@ import { RadioTowerGlassIcon } from '@thesvg/ui-react'
 import { StatusComponentsPanel } from '../../components/StatusComponentsPanel'
 import { StatusIncidentsPanel } from '../../components/StatusIncidentsPanel'
 import { StatusPageSettingsPanel } from '../../components/StatusPageSettingsPanel'
+import { StatusWebhooksPanel } from '../../components/StatusWebhooksPanel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shell/PageHeader'
 
@@ -29,6 +30,7 @@ function StatusPageSettingsRoute() {
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="components">Components</TabsTrigger>
           <TabsTrigger value="incidents">Incidents and maintenance</TabsTrigger>
+          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
         </TabsList>
         <TabsContent value="settings" className="pt-3">
           <StatusPageSettingsPanel />
@@ -38,6 +40,9 @@ function StatusPageSettingsRoute() {
         </TabsContent>
         <TabsContent value="incidents" className="pt-3">
           <StatusIncidentsPanel />
+        </TabsContent>
+        <TabsContent value="webhooks" className="pt-3">
+          <StatusWebhooksPanel />
         </TabsContent>
       </Tabs>
     </div>

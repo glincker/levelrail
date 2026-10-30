@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1871 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1879 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1586,6 +1586,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/status-page/incidents/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusIncident", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/incidents/{id}/updates", Ability: "AbilityWrite", Group: "Other", Handler: "handlePostStatusIncidentUpdate", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/preview", Ability: "AbilityRead", Group: "Other", Handler: "handleStatusPagePreview", Description: ""},
+	{Method: "GET", Path: "/api/v1/status-page/webhooks", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusWebhooks", Description: ""},
+	{Method: "POST", Path: "/api/v1/status-page/webhooks", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStatusWebhook", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/status-page/webhooks/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/status-page/webhooks/{id}/deliveries", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusWebhookDeliveries", Description: ""},
+	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/pause", Ability: "AbilityWrite", Group: "Other", Handler: "handlePauseStatusWebhook", Description: ""},
+	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/resume", Ability: "AbilityWrite", Group: "Other", Handler: "handleResumeStatusWebhook", Description: ""},
+	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/rotate", Ability: "AbilityWrite", Group: "Other", Handler: "handleRotateStatusWebhook", Description: ""},
+	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/test", Ability: "AbilityWrite", Group: "Other", Handler: "handleTestStatusWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/buckets", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageBuckets", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/buckets", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateStorageBucket", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/storage/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteStorageBucket", Description: ""},

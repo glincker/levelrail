@@ -103,6 +103,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
+	"github.com/GLINCKER/levelrail/internal/statuswebhook"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/bitbucketserver"
@@ -215,6 +216,8 @@ type Router struct {
 	incidents              IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
 	incidentBodyMax        int
 	statusSampler          *statuspage.Service
+	statusHooks            *statuswebhook.Service // nil is valid: webhook routes return 501
+	statusHooksStore       statuswebhook.Store
 	statusLimiter          *apiRateLimiter
 	heartbeatMu            sync.Mutex
 	heartbeatLimiter       *apiRateLimiter

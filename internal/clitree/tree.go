@@ -250,6 +250,8 @@ var Tree = map[string]*Node{
 		"component":  {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "delete": nil}},
 		"group":      {Subs: map[string]*Node{"add": nil, "list": nil, "rename": nil, "move": nil, "delete": nil}},
 		"incidents":  {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
+		"webhooks":   {Subs: map[string]*Node{"list": nil, "add": nil, "rotate": nil, "pause": nil, "resume": nil, "delete": nil, "test": nil}},
+		"webhook":    {Subs: map[string]*Node{"list": nil, "add": nil, "rotate": nil, "pause": nil, "resume": nil, "delete": nil, "test": nil}},
 	}},
 	"monitors":           {Subs: map[string]*Node{"create": nil, "list": nil, "results": nil, "delete": nil}},
 	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},

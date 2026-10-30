@@ -2095,6 +2095,14 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mail/storage | AbilityRead | handleGetMailStorage |
 | PUT | /api/v1/mail/storage | AbilityRoot | handlePutMailStorage |
 | POST | /api/v1/mail/storage/test | AbilityRoot | handleTestMailStorage |
+| GET | /api/v1/status-page/webhooks | AbilityRead | handleListStatusWebhooks |
+| POST | /api/v1/status-page/webhooks | AbilityWrite | handleCreateStatusWebhook |
+| DELETE | /api/v1/status-page/webhooks/{id} | AbilityWrite | handleDeleteStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/rotate | AbilityWrite | handleRotateStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/pause | AbilityWrite | handlePauseStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/resume | AbilityWrite | handleResumeStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/test | AbilityWrite | handleTestStatusWebhook |
+| GET | /api/v1/status-page/webhooks/{id}/deliveries | AbilityRead | handleListStatusWebhookDeliveries |
 | POST | /mcp | Public |  |
 
 ## See also

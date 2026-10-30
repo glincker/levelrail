@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/statuspage"
+	"github.com/GLINCKER/levelrail/internal/statuswebhook"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
@@ -74,6 +75,10 @@ func WithStatusPage(db StatusPageDB, cfg statuspage.Config, perMinute int) Optio
 		svc.SetMonitors(statusMonitorSource{rt})
 		rt.statusPage, rt.statusView, rt.statusSampler = db, svc, svc
 		rt.statusLimiter = newAPIRateLimiter(perMinute)
+		if ws, ok := any(db).(statuswebhook.Store); ok {
+			rt.statusHooksStore = ws
+			rt.statusHooks = statuswebhook.New(ws, rt.statusWebhookSealer, statuswebhook.ConfigFromEnv(), rt.logger)
+		}
 	}
 }
 
@@ -91,7 +96,18 @@ func (rt *Router) RunStatusPageSampler(ctx context.Context) error {
 	if rt.statusSampler == nil {
 		return nil
 	}
-	return rt.statusSampler.Run(ctx)
+	if rt.statusHooks == nil {
+		return rt.statusSampler.Run(ctx)
+	}
+	// One delivery goroutine, joined before return so it cannot outlive the sampler.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = rt.statusHooks.Run(ctx)
+	}()
+	err := rt.statusSampler.Run(ctx)
+	<-done
+	return err
 }
 
 // statusMonitorSource reads rt.monitors lazily because the engine is wired after the status page.
@@ -349,6 +365,11 @@ func (rt *Router) saveStatusComponent(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 	rt.statusView.Invalidate()
+	change := "updated"
+	if status == http.StatusCreated {
+		change = "created"
+	}
+	rt.emitStatusComponentEvent(r.Context(), c, change)
 	writeJSON(w, status, toStatusComponentResource(c))
 }
 
@@ -392,11 +413,15 @@ func (rt *Router) handleDeleteStatusComponent(w http.ResponseWriter, r *http.Req
 	if !rt.statusPageReady(w) {
 		return
 	}
+	gone, getErr := rt.statusPage.GetStatusComponent(r.Context(), r.PathValue("id"))
 	if err := rt.statusPage.DeleteStatusComponent(r.Context(), r.PathValue("id")); err != nil {
 		rt.internalError(w, "api: delete status component failed", err)
 		return
 	}
 	rt.statusView.Invalidate()
+	if getErr == nil {
+		rt.emitStatusComponentEvent(r.Context(), gone, "deleted")
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -548,6 +573,7 @@ func (rt *Router) handleCreateStatusIncident(w http.ResponseWriter, r *http.Requ
 		}
 	}
 	rt.statusView.Invalidate()
+	rt.emitStatusIncidentEvent(r.Context(), inc.ID, true)
 	writeJSON(w, http.StatusCreated, toStatusIncidentResource(inc))
 }
 
@@ -603,6 +629,7 @@ func (rt *Router) handlePostStatusIncidentUpdate(w http.ResponseWriter, r *http.
 		return
 	}
 	rt.statusView.Invalidate()
+	rt.emitStatusIncidentEvent(r.Context(), inc.ID, false)
 	writeJSON(w, http.StatusOK, toStatusIncidentResource(inc))
 }
 

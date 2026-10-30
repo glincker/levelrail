@@ -24,6 +24,7 @@ var responseStructName = regexp.MustCompile(`(Resource|Response)$`)
 // deliberately serialized. Add an entry only with the reason it is safe (input-only request body, show-once
 // value at creation, a name or flag rather than a value).
 var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names and reasons, not credentials
+	"statusWebhookSecretResource.SigningSecret":         "show-once signing secret returned at create and rotate, never listed",
 	"createMigrationAgentResponse.Token":                "show-once agent token returned at creation, never listed",
 	"databaseRevealResponse.Password":                   "owner-only reveal behind step-up, audited, no-store",
 	"appResource.SecretEnv":                             "names of secret-backed vars, never values",
