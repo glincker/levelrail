@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,9 +18,13 @@ var (
 )
 
 // SaveStatusIncidentDraftFields stores the unpublished draft; public reads cannot see an unpublished row.
-func (db *DB) SaveStatusIncidentDraftFields(ctx context.Context, id, title, status, body string) error {
-	res, err := db.ExecContext(ctx, `UPDATE status_incidents SET draft_title = ?, draft_body = ?, status = ?, updated_at = ? WHERE id = ? AND published = 0`,
-		nullableText(title), nullableText(body), status, statusTime(time.Now()), id)
+func (db *DB) SaveStatusIncidentDraftFields(ctx context.Context, id, title, status, body, impact string, componentIDs []string) error {
+	comps, err := json.Marshal(nonNilIDs(componentIDs))
+	if err != nil {
+		return fmt.Errorf("store: encode incident components: %w", err)
+	}
+	res, err := db.ExecContext(ctx, `UPDATE status_incidents SET draft_title = ?, draft_body = ?, status = ?, impact = ?, component_ids = ?, updated_at = ? WHERE id = ? AND published = 0`,
+		nullableText(title), nullableText(body), status, impact, string(comps), statusTime(time.Now()), id)
 	if err != nil {
 		return fmt.Errorf("store: save incident draft %q: %w", id, err)
 	}

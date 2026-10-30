@@ -27,7 +27,7 @@ type IncidentStore interface {
 	SetStatusIncidentInternalState(ctx context.Context, id, state, by string, at time.Time) error
 	AddInternalIncidentUpdate(ctx context.Context, u store.StatusIncidentUpdate, visibility, author string) error
 	ListIncidentTimeline(ctx context.Context, incidentID string) ([]store.IncidentTimelineEntry, error)
-	SaveStatusIncidentDraftFields(ctx context.Context, id, title, status, body string) error
+	SaveStatusIncidentDraftFields(ctx context.Context, id, title, status, body, impact string, componentIDs []string) error
 	PublishStatusIncident(ctx context.Context, id string, seenUpdatedAt time.Time, by, updateID string, at time.Time) (store.InternalStatusIncident, error)
 }
 

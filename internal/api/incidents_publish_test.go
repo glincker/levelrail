@@ -50,7 +50,13 @@ func TestIncidents_PublishFlow(t *testing.T) {
 	if rec := apiDo(t, rt, cookie, http.MethodPut, "/api/v1/incidents/pubflow1/draft", `{"title":"PUBTITLE Elevated errors","status":"bogus","body":"x"}`); rec.Code != http.StatusBadRequest {
 		t.Fatalf("bad status draft = %d, want 400", rec.Code)
 	}
-	if rec := apiDo(t, rt, cookie, http.MethodPut, "/api/v1/incidents/pubflow1/draft", `{"title":"PUBTITLE Elevated errors","status":"identified","body":"PUBBODY we found the cause"}`); rec.Code != http.StatusOK {
+	if rec := apiDo(t, rt, cookie, http.MethodPut, "/api/v1/incidents/pubflow1/draft", `{"title":"t","body":"b","impact":"huge"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad impact draft = %d, want 400", rec.Code)
+	}
+	if rec := apiDo(t, rt, cookie, http.MethodPut, "/api/v1/incidents/pubflow1/draft", `{"title":"t","body":"b","component_ids":["nope"]}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown component draft = %d, want 400", rec.Code)
+	}
+	if rec := apiDo(t, rt, cookie, http.MethodPut, "/api/v1/incidents/pubflow1/draft", `{"title":"PUBTITLE Elevated errors","status":"identified","body":"PUBBODY we found the cause","impact":"major","component_ids":[]}`); rec.Code != http.StatusOK {
 		t.Fatalf("save draft = %d %s", rec.Code, rec.Body.String())
 	}
 	for _, n := range []string{"PUBTITLE", "PUBBODY", "INTBODY"} {

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -15,6 +16,9 @@ type incidentDraftRequest struct {
 	Title  string `json:"title"`
 	Status string `json:"status"`
 	Body   string `json:"body"`
+	// Impact and ComponentIDs keep the stored value when omitted.
+	Impact       string    `json:"impact,omitempty"`
+	ComponentIDs *[]string `json:"component_ids,omitempty"`
 }
 
 // handleSaveIncidentDraft stores operator text for the public page; nothing public changes until publish.
@@ -47,7 +51,12 @@ func (rt *Router) handleSaveIncidentDraft(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "status is not valid for an incident")
 		return
 	}
-	err := rt.incidents.SaveStatusIncidentDraftFields(r.Context(), inc.ID, req.Title, req.Status, req.Body)
+	impact, comps, msg := rt.draftImpactAndComponents(r.Context(), inc, req)
+	if msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	err := rt.incidents.SaveStatusIncidentDraftFields(r.Context(), inc.ID, req.Title, req.Status, req.Body, impact, comps)
 	switch {
 	case errors.Is(err, store.ErrStatusIncidentNotFound):
 		writeError(w, http.StatusNotFound, "incident not found")
@@ -61,6 +70,41 @@ func (rt *Router) handleSaveIncidentDraft(w http.ResponseWriter, r *http.Request
 	}
 	rt.addInternalNote(r, inc.ID, "Public draft saved", time.Now().UTC())
 	writeJSON(w, http.StatusOK, incidentStateResource{ID: inc.ID, InternalState: inc.InternalState})
+}
+
+// draftImpactAndComponents validates the optional draft fields against the same sets the status page uses.
+func (rt *Router) draftImpactAndComponents(ctx context.Context, inc store.InternalStatusIncident, req incidentDraftRequest) (string, []string, string) {
+	impact := req.Impact
+	if impact == "" {
+		impact = inc.Impact
+	}
+	switch impact {
+	case statuspage.ImpactNone, statuspage.ImpactMinor, statuspage.ImpactMajor, statuspage.ImpactCritical:
+	default:
+		return "", nil, "impact must be none, minor, major or critical"
+	}
+	if req.ComponentIDs == nil {
+		return impact, inc.ComponentIDs, ""
+	}
+	if len(*req.ComponentIDs) > maxStatusComponents {
+		return "", nil, "too many components"
+	}
+	seen := make(map[string]bool, len(*req.ComponentIDs))
+	comps := make([]string, 0, len(*req.ComponentIDs))
+	for _, id := range *req.ComponentIDs {
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		if rt.statusPage == nil {
+			return "", nil, "unknown component in component_ids"
+		}
+		if _, err := rt.statusPage.GetStatusComponent(ctx, id); err != nil {
+			return "", nil, "unknown component in component_ids"
+		}
+		comps = append(comps, id)
+	}
+	return impact, comps, ""
 }
 
 type incidentPublishRequest struct {

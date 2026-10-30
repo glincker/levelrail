@@ -73,3 +73,20 @@ Reading needs read access and changing needs write access on the `monitors` reso
 ### Internal incidents
 
 With `APP_INCIDENTS_ENABLED`, `GET /api/v1/incidents`, `GET /api/v1/incidents/{id}`, `POST /api/v1/incidents` (promote an alert rule: `{"source":"alert","rule_id":"..."}`), `POST .../ack`, `POST .../resolve` and `POST .../notes` manage them. Otherwise they answer 501. Reading needs the `read:sensitive` ability because timelines carry probe detail; changes need `write` and are audited. `GET /api/v1/status-page/incidents` returns published incidents only, for every caller.
+
+`PUT /api/v1/incidents/{id}/draft` stores the public title, body, and optionally `status`, `impact` (`none`, `minor`, `major`, `critical`) and `component_ids` (existing status page components; omit to keep the stored list). `POST .../publish` is the only way an incident reaches the public page. It needs the `updated_at` you reviewed, answers 409 if the incident changed since, and 422 if the draft title or body is empty. There is no unpublish.
+
+From the CLI:
+
+```
+levelrail-cli incidents list [--state triggered|acknowledged|resolved]
+levelrail-cli incidents show <id>
+levelrail-cli incidents ack <id>
+levelrail-cli incidents resolve <id>
+levelrail-cli incidents note <id> --body "Rolled back the migration"
+levelrail-cli incidents promote <alert-rule-id> [--title "..."]
+levelrail-cli incidents draft <id> --title "Elevated errors" --body "We are investigating" --impact major --components web,api
+levelrail-cli incidents publish <id>
+```
+
+`publish` fetches the incident, refuses an empty draft or an already published incident before sending anything, and sends the `updated_at` it just fetched. Pass `--updated-at` with the value from `show` to refuse if the incident changed after you reviewed it.

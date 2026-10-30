@@ -2094,6 +2094,23 @@ levelrail-cli -A apps list
 
 `explain` documents a resource kind or field from the embedded schema and works offline. It also accepts an app.yaml path (`explain services.web.health.readiness`, or a bare service field such as `explain replicas`) and prints the description, type, allowed values and default; `explain appspec` lists the top level fields, an unknown path suggests the closest match, and `--json` prints the result as JSON. `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.
 
+## Incidents
+
+With `APP_INCIDENTS_ENABLED`, internal incidents opened from monitors and alerts are managed here. Nothing is public until `publish`. See [Monitors](/monitors) for the API and the draft rules.
+
+```
+levelrail-cli incidents list [--state triggered|acknowledged|resolved] [--json]
+levelrail-cli incidents show <id> [--json]
+levelrail-cli incidents ack <id>
+levelrail-cli incidents resolve <id>
+levelrail-cli incidents note <id> --body <text>
+levelrail-cli incidents promote <alert-rule-id> [--title <text>]
+levelrail-cli incidents draft <id> --title <text> --body <text> [--status <s>] [--impact <i>] [--components a,b]
+levelrail-cli incidents publish <id> [--updated-at <ts>]
+```
+
+`list` and `show` need `read:sensitive`; the rest need `write`. `publish` refuses an empty draft client side and sends the `updated_at` it fetched, so a draft edited by someone else in the meantime is not published unreviewed.
+
 ## Analysis reports
 
 With `APP_ANALYSIS_ENABLED=on`, a firing alert or spend alert writes a deterministic report for the affected app: a summary, a timeline, ranked suspected causes with evidence ids, and recommendations. No model is called. Reports are read only.
