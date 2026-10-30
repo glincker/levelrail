@@ -34,8 +34,11 @@ func (p *Pipeline) BuildOnly(ctx context.Context, req BuildOnlyRequest, progress
 		dockerfile := ""
 		if req.Dockerfile != "" {
 			dockerfile = filepath.Join(root, req.Dockerfile)
+			if err := build.EnsureWithin(req.SourceDir, dockerfile); err != nil {
+				return "", fmt.Errorf("deploy: build only: dockerfile %q: %w", req.Dockerfile, err)
+			}
 		}
-		res, err = p.builder.Build(ctx, build.Request{ContextDir: root, DockerfilePath: dockerfile, Tag: req.Tag, BuildArgs: req.Args}, progress)
+		res, err = p.builder.Build(ctx, build.Request{ContextDir: root, DockerfilePath: dockerfile, RootDir: req.SourceDir, Tag: req.Tag, BuildArgs: req.Args}, progress)
 	case "railpack":
 		res, err = p.builder.BuildRailpack(ctx, build.RailpackRequest{SourceDir: root, Tag: req.Tag}, progress)
 		var unsupported *build.UnsupportedProviderError
