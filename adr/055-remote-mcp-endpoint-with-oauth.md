@@ -29,18 +29,7 @@ differs from the slice 1 text above. The code is the source of truth:
   tool fails. A revoked token gets 401 on its next call. Both are covered by
   tests in `internal/api/mcp_http_test.go`.
 
-Threat gaps not yet closed:
-
-- **SSRF through tools.** A read tool that makes the control plane fetch a
-  URL the caller controls (for example a webhook or health probe test) runs
-  from the control plane's network position, which a remote caller can reach
-  without a local client. Before widening the toolset, list every read tool
-  that dials a caller supplied address and either drop it from the remote set
-  or apply the existing outbound address checks to it.
-- **Passkey wording.** The step-up text in section 4 says "MFA when the
-  account has it". Accounts that sign in with a passkey must be covered too,
-  so the consent screen and docs should say "passkey or MFA", and the step-up
-  check must accept either as a fresh sign in.
+Open items are tracked privately; this ADR records only shipped behavior.
 
 ## Context
 
