@@ -42,5 +42,51 @@
     "confirm": "Delete",
     "pending": "Deleting...",
     "done": "Monitor {{name}} deleted"
+  },
+  "incidents": {
+    "title": "Incidents",
+    "empty": "No incidents. Confirmed monitor outages and promoted alerts show up here.",
+    "loadError": "Incidents could not be loaded: {{message}}",
+    "refresh": "Refresh",
+    "published": "Public",
+    "detailHint": "Internal timeline and public draft",
+    "timeline": "Internal timeline",
+    "ack": "Acknowledge",
+    "resolve": "Resolve",
+    "state": {
+      "triggered": "Triggered",
+      "acknowledged": "Acknowledged",
+      "resolved": "Resolved"
+    },
+    "status": {
+      "investigating": "Investigating",
+      "identified": "Identified",
+      "monitoring": "Monitoring",
+      "resolved": "Resolved"
+    },
+    "note": {
+      "label": "Add a note (internal)",
+      "add": "Add note"
+    },
+    "draft": {
+      "title": "Public update draft",
+      "name": "Title",
+      "status": "Status",
+      "body": "Message",
+      "save": "Save draft",
+      "saved": "Draft saved",
+      "prefillBody": "We are investigating: {{title}}. Affected: {{monitor}}.",
+      "unknownMonitor": "service"
+    },
+    "publish": {
+      "action": "Publish",
+      "confirmTitle": "Publish to the public status page?",
+      "confirmBody": "This becomes public immediately and cannot be unpublished. Check the text below.",
+      "confirm": "Publish publicly",
+      "pending": "Publishing...",
+      "done": "Incident published",
+      "already": "Published. Post further public updates from the status page settings.",
+      "stale": "This incident changed since you loaded it. Refresh and review the draft again."
+    }
   }
 }

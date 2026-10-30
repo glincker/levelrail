@@ -42,5 +42,51 @@
     "confirm": "Eliminar",
     "pending": "Eliminando...",
     "done": "Monitor {{name}} eliminado"
+  },
+  "incidents": {
+    "title": "Incidentes",
+    "empty": "Sin incidentes. Las caídas confirmadas de monitores y las alertas promovidas aparecen aquí.",
+    "loadError": "No se pudieron cargar los incidentes: {{message}}",
+    "refresh": "Actualizar",
+    "published": "Público",
+    "detailHint": "Cronología interna y borrador público",
+    "timeline": "Cronología interna",
+    "ack": "Reconocer",
+    "resolve": "Resolver",
+    "state": {
+      "triggered": "Activado",
+      "acknowledged": "Reconocido",
+      "resolved": "Resuelto"
+    },
+    "status": {
+      "investigating": "Investigando",
+      "identified": "Identificado",
+      "monitoring": "Monitoreando",
+      "resolved": "Resuelto"
+    },
+    "note": {
+      "label": "Añadir una nota (interna)",
+      "add": "Añadir nota"
+    },
+    "draft": {
+      "title": "Borrador de actualización pública",
+      "name": "Título",
+      "status": "Estado",
+      "body": "Mensaje",
+      "save": "Guardar borrador",
+      "saved": "Borrador guardado",
+      "prefillBody": "Estamos investigando: {{title}}. Afectado: {{monitor}}.",
+      "unknownMonitor": "servicio"
+    },
+    "publish": {
+      "action": "Publicar",
+      "confirmTitle": "¿Publicar en la página de estado pública?",
+      "confirmBody": "Esto se vuelve público de inmediato y no se puede despublicar. Revisa el texto de abajo.",
+      "confirm": "Publicar",
+      "pending": "Publicando...",
+      "done": "Incidente publicado",
+      "already": "Publicado. Envía más actualizaciones públicas desde los ajustes de la página de estado.",
+      "stale": "Este incidente cambió desde que lo cargaste. Actualiza y revisa el borrador de nuevo."
+    }
   }
 }

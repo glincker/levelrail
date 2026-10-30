@@ -21,6 +21,7 @@ import { CopyFailureDetail } from '../components/attention/CopyFailureDetail'
 import { CopyItemControls } from '../components/attention/CopyItemControls'
 import { useSnoozed } from '../components/shell/snoozeStore'
 import { SilenceMenu } from '../components/attention/SilenceMenu'
+import { IncidentsSection } from '../components/incidents/IncidentsSection'
 import { MonitorsSection } from '../components/monitors/MonitorsSection'
 import { SilencedSection } from '../components/attention/SilencedSection'
 
@@ -311,6 +312,7 @@ export function StatusPage() {
         </ul>
       )}
       <MonitorsSection />
+      <IncidentsSection />
       <SilencedSection
         items={all}
         silences={silences}
