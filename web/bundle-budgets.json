@@ -38,7 +38,7 @@
     "glances": 35000,
     "i18n": 70000,
     "iam-policies": 71000,
-    "icons": 437000,
+    "icons": 290000,
     "identity-and-access": 65000,
     "import-platform": 115000,
     "installing": 47000,
@@ -71,13 +71,13 @@
     "schemas": 149000,
     "security": 41000,
     "settings": 126000,
-    "shell": 543000,
+    "shell": 502000,
     "source": 62000,
     "src": 43000,
     "tanstack": 160000,
     "template-catalog": 76000,
-    "ui-kit": 181000,
+    "ui-kit": 62000,
     "updates": 109000,
-    "vendor": 285000
+    "vendor": 266000
   }
 }

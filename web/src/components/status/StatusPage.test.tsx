@@ -2,8 +2,8 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { StatusPage } from './status'
-import type { AttentionItem } from '../lib/attention'
+import { StatusPage } from './StatusPage'
+import type { AttentionItem } from '@/lib/attention'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -25,27 +25,27 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 })
 
 const useAttentionItems = vi.fn()
-vi.mock('../queries/attention', () => ({
+vi.mock('@/queries/attention', () => ({
   useAttentionItems: () => useAttentionItems() as unknown,
 }))
 
-vi.mock('../queries/silences', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../queries/silences')>()),
+vi.mock('@/queries/silences', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/queries/silences')>()),
   useSilences: () => ({ data: [] }),
   useCreateSilence: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteSilence: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
 // Both sections fetch their own data and have their own tests.
-vi.mock('../components/monitors/MonitorsSection', () => ({
+vi.mock('@/components/monitors/MonitorsSection', () => ({
   MonitorsSection: () => null,
 }))
-vi.mock('../components/incidents/IncidentsSection', () => ({
+vi.mock('@/components/incidents/IncidentsSection', () => ({
   IncidentsSection: () => null,
 }))
 
 const mutate = vi.fn()
-vi.mock('../queries/apps', () => ({
+vi.mock('@/queries/apps', () => ({
   useRestartApp: () => ({ mutate, isPending: false }),
 }))
 

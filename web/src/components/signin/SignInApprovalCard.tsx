@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { SignInRequestsList } from '../attention/SignInRequestsBanner'
+import { SignInRequestsList } from '../attention/SignInRequestsList'
 import { signInRequestsQueryOptions } from '../../queries/signIn'
 
 const POLL_MS = 3000
