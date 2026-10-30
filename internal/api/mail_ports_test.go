@@ -11,12 +11,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-func saveMailApp(t *testing.T, db *store.DB, bind string, ports ...int) {
+func saveMailApp(t *testing.T, db *store.DB) {
 	t.Helper()
-	svc := store.DesiredService{Name: "mail", Image: "i:1", Port: mailWebPort, TemplateID: mailTemplateID, BindAddress: bind}
-	for _, p := range ports {
-		svc.PublishedPorts = append(svc.PublishedPorts, store.PublishedPort{ContainerPort: p, HostPort: p, Protocol: store.PortProtocolTCP})
-	}
+	svc := store.DesiredService{Name: "mail", Image: "i:1", Port: mailWebPort, TemplateID: mailTemplateID}
 	if err := db.SaveDesiredService(context.Background(), svc); err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +47,7 @@ func TestMailPortsListNoMailApp(t *testing.T) {
 func TestMailPortsListReportsFourPortsAndPrivateWeb(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	saveMailApp(t, db, "")
+	saveMailApp(t, db)
 	rec, got, _ := mailPortsCallOn(t, rt, db, cookie, http.MethodGet, "/api/v1/mail/ports", "")
 	if rec.Code != http.StatusOK || !got.Installed || got.App != "mail" || len(got.Ports) != 4 {
 		t.Fatalf("unexpected %d %+v", rec.Code, got)
@@ -73,7 +70,7 @@ func TestMailPortsOpenRefusals(t *testing.T) {
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("no mail app must be refused, got %d", rec.Code)
 	}
-	saveMailApp(t, db, "")
+	saveMailApp(t, db)
 	rec, _, _ = mailPortsCallOn(t, rt, db, cookie, http.MethodPost, "/api/v1/mail/ports/open", `{}`)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("missing confirm must be refused, got %d", rec.Code)
@@ -97,7 +94,7 @@ func saveMailTemplateApp(t *testing.T, db *store.DB) {
 func TestMailPortsOpenRefusesWhenTemplatePortsMissing(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	saveMailApp(t, db, "")
+	saveMailApp(t, db)
 	rec, _, open := mailPortsCallOn(t, rt, db, cookie, http.MethodPost, "/api/v1/mail/ports/open", `{"confirm":true`+mailStepUp+`}`)
 	if rec.Code != http.StatusConflict || open.Result != "refused" || len(open.Pending) != 4 {
 		t.Fatalf("missing published ports must be refused: %d %+v", rec.Code, open)

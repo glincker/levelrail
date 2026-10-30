@@ -26,7 +26,7 @@ func mailBackupCall(t *testing.T, rt *Router, cookie *http.Cookie, method, path,
 func TestMailBackupsNotConfigured(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	saveMailApp(t, db, "")
+	saveMailApp(t, db)
 	if rec := mailBackupCall(t, rt, cookie, http.MethodGet, "/api/v1/mail/backups", ""); rec.Code != http.StatusNotImplemented {
 		t.Fatalf("want 501, got %d %s", rec.Code, rec.Body)
 	}
@@ -35,7 +35,7 @@ func TestMailBackupsNotConfigured(t *testing.T) {
 func TestMailBackupsListAndStorage(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	saveMailApp(t, db, "")
+	saveMailApp(t, db)
 	dir := t.TempDir()
 	WithMailBackup(dir, nil, nil, nil)(rt)
 
@@ -72,7 +72,7 @@ func TestMailBackupsListAndStorage(t *testing.T) {
 
 func TestMailBackupRunNeedsRoot(t *testing.T) {
 	rt, db := newTestRouter(t)
-	saveMailApp(t, db, "")
+	saveMailApp(t, db)
 	WithMailBackup(t.TempDir(), nil, nil, nil)(rt)
 	tok := seedMatrixToken(t, db, "mail-ws", []string{AbilityRead, AbilityWrite, AbilityWriteSensitive})
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/mail/backups", strings.NewReader(`{}`))
@@ -87,7 +87,7 @@ func TestMailBackupRunNeedsRoot(t *testing.T) {
 
 func TestRecoverMailHoldsAtStartup(t *testing.T) {
 	rt, db := newTestRouter(t)
-	saveMailApp(t, db, "")
+	saveMailApp(t, db)
 	WithMailBackup(t.TempDir(), nil, nil, nil)(rt)
 	rt.execRuntime = func(string) (docker.Runtime, error) { return nil, errors.New("node offline") }
 	rt.RecoverMailHolds(context.Background())
