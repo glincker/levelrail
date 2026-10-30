@@ -178,6 +178,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Whole-server recovery](/whole-server-recovery): After restoring the control plane, pull every app volume and database back from its latest backup, with a dry-run plan and a per-resource report.
 - [Archives](/archives): Move cold audit events, deploy attempts and pipeline runs into compressed bundles instead of deleting them.
 - [Disaster recovery](/disaster-recovery): Encrypted off-box backups of the control plane database, master key escrow, offline restore and scheduled restore drills, with the threat model.
+- [Control plane recovery](/control-plane-recovery): What happens when the single control plane machine is lost, what survives, and how to recover onto a new host.
 - [Upgrade safely](/upgrade-safely): Upgrade the control plane safely with pre-flight checks and automatic rollback.
 - [Database access and network](/database-access): Manage database users, issue short-lived credentials, see who can reach a database, and control its network exposure, scope and TLS from the UI, CLI or API.
 - [Private networks and allow rules](/private-networks): Group apps into named private networks, allow specific app to app paths, and fix blocked paths from the dashboard, CLI or API.
@@ -332,6 +333,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [White-labeling](/white-labeling): How the brand layer works, which names and prefixes it drives, the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand.
 - [glinr-bot](/glinr-bot): How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge.
 - [Run behind an existing proxy](/behind-an-existing-proxy): Run Levelrail behind the proxy that already owns ports 80 and 443, with managed routes for Traefik (including Coolify) and Nginx.
+- [Shared hosts](/shared-hosts): What Levelrail touches and does not touch on a server that already runs other containers or a control panel.
 - [Security advisories](/security-advisories): Every security issue Levelrail has found and fixed, with a stable ID, severity, affected versions, the fix, and how we disclose.
 - [Advisory feed](/advisory-feed): Match the images your apps run against a local, optionally signed advisory feed.
 
@@ -361,6 +363,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Roadmap](/roadmap): What Levelrail has shipped by area, what is still open, and what is out of scope.
 - [Feature status](/feature-status): Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
 - [Experimental features](/experimental-features): Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
+- [Support policy (draft)](/support-policy): Draft compatibility and support policy for a future stable line. Not yet in force.
 - [Performance](/performance): Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.
 - [Performance budget](/performance-budget): The rules every new control plane feature follows so idle cost stays flat as features grow.
 - [Load and failover benchmarks](/benchmarks): How to measure throughput, latency, ingress overhead and failover behavior under load, and which numbers are still unmeasured.

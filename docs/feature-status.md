@@ -14,6 +14,8 @@ This page labels every major feature by how much evidence backs it today. The ev
 | **beta** | Works and is tested, but has no end-to-end test and no record of a run on real infrastructure. Expect rough edges. |
 | **hide-behind-flag** | Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](/experimental-features)). |
 
+**Stable scope.** Single node is stable. Multi-node, stacks and flagged features are beta or experimental. A stable label means tests plus a live end-to-end run on one machine; it does not mean a run on a fresh production host, which tier 4 below tracks. The upgrade, resilience and template rows are beta for that reason. A draft of the terms a stable line would carry is in [Support policy](/support-policy).
+
 Evidence tiers used below, weakest to strongest:
 
 1. Unit: `*_test.go` against fakes or `httptest` servers.

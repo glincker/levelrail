@@ -268,6 +268,7 @@
               "whole-server-recovery",
               "archives",
               "disaster-recovery",
+              "control-plane-recovery",
               "upgrade-safely",
               "database-access",
               "private-networks",
@@ -457,6 +458,7 @@
               "white-labeling",
               "glinr-bot",
               "behind-an-existing-proxy",
+              "shared-hosts",
               "security-advisories",
               "advisory-feed"
             ],
@@ -970,6 +972,7 @@
               "roadmap",
               "feature-status",
               "experimental-features",
+              "support-policy",
               "performance",
               "performance-budget",
               "benchmarks",
