@@ -90,3 +90,15 @@ levelrail-cli incidents publish <id>
 ```
 
 `publish` fetches the incident, refuses an empty draft or an already published incident before sending anything, and sends the `updated_at` it just fetched. Pass `--updated-at` with the value from `show` to refuse if the incident changed after you reviewed it.
+
+## Status page link (opt-in)
+
+A monitor can open a public status page incident while it is confirmed down and resolve it on recovery. It is off by default, so existing monitors do not change.
+
+- Turn it on with the "Open status page incidents" checkbox, `levelrail-cli monitors create --status-link`, or `levelrail-cli monitors update <id> --status-link`. The API field is `status_link` (`PATCH /api/v1/monitors/{id}`).
+- The incident lists the status page components of kind monitor that target this monitor, with the impact from `APP_MONITOR_LINK_IMPACT` (minor or major, default major). Add the monitor as a component to see its state change.
+- One incident per outage: a repeated down never opens a second one, and a monitor that flaps back inside the recovery period keeps the same incident.
+- Confirmation: `APP_MONITOR_LINK_CONFIRM_FAILURES` (default 1) failed checks, or `--link-confirm` per monitor. Recovery: `APP_MONITOR_LINK_RECOVERY_PERIOD` (default 2m) of continuous health, or `--link-recovery` per monitor. `APP_MONITOR_LINK_SWEEP_INTERVAL` (default 30s) sets how often both are re-evaluated.
+- No incident opens while an active silence or maintenance window covers the monitor, or while an operator incident is already open on its component.
+- Timeline entries are written by `system` and start with "[Automated]". Open and resolve write audit rows (`monitor_incident.opened`, `monitor_incident.resolved`).
+- Alert channels are notified by the existing `monitor_down` rule, unchanged.

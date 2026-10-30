@@ -287,6 +287,29 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Monitor, error) {
 	return m, nil
 }
 
+// StatusLink is the per-monitor status page link setting.
+type StatusLink struct {
+	Enabled         bool
+	ConfirmFailures int
+	RecoverySeconds int
+}
+
+// SetStatusLink changes only the status page link settings of a stored monitor.
+func (s *Service) SetStatusLink(ctx context.Context, id string, l StatusLink) (Monitor, error) {
+	m, err := s.store.GetMonitor(ctx, id)
+	if err != nil {
+		return Monitor{}, err
+	}
+	m.Spec.StatusLink, m.Spec.LinkConfirmFailures, m.Spec.LinkRecoverySeconds = l.Enabled, l.ConfirmFailures, l.RecoverySeconds
+	if err := Validate(m, s.cfg); err != nil {
+		return Monitor{}, err
+	}
+	if err := s.store.SaveMonitor(ctx, m); err != nil {
+		return Monitor{}, err
+	}
+	return m, nil
+}
+
 func newID() (string, error) {
 	b := make([]byte, 8)
 	if _, err := rand.Read(b); err != nil {

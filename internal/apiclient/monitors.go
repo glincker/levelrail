@@ -16,22 +16,25 @@ type MonitorRange struct {
 
 // Monitor mirrors internal/api's monitorResource and monitorRequest.
 type Monitor struct {
-	ID              string            `json:"id,omitempty"`
-	Name            string            `json:"name"`
-	Kind            string            `json:"kind"`
-	IntervalSeconds int               `json:"interval_seconds"`
-	TimeoutMS       int               `json:"timeout_ms"`
-	Enabled         *bool             `json:"enabled,omitempty"`
-	URL             string            `json:"url,omitempty"`
-	Method          string            `json:"method,omitempty"`
-	Headers         map[string]string `json:"headers,omitempty"`
-	HeaderNames     []string          `json:"header_names,omitempty"`
-	Expect          []MonitorRange    `json:"expect,omitempty"`
-	Contains        string            `json:"contains,omitempty"`
-	FollowRedirects bool              `json:"follow_redirects,omitempty"`
-	Host            string            `json:"host,omitempty"`
-	Port            int               `json:"port,omitempty"`
-	CreatedAt       time.Time         `json:"created_at,omitempty"`
+	ID                  string            `json:"id,omitempty"`
+	Name                string            `json:"name"`
+	Kind                string            `json:"kind"`
+	IntervalSeconds     int               `json:"interval_seconds"`
+	TimeoutMS           int               `json:"timeout_ms"`
+	Enabled             *bool             `json:"enabled,omitempty"`
+	URL                 string            `json:"url,omitempty"`
+	Method              string            `json:"method,omitempty"`
+	Headers             map[string]string `json:"headers,omitempty"`
+	HeaderNames         []string          `json:"header_names,omitempty"`
+	Expect              []MonitorRange    `json:"expect,omitempty"`
+	Contains            string            `json:"contains,omitempty"`
+	FollowRedirects     bool              `json:"follow_redirects,omitempty"`
+	Host                string            `json:"host,omitempty"`
+	Port                int               `json:"port,omitempty"`
+	StatusLink          bool              `json:"status_link,omitempty"`
+	LinkConfirmFailures int               `json:"link_confirm_failures,omitempty"`
+	LinkRecoverySeconds int               `json:"link_recovery_seconds,omitempty"`
+	CreatedAt           time.Time         `json:"created_at,omitempty"`
 }
 
 // MonitorResult is one raw probe outcome.
@@ -70,6 +73,20 @@ func (c *Client) ListMonitors(ctx context.Context) ([]Monitor, error) {
 func (c *Client) CreateMonitor(ctx context.Context, m Monitor) (Monitor, error) {
 	var out Monitor
 	err := c.do(ctx, http.MethodPost, "/api/v1/monitors", m, &out)
+	return out, err
+}
+
+// MonitorLink is the body of PATCH /api/v1/monitors/{id}.
+type MonitorLink struct {
+	StatusLink          bool `json:"status_link"`
+	LinkConfirmFailures int  `json:"link_confirm_failures"`
+	LinkRecoverySeconds int  `json:"link_recovery_seconds"`
+}
+
+// UpdateMonitorLink calls PATCH /api/v1/monitors/{id}.
+func (c *Client) UpdateMonitorLink(ctx context.Context, id string, l MonitorLink) (Monitor, error) {
+	var out Monitor
+	err := c.do(ctx, http.MethodPatch, "/api/v1/monitors/"+PathEscape(id), l, &out)
 	return out, err
 }
 

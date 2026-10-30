@@ -30,6 +30,8 @@
     "name": "Nombre",
     "interval": "Cada (s)",
     "timeout": "Tiempo límite (ms)",
+    "statusLink": "Abrir incidentes en la página de estado",
+    "statusLinkHint": "Abre un incidente en el componente vinculado mientras este monitor está caído y lo resuelve tras la recuperación. Desactivado por defecto.",
     "save": "Crear",
     "saving": "Creando...",
     "created": "Monitor {{name}} creado",

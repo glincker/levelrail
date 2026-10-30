@@ -30,6 +30,8 @@
     "name": "Name",
     "interval": "Every (s)",
     "timeout": "Timeout (ms)",
+    "statusLink": "Open status page incidents",
+    "statusLinkHint": "Opens an incident on the linked status component while this monitor is down and resolves it after recovery. Off by default.",
     "save": "Create",
     "saving": "Creating...",
     "created": "Monitor {{name}} created",

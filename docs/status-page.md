@@ -155,3 +155,7 @@ How a custom status domain is routed and gets a certificate.
 
 </Card>
 </CardGroup>
+
+## Automatic incidents from monitors
+
+Monitors with the status link setting open and resolve incidents on the page by themselves. See [Monitors](monitors.md#status-page-link-opt-in). Their timeline entries are labeled "[Automated]".

@@ -43,6 +43,11 @@ type Spec struct {
 	FollowRedirects bool          `json:"follow_redirects,omitempty"`
 	Host            string        `json:"host,omitempty"`
 	Port            int           `json:"port,omitempty"`
+	// StatusLink opts the monitor in to opening and resolving a status page incident. Zero
+	// confirm and recovery values fall back to the APP_MONITOR_LINK_* settings.
+	StatusLink          bool `json:"status_link,omitempty"`
+	LinkConfirmFailures int  `json:"link_confirm_failures,omitempty"`
+	LinkRecoverySeconds int  `json:"link_recovery_seconds,omitempty"`
 }
 
 // Monitor is one check definition.
@@ -118,6 +123,9 @@ func Validate(m Monitor, cfg Config) error {
 	}
 	if m.Timeout >= m.Interval {
 		return bad("timeout must be shorter than the interval")
+	}
+	if m.Spec.LinkConfirmFailures < 0 || m.Spec.LinkRecoverySeconds < 0 {
+		return bad("status link confirm failures and recovery seconds cannot be negative")
 	}
 	if m.Kind == KindTCP {
 		return validateTCP(m.Spec, bad)

@@ -15,18 +15,23 @@ import (
 
 // runMonitors dispatches "monitors <verb>": experimental uptime checks, off unless the server sets APP_MONITORS_ENABLED.
 func runMonitors(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	subs := map[string]apiCmd{"create": monitorsCreateCommand(), "list": monitorsListCommand(), "results": monitorsResultsCommand(),
+	subs := map[string]apiCmd{"create": monitorsCreateCommand(), "list": monitorsListCommand(), "results": monitorsResultsCommand(), "update": monitorsUpdateCommand(),
 		"delete": monitorsDeleteCommand()}
 	return dispatchSub(prog, "monitors", monitorsUsage, subs, args, stdout, stderr, lookupEnv)
 }
 
 func monitorsUsage(prog string) string {
 	return fmt.Sprintf(`Usage (experimental, needs APP_MONITORS_ENABLED=true on the control plane):
-  %[1]s monitors create --name N --kind http --url URL [--method GET] [--header NAME=VALUE]... [--expect 200-299,301] [--contains TEXT] [--follow-redirects] [--interval 60s] [--timeout 5s]
-  %[1]s monitors create --name N --kind tcp --host HOST --port PORT [--interval 60s] [--timeout 5s]
+  %[1]s monitors create --name N --kind http --url URL [--method GET] [--header NAME=VALUE]... [--expect 200-299,301] [--contains TEXT] [--follow-redirects] [--interval 60s] [--timeout 5s] [--status-link] [--link-confirm N] [--link-recovery 2m]
+  %[1]s monitors create --name N --kind tcp --host HOST --port PORT [--interval 60s] [--timeout 5s] [--status-link]
+  %[1]s monitors update <id> [--status-link=true|false] [--link-confirm N] [--link-recovery 2m]
   %[1]s monitors list
   %[1]s monitors results <id> [--window 24h] [--limit N]
   %[1]s monitors delete <id>
+
+--status-link opens a status page incident on the monitor's component while it is confirmed
+down and resolves it after recovery. It is off by default; --link-confirm and --link-recovery
+override the APP_MONITOR_LINK_* defaults for this monitor.
 
 Header values are stored encrypted and are never shown again. Interval floors
 and limits come from the APP_MONITOR_* settings on the control plane.
@@ -64,7 +69,9 @@ func parseExpect(s string) ([]apiclient.MonitorRange, error) {
 func monitorsCreateCommand() apiCmd {
 	var name, kind, urlStr, method, expect, contains, host string
 	var port int
-	var follow bool
+	var follow, statusLink bool
+	var linkConfirm int
+	var linkRecovery time.Duration
 	var headers headerFlags
 	interval, timeout := 60*time.Second, 5*time.Second
 	return apiCmd{label: "monitors create", usage: monitorsUsage,
@@ -81,6 +88,9 @@ func monitorsCreateCommand() apiCmd {
 			fs.IntVar(&port, "port", 0, "port to connect to (tcp kind)")
 			fs.DurationVar(&interval, "interval", interval, "time between checks")
 			fs.DurationVar(&timeout, "timeout", timeout, "per check timeout")
+			fs.BoolVar(&statusLink, "status-link", false, "open and resolve a status page incident for this monitor")
+			fs.IntVar(&linkConfirm, "link-confirm", 0, "failed checks before the incident opens (0 uses the server default)")
+			fs.DurationVar(&linkRecovery, "link-recovery", 0, "time the monitor must stay up before the incident resolves (0 uses the server default)")
 		},
 		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
 			if name == "" {
@@ -99,7 +109,8 @@ func monitorsCreateCommand() apiCmd {
 				hdr[k] = v
 			}
 			m := apiclient.Monitor{Name: name, Kind: kind, IntervalSeconds: int(interval / time.Second), TimeoutMS: int(timeout / time.Millisecond),
-				URL: urlStr, Method: method, Headers: hdr, Expect: ranges, Contains: contains, FollowRedirects: follow, Host: host, Port: port}
+				URL: urlStr, Method: method, Headers: hdr, Expect: ranges, Contains: contains, FollowRedirects: follow, Host: host, Port: port,
+				StatusLink: statusLink, LinkConfirmFailures: linkConfirm, LinkRecoverySeconds: int(linkRecovery / time.Second)}
 			created, err := c.CreateMonitor(ctx, m)
 			return created, func(w io.Writer) {
 				_, _ = fmt.Fprintf(w, "monitor %s created: %s (%s every %ds)\n", created.ID, created.Name, created.Kind, created.IntervalSeconds)
@@ -162,5 +173,24 @@ func monitorsDeleteCommand() apiCmd {
 		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
 			err := c.DeleteMonitor(ctx, pos[0])
 			return map[string]string{"deleted": pos[0]}, func(w io.Writer) { _, _ = fmt.Fprintf(w, "monitor %s deleted\n", pos[0]) }, err
+		}}
+}
+
+func monitorsUpdateCommand() apiCmd {
+	var statusLink bool
+	var linkConfirm int
+	var linkRecovery time.Duration
+	return apiCmd{label: "monitors update", usage: monitorsUsage, args: 1,
+		setup: func(fs *flag.FlagSet) {
+			fs.BoolVar(&statusLink, "status-link", false, "open and resolve a status page incident for this monitor")
+			fs.IntVar(&linkConfirm, "link-confirm", 0, "failed checks before the incident opens (0 uses the server default)")
+			fs.DurationVar(&linkRecovery, "link-recovery", 0, "time the monitor must stay up before the incident resolves (0 uses the server default)")
+		},
+		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
+			m, err := c.UpdateMonitorLink(ctx, pos[0], apiclient.MonitorLink{StatusLink: statusLink, LinkConfirmFailures: linkConfirm,
+				LinkRecoverySeconds: int(linkRecovery / time.Second)})
+			return m, func(w io.Writer) {
+				_, _ = fmt.Fprintf(w, "monitor %s status link: %t\n", m.ID, m.StatusLink)
+			}, err
 		}}
 }

@@ -54,4 +54,5 @@ export interface CreateMonitorInput {
   url?: string
   host?: string
   port?: number
+  status_link?: boolean
 }
