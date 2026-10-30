@@ -234,14 +234,18 @@ func (c *mailBackupConfig) sweepHostLeftovers(now time.Time) {
 }
 
 // sweepVolume removes stale staged, discarded and legacy restore dirs on the
-// mail volume through the running mail container.
-func sweepVolume(ctx context.Context, rt moxrun.Execer, cid string, withConfig bool) {
+// mail volume through the running mail container. Only an open swap journal
+// is an error: other sweep failures must not block a backup.
+func sweepVolume(ctx context.Context, rt moxrun.Execer, cid string, withConfig bool) error {
 	mins := strconv.Itoa(int(envMinutes("APP_MAIL_RESTORE_SWEEP_MINUTES", 120).Minutes()))
 	roots := []string{moxrun.DataDir}
 	if withConfig {
 		roots = append(roots, moxrun.ConfigDir)
 	}
 	for _, r := range roots {
-		_ = moxrun.Sweep(ctx, rt, cid, r, mins)
+		if err := moxrun.Sweep(ctx, rt, cid, r, mins); errors.Is(err, moxrun.ErrSwapOpen) {
+			return err
+		}
 	}
+	return nil
 }

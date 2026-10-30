@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -58,7 +59,8 @@ func Backup(ctx context.Context, spec BackupSpec) (Manifest, error) {
 			return Manifest{}, fmt.Errorf("copy staging out of the mail container: %w", err)
 		}
 	}
-	if spec.FetchConfig != nil {
+	// mox backup already stores the config dir; fetching it again would collide file by file.
+	if _, err := os.Stat(filepath.Join(host, "config")); spec.FetchConfig != nil && errors.Is(err, os.ErrNotExist) {
 		step("config")
 		if err := spec.FetchConfig(ctx, filepath.Join(host, "config")); err != nil {
 			return Manifest{}, fmt.Errorf("copy the mail config out of the mail container: %w", err)
