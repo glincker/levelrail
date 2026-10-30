@@ -76,6 +76,7 @@ var kindInfos = map[string]kindInfo{
 	KindGitHostUnreachable:      {"Git host %s is unreachable", "Redeploy a known commit from cache, or wait: queued pushes retry when the host answers", linkApps, false},
 	KindNodeCapacity:            {"Node %s is running out of room", "Open the node, review the Capacity card and free space", linkNodes, false},
 	KindStackDrift:              {"Stack %s has drifted from its last applied revision", "Open the stack, review the drifted resources and re-apply or update the revision", linkStacks, false},
+	KindAdvisoryMatch:           {"%s match a known advisory", "Open the security center, then redeploy each app on a fixed image", linkCenter, false},
 	KindFirewallAttackSuggested: {"Blocked traffic is spiking", "Open the firewall and turn on attack mode if this is an attack", linkFirewall, false},
 	KindAccessReviewOverdue:     {"Access review %s is overdue", "Open the compliance tab and finish the review", linkCenter + "?tab=compliance", false},
 }

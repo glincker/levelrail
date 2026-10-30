@@ -456,7 +456,8 @@
               "white-labeling",
               "glinr-bot",
               "behind-an-existing-proxy",
-              "security-advisories"
+              "security-advisories",
+              "advisory-feed"
             ],
             "icon": "/assets/icons/lightbulb.svg"
           },

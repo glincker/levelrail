@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1839 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1840 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -550,6 +550,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/roles/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateRole", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAccountSecurity", Description: ""},
 	{Method: "PUT", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutAccountSecurity", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/advisories", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSecurityAdvisories", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/hsts", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetHSTS", Description: ""},
 	{Method: "PUT", Path: "/api/v1/security/hsts", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutHSTS", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/policy", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSecurityPolicy", Description: ""},

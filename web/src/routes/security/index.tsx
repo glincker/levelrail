@@ -14,6 +14,7 @@ import { SessionsPanel } from '../../components/security/SessionsPanel'
 import { PolicyPanel } from '../../components/security/PolicyPanel'
 import { RotationsPanel } from '../../components/security/RotationsPanel'
 import { CompliancePanel } from '../../components/security/CompliancePanel'
+import { AdvisoriesCard } from '../../components/security/AdvisoriesCard'
 import { ReachabilityPanel } from '../../components/security/ReachabilityPanel'
 import { useIsRoot } from '../../hooks/useIsRoot'
 
@@ -103,6 +104,7 @@ function SecurityCenterPage() {
           {posture.data ? (
             <>
               <PostureScoreCard posture={posture.data} />
+              <AdvisoriesCard />
               {posture.data.account.length > 0 ? (
                 <PostureChecklist
                   title={t('checklist.account')}

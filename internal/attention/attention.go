@@ -102,6 +102,7 @@ const (
 	KindFirewallAttackSuggested = "firewall_attack_suggested"
 	KindNodeCapacity            = "node_capacity"
 	KindStackDrift              = "stack_drift"
+	KindAdvisoryMatch           = "advisory_match"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

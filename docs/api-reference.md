@@ -307,6 +307,7 @@ Endpoints for:
 | GET | /api/v1/auth/session | Public | handleAuthSession |
 | GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
 | PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
+| GET | /api/v1/security/advisories | AbilityRead | handleSecurityAdvisories |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
