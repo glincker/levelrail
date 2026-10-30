@@ -156,6 +156,7 @@
       "complete": "Complete",
       "insufficient_data": "Insufficient data"
     },
+    "saving": "Saves about ${{amount}}/mo",
     "timeline": "Timeline",
     "title": "Analysis",
     "view": "View report"

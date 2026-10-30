@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { latestReport, sortCauses } from '@/lib/analysisReports'
+import { sortCauses, sortReportsNewest } from '@/lib/analysisReports'
 import type {
   AnalysisCause,
   AnalysisReportSummary,
@@ -38,14 +38,12 @@ describe('helpers', () => {
     ])
     expect(out.map((c) => c.id)).toEqual(['c', 'b', 'a'])
   })
-  it('picks the latest report', () => {
-    expect(
-      latestReport([
-        rep('a', '2026-01-01T00:00:00Z'),
-        rep('b', '2026-02-01T00:00:00Z'),
-      ])?.id,
-    ).toBe('b')
-    expect(latestReport([])).toBeUndefined()
+  it('sorts reports newest first', () => {
+    const out = sortReportsNewest([
+      rep('a', '2026-01-01T00:00:00Z'),
+      rep('b', '2026-02-01T00:00:00Z'),
+    ])
+    expect(out.map((r) => r.id)).toEqual(['b', 'a'])
   })
 })
 
@@ -54,12 +52,20 @@ describe('AppAnalysisView', () => {
     const { container } = render(<AppAnalysisView reports={[]} />)
     expect(container.firstChild).toBeNull()
   })
-  it('renders the latest summary with a toggle', () => {
-    render(<AppAnalysisView reports={[rep('a', '2026-01-01T00:00:00Z')]} />)
-    expect(screen.getByText('summary a')).toBeTruthy()
-    expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe(
-      'false',
+  it('renders every report with its own toggle', () => {
+    render(
+      <AppAnalysisView
+        reports={[
+          rep('a', '2026-01-01T00:00:00Z'),
+          rep('b', '2026-02-01T00:00:00Z'),
+        ]}
+      />,
     )
+    expect(screen.getByText('summary a')).toBeTruthy()
+    expect(screen.getByText('summary b')).toBeTruthy()
+    const buttons = screen.getAllByRole('button')
+    expect(buttons).toHaveLength(2)
+    expect(buttons[0]?.getAttribute('aria-expanded')).toBe('false')
   })
 })
 

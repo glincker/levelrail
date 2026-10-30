@@ -16,7 +16,7 @@ export async function fetchAnalysisReports(
   appName: string,
 ): Promise<AnalysisReportSummary[]> {
   const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/analysis/reports?limit=5`,
+    `/api/v1/apps/${encodeURIComponent(appName)}/analysis/reports?limit=20`,
   )
   if (res.status === 404 || res.status === 501) return []
   if (!res.ok) throw new Error(`fetch analysis reports failed: ${res.status}`)

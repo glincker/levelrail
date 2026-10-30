@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { latestReport, sortCauses } from '@/lib/analysisReports'
+import { sortReportsNewest, sortCauses } from '@/lib/analysisReports'
 import { formatAbsoluteTime, formatRelativeTime } from '@/lib/relativeTime'
 import {
   useAnalysisReport,
@@ -89,6 +89,13 @@ export function AnalysisReportBodyView({ body }: { body: AnalysisReportBody }) {
             {recs.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center gap-2">
                 <span>{r.text}</span>
+                {r.monthly_saving_usd ? (
+                  <span className={`${CHIP} bg-muted text-muted-foreground`}>
+                    {t('appAnalysis.saving', {
+                      amount: r.monthly_saving_usd.toFixed(2),
+                    })}
+                  </span>
+                ) : null}
                 <EvidenceIds ids={r.evidence ?? []} />
               </li>
             ))}
@@ -117,56 +124,68 @@ function ReportDetail({ id }: { id: string }) {
   return <AnalysisReportBodyView body={data.report} />
 }
 
+function ReportRow({ report }: { report: AnalysisReportSummary }) {
+  const { t } = useTranslation('common')
+  const [open, setOpen] = useState(false)
+  const detailId = `app-analysis-detail-${report.id}`
+  const insufficient = report.status === 'insufficient_data'
+  return (
+    <li>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
+        <span
+          className={`${CHIP} ${insufficient ? 'bg-muted text-muted-foreground' : 'bg-primary/10 font-medium text-primary'}`}
+        >
+          {t(`appAnalysis.status.${report.status}`)}
+        </span>
+        <span className="min-w-0 flex-1 truncate" title={report.summary}>
+          {report.summary}
+        </span>
+        <span
+          className="text-muted-foreground"
+          title={formatAbsoluteTime(report.created_at)}
+        >
+          {formatRelativeTime(report.created_at)}
+        </span>
+        <span className={`${CHIP} bg-muted text-muted-foreground`}>
+          {report.trigger_kind}
+        </span>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={detailId}
+          onClick={() => setOpen((v) => !v)}
+          className="rounded text-xs font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {open ? t('appAnalysis.hide') : t('appAnalysis.view')}
+        </button>
+      </div>
+      {open && (
+        <div id={detailId} className="border-t border-border">
+          <ReportDetail id={report.id} />
+        </div>
+      )}
+    </li>
+  )
+}
+
 export function AppAnalysisView({
   reports,
 }: {
   reports?: AnalysisReportSummary[]
 }) {
   const { t } = useTranslation('common')
-  const [open, setOpen] = useState(false)
-  const latest = latestReport(reports)
-  if (!latest) return null
-  const insufficient = latest.status === 'insufficient_data'
+  if (!reports || reports.length === 0) return null
+  const rows = sortReportsNewest(reports)
   return (
     <section aria-labelledby="app-analysis-title" className="space-y-2">
       <h2 id="app-analysis-title" className="text-sm font-medium">
         {t('appAnalysis.title')}
       </h2>
-      <div className="rounded-lg border border-border">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
-          <span
-            className={`${CHIP} ${insufficient ? 'bg-muted text-muted-foreground' : 'bg-primary/10 font-medium text-primary'}`}
-          >
-            {t(`appAnalysis.status.${latest.status}`)}
-          </span>
-          <span className="min-w-0 flex-1 truncate" title={latest.summary}>
-            {latest.summary}
-          </span>
-          <span
-            className="text-muted-foreground"
-            title={formatAbsoluteTime(latest.created_at)}
-          >
-            {formatRelativeTime(latest.created_at)}
-          </span>
-          <span className={`${CHIP} bg-muted text-muted-foreground`}>
-            {latest.trigger_kind}
-          </span>
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls="app-analysis-detail"
-            onClick={() => setOpen((v) => !v)}
-            className="rounded text-xs font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-          >
-            {open ? t('appAnalysis.hide') : t('appAnalysis.view')}
-          </button>
-        </div>
-        {open && (
-          <div id="app-analysis-detail" className="border-t border-border">
-            <ReportDetail id={latest.id} />
-          </div>
-        )}
-      </div>
+      <ul className="divide-y divide-border rounded-lg border border-border">
+        {rows.map((r) => (
+          <ReportRow key={r.id} report={r} />
+        ))}
+      </ul>
     </section>
   )
 }
