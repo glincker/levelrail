@@ -188,6 +188,9 @@ type mailBackupTarget struct {
 // only, via mailEngineContainer) and the backup config, writing any error.
 func (rt *Router) mailBackupSetup(w http.ResponseWriter, r *http.Request, app string, needEngine bool) (*mailBackupConfig, mailBackupTarget, bool) {
 	var t mailBackupTarget
+	if !rt.authorizeMailApp(w, r, app) {
+		return nil, t, false
+	}
 	cfg := rt.mail.backup
 	if cfg == nil {
 		writeError(w, http.StatusNotImplemented, "mail backups are not configured on this control plane")
@@ -248,7 +251,7 @@ func (rt *Router) handleListMailBackups(w http.ResponseWriter, r *http.Request) 
 	}
 	sink, err := cfg.sink(t.svc.Name)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		rt.internalError(w, "api: handleListMailBackups failed", err)
 		return
 	}
 	ms, err := mailbackup.List(r.Context(), sink)
@@ -296,7 +299,7 @@ func (rt *Router) handleRunMailBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	sink, err := cfg.sink(t.svc.Name)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		rt.internalError(w, "api: handleRunMailBackup failed", err)
 		return
 	}
 	job, started := cfg.start(t.svc.Name, "backup", "")
@@ -365,7 +368,7 @@ func (rt *Router) handleRestoreMailBackup(w http.ResponseWriter, r *http.Request
 	}
 	sink, err := cfg.sink(t.svc.Name)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		rt.internalError(w, "api: handleRestoreMailBackup failed", err)
 		return
 	}
 	runner := moxrun.ExecRunner{RT: t.rt, ContainerID: t.container.ID}
@@ -486,6 +489,9 @@ func (rt *Router) runMailRestore(base context.Context, cfg *mailBackupConfig, t 
 // answers while a hold is being recovered so the dashboard can show the job.
 func (rt *Router) mailBackupSetupOrHeld(w http.ResponseWriter, r *http.Request, app string) (*mailBackupConfig, mailBackupTarget, bool) {
 	var t mailBackupTarget
+	if !rt.authorizeMailApp(w, r, app) {
+		return nil, t, false
+	}
 	if rt.mail.backup != nil {
 		if svc, found, err := rt.pickMailApp(r, app); err == nil && found && strings.HasPrefix(svc.MaintenanceHold, mailRestoreHoldPrefix) && mailstorage.ValidServiceID(svc.Name) {
 			cfg := rt.mail.backup
