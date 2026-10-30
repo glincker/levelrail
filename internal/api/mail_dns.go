@@ -32,6 +32,7 @@ type mailDNSApplyResponse struct {
 // mailDNSTarget decodes the spec and resolves its zone, writing the error response itself.
 func (rt *Router) mailDNSTarget(w http.ResponseWriter, r *http.Request, req *mailDNSPlanRequest) (dnszones.Provider, dnszones.Zone, mailrecords.PlanOptions, bool) {
 	req.Domain = strings.ToLower(strings.TrimSpace(req.Domain))
+	rt.mailDemoFillSpec(&req.Spec)
 	if _, _, err := mailrecords.Build(req.Spec); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return nil, dnszones.Zone{}, mailrecords.PlanOptions{}, false
@@ -42,7 +43,7 @@ func (rt *Router) mailDNSTarget(w http.ResponseWriter, r *http.Request, req *mai
 		return nil, dnszones.Zone{}, mailrecords.PlanOptions{}, false
 	}
 	r.SetPathValue("zone", req.Domain)
-	p, z, ok := rt.requireZone(w, r)
+	p, z, ok := rt.mailZone(w, r)
 	return p, z, mailrecords.PlanOptions{ReplaceExisting: replace}, ok
 }
 
@@ -99,8 +100,10 @@ func (rt *Router) handleMailDNSCheck(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	ctx, cancel := context.WithTimeout(r.Context(), 5*domainCheckLookupTimeout)
 	defer cancel()
-	rep, err := mailrecords.Check(ctx, rt.mailResolver(), strings.ToLower(strings.TrimSpace(q.Get("domain"))),
-		mailrecords.Expect{MailHost: strings.ToLower(strings.TrimSpace(q.Get("mail_host"))), DKIMSelector: q.Get("dkim_selector")})
+	domain := strings.ToLower(strings.TrimSpace(q.Get("domain")))
+	exp := mailrecords.Expect{MailHost: strings.ToLower(strings.TrimSpace(q.Get("mail_host"))), DKIMSelector: q.Get("dkim_selector")}
+	domain = rt.mailDemoCheckArgs(domain, &exp)
+	rep, err := mailrecords.Check(ctx, rt.mailResolver(), domain, exp)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -109,5 +112,8 @@ func (rt *Router) handleMailDNSCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) mailResolver() mailrecords.Resolver {
+	if d := rt.mail.demo; d != nil {
+		return d.zone
+	}
 	return net.DefaultResolver
 }

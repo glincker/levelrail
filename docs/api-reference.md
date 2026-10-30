@@ -2080,6 +2080,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mail/queue | AbilityReadSensitive | handleMailQueue |
 | POST | /api/v1/mail/queue/hold | AbilityWriteSensitive | handleMailQueueHold |
 | POST | /api/v1/mail/queue/release | AbilityWriteSensitive | handleMailQueueHold |
+| POST | /api/v1/mail/demo/reset | AbilityRoot | handleMailDemoReset |
 | POST | /mcp | Public |  |
 
 ## See also

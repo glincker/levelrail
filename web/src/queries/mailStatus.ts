@@ -16,6 +16,8 @@ export interface MailStatus {
   // From the install env; used to prefill the DNS form.
   domain?: string
   hostname?: string
+  // True only in local demo mode (APP_MAIL_DEMO with APP_DEV_MODE).
+  demo?: boolean
 }
 
 export async function fetchMailStatus(): Promise<MailStatus> {

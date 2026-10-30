@@ -61,9 +61,12 @@ type mailState struct {
 	// boxes holds mailbox ownership; engine is nil in production (the default factory is used).
 	boxes  MailboxStore
 	engine mailEngineFactory
+	// demo is nil unless dev mode and APP_MAIL_DEMO are both on (mail_demo.go).
+	demo *mailDemo
 }
 
 func (rt *Router) attachMail(s any) {
+	rt.initMailDemo()
 	if mb, ok := s.(MailboxStore); ok {
 		rt.mail.boxes = mb
 	}

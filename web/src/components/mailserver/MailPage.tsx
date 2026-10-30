@@ -7,6 +7,7 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 import { cn } from '@/lib/utils'
 import type { MailCheckReport } from '@/queries/mailDns'
 import { useMailStatus } from '@/queries/mailStatus'
+import { MailDemoBadge } from './MailDemoBadge'
 import { MailNextStep } from './MailNextStep'
 import { MailChecklist } from './MailChecklist'
 import { MailDnsPanel } from './MailDnsPanel'
@@ -42,6 +43,7 @@ export function MailPage() {
       }
     >
       <div className="space-y-3">
+        {status?.demo ? <MailDemoBadge /> : null}
         <MailNextStep
           status={status}
           report={report}

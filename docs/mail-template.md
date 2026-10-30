@@ -105,3 +105,14 @@ What it does not cover:
 - The relay password, when set, is also an environment variable with the same exposure.
 
 Guidance: run mail on a dedicated node for production, so a compromise of another app cannot reach the mail volumes and the mail host's IP reputation is not shared with other workloads.
+
+## Local demo mode
+
+To try the Mail page without a mail container, DNS provider or domain, run `scripts/dev-local.sh`. It sets `APP_MAIL_DEMO=1` next to `APP_DEV_MODE=1`; set `LOCAL_MAIL_DEMO=0` to opt out.
+Demo mode needs both variables. `APP_MAIL_DEMO` alone is ignored with one warning in the log, and release builds never enable it.
+The page shows a DEMO DATA badge. A fake mail server holds two domains, five mailboxes, aliases and a queue with a failing message.
+Plan and apply write the real planned records (the same builder as production) into an in-memory zone, never a provider.
+The check resolves against that zone: SPF and DMARC fail first, and each record turns green after apply.
+Opening the mail ports only flips a fake flag. Use Reset demo on the badge to return to the seeded state.
+The default domain is `demo.example`, the mail IP is a documentation address, and every secret is an obviously fake string.
+Nothing demo ever reaches a real DNS provider or mail engine.

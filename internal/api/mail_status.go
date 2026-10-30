@@ -38,6 +38,8 @@ type mailStatusResponse struct {
 	// Domain and Hostname come from the install env so the DNS form can prefill.
 	Domain   string `json:"domain,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
+	// Demo is true only in local demo mode, where every value is fake.
+	Demo bool `json:"demo,omitempty"`
 }
 
 // mailEnvValue returns an env value, or "" when it is unset or still a template placeholder.
@@ -158,6 +160,9 @@ func (rt *Router) mailProbe(ctx context.Context, svc store.DesiredService) mailS
 // handleMailStatus handles GET /api/v1/mail/status. With no mail app it is one
 // store read: no probes, goroutines or polling. ?app=<name> picks one install.
 func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
+	if rt.mailDemoStatus(w, r) {
+		return
+	}
 	out := mailStatusResponse{ContainerState: "none", TLS: "unknown"}
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {

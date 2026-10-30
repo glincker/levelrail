@@ -51,8 +51,9 @@ build_binary() {
 start_api() {
 	# Env-gated experimental features are not on the Beta features page; turn them
 	# on locally so work in progress is visible. LOCAL_EXPERIMENTAL overrides.
-	(cd "$repo_root" && APP_EXPERIMENTAL="${LOCAL_EXPERIMENTAL:-load-balancer,ai-models,iac,cloudflare-tunnel,access-roles,global-environments,ai-control}" \
-		APP_DEV_MODE=1 APP_DEV_FIXTURES_FILE="$repo_root/test/fixtures/dev-fixtures.yml" \
+	# APP_MAIL_DEMO=1 serves fake mail data (dev mode only); LOCAL_MAIL_DEMO=0 opts out.
+	(cd "$repo_root" && APP_EXPERIMENTAL="${LOCAL_EXPERIMENTAL:-load-balancer,ai-models,iac,cloudflare-tunnel,access-roles,global-environments,ai-control,mail}" \
+		APP_DEV_MODE=1 APP_MAIL_DEMO="${LOCAL_MAIL_DEMO:-1}" APP_DEV_FIXTURES_FILE="$repo_root/test/fixtures/dev-fixtures.yml" \
 		APP_DATA_DIR="$dir/data" APP_HTTP_ADDR="127.0.0.1:$api_port" APP_AGENT_ADDR="127.0.0.1:0" \
 		APP_INGRESS_HTTP_ADDR="127.0.0.1:0" APP_INGRESS_HTTPS_ADDR="127.0.0.1:0" \
 		nohup "$dir/levelrail" >"$dir/server.log" 2>&1 &)

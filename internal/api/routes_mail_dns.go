@@ -9,4 +9,6 @@ func (rt *Router) registerMailDNSRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/mail/dns/apply", rt.requireAbility(AbilityRoot, rt.handleMailDNSApply))
 	mux.HandleFunc("GET /api/v1/mail/status", rt.requireAbility(AbilityRead, rt.handleMailStatus))
 	mux.HandleFunc("GET /api/v1/mail/dns/check", rt.requireAbility(AbilityRead, rt.handleMailDNSCheck))
+	// Always registered so route guards see it; the handler answers 404 with demo off.
+	mux.HandleFunc("POST /api/v1/mail/demo/reset", rt.requireAbility(AbilityRoot, rt.handleMailDemoReset))
 }

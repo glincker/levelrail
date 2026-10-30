@@ -100,6 +100,9 @@ func (rt *Router) mailEngineFor(w http.ResponseWriter, r *http.Request, app stri
 	if build == nil {
 		build = rt.defaultMailEngine
 	}
+	if rt.mail.demo != nil {
+		build = rt.mail.demo.engineFactory
+	}
 	e, err := build(r.Context(), svc.Name)
 	if err != nil {
 		rt.logger.Warn("api: mail: engine unavailable", slog.String("app", svc.Name), slog.String("error", err.Error()))

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1856 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1857 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1259,6 +1259,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/mail/broadcasts/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestMailBroadcast", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/broadcasts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMailBroadcast", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/broadcasts/{id}/cancel", Ability: "AbilityRoot", Group: "Other", Handler: "handleCancelMailBroadcast", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/demo/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleMailDemoReset", Description: "Always registered so route guards see it; the handler answers 404 with demo off."},
 	{Method: "POST", Path: "/api/v1/mail/dns/apply", Ability: "AbilityRoot", Group: "Other", Handler: "handleMailDNSApply", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/dns/check", Ability: "AbilityRead", Group: "Other", Handler: "handleMailDNSCheck", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/dns/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleMailDNSPlan", Description: ""},

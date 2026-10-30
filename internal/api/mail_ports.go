@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/mail/demo"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -71,6 +72,9 @@ type mailPortsOpenResponse struct {
 
 // pickMailApp returns the named mail app, or the best ranked one when none is named.
 func (rt *Router) pickMailApp(r *http.Request, want string) (store.DesiredService, bool, error) {
+	if rt.mail.demo != nil {
+		return store.DesiredService{Name: demo.AppName}, true, nil
+	}
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {
 		return store.DesiredService{}, false, err
@@ -163,6 +167,9 @@ func mailPortsView(svc store.DesiredService, firewall map[int]string) []mailPort
 // handleMailPorts handles GET /api/v1/mail/ports. It reads stored state and
 // the local host firewall only; it never opens a connection to the internet.
 func (rt *Router) handleMailPorts(w http.ResponseWriter, r *http.Request) {
+	if rt.mailDemoPorts(w) {
+		return
+	}
 	want := r.URL.Query().Get("app")
 	svc, found, err := rt.pickMailApp(r, want)
 	if err != nil {
@@ -202,6 +209,9 @@ func (rt *Router) handleMailPortsOpen(w http.ResponseWriter, r *http.Request) {
 	}
 	if !req.Confirm {
 		writeError(w, http.StatusBadRequest, "confirm must be true. "+mailOpenWarn)
+		return
+	}
+	if rt.mailDemoPortsOpen(w) {
 		return
 	}
 	svc, found, err := rt.pickMailApp(r, req.App)

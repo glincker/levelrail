@@ -225,5 +225,10 @@
     "team": "Team",
     "claim": "Claim domain",
     "claimed": "Claimed"
+  },
+  "demo": {
+    "badge": "DEMO DATA",
+    "hint": "Local demo mode: nothing here is real and nothing reaches a DNS provider or mail server.",
+    "reset": "Reset demo"
   }
 }
