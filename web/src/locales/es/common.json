@@ -116,6 +116,22 @@
     "errorBody": "No se pudo cargar la lista de aplicaciones. {{message}}",
     "retry": "Reintentar"
   },
+  "appAnalysis": {
+    "confidence": "Confianza {{level}}",
+    "causes": "Causas sospechadas",
+    "hide": "Ocultar informe",
+    "loadFailed": "No se pudo cargar este informe.",
+    "loading": "Cargando informe",
+    "recommendations": "Recomendaciones",
+    "saving": "Ahorra unos ${{amount}}/mes",
+    "status": {
+      "complete": "Completo",
+      "insufficient_data": "Datos insuficientes"
+    },
+    "timeline": "Cronología",
+    "title": "Análisis",
+    "view": "Ver informe"
+  },
   "appSectionHelp": "Lee la guía de esta página",
   "appActions": {
     "deploy": "Desplegar",

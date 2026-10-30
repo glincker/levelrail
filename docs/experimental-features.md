@@ -28,6 +28,7 @@ The value is a comma separated list of feature keys. Unknown keys are logged at 
 | `plugins` | [Plugins](/plugins): signed, operator-approved plugins in locked-down containers, starting with notification channels |
 | `canvas` | [Canvas](/canvas) (beta): a visual project editor that turns a draft into a reviewable plan. Needs `iac` to review and apply |
 | `resource-advisor` | [Resource advisor](/resource-advisor) (beta): limit, idle and tuning suggestions |
+| `mail` | [Mail DNS](/mail-dns) (experimental): plan, apply and check the SPF, DKIM, DMARC, MX and related records for email |
 
 Every feature has a switch in Settings, Beta features, and the choice is saved at once. `ai-chat`, `resource-advisor`, `cli-console`, `mobile-api`, `git-push`, `saml-scim` and `canvas` apply live. The rest are wired at server start: the card shows "Restart to apply" with a Restart now button (root, supervised installs), and `levelrail-cli settings beta-features set <feature> on --restart` does the same from the CLI. A feature listed in `APP_EXPERIMENTAL` shows as "Enabled by server setting" and stays on regardless of Settings. Turning a feature off never deletes its data.
 

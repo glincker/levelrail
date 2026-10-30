@@ -11,8 +11,8 @@ import (
 
 // Counts are pinned so adding a mutating route forces a human look at whether it is audited.
 const (
-	pinnedNonGETRoutes   = 1024
-	pinnedExemptions     = 117
+	pinnedNonGETRoutes   = 1026
+	pinnedExemptions     = 118
 	pinnedKnownAuditGaps = 0
 )
 
@@ -185,6 +185,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/costs/budgets/{id}/dry-run",
 		"POST /api/v1/deploy-policies/check",
 		"POST /api/v1/app-types/{name}/check",
+		"POST /api/v1/mail/dns/plan",
 		"POST /api/v1/docker/lint",
 		"POST /api/v1/domains/{domain}/diagnose",
 		"POST /api/v1/fixes/{id}/preview",

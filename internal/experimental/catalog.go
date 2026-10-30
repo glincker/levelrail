@@ -39,6 +39,7 @@ var catalog = map[Feature]Info{
 	GitPush:            {Name: "Git push deploy", Summary: "Deploy an app with git push to a remote on your own server, using a per-app token.", DocsPath: "/git-push-deploy", Maturity: MaturityBeta},
 	Canvas:             {Name: "Canvas", Summary: "Compose a project's apps, databases and connections on a canvas, review every change as a plan, then apply it. Needs Platform as code switched on.", DocsPath: "/canvas", Maturity: MaturityBeta},
 	SAMLSCIM:           {Name: "SAML and SCIM", Summary: "SAML 2.0 single sign-on and SCIM 2.0 provisioning, built on the sign-in library. Beta: not yet verified against every identity provider.", DocsPath: "/sso-saml", Maturity: MaturityBeta},
+	Mail:               {Name: "Mail DNS", Summary: "Plan, apply and check the SPF, DKIM, DMARC, MX and related DNS records a domain needs for email, add-only by default.", DocsPath: "/mail-dns", Maturity: MaturityExperimental},
 }
 
 // Describe returns the operator-facing description of f. Only the Settings

@@ -23,6 +23,7 @@ var experimentalCommands = map[string]experimental.Feature{
 	"environments":      experimental.GlobalEnvironments,
 	"plugins":           experimental.Plugins,
 	"git":               experimental.GitPush,
+	"mail":              experimental.Mail,
 }
 
 // experimentalFeatureFor returns the gated feature a command line invokes.

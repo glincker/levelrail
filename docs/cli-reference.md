@@ -839,6 +839,18 @@ levelrail-cli domains standalone remove <domain> [flags]
 - `dns` reads and writes the real A, AAAA, CNAME, TXT, MX, SRV and CAA records in the domain's zone through whichever DNS-01 provider is configured. `remove` must match an existing record exactly.
 - `cloudflare-dns set --cf-api-token TOKEN` and `route53-dns set --aws-access-key-id ID --aws-secret-access-key KEY` configure the ACME DNS-01 credentials needed for wildcard domains. A domain is wildcard eligible by having a leading `*.` label; if both providers are enabled, Cloudflare takes precedence.
 
+## Mail DNS
+
+Experimental, needs `APP_EXPERIMENTAL=mail`. See [Mail DNS](/mail-dns).
+
+```
+levelrail-cli mail dns plan <domain> [--host H] [--ipv4 IP] [--ipv6 IP] [--mx-priority N] [--preset ID] [--spf-mode server|include] [--spf-include HOSTS] [--dkim-selector S] [--dkim-key-file F] [--dmarc-policy none|quarantine|reject] [--dmarc-rua ADDR] [--dmarc-pct N] [--mta-sts testing|enforce] [--tls-rpt] [--autoconfig] [--replace-existing KINDS] [--provider P] [--json]
+levelrail-cli mail dns apply <domain> --plan-hash H --confirm [same flags as plan]
+levelrail-cli mail dns check <domain> [--host H] [--dkim-selector S] [--json]
+```
+
+`plan` is a dry run and prints a plan hash. `apply` refuses a stale hash and never replaces existing MX, SPF, DKIM or DMARC records unless `--replace-existing` lists their kind.
+
 ## DNS
 
 See [DNS zones and records](/dns).

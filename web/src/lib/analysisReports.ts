@@ -16,11 +16,10 @@ export function sortCauses(causes: AnalysisCause[]): AnalysisCause[] {
   )
 }
 
-export function latestReport(
-  reports: AnalysisReportSummary[] | undefined,
-): AnalysisReportSummary | undefined {
-  if (!reports || reports.length === 0) return undefined
-  return reports.reduce((best, r) =>
-    Date.parse(r.created_at) > Date.parse(best.created_at) ? r : best,
+export function sortReportsNewest(
+  reports: AnalysisReportSummary[],
+): AnalysisReportSummary[] {
+  return [...reports].sort(
+    (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
   )
 }

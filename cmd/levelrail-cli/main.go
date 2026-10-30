@@ -110,6 +110,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runMobile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "plugins":
 		return runPlugins(prog, args[1:], stdout, stderr, lookupEnv)
+	case "mail":
+		return runMail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns":
 		return runDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":

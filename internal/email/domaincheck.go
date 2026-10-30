@@ -159,6 +159,16 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
+// CheckSPF is the SPF verdict alone, for callers that grade records one by one.
+func CheckSPF(ctx context.Context, dns DNSLookup, domain, include string) RecordCheck {
+	return checkSPF(ctx, dns, domain, include)
+}
+
+// CheckDMARC is the DMARC verdict alone.
+func CheckDMARC(ctx context.Context, dns DNSLookup, domain string) RecordCheck {
+	return checkDMARC(ctx, dns, domain)
+}
+
 // SystemDNS is the control plane's own resolver, so the check needs no external service.
 type SystemDNS struct{}
 
