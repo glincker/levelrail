@@ -16,7 +16,8 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-private-networks': 'network vpc subnet wireguard mesh private',
   'action-private-networks': 'network vpc subnet new private',
   'nav-loadbalancers': 'load balancer lb traffic proxy ingress',
-  'nav-mail': 'mail email smtp imap mx spf dkim dmarc dns postfix mailbox',
+  'nav-mail':
+    'mail email smtp imap mx spf dkim dmarc dns postfix mailbox webmail backup queue add mailbox',
   'settings-registry-credentials':
     'container registry docker image images ghcr hub pull credentials runtime',
   'nav-builds':

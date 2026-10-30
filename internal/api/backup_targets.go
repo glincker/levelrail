@@ -155,7 +155,7 @@ func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
 			return errors.New("name is required")
 		}
 		if backup.LocalRootFromEnv(os.LookupEnv) == "" {
-			return errors.New("local targets need " + backup.EnvLocalRoot + " set to an absolute directory on the control plane")
+			return errors.New("local targets need " + backup.EnvLocalRoot + " (or APP_DATA_DIR) set to an absolute directory on the control plane")
 		}
 		_, err := backup.CleanLocalPath(req.Bucket)
 		return err

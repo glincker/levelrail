@@ -47,4 +47,4 @@ Each copy is read back and its SHA-256 compared with the primary's recorded chec
 
 ## Local directory targets
 
-For small boxes and tests, set `APP_BACKUP_LOCAL_ROOT` to an absolute directory, then add a target with `levelrail-cli backups targets add --type local --name NAME --path SUBDIR`. The path is relative to the root and cannot leave it (symlinks included). No keys are needed. The root is returned read-only as `local_root` by `backups targets list` and `show`, and the dashboard form shows it as the folder prefix.
+For small boxes and tests, optionally set `APP_BACKUP_LOCAL_ROOT` to an absolute directory (it defaults to `backups/` under `APP_DATA_DIR`), then add a target with `levelrail-cli backups targets add --type local --name NAME --path SUBDIR`. The path is relative to the root and cannot leave it (symlinks included). No keys are needed. The root is returned read-only as `local_root` by `backups targets list` and `show`, and the dashboard form shows it as the folder prefix.

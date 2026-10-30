@@ -69,12 +69,15 @@ type Service struct {
 	windows  WindowSource
 	monitors MonitorSource
 
-	mu       sync.Mutex
-	current  map[string]string
-	cached   *View
-	cachedAt time.Time
-	hist     *View
-	histAt   time.Time
+	mu        sync.Mutex
+	current   map[string]string
+	cached    *View
+	cachedAt  time.Time
+	hist      *View
+	histAt    time.Time
+	enabled   bool
+	enabledAt time.Time
+	enabledOK bool
 }
 
 // New builds a Service. apps and domains may be nil, in which case
@@ -103,6 +106,7 @@ func New(st Store, apps AppSource, domains DomainSource, cfg Config, logger *slo
 func (s *Service) Invalidate() {
 	s.mu.Lock()
 	s.cached, s.hist = nil, nil
+	s.enabledOK = false
 	s.mu.Unlock()
 }
 
@@ -312,12 +316,23 @@ func (s *Service) History(ctx context.Context) (View, error) {
 	return v, nil
 }
 
-// Enabled reports whether the public page is switched on.
+// Enabled reports whether the public page is switched on. The flag is held
+// for the view TTL and dropped by Invalidate, so a settings save is seen at once.
 func (s *Service) Enabled(ctx context.Context) (bool, error) {
+	s.mu.Lock()
+	if s.enabledOK && s.now().Sub(s.enabledAt) < s.cfg.CacheTTL {
+		on := s.enabled
+		s.mu.Unlock()
+		return on, nil
+	}
+	s.mu.Unlock()
 	settings, err := s.store.GetStatusPageSettings(ctx)
 	if err != nil {
 		return false, fmt.Errorf("statuspage: load settings: %w", err)
 	}
+	s.mu.Lock()
+	s.enabled, s.enabledAt, s.enabledOK = settings.Enabled, s.now(), true
+	s.mu.Unlock()
 	return settings.Enabled, nil
 }
 

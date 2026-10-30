@@ -76,7 +76,7 @@ describe('MailSystemEmailCard', () => {
     )
     renderCard()
     await userEvent.click(
-      await screen.findByRole('button', { name: /use my mail server/i }),
+      await screen.findByRole('switch', { name: /noreply@example.test/ }),
     )
     expect(await screen.findByText(/Mailbox: ready/)).toBeTruthy()
     const enable = calls.find((c) => c.url.endsWith('/enable'))
@@ -84,10 +84,28 @@ describe('MailSystemEmailCard', () => {
       domain: 'example.test',
       replace_existing: false,
     })
-    expect(await screen.findByText('noreply@example.test')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(screen.getByText('SPF: fail')).toBeTruthy()
     expect(
       screen.getByRole('link', { name: /dns panel/i }).getAttribute('href'),
     ).toBe('#mail-dns-panel')
     expect(document.body.textContent).not.toMatch(/password:/i)
+  })
+
+  it('keeps the options behind Settings with a labelled domain select', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(JSON.stringify(off)))),
+    )
+    renderCard()
+    await screen.findByRole('switch')
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(screen.getByLabelText('Sender domain')).toBeTruthy()
+    expect(
+      screen.getByRole('checkbox', {
+        name: /Replace the current email provider/,
+      }),
+    ).toBeTruthy()
   })
 })

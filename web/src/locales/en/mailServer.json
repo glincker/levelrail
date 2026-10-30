@@ -1,6 +1,6 @@
 {
   "title": "Mail",
-  "description": "Set up DNS for your own mail server and see what is still missing. Experimental.",
+  "description": "Your own mail server: mailboxes, DNS, backups.",
   "eyebrow": "Experimental",
   "install": {
     "title": "Install a mail server",
@@ -335,6 +335,93 @@
       "provider_restored": "Previous provider restored",
       "mailbox_suspended": "Mailbox suspended",
       "rotated": "Password rotated"
-    }
+    },
+    "switchLabel": "Send Levelrail emails from {{from}}",
+    "settings": "Settings",
+    "statusOn": "On",
+    "statusOff": "Off",
+    "statusReplaced": "Changed since enabled",
+    "replaceHelp": "Turns off the provider you use today. Disable puts it back.",
+    "pinNote": "Pinned: if the email settings change later, this shows as changed and Disable restores the earlier provider.",
+    "noLast": "Not tested yet",
+    "testShort": "Test",
+    "dnsReady": "DNS readiness",
+    "dnsRow": "{{name}}: {{value}}"
+  },
+  "tabs": {
+    "label": "Mail sections",
+    "overview": "Overview",
+    "mailboxes": "Mailboxes",
+    "domains": "Domains and DNS",
+    "backups": "Backups"
+  },
+  "shell": {
+    "running": "Running",
+    "stopped": "Stopped",
+    "waiting": "Starting",
+    "notInstalled": "Not installed",
+    "settings": "Settings",
+    "settingsTitle": "Mail settings",
+    "queueChip": "Queue {{count}}",
+    "queueTitle": "Delivery queue",
+    "addMailbox": "Add mailbox",
+    "statusLabel": "Mail server status",
+    "skeleton": "Loading mail status"
+  },
+  "webmail": {
+    "open": "Open webmail",
+    "openFor": "Open webmail for {{address}}",
+    "disabled": "Attach a domain to the webmail listener to enable this",
+    "settings": "App domain settings"
+  },
+  "ov": {
+    "allSet": "All set",
+    "details": "Details",
+    "hideDetails": "Hide details",
+    "chips": {
+      "dns": "DNS {{pass}}/{{total}}",
+      "dnsNone": "DNS not checked",
+      "backup": "Backup {{when}}",
+      "backupNone": "No backup yet",
+      "queue": "{{count}} queued"
+    },
+    "statsLabel": "Mail at a glance",
+    "backupOpen": "Open backups"
+  },
+  "mbx": {
+    "search": "Search mailboxes",
+    "filter": "Filter by status",
+    "all": "All",
+    "active": "Active",
+    "suspended": "Suspended",
+    "system": "System",
+    "add": {
+      "name": "Name",
+      "hint": "name",
+      "submit": "Create",
+      "cancel": "Cancel",
+      "claims": "Claims {{domain}} for your default team",
+      "domainLabel": "Domain",
+      "user": "Linked user (optional)",
+      "close": "Close"
+    },
+    "empty": "No mailboxes yet.",
+    "noMatch": "No mailbox matches.",
+    "list": "Mailboxes",
+    "actions": "Actions for {{address}}",
+    "copy": "Copy address",
+    "copied": "Copied",
+    "details": "Details",
+    "aliasesTitle": "Aliases",
+    "addDomain": "Add domain",
+    "domainChip": "Domain {{domain}}",
+    "created": "Created {{date}}",
+    "team": "Team {{team}}",
+    "user": "Linked: {{user}}",
+    "claimedDomains": "Claimed domains",
+    "noDomains": "No domain is claimed yet. It is claimed when you add the first mailbox.",
+    "loading": "Loading mailboxes",
+    "notUp": "Available once the mail server is running.",
+    "storage": "Backup storage"
   }
 }

@@ -56,7 +56,16 @@ function renderPage() {
   )
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  window.localStorage.clear()
+})
+
+async function openDomains() {
+  await userEvent.click(
+    await screen.findByRole('tab', { name: 'Domains and DNS' }),
+  )
+}
 
 function statusFetch(body: unknown) {
   return vi.fn((url: string) =>
@@ -190,31 +199,25 @@ describe('MailPage guided setup', () => {
     )
     const user = userEvent.setup()
     renderPage()
+    expect(await screen.findByText('Mail app installed')).toBeTruthy()
+    await user.click(
+      await screen.findByRole('button', { name: 'Preview DNS records' }),
+    )
     const domain = await screen.findByLabelText<HTMLInputElement>('Domain')
     await vi.waitFor(() => expect(domain.value).toBe('example.test'))
     expect(screen.getByLabelText<HTMLInputElement>('Mail host').value).toBe(
       'smtp.example.test',
     )
-    expect(
-      screen.queryByRole('link', { name: /Install mail server/ }),
-    ).toBeNull()
-    expect(screen.getByText('Mail app installed')).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: 'Preview records' }),
-    ).toHaveProperty('disabled', false)
-    await user.click(
-      screen.getByRole('button', { name: 'Preview DNS records' }),
-    )
     await vi.waitFor(() =>
       expect(urls.some((u) => u.endsWith('/plan'))).toBe(true),
     )
-    expect(document.activeElement).toBe(domain)
   })
 
   it('lets a typed domain win over the prefill', async () => {
     vi.stubGlobal('fetch', statusFetch(up))
     const user = userEvent.setup()
     renderPage()
+    await openDomains()
     const domain = await screen.findByLabelText<HTMLInputElement>('Domain')
     await vi.waitFor(() => expect(domain.value).toBe('example.test'))
     await user.clear(domain)
@@ -226,13 +229,15 @@ describe('MailPage guided setup', () => {
 })
 
 describe('MailPage', () => {
-  it('shows every unchecked step as not checked', () => {
+  it('shows every unchecked step as not checked', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() => Promise.resolve(jsonRes([]))),
     )
     renderPage()
-    expect(screen.getAllByText('Not checked').length).toBeGreaterThanOrEqual(8)
+    expect(
+      (await screen.findAllByText('Not checked')).length,
+    ).toBeGreaterThanOrEqual(8)
     expect(
       screen.getByRole('link', { name: /Install mail server/ }),
     ).toBeTruthy()
@@ -287,6 +292,7 @@ describe('MailPage', () => {
     )
     const user = userEvent.setup()
     renderPage()
+    await openDomains()
     await user.type(screen.getByLabelText('Domain'), 'example.com')
     await user.click(screen.getByRole('button', { name: 'Preview records' }))
     await user.click(
@@ -295,6 +301,7 @@ describe('MailPage', () => {
     expect(applyBody).toContain('"plan_hash":"abc123def4567890"')
     expect(applyBody).toContain('"confirm":true')
     await user.click(screen.getByRole('button', { name: 'Check' }))
+    await user.click(screen.getByRole('tab', { name: 'Overview' }))
     expect(await screen.findByText('SPF ok')).toBeTruthy()
   })
 })
