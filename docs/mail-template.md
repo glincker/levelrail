@@ -139,3 +139,11 @@ The check resolves against that zone: SPF and DMARC fail first, and each record 
 Opening the mail ports only flips a fake flag. Use Reset demo on the badge to return to the seeded state.
 The default domain is `demo.example`, the mail IP is a documentation address, and every secret is an obviously fake string.
 Nothing demo ever reaches a real DNS provider or mail engine.
+
+## Readiness and status
+
+The web listener answers 403 on `/admin/` by design, so the template declares its own platform probe: `GET /webmail/` on the routed port 8081, expecting 2xx. The container healthcheck still checks the private admin listener and SMTP.
+
+`levelrail-cli mail status` reports `ready` and the controller's `reconcile` reason (for example `ReadinessFailed`). A running container with a failing readiness check is flagged in `next`.
+
+Installs made before this fix keep the old probe on their service row, so the app keeps failing readiness. Run `levelrail-cli templates install mail-mox --name <app>` once, or use Redeploy, to store the new probe.

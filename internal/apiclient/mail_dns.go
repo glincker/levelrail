@@ -70,10 +70,13 @@ type MailStatus struct {
 	Installed      bool   `json:"installed"`
 	ContainerState string `json:"container_state"`
 	AdminReachable bool   `json:"admin_reachable"`
-	TLS            string `json:"tls"`
-	NextStep       string `json:"next_step"`
-	Domain         string `json:"domain,omitempty"`
-	Hostname       string `json:"hostname,omitempty"`
+	Ready          bool   `json:"ready"`
+	// ReconcileReason is the controller's Ready=False reason, for example ReadinessFailed.
+	ReconcileReason string `json:"reconcile_reason,omitempty"`
+	TLS             string `json:"tls"`
+	NextStep        string `json:"next_step"`
+	Domain          string `json:"domain,omitempty"`
+	Hostname        string `json:"hostname,omitempty"`
 	// MaintenanceHold is set while a restore holds the mail app stopped.
 	MaintenanceHold string `json:"maintenance_hold,omitempty"`
 }

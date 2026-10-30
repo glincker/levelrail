@@ -11,6 +11,9 @@ export interface MailStatus {
   installed: boolean
   container_state: string
   admin_reachable: boolean
+  // False while the app controller reports Ready=False; reconcile_reason is its code.
+  ready?: boolean
+  reconcile_reason?: string
   tls: string
   next_step: string
   // From the install env; used to prefill the DNS form.

@@ -98,7 +98,7 @@ func (rt *Router) mailDemoStatus(w http.ResponseWriter, r *http.Request) bool {
 		domain = demo.DefaultDomain
 	}
 	writeJSON(w, http.StatusOK, mailStatusResponse{
-		App: demo.AppName, Installed: true, ContainerState: "running", AdminReachable: true, TLS: "self-signed",
+		App: demo.AppName, Installed: true, ContainerState: "running", AdminReachable: true, Ready: true, TLS: "self-signed",
 		Domain: domain, Hostname: "mail." + domain, Demo: true,
 		NextStep: "DEMO DATA: nothing here is real. Plan and apply DNS to see the checklist turn green, then reset the demo zone to start over.",
 	})

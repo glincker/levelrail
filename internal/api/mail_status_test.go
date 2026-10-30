@@ -67,3 +67,11 @@ func TestMailNames(t *testing.T) {
 		t.Fatalf("placeholder leaked: %q %q", d, h)
 	}
 }
+
+func TestMailNextStepReadinessFailing(t *testing.T) {
+	s := mailNextStep(mailStatusResponse{Installed: true, ContainerState: "running", AdminReachable: true, Ready: false, ReconcileReason: "ReadinessFailed"})
+	want := "The mail container is running but the app is failing its readiness check (ReadinessFailed). Check the logs."
+	if s != want {
+		t.Fatalf("got %q", s)
+	}
+}

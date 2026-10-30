@@ -114,6 +114,10 @@ func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		}
 		return c.result(st, func() {
 			_, _ = fmt.Fprintf(stdout, "app: %s\ninstalled: %t\ncontainer: %s\nadmin api: %t\ntls: %s\n", st.App, st.Installed, st.ContainerState, st.AdminReachable, st.TLS)
+			_, _ = fmt.Fprintf(stdout, "ready: %t\n", st.Ready)
+			if st.ReconcileReason != "" {
+				_, _ = fmt.Fprintf(stdout, "reconcile: %s\n", st.ReconcileReason)
+			}
 			if st.MaintenanceHold != "" {
 				_, _ = fmt.Fprintf(stdout, "hold: %s\n", st.MaintenanceHold)
 			}

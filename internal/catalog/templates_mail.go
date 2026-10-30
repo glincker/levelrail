@@ -172,4 +172,13 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # The routed web listener answers 403 on /admin/ by design, so the platform probes /webmail/ there.
+    x-levelrail-healthcheck:
+      kind: http
+      path: /webmail/
+      port: 8081
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 `

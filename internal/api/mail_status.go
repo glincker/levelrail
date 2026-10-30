@@ -33,8 +33,11 @@ type mailStatusResponse struct {
 	Installed      bool   `json:"installed"`
 	ContainerState string `json:"container_state"`
 	AdminReachable bool   `json:"admin_reachable"`
-	TLS            string `json:"tls"`
-	NextStep       string `json:"next_step"`
+	// Ready is false while the app's controller reports Ready=False; ReconcileReason is its reason code.
+	Ready           bool   `json:"ready"`
+	ReconcileReason string `json:"reconcile_reason,omitempty"`
+	TLS             string `json:"tls"`
+	NextStep        string `json:"next_step"`
 	// Domain and Hostname come from the install env so the DNS form can prefill.
 	Domain   string `json:"domain,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
@@ -138,6 +141,13 @@ func containerIP(c docker.ContainerState) string {
 func (rt *Router) mailProbe(ctx context.Context, svc store.DesiredService) mailStatusResponse {
 	out := mailStatusResponse{App: svc.Name, Installed: true, ContainerState: "unknown", TLS: mailTLSKind(svc.Env), MaintenanceHold: svc.MaintenanceHold}
 	out.Domain, out.Hostname = mailNames(svc.Env)
+	out.Ready = true
+	if rt.deploys != nil {
+		// Reason codes only: the condition message can carry container output.
+		if reason, _ := rt.failingReadyCondition(ctx, svc.Name); reason != "" {
+			out.Ready, out.ReconcileReason = false, reason
+		}
+	}
 	ip := ""
 	if rt.containers != nil {
 		c, err := rt.mailEngineContainer(ctx, svc)
@@ -205,6 +215,8 @@ func mailNextStep(s mailStatusResponse) string {
 		return "A mail restore holds this app, so the platform will not start or change it. Check the job with levelrail-cli mail backups list; an interrupted restore is finished or rolled back on that call."
 	case s.ContainerState == "missing" || s.ContainerState == "stopped":
 		return "The mail container is not running. Start or redeploy the app and check its logs."
+	case s.ContainerState == "running" && !s.Ready:
+		return "The mail container is running but the app is failing its readiness check (" + s.ReconcileReason + "). Check the logs."
 	case s.ContainerState == "running" && !s.AdminReachable:
 		return "The mail container is running but its admin API does not answer yet. Wait a minute, then check the app logs."
 	case s.TLS == "self-signed":
