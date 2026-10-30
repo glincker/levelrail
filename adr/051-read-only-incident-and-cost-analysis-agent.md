@@ -1,8 +1,58 @@
 # ADR 051: Read-only incident and cost analysis agent
 
-Status: Proposed
+Status: Accepted (phase one shipped, flag default off)
 
 Date: 2026-10-29
+
+## Implementation status
+
+Phase one shipped as a deterministic report with no model call. The
+sections below are the original design; where they differ, this section
+wins.
+
+Built:
+
+- Stored reports in the `analysis_reports` table (migration
+  `3056_analysis_reports.sql`), with a retention prune.
+- `GET /api/v1/apps/{name}/analysis/reports` (newest first),
+  `GET /api/v1/analysis/reports/{id}` and
+  `POST /api/v1/apps/{name}/analysis/reports` (manual run, write ability,
+  audited, 501 when disabled). The package is `internal/analysis`; there
+  is no `internal/analysisdigest` package and no `analysis_runs` queue.
+- CLI: `levelrail-cli analysis list APP`, `analysis show ID`,
+  `analysis run APP`.
+- Read MCP tool `get_analysis_report` (get by id or list an app's).
+- Off unless `APP_ANALYSIS_ENABLED=on`. There is no
+  `APP_EXPERIMENTAL=incident-analysis` gate in the code.
+
+Env vars actually read (`internal/analysis/config.go`):
+`APP_ANALYSIS_ENABLED`, `APP_ANALYSIS_WINDOW`,
+`APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`,
+`APP_ANALYSIS_TREND_PCT`, `APP_ANALYSIS_UTILIZATION_PCT`,
+`APP_ANALYSIS_RESTART_THRESHOLD`, `APP_ANALYSIS_LOG_ERROR_MIN`,
+`APP_ANALYSIS_LOG_GROUPS`, `APP_ANALYSIS_LOG_SAMPLE_BYTES`,
+`APP_ANALYSIS_MAX_EVENTS`, `APP_ANALYSIS_DEPLOY_PROXIMITY`,
+`APP_ANALYSIS_MIN_INTERVAL`, `APP_ANALYSIS_MAX_CONCURRENT`,
+`APP_ANALYSIS_TIMEOUT`, `APP_ANALYSIS_RETENTION`, and the right-sizing
+knobs `APP_ANALYSIS_HEADROOM_MEMORY`, `APP_ANALYSIS_HEADROOM_CPU`,
+`APP_ANALYSIS_SIZING_RAISE_AT`, `APP_ANALYSIS_SIZING_LOWER_AT` and
+`APP_ANALYSIS_SIZING_MIN_COVERAGE`. A zero or unset sizing value keeps
+the right-sizing engine default.
+
+Replaced: `APP_ANALYSIS_HEADROOM_PCT` became the separate memory and CPU
+headroom variables above. `APP_ANALYSIS_MAX_TOKENS`,
+`APP_ANALYSIS_MONTHLY_TOKENS`, `APP_ANALYSIS_TOKEN_TTL`,
+`APP_ANALYSIS_DEDUP_WINDOW`, `APP_ANALYSIS_MAX_RUNS_PER_HOUR` and
+`APP_ANALYSIS_LOG_SAMPLES` were never implemented.
+
+Not built:
+
+- The model step, validator and run token (phases 3 and 4 of the plan).
+- Automatic triggers from inbox firings and spend alerts.
+- An MCP run tool. It was dropped over the MCP tool token budget; only
+  the read tool exists.
+- Digest evidence in the dashboard.
+- Report feedback (phase 5).
 
 ## Context
 

@@ -39,7 +39,7 @@ Goal: fewer steps between a first deploy and a repeatable setup.
 
 Goal: widen what is proven, only after the earlier goals are met.
 
-- Read-only incident and cost analysis agent: reads metrics, logs, deploys and spend data and writes a summary with suggested next steps. It is opt-in, off by default, and never changes anything; it stays a read-and-suggest layer, see [out of scope](#out-of-scope). Status: planned.
+- Read-only incident and cost analysis agent: reads metrics, logs, deploys and spend data and writes a summary with suggested next steps. It is opt-in, off by default, and never changes anything; it stays a read-and-suggest layer, see [out of scope](#out-of-scope). Status: phase one shipped behind `APP_ANALYSIS_ENABLED=on` (stored deterministic reports, API, `analysis list|show|run`, read MCP tool). The model step and automatic triggers are not built.
 - Database coverage: point-in-time restore and TLS for more engines than today. Status: open, depends on what each engine supports.
 - Real pause or scale-to-zero for spend caps: needs an accepted ADR first, see [ADR 041](https://github.com/glincker/levelrail/blob/main/adr/041-spend-pause-scale-to-zero.md). Status: design.
 - Control-plane high availability: see [ADR 037](https://github.com/glincker/levelrail/blob/main/adr/037-control-plane-ha-replication.md), [ADR 039](https://github.com/glincker/levelrail/blob/main/adr/039-control-plane-ha-wal-shipping-vs-postgres.md) and [ADR 047](https://github.com/glincker/levelrail/blob/main/adr/047-warm-standby-control-plane-promote-drill.md). Status: design and drill, not a release goal yet.
