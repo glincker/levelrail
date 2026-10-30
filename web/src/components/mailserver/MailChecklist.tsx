@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   CircleAlertGlassIcon,
@@ -10,6 +11,9 @@ import type {
   MailCheckReport,
   MailCheckStatus,
 } from '@/queries/mailDns'
+import { isMailUp, type MailStatus } from '@/queries/mailStatus'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 const STATUS_TONE: Record<MailCheckStatus, string> = {
   pass: 'text-tone-success',
@@ -52,8 +56,10 @@ function findItem(
 /** MailChecklist shows each setup step with its last checked state; unknown steps say so. */
 export function MailChecklist({
   report,
+  status,
 }: {
   report: MailCheckReport | undefined
+  status?: MailStatus
 }) {
   const { t } = useTranslation('mailServer')
   return (
@@ -73,27 +79,50 @@ export function MailChecklist({
       >
         {ROWS.map((row) => {
           const item = findItem(report, row.check)
-          const status: MailCheckStatus = item?.status ?? 'not_tested'
+          let rowStatus: MailCheckStatus = item?.status ?? 'not_tested'
+          let serverDetail: string | undefined
+          if (row.key === 'server' && status) {
+            if (isMailUp(status)) {
+              rowStatus = 'pass'
+              serverDetail = t('server.done')
+            } else if (status.installed) {
+              rowStatus = 'warn'
+              serverDetail = status.next_step || t('server.stopped')
+            }
+          }
           const detail =
-            item && item.status !== 'not_tested'
+            serverDetail ??
+            (item && item.status !== 'not_tested'
               ? item.message
               : row.key === 'server' || row.key === 'ptr'
                 ? t(`unknown.${row.key}`)
-                : (item?.message ?? t('status.not_tested'))
+                : (item?.message ?? t('status.not_tested')))
           return (
             <li key={row.key} className="flex items-start gap-2 text-sm">
               <span className="mt-0.5 shrink-0">
-                <StatusGlyph status={status} />
+                <StatusGlyph status={rowStatus} />
               </span>
               <span className="min-w-0">
                 <span className="font-medium">{t(`items.${row.key}`)}</span>
-                <span className="sr-only"> {t(`status.${status}`)}</span>
+                <span className="sr-only"> {t(`status.${rowStatus}`)}</span>
                 <span
                   className="block truncate text-xs text-muted-foreground"
                   title={detail}
                 >
-                  {status === 'not_tested' ? t('status.not_tested') : detail}
+                  {rowStatus === 'not_tested' ? t('status.not_tested') : detail}
                 </span>
+                {row.key === 'server' && status && !status.installed && (
+                  <Link
+                    to="/templates"
+                    search={{ deploy: 'mail-mox' }}
+                    className={cn(
+                      buttonVariants({ variant: 'outline', size: 'sm' }),
+                      'mt-1',
+                    )}
+                  >
+                    {t('server.installAction')}
+                  </Link>
+                )}
               </span>
             </li>
           )
