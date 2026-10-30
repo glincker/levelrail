@@ -13,13 +13,15 @@ const (
 
 // mailTemplates holds the experimental in-house mail engine (ADR 058). The
 // control plane adapter in internal/mail talks to its private admin API.
-var mailTemplates = []Template{
-	{
+var mailTemplates = []Template{mailMoxTemplate()}
+
+func mailMoxTemplate() Template {
+	base := Template{
 		ID:     "mail-mox",
 		Name:   "Mail server (mox, experimental)",
 		Slogan: "Experimental, needs APP_EXPERIMENTAL=mail. Self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).",
 		Description: "Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.\n" +
-			"Set MAIL_FIRST_DOMAIN. MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\n" +
+			"Install with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\n" +
 			"Ports 25, 465, 587 and 993 bind privately by default: set a public bind for each in the app's Network settings and open them in the firewall. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\n" +
 			"TLS: the first start makes a self-signed certificate so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.\n" +
 			"Relay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.\n" +
@@ -29,7 +31,36 @@ var mailTemplates = []Template{
 		DocumentationURL:       "https://www.xmox.nl/",
 		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose:                mailMoxCompose(),
-	},
+	}
+	m := Manifest{
+		ID: base.ID, Name: base.Name, Description: base.Description, Category: base.Category,
+		DocumentationURL: base.DocumentationURL, RecommendedMemoryBytes: base.RecommendedMemoryBytes,
+		Compose: base.Compose, Env: mailMoxPrompts(),
+	}
+	if err := m.Validate(); err != nil {
+		panic(err)
+	}
+	t, err := m.Template()
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+// Defaults for the optional settings live in the start scripts, because the
+// engine only resolves SERVICE_* variables, not shell-style defaults.
+func mailMoxPrompts() []EnvPrompt {
+	return []EnvPrompt{
+		{Key: "MAIL_FIRST_DOMAIN", Label: "Mail domain", Required: true, Description: "The domain you want to receive mail for, for example example.com. Addresses will look like you@example.com."},
+		{Key: "MAIL_HOSTNAME", Label: "Mail server host name", Description: "The name other mail servers connect to. Leave empty to use mail. plus your domain (mail.example.com). It needs a DNS record and matching reverse DNS."},
+		{Key: "MAIL_ADMIN_EMAIL", Label: "Admin address", Description: "Leave empty to use postmaster@ plus your domain."},
+		{Key: "MAIL_TLS_CERT_FILE", Label: "Certificate file", Description: "Optional path under the config volume, for example certs/cur.pem. Leave empty and the first start makes a self-signed certificate for testing."},
+		{Key: "MAIL_TLS_KEY_FILE", Label: "Certificate key file", Description: "Optional path under the config volume, for example certs/cur.key. Set it together with the certificate file."},
+		{Key: "MAIL_SMARTHOST_HOST", Label: "Relay host", Description: "Optional. Send outgoing mail through a provider instead of directly."},
+		{Key: "MAIL_SMARTHOST_PORT", Label: "Relay port", Description: "Leave empty for 587. Use 465 for implicit TLS."},
+		{Key: "MAIL_SMARTHOST_USER", Label: "Relay user"},
+		{Key: "MAIL_SMARTHOST_PASSWORD", Label: "Relay password", Secret: true},
+	}
 }
 
 // mailMoxCompose renders the resource defaults from env at load time so an
@@ -62,16 +93,17 @@ services:
       levelrail.mail: tls-init
     mem_limit: 64m
     environment:
-      MAIL_HOSTNAME: ${MAIL_HOSTNAME:-}
-      MAIL_FIRST_DOMAIN: ${MAIL_FIRST_DOMAIN:?Set MAIL_FIRST_DOMAIN to the domain you want to receive mail for, for example example.com}
-      MAIL_TLS_CERT_FILE: ${MAIL_TLS_CERT_FILE:-certs/selfsigned.pem}
-      MAIL_TLS_KEY_FILE: ${MAIL_TLS_KEY_FILE:-certs/selfsigned.key}
+      MAIL_HOSTNAME: ${MAIL_HOSTNAME}
+      MAIL_FIRST_DOMAIN: ${MAIL_FIRST_DOMAIN}
+      MAIL_TLS_CERT_FILE: ${MAIL_TLS_CERT_FILE}
+      MAIL_TLS_KEY_FILE: ${MAIL_TLS_KEY_FILE}
     entrypoint: ["sh", "-c"]
     command:
       - |
         set -e
         cd /mox/config
-        [ -n "$MAIL_HOSTNAME" ] || MAIL_HOSTNAME=mail.$MAIL_FIRST_DOMAIN
+        [ -n "$MAIL_FIRST_DOMAIN" ] || { echo "mail template: the mail domain is not set. Install with: levelrail-cli templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com (or fill in Mail domain in the dashboard install form)" >&2; exit 1; }
+        : "${MAIL_HOSTNAME:=mail.$MAIL_FIRST_DOMAIN}" "${MAIL_TLS_CERT_FILE:=certs/selfsigned.pem}" "${MAIL_TLS_KEY_FILE:=certs/selfsigned.key}"
         if [ -f "$MAIL_TLS_CERT_FILE" ] && [ -f "$MAIL_TLS_KEY_FILE" ]; then exit 0; fi
         if [ -e "$MAIL_TLS_CERT_FILE" ] || [ -e "$MAIL_TLS_KEY_FILE" ]; then echo "mail template: only one of the certificate and key files exists, add the other or remove both" >&2; exit 1; fi
         mkdir -p "$(dirname "$MAIL_TLS_CERT_FILE")" "$(dirname "$MAIL_TLS_KEY_FILE")"
@@ -97,26 +129,27 @@ services:
       - "587:587"
       - "993:993"
     environment:
-      MAIL_HOSTNAME: ${MAIL_HOSTNAME:-}
-      MAIL_FIRST_DOMAIN: ${MAIL_FIRST_DOMAIN:?Set MAIL_FIRST_DOMAIN to the domain you want to receive mail for, for example example.com}
-      MAIL_ADMIN_EMAIL: ${MAIL_ADMIN_EMAIL:-}
+      MAIL_HOSTNAME: ${MAIL_HOSTNAME}
+      MAIL_FIRST_DOMAIN: ${MAIL_FIRST_DOMAIN}
+      MAIL_ADMIN_EMAIL: ${MAIL_ADMIN_EMAIL}
       MAIL_ADMIN_PASSWORD: ${SERVICE_PASSWORD_MAILADMIN}
-      MAIL_TLS_CERT_FILE: ${MAIL_TLS_CERT_FILE:-certs/selfsigned.pem}
-      MAIL_TLS_KEY_FILE: ${MAIL_TLS_KEY_FILE:-certs/selfsigned.key}
-      MAIL_SMARTHOST_HOST: ${MAIL_SMARTHOST_HOST:-}
-      MAIL_SMARTHOST_PORT: ${MAIL_SMARTHOST_PORT:-587}
-      MAIL_SMARTHOST_USER: ${MAIL_SMARTHOST_USER:-}
-      MAIL_SMARTHOST_PASSWORD: ${MAIL_SMARTHOST_PASSWORD:-}
+      MAIL_TLS_CERT_FILE: ${MAIL_TLS_CERT_FILE}
+      MAIL_TLS_KEY_FILE: ${MAIL_TLS_KEY_FILE}
+      MAIL_SMARTHOST_HOST: ${MAIL_SMARTHOST_HOST}
+      MAIL_SMARTHOST_PORT: ${MAIL_SMARTHOST_PORT}
+      MAIL_SMARTHOST_USER: ${MAIL_SMARTHOST_USER}
+      MAIL_SMARTHOST_PASSWORD: ${MAIL_SMARTHOST_PASSWORD}
     entrypoint: ["sh", "-c"]
     command:
       - |
         set -e
         cd /mox
         mkdir -p config data
-        [ -n "$MAIL_HOSTNAME" ] || MAIL_HOSTNAME=mail.$MAIL_FIRST_DOMAIN
+        [ -n "$MAIL_FIRST_DOMAIN" ] || { echo "mail template: the mail domain is not set. Install with: levelrail-cli templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com (or fill in Mail domain in the dashboard install form)" >&2; exit 1; }
+        : "${MAIL_HOSTNAME:=mail.$MAIL_FIRST_DOMAIN}" "${MAIL_TLS_CERT_FILE:=certs/selfsigned.pem}" "${MAIL_TLS_KEY_FILE:=certs/selfsigned.key}" "${MAIL_SMARTHOST_PORT:=587}"
         if [ ! -f "config/$MAIL_TLS_CERT_FILE" ] || [ ! -f "config/$MAIL_TLS_KEY_FILE" ]; then echo "mail template: the certificate or key file is missing from the config volume ($MAIL_TLS_CERT_FILE, $MAIL_TLS_KEY_FILE under /mox/config). Add both files or clear the two settings to use a self-signed certificate, then restart." >&2; exit 1; fi
         if [ -f config/certs/.selfsigned ] && [ "$MAIL_TLS_CERT_FILE" = certs/selfsigned.pem ]; then echo "mail template: using a self-signed certificate, replace it before sending real mail: put your certificate and key in the config volume, set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE, and restart"; fi
-        [ -n "$MAIL_ADMIN_EMAIL" ] || MAIL_ADMIN_EMAIL=postmaster@$MAIL_FIRST_DOMAIN
+        : "${MAIL_ADMIN_EMAIL:=postmaster@$MAIL_FIRST_DOMAIN}"
         if [ ! -f config/.initialized ]; then
           if [ -e config/mox.conf ] || [ -e config/domains.conf ] || [ -e config/adminpasswd ]; then echo "mail template: mox config exists but was never initialised, refusing to overwrite" >&2; exit 1; fi
           rm -rf /tmp/init; mkdir /tmp/init; cd /tmp/init

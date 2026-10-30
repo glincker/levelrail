@@ -198,6 +198,10 @@ func runTemplatesDeploy(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get service template %q: %w", id, err))
 	}
 
+	if template.RequiresConfiguration {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("template %q needs settings before it can deploy. Use: %s templates install %s --env KEY=VALUE (see the template's description for the settings)", id, prog, id))
+	}
+
 	name := nameFlag
 	if name == "" {
 		name = template.ID

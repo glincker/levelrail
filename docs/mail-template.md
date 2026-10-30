@@ -11,6 +11,16 @@ The `mail-mox` template runs the official [mox](https://www.xmox.nl/) image (MIT
 
 Stalwart stays the separate, optional groupware template (`stalwart`, with JMAP and its own management console). This template does not replace or change it.
 
+## Install
+
+One command, with your mail domain as a setting:
+
+```bash
+levelrail-cli templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com
+```
+
+In the dashboard, open the template and fill in "Mail domain". Everything else is optional and has a default, so the server comes up with a self-signed certificate and no further steps. `templates deploy mail-mox` stops with a message that points to `templates install`, because the domain cannot be guessed. If the domain is missing, the container logs one line saying so and exits.
+
 ## What it installs
 
 One container, pinned by image digest, with two named volumes: `mail_config` at `/mox/config` and `mail_data` at `/mox/data`. On first start it runs `mox quickstart` non-interactively for your hostname and admin address, sets the web admin password from a generated secret, and writes `mox.conf` from your inputs. Later starts rebuild only `mox.conf`; `domains.conf` belongs to the control plane and is never rewritten.
@@ -19,7 +29,7 @@ mox starts as root only to bind its ports, then runs as numeric uid 1000. The co
 
 | Input | Meaning |
 | --- | --- |
-| `MAIL_FIRST_DOMAIN` | Required. The first mail domain, for example `example.com`. |
+| `MAIL_FIRST_DOMAIN` | Required (install setting "Mail domain"). The first mail domain, for example `example.com`. |
 | `MAIL_HOSTNAME` | Optional. The FQDN other servers connect to. Defaults to `mail.` plus the first domain. |
 | `MAIL_ADMIN_EMAIL` | Optional. Defaults to `postmaster@` the first domain. |
 | `MAIL_TLS_CERT_FILE`, `MAIL_TLS_KEY_FILE` | Optional. Certificate and key paths under `/mox/config`. Existing files win; when absent a self-signed pair is made (see below). |
