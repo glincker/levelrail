@@ -55,6 +55,12 @@ All limits are environment variables on the control plane. Durations use Go synt
 | `APP_MONITOR_JITTER_PERCENT` | `10` | Start spread as a share of the interval |
 | `APP_MONITOR_TICK_INTERVAL` | `1s` | Scheduler resolution |
 | `APP_MONITOR_RESULTS_MAX_LIMIT` | `1000` | Most raw results one request returns |
+| `APP_INCIDENTS_ENABLED` | `false` | Open internal, unpublished incidents from confirmed monitor outages. Needs `APP_MONITORS_ENABLED` |
+| `APP_INCIDENT_FOLD_WINDOW` | `10m` | A new outage folds into an open incident on a shared status component within this window |
+| `APP_INCIDENT_REOPEN_WINDOW` | `15m` | A repeat outage of the same monitor reopens a resolved incident within this window |
+| `APP_INCIDENT_SWEEP_INTERVAL` | `1m` | How often open incidents are reconciled with live monitor state |
+| `APP_INCIDENT_OPEN_MAX` | `200` | Open incident cap, further outages fold into one overflow incident |
+| `APP_INCIDENT_QUEUE_MAX` | `256` | Transitions buffered for the opener, extra ones are dropped and the sweep catches up |
 
 ## API
 
