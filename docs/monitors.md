@@ -1,12 +1,12 @@
 ---
 title: "Monitors"
-description: Experimental http and tcp uptime monitors with a bounded result history and hourly rollups, off unless APP_MONITORS_ENABLED is set.
+description: Experimental http, tcp, heartbeat and tls uptime monitors with a bounded result history and hourly rollups, off unless APP_MONITORS_ENABLED is set.
 "og:url": "https://docs.levelrail.com/monitors"
 ---
 
 <Warning>Monitors are experimental. The API, CLI and storage may change between releases.</Warning>
 
-A monitor probes an endpoint on a schedule from the control plane and records the result. This first slice has `http` and `tcp` monitors, a result history, and hourly rollups. It does not send alerts, open incidents or change the status page.
+A monitor probes an endpoint on a schedule from the control plane and records the result. The monitor kinds are `http`, `tcp`, `heartbeat` and `tls`, with a result history and hourly rollups. A down monitor is reported by the `monitor_down` alert rule. Internal incidents and the status page link are opt-in.
 
 The feature is off by default. When `APP_MONITORS_ENABLED` is not true, the `/api/v1/monitors` routes answer 404 and no scheduler runs.
 
@@ -49,6 +49,8 @@ All limits are environment variables on the control plane. Durations use Go synt
 | `APP_MONITOR_HEARTBEAT_MIN_RESPONSE` | `25ms` | Floor on ping response time so a hit and a miss take about the same time |
 | `APP_MONITOR_TLS_WARN_DAYS` | `21` | Degraded under this many days left |
 | `APP_MONITOR_TLS_CRIT_DAYS` | `7` | Down under this many days left |
+| `APP_MONITOR_CONFIRM_FAILURES` | `2` | Failed checks needed before a suspect monitor is confirmed down |
+| `APP_MONITOR_RECOVERY_SUCCESSES` | `2` | Passing checks needed before a recovering monitor is confirmed up |
 | `APP_MONITOR_WORKERS` | `4` | Concurrent probes |
 | `APP_MONITOR_MIN_INTERVAL_HTTP` | `30s` | Lowest http interval |
 | `APP_MONITOR_MIN_INTERVAL_TCP` | `30s` | Lowest tcp interval |
@@ -67,7 +69,7 @@ All limits are environment variables on the control plane. Durations use Go synt
 | `APP_MONITOR_JITTER_PERCENT` | `10` | Start spread as a share of the interval |
 | `APP_MONITOR_TICK_INTERVAL` | `1s` | Scheduler resolution |
 | `APP_MONITOR_RESULTS_MAX_LIMIT` | `1000` | Most raw results one request returns |
-| `APP_INCIDENTS_ENABLED` | `false` | Open internal, unpublished incidents from confirmed monitor outages. Needs `APP_MONITORS_ENABLED` |
+| `APP_INCIDENTS_ENABLED` | `false` | Open internal, unpublished incidents from confirmed monitor outages. Ignored unless `APP_MONITORS_ENABLED` is also true |
 | `APP_INCIDENT_FOLD_WINDOW` | `10m` | A new outage folds into an open incident on a shared status component within this window |
 | `APP_INCIDENT_REOPEN_WINDOW` | `15m` | A repeat outage of the same monitor reopens a resolved incident within this window |
 | `APP_INCIDENT_SWEEP_INTERVAL` | `1m` | How often open incidents are reconciled with live monitor state |
@@ -113,14 +115,14 @@ A monitor can open a public status page incident while it is confirmed down and 
 - Confirmation: `APP_MONITOR_LINK_CONFIRM_FAILURES` (default 1) failed checks, or `--link-confirm` per monitor. Recovery: `APP_MONITOR_LINK_RECOVERY_PERIOD` (default 2m) of continuous health, or `--link-recovery` per monitor. `APP_MONITOR_LINK_SWEEP_INTERVAL` (default 30s) sets how often both are re-evaluated.
 - No incident opens while an active silence or maintenance window covers the monitor, or while an operator incident is already open on its component.
 - Timeline entries are written by `system` and start with "[Automated]". Open and resolve write audit rows (`monitor_incident.opened`, `monitor_incident.resolved`).
-- Alert channels are notified by the existing `monitor_down` rule, unchanged.
+- Alert channels are notified by the existing `monitor_down` rule, unchanged. That rule is a critical default, added when `APP_MONITORS_ENABLED` is true.
 
 ## Cron heartbeat
 
 A `heartbeat` monitor has an expected `interval` and a `grace` period (default `APP_MONITOR_HEARTBEAT_GRACE`). Creating it returns a secret ping path once; only its SHA-256 hash is stored.
 
 ```sh
-levelrail monitors create --name nightly-backup --kind heartbeat --interval 24h --grace 10m
+levelrail-cli monitors create --name nightly-backup --kind heartbeat --interval 24h --grace 10m
 # in the job:
 curl -fsS -m 10 --retry 3 https://cp.example.com/api/v1/heartbeat/<token>
 ```
@@ -130,7 +132,7 @@ curl -fsS -m 10 --retry 3 https://cp.example.com/api/v1/heartbeat/<token>
 - `/fail` after a failed job: marks the monitor down at once with reason `job_failed`.
 - No ping within interval plus grace: down with reason `heartbeat_missed`. The next ping brings it back up.
 
-The route needs no auth header. It answers `204`, or `404` for any unknown token, wrong monitor kind, disabled monitor or unknown suffix, after a minimum response time. Requests are rate limited per client address and bodies are capped. Rotate a leaked URL with `levelrail monitors rotate-token <id>` or `POST /api/v1/monitors/{id}/rotate-token`; the old URL stops working at once. The dashboard shows a copyable curl line when the monitor is created.
+The route needs no auth header. It answers `204`, or `404` for any unknown token, wrong monitor kind, disabled monitor or unknown suffix, after a minimum response time. Requests are rate limited per client address and bodies are capped. Rotate a leaked URL with `levelrail-cli monitors rotate-token <id>` or `POST /api/v1/monitors/{id}/rotate-token`; the old URL stops working at once. The dashboard shows a copyable curl line when the monitor is created.
 
 Heartbeats feed the same status page link and `monitor_down` alert rule as the other kinds.
 
@@ -139,5 +141,5 @@ Heartbeats feed the same status page link and `monitor_down` alert rule as the o
 A `tls` monitor connects to `host:port` (default 443), verifies the chain against the system roots and reports the whole days left in the result code. Under the warning threshold it is `degraded` (still up, reason `cert_expiring`); under the critical threshold it is down (`cert_expiring_critical`). An untrusted or mismatched chain is down with `cert_invalid`, an expired one with `cert_expired`; verification is never skipped. Per-monitor `warn_days` and `crit_days` override `APP_MONITOR_TLS_WARN_DAYS` and `APP_MONITOR_TLS_CRIT_DAYS`. The target goes through the same address guard as `tcp`, so internal hosts are refused unless the private-address opt-in is set.
 
 ```sh
-levelrail monitors create --name site-cert --kind tls --host example.com --interval 24h --warn-days 30 --crit-days 10
+levelrail-cli monitors create --name site-cert --kind tls --host example.com --interval 24h --warn-days 30 --crit-days 10
 ```
