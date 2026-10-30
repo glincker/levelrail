@@ -168,7 +168,7 @@ one instance; nothing in this ADR assumes more than that.
 
 - **The service's own bucket** (a backup target with sealed credentials,
   existing resource) or **a local folder** under the confined local root.
-- Local folders carry a size cap, `APP_MAIL_BACKUP_LOCAL_MAX_BYTES`. When
+- Local folders carry a size cap, `APP_MAIL_BACKUP_LOCAL_CAP_MB`. When
   the next backup would pass it, oldest succeeded backups are pruned first;
   if the newest alone does not fit, the backup fails loudly instead of
   deleting the only good copy.
@@ -653,7 +653,7 @@ Same host only, no DNS, no second node:
    and `verifydata` inside the container (exec, as the PreHook already
    does), write the manifest (version, counts, size).
 2. Ship the staging dir through the existing volume archive and age path to
-   a local folder with `APP_MAIL_BACKUP_LOCAL_MAX_BYTES` and oldest-first
+   a local folder with `APP_MAIL_BACKUP_LOCAL_CAP_MB` and oldest-first
    pruning.
 3. `mail restore --dry-run` and real restore into new volumes on the same
    node, `verifydata` with the target image, version guard (no downgrade).
@@ -665,7 +665,7 @@ Same host only, no DNS, no second node:
 
 Files: `internal/mail/backup.go`, `internal/mail/export.go`,
 `cmd/levelrail-cli/mail_backup.go`, one test file. Env:
-`APP_MAIL_BACKUP_LOCAL_MAX_BYTES`, `APP_MAIL_BACKUP_RETAIN`,
+`APP_MAIL_BACKUP_LOCAL_CAP_MB`, `APP_MAIL_BACKUP_RETAIN`,
 `APP_MAIL_BACKUP_RETAIN_DAYS`, `APP_MAIL_EXPORT_MAX_BYTES`.
 
 ## Later slices

@@ -1,6 +1,6 @@
 # ADR 059: Mail security, storage and team ownership
 
-Status: Proposed
+Status: Accepted (owner defaults recorded, see Decisions at the end)
 
 Date: 2026-10-29
 
@@ -725,3 +725,15 @@ checks page; lockout watcher; offboarding hook; archive policy.
 12. Mail-in-a-Box uses duplicity; Mailu admin TOTP and token support.
 13. Certificate renewal restart in a quiet window keeps mail flowing
     (senders retry), with no lost inbound mail.
+
+## Decisions
+
+The open questions are settled as follows. Each can be revisited with a new ADR.
+
+1. Mail runs on a dedicated node by default. Using the control plane node needs an explicit confirmation and is never the default.
+2. Offboarding a team member suspends their mailbox. Transfer or forward are explicit options.
+3. Webmail forward auth is not in the first release.
+4. A backup recovery point of up to 6 hours is acceptable for the first release.
+5. On R2, one bucket per mail service is required. A shared bucket with a prefix is allowed on S3 compatible stores with a warning.
+6. A new mail service starts with a send cap of 200 messages per hour per account, read from `APP_MAIL_DEFAULT_SEND_CAP_PER_HOUR`.
+7. Mail stays behind the experimental `mail` flag until the real host run in ADR 060 is recorded.
