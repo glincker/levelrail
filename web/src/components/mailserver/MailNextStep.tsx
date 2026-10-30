@@ -2,25 +2,10 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CopyGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { COPY_FEEDBACK_MS } from '@/lib/copyFeedback'
 import type { MailCheckReport } from '@/queries/mailDns'
-import { isMailUp, type MailStatus } from '@/queries/mailStatus'
-
-type StepKey = 'install' | 'fix' | 'wait' | 'dns' | 'verify'
-
-function stepOf(
-  s: MailStatus,
-  report: MailCheckReport | undefined,
-): StepKey | null {
-  if (!s.installed) return 'install'
-  if (s.container_state === 'missing' || s.container_state === 'stopped')
-    return 'fix'
-  if (s.container_state === 'running' && !s.admin_reachable) return 'wait'
-  if (!isMailUp(s)) return null
-  if (!report) return 'dns'
-  return report.items.some((i) => i.status !== 'pass') ? 'verify' : null
-}
+import type { MailStatus } from '@/queries/mailStatus'
+import { nextStepOf } from './mailSetup'
 
 /** MailNextStep shows the single next action from the live status, with a prefilled CLI line. */
 export function MailNextStep({
@@ -37,7 +22,7 @@ export function MailNextStep({
   const { t } = useTranslation('mailServer')
   const [copied, setCopied] = useState(false)
   if (!status) return null
-  const step = stepOf(status, report)
+  const step = nextStepOf(status, report)
   const cmd = `lrcli templates install mail-mox --env MAIL_FIRST_DOMAIN=${domain || '<domain>'}`
   const done: ('installed' | 'running' | 'admin')[] = []
   if (status.installed) done.push('installed')
@@ -60,18 +45,6 @@ export function MailNextStep({
         <h2 className="text-sm font-medium">
           {step ? t(`next.step.${step}`) : t('next.allSet')}
         </h2>
-        {status.installed && (
-          <Badge
-            variant={status.tls === 'self-signed' ? 'warning' : 'muted'}
-            title={
-              status.tls === 'self-signed' ? t('next.tlsSelfSigned') : undefined
-            }
-          >
-            {t(`next.tls.${status.tls}`, {
-              defaultValue: t('next.tls.unknown'),
-            })}
-          </Badge>
-        )}
       </div>
       {step && step !== 'dns' && step !== 'verify' && (
         <p className="mt-1 text-xs text-muted-foreground">{status.next_step}</p>
