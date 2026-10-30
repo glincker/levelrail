@@ -39,6 +39,7 @@ type StatusPageStore interface {
 	SaveStatusIncident(ctx context.Context, i store.StatusIncident) error
 	GetStatusIncident(ctx context.Context, id string) (store.StatusIncident, error)
 	ListStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
+	ListPublicStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
 	DeleteStatusIncident(ctx context.Context, id string) error
 	AddStatusIncidentUpdate(ctx context.Context, u store.StatusIncidentUpdate) error
 	ListStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)

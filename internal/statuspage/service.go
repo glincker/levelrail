@@ -22,8 +22,8 @@ type Store interface {
 	AddStatusSamples(ctx context.Context, componentID, day string, ok, degraded, down int) error
 	ListStatusDaily(ctx context.Context, sinceDay string) ([]store.StatusDaily, error)
 	PruneStatusDaily(ctx context.Context, beforeDay string) error
-	ListStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
-	ListStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
+	ListPublicStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
+	ListPublicStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
 }
 
 // AppSource reports an app's current status as one of the status constants.
@@ -342,11 +342,11 @@ func (s *Service) build(ctx context.Context, window time.Duration) (View, error)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list daily: %w", err)
 	}
-	incidents, err := s.store.ListStatusIncidents(ctx, 500)
+	incidents, err := s.store.ListPublicStatusIncidents(ctx, 500)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list incidents: %w", err)
 	}
-	updates, err := s.store.ListStatusIncidentUpdates(ctx)
+	updates, err := s.store.ListPublicStatusIncidentUpdates(ctx)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list incident updates: %w", err)
 	}
