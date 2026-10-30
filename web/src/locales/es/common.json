@@ -244,6 +244,14 @@
         "label": "Secciones de uso y costes",
         "usage": "Uso",
         "costs": "Explorador de costes"
+      },
+      "platform": {
+        "label": "Secciones de la plataforma",
+        "overview": "Resumen",
+        "https": "HTTPS",
+        "ingress": "Ingress",
+        "addresses": "Direcciones",
+        "dnsProviders": "Proveedores de DNS"
       }
     },
     "pins": {
