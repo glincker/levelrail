@@ -53,6 +53,7 @@ import { useCreateAlertRule } from '../queries/alerts'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
+import { useMonitors } from '../queries/monitors'
 import { DatabaseRuleFields } from './DatabaseRuleFields'
 import {
   isDatabaseRuleKind,
@@ -186,6 +187,8 @@ const KIND_OPTIONS: {
     value: 'email_delivery_failing',
     Icon: MailGlassIcon,
   },
+  { value: 'deploy_failed', Icon: RocketGlassIcon },
+  { value: 'monitor_down', Icon: GlobeGlassIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -228,6 +231,8 @@ const createAlertRuleSchema = z
       'version_skew',
       'budget_threshold',
       'email_delivery_failing',
+      'deploy_failed',
+      'monitor_down',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -262,6 +267,8 @@ const createAlertRuleSchema = z
       data.kind === 'log_archive_stale' ||
       data.kind === 'version_skew' ||
       data.kind === 'email_delivery_failing' ||
+      data.kind === 'deploy_failed' ||
+      data.kind === 'monitor_down' ||
       data.kind === 'budget_threshold'
     ) {
       return
@@ -474,6 +481,8 @@ export function CreateAlertRuleDialog({
   const scheduledTasksQuery = useScheduledTasks(appName)
   const scheduledTasks = scheduledTasksQuery.data ?? []
   const databasesQuery = useDatabases()
+  // null data means the monitors API is off, so the kind is not offered.
+  const monitorsEnabled = Boolean(useMonitors().data)
   const databases = databasesQuery.data ?? []
   const { control, register, handleSubmit, formState, reset, watch, setValue } =
     useForm<CreateAlertRuleFormInput, unknown, CreateAlertRuleFormOutput>({
@@ -622,7 +631,12 @@ export function CreateAlertRuleDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {KIND_OPTIONS.map((option) => (
+                    {KIND_OPTIONS.filter(
+                      (option) =>
+                        option.value !== 'monitor_down' ||
+                        monitorsEnabled ||
+                        kind === 'monitor_down',
+                    ).map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         <option.Icon
                           className="size-4.5 text-muted-foreground"
@@ -912,6 +926,8 @@ export function CreateAlertRuleDialog({
             />
           ) : kind === 'email_delivery_failing' ? (
             <AlertKindGuidance kind="email_delivery_failing" />
+          ) : kind === 'deploy_failed' || kind === 'monitor_down' ? (
+            <AlertKindGuidance kind={kind} />
           ) : kind === 'budget_threshold' ? (
             <p className="text-sm text-muted-foreground">
               {t('budgetThreshold.hint')}
