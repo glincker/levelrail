@@ -131,8 +131,8 @@ export function TemplateMarketplace({
           deployingId={deployingId}
         />
       ) : null}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
-        <div className="md:sticky md:top-4 md:self-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr]">
+        <div className="lg:sticky lg:top-4 lg:self-start">
           <TemplateCategoryRail
             categoryCounts={categoryCounts}
             total={templates.length}
