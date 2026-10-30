@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   ArrowLeftGlassIcon,
@@ -31,16 +31,39 @@ import {
   SidebarUpgradeLabel,
 } from './settings/updates/SidebarUpgradeIndicator'
 import { LockedFeatureMark } from './shell/LockedFeatureMark'
+import { matchesPrefix } from './shell/navModel'
 
-const OPEN_GROUPS_STORAGE_KEY = 'settings-sidebar-open-groups'
+const OPEN_GROUPS_STORAGE_KEY = 'settings-sidebar-open-groups:v2'
 
-function readStoredOpenGroups(): Record<string, boolean> | null {
+function readStoredOpenGroups(): Record<string, boolean> {
   try {
-    const raw = sessionStorage.getItem(OPEN_GROUPS_STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : null
+    const raw = localStorage.getItem(OPEN_GROUPS_STORAGE_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    return parsed && typeof parsed === 'object'
+      ? (parsed as Record<string, boolean>)
+      : {}
   } catch {
-    return null
+    return {}
   }
+}
+
+function writeStoredOpenGroups(groups: Record<string, boolean>) {
+  try {
+    localStorage.setItem(OPEN_GROUPS_STORAGE_KEY, JSON.stringify(groups))
+  } catch {
+    // Storage can be blocked; the in-memory state still works.
+  }
+}
+
+/** Groups start closed; only the one holding the current page opens by default. */
+function isGroupOpen(
+  stored: Record<string, boolean>,
+  section: { id: string; items: readonly { to: string }[] },
+  pathname: string,
+): boolean {
+  const remembered = stored[section.id]
+  if (remembered !== undefined) return remembered
+  return section.items.some((item) => matchesPrefix(pathname, item.to))
 }
 
 function SettingsNavLink({
@@ -77,7 +100,7 @@ function SettingsNavLink({
     <SidebarMenuItem>
       <SidebarMenuButton
         render={<Link to={item.to} />}
-        isActive={pathname === item.to}
+        isActive={matchesPrefix(pathname, item.to)}
         tooltip={item.title}
       >
         {item.id === 'updates' ? (
@@ -100,25 +123,15 @@ export function SettingsScopedSidebar() {
   const sections = useSettingsNav()
   const [query, setQuery] = useState('')
 
-  // Groups missing from the stored map render open, so a group that shows up
-  // later (a feature flag, a route) never starts collapsed.
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
-    () => readStoredOpenGroups() ?? {},
-  )
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        OPEN_GROUPS_STORAGE_KEY,
-        JSON.stringify(openGroups),
-      )
-    } catch {
-      // sessionStorage can throw (private mode, quota); state still works.
-    }
-  }, [openGroups])
+  const [openGroups, setOpenGroups] =
+    useState<Record<string, boolean>>(readStoredOpenGroups)
 
   function setGroupOpen(id: string, open: boolean) {
-    setOpenGroups((prev) => ({ ...prev, [id]: open }))
+    setOpenGroups((prev) => {
+      const next = { ...prev, [id]: open }
+      writeStoredOpenGroups(next)
+      return next
+    })
   }
 
   const trimmedQuery = query.trim().toLowerCase()
@@ -169,7 +182,9 @@ export function SettingsScopedSidebar() {
         // While searching, every matching group is forced open and the
         // trigger is disabled so a stray click doesn't collapse a group the
         // user will see restored once they clear the query.
-        const isOpen = isSearching ? true : (openGroups[section.id] ?? true)
+        const isOpen = isSearching
+          ? true
+          : isGroupOpen(openGroups, section, pathname)
 
         return (
           <SidebarGroup key={section.id}>

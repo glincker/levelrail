@@ -443,7 +443,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     '/settings/platform/dns-providers',
     'Settings',
     undefined,
-    'cloudflare-dns',
+    'cloudflare',
   ),
   nav(
     'settings-platform-route53',
@@ -452,7 +452,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     '/settings/platform/dns-providers',
     'Settings',
     undefined,
-    'route53-dns',
+    'route53',
   ),
   nav(
     'settings-platform-google-cloud-dns',

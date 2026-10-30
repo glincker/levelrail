@@ -5,11 +5,9 @@ import {
   GlobeGlassIcon,
   LockGlassIcon,
   PlugGlassIcon,
-  SettingsGlassIcon,
 } from '@thesvg/ui-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { PlatformPageShell } from './PlatformPageShell'
 import { PlatformSettingsSearch } from './PlatformSettingsSearch'
 import {
   PlatformStatusTile,
@@ -97,12 +95,7 @@ export function PlatformOverviewPage() {
   }
 
   return (
-    <PlatformPageShell
-      title={t('overview.title')}
-      description={t('overview.description')}
-      icon={<SettingsGlassIcon size="1.4em" />}
-      isOverview
-    >
+    <>
       <ul
         aria-label={t('overview.tilesLabel')}
         className="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2"
@@ -113,6 +106,6 @@ export function PlatformOverviewPage() {
         <PlatformStatusTile {...dns} />
       </ul>
       <PlatformSettingsSearch />
-    </PlatformPageShell>
+    </>
   )
 }

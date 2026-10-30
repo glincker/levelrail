@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { Route as Layout } from '../../routes/settings/platform/route'
 import { Route as Overview } from '../../routes/settings/platform/index'
 import { Route as Https } from '../../routes/settings/platform/https'
 import { Route as Ingress } from '../../routes/settings/platform/ingress'
@@ -6,30 +7,32 @@ import { Route as Addresses } from '../../routes/settings/platform/addresses'
 import { Route as Dns } from '../../routes/settings/platform/dns-providers'
 import { ROUTE_ENTRIES, routeEntryItem } from '../commandPaletteData'
 import { settingsNavSections } from '../../lib/settingsNav'
+import { PLATFORM_TAB_PATHS } from '../../lib/platformSettingsIndex'
 
 describe('platform routes', () => {
+  it('prefetches shared data once in the layout route', () => {
+    expect(Layout.options.component).toBeTypeOf('function')
+    expect(Layout.options.loader).toBeTypeOf('function')
+  })
+
   it.each([
     ['overview', Overview],
     ['https', Https],
     ['ingress', Ingress],
     ['addresses', Addresses],
     ['dns-providers', Dns],
-  ])('registers a component and loader for %s', (_name, route) => {
+  ])('registers a component for %s', (_name, route) => {
     expect(route.options.component).toBeTypeOf('function')
-    expect(route.options.loader).toBeTypeOf('function')
   })
 })
 
 describe('platform nav and palette', () => {
-  it('lists five pages in a Platform settings area', () => {
-    const area = settingsNavSections.find((s) => s.id === 'platform')
-    expect(area?.items.map((i) => i.to)).toEqual([
-      '/settings/platform',
-      '/settings/platform/https',
-      '/settings/platform/ingress',
-      '/settings/platform/addresses',
-      '/settings/platform/dns-providers',
-    ])
+  it('has one Platform settings sidebar item and five tabs', () => {
+    const items = settingsNavSections
+      .flatMap((s) => s.items)
+      .filter((i) => i.to.startsWith('/settings/platform'))
+    expect(items.map((i) => i.to)).toEqual(['/settings/platform'])
+    expect(PLATFORM_TAB_PATHS).toHaveLength(5)
   })
 
   it('has palette entries for pages and individual settings', () => {

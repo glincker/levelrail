@@ -12,6 +12,7 @@ import {
   PLATFORM_PAGE_PATH,
   filterPlatformSettings,
 } from '../../lib/platformSettingsIndex'
+import { PROVIDER_HASH } from './dns-providers/providers'
 import { PlatformOverviewPage } from './PlatformOverviewPage'
 import { PlatformStatusStrip } from './PlatformStatusStrip'
 import { PlatformAddressesPage } from './PlatformAddressesPage'
@@ -274,6 +275,14 @@ describe('card anchors', () => {
     for (const e of PLATFORM_SETTINGS) {
       expect(PLATFORM_PAGE_PATH[e.page]).toMatch(/^\/settings\/platform\//)
     }
+  })
+})
+
+describe('dns provider anchors', () => {
+  it('use the ids the providers page opens its sheets on', () => {
+    expect(PLATFORM_ANCHORS.cloudflareDns).toBe(PROVIDER_HASH.cloudflare)
+    expect(PLATFORM_ANCHORS.route53Dns).toBe(PROVIDER_HASH.route53)
+    expect(PLATFORM_ANCHORS.googleCloudDns).toBe(PROVIDER_HASH.googleclouddns)
   })
 })
 

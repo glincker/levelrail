@@ -57,6 +57,14 @@ describe('filterSettingsNav', () => {
 })
 
 describe('settings nav catalogue', () => {
+  it('keeps Platform as one item and no longer has its own area', () => {
+    expect('platform' in settingsEn.nav.areas).toBe(false)
+    const platformItems = settingsNavSections
+      .flatMap((a) => a.items)
+      .filter((i) => i.to.startsWith('/settings/platform'))
+    expect(platformItems).toHaveLength(1)
+  })
+
   it('has a label for every area and item, with unique paths', () => {
     const paths = new Set<string>()
     for (const area of settingsNavSections) {

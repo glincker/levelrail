@@ -1,6 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { useRouterState } from '@tanstack/react-router'
-import { SectionTabs } from './SectionTabs'
+import { SectionTabs, type SectionTabItem } from './SectionTabs'
+import {
+  PLATFORM_OVERVIEW_PATH,
+  type PlatformTabTo,
+} from '@/lib/platformSettingsIndex'
 import { matchesPrefix } from './navModel'
 
 /** Deploys, Timeline and Builds share one sidebar entry; each stays its own route. */
@@ -49,6 +53,41 @@ export function CostSectionTabs() {
           label: t('shell.sectionTabs.cost.costs'),
           active: matchesPrefix(pathname, '/costs'),
         },
+      ]}
+    />
+  )
+}
+
+/** Platform settings pages share one sidebar entry; the overview is exact so it is not lit on its children. */
+export function PlatformSectionTabs() {
+  const { t } = useTranslation()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const tab = (to: PlatformTabTo, label: string): SectionTabItem => ({
+    to,
+    label,
+    active:
+      to === PLATFORM_OVERVIEW_PATH
+        ? pathname.replace(/\/$/, '') === PLATFORM_OVERVIEW_PATH
+        : matchesPrefix(pathname, to),
+  })
+  return (
+    <SectionTabs
+      ariaLabel={t('shell.sectionTabs.platform.label')}
+      items={[
+        tab('/settings/platform', t('shell.sectionTabs.platform.overview')),
+        tab('/settings/platform/https', t('shell.sectionTabs.platform.https')),
+        tab(
+          '/settings/platform/ingress',
+          t('shell.sectionTabs.platform.ingress'),
+        ),
+        tab(
+          '/settings/platform/addresses',
+          t('shell.sectionTabs.platform.addresses'),
+        ),
+        tab(
+          '/settings/platform/dns-providers',
+          t('shell.sectionTabs.platform.dnsProviders'),
+        ),
       ]}
     />
   )

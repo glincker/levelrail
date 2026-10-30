@@ -86,11 +86,6 @@ export function DnsProvidersPage() {
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <h1 className="text-xl font-semibold">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('purpose')}</p>
-      </header>
-
       <div className="relative max-w-md">
         <SearchGlassIcon
           className="pointer-events-none absolute top-2.5 left-2.5 size-4 text-muted-foreground"

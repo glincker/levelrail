@@ -16,6 +16,17 @@ export const PLATFORM_PAGE_PATH = {
 
 export const PLATFORM_OVERVIEW_PATH = '/settings/platform'
 
+/** Tab order: overview first, then the four pages. */
+export const PLATFORM_TAB_PATHS = [
+  PLATFORM_OVERVIEW_PATH,
+  PLATFORM_PAGE_PATH.https,
+  PLATFORM_PAGE_PATH.ingress,
+  PLATFORM_PAGE_PATH.addresses,
+  PLATFORM_PAGE_PATH['dns-providers'],
+] as const
+
+export type PlatformTabTo = (typeof PLATFORM_TAB_PATHS)[number]
+
 export interface PlatformSettingEntry {
   id: PlatformSettingId
   page: PlatformPageId
@@ -36,8 +47,8 @@ export const PLATFORM_ANCHORS = {
   appsBaseDomain: 'apps-base-domain',
   fallbackDomains: 'fallback-domains',
   domainAutomation: 'domain-automation',
-  cloudflareDns: 'cloudflare-dns',
-  route53Dns: 'route53-dns',
+  cloudflareDns: 'cloudflare',
+  route53Dns: 'route53',
   googleCloudDns: 'google-cloud-dns',
 } as const
 

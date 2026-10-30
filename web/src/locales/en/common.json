@@ -321,6 +321,14 @@
         "timeline": "Timeline",
         "builds": "Builds"
       },
+      "platform": {
+        "label": "Platform sections",
+        "overview": "Overview",
+        "https": "HTTPS",
+        "ingress": "Ingress",
+        "addresses": "Addresses",
+        "dnsProviders": "DNS providers"
+      },
       "cost": {
         "label": "Usage and cost sections",
         "usage": "Usage",
