@@ -212,6 +212,8 @@ type Router struct {
 	inbox                  InboxStore      // nil is valid: notification inbox routes return 501
 	statusPage             StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
 	statusView             StatusPageViewer
+	incidents              IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
+	incidentBodyMax        int
 	statusSampler          *statuspage.Service
 	statusLimiter          *apiRateLimiter
 	statusHost             statusHostCache

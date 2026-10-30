@@ -56,5 +56,6 @@ func (s *bootState) newIncidentOpener() *incident.Opener {
 		return nil
 	}
 	guard := incident.AlertGuard{Src: s.alertingDB, Logger: s.logger}
+	s.apiRouter.SetIncidents(s.db, cfg.UpdateBodyMax)
 	return incident.New(cfg, s.db, guard, s.logger)
 }

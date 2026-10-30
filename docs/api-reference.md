@@ -2053,6 +2053,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/mail/dns/plan | AbilityRead | handleMailDNSPlan |
 | POST | /api/v1/mail/dns/apply | AbilityRoot | handleMailDNSApply |
 | GET | /api/v1/mail/dns/check | AbilityRead | handleMailDNSCheck |
+| GET | /api/v1/incidents | AbilityReadSensitive | handleListIncidents |
+| GET | /api/v1/incidents/{id} | AbilityReadSensitive | handleGetIncident |
+| POST | /api/v1/incidents | AbilityWrite | handlePromoteIncident |
+| POST | /api/v1/incidents/{id}/ack | AbilityWrite | handleAckIncident |
+| POST | /api/v1/incidents/{id}/resolve | AbilityWrite | handleResolveIncident |
+| POST | /api/v1/incidents/{id}/notes | AbilityWrite | handleAddIncidentNote |
 
 ## See also
 

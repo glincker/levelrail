@@ -61,6 +61,7 @@ All limits are environment variables on the control plane. Durations use Go synt
 | `APP_INCIDENT_SWEEP_INTERVAL` | `1m` | How often open incidents are reconciled with live monitor state |
 | `APP_INCIDENT_OPEN_MAX` | `200` | Open incident cap, further outages fold into one overflow incident |
 | `APP_INCIDENT_QUEUE_MAX` | `256` | Transitions buffered for the opener, extra ones are dropped and the sweep catches up |
+| `APP_INCIDENT_UPDATE_BODY_MAX` | `4096` | Byte cap for an internal incident note |
 
 ## API
 
@@ -68,3 +69,7 @@ All limits are environment variables on the control plane. Durations use Go synt
 - `GET /api/v1/monitors/{id}/results?window=24h&limit=100` returns recent raw results and hourly rollups.
 
 Reading needs read access and changing needs write access on the `monitors` resource. Creating and deleting are recorded in the audit log.
+
+### Internal incidents
+
+With `APP_INCIDENTS_ENABLED`, `GET /api/v1/incidents`, `GET /api/v1/incidents/{id}`, `POST /api/v1/incidents` (promote an alert rule: `{"source":"alert","rule_id":"..."}`), `POST .../ack`, `POST .../resolve` and `POST .../notes` manage them. Otherwise they answer 501. Reading needs the `read:sensitive` ability because timelines carry probe detail; changes need `write` and are audited. `GET /api/v1/status-page/incidents` returns published incidents only, for every caller.

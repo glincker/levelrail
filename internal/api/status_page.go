@@ -43,6 +43,8 @@ type StatusPageStore interface {
 	DeleteStatusIncident(ctx context.Context, id string) error
 	AddStatusIncidentUpdate(ctx context.Context, u store.StatusIncidentUpdate) error
 	ListStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
+	ListPublicStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
+	GetPublicStatusIncident(ctx context.Context, id string) (store.StatusIncident, error)
 }
 
 // StatusPageViewer builds the public view. *statuspage.Service satisfies it.
@@ -438,12 +440,13 @@ func (rt *Router) handleListStatusIncidents(w http.ResponseWriter, r *http.Reque
 	if !rt.statusPageReady(w) {
 		return
 	}
-	list, err := rt.statusPage.ListStatusIncidents(r.Context(), 100)
+	// Internal incidents are served only by /api/v1/incidents behind read:sensitive, never here.
+	list, err := rt.statusPage.ListPublicStatusIncidents(r.Context(), 100)
 	if err != nil {
 		rt.internalError(w, "api: list status incidents failed", err)
 		return
 	}
-	updates, err := rt.statusPage.ListStatusIncidentUpdates(r.Context())
+	updates, err := rt.statusPage.ListPublicStatusIncidentUpdates(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list status incident updates failed", err)
 		return
@@ -561,7 +564,8 @@ func (rt *Router) handlePostStatusIncidentUpdate(w http.ResponseWriter, r *http.
 	if !rt.statusPageReady(w) {
 		return
 	}
-	inc, err := rt.statusPage.GetStatusIncident(r.Context(), r.PathValue("id"))
+	// Unpublished incidents are not addressable here; publishing is a separate step.
+	inc, err := rt.statusPage.GetPublicStatusIncident(r.Context(), r.PathValue("id"))
 	if errors.Is(err, store.ErrStatusIncidentNotFound) {
 		writeError(w, http.StatusNotFound, "incident not found")
 		return

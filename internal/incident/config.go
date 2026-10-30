@@ -15,6 +15,7 @@ const (
 	DefaultSweepInterval = time.Minute
 	DefaultOpenMax       = 200
 	DefaultQueueMax      = 256
+	DefaultUpdateBodyMax = 4096
 )
 
 // Config holds every knob of the incident opener, all from the environment.
@@ -26,6 +27,8 @@ type Config struct {
 	SweepInterval time.Duration
 	OpenMax       int
 	QueueMax      int
+	// UpdateBodyMax caps the bytes of an internal note.
+	UpdateBodyMax int
 }
 
 // ConfigFromEnv reads the settings; invalid values fall back to the default and are reported in the error.
@@ -77,6 +80,7 @@ func ConfigFromEnv(lookup func(string) (string, bool)) (Config, error) {
 		SweepInterval: dur("APP_INCIDENT_SWEEP_INTERVAL", DefaultSweepInterval),
 		OpenMax:       num("APP_INCIDENT_OPEN_MAX", DefaultOpenMax),
 		QueueMax:      num("APP_INCIDENT_QUEUE_MAX", DefaultQueueMax),
+		UpdateBodyMax: num("APP_INCIDENT_UPDATE_BODY_MAX", DefaultUpdateBodyMax),
 	}
 	cfg.Enabled = flag("APP_MONITORS_ENABLED") && flag("APP_INCIDENTS_ENABLED")
 	if len(errs) > 0 {
