@@ -2,6 +2,7 @@
   "title": "Framework preset",
   "description": "Pick your framework to fill in the port, health check and storage it needs.",
   "detected": "Detected from your repository",
+  "detectedShort": "Detected",
   "loadFailed": "Could not load framework presets.",
   "port": "Port",
   "healthPath": "Health path",

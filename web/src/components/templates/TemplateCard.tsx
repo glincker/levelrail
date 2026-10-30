@@ -68,7 +68,7 @@ function DeployButton({
       variant="outline"
       disabled={deploying}
       className={cn(
-        'text-foreground/80 group-focus-within/card:border-primary group-focus-within/card:bg-primary group-focus-within/card:text-primary-foreground group-hover/card:border-primary group-hover/card:bg-primary group-hover/card:text-primary-foreground',
+        'border-primary/40 text-primary group-focus-within/card:border-primary group-focus-within/card:bg-primary group-focus-within/card:text-primary-foreground group-hover/card:border-primary group-hover/card:bg-primary group-hover/card:text-primary-foreground',
         className,
       )}
       onClick={() => {
