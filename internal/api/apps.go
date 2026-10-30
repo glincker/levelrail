@@ -1375,6 +1375,21 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Warn("api: delete app: remove secret scan data failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	if rt.ciTrusts != nil {
+		if err := rt.ciTrusts.DeleteCIOIDCTrustsForApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove ci trusts failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if rt.buildHooks != nil {
+		if err := rt.buildHooks.DeleteBuildHooksForService(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove build hooks failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if rt.imageAutoUpdates != nil {
+		if err := rt.imageAutoUpdates.DeleteImageAutoUpdatesForApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove image auto update failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if existing.AppID != "" {
 		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())

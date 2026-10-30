@@ -21,6 +21,7 @@ type ImageAutoUpdateStore interface {
 	GetImageAutoUpdate(ctx context.Context, serviceName string) (store.ImageAutoUpdate, error)
 	RecordImageAutoUpdateCheck(ctx context.Context, serviceName, result string, at time.Time) error
 	SetImageAutoUpdateWebhookHash(ctx context.Context, serviceName, hash string) error
+	DeleteImageAutoUpdatesForApp(ctx context.Context, serviceName string) error
 }
 
 // Results CheckImageUpdate records; the UI and CLI show them verbatim.
