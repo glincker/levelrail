@@ -301,5 +301,36 @@
     },
     "localOnly": "In this release backups are still written to the local folder. The bucket is only checked and saved.",
     "failed": "Storage check failed"
+  },
+  "systemEmail": {
+    "title": "System emails",
+    "intro": "Send invites, password resets, alerts and status page notices from noreply at one of your domains, through this mail server.",
+    "domain": "Sender domain",
+    "fromOption": "noreply@{{domain}}",
+    "replace": "Replace the current email provider (disable puts it back)",
+    "enable": "Use my mail server",
+    "disable": "Disable",
+    "rotate": "Rotate password",
+    "test": "Send test",
+    "active": "Sending through {{addr}}.",
+    "replaced": "Enabled, but the email settings were changed since. Disable to restore the earlier provider.",
+    "lastOk": "Last test to {{to}} passed: {{message}}",
+    "lastFail": "Last test to {{to}} failed: {{message}}",
+    "dns": "DNS: SPF {{spf}}, DKIM {{dkim}}, DMARC {{dmarc}}",
+    "dnsWarning": "Mail to outside recipients will land in spam or be rejected until SPF, DKIM and DMARC pass and the server's reverse DNS (PTR) matches its mail host.",
+    "dnsLink": "Open the DNS panel",
+    "needsRoot": "Only an instance admin can change where system emails go.",
+    "noDomain": "Claim a domain in Mailboxes first.",
+    "failed": "The system email request failed.",
+    "steps": "Steps",
+    "step": {
+      "mailbox": "Mailbox",
+      "provider_saved": "Provider saved",
+      "test_send_queued": "Test send queued",
+      "delivered_to_local_queue": "Delivered to the mail server queue",
+      "provider_restored": "Previous provider restored",
+      "mailbox_suspended": "Mailbox suspended",
+      "rotated": "Password rotated"
+    }
   }
 }

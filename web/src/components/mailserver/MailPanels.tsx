@@ -5,6 +5,7 @@ import { MailStoragePanel } from './MailStoragePanel'
 import { MailAliasesPanel } from './MailAliasesPanel'
 import { MailMailboxesPanel } from './MailMailboxesPanel'
 import { MailQueuePanel } from './MailQueuePanel'
+import { MailSystemEmailCard } from './MailSystemEmailCard'
 
 /** Working mail panels; rendered only once the mail service is installed and healthy. */
 export function MailPanels() {
@@ -15,6 +16,7 @@ export function MailPanels() {
   return (
     <div className="space-y-3">
       <MailMailboxesPanel domains={domains} />
+      <MailSystemEmailCard domains={domains} />
       <MailAliasesPanel domains={domains} />
       <MailQueuePanel />
       {status?.app && <MailStoragePanel app={status.app} />}

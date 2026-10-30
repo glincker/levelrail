@@ -3320,6 +3320,10 @@
         "bestFor": "Any mail server or relay that speaks SMTP.",
         "credentialHint": "Use the password your mail server gives you."
       }
+    },
+    "ownMailServer": {
+      "name": "Use my mail server",
+      "bestFor": "Send as noreply from your own domain through the Mail page."
     }
   },
   "heartbeat": {

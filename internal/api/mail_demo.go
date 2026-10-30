@@ -20,6 +20,8 @@ type mailDemo struct {
 	engine    *demo.Engine
 	zone      *demo.Zone
 	portsOpen bool
+	// systemEmail stands in for the sealed system email state; demo never touches email settings.
+	systemEmail *sysEmailState
 }
 
 // initMailDemo is the single place demo mode is decided.
@@ -155,7 +157,7 @@ func (rt *Router) handleMailDemoReset(w http.ResponseWriter, r *http.Request) {
 	}
 	d.zone.Reset()
 	d.mu.Lock()
-	d.engine, d.portsOpen = demo.NewEngine(), false
+	d.engine, d.portsOpen, d.systemEmail = demo.NewEngine(), false, nil
 	d.mu.Unlock()
 	rt.auditDNS(r, "mail_demo.reset", d.zone.ZoneFor(demo.DefaultDomain), "demo state reset", http.StatusOK)
 	rt.logger.Info("mail demo state reset", slog.String("by", "api"))

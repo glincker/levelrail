@@ -24,6 +24,10 @@ A credential that is already stored shows a **Set** chip instead of its value, w
 
 The **Sender identity** card suggests values you can use with one click, marked **Suggested**: the from name from your instance name, a `noreply@` address on your instance's public domain (when one is configured), the signed-in owner's address as reply-to, and the from address as the envelope sender. A suggestion only fills the field; it is saved when you save the card. Addresses are checked as you type, and once a from address is set the card links to the **Delivery check** for SPF, DKIM and DMARC.
 
+## Use your own mail server
+
+With the experimental mail server installed and healthy, the provider list shows **Use my mail server**. It opens the System emails card on the Mail page, which points the primary provider at the mail server as `noreply@<your domain>`. See [Mailboxes](/mail-mailboxes#system-emails) for what it changes and how to undo it.
+
 ## Primary and backup
 
 The primary sends everything. When it keeps failing, mail switches to the backup automatically and returns to the primary once it recovers. Add the backup from the **Providers** card, test each one on its own, and use **Make primary** to swap them. The primary cannot be removed while a backup exists. The failover threshold and cooldown come from `APP_EMAIL_FAILOVER_THRESHOLD` and `APP_EMAIL_FAILOVER_COOLDOWN_SECONDS`.

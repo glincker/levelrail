@@ -55,6 +55,9 @@ func (s smtpSender) deliver(ctx context.Context, envelopeFrom, rcpt string, msg 
 		mode = TLSImplicit
 	}
 	tlsCfg := &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12, InsecureSkipVerify: s.cfg.SkipVerify} //nolint:gosec // operator opt-out, off by default
+	if s.cfg.PinSHA256 != "" {
+		tlsCfg = pinnedTLSConfig(host, s.cfg.PinSHA256)
+	}
 
 	dialer := &net.Dialer{Timeout: smtpDialTimeout}
 	var conn net.Conn

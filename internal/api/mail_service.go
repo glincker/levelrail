@@ -62,8 +62,10 @@ type mailState struct {
 	boxes  MailboxStore
 	engine mailEngineFactory
 	// demo is nil unless dev mode and APP_MAIL_DEMO are both on (mail_demo.go).
-	demo *mailDemo
+	demo   *mailDemo
 	backup *mailBackupConfig
+	// sysEmail guards the system email actions (mail_system_email.go).
+	sysEmail sysEmailRuntime
 }
 
 func (rt *Router) attachMail(s any) {

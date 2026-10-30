@@ -19,4 +19,10 @@ func (rt *Router) registerMailboxRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/mail/queue", rt.requireAbility(AbilityReadSensitive, rt.handleMailQueue))
 	mux.HandleFunc("POST /api/v1/mail/queue/hold", rt.requireAbility(AbilityWriteSensitive, rt.handleMailQueueHold(true)))
 	mux.HandleFunc("POST /api/v1/mail/queue/release", rt.requireAbility(AbilityWriteSensitive, rt.handleMailQueueHold(false)))
+	// System email changes the instance email provider, so it needs root like PUT /api/v1/settings/email.
+	mux.HandleFunc("GET /api/v1/mail/system-email", rt.requireAbility(AbilityRead, rt.handleGetSystemEmail))
+	mux.HandleFunc("POST /api/v1/mail/system-email/enable", rt.requireAbility(AbilityRoot, rt.handleEnableSystemEmail))
+	mux.HandleFunc("POST /api/v1/mail/system-email/disable", rt.requireAbility(AbilityRoot, rt.handleDisableSystemEmail))
+	mux.HandleFunc("POST /api/v1/mail/system-email/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateSystemEmail))
+	mux.HandleFunc("POST /api/v1/mail/system-email/test", rt.requireAbility(AbilityRoot, rt.handleTestSystemEmail))
 }
