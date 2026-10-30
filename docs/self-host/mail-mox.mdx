@@ -1,11 +1,11 @@
 ---
 title: "Self-host Mail server (mox, experimental) with Docker"
 sidebarTitle: "Mail server (mox, experimental)"
-description: "Experimental self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT)."
+description: "Experimental, needs APP_EXPERIMENTAL=mail. Self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT)."
 "og:url": "https://docs.levelrail.com/self-host/mail-mox"
 ---
 
-Experimental self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).
+Experimental, needs APP_EXPERIMENTAL=mail. Self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).
 
 This page describes the Levelrail template for Mail server (mox, experimental) (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.xmox.nl/.
 
@@ -15,7 +15,7 @@ Recommended memory: about 256 MiB.
 
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
-| `mox` | `r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e` | 80, 8010, 25, 465, 587, 993 | `mail_config -&#62; /mox/config`<br />`mail_data -&#62; /mox/data` |
+| `mox` | `r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e` | 8081, 25, 465, 587, 993 | `mail_config -&#62; /mox/config`<br />`mail_data -&#62; /mox/data` |
 
 ## Environment variables
 
@@ -40,7 +40,7 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`mox`): 25:25, 465:465, 587:587, 8010:8010, 8025:80, 993:993.
+- Publishes ports directly on the host (`mox`): 25:25, 465:465, 587:587, 8025:8081, 993:993.
 - Passwords and keys are generated at deploy time (`mox`): MAIL_ADMIN_PASSWORD.
 - Stores data in named volumes (`mox`): mail_config, mail_data.
 

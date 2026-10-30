@@ -148,7 +148,7 @@ Generated from `internal/catalog.Templates` (370 entries as of this build). Run 
 | [FreeScout](https://github.com/freescout-helpdesk/freescout/wiki) | A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout. | `freescout` |  |
 | [Gotify](https://gotify.net/docs/) | A simple push notification server with a REST API and web UI, for sending messages to your devices. | `gotify` |  |
 | [Listmonk](https://listmonk.app/docs/) | A self-hosted newsletter and mailing list manager with a fast, dependency-light core. | `listmonk` |  |
-| [Mail server (mox, experimental)](https://www.xmox.nl/) | Experimental self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT). | `mail-mox` |  |
+| [Mail server (mox, experimental)](https://www.xmox.nl/) | Experimental, needs APP_EXPERIMENTAL=mail. Self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT). | `mail-mox` |  |
 | [Matrix Synapse](https://element-hq.github.io/synapse/latest/setup/installation.html) | A federated, end-to-end encrypted chat server implementing the Matrix protocol. | `matrix-synapse` |  |
 | [Matrix Synapse (Postgres)](https://element-hq.github.io/synapse/latest/) | A Matrix homeserver backed by Postgres, for self-hosted federated chat and voice/video signaling. | `matrix-synapse-postgres` |  |
 | [Mattermost](https://docs.mattermost.com) | An open-source, self-hosted alternative to Slack for team messaging and collaboration. | `mattermost` |  |

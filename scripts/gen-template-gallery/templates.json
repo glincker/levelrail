@@ -19766,7 +19766,7 @@
  {
   "id": "mail-mox",
   "name": "Mail server (mox, experimental)",
-  "slogan": "Experimental self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).",
+  "slogan": "Experimental, needs APP_EXPERIMENTAL=mail. Self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).",
   "category": "Communication",
   "docUrl": "https://www.xmox.nl/",
   "memoryMiB": 256,
@@ -19776,8 +19776,7 @@
     "name": "mox",
     "image": "r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e",
     "ports": [
-     80,
-     8010,
+     8081,
      25,
      465,
      587,
@@ -19850,7 +19849,7 @@
      "services": [
       "mox"
      ],
-     "detail": "25:25, 465:465, 587:587, 8010:8010, 8025:80, 993:993",
+     "detail": "25:25, 465:465, 587:587, 8025:8081, 993:993",
      "message": "Publishes ports directly on the host"
     },
     {

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -254,8 +253,9 @@ func (rt *Router) deploymentSearchDocs(ctx context.Context) ([]search.Doc, error
 }
 
 func templateSearchDocs(context.Context) ([]search.Doc, error) {
-	out := make([]search.Doc, 0, len(catalog.Templates))
-	for _, t := range catalog.Templates {
+	tpls := availableTemplates()
+	out := make([]search.Doc, 0, len(tpls))
+	for _, t := range tpls {
 		out = append(out, search.Doc{
 			Ref: "template:" + t.ID, Kind: search.KindTemplate, Title: t.Name, Body: strings.TrimSpace(t.Slogan + " " + t.Category),
 			Prefix: searchPrefixGlobal, Name: "template:" + t.ID, Ability: AbilityRead, Href: "/templates/" + t.ID,

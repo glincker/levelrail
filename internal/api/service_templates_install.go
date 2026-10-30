@@ -34,7 +34,7 @@ func manifestIcon(m *catalog.Manifest) string {
 func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	tpl, ok := catalog.TemplateByID(id)
-	if !ok {
+	if !ok || !templateAvailable(id) {
 		writeError(w, http.StatusNotFound, "service template not found")
 		return
 	}

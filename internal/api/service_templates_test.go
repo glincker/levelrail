@@ -24,8 +24,8 @@ func TestHandleListServiceTemplates(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got) != len(catalog.Templates) {
-		t.Fatalf("got %d templates, want %d", len(got), len(catalog.Templates))
+	if len(got) != len(availableTemplates()) {
+		t.Fatalf("got %d templates, want %d", len(got), len(availableTemplates()))
 	}
 	for _, item := range got {
 		if item.ID == "" || item.Name == "" || item.Slogan == "" || item.Category == "" || item.DocumentationURL == "" {
