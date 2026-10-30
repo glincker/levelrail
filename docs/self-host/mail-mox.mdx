@@ -16,6 +16,7 @@ Recommended memory: about 256 MiB.
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
 | `mox` | `r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e` | 8081, 25, 465, 587, 993 | `mail_config -&#62; /mox/config`<br />`mail_data -&#62; /mox/data` |
+| `mox-tls` | `alpine/openssl:3.5.4@sha256:42c7389ef077aed0eb4e96d0abbd094083d701bbaff1313073b061c0c9cd8278` | none | `mail_config -&#62; /mox/config` |
 
 ## Environment variables
 
@@ -31,6 +32,10 @@ Recommended memory: about 256 MiB.
 | `mox` | `MAIL_SMARTHOST_USER` | Preset in the template |
 | `mox` | `MAIL_TLS_CERT_FILE` | Preset in the template |
 | `mox` | `MAIL_TLS_KEY_FILE` | Preset in the template |
+| `mox-tls` | `MAIL_FIRST_DOMAIN` | Preset in the template |
+| `mox-tls` | `MAIL_HOSTNAME` | Preset in the template |
+| `mox-tls` | `MAIL_TLS_CERT_FILE` | Preset in the template |
+| `mox-tls` | `MAIL_TLS_KEY_FILE` | Preset in the template |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -42,7 +47,8 @@ What this template needs:
 
 - Publishes ports directly on the host (`mox`): 25:25, 465:465, 587:587, 8025:8081, 993:993.
 - Passwords and keys are generated at deploy time (`mox`): MAIL_ADMIN_PASSWORD.
-- Stores data in named volumes (`mox`): mail_config, mail_data.
+- No health check, so a deploy is judged by the process starting (`mox-tls`).
+- Stores data in named volumes (`mox`, `mox-tls`): mail_config, mail_data.
 
 What Levelrail adds around it:
 

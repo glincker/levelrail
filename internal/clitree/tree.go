@@ -374,7 +374,7 @@ var Tree = map[string]*Node{
 		"invites": {Subs: map[string]*Node{"list": nil, "create": nil, "revoke": nil, "accept": nil}}}},
 	"quota":   {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 	"members": {Subs: map[string]*Node{"list": nil, "set-role": nil, "remove": nil, "leave": nil}},
-	"mail":    {Subs: map[string]*Node{"dns": {Subs: map[string]*Node{"plan": nil, "apply": nil, "check": nil}}}},
+	"mail":    {Subs: map[string]*Node{"status": nil, "dns": {Subs: map[string]*Node{"plan": nil, "apply": nil, "check": nil}}}},
 	"dns": {Subs: map[string]*Node{
 		"zones":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "nameservers": nil, "verify": nil}},
 		"records":       {Subs: map[string]*Node{"list": nil, "add": nil, "update": nil, "delete": nil, "import": nil, "export": nil, "template": nil}},

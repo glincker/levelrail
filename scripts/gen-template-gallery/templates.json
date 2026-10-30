@@ -19786,6 +19786,14 @@
      "mail_config -> /mox/config",
      "mail_data -> /mox/data"
     ]
+   },
+   {
+    "name": "mox-tls",
+    "image": "alpine/openssl:3.5.4@sha256:42c7389ef077aed0eb4e96d0abbd094083d701bbaff1313073b061c0c9cd8278",
+    "ports": [],
+    "volumes": [
+     "mail_config -> /mox/config"
+    ]
    }
   ],
   "env": [
@@ -19838,6 +19846,26 @@
     "service": "mox",
     "name": "MAIL_TLS_KEY_FILE",
     "kind": "preset"
+   },
+   {
+    "service": "mox-tls",
+    "name": "MAIL_FIRST_DOMAIN",
+    "kind": "preset"
+   },
+   {
+    "service": "mox-tls",
+    "name": "MAIL_HOSTNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "mox-tls",
+    "name": "MAIL_TLS_CERT_FILE",
+    "kind": "preset"
+   },
+   {
+    "service": "mox-tls",
+    "name": "MAIL_TLS_KEY_FILE",
+    "kind": "preset"
    }
   ],
   "requirements": {
@@ -19862,10 +19890,19 @@
      "message": "Passwords and keys are generated at deploy time"
     },
     {
+     "code": "no_healthcheck",
+     "severity": "info",
+     "services": [
+      "mox-tls"
+     ],
+     "message": "No health check, so a deploy is judged by the process starting"
+    },
+    {
      "code": "persistent_data",
      "severity": "info",
      "services": [
-      "mox"
+      "mox",
+      "mox-tls"
      ],
      "detail": "mail_config, mail_data",
      "message": "Stores data in named volumes"

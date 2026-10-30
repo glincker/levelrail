@@ -2061,6 +2061,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/incidents/{id}/notes | AbilityWrite | handleAddIncidentNote |
 | PUT | /api/v1/incidents/{id}/draft | AbilityWrite | handleSaveIncidentDraft |
 | POST | /api/v1/incidents/{id}/publish | AbilityWrite | handlePublishIncident |
+| GET | /api/v1/mail/status | AbilityRead | handleMailStatus |
 
 ## See also
 

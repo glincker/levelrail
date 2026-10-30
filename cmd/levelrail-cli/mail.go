@@ -16,6 +16,7 @@ import (
 
 func mailUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s mail status                       show whether the mail server is installed, running and ready
   %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
   %[1]s mail dns apply <domain> --plan-hash H --confirm [flags]   write a plan you reviewed
   %[1]s mail dns check <domain> [--host H] [--dkim-selector S]    grade the live mail DNS
@@ -81,6 +82,19 @@ func (m *mailFlags) finish(domain string) error {
 }
 
 func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) >= 1 && args[0] == "status" {
+		c, code, ok := parseDBAccess(prog, "mail status", "mail status", args[1:], 0, "", stdout, stderr, lookupEnv, nil)
+		if !ok {
+			return code
+		}
+		st, err := c.client.MailStatus(context.Background())
+		if err != nil {
+			return c.fail(fmt.Errorf("mail status: %w", err))
+		}
+		return c.result(st, func() {
+			_, _ = fmt.Fprintf(stdout, "installed: %t\ncontainer: %s\nadmin api: %t\ntls: %s\nnext: %s\n", st.Installed, st.ContainerState, st.AdminReachable, st.TLS, st.NextStep)
+		})
+	}
 	if len(args) < 2 || args[0] != "dns" {
 		_, _ = fmt.Fprint(stderr, mailUsage(prog))
 		return exitUsage

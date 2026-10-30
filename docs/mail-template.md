@@ -19,10 +19,10 @@ mox starts as root only to bind its ports, then runs as numeric uid 1000. The co
 
 | Input | Meaning |
 | --- | --- |
-| `MAIL_HOSTNAME` | Required. The FQDN other servers connect to, for example `mail.example.com`. |
-| `MAIL_FIRST_DOMAIN` | Required. The first mail domain. |
+| `MAIL_FIRST_DOMAIN` | Required. The first mail domain, for example `example.com`. |
+| `MAIL_HOSTNAME` | Optional. The FQDN other servers connect to. Defaults to `mail.` plus the first domain. |
 | `MAIL_ADMIN_EMAIL` | Optional. Defaults to `postmaster@` the first domain. |
-| `MAIL_TLS_CERT_FILE`, `MAIL_TLS_KEY_FILE` | Required. Certificate and key paths under `/mox/config`, mapped to `TLS: KeyCerts` on the public listener. The install fails with a clear message when either is missing, and the container refuses to start when the files are not in the config volume. |
+| `MAIL_TLS_CERT_FILE`, `MAIL_TLS_KEY_FILE` | Optional. Certificate and key paths under `/mox/config`. Existing files win; when absent a self-signed pair is made (see below). |
 | `MAIL_SMARTHOST_HOST`, `_PORT`, `_USER`, `_PASSWORD` | Optional relay. The password is a secret input. Port defaults to 587. |
 
 The admin password is the generated secret `SERVICE_PASSWORD_MAILADMIN` on the app. The admin API listens on container port 8080 and is not published on the host. The webmail and account UI are published as 8025 (container port 8081). The control plane builds the adapter address from the service's container address on the app network and port 8080 (override with `APP_MAIL_ADMIN_PORT`). Queue operations are hold and release.
@@ -49,7 +49,11 @@ The template has no node field of its own. Choose the node in the deploy dialog 
 
 ## TLS and restarts
 
-Put the certificate chain and key in the config volume (for example `certs/cur.pem` and `certs/cur.key`) and set the two inputs. mox has no reload: when the certificate renews, restart the container. A certificate is required: the built-in ACME client would need ports 80 and 443, which this template does not publish, so it is not offered.
+The first start works with no manual steps. A one-shot `mox-tls` service makes a self-signed certificate for the mail host name in the config volume (`certs/selfsigned.pem`) and the log says so. It is for testing only: replace it before sending real mail.
+
+To use a real certificate, put the chain and key in the config volume (for example `certs/cur.pem` and `certs/cur.key`), set the two inputs and restart. Existing files are never overwritten. mox has no reload: restart after every renewal. The built-in ACME client is not offered because ports 80 and 443 are not published.
+
+Check the state with `levelrail-cli mail status` (installed, container, admin API, certificate kind and the next step).
 
 ## Relay mode
 
