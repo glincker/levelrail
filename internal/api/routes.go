@@ -86,6 +86,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStandaloneDomainRoutes(mux)
 	rt.registerLogExplorerRoutes(mux)
 	rt.registerMobileRoutes(mux)
+	mcpHTTP := rt.registerMCPHTTPRoutes(mux)
 	rt.registerAccountSelfRoutes(mux)
 
 	h := rt.stackLockMiddleware(mux)
@@ -106,6 +107,7 @@ func (rt *Router) Handler() http.Handler {
 	if rt.demo != nil {
 		h = rt.demoGate(h)
 	}
+	mcpHTTP.inner = h
 	return h
 }
 

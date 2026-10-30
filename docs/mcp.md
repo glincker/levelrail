@@ -122,6 +122,43 @@ Each call is rejected locally, with no API request, when `confirm` is missing or
 
 Deploy, rollback and restart already exist as `deploy_app`, `rollback_app` and `restart_app` and are governed by `--mode`, not `--allow-write`. Use `--mode read-only` to remove every mutating tool.
 
+## Remote endpoint (experimental, read-only)
+
+With `APP_EXPERIMENTAL=mcp-http` the control plane serves `POST /mcp`, a stateless Streamable HTTP MCP endpoint. It is off by default and the route answers 404 until enabled. It exposes the read-only tool set only, never a write, deploy or destructive tool.
+
+Authentication is a normal API token sent as `Authorization: Bearer <token>`. The token needs the `read` ability. OAuth is not supported yet, so clients that require OAuth discovery cannot connect. Every tool call is a REST call made with the caller's own token, so abilities, IAM, AI control and access policies apply exactly as for the API. There is no shared service identity.
+
+Claude Code:
+
+```
+claude mcp add --transport http levelrail https://levelrail.example.com/mcp --header "Authorization: Bearer $LEVELRAIL_TOKEN"
+```
+
+Cursor (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "levelrail": {
+      "url": "https://levelrail.example.com/mcp",
+      "headers": { "Authorization": "Bearer ${env:LEVELRAIL_TOKEN}" }
+    }
+  }
+}
+```
+
+Environment:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_MCP_HTTP_RPM` | 60 | Requests per minute per token |
+| `APP_MCP_HTTP_MAX_BODY_BYTES` | 262144 | Request body cap, over it answers 413 |
+| `APP_MCP_HTTP_MAX_RESPONSE_BYTES` | 4194304 | Cap on one tool's REST response |
+| `APP_MCP_HTTP_CALL_TIMEOUT_SECONDS` | 30 | Time limit for one tool's REST call |
+| `APP_MCP_HTTP_ALLOWED_ORIGINS` | empty | Extra browser origins, comma separated. The dashboard URL is always allowed |
+
+A request with an `Origin` header outside that list gets 403, which blocks DNS rebinding and browser abuse. Clients that send no `Origin` are unaffected. Each tool call writes an audit row with action `mcp.tool_call` holding the tool name, token id, outcome and argument names, never argument values.
+
 ## Prompts
 
 Prompts are parameterised, reviewable starting points an MCP client shows as slash commands. Each one tells the assistant which read tools to call and in what order, and which state changing tools exist but need your explicit confirmation. The text adapts to the session: a tool the mode or `--allow-write` hides is marked "not exposed" and the prompt falls back to the CLI command.

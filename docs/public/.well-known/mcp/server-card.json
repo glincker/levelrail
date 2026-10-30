@@ -8,5 +8,12 @@
   "repository": "https://github.com/glincker/levelrail",
   "license": "Apache-2.0",
   "transports": ["stdio", "streamable-http"],
-  "hosted": false
+  "hosted": false,
+  "remote": {
+    "experimental": "mcp-http",
+    "path": "/mcp",
+    "transport": "streamable-http",
+    "mode": "read-only",
+    "authentication": { "bearer": true, "oauth": false }
+  }
 }
