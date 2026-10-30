@@ -222,7 +222,9 @@ if [ -n "$staged_web_files" ]; then
 	# references, so --noEmit checks nothing. -b is what CI runs. It is the
 	# long pole, so eslint and prettier (under 10s together) run beside it.
 	tsc_log="$(mktemp)"
-	( cd web && npx tsc -b ) >"$tsc_log" 2>&1 &
+	# tsc -b runs out of the default heap on large web changes; raise it unless
+	# the caller set NODE_OPTIONS (LEVELRAIL_HOOK_NODE_HEAP_MB tunes the size).
+	( cd web && NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${LEVELRAIL_HOOK_NODE_HEAP_MB:-8192}}" npx tsc -b ) >"$tsc_log" 2>&1 &
 	tsc_pid=$!
 	lint_rc=0
 	# shellcheck disable=SC2086
