@@ -126,7 +126,7 @@ Deploy, rollback and restart already exist as `deploy_app`, `rollback_app` and `
 
 With `APP_EXPERIMENTAL=mcp-http` the control plane serves `POST /mcp`, a stateless Streamable HTTP MCP endpoint. It is off by default and the route answers 404 until enabled. It exposes the read-only tool set only, never a write, deploy or destructive tool.
 
-Authentication is a normal API token sent as `Authorization: Bearer <token>`. The token needs the `read` ability. OAuth is not supported yet, so clients that require OAuth discovery cannot connect. Every tool call is a REST call made with the caller's own token, so abilities, IAM, AI control and access policies apply exactly as for the API. There is no shared service identity.
+Authentication is a normal API token sent as `Authorization: Bearer <token>`. The token needs the `read` ability. Clients that require OAuth discovery can connect once an administrator turns on [OAuth for remote clients](#oauth-for-remote-clients). Every tool call is a REST call made with the caller's own token, so abilities, IAM, AI control and access policies apply exactly as for the API. There is no shared service identity.
 
 Claude Code:
 
@@ -158,6 +158,42 @@ Environment:
 | `APP_MCP_HTTP_ALLOWED_ORIGINS` | empty | Extra browser origins, comma separated. The dashboard URL is always allowed |
 
 A request with an `Origin` header outside that list gets 403, which blocks DNS rebinding and browser abuse. Clients that send no `Origin` are unaffected. Each tool call writes an audit row with action `mcp.tool_call` holding the tool name, token id, outcome and argument names, never argument values.
+
+## OAuth for remote clients
+
+Some remote MCP clients cannot send a static header and expect OAuth discovery instead. This is experimental and off by default: it is part of the `mcp-http` experimental feature, so every OAuth route answers 404 until `APP_EXPERIMENTAL=mcp-http` is set. Only pre-registered public clients are supported (no dynamic registration, no client secret), and PKCE with `S256` is required.
+
+Set `APP_DASHBOARD_URL` to the public HTTPS URL of the control plane. It is the OAuth issuer; the `Host` header is used only for loopback development, and without a dashboard URL the flow answers 503.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `/mcp` | The MCP resource itself |
+| `/.well-known/oauth-protected-resource` | Tells a client which authorization server to use |
+| `/.well-known/oauth-authorization-server` | Authorization server metadata |
+| `/oauth/authorize` | Starts the flow and sends the user to the consent page |
+| `/oauth/token` | Exchanges a code or a refresh token for an access token |
+
+A client may request the scopes `mcp:read` (the default) and `mcp:read:sensitive`. The signed-in user approves or denies on a consent page in the dashboard. The access token is a normal API token named `mcp:<client>`, so it appears in the token list. Revoking it ends the grant, and deleting a client revokes every token it was granted.
+
+Register a client as root, either in the dashboard under Settings > CLI access > Connected AI clients, or from the CLI. The client id is generated and printed:
+
+```
+levelrail-cli mcp-clients create --name "My assistant" --redirect-uri https://assistant.example.com/callback
+levelrail-cli mcp-clients list
+levelrail-cli mcp-clients delete --id <client_id>
+```
+
+Redirect URIs must be absolute `https` (or `http` on `127.0.0.1` or `[::1]`) with no fragment. See [CLI reference](/cli-reference) for every flag.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_MCP_OAUTH_CODE_TTL` | 1m | Lifetime of an authorization code |
+| `APP_MCP_OAUTH_REQUEST_TTL` | 10m | Time the user has to answer the consent page |
+| `APP_MCP_OAUTH_ACCESS_TTL` | 1h | Access token lifetime |
+| `APP_MCP_OAUTH_REFRESH_TTL` | 720h | Refresh token lifetime |
+| `APP_MCP_OAUTH_GRANT_MAX_AGE` | 2160h | Longest a grant may live in total |
+| `APP_MCP_OAUTH_TOKEN_RPM` | 30 | Token endpoint requests per minute |
+| `APP_MCP_OAUTH_AUTHORIZE_RPM` | 30 | Authorize endpoint requests per minute |
 
 ## Prompts
 

@@ -144,6 +144,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status-page":
 		return runStatusPage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "mcp-clients":
+		return runMCPClients(prog, args[1:], stdout, stderr, lookupEnv)
 	case "monitors":
 		return runMonitors(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env":
@@ -431,6 +433,7 @@ Usage:
   %[1]s push-subscriptions list|revoke [flags]             list or revoke registered browser push subscriptions
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
+  %[1]s mcp-clients create|list|delete                      pre-register OAuth clients for remote MCP (experimental, root only)
   %[1]s monitors create|list|results|delete                 experimental uptime monitors (http, tcp), needs APP_MONITORS_ENABLED
   %[1]s env pull|push <app> [--file .env] [flags]   sync an app's env vars with a local .env file
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret

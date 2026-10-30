@@ -2095,6 +2095,18 @@ levelrail-cli -A apps list
 
 `explain` documents a resource kind or field from the embedded schema and works offline. It also accepts an app.yaml path (`explain services.web.health.readiness`, or a bare service field such as `explain replicas`) and prints the description, type, allowed values and default; `explain appspec` lists the top level fields, an unknown path suggests the closest match, and `--json` prints the result as JSON. `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.
 
+## MCP OAuth clients
+
+Experimental and root only. With the `mcp-http` feature on, remote MCP clients that use OAuth must be pre-registered here or in the dashboard (Settings > CLI access > Connected AI clients). See [OAuth for remote clients](/mcp#oauth-for-remote-clients).
+
+```
+levelrail-cli mcp-clients create --name N --redirect-uri URI [--redirect-uri URI]... [--redirect-uris URI,URI] [--scope mcp:read|mcp:read:sensitive]... [--json]
+levelrail-cli mcp-clients list [--json]
+levelrail-cli mcp-clients delete --id ID [--json]
+```
+
+`create` prints the generated `client_id`; public clients have no secret. `--scope` defaults to `mcp:read`. `delete` also revokes every token the client was granted.
+
 ## Incidents
 
 With `APP_INCIDENTS_ENABLED`, internal incidents opened from monitors and alerts are managed here. Nothing is public until `publish`. See [Monitors](/monitors) for the API and the draft rules.
