@@ -448,6 +448,21 @@ runs files serially (`fileParallelism: false`, to avoid jsdom contention
 flakes) and one job would be the suite's whole wall time. A skipped shard job
 passes `CI required` the same way a skipped area does.
 
+## Release branch pushes
+
+`ci.yml` also runs on `push` to `release/**`, so each push to the release line
+gets the same impact-scoped run a PR gets. Concurrency groups a release branch by
+ref and cancels the older run, so a burst of pushes keeps only the newest.
+Because a cancelled run never reports its commit, `changes` diffs a release push
+against its merge-base with `main` (the cumulative release diff), not against
+`github.event.before`. Other pushes use `before` and fall back to the same
+merge-base when it is the zero SHA or no longer reachable (a force push).
+Public repository minutes are free, but a push burst still queues runners and
+delays the PR checks, so batch pushes. `paths-ignore` for Markdown and `adr/**`
+stays: required checks only matter on PRs, which have no path filter.
+`coverage-gate` and the cache saves also run for these pushes. The draft logic
+is unchanged because it reads the pull request payload.
+
 ## Concurrency and merge queue
 
 A new push to a PR cancels that PR's previous CI run (`ci.yml`, `secret-scan.yml`,
@@ -677,3 +692,31 @@ comparison should use the fastest of several runs, not the median.
   removes, linked worktrees that are clean and fully contained in a remote
   branch. It never touches the primary worktree, the current one, or any
   dirty or unpushed tree.
+
+## Pre-integrate gate
+
+`scripts/pre-integrate.sh [--web] [--base REF]` is the one local gate to run before
+a branch is squash-merged into the release branch or the release PR is opened. It
+stops at the first failure and always prints a summary with each step's time. The
+base defaults to the closest `origin/release/*` merge-base, like the pre-push hook.
+Typical times on a warm laptop (no `--web`) are in the last column.
+
+| Step | Runs when | Time |
+| --- | --- | --- |
+| gofmt on changed Go files | Go files changed | 1s |
+| `scripts/code-gen-check.sh` | always | 4s |
+| `scripts/check-migration-versions.sh` plus `--against-remotes` | always; fetches origin and reads every `origin/*` branch | about 1 min |
+| `scripts/check-fanin.sh` | always | 3s |
+| `scripts/check-dashes.sh` | always | 1s |
+| i18n parity (`localeParity.test.ts`) | `web/src/locales/` changed | 10s |
+| API guards (`./internal/api`) | `internal/api`, route or openapi files changed | 30s to 2 min |
+| CLI guards (`TestCommandTree`, `TestHelpTextCoversEveryFlag`) | same as above | 20s |
+| `go vet` on changed packages | Go files changed | 10s to 1 min |
+| `tsc -b` | `--web` | 1 to 3 min |
+| bundle size and report | `--web`; fails on any FAIL line | 1 to 2 min |
+
+Knobs: `PRE_INTEGRATE_NODE_PATH`, `PRE_INTEGRATE_NODE_HEAP`, `PRE_INTEGRATE_TAIL`,
+`PRE_INTEGRATE_MIGRATION_STRICT=1` (fail instead of warn when another remote branch
+uses the same migration number under a different file name), `LEVELRAIL_PUSH_BASE`.
+`scripts/next-migration.sh` prints the next free number across the working tree and
+all `origin/*` branches; `scripts/test-next-migration.sh` checks it on a temp repo.
