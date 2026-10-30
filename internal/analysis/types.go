@@ -15,6 +15,8 @@ const (
 const (
 	TriggerAlert = "alert"
 	TriggerSpend = "spend"
+	// TriggerManual marks a report an operator asked for on demand.
+	TriggerManual = "manual"
 )
 
 // Trigger is the alert or spend event a report answers.

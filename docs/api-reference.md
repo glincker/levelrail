@@ -671,6 +671,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/rollout | AbilityDeploy | handleDeleteRollout |
 | GET | /api/v1/apps/{name}/releases | AbilityRead | handleListAppReleases |
 | GET | /api/v1/apps/{name}/analysis/reports | AbilityRead | handleListAnalysisReports |
+| POST | /api/v1/apps/{name}/analysis/reports | AbilityWrite | handleRunAnalysisReport |
 
 </Accordion>
 

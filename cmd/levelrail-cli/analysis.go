@@ -9,10 +9,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAnalysis dispatches `analysis list <app>` and `analysis show <id>`; both are read only.
+// runAnalysis dispatches `analysis list <app>`, `analysis show <id>` (read only) and `analysis run <app>`.
 func runAnalysis(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s analysis list <app> [--json]\n  %[1]s analysis show <id> [--json]\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s analysis list <app> [--json]\n  %[1]s analysis show <id> [--json]\n  %[1]s analysis run <app> [--json]\n", prog)
 		return 2
 	}
 	switch args[0] {
@@ -20,6 +20,8 @@ func runAnalysis(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runAnalysisList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "show":
 		return runAnalysisShow(prog, args[1:], stdout, stderr, lookupEnv)
+	case "run":
+		return runAnalysisRun(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "unknown analysis command %q\n", args[0])
 	return 2
@@ -63,6 +65,23 @@ func runAnalysisShow(prog string, args []string, stdout, stderr io.Writer, looku
 	rep, err := client.GetAnalysisReport(context.Background(), id)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get analysis report %q: %w", id, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, rep, func() { printAnalysisReport(stdout, rep) })
+}
+
+func runAnalysisRun(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "analysis run", "print the report as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s analysis run <app> [flags]\n\nGenerates an analysis report for an app now. Needs APP_ANALYSIS_ENABLED on the control plane.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	client, app, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "analysis run", "app name"}, lookupEnv)
+	if !ok {
+		return exitCode
+	}
+	rep, err := client.RunAnalysis(context.Background(), app)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("run analysis for app %q: %w", app, err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, rep, func() { printAnalysisReport(stdout, rep) })
 }

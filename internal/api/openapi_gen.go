@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1824 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1825 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -112,6 +112,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/alert-history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppAlertHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/analysis/reports", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAnalysisReports", Description: "Read-only analysis reports (ADR 051, no model). AbilityRead, same sensitivity as resource-recommendation; the by-id route is scoped to the report's app."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/analysis/reports", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunAnalysisReport", Description: "On-demand run for one app. AbilityWrite because it stores a report; 501 unless APP_ANALYSIS_ENABLED is on."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/apply-pending", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyPending", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/auto-rollback", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAutoRollback", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/auto-rollback", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAutoRollback", Description: ""},
