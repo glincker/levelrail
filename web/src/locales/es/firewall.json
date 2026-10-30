@@ -1,0 +1,324 @@
+{
+  "cancel": "Cancelar",
+  "save": "Guardar",
+  "retry": "Intentar de nuevo",
+  "page": {
+    "title": "Firewall",
+    "description": "Filtra las solicitudes web antes de que lleguen a tus apps. Los cambios de reglas se aplican al instante, sin redeploy.",
+    "sections": "Secciones del firewall",
+    "scope": "Host",
+    "allHosts": "Todos los hosts",
+    "range": "Rango de tiempo",
+    "ranges": {
+      "1h": "Última hora",
+      "6h": "Últimas 6 horas",
+      "24h": "Último día"
+    },
+    "tabs": {
+      "overview": "Resumen",
+      "traffic": "Tráfico",
+      "rules": "Reglas",
+      "audit": "Registro de auditoría"
+    },
+    "help": "Guía del firewall"
+  },
+  "outcome": {
+    "allowed": "Permitida",
+    "denied": "Denegada",
+    "challenged": "Con desafío",
+    "logged": "Registrada",
+    "rate_limited": "Limitada por tasa"
+  },
+  "action": {
+    "allow": "Omitir",
+    "deny": "Denegar",
+    "challenge": "Desafío",
+    "log": "Registrar",
+    "rate_limit": "Limitar tasa"
+  },
+  "actionHint": {
+    "allow": "Se salta todas las reglas posteriores, los bloqueos y la verificación de bots. Úsalo para clientes de confianza.",
+    "deny": "Rechaza la solicitud con un 403.",
+    "challenge": "Pide al navegador que resuelva una breve prueba de trabajo antes de dejarlo pasar.",
+    "log": "Cuenta la solicitud y la deja continuar. Úsalo para probar una regla antes de aplicarla.",
+    "rate_limit": "Deja pasar esta cantidad de solicitudes coincidentes por cliente y luego responde 429 hasta que termine la ventana."
+  },
+  "mode": {
+    "off": "Desactivado",
+    "log": "Solo registrar",
+    "challenge": "Desafío",
+    "block": "Bloquear"
+  },
+  "field": {
+    "path": "Ruta de la solicitud",
+    "host": "Host",
+    "method": "Método",
+    "header": "Encabezado",
+    "query": "Parámetro de consulta",
+    "user_agent": "User agent",
+    "ip": "Dirección IP o rango",
+    "country": "País"
+  },
+  "op": {
+    "equals": "Es igual a",
+    "starts_with": "Empieza con",
+    "contains": "Contiene",
+    "glob": "Coincide con el patrón",
+    "in_cidr": "Está en",
+    "exists": "Existe"
+  },
+  "placeholder": {
+    "path": "/api/users",
+    "host": "app.example.com",
+    "method": "POST",
+    "header": "valor",
+    "query": "valor",
+    "user_agent": "curl",
+    "ip": "203.0.113.0/24",
+    "country": "DE",
+    "paramName": "Nombre"
+  },
+  "rateLimit": {
+    "count": "Solicitudes permitidas",
+    "countUnit": "solicitudes cada",
+    "window": "Ventana",
+    "windowUnit": "segundos"
+  },
+  "reason": {
+    "rule": "Una regla",
+    "rate_rule": "Una regla de límite de tasa",
+    "ban": "Bloqueo temporal",
+    "bot": "Lista de bots maliciosos",
+    "ai_bot": "Lista de rastreadores de IA",
+    "attack_mode": "Modo de ataque",
+    "shield_rate": "Límite de tasa del dominio",
+    "shield_concurrency": "Tope de conexiones del dominio",
+    "shield_bot": "Lista de bots del dominio",
+    "shield_body": "Límite de tamaño del cuerpo del dominio"
+  },
+  "actions": {
+    "failed": "Eso no funcionó",
+    "blockIp": "Bloquear esta IP",
+    "allowIp": "Permitir siempre esta IP",
+    "createRule": "Crear una regla a partir de esto",
+    "blocked": "{{ip}} bloqueada",
+    "allowed": "{{ip}} ahora se salta el firewall"
+  },
+  "lockout": {
+    "title": "Esto te bloquearía",
+    "description": "{{ip}} es la dirección que estás usando ahora mismo. Bloquearla te dejará sin acceso a este plano de control hasta que la entrada se quite desde el servidor.",
+    "ruleDescription": "Esta regla coincide con la dirección que estás usando ahora mismo. Al guardarla te quedarás sin acceso a este plano de control hasta que la regla se quite desde el servidor.",
+    "confirm": "Bloquear de todos modos"
+  },
+  "error": {
+    "loadFailed": "No se pudo cargar el firewall.",
+    "forbiddenTitle": "No puedes ver esta parte del firewall",
+    "forbiddenHelp": "Las direcciones de los clientes requieren el permiso read:sensitive. Pide a un administrador que lo añada a tu rol o token."
+  },
+  "status": {
+    "activeTitle": "El firewall está activo",
+    "activeSubtitle": "Todos los sistemas normales",
+    "attackTitle": "El modo de ataque está activado",
+    "attackUntil": "Los límites se endurecen hasta las {{time}}",
+    "spikeTitle": "El tráfico bloqueado está en aumento",
+    "spikeSubtitle": "Revisa la pestaña de tráfico o activa el modo de ataque",
+    "attackMode": "Modo de ataque",
+    "customRules": "Reglas habilitadas",
+    "botProtection": "Bots maliciosos",
+    "aiBots": "Rastreadores de IA",
+    "on": "Activado",
+    "off": "Desactivado"
+  },
+  "chart": {
+    "legend": "Solicitudes por resultado",
+    "label": "Solicitudes por resultado del firewall en el rango {{range}}",
+    "none": "ninguna",
+    "empty": "Aún no se han visto solicitudes en este rango. Los conteos aparecen en cuanto llega tráfico a un host."
+  },
+  "alerts": {
+    "title": "Alertas",
+    "noneTitle": "No hay alertas activas",
+    "noneHelp": "Aparece una aquí si las solicitudes bloqueadas o con desafío superan {{threshold}} por minuto.",
+    "spikeTitle": "El tráfico bloqueado está en aumento",
+    "spikeHelp": "{{rate}} solicitudes bloqueadas o con desafío por minuto en los últimos {{minutes}} minutos (alerta en {{threshold}}).",
+    "turnOn": "Activar el modo de ataque",
+    "attackOn": "El modo de ataque está activado. Termina"
+  },
+  "topList": {
+    "actionsFor": "Acciones para {{key}}",
+    "spark": "Solicitudes de la última hora para {{key}}"
+  },
+  "traffic": {
+    "note": "Las tablas principales son aproximadas y cubren los últimos {{minutes}} minutos. Solo se guardan en memoria, así que se reinician cuando se reinicia el plano de control. No se muestran países, redes ni huellas de cliente.",
+    "lastHour": "Última hora",
+    "ips": "Direcciones IP principales",
+    "ipsEmpty": "No se vieron solicitudes en la última hora. Las direcciones aparecen aquí a medida que llega tráfico.",
+    "deniedIps": "IP denegadas",
+    "deniedEmpty": "Nada denegado, con desafío ni limitado por tasa en la última hora.",
+    "userAgents": "User agents principales",
+    "userAgentsEmpty": "No se vieron solicitudes en la última hora.",
+    "paths": "Rutas de solicitud principales",
+    "pathsEmpty": "No se vieron solicitudes en la última hora.",
+    "hosts": "Hosts principales",
+    "hostsEmpty": "No se vieron solicitudes en la última hora."
+  },
+  "bans": {
+    "title": "Bloqueos temporales",
+    "description": "Los clientes a los que se deniega acceso repetidamente se bloquean por un tiempo.",
+    "retention": "Un cliente denegado {{strikes}} veces en {{window}} se bloquea durante {{duration}}. Los bloqueos viven en memoria y terminan al reiniciar.",
+    "emptyTitle": "No hay bloqueos activos",
+    "emptyHelp": "Un cliente al que se deniega acceso repetidamente se bloquea aquí automáticamente, con un botón para levantarlo.",
+    "loadFailed": "No se pudieron cargar los bloqueos temporales.",
+    "ip": "Dirección IP",
+    "reason": "Causado por",
+    "requests": "Bloqueadas",
+    "started": "Inicio",
+    "ends": "Termina",
+    "lift": "Levantar",
+    "liftFor": "Levantar el bloqueo de {{ip}}",
+    "lifted": "Bloqueo de {{ip}} levantado"
+  },
+  "rules": {
+    "title": "Reglas",
+    "manage": "Gestionar",
+    "new": "Nueva regla",
+    "customTitle": "Reglas personalizadas",
+    "customHelp": "Se verifican en este orden. La primera regla que permite, deniega o lanza un desafío termina la verificación. Los cambios se aplican sin redeploy.",
+    "emptyTitle": "Aún no hay reglas personalizadas",
+    "emptyHelp": "Añade una regla para denegar, lanzar un desafío, registrar o limitar la tasa de las solicitudes que coincidan con una ruta, encabezado, user agent o dirección.",
+    "edit": "Editar",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteHelp": "El tráfico que coincidía deja de filtrarse. No se puede deshacer.",
+    "enabledFor": "Habilitada: {{name}}",
+    "actionsFor": "Acciones para {{name}}",
+    "hitsTitle": "Coincidencias desde que se inició el plano de control",
+    "hitsSpark": "Coincidencias de la última hora para {{name}}"
+  },
+  "ipList": {
+    "blockTitle": "Bloqueo de IP",
+    "blockHelp": "Deniega una dirección o rango en todos los hosts, o solo en el host seleccionado arriba.",
+    "bypassTitle": "Permitir siempre",
+    "bypassHelp": "Estas direcciones se saltan todas las demás reglas, bloqueos y verificaciones de bots.",
+    "ipLabel": "Dirección IP o rango CIDR",
+    "noteLabel": "Nota",
+    "notePlaceholder": "Motivo (opcional)",
+    "block": "Bloquear",
+    "bypass": "Permitir",
+    "required": "Ingresa una dirección IP o un rango CIDR.",
+    "removeFor": "Quitar {{ip}}",
+    "removed": "{{ip}} eliminada",
+    "blockEmptyTitle": "No hay direcciones bloqueadas",
+    "blockEmptyHelp": "Añade una dirección arriba o bloquea una desde la pestaña de Tráfico.",
+    "bypassEmptyTitle": "No hay direcciones siempre permitidas",
+    "bypassEmptyHelp": "Añade las direcciones de tu oficina o de monitoreo para que ninguna regla pueda dejarlas sin acceso.",
+    "scopeNote": "Las entradas nuevas se aplican solo a {{scope}}.",
+    "allHostsNote": "Las entradas nuevas se aplican a todos los hosts."
+  },
+  "bots": {
+    "title": "Gestión de bots",
+    "description": "Convierte las listas curadas en registro, desafío o bloqueo. El desafío muestra una breve verificación del navegador.",
+    "badBots": "Bots maliciosos",
+    "badBotsHelp": "Scrapers y escáneres de la lista incluida. Edita esa lista con el ajuste de lista de bots en el servidor.",
+    "aiBots": "Rastreadores de IA",
+    "aiBotsHelp": "Rastreadores que recopilan contenido para modelos de IA. La lista de abajo son datos que puedes editar.",
+    "editList": "Editar lista",
+    "customList_one": "{{count}} entrada personalizada",
+    "customList_other": "{{count}} entradas personalizadas",
+    "shippedList_one": "Lista incluida, {{count}} entrada",
+    "shippedList_other": "Lista incluida, {{count}} entradas",
+    "bans": "Bloqueos automáticos",
+    "bansHelp": "Bloquea a un cliente por un tiempo después de que se le deniegue acceso repetidamente.",
+    "bansDetail": "Bloquear a un cliente durante {{duration}} tras {{strikes}} denegaciones en {{window}}.",
+    "saved": "Ajustes de bots guardados",
+    "listTitle": "Lista de rastreadores de IA",
+    "listHelp": "Una subcadena de user agent por línea, sin distinguir mayúsculas de minúsculas. Borra todo y guarda para volver a la lista incluida.",
+    "listLabel": "User agents de rastreadores de IA",
+    "listReset": "Restablecer a la lista incluida",
+    "listCount_one": "{{count}} entrada",
+    "listCount_other": "{{count}} entradas",
+    "listTooMany": "Máximo {{max}} entradas.",
+    "verifiedNote": "La coincidencia es solo por user agent. No se verifica la identidad del rastreador, así que un cliente puede hacerse pasar por un navegador o por un bot conocido."
+  },
+  "attack": {
+    "title": "Zona de peligro",
+    "description": "Cambios que afectan a todos los visitantes de todos los hosts. Se desactivan por sí solos.",
+    "switchTitle": "Modo de ataque",
+    "switchHelp": "Endurece los límites de tasa y de conexiones y rechaza la lista de bots maliciosos en todos los hosts. Opcionalmente lanza un desafío con verificación del navegador a todos los visitantes.",
+    "duration": "Duración",
+    "minutes_one": "{{count}} minuto",
+    "minutes_other": "{{count}} minutos",
+    "challenge": "Lanzar un desafío a todos los visitantes",
+    "turnOn": "Activar el modo de ataque",
+    "turnOff": "Desactivar",
+    "endsIn": "Termina",
+    "confirmTitle": "¿Activar el modo de ataque?",
+    "confirmHelp": "Permanece activado durante {{minutes}} minutos, a menos que lo desactives antes.",
+    "consequenceLimits": "Todos los clientes reciben un límite bajo de tasa de solicitudes y de conexiones.",
+    "consequenceBots": "Se rechaza a los bots de la lista de bots maliciosos.",
+    "consequenceChallenge": "Todos los visitantes deben superar una breve verificación del navegador, incluidos los clientes de API.",
+    "onToast": "El modo de ataque está activado",
+    "offToast": "El modo de ataque está desactivado"
+  },
+  "limits": {
+    "title": "Límites de {{domain}}",
+    "description": "Límites por dominio de tasa, conexiones y tamaño del cuerpo, lista de bots y lista de permitidos. Se ejecutan después de las reglas del firewall de arriba.",
+    "unknownDomain": "Este host no está configurado aquí, así que no tiene límites por dominio."
+  },
+  "audit": {
+    "title": "Cambios del firewall",
+    "emptyTitle": "Aún no hay cambios en el firewall",
+    "emptyHelp": "Aquí se registra, con quién lo hizo, la creación o el cambio de una regla, una entrada de IP, la gestión de bots o el modo de ataque.",
+    "actions": {
+      "rule_created": "Regla creada",
+      "rule_updated": "Regla modificada",
+      "rule_deleted": "Regla eliminada",
+      "rules_reordered": "Reglas reordenadas",
+      "ip_blocked": "IP bloqueada",
+      "ip_allowed": "IP siempre permitida",
+      "ban_lifted": "Bloqueo levantado",
+      "settings_changed": "Ajustes de bots modificados",
+      "attack_mode_on": "Modo de ataque activado",
+      "attack_mode_off": "Modo de ataque desactivado"
+    }
+  },
+  "editor": {
+    "newTitle": "Nueva regla de firewall",
+    "editTitle": "Editar regla de firewall",
+    "description": "Una regla coincide cuando se cumplen todas sus condiciones. Las reglas se verifican en orden, así que añade varias reglas para un OR.",
+    "back": "Todas las reglas",
+    "create": "Crear regla",
+    "save": "Guardar regla",
+    "saving": "Guardando",
+    "created": "Regla creada",
+    "updated": "Regla guardada",
+    "missing": "Esta regla ya no existe.",
+    "namePlaceholder": "Bloquear rutas de administración antiguas",
+    "notePlaceholder": "Para qué sirve esta regla",
+    "scope": "Se aplica a",
+    "scopeHelp": "Todos los hosts, o un solo host."
+  },
+  "validation": {
+    "nameRequired": "Dale a la regla un nombre de hasta 80 caracteres.",
+    "noteTooLong": "Mantén la descripción por debajo de 200 caracteres.",
+    "actionRequired": "Elige qué hace la regla.",
+    "rateCount": "Ingresa un número entero de solicitudes de 1 a 1.000.000.",
+    "rateWindow": "Ingresa un número entero de segundos de 1 a 3.600.",
+    "paramName": "Ingresa un nombre con letras, dígitos, guiones o guiones bajos.",
+    "valueRequired": "Ingresa un valor de hasta 256 caracteres.",
+    "ipInvalid": "Ingresa una dirección IP o un rango CIDR como 203.0.113.0/24.",
+    "methodInvalid": "Ingresa un método HTTP como GET o POST.",
+    "countryInvalid": "Ingresa un código de país de dos letras como DE.",
+    "pathSlash": "Una ruta empieza con /.",
+    "wildcards": "Usa como máximo 8 comodines."
+  },
+  "banner": {
+    "diagram": {
+      "allowed": "Permitida",
+      "blocked": "Bloqueada",
+      "server": "Servidor"
+    }
+  }
+}
