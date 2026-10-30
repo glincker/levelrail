@@ -188,6 +188,9 @@ rollback is (there is no separate rollback endpoint); "%[1]s apps
 rollback <name> --image <older-tag>" does exactly this, framed for that
 use.
 
+To go back to a recorded release instead of an image tag, use
+"%[1]s apps rollback <name> --release <id>" (ids from "%[1]s releases list").
+
 If the app is tagged with a protected environment, this fails unless
 --confirm is set or you type "yes" at the interactive prompt.
 

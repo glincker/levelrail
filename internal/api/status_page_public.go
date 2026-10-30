@@ -237,7 +237,7 @@ func (rt *Router) servePublicStatus(w http.ResponseWriter, r *http.Request, form
 	if r.Method == http.MethodHead {
 		return
 	}
-	_, _ = w.Write(body)
+	_, _ = w.Write(body) //nolint:gosec // G705: body is rendered by internal/statuspage, which escapes every operator-supplied value
 }
 
 func publicBaseURL(r *http.Request) string {
