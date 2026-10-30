@@ -12,6 +12,7 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -26,7 +27,30 @@ const (
 	pipelineHMACSecretKey         = "hmac_secret"
 	pipelineSignatureHeader       = "X-Hub-Signature-256"
 	maxIdempotencyKeyLen          = 128
+	defaultPipelineMaxRefLen      = 255
 )
+
+var (
+	pipelineRefRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/@+-]*$`)
+	pipelineSHARe = regexp.MustCompile(`^[0-9a-fA-F]{7,64}$`)
+)
+
+// validatePipelineRefSHA keeps hostile ref and sha values out of the OIDC
+// subject, the checkout script and commit statuses. Empty values are allowed.
+func validatePipelineRefSHA(ref, sha string) error {
+	maxLen := envPositiveInt("LEVELRAIL_PIPELINE_MAX_REF_LEN", defaultPipelineMaxRefLen)
+	if ref != "" {
+		if len(ref) > maxLen || !pipelineRefRe.MatchString(ref) || strings.Contains(ref, "..") ||
+			strings.Contains(ref, "//") || strings.HasSuffix(ref, "/") || strings.HasSuffix(ref, ".") ||
+			strings.HasSuffix(ref, ".lock") || strings.Contains(ref, "@{") {
+			return fmt.Errorf("%w: ref is not a valid git ref", pipeline.ErrInvalidInput)
+		}
+	}
+	if sha != "" && !pipelineSHARe.MatchString(sha) {
+		return fmt.Errorf("%w: sha must be 7 to 64 hex characters", pipeline.ErrInvalidInput)
+	}
+	return nil
+}
 
 // pipelineHookContentTypes are the payload types a trigger accepts. The
 // body is stored and exposed as data, never parsed into commands.
@@ -296,6 +320,9 @@ func (rt *Router) startWebhookRun(r *http.Request, p store.Pipeline, body []byte
 	q, err := url.ParseQuery(rawQuery)
 	if err != nil {
 		return store.PipelineRun{}, fmt.Errorf("%w: unreadable query string", pipeline.ErrInvalidInput)
+	}
+	if err := validatePipelineRefSHA(q.Get("ref"), q.Get("sha")); err != nil {
+		return store.PipelineRun{}, err
 	}
 	inputs := map[string]string{}
 	for k, v := range q {

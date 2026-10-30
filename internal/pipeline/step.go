@@ -331,6 +331,9 @@ func (jr *jobRun) setup(ctx context.Context, k int) error {
 func (jr *jobRun) checkout(ctx context.Context, k int, url, token string) error {
 	e := jr.e
 	ref := firstNonEmpty(jr.run.CommitSHA, jr.run.Ref, "HEAD")
+	if strings.HasPrefix(ref, "-") || strings.HasPrefix(jr.run.Ref, "-") || strings.HasPrefix(jr.run.CommitSHA, "-") {
+		return fmt.Errorf("checkout: refusing ref or commit starting with a dash")
+	}
 	auth := ""
 	if token != "" {
 		basic := base64.StdEncoding.EncodeToString([]byte("x-access-token:" + token))
@@ -354,7 +357,7 @@ func (jr *jobRun) checkout(ctx context.Context, k int, url, token string) error 
 	if jr.run.CommitSHA != "" {
 		target = jr.run.CommitSHA
 	}
-	body := fmt.Sprintf("git init -q .\ngit remote add origin %s\ngit %s fetch -q --depth 1 origin %s || git %s fetch -q origin\ngit checkout -q --force %s\n",
+	body := fmt.Sprintf("git init -q .\ngit remote add origin %s\ngit %s fetch -q --depth 1 -- origin %s || git %s fetch -q -- origin\ngit checkout -q --force %s --\n",
 		shellQuote(url), auth, shellQuote(ref), auth, shellQuote(target))
 	jr.sink.Line(k, "stdout", fmt.Sprintf("checking out %s", ref))
 	if _, err := jr.exec(ctx, k, id, buildScript(nil, body)); err != nil {
