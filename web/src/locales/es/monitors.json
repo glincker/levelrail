@@ -16,6 +16,7 @@
     "suspect": "Sospechoso",
     "down": "Caído",
     "recovering": "Recuperando",
+    "degraded": "Degradado",
     "paused": "En pausa",
     "unknown": "Sin datos"
   },
@@ -35,7 +36,20 @@
     "save": "Crear",
     "saving": "Creando...",
     "created": "Monitor {{name}} creado",
-    "error": "No se pudo crear el monitor: {{message}}"
+    "error": "No se pudo crear el monitor: {{message}}",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "critDays": "Crítico (días)",
+    "daysHint": "Degradado por debajo de los días de aviso, caído por debajo de los días críticos. En blanco usa el valor del servidor.",
+    "done": "Listo",
+    "grace": "Margen (s)",
+    "graceHint": "Espera extra tras el intervalo antes de que la tarea se considere tardía. En blanco usa el valor del servidor.",
+    "heartbeat": "Latido de cron",
+    "pingHint": "Se muestra una sola vez. Añade /start antes de la tarea y /fail si hay un error. Rótalo con la CLI si se filtra.",
+    "pingTitle": "Añade esto a tu tarea",
+    "serverDefault": "predeterminado",
+    "tls": "Certificado TLS",
+    "warnDays": "Aviso (días)"
   },
   "delete": {
     "action": "Eliminar {{name}}",

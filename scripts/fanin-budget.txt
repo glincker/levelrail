@@ -4,6 +4,7 @@
 # v0.8.11: internal/api imports internal/monitor, so every dependent of the API now depends on it and on kit/netguard (the SSRF guard its probes dial through).
 # v0.8.12: internal/mailrecords reuses the SPF and DMARC grading in internal/email and internal/api imports it, so the API's dependents now depend on internal/email.
 # v0.8.12: internal/mail/demo (the dev-only mail demo zone) imports internal/dnszones, adding one dependent.
+# v0.8.12: internal/mailstorage imports internal/objectstore, adding one dependent to deploytrace and semver; it and internal/statuswebhook (signed subscriber webhooks) each add one to netguard and docker.
 internal/autoscale 142
 internal/bindaddr 142
 internal/bindmount 144
@@ -15,9 +16,9 @@ internal/costbudget 136
 internal/dbprovision 39
 internal/deploy 24
 internal/deploysafety 35
-internal/deploytrace 30
+internal/deploytrace 31
 internal/dnszones 21
-internal/docker 152
+internal/docker 153
 internal/dockerguard 52
 internal/email 30
 internal/envredact 61
@@ -45,8 +46,8 @@ internal/version 29
 kit/cronexpr 142
 kit/diskspace 37
 kit/ids 68
-kit/netguard 152
+kit/netguard 153
 kit/probe 142
-kit/semver 26
+kit/semver 27
 kit/timeutil 136
 kit/upgrade 24

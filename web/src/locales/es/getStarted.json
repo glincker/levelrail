@@ -84,7 +84,7 @@
     },
     "first_app": {
       "title": "Despliega tu primera aplicación",
-    "titleLive": "Tu primera aplicación está en ejecución",
+      "titleLive": "Tu primera aplicación está en ejecución",
       "what": "Crea una aplicación desde un repositorio, una imagen de contenedor o un template. La plataforma la compila, la inicia y le da una dirección https.",
       "why": "Demuestra que el ciclo de compilación, despliegue y rollback funciona en este servidor.",
       "cta": "Crear una aplicación"

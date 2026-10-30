@@ -36,6 +36,7 @@ const EXPECTED_GLOBAL = [
   '/dns',
   '/firewall',
   '/loadbalancers',
+  '/mail',
   '/images',
   '/inbox',
   '/settings/registry',
@@ -120,6 +121,7 @@ describe('global nav model', () => {
       'Private networks',
       'Firewall',
       'Load balancers',
+      'Mail',
       'CDN and caches',
     ])
   })

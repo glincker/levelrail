@@ -43,7 +43,9 @@ function DraftForm({
     <div>
       <input aria-label="name" {...register('name')} />
       <input aria-label="token" {...register('token')} />
-      {restoredFromDraft ? <p>Restored your unsaved draft from earlier.</p> : null}
+      {restoredFromDraft ? (
+        <p>Restored your unsaved draft from earlier.</p>
+      ) : null}
       <button type="button" onClick={discardDraft}>
         Discard draft
       </button>
@@ -188,7 +190,9 @@ describe('useFormDraft', () => {
     })
     expect(window.localStorage.getItem('test-draft-submit')).not.toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Clear (simulated submit)' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Clear (simulated submit)' }),
+    )
 
     expect(window.localStorage.getItem('test-draft-submit')).toBeNull()
     expect(screen.getByLabelText('name')).toHaveValue('demo-app')

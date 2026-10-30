@@ -22,15 +22,9 @@ const tenantCompose = "services:\n  web:\n    image: nginx:1\n"
 // A tenant can never install, deploy or label an app as the mail server,
 // at any team role, through any path that records a template ID.
 func TestMailTemplate_TenantCannotInstallOrDeploy(t *testing.T) {
-	wasOn := experimental.Enabled(experimental.Mail)
 	experimental.Set(experimental.Mail)
-	t.Cleanup(func() {
-		if wasOn {
-			experimental.Set(experimental.Mail)
-			return
-		}
-		experimental.Reset()
-	})
+	// TestMain turns every feature on; restoring only Mail would gate later stack tests.
+	t.Cleanup(func() { experimental.Set(experimental.All()...) })
 	f := newTeamFixture(t)
 	for _, role := range allTeamRoles {
 		for _, c := range []struct{ path, body string }{
