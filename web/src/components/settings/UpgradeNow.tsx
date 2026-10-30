@@ -29,6 +29,14 @@ import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 import { UpgradeProgress } from './UpgradeProgress'
 import { UpgradeStateHero } from './UpgradeStateHero'
 import { UpgradePlanPreview } from './UpgradePlanPreview'
+import {
+  BlockReasonText,
+  RestoreAfterUpgrade,
+  UpgradeSafetyCard,
+  UpgradeSafetyError,
+  UpgradeSafetySkeleton,
+} from './UpgradeSafetyCard'
+import { upgradeBlockReason } from './upgradeBlockReason'
 
 const POLL_MS = UPGRADE_POLL_MS
 const RECENT_MS = 15 * 60_000
@@ -68,6 +76,7 @@ export function UpgradeNow() {
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [dismissed, setDismissed] = useState('')
   const [rechecking, setRechecking] = useState(false)
+  const [skipBackup, setSkipBackup] = useState(false)
   const queryClient = useQueryClient()
 
   const attempts = useQuery({
@@ -133,11 +142,7 @@ export function UpgradeNow() {
   const reconnecting = attempts.isError || status.isError
 
   if (preflight.isPending || plan.isPending) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t('selfUpgrade.loading')}
-      </p>
-    )
+    return <UpgradeSafetySkeleton />
   }
   const pre = preflight.data
   const hostBinaryEdge = pre?.edge?.installable === false
@@ -214,7 +219,12 @@ export function UpgradeNow() {
   const planData = plan.data
   const serverTimezone = schedule.data?.server_timezone ?? 'UTC'
   const activeSchedule = schedule.data?.active ?? null
-  const canApply = planData?.can_apply === true && planData.notes_available
+  const block = planData ? upgradeBlockReason(planData) : null
+  const canApply = planData !== undefined && block === null
+  const restoreCommand = plan.data?.backup?.restore_command
+  const backupFailed =
+    recent?.failed_step === 'backup' && recent.outcome !== 'succeeded'
+  const showRestore = recent?.outcome === 'succeeded' && Boolean(restoreCommand)
 
   return (
     <div className="space-y-4">
@@ -239,6 +249,9 @@ export function UpgradeNow() {
           }}
         />
       ) : null}
+      {showRestore && restoreCommand ? (
+        <RestoreAfterUpgrade command={restoreCommand} />
+      ) : null}
       {activeSchedule ? (
         <ScheduledUpgradeBanner
           schedule={activeSchedule}
@@ -260,7 +273,22 @@ export function UpgradeNow() {
           </ul>
         </div>
       ) : null}
-      <UpgradePlanPreview pre={pre} />
+      {planData ? (
+        <UpgradeSafetyCard
+          plan={planData}
+          skipBackup={skipBackup}
+          onSkipBackupChange={setSkipBackup}
+          backupFailed={backupFailed}
+          fallbackMigrations={pre.migrations_to_apply ?? undefined}
+        />
+      ) : plan.isError ? (
+        <UpgradeSafetyError
+          message={plan.error.message}
+          onRetry={() => void plan.refetch()}
+        />
+      ) : (
+        <UpgradePlanPreview pre={pre} />
+      )}
       {planData && planData.signature_pinned === false ? (
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <ShieldCheckGlassIcon
@@ -315,7 +343,8 @@ export function UpgradeNow() {
         >
           {t('schedule.button')}
         </Button>
-        {pre.blocked && !pre.waiting ? (
+        {block ? <BlockReasonText block={block} /> : null}
+        {!block && pre.blocked && !pre.waiting ? (
           <span className="text-xs text-muted-foreground">
             {t('upgradeNow.fixFirst')}
           </span>
@@ -331,7 +360,11 @@ export function UpgradeNow() {
             error={start.isError ? start.error.message : undefined}
             onConfirm={(ack) =>
               start.mutate(
-                { target: planData.target_version, ack },
+                {
+                  target: planData.target_version,
+                  ack,
+                  ...(skipBackup ? { skip_backup: true } : {}),
+                },
                 {
                   onSuccess: () => {
                     setConfirmOpen(false)

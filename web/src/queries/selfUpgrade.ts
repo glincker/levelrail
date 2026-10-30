@@ -16,6 +16,20 @@ export interface SelfUpgradeBreaking {
   requires_ack: boolean
 }
 
+export interface SelfUpgradeDisk {
+  known: boolean
+  free_bytes: number
+  required_bytes: number
+  db_bytes: number
+  ok: boolean
+}
+
+export interface SelfUpgradeBackup {
+  will_take: boolean
+  dir?: string
+  restore_command?: string
+}
+
 export interface SelfUpgradePlan {
   current_version: string
   target_version: string
@@ -25,6 +39,13 @@ export interface SelfUpgradePlan {
   cannot_apply_reason?: string
   command: string
   steps: string[]
+  db_schema_version?: number
+  target_schema_version?: number
+  pending_migrations?: number
+  disk?: SelfUpgradeDisk
+  downtime_seconds?: number
+  restart_behaviour?: string
+  backup?: SelfUpgradeBackup
   signature_pinned?: boolean
   signature_pinned_version?: string
   edge?: EdgeGuidance
@@ -217,6 +238,7 @@ export function useStartSelfUpgrade() {
     mutationFn: async (input: {
       target: string
       ack: string[]
+      skip_backup?: boolean
     }): Promise<{ status: string; target_version: string }> => {
       const res = await fetch('/api/v1/updates/self-upgrade', {
         method: 'POST',

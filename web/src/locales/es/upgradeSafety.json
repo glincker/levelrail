@@ -1,0 +1,53 @@
+{
+  "title": "Antes de actualizar",
+  "loading": "Comprobando espacio en disco, copia de seguridad y tiempo de inactividad",
+  "loadError": "No se pudo comprobar esta actualización: {{message}}",
+  "loadErrorNext": "Recarga la página o inténtalo de nuevo en un minuto. No se cambió nada.",
+  "retry": "Reintentar",
+  "change": {
+    "label": "Qué cambia",
+    "fromTo": "{{from}} a {{to}}",
+    "migrations_one": "1 migración de base de datos",
+    "migrations_other": "{{count}} migraciones de base de datos",
+    "noMigrations": "Sin migraciones de base de datos",
+    "schema": "esquema {{from}} a {{to}}",
+    "breaking_one": "1 cambio incompatible",
+    "breaking_other": "{{count}} cambios incompatibles",
+    "noBreaking": "Sin cambios incompatibles"
+  },
+  "checks": {
+    "label": "Comprobaciones",
+    "diskOk": "Disco OK: {{free}} libres, {{needed}} necesarios",
+    "diskShort": "Disco insuficiente: {{free}} libres, {{needed}} necesarios",
+    "diskUnknown": "No se pudo medir el espacio libre en disco",
+    "backupAt": "La copia se guarda en {{dir}}",
+    "backupSkipped": "Copia omitida, no habrá punto de restauración",
+    "backupNone": "No hay copia previa a la actualización configurada"
+  },
+  "downtime": {
+    "label": "Tiempo de inactividad",
+    "estimate": "Unos {{seconds}} s sin servicio mientras el servidor se reinicia",
+    "restart": "Reinicio: {{behaviour}}"
+  },
+  "restore": {
+    "label": "Si algo sale mal, restaura con",
+    "after": "Guarda este comando. Devuelve la base de datos al estado anterior a la actualización.",
+    "copyLabel": "Comando de restauración"
+  },
+  "blocked": {
+    "disk": "No hay suficiente espacio libre. Libera {{short}} o mueve el directorio de datos y recarga.",
+    "plan": "Esta actualización no puede empezar: {{reason}}",
+    "planUnknown": "El plan de actualización falló. Recarga la página o actualiza desde la línea de comandos.",
+    "notes": "Las notas de esta versión aún no están disponibles. Inténtalo en unos minutos."
+  },
+  "skip": {
+    "toggle": "Avanzado",
+    "label": "Omitir la copia previa a la actualización",
+    "warning": "No se creará ningún punto de restauración. Si la actualización falla no podrás volver a los datos actuales.",
+    "hint": "La copia falló. Corrige la causa y reintenta, o omítela bajo tu responsabilidad."
+  },
+  "backupFailed": {
+    "title": "La copia previa falló, así que no se cambió nada",
+    "next": "Libera espacio en disco o comprueba que el directorio de copias es escribible y pulsa Actualizar de nuevo. También puedes omitir la copia en Avanzado."
+  }
+}
