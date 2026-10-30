@@ -499,6 +499,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox'.split(
     ' ',
   )
