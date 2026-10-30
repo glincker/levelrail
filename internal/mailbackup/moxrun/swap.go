@@ -15,36 +15,41 @@ import (
 // Every mode works on one volume root ($2). The journal (.levelrail/swap)
 // records the phase before each step, so rollback can always restore the
 // original entries from the pre-restore dir, whatever step was interrupted.
+// Only swap creates under .levelrail, always owned like the root: mox backup
+// walks both roots as the mox user and fails on anything it cannot open.
+// A staged moxversion stays out: mox backup writes its own and fails on a live one.
 const swapScript = `set -eu
 mode="$1"; R="$2"; id="${3:-}"; pre="${4:-}"; arg="${5:-}"
-L="$R/.levelrail"; j="$L/swap"
+L="$R/.levelrail"; j="$L/swap"; o=""
 cd "$R"
-mkdir -p "$L"; chmod 700 "$L"
-jw() { printf '%s %s %s\n' "$id" "$pre" "$1" > "$j.new"; sync; mv -f "$j.new" "$j"; sync; }
+own() { o="$(ls -nd . | awk '{print $3":"$4}')"; case "$o" in [0-9]*:[0-9]*) ;; *) echo "cannot read the owner of $R" >&2; exit 7;; esac; }
+mkw() { mkdir -p "$1"; chown "$o" "$1"; chmod 700 "$1"; }
+jw() { printf '%s %s %s\n' "$id" "$pre" "$1" > "$j.new"; chown "$o" "$j.new"; sync; mv -f "$j.new" "$j"; sync; }
+tidy() { rmdir -- "$L" 2>/dev/null || true; }
 case "$mode" in
 swap)
 	s="$L/restore-$id/$arg"; p="$L/$pre"
 	test -d "$s" || { echo "staged restore $s is missing" >&2; exit 3; }
 	[ ! -e "$j" ] || { echo "an earlier restore swap in $R is not finished" >&2; exit 4; }
 	[ ! -e "$p" ] || { echo "$p already exists" >&2; exit 5; }
-	o="$(ls -nd . | awk '{print $3":"$4}')"
-	case "$o" in [0-9]*:[0-9]*) ;; *) echo "cannot read the owner of $R" >&2; exit 7;; esac
+	own
 	chown -Rh "$o" "$s"
-	mkdir -p "$p"; chmod 700 "$p"
+	mkw "$L"; mkw "$p"
 	jw aside
 	for f in * .[!.]* ..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "$f" in tmp|.levelrail) continue;; esac; mv -- "$f" "$p/"; done
 	jw in
-	for f in "$s"/* "$s"/.[!.]* "$s"/..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "${f##*/}" in tmp|.levelrail) continue;; esac; mv -- "$f" .; done
+	for f in "$s"/* "$s"/.[!.]* "$s"/..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "${f##*/}" in tmp|.levelrail|moxversion) continue;; esac; mv -- "$f" .; done
 	jw swapped
 	rm -rf -- "$L/restore-$id"
 	echo swapped ;;
 rollback)
 	[ -e "$j" ] || { echo none; exit 0; }
+	own
 	read -r jid jpre phase < "$j" || true
 	case "$jpre" in pre-restore-*) ;; *) echo "the swap journal $j is unreadable" >&2; exit 6;; esac
 	id="$jid"; pre="$jpre"; p="$L/$jpre"; d="$L/discarded-$(date -u +%Y%m%dT%H%M%SZ)-$jid-$$"
 	case "$phase" in aside|rollback) ;; *)
-		mkdir -p "$d"; chmod 700 "$d"
+		mkw "$d"
 		for f in * .[!.]* ..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "$f" in tmp|.levelrail) continue;; esac; mv -- "$f" "$d/"; done ;;
 	esac
 	# From here live entries are originals already moved back, so a rerun must not discard them.
@@ -52,23 +57,30 @@ rollback)
 	if [ -d "$p" ]; then
 		for f in "$p"/* "$p"/.[!.]* "$p"/..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue
 			b="$(basename -- "$f")"
-			if [ -e "./$b" ] || [ -L "./$b" ]; then mkdir -p "$d"; mv -- "./$b" "$d/"; fi
+			if [ -e "./$b" ] || [ -L "./$b" ]; then mkw "$d"; mv -- "./$b" "$d/"; fi
 			mv -- "$f" .
 		done
 		rmdir -- "$p"
 	fi
-	rm -f -- "$j"; sync
+	rm -f -- "$j"; sync; tidy
 	echo rolledback ;;
 state)
 	if [ -e "$j" ]; then cat "$j"; else echo none; fi ;;
 commit)
 	rm -f -- "$j"; sync
 	n=$(ls -1d "$L"/pre-restore-* 2>/dev/null | wc -l); x=$((n - arg))
-	if [ "$x" -gt 0 ]; then ls -1d "$L"/pre-restore-* | sort | head -n "$x" | while read -r o; do rm -rf -- "$o"; done; fi
+	if [ "$x" -gt 0 ]; then ls -1d "$L"/pre-restore-* | sort | head -n "$x" | while read -r c; do rm -rf -- "$c"; done; fi
+	tidy
 	echo committed ;;
 sweep)
 	[ ! -e "$j" ] || { echo busy; exit 0; }
-	find "$L" -mindepth 1 -maxdepth 1 \( -name 'restore-*' -o -name 'discarded-*' \) -mmin "+$arg" -exec rm -rf -- {} +
+	if [ -d "$L" ]; then
+		find "$L" -mindepth 1 -maxdepth 1 \( -name 'restore-*' -o -name 'discarded-*' \) -mmin "+$arg" -exec rm -rf -- {} +
+		rm -f -- "$j.new"
+		# Older releases left root-owned 0700 dirs here, which mox backup cannot walk.
+		own; find "$L" -maxdepth 1 -exec chown "$o" {} +; chmod 700 "$L"
+		tidy
+	fi
 	if [ -d tmp/restore ]; then find tmp/restore -mindepth 1 -maxdepth 1 -mmin "+$arg" -exec rm -rf -- {} +; fi
 	echo swept ;;
 *) echo "unknown mode $mode" >&2; exit 2 ;;
@@ -147,16 +159,27 @@ func (h *Helper) Run(ctx context.Context, mode, root string, args ...string) (st
 	return strings.TrimSpace(lines[len(lines)-1]), nil
 }
 
+// ErrSwapOpen means a swap journal is open on a mail volume: a restore is
+// running or was interrupted and needs recovery.
+var ErrSwapOpen = errors.New("a restore is in progress or needs recovery")
+
 // Sweep removes stale staged and discarded restore dirs under root through
-// the running mail container; it does nothing while a swap journal is open.
+// the running mail container, hands what is left to the volume owner and
+// removes an empty work dir. It returns ErrSwapOpen while a journal is open.
 func Sweep(ctx context.Context, rt Execer, containerID, root, minutes string) error {
 	rc, err := rt.Exec(ctx, containerID, []string{"sh", "-c", swapScript, "swap", "sweep", root, "", "", minutes})
 	if err != nil {
 		return err
 	}
-	_, err = drain(rc)
+	out, err := drain(rc)
 	_ = rc.Close()
-	return err
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(out) == "busy" {
+		return fmt.Errorf("%s: %w", root, ErrSwapOpen)
+	}
+	return nil
 }
 
 // Close removes the helper container.

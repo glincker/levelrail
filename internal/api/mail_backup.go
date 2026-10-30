@@ -317,7 +317,14 @@ func (rt *Router) runMailBackup(base context.Context, cfg *mailBackupConfig, t m
 	app, cid := t.svc.Name, t.container.ID
 	vols := mailVolumes(t.svc)
 	cfg.sweepHostLeftovers(time.Now())
-	sweepVolume(ctx, t.rt, cid, vols.Config != "")
+	if err := sweepVolume(ctx, t.rt, cid, vols.Config != ""); err != nil {
+		rt.logger.Warn("api: mail backup refused", slog.String("app", app), slog.String("job", jobID), slog.String("error", err.Error()))
+		cfg.finish(app, "", fmt.Errorf("mail backup refused: %w", err))
+		if strings.HasPrefix(t.svc.MaintenanceHold, mailRestoreHoldPrefix) {
+			rt.startMailRecovery(ctx, cfg, t.svc)
+		}
+		return
+	}
 	var fetchConfig func(context.Context, string) error
 	if vols.Config != "" {
 		fetchConfig = func(ctx context.Context, host string) error {
@@ -442,7 +449,9 @@ func (rt *Router) runMailRestore(base context.Context, cfg *mailBackupConfig, t 
 		_ = os.RemoveAll(work)
 		defer func() { _ = os.RemoveAll(filepath.Dir(work)) }()
 		cfg.sweepHostLeftovers(time.Now())
-		sweepVolume(ctx, t.rt, cid, vols.Config != "")
+		if err := sweepVolume(ctx, t.rt, cid, vols.Config != ""); err != nil {
+			return err
+		}
 		step("extract")
 		runner := moxrun.ExecRunner{RT: t.rt, ContainerID: cid}
 		if _, err := mailbackup.Restore(ctx, mailbackup.RestoreSpec{Runner: runner, Sink: sink, ID: id, DestDir: work, Identities: cfg.identities}, false); err != nil {

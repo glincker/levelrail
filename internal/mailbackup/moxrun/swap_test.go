@@ -153,3 +153,54 @@ func TestExecRunnerSeesExitPastOutputCap(t *testing.T) {
 		t.Fatalf("got len %d err %v", len(out), err)
 	}
 }
+
+// TestOnlySwapCreatesTheWorkDir models the real-host failure: every mode but
+// swap must leave a volume root without .levelrail when nothing is pending.
+func TestOnlySwapCreatesTheWorkDir(t *testing.T) {
+	r := liveRoot(t)
+	work := filepath.Join(r, WorkDir)
+	gone := func(when string) {
+		t.Helper()
+		if _, err := os.Stat(work); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("%s: %s exists", when, work)
+		}
+	}
+	for _, args := range [][]string{{"state"}, {"rollback"}, {"commit", "", "", "2"}, {"sweep", "", "", "120"}} {
+		mustSwap(t, r, args...)
+		gone(args[0] + " with nothing pending")
+	}
+	write(t, filepath.Join(work, "swap.new"), "ID1 pre-restore-1-ID1 aside\n")
+	mustSwap(t, r, "sweep", "", "", "120")
+	gone("sweep of an empty work dir with a closed journal")
+
+	write(t, filepath.Join(work, "swap"), "ID1 pre-restore-1-ID1 in\n")
+	if out, _ := runSwap(t, r, "sweep", "", "", "120"); strings.TrimSpace(out) != "busy" {
+		t.Fatalf("sweep with an open journal said %q, want busy", out)
+	}
+	if err := os.Remove(filepath.Join(work, "swap")); err != nil {
+		t.Fatal(err)
+	}
+	stage(t, r, "newidx")
+	mustSwap(t, r, "swap", "ID1", "pre-restore-1-ID1", "data")
+	if fi, err := os.Stat(work); err != nil || fi.Mode().Perm() != 0o700 {
+		t.Fatalf("swap work dir: %v %v", fi, err)
+	}
+	mustSwap(t, r, "commit", "", "", "0")
+	gone("commit that keeps no pre-restore copy")
+	stage(t, r, "again")
+	mustSwap(t, r, "swap", "ID1", "pre-restore-2-ID1", "data")
+	mustSwap(t, r, "rollback")
+	if ents, _ := os.ReadDir(work); len(ents) != 1 || !strings.HasPrefix(ents[0].Name(), "discarded-") {
+		t.Fatalf("rollback must leave only the discarded copy for the sweep, got %v", ents)
+	}
+}
+
+func TestSweepReportsAnOpenJournal(t *testing.T) {
+	err := Sweep(context.Background(), fakeExec{r: strings.NewReader("busy\n")}, "c", DataDir, "120")
+	if !errors.Is(err, ErrSwapOpen) {
+		t.Fatalf("an open journal must refuse the backup, got %v", err)
+	}
+	if err := Sweep(context.Background(), fakeExec{r: strings.NewReader("swept\n")}, "c", DataDir, "120"); err != nil {
+		t.Fatal(err)
+	}
+}
