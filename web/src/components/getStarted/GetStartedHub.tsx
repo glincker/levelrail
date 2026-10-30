@@ -122,27 +122,23 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
     <div className="space-y-6">
       <section
         aria-label={t('summary.ready', { percent: guide.ready_percent })}
-        className="space-y-3 rounded-lg border border-border bg-card p-4"
+        className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-4 py-3"
       >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-lg font-semibold text-foreground">
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-foreground">
             {t('summary.ready', { percent: guide.ready_percent })}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground tabular-nums">
             {t('summary.steps', { done: guide.done, total: guide.total })}
           </p>
         </div>
         <Progress
           value={guide.ready_percent}
           aria-label={t('summary.ready', { percent: guide.ready_percent })}
+          className="min-w-40 flex-1"
         />
-        {guide.server_address ? (
-          <p className="text-xs text-muted-foreground">
-            {t('summary.serverAddress', { address: guide.server_address })}
-          </p>
-        ) : null}
         {isRoot ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -167,6 +163,11 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
         ) : (
           <p className="text-xs text-muted-foreground">{t('page.rootOnly')}</p>
         )}
+        {guide.server_address ? (
+          <p className="basis-full text-xs text-muted-foreground">
+            {t('summary.serverAddress', { address: guide.server_address })}
+          </p>
+        ) : null}
       </section>
 
       {guide.hidden ? (
