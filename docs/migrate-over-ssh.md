@@ -1,6 +1,6 @@
 ---
 title: "Migrate over SSH"
-description: Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login, read only, with no agent and no command run on the old host
+description: "Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login. Read only, no agent, no remote command."
 "og:url": "https://docs.levelrail.com/migrate-over-ssh"
 ---
 

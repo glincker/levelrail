@@ -1,6 +1,6 @@
 ---
 title: "DNS zones and records"
-description: Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
+description: "Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move name servers, verify delegation and propagation, and serve wildcard subdomains."
 "og:url": "https://docs.levelrail.com/dns"
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Migrating a static site from Netlify"
-description: "A runbook for moving a Netlify site to Levelrail: build settings, netlify.toml mapping, redirects and headers, deploy contexts, forms, build hooks, a DNS cutover and the features with no equivalent."
+description: "A runbook for moving a Netlify site to Levelrail: build settings, netlify.toml mapping, redirects and headers, forms, a DNS cutover and gaps."
 "og:url": "https://docs.levelrail.com/migrating-from-netlify"
 ---
 

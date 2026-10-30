@@ -3,8 +3,6 @@ title: Server-side apply
 description: Merge partial manifests on the server with per-field ownership, conflict detection, version preconditions and dry runs.
 ---
 
-# Server-side apply
-
 Server-side apply lets several tools (CI, an operator, the dashboard, a person running `edit`) each own part of one resource without overwriting each other. Each sends only the fields it cares about. The server merges them, remembers who set which field, and refuses a change to a field someone else owns.
 
 Supported kinds: apps and databases. Other kinds answer `405`. Stack resources keep changing through their stack apply, and an app or database a stack owns is refused with `409`.

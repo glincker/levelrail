@@ -1,6 +1,6 @@
 ---
 title: "Firewall"
-description: "Filter web requests at the embedded ingress: ordered rules, IP lists, automatic bans, a browser challenge, bot and AI crawler handling, attack mode, and a live view of what was blocked."
+description: "Filter web requests at the embedded ingress with ordered rules, IP lists, automatic bans, a browser challenge, bot handling and attack mode."
 "og:url": "https://docs.levelrail.com/firewall"
 ---
 

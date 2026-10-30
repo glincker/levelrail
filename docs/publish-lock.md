@@ -1,4 +1,8 @@
-# Publish lock
+---
+title: "Publish lock"
+description: "Lock publishing on an app so what is live stays exactly as it is. New builds still run and finish, but wait as held builds until you publish them."
+"og:url": "https://docs.levelrail.com/publish-lock"
+---
 
 Locking publishing on an app keeps what is live exactly as it is. New builds still run and finish, but they wait as held builds until you publish them.
 

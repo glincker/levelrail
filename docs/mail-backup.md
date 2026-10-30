@@ -1,4 +1,8 @@
-# Mail backup and restore
+---
+title: "Mail backup and restore"
+description: "Back up, verify and restore the mox mail server from the Mail page, the CLI or the API. Everything here needs APP_EXPERIMENTAL=mail on the control plane."
+"og:url": "https://docs.levelrail.com/mail-backup"
+---
 
 Back up, verify and restore the mox mail server from the dashboard (Mail page, Backup and Storage panels), the CLI (`levelrail-cli mail backup`, `levelrail-cli mail storage`) or the API (`/api/v1/mail/backups`, `/api/v1/mail/storage`). Everything here needs `APP_EXPERIMENTAL=mail`.
 

@@ -156,6 +156,7 @@
               "email-templates",
               "alert-inbox",
               "event-webhooks",
+              "heartbeat",
               "attention-center"
             ]
           },
@@ -166,12 +167,14 @@
               "deploy-from-cli",
               "drop-deploy",
               "compose-apps",
+              "app-files",
               "udp-ports",
               "new-app-wizard",
               "importing-apps",
               "pages",
               "static-routing",
               "deploy-safety",
+              "publish-lock",
               "deploy-failures",
               "git-host-outages",
               "deploy-trace",
@@ -182,6 +185,7 @@
               "pr-comment-commands",
               "scheduled-jobs",
               "scheduled-functions",
+              "jobs",
               "image-auto-update",
               "build-hooks",
               "sleep-when-idle",
@@ -214,10 +218,13 @@
             "pages": [
               "domains-and-ingress",
               "standalone-domains",
+              "domains",
               "dns",
               "mail-dns",
               "mail-template",
               "mail-mailboxes",
+              "mail-backup",
+              "mail-storage",
               "domain-diagnosis",
               "domain-traffic-controls",
               "abuse-defense",
@@ -233,6 +240,7 @@
               "node-provisioning",
               "multi-cloud-provisioning",
               "network-topology",
+              "app-tunnel",
               "service-topology-graph",
               "canvas",
               "build-node-routing"
@@ -286,6 +294,7 @@
               "pipelines-oidc",
               "git-integrations",
               "git-reliability",
+              "ci-gate",
               "git-push-deploy",
               "import-a-repo",
               "monorepos"
@@ -360,6 +369,7 @@
             "pages": [
               "templates-and-registry",
               "private-registries",
+              "template-upgrades",
               "template-catalog",
               "deploy-button",
               "templates-status",
@@ -378,6 +388,7 @@
               "migrate-from-caprover",
               "migrate-from-dokku",
               "migrate-from-docker-compose",
+              "import-kubernetes",
               "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
               "migration-agent-threat-model",
@@ -420,13 +431,16 @@
             "group": "Reference",
             "pages": [
               "app-spec-reference",
+              "server-side-apply",
               "feature-catalog",
               "cli-reference",
+              "cli-output",
               "cli-kubectl-parity",
               "cli-tui",
               "environment-variables",
               "environment-and-secrets",
               "api-reference",
+              "api-v2",
               "api-explorer",
               "mobile-api",
               "plugins",
@@ -979,7 +993,8 @@
               "benchmark-runbook",
               "control-plane-health",
               "changelog",
-              "upgrade-history"
+              "upgrade-history",
+              "upgrade-compatibility"
             ],
             "icon": "/assets/icons/chart-line-up.svg"
           },

@@ -1,4 +1,8 @@
-# Private app tunnel
+---
+title: "Private app tunnel"
+description: "Reach an admin port of an app from your laptop without publishing it. The CLI listens on 127.0.0.1 and relays each connection through the control plane."
+"og:url": "https://docs.levelrail.com/app-tunnel"
+---
 
 Reach an admin port of an app from your laptop without publishing it. The CLI listens on `127.0.0.1` and relays each connection through the control plane to the container's port on the platform network.
 

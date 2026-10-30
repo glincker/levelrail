@@ -1,7 +1,7 @@
 ---
 title: "Migration wizard"
 sidebarTitle: "Migration wizard"
-description: Move apps, databases and volumes off Coolify, Dokploy, CapRover or an old server in one guided, resumable job, with live progress, DNS checks and a safe-to-delete gate.
+description: "Move apps, databases and volumes off Coolify, Dokploy, CapRover or an old server in one guided, resumable job with live progress and a safe-to-delete gate."
 "og:url": "https://docs.levelrail.com/migration-wizard"
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "AI models"
 tag: "Experimental"
-description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes, or small GGUF models on CPU with hard limits, as a first-class resource with an OpenAI-compatible endpoint protected by an API key.
+description: "Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes, or small GGUF models on CPU with hard limits, behind an OpenAI-compatible endpoint."
 "og:url": "https://docs.levelrail.com/ai-models"
 ---
 

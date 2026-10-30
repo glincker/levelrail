@@ -2,7 +2,7 @@
 title: "Add a node anywhere"
 tag: "Beta"
 sidebarTitle: "Add a node anywhere"
-description: One guided flow to add an EC2 instance, a Google Cloud VM, a VPS or a home server as a node, with provider, region and zone auto-detect, live progress, preflight checks with fixes and failure-domain aware placement.
+description: "Add an EC2 instance, Google Cloud VM, VPS or home server as a node in one guided flow, with zone auto-detect, preflight checks and failure-domain placement."
 "og:url": "https://docs.levelrail.com/add-node-anywhere"
 ---
 

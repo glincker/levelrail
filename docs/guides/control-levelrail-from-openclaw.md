@@ -1,6 +1,6 @@
 ---
 title: Control Levelrail from OpenClaw
-description: "Give an OpenClaw agent a least-privilege Levelrail token and connect it over MCP or the CLI, so it can read logs, deploy and roll back without being able to change your guardrails."
+description: "Give an OpenClaw agent a least-privilege Levelrail token over MCP or the CLI, so it can read logs, deploy and roll back without changing guardrails."
 "og:url": "https://docs.levelrail.com/guides/control-levelrail-from-openclaw"
 ---
 

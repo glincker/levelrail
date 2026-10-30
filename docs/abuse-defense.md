@@ -1,6 +1,6 @@
 ---
 title: "Ingress abuse defense"
-description: "Per-app rate limit by client address, address and User-Agent deny lists, and a log only mode with a replay of recent traffic before you enforce, from the dashboard, CLI or API."
+description: "Per-app rate limits by client address, address and User-Agent deny lists, and a log only mode that replays recent traffic before you enforce."
 "og:url": "https://docs.levelrail.com/abuse-defense"
 ---
 

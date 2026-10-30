@@ -1,6 +1,6 @@
 ---
 title: "Cost explorer and budgets"
-description: "Explore cost over time by app, project, tag, node or kind, see a month end forecast with a range, spot the biggest increases, and set named budgets that alert at thresholds and can pause or throttle apps."
+description: "Explore cost by app, project, tag, node or kind, see a month end forecast, and set budgets that alert at thresholds or pause and throttle apps."
 "og:url": "https://docs.levelrail.com/cost-explorer"
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Promotions and release notes"
-description: Promote the same image from one environment to another without a rebuild, see what a promotion or a deploy changes (commits, env var keys, image digest), and generate release notes from the commits between two deploys.
+description: "Promote the same image between environments without a rebuild, see what a deploy changes (commits, env keys, digest), and generate release notes."
 "og:url": "https://docs.levelrail.com/promotions-and-releases"
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Pull request comment commands"
-description: Redeploy, roll back or check an app from a GitHub pull request comment, limited to users with write access, off by default, with the same freeze, approval and policy checks as the dashboard.
+description: "Redeploy, roll back or check an app from a GitHub pull request comment. Limited to users with write access, off by default, with the same policy checks."
 "og:url": "https://docs.levelrail.com/pr-comment-commands"
 ---
 

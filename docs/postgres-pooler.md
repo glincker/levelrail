@@ -1,4 +1,8 @@
-# Postgres connection pooler
+---
+title: "Postgres connection pooler"
+description: "Run a pgbouncer style pooler next to a managed Postgres database in transaction pooling mode, so many app connections share a few server connections."
+"og:url": "https://docs.levelrail.com/postgres-pooler"
+---
 
 Small servers often run out of Postgres connections before they run out of CPU or memory. Each app replica opens its own pool, and `max_connections` fills up fast. A managed Postgres database can opt into a pooler: a pgbouncer style container that runs next to the database in transaction pooling mode, so many client connections share a few server connections.
 

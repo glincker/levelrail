@@ -1,4 +1,8 @@
-# Upgrade compatibility
+---
+title: "Upgrade compatibility"
+description: "Every release must upgrade cleanly from the previous minor's latest patch, with the data it left behind. Patch releases carry no destructive migrations."
+"og:url": "https://docs.levelrail.com/upgrade-compatibility"
+---
 
 Every release must upgrade cleanly from the previous minor's latest patch, with the data it left behind. Patch releases carry no destructive migrations.
 

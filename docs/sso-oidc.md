@@ -1,6 +1,6 @@
 ---
 title: "OAuth and OIDC single sign-on"
-description: "Map identity provider groups to roles, create accounts on first sign-in only when you allow it, restrict email domains and route people to the right provider by their email domain."
+description: "Map identity provider groups to roles, create accounts on first sign-in only when allowed, restrict email domains and route users by email domain."
 "og:url": "https://docs.levelrail.com/sso-oidc"
 ---
 

@@ -1,4 +1,8 @@
-# Mail storage
+---
+title: "Mail storage"
+description: "Each mail service brings its own S3 compatible bucket for backups, mailbox archives and exports. Mailbox addresses appear only as hashes in keys."
+"og:url": "https://docs.levelrail.com/mail-storage"
+---
 
 Each mail service brings its own S3 compatible bucket. The connection is
 owned by one service and holds backups, mailbox archives and exports. Every

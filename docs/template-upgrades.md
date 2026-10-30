@@ -1,4 +1,8 @@
-# Template upgrades
+---
+title: "Template upgrades"
+description: "Check apps deployed from a catalog template against the current catalog entry. The planner is read-only, and the apply step deploys the new spec."
+"og:url": "https://docs.levelrail.com/template-upgrades"
+---
 
 Apps deployed from a catalog template can be checked against the current
 catalog entry. The planner is read-only; the apply step deploys the new spec,
