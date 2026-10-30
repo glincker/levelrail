@@ -187,7 +187,7 @@ func runCp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 			return c.fail(err)
 		}
 		n, err := c.client.DownloadVolumeFile(ctx, srcR.App, srcR.Volume, srcR.Path, w)
-		if cerr := closeFn(); err == nil {
+		if cerr := closeFn(err); err == nil {
 			err = cerr
 		}
 		if err != nil {

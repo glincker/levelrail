@@ -115,7 +115,10 @@ func runAppsVolumesAttach(prog string, args []string, stdout, stderr io.Writer, 
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("attach volume %q to app %q: %w", volName, name, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printAppVolumesHuman(stdout, result.Volumes) })
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+		printAppVolumesHuman(stdout, result.Volumes)
+		_, _ = fmt.Fprintf(stdout, "the new mount applies at the next container create: run %s apps apply %s\n", prog, name)
+	})
 }
 
 func runAppsVolumesDetach(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -163,7 +166,10 @@ func runAppsVolumesDetach(prog string, args []string, stdout, stderr io.Writer, 
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("detach volume %q from app %q: %w", volName, name, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printAppVolumesHuman(stdout, result.Volumes) })
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+		printAppVolumesHuman(stdout, result.Volumes)
+		_, _ = fmt.Fprintf(stdout, "the change applies at the next container create: run %s apps apply %s\n", prog, name)
+	})
 }
 
 func printAppVolumesHuman(out io.Writer, volumes []appVolumeResource) {

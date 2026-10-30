@@ -28,6 +28,7 @@ levelrail-cli doctor --fix        # print a plan of safe auto fixes, ask, apply,
 levelrail-cli doctor --fix --yes  # apply without asking
 levelrail-cli doctor --output json
 levelrail-cli doctor disk         # only the disk checks, with the top consumers and a cleanup suggestion
+levelrail-cli doctor paths        # where the binary, releases dir, data dir and systemd unit live on this host (offline)
 levelrail-cli doctor --local      # Docker, disk and ports only, no control plane needed
 ```
 
