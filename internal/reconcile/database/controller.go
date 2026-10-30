@@ -671,7 +671,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		if res, stop := c.settleVolume(ctx, desired, volName, fresh); stop {
 			return res, nil
 		}
-		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
+		if err := docker.EnsureVolumeFor(ctx, c.runtime, volName, c.volumeOwner(volName)); err != nil {
 			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
 		}
 		c.markVolumeResolved(ctx, desired, fresh)
@@ -680,7 +680,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		c.prov.Skip(dbprovision.StepCreateVolume, "no persistent storage for this engine")
 	}
 	if pitrActive {
-		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
+		if err := docker.EnsureVolumeFor(ctx, c.runtime, walArchiveVolumeName(c.dbName), c.volumeOwner(walArchiveVolumeName(c.dbName))); err != nil {
 			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
 		}
 	}
@@ -783,7 +783,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			// this again, matching the "generate at creation time, not
 			// every reconcile pass" invariant WithTLS's own doc comment
 			// establishes.
-			if err := c.runtime.EnsureVolume(ctx, certsVolumeName(c.dbName)); err != nil {
+			if err := docker.EnsureVolumeFor(ctx, c.runtime, certsVolumeName(c.dbName), c.volumeOwner(certsVolumeName(c.dbName))); err != nil {
 				return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure certs volume: %w", c.dbName, err)
 			}
 			if err := c.provisionCerts(ctx, c.dbName, tlsMaterial); err != nil {
@@ -1241,4 +1241,9 @@ func credentialsBlockedResult() reconcile.Result {
 		Message: "no credentials available for this database; either the control plane has no secrets master key configured, " +
 			"or generating/resolving this database's own credentials failed, so no container is started rather than running it unauthenticated",
 	}}}
+}
+
+// volumeOwner tags a database's volumes so another app cannot adopt them.
+func (c *Controller) volumeOwner(volName string) docker.VolumeOwner {
+	return docker.VolumeOwner{App: "database/" + c.dbName, Name: volName}
 }

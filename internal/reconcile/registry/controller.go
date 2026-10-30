@@ -206,7 +206,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	volName := VolumeName(c.prefix)
-	if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
+	if err := docker.EnsureVolumeFor(ctx, c.runtime, volName, docker.VolumeOwner{App: "registry", Name: volName}); err != nil {
 		return notReady("VolumeFailed", err), fmt.Errorf("registry: ensure volume %q: %w", volName, err)
 	}
 

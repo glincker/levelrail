@@ -379,7 +379,7 @@ func (p *Protection) VolumeExists(ctx context.Context, rtm docker.Runtime, name 
 // RestoreVolumeTo restores a volume backup into a brand-new volume on the
 // node rtm drives. It never writes to an existing volume: the caller checks
 // VolumeExists first.
-func (p *Protection) RestoreVolumeTo(ctx context.Context, rtm docker.Runtime, historyID, sourceService, sourceVolume, newVolume, backupID string) error {
+func (p *Protection) RestoreVolumeTo(ctx context.Context, rtm docker.Runtime, historyID, sourceService, sourceVolume, newVolume, backupID, ownerApp string) error {
 	if p.RestoreStore == nil || p.Downloader == nil {
 		return errors.New("volume restore is not configured on this control plane")
 	}
@@ -389,6 +389,7 @@ func (p *Protection) RestoreVolumeTo(ctx context.Context, rtm docker.Runtime, hi
 		Downloader:     p.Downloader,
 		VolumeRestorer: &ContainerVolumeRestorer{Runtime: rtm},
 		Volumes:        rtm,
+		OwnerApp:       ownerApp,
 	}
 	if p.Sealer != nil {
 		r.Identities = p.Sealer.Identities

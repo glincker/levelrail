@@ -24,7 +24,7 @@ type BackupProtection interface {
 	StartDrill(ctx context.Context, backupID string) (string, error)
 	RefreshProtection(ctx context.Context, targetIDs []string) ([]store.BackupTargetProtection, error)
 	VolumeExists(ctx context.Context, rtm docker.Runtime, name string) (exists, known bool, err error)
-	RestoreVolumeTo(ctx context.Context, rtm docker.Runtime, historyID, sourceService, sourceVolume, newVolume, backupID string) error
+	RestoreVolumeTo(ctx context.Context, rtm docker.Runtime, historyID, sourceService, sourceVolume, newVolume, backupID, ownerApp string) error
 }
 
 // BackupProtectionStore is the store surface the same routes read and write.
@@ -482,7 +482,11 @@ func (rt *Router) handleVolumeRestoreTo(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	newVolume, explicit, ok := rt.chooseRestoreVolumeName(w, req, svcName, volName)
+	ownerApp := strings.TrimSpace(req.TargetApp)
+	if ownerApp == "" {
+		ownerApp = svcName
+	}
+	newVolume, explicit, ok := rt.chooseRestoreVolumeName(w, req, svcName, volName, ownerApp)
 	if !ok {
 		return
 	}
@@ -506,7 +510,7 @@ func (rt *Router) handleVolumeRestoreTo(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	go func() { //nolint:gosec // deliberately not r.Context(): cancelled the moment this handler returns
-		if err := rt.backupProtection.RestoreVolumeTo(context.Background(), nodeRuntime, historyID, svcName, volName, newVolume, req.BackupID); err != nil {
+		if err := rt.backupProtection.RestoreVolumeTo(context.Background(), nodeRuntime, historyID, svcName, volName, newVolume, req.BackupID, ownerApp); err != nil {
 			rt.logger.Error("api: volume restore-to failed", slog.String("error", err.Error()), slog.String("id", historyID), slog.String("service", svcName), slog.String("volume", volName))
 		}
 	}()
@@ -515,13 +519,17 @@ func (rt *Router) handleVolumeRestoreTo(w http.ResponseWriter, r *http.Request) 
 
 // chooseRestoreVolumeName resolves the new volume's name from the request,
 // writing the error response itself on a bad request.
-func (rt *Router) chooseRestoreVolumeName(w http.ResponseWriter, req volumeRestoreToRequest, svcName, volName string) (name string, explicit, ok bool) {
+func (rt *Router) chooseRestoreVolumeName(w http.ResponseWriter, req volumeRestoreToRequest, svcName, volName, ownerApp string) (name string, explicit, ok bool) {
 	switch {
 	case strings.TrimSpace(req.NewVolumeName) != "":
 		name = strings.TrimSpace(req.NewVolumeName)
 		explicit = true
+		if !strings.HasPrefix(name, restoreVolumePrefix(ownerApp)) {
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("new_volume_name must start with %q", restoreVolumePrefix(ownerApp)))
+			return "", false, false
+		}
 	case strings.TrimSpace(req.TargetApp) != "":
-		name = "app-" + strings.TrimSpace(req.TargetApp) + "-" + volName
+		name = restoreVolumePrefix(ownerApp) + volName
 		explicit = true
 	default:
 		generated, err := defaultVolumeCloneName(svcName, volName)
@@ -537,3 +545,6 @@ func (rt *Router) chooseRestoreVolumeName(w http.ResponseWriter, req volumeResto
 	}
 	return name, explicit, true
 }
+
+// restoreVolumePrefix is the name prefix an app's own volumes carry.
+func restoreVolumePrefix(app string) string { return "app-" + app + "-" }

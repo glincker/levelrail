@@ -38,7 +38,7 @@ func (c *Controller) BuildJobSpec(ctx context.Context, desired *store.DesiredSer
 		return JobSpec{}, fmt.Errorf("resolve env: %w", err)
 	}
 	for _, v := range desired.Volumes {
-		if err := c.runtime.EnsureVolume(ctx, v.Name); err != nil {
+		if err := docker.EnsureVolumeFor(ctx, c.runtime, v.Name, volumeOwner(desired, v.Name)); err != nil {
 			return JobSpec{}, fmt.Errorf("ensure volume %q: %w", v.Name, err)
 		}
 	}

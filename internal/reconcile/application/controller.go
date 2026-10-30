@@ -1321,7 +1321,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 
 	for _, v := range desired.Volumes {
 		if err := traceStep(ctx, tr, deploytrace.StepEnsureVolume, deploytrace.StepEnsureVolume+"."+v.Name, "ensuring volume "+v.Name,
-			func() error { return c.runtime.EnsureVolume(ctx, v.Name) }, "EnsureVolumeFailed", v.Name+" mounted at "+v.ContainerPath); err != nil {
+			func() error { return docker.EnsureVolumeFor(ctx, c.runtime, v.Name, volumeOwner(desired, v.Name)) }, "EnsureVolumeFailed", v.Name+" mounted at "+v.ContainerPath); err != nil {
 			return fmt.Errorf("ensure volume %q: %w", v.Name, err)
 		}
 	}
