@@ -142,7 +142,15 @@ describe('CommandPalette', () => {
     renderPalette()
     await screen.findByRole('option', { name: /prod apis/ })
     const urls = fetchMock.mock.calls.map((c) => c[0])
-    expect(urls.every((u) => u.startsWith('/api/v1/search'))).toBe(true)
+    // Mail actions need the mail status and the caller's abilities, both cheap reads.
+    expect(
+      urls.every(
+        (u) =>
+          u.startsWith('/api/v1/search') ||
+          u.startsWith('/api/v1/mail/status') ||
+          u.startsWith('/api/v1/users'),
+      ),
+    ).toBe(true)
     expect(searchCalls()).toHaveLength(0)
   })
 

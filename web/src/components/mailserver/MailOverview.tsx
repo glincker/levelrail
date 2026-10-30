@@ -1,11 +1,17 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
-import type { MailCheckReport } from '@/queries/mailDns'
+import { toast } from '@/components/ui/toast'
+import { checkMailDns, type MailCheckReport } from '@/queries/mailDns'
 import { isMailUp, type MailStatus } from '@/queries/mailStatus'
 import { useMailBackups } from '../../queries/mailBackup'
-import { useMailQueue } from '../../queries/mailMailboxes'
+import {
+  useMailboxes,
+  useMailDomains,
+  useMailQueue,
+} from '../../queries/mailMailboxes'
 import { MailChecklist } from './MailChecklist'
 import { MailNextStep } from './MailNextStep'
 import { nextStepOf } from './mailSetup'
@@ -16,6 +22,7 @@ interface Props {
   status: MailStatus
   report: MailCheckReport | undefined
   domain: string
+  onReport: (r: MailCheckReport) => void
   onPreview: () => void
   onTab: (tab: MailTab) => void
 }
@@ -28,6 +35,7 @@ export function MailOverview({
   status,
   report,
   domain,
+  onReport,
   onPreview,
   onTab,
 }: Props) {
@@ -36,7 +44,27 @@ export function MailOverview({
   const [details, setDetails] = useState(false)
   const backups = useMailBackups(up ? (status.app ?? '') : '').data
   const queue = useMailQueue(up).data
-  const done = up && nextStepOf(status, report) === null
+  const domains = useMailDomains(up).data
+  const boxes = useMailboxes(up).data
+  const facts =
+    domains && boxes && backups
+      ? {
+          domains: domains.length,
+          mailboxes: boxes.length,
+          backups: backups.backups?.length ?? 0,
+        }
+      : undefined
+  const done = up && nextStepOf(status, report, facts) === null
+  const checkDomain = domain || status.domain || domains?.[0]?.domain || ''
+  const check = useMutation({
+    mutationFn: () => checkMailDns({ domain: checkDomain }),
+    onSuccess: onReport,
+    onError: (e) =>
+      toast.add({
+        title: e instanceof Error ? e.message : t('ov.checkFailed'),
+        type: 'error',
+      }),
+  })
   const items = report?.items ?? []
   const pass = items.filter((i) => i.status === 'pass').length
   const last = backups?.backups?.[0]
@@ -55,6 +83,18 @@ export function MailOverview({
                 : t('ov.chips.dnsNone')}
             </button>
           </li>
+          {!report && checkDomain ? (
+            <li>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={check.isPending}
+                onClick={() => check.mutate()}
+              >
+                {check.isPending ? t('dns.checking') : t('ov.checkDns')}
+              </Button>
+            </li>
+          ) : null}
           <li>
             <button
               type="button"

@@ -262,7 +262,17 @@
       "swap": "swapping data",
       "start": "starting mail",
       "wait": "waiting for mail"
-    }
+    },
+    "line": "Last backup {{when}}, {{size}}, {{state}}",
+    "verifiedLower": "verified",
+    "unverifiedLower": "not verified",
+    "capChip": "{{cap}} cap",
+    "destination": "Storage",
+    "destinationOpen": "Open backup storage settings",
+    "history": "History",
+    "historyTitle": "Backup history",
+    "progressLabel": "Backup progress",
+    "actionsFor": "Actions for backup {{id}}"
   },
   "restore": {
     "title": "Restore backup {{id}}",
@@ -380,13 +390,15 @@
     "hideDetails": "Hide details",
     "chips": {
       "dns": "DNS {{pass}}/{{total}}",
-      "dnsNone": "DNS not checked",
+      "dnsNone": "DNS: Not checked yet",
       "backup": "Backup {{when}}",
       "backupNone": "No backup yet",
       "queue": "{{count}} queued"
     },
     "statsLabel": "Mail at a glance",
-    "backupOpen": "Open backups"
+    "backupOpen": "Open backups",
+    "checkDns": "Check DNS",
+    "checkFailed": "DNS check failed"
   },
   "mbx": {
     "search": "Search mailboxes",
@@ -422,6 +434,9 @@
     "noDomains": "No domain is claimed yet. It is claimed when you add the first mailbox.",
     "loading": "Loading mailboxes",
     "notUp": "Available once the mail server is running.",
-    "storage": "Backup storage"
+    "storage": "Backup storage",
+    "viewOnly": "You can view mailboxes but not manage them",
+    "viewOnlyReason": "Your team role does not allow managing mail. Ask a team admin or owner for access.",
+    "actionForbidden": "Your team role does not allow this. Ask a team admin or owner to do it or to change your role."
   }
 }

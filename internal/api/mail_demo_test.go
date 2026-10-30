@@ -165,3 +165,30 @@ func TestMailDemoEngineLifecycle(t *testing.T) {
 		t.Fatal("second delete must fail")
 	}
 }
+
+func TestMailDemoRootClaimOnlyForDevOwner(t *testing.T) {
+	res := []string{"mail:domain:demo.example"}
+	root := []string{AbilityRoot}
+	if got := mailDecide(nil, root, nil, store.DefaultTeamID, AbilityRoot, res...); got != http.StatusForbidden {
+		t.Fatalf("precondition: capped root claim should be refused, got %d", got)
+	}
+	if got := mailDecide(nil, root, nil, store.DefaultTeamID, AbilityWriteSensitive, res...); got != 0 {
+		t.Fatalf("dev owner creating a mailbox: got %d", got)
+	}
+	demoRT := mailDemoRouter(t)
+	if !demoRT.mailDemoRootClaim(nil, root, AbilityRoot) {
+		t.Fatal("demo must let the dev owner claim a domain")
+	}
+	member := &teamScope{roles: map[string]string{store.DefaultTeamID: store.TeamRoleDeveloper}}
+	abilities := []string{AbilityRead, AbilityWriteSensitive}
+	if demoRT.mailDemoRootClaim(member, abilities, AbilityRoot) {
+		t.Fatal("a team member must still be refused the claim")
+	}
+	if got := mailDecide(member, abilities, nil, store.DefaultTeamID, AbilityRoot, res...); got != http.StatusForbidden {
+		t.Fatalf("non-owner claim: got %d, want 403", got)
+	}
+	off := &Router{logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	if off.mailDemoRootClaim(nil, root, AbilityRoot) {
+		t.Fatal("production behavior must not change with demo off")
+	}
+}

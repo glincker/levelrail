@@ -15,6 +15,7 @@ import {
   domainFromPath,
   useTrafficPaletteItems,
 } from '../components/trafficPaletteItems'
+import { useMailPaletteItems } from '../components/mailPaletteItems'
 import { useResourcePaletteItems } from '../components/resourcePaletteItems'
 import { useAppTabPaletteItems } from '../components/apps/useAppTabPaletteItems'
 import { useExperimentalFeatures } from './useExperimental'
@@ -47,6 +48,7 @@ export function usePaletteBaseItems(
   })
   const resourceItems = useResourcePaletteItems()
   const appTabItems = useAppTabPaletteItems()
+  const mailItems = useMailPaletteItems()
 
   return React.useMemo<PaletteItem[]>(() => {
     const go =
@@ -85,7 +87,7 @@ export function usePaletteBaseItems(
       icon: <TerminalGlassIcon size="1.4em" />,
       run: openCliModal,
     })
-    items.push(...traffic.base, ...resourceItems, ...appTabItems)
+    items.push(...traffic.base, ...resourceItems, ...appTabItems, ...mailItems)
     return items
   }, [
     navigate,
@@ -94,6 +96,7 @@ export function usePaletteBaseItems(
     traffic.base,
     resourceItems,
     appTabItems,
+    mailItems,
     onShowShortcuts,
     pageActions,
     experimental,
