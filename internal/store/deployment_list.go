@@ -230,12 +230,12 @@ func deploymentWhere(f DeploymentFilter, withCursor bool) (string, []any, error)
 		if len(stored) == 0 {
 			conds = append(conds, "0")
 		} else {
-			bStored, err := json.Marshal(stored)
-			if err != nil {
-				return "", nil, fmt.Errorf("marshal stored statuses: %w", err)
+			// A literal list lets the planner walk idx_deploy_attempts_status_started
+			// in order and stop at LIMIT, which a json_each subquery blocks.
+			conds = append(conds, "d.status IN ("+placeholders(len(stored))+")")
+			for _, st := range stored {
+				args = append(args, st)
 			}
-			conds = append(conds, "d.status IN (SELECT value FROM json_each(?))")
-			args = append(args, string(bStored))
 
 			bStatuses, err := json.Marshal(f.Statuses)
 			if err != nil {
