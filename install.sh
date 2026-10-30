@@ -1669,7 +1669,8 @@ installed_version() {
 }
 
 CLI_PRESENT=0
-CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-https://levelrail.com/install-cli.sh}"
+CLI_SITE_URL="https://levelrail.com/install-cli.sh"
+CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-$CLI_SITE_URL}"
 
 # verify_cli_script checks the downloaded CLI installer against the release
 # checksums.txt (signature checked first). A missing entry blocks the run in
@@ -1709,6 +1710,32 @@ verify_cli_script() {
 	log "CLI installer checksum verified."
 }
 
+# fetch_cli_script downloads the CLI installer to $1. An explicit override URL is
+# used as is; otherwise the release asset is preferred so the script matches the
+# installed version. Without the asset, auto mode falls back to the site copy and
+# require mode refuses.
+fetch_cli_script() {
+	dest="$1"
+	if [ -n "${LEVELRAIL_CLI_INSTALLER_URL:-}" ]; then
+		curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$dest" "$CLI_INSTALLER_URL" 2>/dev/null
+		return
+	fi
+	asset_base="${LEVELRAIL_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
+	asset_proto="$HTTPS_ONLY"
+	case "$asset_base" in
+	http://*) [ "${LEVELRAIL_INSECURE_MIRROR:-}" != "1" ] || asset_proto="=http" ;;
+	esac
+	if curl -fsSL --proto "$asset_proto" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$dest" "${asset_base}/install-cli.sh" 2>/dev/null; then
+		return 0
+	fi
+	if [ "$VERIFY_MODE" = "require" ]; then
+		warn "APP_INSTALL_VERIFY=require and ${VERSION} publishes no install-cli.sh release asset, not falling back to ${CLI_SITE_URL}"
+		return 1
+	fi
+	warn "${VERSION} publishes no install-cli.sh release asset, falling back to ${CLI_SITE_URL} (not checksum-verified against this release)"
+	curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$dest" "$CLI_SITE_URL" 2>/dev/null
+}
+
 # install_cli reuses install-cli.sh so the CLI gets the same checksum and
 # signature checks as the server binary. Never fatal: the server is already up.
 install_cli() {
@@ -1725,8 +1752,13 @@ install_cli() {
 		return 0
 	fi
 	cli_script="$(mktemp)"
-	if curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$cli_script" "$CLI_INSTALLER_URL" 2>/dev/null &&
-		verify_cli_script "$cli_script" &&
+	if ! fetch_cli_script "$cli_script"; then
+		rm -f "$cli_script"
+		warn "levelrail-cli was not installed"
+		log "levelrail-cli not installed: run ${cli_hint}"
+		return 0
+	fi
+	if verify_cli_script "$cli_script" &&
 		LEVELRAIL_VERSION="$VERSION" LEVELRAIL_CLI_INSTALL_DIR="${LEVELRAIL_CLI_INSTALL_DIR:-/usr/local/bin}" sh "$cli_script"; then
 		rm -f "$cli_script"
 		CLI_PRESENT=1
