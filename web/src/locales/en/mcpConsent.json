@@ -48,6 +48,13 @@
     "remove": "Remove {{name}}",
     "confirmTitle": "Remove {{name}}?",
     "confirmBody": "Its access tokens stop working right away. It can be added again later.",
-    "confirm": "Remove client"
-  }
+    "confirm": "Remove client",
+    "dismiss": "Dismiss"
+  },
+  "scopes": {
+    "heading": "Access being granted",
+    "read": "Read resources and their status",
+    "sensitive": "Read sensitive values, such as secret contents"
+  },
+  "approveSensitive": "Approve with sensitive access"
 }

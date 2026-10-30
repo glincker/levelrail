@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { BotGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
+import {
+  BotGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,6 +18,10 @@ import {
 } from '../../queries/mcpOauth'
 
 const SENSITIVE_SCOPE = 'mcp:read:sensitive'
+const SCOPE_LABEL_KEYS: Record<string, 'scopes.read' | 'scopes.sensitive'> = {
+  'mcp:read': 'scopes.read',
+  [SENSITIVE_SCOPE]: 'scopes.sensitive',
+}
 const MCP_FEATURE = 'mcp-http'
 const SECONDS_PER_MINUTE = 60
 const SECONDS_PER_HOUR = 3600
@@ -140,15 +148,38 @@ function ConsentBody({
           </div>
         </header>
 
-        <div className="space-y-1 rounded-lg border border-border p-3 text-sm">
+        <div
+          className={
+            sensitive
+              ? 'space-y-1 rounded-lg border border-tone-warning bg-tone-warning-soft p-3 text-sm'
+              : 'space-y-1 rounded-lg border border-border p-3 text-sm'
+          }
+        >
           <p className="flex items-center gap-2 font-medium">
-            <ShieldCheckGlassIcon className="size-5" aria-hidden="true" />
+            {sensitive ? (
+              <TriangleAlertGlassIcon className="size-5" aria-hidden="true" />
+            ) : (
+              <ShieldCheckGlassIcon className="size-5" aria-hidden="true" />
+            )}
             {grantable.length === 0
               ? t('access.none')
               : sensitive
                 ? t('access.sensitive')
                 : t('access.read')}
           </p>
+          {grantable.length > 0 ? (
+            <ul aria-label={t('scopes.heading')} className="space-y-0.5 pl-7">
+              {grantable.map((scope) => (
+                <li key={scope} data-testid="consent-scope">
+                  {SCOPE_LABEL_KEYS[scope] ? (
+                    t(SCOPE_LABEL_KEYS[scope])
+                  ) : (
+                    <span className="font-mono">{scope}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {trimmed && grantable.length > 0 ? (
             <p className="text-muted-foreground">{t('access.trimmed')}</p>
           ) : null}
@@ -184,7 +215,11 @@ function ConsentBody({
             disabled={busy || grantable.length === 0}
             onClick={() => submit(true)}
           >
-            {decide.isPending ? t('working') : t('approve')}
+            {decide.isPending
+              ? t('working')
+              : sensitive
+                ? t('approveSensitive')
+                : t('approve')}
           </Button>
         </div>
       </section>

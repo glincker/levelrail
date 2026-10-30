@@ -48,6 +48,13 @@
     "remove": "Quitar {{name}}",
     "confirmTitle": "Quitar {{name}}?",
     "confirmBody": "Sus tokens de acceso dejan de funcionar al instante. Se puede anadir de nuevo mas tarde.",
-    "confirm": "Quitar cliente"
-  }
+    "confirm": "Quitar cliente",
+    "dismiss": "Cerrar"
+  },
+  "scopes": {
+    "heading": "Acceso que se concede",
+    "read": "Leer recursos y su estado",
+    "sensitive": "Leer valores sensibles, como el contenido de secretos"
+  },
+  "approveSensitive": "Aprobar con acceso sensible"
 }
