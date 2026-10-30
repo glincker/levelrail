@@ -90,6 +90,11 @@ function ApprovalForm({
                   hosts: plugin.outbound_hosts.join(', '),
                 })}
           </Detail>
+          {plugin.outbound_hosts.length > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {t('approve.networkNote')}
+            </p>
+          ) : null}
           <Detail label={t('approve.image')}>{plugin.image}</Detail>
           <Detail label={t('approve.signedBy')}>{plugin.key_id}</Detail>
           <p className="text-sm text-muted-foreground">{t('approve.never')}</p>

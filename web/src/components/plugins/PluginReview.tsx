@@ -120,6 +120,11 @@ export function PluginReview({
             ? t('approve.networkNone')
             : t('approve.networkHosts', { hosts: m.outbound_hosts.join(', ') })}
         </p>
+        {m.outbound_hosts.length > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {t('approve.networkNote')}
+          </p>
+        ) : null}
       </div>
       {m.contributes.panels.length > 0 ? (
         <p className="text-xs text-muted-foreground">

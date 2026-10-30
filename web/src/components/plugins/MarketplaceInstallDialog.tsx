@@ -193,6 +193,11 @@ function ConfirmSheet({
                     hosts: pv.entry.outbound_hosts.join(', '),
                   })}
             </Detail>
+            {pv.entry.outbound_hosts.length > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t('approve.networkNote')}
+              </p>
+            ) : null}
             <p className="text-sm text-muted-foreground">
               {t('marketplace.sheet.exactly')}
             </p>

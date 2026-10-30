@@ -161,9 +161,10 @@ func printMarketplacePreview(out io.Writer, pv apiclient.MarketplacePreview) {
 	e := pv.Entry
 	_, _ = fmt.Fprintf(out, "%s %s by %s (source %s)\n", e.ID, e.Version, e.Publisher, pv.SourceName)
 	_, _ = fmt.Fprintf(out, "  action:     %s\n  publisher key: %s (%s), trusted: %v\n", pv.Action, pv.KeyID, pv.KeyName, pv.KeyTrusted)
-	_, _ = fmt.Fprintf(out, "  digest:     %s\n  abilities:  %s\n  hosts:      %s\n", e.Digest, strings.Join(e.Abilities, ", "), joinOrNone(e.OutboundHosts))
+	_, _ = fmt.Fprintf(out, "  digest:     %s\n  abilities:  %s\n  hosts:      %s (declared by the plugin, not restricted)\n", e.Digest, strings.Join(e.Abilities, ", "), joinOrNone(e.OutboundHosts))
+	printNetworkNote(out, e.OutboundHosts)
 	if pv.Action == "upgrade" {
-		_, _ = fmt.Fprintf(out, "  upgrade from %s, new abilities: %s, new hosts: %s\n", pv.InstalledVersion, joinOrNone(pv.AddedAbilities), joinOrNone(pv.AddedHosts))
+		_, _ = fmt.Fprintf(out, "  upgrade from %s, new abilities: %s, new hosts (declared): %s\n", pv.InstalledVersion, joinOrNone(pv.AddedAbilities), joinOrNone(pv.AddedHosts))
 	}
 }
 
