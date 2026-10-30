@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { PortEditor } from '../../../components/PortEditor'
 import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
+import { RolloutPolicyCard } from '../../../components/RolloutPolicyCard'
 import { HooksEditor } from '../../../components/HooksEditor'
 import { DeploySafetyCard } from '../../../components/DeploySafetyCard'
 import { PostDeployWatchCard } from '../../../components/PostDeployWatchCard'
@@ -73,6 +74,9 @@ function DeploySettingsSection() {
         </CardHelp>
         <CardHelp card="strategy">
           <DeployStrategyEditor app={app} />
+        </CardHelp>
+        <CardHelp card="rolloutPolicy">
+          <RolloutPolicyCard appName={name} />
         </CardHelp>
         <CardHelp card="hooks">
           <HooksEditor app={app} />

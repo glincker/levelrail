@@ -517,7 +517,8 @@
       "imageAutoUpdate": "Vuelve a desplegar automáticamente cuando se publica una imagen más reciente para tu etiqueta.",
       "badge": "Muestra una insignia de estado de despliegue en vivo que puedes incrustar en un README.",
       "githubActions": "Permite que un flujo de trabajo de GitHub Actions despliegue esta aplicación.",
-      "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación."
+      "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación.",
+      "rolloutPolicy": "Limita cuántas réplicas pueden sobrar o no estar disponibles durante una actualización progresiva."
     },
     "whatItDoes": "Qué hace esto:"
   },
