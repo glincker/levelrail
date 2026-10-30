@@ -8,7 +8,8 @@
       "policy": "Policy",
       "rotations": "Secret rotations",
       "compliance": "Compliance",
-      "exposure": "Exposure"
+      "exposure": "Exposure",
+      "advisories": "Advisories"
     },
     "loadError": "Could not load the security center.",
     "retry": "Try again"

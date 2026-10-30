@@ -44,6 +44,7 @@ export const NAMESPACES = [
   'iam',
   'signIn',
   'security',
+  'advisories',
   'traffic',
   'dns',
   'domainPolicies',
