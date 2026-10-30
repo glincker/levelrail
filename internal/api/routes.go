@@ -80,6 +80,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMailDNSRoutes(mux)
 	rt.registerMailPortRoutes(mux)
 	rt.registerMailboxRoutes(mux)
+	rt.registerMailCertRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
 	rt.registerTeamRoutes(mux)

@@ -75,6 +75,18 @@ To use a real certificate, put the chain and key in the config volume (for examp
 
 Check the state with `levelrail-cli mail status` (installed, container, admin API, certificate kind and the next step).
 
+### Check and upload a certificate
+
+- `levelrail-cli mail cert status` connects to the mail server's private submission port (465) and shows the served certificate: subject, issuer, expiry, days left, and whether it is self-signed. It sends no credentials and only probes the container's private address.
+- `levelrail-cli mail cert upload --cert chain.pem --key key.pem` installs your own certificate. The chain must start with the leaf, cover the mail host name and be valid now; the key must match and must not be encrypted. It asks for your password.
+- The key is sealed at rest in the control plane and is never shown again, logged or written to audit. In the config volume the pair lands as `certs/managed.pem` and `certs/managed.key` (mode `0600`); the previous managed pair is kept as `certs/managed.prev.pem` and `.prev.key`.
+- mox is then restarted through the normal restart path and probed until it serves the new serial. If it does not come back, or still serves the old certificate after `APP_MAIL_CERT_VERIFY_SECONDS` (default 90), the previous files and settings are restored and mox restarts again.
+- With `APP_MAIL_RESTART_WINDOW` set (for example `02:00-05:00`, UTC), uploads outside the window are refused unless you pass `--restart-now`.
+- If `MAIL_TLS_CERT_FILE` points at your own files, upload refuses and never touches them. Clear both inputs first.
+- `mail cert obtain` (a certificate through the platform's ACME) is not yet implemented and says so.
+
+The node agent must be current: an older agent cannot write the key with mode `0600`, and the upload then stops and removes the key.
+
 ## Relay mode
 
 Set `MAIL_SMARTHOST_HOST` to send through a provider. The template writes a `relay1` transport (`Submissions` for port 465, `Submission` otherwise, with `Auth` when a user is set) and a default route to it in `domains.conf` if no route exists yet. Adding or changing a transport needs a container restart.

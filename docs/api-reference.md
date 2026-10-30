@@ -2081,6 +2081,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/mail/queue/hold | AbilityWriteSensitive | handleMailQueueHold |
 | POST | /api/v1/mail/queue/release | AbilityWriteSensitive | handleMailQueueHold |
 | POST | /api/v1/mail/demo/reset | AbilityRoot | handleMailDemoReset |
+| GET | /api/v1/mail/cert | AbilityRead | handleMailCertStatus |
+| PUT | /api/v1/mail/cert | AbilityWriteSensitive | handleMailCertUpload |
+| POST | /api/v1/mail/cert/obtain | AbilityWriteSensitive | handleMailCertObtain |
 | POST | /mcp | Public |  |
 
 ## See also

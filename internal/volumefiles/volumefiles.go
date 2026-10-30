@@ -228,6 +228,13 @@ func (s *Store) Read(p string) (io.ReadCloser, int64, error) {
 // oversized upload never leaves a partial file. Existing ownership and mode
 // are kept so the app keeps access to what it owns.
 func (s *Store) Write(p string, r io.Reader, maxBytes int64) (int64, error) {
+	return s.WriteMode(p, r, maxBytes, 0)
+}
+
+// WriteMode is Write with a requested permission for the file. A zero mode keeps
+// Write's behaviour; otherwise the result is never wider than mode, nor than the
+// file it replaces.
+func (s *Store) WriteMode(p string, r io.Reader, maxBytes int64, want fs.FileMode) (int64, error) {
 	rel, err := Clean(p)
 	if err != nil {
 		return 0, err
@@ -250,6 +257,13 @@ func (s *Store) Write(p string, r io.Reader, maxBytes int64) (int64, error) {
 		mode = prev.Mode().Perm()
 	case perr != nil && !errors.Is(perr, fs.ErrNotExist):
 		return 0, mapErr(perr)
+	}
+	if want != 0 {
+		if perr == nil {
+			mode &= want.Perm()
+		} else {
+			mode = want.Perm()
+		}
 	}
 	tmpName := path.Join(dir, ".upload-"+strconv.FormatInt(time.Now().UnixNano(), 36))
 	tmp, err := s.root.OpenFile(tmpName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
