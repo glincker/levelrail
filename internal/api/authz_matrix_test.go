@@ -113,6 +113,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/apps/{name}/abuse/dry-run":                     "replays recent in-memory access records against a draft policy and counts what it would block, persists nothing",
 	"POST /api/v1/apps/{name}/budget/dry-run":                    "previews what pausing the app would stop and save, persists nothing",
 	"POST /api/v1/app-types/{name}/check":                        "checks a draft app spec against a published app type and returns violations, persists nothing",
+	"POST /api/v1/mail/dns/plan":                                 "diffs the mail DNS records against the live zone and returns the plan, persists nothing",
 	"POST /api/v1/costs/budgets/{id}/dry-run":                    "previews what pausing a budget's apps would stop and save, persists nothing",
 	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
 	"POST /api/v1/system/doctor/checks/{id}/run":                 "re-runs one read-only health check, persists nothing",

@@ -46,6 +46,8 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		return experimental.ResourceAdvisor, true
 	case p == "/api/v1/plugins" || strings.HasPrefix(p, "/api/v1/plugins/"), p == "/api/v1/plugin-keys" || strings.HasPrefix(p, "/api/v1/plugin-keys/"), p == "/api/v1/plugin-panels", p == "/api/v1/plugin-marketplace" || strings.HasPrefix(p, "/api/v1/plugin-marketplace/"):
 		return experimental.Plugins, true
+	case strings.HasPrefix(p, "/api/v1/mail/"):
+		return experimental.Mail, true
 	case strings.HasPrefix(p, mobileRoutePrefix):
 		return experimental.MobileAPI, true
 	case strings.HasPrefix(p, "/api/v1/auth/saml/"), strings.HasPrefix(p, "/api/v1/sso/"), strings.HasPrefix(p, "/api/v1/scim/"):

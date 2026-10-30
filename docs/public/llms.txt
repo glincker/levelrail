@@ -76,6 +76,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Domains and ingress](https://docs.levelrail.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
 - [Standalone domains](https://docs.levelrail.com/standalone-domains): proxy a domain to a port, address, URL, app port or container without an app, plus the server address for DNS records.
 - [DNS zones and records](https://docs.levelrail.com/dns): zones and records at Cloudflare or Route53, name server delegation, propagation checks, and wildcard subdomains.
+- [Mail DNS](https://docs.levelrail.com/mail-dns): experimental, plan, apply and check the SPF, DKIM, DMARC, MX and autoconfig records for email, add-only by default.
 - [Domain traffic controls](https://docs.levelrail.com/domain-traffic-controls): per-domain header rules, path forwarders, country rules, response caching, redirects and raw ports.
 - [Ingress abuse defense](https://docs.levelrail.com/abuse-defense): per app rate limit by client address, address and User-Agent deny lists, a log only mode and a replay of recent traffic before enforcing.
 - [Traffic observability](https://docs.levelrail.com/traffic-observability): per app request rate, status classes, p50/p95/p99, top and slow routes, and 5xx spikes tied to deploys, with bounded storage.

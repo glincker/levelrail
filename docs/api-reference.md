@@ -2049,6 +2049,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/monitors | AbilityWrite | handleCreateMonitor |
 | DELETE | /api/v1/monitors/{id} | AbilityWrite | handleDeleteMonitor |
 | GET | /api/v1/monitors/{id}/results | AbilityRead | handleMonitorResults |
+| POST | /api/v1/mail/dns/plan | AbilityRead | handleMailDNSPlan |
+| POST | /api/v1/mail/dns/apply | AbilityRoot | handleMailDNSApply |
+| GET | /api/v1/mail/dns/check | AbilityRead | handleMailDNSCheck |
 
 ## See also
 

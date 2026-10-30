@@ -215,6 +215,7 @@
               "domains-and-ingress",
               "standalone-domains",
               "dns",
+              "mail-dns",
               "domain-diagnosis",
               "domain-traffic-controls",
               "abuse-defense",
