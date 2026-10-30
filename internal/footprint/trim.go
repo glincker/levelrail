@@ -16,6 +16,8 @@ const (
 	EnvGCPercent       = "APP_GC_PERCENT"
 	EnvTrimInterval    = "APP_MEM_TRIM_INTERVAL"
 	EnvTrimMinIdleMB   = "APP_MEM_TRIM_MIN_IDLE_MB"
+	EnvTrimBootDelay   = "APP_MEM_TRIM_BOOT_DELAY"
+	DefaultTrimBoot    = 12 * time.Second
 	DefaultGCPercent   = 50
 	DefaultTrimEvery   = 2 * time.Minute
 	DefaultTrimIdleMB  = 24
@@ -58,6 +60,7 @@ func RunTrim(ctx context.Context, logger *slog.Logger, getenv func(string) strin
 	if n, err := strconv.ParseUint(strings.TrimSpace(getenv(EnvTrimMinIdleMB)), 10, 64); err == nil {
 		minIdle = n
 	}
+	go trimOnceAfterBoot(ctx, getenv)
 	_ = Every(ctx, trimLoopName, every, logger, func(context.Context) error {
 		var ms runtime.MemStats
 		runtime.ReadMemStats(&ms)
@@ -67,4 +70,23 @@ func RunTrim(ctx context.Context, logger *slog.Logger, getenv func(string) strin
 		debug.FreeOSMemory()
 		return nil
 	})
+}
+
+// trimOnceAfterBoot releases the boot-time heap shortly after startup instead of waiting a full trim interval; a delay of 0 or less turns it off.
+func trimOnceAfterBoot(ctx context.Context, getenv func(string) string) {
+	delay := DefaultTrimBoot
+	if d, err := time.ParseDuration(strings.TrimSpace(getenv(EnvTrimBootDelay))); err == nil {
+		delay = d
+	}
+	if delay <= 0 {
+		return
+	}
+	t := time.NewTimer(delay)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return
+	case <-t.C:
+	}
+	debug.FreeOSMemory()
 }
