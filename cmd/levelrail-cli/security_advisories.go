@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -11,12 +12,16 @@ import (
 
 // runSecurityAdvisories implements "security advisories list|match".
 func runSecurityAdvisories(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	if len(args) == 0 || (args[0] != "list" && args[0] != "match") {
+	// No verb, or flags first, means list.
+	mode, rest := "list", args
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		mode, rest = args[0], args[1:]
+	}
+	if mode != "list" && mode != "match" {
 		_, _ = fmt.Fprint(stderr, securityUsage(prog))
 		return exitUsage
 	}
-	mode := args[0]
-	client, _, jsonOut, of, code, ok := securityCommand(prog, "security advisories "+mode, "print the result as JSON to stdout and nothing else", args[1:], stderr, lookupEnv, nil)
+	client, _, jsonOut, of, code, ok := securityCommand(prog, "security advisories "+mode, "print the result as JSON to stdout and nothing else", rest, stderr, lookupEnv, nil)
 	if !ok {
 		return code
 	}
