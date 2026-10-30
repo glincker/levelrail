@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   Sheet,
   SheetContent,
@@ -12,14 +11,14 @@ import {
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DnsHostTile } from '@/components/dns/DnsHostChip'
-import { DeleteRecordDialog } from '@/components/dns/ConfirmDialogs'
 import { RecordDialog } from '@/components/dns/RecordDialog'
-import { RecordsTable } from '@/components/dns/RecordsTable'
 import { useCopy } from '@/components/dns/useCopy'
-import { dnsRecordsQueryOptions, useDnsDelegation } from '@/queries/dns'
+import { dnsZoneDetailQueryOptions } from '@/queries/dns'
 import { domainsQueryOptions } from '@/queries/domains'
 import type { DnsRecordSet, DnsZone } from '@/types/dns'
+import { RecordDeleteDialog } from './RecordDeleteDialog'
 import { ZoneDelegationBanner } from './ZoneDelegationBanner'
+import { ZoneRecords } from './ZoneRecords'
 import { hostKey } from './providers'
 
 type Modal =
@@ -30,38 +29,65 @@ type Modal =
 function NameServers({ zone }: { zone: DnsZone }) {
   const { t } = useTranslation('dnsProviders')
   const { copied, copy } = useCopy()
-  const delegation = useDnsDelegation(zone.name, !zone.private)
-  const found = [
-    ...new Set(
-      (delegation.data?.delegation.resolvers ?? []).flatMap(
-        (r) => r.name_servers ?? [],
-      ),
-    ),
-  ]
+  const detail = useQuery({
+    ...dnsZoneDetailQueryOptions(zone.provider, zone.id),
+  })
+  const d = detail.data
+  if (detail.error)
+    return (
+      <p role="alert" className="text-sm text-tone-danger">
+        {t('zone.detailFailed')}
+      </p>
+    )
+  if (!d) return <p className="text-sm text-muted-foreground">...</p>
+  const assigned = d.nameservers ?? d.name_servers ?? []
+  const current = d.current_nameservers ?? []
   return (
     <div className="space-y-4">
-      {zone.private ? null : (
-        <ZoneDelegationBanner zone={zone.name} showSteps />
-      )}
+      <ZoneDelegationBanner
+        delegated={d.delegated ?? 'unknown'}
+        reason={d.delegation_reason}
+        showSteps
+        onRecheck={() => void detail.refetch()}
+        checking={detail.isFetching}
+      />
+      {d.registrar_hint ? (
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-medium">{t('zone.registrar')}</span>
+          <span>
+            {t('zone.registrarHint', { name: d.registrar_hint.name })}
+          </span>
+          {d.registrar_hint.url ? (
+            <a
+              href={d.registrar_hint.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline"
+            >
+              {t('zone.registrarOpen', { name: d.registrar_hint.name })}
+            </a>
+          ) : null}
+        </p>
+      ) : null}
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-medium">{t('zone.assigned')}</h3>
-          {zone.name_servers.length > 0 ? (
+          {assigned.length > 0 ? (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => copy('all', zone.name_servers.join('\n'))}
+              onClick={() => copy('all', assigned.join('\n'))}
             >
               <CopyGlassIcon size="1.4em" />
               {copied === 'all' ? t('zone.copied') : t('zone.copyAll')}
             </Button>
           ) : null}
         </div>
-        {zone.name_servers.length === 0 ? (
+        {assigned.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('zone.noServers')}</p>
         ) : (
           <ul className="divide-y divide-border rounded-md border border-border">
-            {zone.name_servers.map((ns) => (
+            {assigned.map((ns) => (
               <li
                 key={ns}
                 className="flex items-center justify-between gap-2 px-3 py-1.5"
@@ -85,7 +111,7 @@ function NameServers({ zone }: { zone: DnsZone }) {
         <section className="space-y-1">
           <h3 className="text-sm font-medium">{t('zone.current')}</h3>
           <p className="font-mono text-sm text-muted-foreground">
-            {found.length > 0 ? found.join(', ') : t('zone.none')}
+            {current.length > 0 ? current.join(', ') : t('zone.none')}
           </p>
         </section>
       )}
@@ -125,10 +151,11 @@ export function ZoneSheet({
   onClose: () => void
 }) {
   const { t } = useTranslation('dnsProviders')
-  const recs = useQuery({
-    ...dnsRecordsQueryOptions(zone?.name ?? ''),
+  const detail = useQuery({
+    ...dnsZoneDetailQueryOptions(zone?.provider ?? '', zone?.id ?? ''),
     enabled: zone !== null,
   })
+  const caps = detail.data?.capabilities
   const [modal, setModal] = useState<Modal>({ kind: 'none' })
   const close = () => setModal({ kind: 'none' })
   return (
@@ -154,22 +181,14 @@ export function ZoneSheet({
                   <TabsTrigger value="used">{t('zone.tabUsedBy')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="records">
-                  {recs.data ? (
-                    <RecordsTable
-                      records={recs.data.records}
-                      onAdd={() => setModal({ kind: 'record' })}
-                      onEdit={(record) => setModal({ kind: 'record', record })}
-                      onDelete={(record) =>
-                        setModal({ kind: 'delete', record })
-                      }
-                    />
-                  ) : recs.error ? (
-                    <p role="alert" className="text-sm text-tone-danger">
-                      {recs.error.message}
-                    </p>
-                  ) : (
-                    <Skeleton className="h-32 w-full" />
-                  )}
+                  <ZoneRecords
+                    zone={zone.name}
+                    provider={zone.provider}
+                    canWrite={caps !== undefined}
+                    onAdd={() => setModal({ kind: 'record' })}
+                    onEdit={(record) => setModal({ kind: 'record', record })}
+                    onDelete={(record) => setModal({ kind: 'delete', record })}
+                  />
                 </TabsContent>
                 <TabsContent value="ns">
                   <NameServers zone={zone} />
@@ -182,17 +201,17 @@ export function ZoneSheet({
           ) : null}
         </SheetContent>
       </Sheet>
-      {zone && recs.data && modal.kind === 'record' ? (
+      {zone && caps && modal.kind === 'record' ? (
         <RecordDialog
           zone={zone.name}
           zoneName={zone.name}
-          caps={recs.data.capabilities}
+          caps={caps}
           record={modal.record}
           onClose={close}
         />
       ) : null}
       {zone && modal.kind === 'delete' ? (
-        <DeleteRecordDialog
+        <RecordDeleteDialog
           zone={zone.name}
           record={modal.record}
           onClose={close}

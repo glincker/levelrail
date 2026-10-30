@@ -21,6 +21,9 @@ interface Mock {
   zones: object[]
   puts: unknown[]
   gcpTest: object
+  deletes: URLSearchParams[]
+  conflict: boolean
+  forbidden: boolean
 }
 
 function mockApi(m: Partial<Mock> = {}) {
@@ -35,9 +38,15 @@ function mockApi(m: Partial<Mock> = {}) {
         status: 'active',
         record_count: 4,
         name_servers: ['a.ns.cf'],
+        nameservers: ['a.ns.cf'],
+        delegated: 'yes',
+        current_nameservers: ['a.ns.cf'],
       },
     ],
     puts: [],
+    deletes: [],
+    conflict: false,
+    forbidden: false,
     gcpTest: { ok: false, error: 'permission denied' },
     ...m,
   }
@@ -66,15 +75,58 @@ function mockApi(m: Partial<Mock> = {}) {
       if (url.includes('/settings/google-cloud-dns/test'))
         return ok(state.gcpTest)
       if (url.includes('/settings/google-cloud-dns')) return ok(state.gcp)
-      if (url.includes('/dns/zones') && url.includes('/delegation'))
+      if (url.includes('/dns/zones/cloudflare/z1'))
         return ok({
-          delegation: {
-            domain: 'example.com',
-            state: 'delegated',
-            expected: [],
-            resolvers: [],
-          },
-          checked_at: '',
+          ...state.zones[0],
+          registrar_hint: { name: 'Namecheap', url: 'https://reg.example' },
+          capabilities: {},
+        })
+      if (url.includes('/dns/zones/example.com/records')) {
+        const u = new URL(url, 'http://x')
+        if (init?.method === 'DELETE') {
+          state.deletes.push(u.searchParams)
+          if (state.conflict && u.searchParams.get('force') !== 'true')
+            return Promise.resolve({
+              ok: false,
+              status: 409,
+              json: () =>
+                Promise.resolve({
+                  error: 'managed',
+                  managed_by_levelrail: true,
+                }),
+            })
+          return ok({ deleted: {} })
+        }
+        return ok({
+          zone: state.zones[0],
+          provider: 'cloudflare',
+          capabilities: {},
+          total: 2,
+          matched: 2,
+          records: [
+            {
+              name: 'www.example.com',
+              type: 'A',
+              ttl: 300,
+              values: ['1.2.3.4'],
+              read_only: false,
+              managed_by_levelrail: true,
+            },
+            {
+              name: 'example.com',
+              type: 'NS',
+              ttl: 300,
+              values: ['a.ns.cf'],
+              read_only: true,
+            },
+          ],
+        })
+      }
+      if (state.forbidden && url.endsWith('/api/v1/dns/zones'))
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          json: () => Promise.resolve({ error: 'forbidden' }),
         })
       if (url.includes('/dns/zones'))
         return ok({
@@ -196,12 +248,87 @@ describe('DnsProvidersPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('lists hosted zones', async () => {
+  it.each([
+    ['yes', 'Delegated'],
+    ['no', 'Not delegated'],
+    ['partial', 'Partial'],
+    ['unknown', 'Unknown'],
+  ])('shows the %s delegation chip', async (delegated, label) => {
+    mockApi({
+      zones: [
+        {
+          id: 'z1',
+          name: 'example.com',
+          provider: 'cloudflare',
+          delegated,
+          delegation_reason:
+            delegated === 'unknown' ? 'lookup_failed' : undefined,
+          name_servers: [],
+        },
+      ],
+    })
+    renderPage()
+    const chip = await screen.findByText(label, { selector: 'span' })
+    if (delegated === 'unknown')
+      expect(chip).toHaveAttribute('title', expect.stringContaining('failed'))
+  })
+
+  it('lists hosted zones with the record count', async () => {
     mockApi()
     renderPage()
     expect(
       await screen.findByRole('button', { name: 'Open zone example.com' }),
     ).toBeInTheDocument()
     expect(await screen.findByText('Delegated')).toBeInTheDocument()
+    expect(screen.getByText('4')).toBeInTheDocument()
+  })
+
+  it('shows a calm state when zones are admin only', async () => {
+    mockApi({ forbidden: true })
+    renderPage()
+    expect(
+      await screen.findByText('Zones are managed by instance admins'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('shows lock and Levelrail marks, sends confirm and retries with force on 409', async () => {
+    const api = mockApi({ conflict: true })
+    renderPage()
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open zone example.com' }),
+    )
+    expect(await screen.findByText('Levelrail')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /Read only/ })).toBeInTheDocument()
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete www.example.com A' }),
+    )
+    await userEvent.type(
+      screen.getByLabelText('Type www.example.com to confirm'),
+      'www.example.com',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Delete record' }))
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete anyway' }),
+    )
+    await waitFor(() => expect(api.deletes).toHaveLength(2))
+    expect(api.deletes[0]?.get('confirm')).toBe('www.example.com')
+    expect(api.deletes[0]?.get('force')).toBeNull()
+    expect(api.deletes[1]?.get('force')).toBe('true')
+  })
+
+  it('shows the registrar hint and current name servers', async () => {
+    mockApi()
+    renderPage()
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open zone example.com' }),
+    )
+    await userEvent.click(screen.getByRole('tab', { name: 'Name servers' }))
+    expect(
+      await screen.findByRole('link', { name: 'Open Namecheap' }),
+    ).toHaveAttribute('href', 'https://reg.example')
+    expect(
+      screen.getByText('Name servers found in public DNS'),
+    ).toBeInTheDocument()
   })
 })

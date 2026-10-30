@@ -1,5 +1,6 @@
 import {
   queryOptions,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -18,6 +19,7 @@ import type {
   DnsRecordWrite,
   DnsTemplate,
   DnsZone,
+  DnsZoneDetail,
   DnsZoneOverview,
   DnsZonesResponse,
 } from '../types/dns'
@@ -76,6 +78,8 @@ export const dnsZonesQueryOptions = () =>
     queryKey: dnsKeys.zones(),
     queryFn: () => request<DnsZonesResponse>('/api/v1/dns/zones'),
     staleTime: 30_000,
+    // Team members get 403; retrying it only delays the calm empty state.
+    retry: (n, e) => !(e instanceof ApiError && e.status === 403) && n < 2,
   })
 
 export const dnsZoneQueryOptions = (zone: string) =>
@@ -84,6 +88,47 @@ export const dnsZoneQueryOptions = (zone: string) =>
     queryFn: () => request<DnsZoneOverview>(zoneBase(zone)),
     staleTime: 15_000,
   })
+
+export const dnsZoneDetailQueryOptions = (provider: string, id: string) =>
+  queryOptions({
+    queryKey: [...dnsKeys.all, 'zone-detail', provider, id] as const,
+    queryFn: () =>
+      request<DnsZoneDetail>(
+        `/api/v1/dns/zones/${encodeURIComponent(provider)}/${encodeURIComponent(id)}`,
+      ),
+    staleTime: 15_000,
+    retry: false,
+  })
+
+export interface DnsRecordFilter {
+  provider: string
+  type: string
+  search: string
+}
+
+/** Paged records from the list route; follows next_cursor. */
+export function useDnsZoneRecords(
+  zone: string,
+  f: DnsRecordFilter,
+  enabled: boolean,
+) {
+  return useInfiniteQuery({
+    queryKey: [...dnsKeys.records(zone), 'paged', f] as const,
+    initialPageParam: '',
+    queryFn: ({ pageParam }) => {
+      const q = new URLSearchParams({ provider: f.provider })
+      if (f.type) q.set('type', f.type)
+      if (f.search) q.set('search', f.search)
+      if (pageParam) q.set('cursor', pageParam)
+      return request<DnsRecordsResponse>(
+        `${zoneBase(zone)}/records?${q.toString()}`,
+      )
+    },
+    getNextPageParam: (last) => last.next_cursor || undefined,
+    enabled,
+    staleTime: 15_000,
+  })
+}
 
 export const dnsRecordsQueryOptions = (zone: string) =>
   queryOptions({
@@ -194,10 +239,16 @@ export function useSaveDnsRecord(zone: string) {
 
 export function useDeleteDnsRecord(zone: string) {
   const invalidate = useInvalidateZone(zone)
-  return useMutation<unknown, DnsApiError, DnsRecordKey>({
+  return useMutation<unknown, DnsApiError, DnsRecordKey & { force?: boolean }>({
     mutationFn: (k) => {
-      const q = new URLSearchParams({ name: k.name, type: k.type })
+      // The API requires the record name repeated as confirm.
+      const q = new URLSearchParams({
+        name: k.name,
+        type: k.type,
+        confirm: k.name,
+      })
       if (k.set_identifier) q.set('set_identifier', k.set_identifier)
+      if (k.force) q.set('force', 'true')
       return request(`${zoneBase(zone)}/records?${q.toString()}`, {
         method: 'DELETE',
       })

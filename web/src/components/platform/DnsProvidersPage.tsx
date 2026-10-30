@@ -5,6 +5,7 @@ import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { DnsHostTile } from '@/components/dns/DnsHostChip'
+import { ApiError } from '@/lib/apiError'
 import { dnsZonesQueryOptions } from '@/queries/dns'
 import type { DnsZone } from '@/types/dns'
 import { DomainsUsing } from './dns-providers/DomainsUsing'
@@ -25,6 +26,8 @@ const STATUS_VARIANT = {
   attention: 'destructive',
   notConnected: 'muted',
 } as const
+
+const forbidden = (e: unknown) => e instanceof ApiError && e.status === 403
 
 /** One calm page for DNS hosts: provider strip, hosted zones, and the domains each host serves. */
 export function DnsProvidersPage() {
@@ -165,7 +168,12 @@ export function DnsProvidersPage() {
             ))}
           </select>
         </div>
-        {zonesQuery.error ? (
+        {zonesQuery.error && forbidden(zonesQuery.error) ? (
+          <div role="status" className="space-y-0.5 text-sm">
+            <p className="font-medium">{t('zones.adminOnly')}</p>
+            <p className="text-muted-foreground">{t('zones.adminOnlyBody')}</p>
+          </div>
+        ) : zonesQuery.error ? (
           <p role="alert" className="text-sm text-tone-danger">
             {t('loadFailed')}
           </p>

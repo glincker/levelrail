@@ -1,14 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { DnsHostTile } from '@/components/dns/DnsHostChip'
-import { useDnsDelegation } from '@/queries/dns'
 import type { DnsZone } from '@/types/dns'
-import {
-  DELEGATION_ROWS,
-  delegationChipKey,
-  hostKey,
-  type ProviderId,
-} from './providers'
+import { delegationChipKey, hostKey, type ProviderId } from './providers'
 
 const CHIP: Record<string, 'success' | 'warning' | 'muted'> = {
   delegated: 'success',
@@ -17,17 +11,24 @@ const CHIP: Record<string, 'success' | 'warning' | 'muted'> = {
   unknown: 'muted',
 }
 
-function DelegationChip({
-  zone,
-  enabled,
-}: {
-  zone: DnsZone
-  enabled: boolean
-}) {
+export function DelegationChip({ zone }: { zone: DnsZone }) {
   const { t } = useTranslation('dnsProviders')
-  const q = useDnsDelegation(zone.name, enabled && !zone.private)
-  const key = delegationChipKey(q.data?.delegation.state)
-  return <Badge variant={CHIP[key]}>{t(`delegation.${key}`)}</Badge>
+  const key = delegationChipKey(zone.delegated)
+  const reason = zone.delegation_reason
+    ? t(`delegation.reason.${zone.delegation_reason}`)
+    : ''
+  const label = t(`delegation.${key}`)
+  return (
+    <Badge
+      variant={CHIP[key]}
+      title={reason || undefined}
+      aria-label={
+        reason ? t('delegation.chipLabel', { state: label, reason }) : label
+      }
+    >
+      {label}
+    </Badge>
+  )
 }
 
 function statusKey(
@@ -65,7 +66,7 @@ export function ZonesTable({
         <span role="columnheader">{t('zones.records')}</span>
         <span role="columnheader">{t('zones.delegation')}</span>
       </div>
-      {zones.map((z, i) => {
+      {zones.map((z) => {
         const s = statusKey(z.status)
         return (
           <div
@@ -111,7 +112,7 @@ export function ZonesTable({
               {z.record_count ?? t('zones.unknown')}
             </span>
             <span role="cell">
-              <DelegationChip zone={z} enabled={i < DELEGATION_ROWS} />
+              <DelegationChip zone={z} />
             </span>
           </div>
         )

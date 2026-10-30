@@ -1,4 +1,4 @@
-import type { DelegationState } from '@/types/dns'
+import type { DnsDelegated } from '@/types/dns'
 import type { DnsDetection } from '@/queries/domainDns'
 
 export type ProviderId = 'cloudflare' | 'route53' | 'googleclouddns'
@@ -45,9 +45,9 @@ export interface ProviderState {
 }
 
 // Bounds come from the build env so a large estate can be tuned without a code change.
-export const DELEGATION_ROWS = Math.max(
+export const RECORD_SEARCH_DEBOUNCE_MS = Math.max(
   0,
-  Number(import.meta.env.VITE_DNS_DELEGATION_ROWS ?? 25),
+  Number(import.meta.env.VITE_DNS_RECORD_SEARCH_DEBOUNCE_MS ?? 250),
 )
 export const DETECT_AUTO_MAX = Math.max(
   0,
@@ -59,12 +59,11 @@ export const DETECT_CONCURRENCY = Math.max(
 )
 
 export function delegationChipKey(
-  state: DelegationState | undefined,
+  d: DnsDelegated | undefined,
 ): 'delegated' | 'partial' | 'notDelegated' | 'unknown' {
-  if (state === 'delegated') return 'delegated'
-  if (state === 'partially_delegated') return 'partial'
-  if (state === 'not_delegated' || state === 'delegated_elsewhere')
-    return 'notDelegated'
+  if (d === 'yes') return 'delegated'
+  if (d === 'partial') return 'partial'
+  if (d === 'no') return 'notDelegated'
   return 'unknown'
 }
 

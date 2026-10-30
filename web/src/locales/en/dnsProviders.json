@@ -84,7 +84,9 @@
     "none": "No hosted zones yet. Connect a provider to list its zones.",
     "open": "Open zone {{zone}}",
     "inProvider": "Zones in this account",
-    "searchInSheet": "Search this account's zones"
+    "searchInSheet": "Search this account's zones",
+    "adminOnly": "Zones are managed by instance admins",
+    "adminOnlyBody": "Hosted zones are shared across the instance. Ask an instance admin to view or change them."
   },
   "delegation": {
     "delegated": "Delegated",
@@ -93,15 +95,21 @@
     "unknown": "Unknown",
     "bannerDelegated": "Delegated: public resolvers return this zone's name servers.",
     "bannerPartial": "Partly delegated: some resolvers still return other name servers.",
-    "bannerElsewhere": "Not delegated: your domain currently uses {{servers}}. Set the name servers below at your registrar.",
-    "bannerNot": "Not delegated: no name servers answer for this domain yet. Set the name servers below at your registrar.",
-    "bannerUnknown": "Could not check delegation right now.",
+    "bannerNot": "Not delegated: public resolvers do not return this zone's name servers. Set the name servers below at your registrar.",
+    "bannerUnknown": "Delegation could not be checked right now.",
     "recheck": "Check again",
     "checking": "Checking...",
     "stepsHeading": "What to do",
     "step1": "Copy the name servers assigned to this zone.",
     "step2": "Open your registrar and replace the domain's name servers with them.",
-    "step3": "Wait for propagation, then check again."
+    "step3": "Wait for propagation, then check again.",
+    "reason": {
+      "private_zone": "Private zones are not checked; they need no delegation.",
+      "lookup_failed": "The public name server lookup failed. Try again later.",
+      "no_assigned_nameservers": "The provider did not report name servers for this zone.",
+      "no_public_nameservers": "Public DNS returned no name servers for this domain yet."
+    },
+    "chipLabel": "Delegation: {{state}}. {{reason}}"
   },
   "zone": {
     "close": "Close",
@@ -116,7 +124,13 @@
     "copied": "Copied",
     "noServers": "This provider did not report name servers.",
     "usedNone": "No domain in Levelrail uses this zone.",
-    "usedStack": "Stack {{stack}}"
+    "usedStack": "Stack {{stack}}",
+    "registrar": "Registrar",
+    "registrarHint": "This domain appears to be registered at {{name}}.",
+    "registrarOpen": "Open {{name}}",
+    "detailFailed": "Could not load this zone's details.",
+    "adminOnly": "Zones are managed by instance admins",
+    "adminOnlyBody": "Ask an instance admin to open or change hosted zones."
   },
   "domains": {
     "heading": "Domains using each provider",
@@ -132,5 +146,33 @@
     "connect": "Connect {{provider}}",
     "detectFailed": "Could not detect"
   },
-  "more": "More providers soon"
+  "more": "More providers soon",
+  "records": {
+    "search": "Search records",
+    "type": "Record type",
+    "all": "All types",
+    "add": "Add record",
+    "name": "Name",
+    "ttl": "TTL",
+    "values": "Values",
+    "auto": "Auto",
+    "empty": "No records match.",
+    "more": "Load more",
+    "count": "{{shown}} of {{matched}} shown",
+    "readOnly": "Read only, managed by the provider",
+    "levelrail": "Levelrail",
+    "levelrailTip": "Added by Levelrail mail DNS setup",
+    "edit": "Edit {{name}} {{type}}",
+    "delete": "Delete {{name}} {{type}}",
+    "deleteTitle": "Delete {{name}} {{type}}?",
+    "deleteLead": "This removes the record set from the provider.",
+    "typeName": "Type {{name}} to confirm",
+    "confirm": "Delete record",
+    "managedTitle": "Levelrail added this record",
+    "managedBody": "Mail DNS setup wrote this record. Deleting it can break mail delivery. Delete it anyway?",
+    "forceConfirm": "Delete anyway",
+    "cancel": "Cancel",
+    "failed": "Could not delete the record.",
+    "alias": "Alias to {{target}}"
+  }
 }
