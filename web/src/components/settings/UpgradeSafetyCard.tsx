@@ -5,6 +5,8 @@ import {
   ChevronRightGlassIcon,
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
+  InfoGlassIcon,
+  TriangleAlertGlassIcon,
 } from '@thesvg/ui-react'
 import { Checkbox } from '../ui/checkbox'
 import { CommandBlock } from '../ui/code-block'
@@ -101,9 +103,20 @@ export function UpgradeSafetyCard({
       className="space-y-3 rounded-lg border border-border bg-card p-3"
     >
       {backupFailed ? (
-        <div role="alert" className="space-y-0.5 text-sm text-tone-danger">
-          <p className="font-medium">{t('backupFailed.title')}</p>
-          <p className="text-muted-foreground">{t('backupFailed.next')}</p>
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-md border border-tone-danger-border bg-tone-danger-soft p-2 text-sm"
+        >
+          <CircleAlertGlassIcon
+            aria-hidden
+            className="mt-0.5 size-5 shrink-0 text-tone-danger"
+          />
+          <div className="space-y-0.5">
+            <p className="font-semibold text-tone-danger">
+              {t('backupFailed.title')}
+            </p>
+            <p className="text-foreground">{t('backupFailed.next')}</p>
+          </div>
         </div>
       ) : null}
       <dl className="space-y-2">
@@ -129,15 +142,17 @@ export function UpgradeSafetyCard({
                 })})`
               : null}
           </p>
-          <p
-            className={
-              breaking > 0 ? 'text-tone-warning' : 'text-muted-foreground'
-            }
-          >
-            {breaking > 0
-              ? t('change.breaking', { count: breaking })
-              : t('change.noBreaking')}
-          </p>
+          {breaking > 0 ? (
+            <p className="flex items-start gap-1.5 font-semibold text-tone-warning">
+              <TriangleAlertGlassIcon
+                aria-hidden
+                className="mt-0.5 size-4 shrink-0"
+              />
+              {t('change.breaking', { count: breaking })}
+            </p>
+          ) : (
+            <p className="text-muted-foreground">{t('change.noBreaking')}</p>
+          )}
         </Row>
         <Row label={t('checks.label')}>
           {disk ? (
@@ -147,13 +162,20 @@ export function UpgradeSafetyCard({
                   aria-hidden
                   className="mt-0.5 size-4 shrink-0 text-tone-success"
                 />
-              ) : (
+              ) : disk.known ? (
                 <CircleAlertGlassIcon
                   aria-hidden
                   className="mt-0.5 size-4 shrink-0 text-tone-danger"
                 />
+              ) : (
+                <InfoGlassIcon
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                />
               )}
-              <span>
+              <span
+                className={disk.known ? undefined : 'text-muted-foreground'}
+              >
                 {!disk.known
                   ? t('checks.diskUnknown')
                   : t(disk.ok ? 'checks.diskOk' : 'checks.diskShort', {
@@ -220,7 +242,11 @@ export function UpgradeSafetyCard({
                   {t('skip.label')}
                 </label>
               </div>
-              <p className="text-xs text-tone-warning">
+              <p className="flex items-start gap-1.5 text-sm font-medium text-tone-warning">
+                <TriangleAlertGlassIcon
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0"
+                />
                 {backupFailed ? t('skip.hint') : t('skip.warning')}
               </p>
             </div>
