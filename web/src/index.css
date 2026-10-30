@@ -33,7 +33,7 @@
   color-scheme: light dark;
   /* Overwritten by BrandProvider from the live /api/v1/brand response
      (adr/024); these are just the pre-hydration/test fallback, matching
-     brand.yaml's own default values. Wired into --ring and links only;
+     brand.yaml's own default values. Wired into links only (the focus ring is neutral);
      --primary stays neutral ink. */
   --brand-accent: #107292;
   --brand-accent-dark: #2fb3dc;
@@ -56,7 +56,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: var(--brand-accent);
+  --ring: oklch(0.556 0 0);
   --brand-link: var(--brand-accent);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -170,7 +170,7 @@ body {
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: var(--brand-accent-dark);
+  --ring: oklch(0.708 0 0);
   --brand-link: var(--brand-accent-dark);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
