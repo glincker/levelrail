@@ -127,6 +127,11 @@ func (rt *Router) mcpCodeGrant(w http.ResponseWriter, r *http.Request, st mcpOAu
 		invalid("code is required")
 		return
 	}
+	// Only the client the code was issued to may burn or replay it.
+	if pre, perr := st.GetMCPOAuthRequestByCode(r.Context(), sha256Hex(code)); perr == nil && subtle.ConstantTimeCompare([]byte(pre.ClientID), []byte(client.ID)) != 1 {
+		invalid("the authorization code was issued to another client")
+		return
+	}
 	req, reused, err := st.ConsumeMCPOAuthCode(r.Context(), sha256Hex(code), nowUnix())
 	if err != nil {
 		if reused && req != nil {
@@ -158,6 +163,10 @@ func (rt *Router) mcpCodeGrant(w http.ResponseWriter, r *http.Request, st mcpOAu
 	user, err := rt.auth.GetUserByID(r.Context(), req.UserID)
 	if err != nil {
 		invalid("the approving user no longer exists")
+		return
+	}
+	if gone, gerr := rt.tokenOwnerGone(r.Context(), &store.APIToken{OwnerUserID: user.ID}); gerr != nil || gone {
+		invalid("the approving user no longer exists or is disabled")
 		return
 	}
 	scopes := mcpGrantable(req.Scopes, user.Abilities)
@@ -244,6 +253,11 @@ func (rt *Router) mcpRefreshGrant(w http.ResponseWriter, r *http.Request, st mcp
 	if err != nil {
 		rt.revokeMCPGrant(r.Context(), st, g.ID)
 		invalid("the approving user no longer exists")
+		return
+	}
+	if gone, gerr := rt.tokenOwnerGone(r.Context(), &store.APIToken{OwnerUserID: user.ID}); gerr != nil || gone {
+		rt.revokeMCPGrant(r.Context(), st, g.ID)
+		invalid("the approving user no longer exists or is disabled")
 		return
 	}
 	// Scopes are re-capped on every refresh so a demoted user cannot keep reading.

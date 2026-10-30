@@ -48,6 +48,7 @@ type mcpHTTP struct {
 	inner        http.Handler
 	limit        *apiRateLimiter
 	oauthLimit   *apiRateLimiter
+	authzLimit   *apiRateLimiter
 	maxBody      int64
 	maxResponse  int64
 	callTimeout  time.Duration

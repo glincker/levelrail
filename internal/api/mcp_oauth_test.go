@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -353,5 +354,38 @@ func TestMCPOAuth_ResourceIndicator(t *testing.T) {
 	rec := o.authorize(o.authorizeQuery(map[string]string{"resource": "https://other.example.com/mcp"}))
 	if !strings.Contains(rec.Header().Get("Location"), "invalid_target") {
 		t.Fatalf("foreign resource = %d %v, want invalid_target", rec.Code, rec.Header())
+	}
+}
+
+func TestMCPOAuth_TokenRevokeEndsGrantAndAuthorizeIsLimited(t *testing.T) {
+	t.Setenv(envMCPOAuthAuthorizeRPM, "2")
+	o := newMCPOAuthHarness(t)
+	tr := o.issue()
+	// Revoking the access token must end the grant even if the token row is later purged.
+	rows, err := o.db.QueryContext(context.Background(), `SELECT token_id FROM mcp_oauth_tokens`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tokenID string
+	if rows.Next() {
+		_ = rows.Scan(&tokenID)
+	}
+	_ = rows.Close()
+	if err := o.rt.libraryRevokeToken(context.Background(), tokenID); err != nil {
+		t.Fatalf("revoke = %v", err)
+	}
+	g, err := o.db.GetMCPOAuthGrantByToken(context.Background(), tokenID)
+	if err != nil || !g.Revoked {
+		t.Fatalf("grant after token revoke = %+v, %v; want revoked", g, err)
+	}
+	if rec := o.token(url.Values{"grant_type": {"refresh_token"}, "client_id": {o.client}, "refresh_token": {tr.RefreshToken}}); rec.Code != http.StatusBadRequest {
+		t.Fatalf("refresh after revoke = %d", rec.Code)
+	}
+	var last int
+	for range 4 {
+		last = o.authorize(o.authorizeQuery(nil)).Code
+	}
+	if last != http.StatusTooManyRequests {
+		t.Fatalf("authorize past the limit = %d, want 429", last)
 	}
 }
