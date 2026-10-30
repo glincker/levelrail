@@ -1,0 +1,359 @@
+{
+  "page": {
+    "title": "Centro de seguridad",
+    "description": "Tu puntuación de seguridad, qué corregir primero y cada sesión y dispositivo que puede acceder a este plano de control.",
+    "tabs": {
+      "checklist": "Lista de verificación",
+      "sessions": "Sesiones y dispositivos",
+      "policy": "Política",
+      "rotations": "Rotación de secretos",
+      "compliance": "Cumplimiento",
+      "exposure": "Exposición",
+      "advisories": "Avisos"
+    },
+    "loadError": "No se pudo cargar el centro de seguridad.",
+    "retry": "Reintentar"
+  },
+  "score": {
+    "label": "Puntuación de seguridad",
+    "grade": "Nota {{grade}}",
+    "generated": "Verificado {{time}}",
+    "failing": "{{critical}} críticos, {{high}} altos, {{medium}} medios, {{low}} bajos",
+    "passing": "{{count}} verificaciones superadas",
+    "unknown": "{{count}} no se pudieron verificar",
+    "recommended": "{{count}} pasos recomendados no afectan la puntuación hasta que despliegues una app",
+    "summaryOnly": "Solo los administradores ven la lista completa. Pide a un administrador que revise los elementos detrás de esta puntuación."
+  },
+  "severity": {
+    "critical": "Crítica",
+    "high": "Alta",
+    "medium": "Media",
+    "low": "Baja"
+  },
+  "status": {
+    "pass": "Correcto",
+    "fail": "Requiere acción",
+    "recommended": "Recomendado",
+    "unknown": "Desconocido"
+  },
+  "supplyGate": {
+    "blockOnHigh": {
+      "label": "Bloquear en alta o crítica",
+      "summary": "Detener las versiones con hallazgos graves.",
+      "detail": "Una versión con una vulnerabilidad alta o crítica no se publica. La versión anterior sigue sirviéndose y el deploy registra el motivo. Si falla el propio escáner, la versión se permite."
+    }
+  },
+  "reach": {
+    "title": "Lo que Internet puede alcanzar",
+    "description": "Cada dominio y puerto publicado por app y base de datos, con una corrección para lo que no debería estar abierto. Las correcciones usan los mismos controles que las páginas de apps, firewall y bases de datos.",
+    "recheck": "Verificar de nuevo",
+    "rechecking": "Verificando",
+    "recheckError": "No se pudo verificar de nuevo.",
+    "loadError": "No se pudo cargar el informe de exposición.",
+    "rulesUnreadable": "No se pudieron leer las reglas de firewall de un nodo, así que un puerto restringido podría aparecer como abierto.",
+    "clean": "No hay nada riesgoso al alcance. {{count}} puertos publicados están limitados por reglas de firewall.",
+    "subjects": "Apps y bases de datos",
+    "private": "No accesible desde el exterior",
+    "fixed": "Corregido. Se volvió a verificar el informe.",
+    "stillFailing": "Se aplicó el cambio pero el hallazgo sigue ahí.",
+    "applyError": "No se pudo aplicar la corrección.",
+    "severity": {
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Baja",
+      "info": "Info"
+    },
+    "type": {
+      "app": "App",
+      "database": "Base de datos"
+    },
+    "kinds": {
+      "app_direct_port": {
+        "title": "{{name}} está abierta en el puerto {{port}}",
+        "why": "Un puerto directo se salta TLS, las puertas de inicio de sesión y el escudo. Servirla a través del proxy cierra el puerto.",
+        "fix": "Servir a través del proxy"
+      },
+      "app_no_shield": {
+        "title": "{{name}} no tiene escudo en {{domain}}",
+        "why": "Sin límites de tasa, un solo cliente puede consumir toda la capacidad de la app.",
+        "fix": "Aplicar el escudo recomendado"
+      },
+      "database_public": {
+        "title": "La base de datos {{name}} está abierta a Internet en el puerto {{port}}",
+        "why": "Cualquiera que encuentre el puerto puede intentar iniciar sesión. Restríngelo a direcciones conocidas o hazlo privado.",
+        "fix": "Revisar acceso"
+      },
+      "port_exposed": {
+        "title": "{{container}} está abierto en el puerto {{port}}",
+        "why": "Docker publica puertos por encima del firewall del host, así que cualquiera puede alcanzar este.",
+        "fix": "Restringir en el firewall"
+      },
+      "docker_api": {
+        "title": "La API de Docker está abierta en el puerto {{port}}",
+        "why": "Quien la alcance controla todos los contenedores del servidor.",
+        "fix": "Restringir en el firewall"
+      }
+    },
+    "confirm": {
+      "title": "¿Cerrar el puerto directo?",
+      "description": "La app se recrea con la misma imagen y después solo es accesible a través del proxy. Todo lo que use la dirección directa deja de funcionar.",
+      "confirm": "Cerrar el puerto",
+      "pending": "Aplicando"
+    }
+  },
+  "checklist": {
+    "platform": "Plataforma",
+    "account": "Tu cuenta",
+    "empty": "Aún no hay nada que verificar.",
+    "count": "{{count}} afectados",
+    "showPassing": "Mostrar verificaciones superadas",
+    "hidePassing": "Ocultar verificaciones superadas",
+    "fix": "Corregir",
+    "open": "Abrir",
+    "cli": "Desde la CLI",
+    "applied": "Cambio aplicado.",
+    "applyError": "No se pudo aplicar el cambio."
+  },
+  "items": {
+    "admin_without_mfa": {
+      "title": "Administradores sin autenticación de dos factores ni passkey",
+      "pass": "Todos los administradores tienen autenticación de dos factores o una passkey",
+      "why": "Una contraseña de administrador filtrada bastaría para controlar por completo todas las apps y secretos."
+    },
+    "account_flagged": {
+      "title": "Cuentas marcadas para cambiar la contraseña",
+      "pass": "Ninguna cuenta está marcada para restablecer la contraseña",
+      "why": "Alguien reportó un inicio de sesión en estas cuentas que no era suyo."
+    },
+    "recovery_codes_missing": {
+      "title": "Cuentas sin códigos de recuperación restantes",
+      "pass": "Todas las cuentas con dos factores tienen códigos de recuperación",
+      "why": "Perder la app de autenticación dejaría a estas cuentas bloqueadas sin forma de volver a entrar."
+    },
+    "no_admin_passkey": {
+      "title": "Ningún administrador tiene una passkey",
+      "pass": "Los administradores tienen {{count}} passkey(s)",
+      "why": "Las passkeys no se pueden suplantar con phishing ni reutilizar, a diferencia de las contraseñas y los códigos."
+    },
+    "token_root": {
+      "title": "Tokens de API con permisos root",
+      "pass": "Ningún token de API tiene permisos root",
+      "why": "Un token root puede hacer todo lo que hace un administrador, incluso crear más tokens."
+    },
+    "token_no_expiry": {
+      "title": "Tokens de API que nunca expiran",
+      "pass": "Todos los tokens de API tienen fecha de expiración",
+      "why": "Un token sin expiración sigue funcionando mucho después de que nadie recuerde que existe."
+    },
+    "token_signin_approve": {
+      "title": "Tokens de API que pueden aprobar inicios de sesión",
+      "pass": "Ningún token de API puede aprobar inicios de sesión",
+      "why": "Un token así puede revelar códigos de inicio de sesión y aprobar navegadores nuevos para su propietario."
+    },
+    "token_unused": {
+      "title": "Tokens de API sin uso desde hace mucho tiempo",
+      "pass": "No hay tokens de API sin uso prolongado",
+      "why": "Los tokens sin uso son puro riesgo: revoca los que ya nada necesita."
+    },
+    "sessions_old": {
+      "title": "Sesiones antiguas que siguen abiertas",
+      "pass": "No hay sesiones antiguas",
+      "why": "Las sesiones de larga duración en navegadores olvidados son una puerta de entrada fácil."
+    },
+    "secret_reveal_allow": {
+      "title": "Los valores de los secretos se pueden revelar sin confirmar",
+      "pass": "Revelar el valor de un secreto requiere confirmar con contraseña o passkey",
+      "why": "Con APP_SECRET_REVEAL=allow, cualquiera con read:sensitive o una sesión robada puede leer todos los valores de los secretos. Cámbialo a step_up."
+    },
+    "new_device_approval_off": {
+      "title": "La aprobación de navegadores nuevos está desactivada",
+      "pass": "La aprobación de navegadores nuevos está activada",
+      "why": "Sin ella, una contraseña robada inicia sesión desde cualquier lugar sin una segunda verificación."
+    },
+    "approval_password_only": {
+      "title": "Solo los inicios de sesión con contraseña requieren aprobar el navegador nuevo",
+      "pass": "Todos los métodos de inicio de sesión requieren aprobar el navegador nuevo",
+      "why": "Los inicios de sesión con passkey y OAuth desde un navegador nuevo hoy se saltan el paso de aprobación."
+    },
+    "code_login_admins": {
+      "title": "Los administradores pueden iniciar sesión con un código",
+      "pass": "Los administradores no pueden iniciar sesión con un código",
+      "why": "Un código enviado a una sesión abierta o al correo es una vía más débil hacia una cuenta de administrador."
+    },
+    "public_exposure": {
+      "title": "Puertos de contenedores abiertos a Internet",
+      "pass": "No hay puertos públicos sin restricción",
+      "why": "Docker publica puertos por encima del firewall del host, así que cualquiera puede alcanzarlos."
+    },
+    "docker_api_exposed": {
+      "title": "La API de Docker es accesible desde Internet",
+      "pass": "La API de Docker no está expuesta",
+      "why": "El acceso a la API de Docker sin autenticación es control total del servidor."
+    },
+    "offbox_backup_off": {
+      "title": "Las copias de seguridad externas del plano de control están desactivadas",
+      "pass": "Las copias de seguridad externas cifradas están activadas",
+      "why": "Perder esta máquina implicaría perder todas las definiciones de apps, secretos y certificados."
+    },
+    "master_key_rotation": {
+      "title": "Falta la clave maestra o su rotación está vencida",
+      "pass": "La clave maestra se rotó recientemente",
+      "why": "Rotar la clave maestra limita lo que podría descifrar una copia antigua filtrada."
+    },
+    "secrets_old": {
+      "title": "Secretos con más de {{detail}}",
+      "pass": "No hay secretos obsoletos",
+      "why": "Es más probable que los secretos antiguos se hayan filtrado en algún punto."
+    },
+    "tls_not_public": {
+      "title": "Dominios sin un certificado de confianza pública",
+      "pass": "Todos los dominios tienen un certificado público",
+      "why": "Los navegadores muestran advertencias en estos dominios, lo que acostumbra a la gente a ignorarlas."
+    },
+    "hsts_off": {
+      "title": "HSTS está desactivado aunque hay certificados reales",
+      "pass": "HSTS está activado o aún no hace falta",
+      "why": "Sin HSTS, una primera visita por HTTP sin cifrar puede ser interceptada y degradada."
+    },
+    "domains_unshielded": {
+      "title": "Dominios sin escudo",
+      "pass": "Todos los dominios enrutados tienen un escudo",
+      "why": "Un escudo limita las solicitudes por visitante y rechaza bots abusivos, de modo que un cliente ruidoso no deje sin recursos a los demás."
+    },
+    "agents_outdated": {
+      "title": "Agentes de nodo más antiguos que la versión mínima",
+      "pass": "Todos los agentes de nodo están al día",
+      "why": "Los agentes antiguos no tienen correcciones de seguridad que el plano de control ya espera."
+    },
+    "login_anomalies": {
+      "title": "Ráfagas de inicios de sesión fallidos",
+      "pass": "No hay ráfagas de inicios de sesión fallidos",
+      "why": "Muchas contraseñas incorrectas en poco tiempo suelen indicar que alguien está adivinando."
+    },
+    "own_mfa": {
+      "title": "Tu cuenta no tiene autenticación de dos factores ni passkey",
+      "pass": "Tu cuenta tiene autenticación de dos factores o una passkey",
+      "why": "Tu contraseña por sí sola basta para iniciar sesión como tú."
+    },
+    "own_recovery_codes": {
+      "title": "No te quedan códigos de recuperación",
+      "pass": "Tienes códigos de recuperación",
+      "why": "Sin ellos, perder tu autenticador te deja sin acceso."
+    },
+    "own_account_flagged": {
+      "title": "Tu cuenta necesita una contraseña nueva",
+      "pass": "Tu cuenta no está marcada",
+      "why": "Se reportó un inicio de sesión en tu cuenta que no era tuyo."
+    }
+  },
+  "actions": {
+    "set_policy": "Aplicar la política recomendada",
+    "disable_code_login_admins": "Desactivar el inicio de sesión con código para administradores",
+    "review_sessions": "Revisar sesiones",
+    "enable_hsts": "Activar HSTS"
+  },
+  "hsts": {
+    "title": "Activar HSTS",
+    "description": "Comprobamos que cada dominio público sirva un certificado de confianza pública antes de poder activarlo.",
+    "probing": "Verificando certificados...",
+    "probeError": "No se pudo ejecutar la verificación de certificados.",
+    "trusted": "Certificado de confianza",
+    "notTrusted": "Autofirmado, interno o inaccesible por HTTPS",
+    "noDomains": "Aún no hay ningún dominio público configurado.",
+    "blocked": "HSTS permanece desactivado hasta que todos los dominios lo superen. Con un certificado autofirmado, los navegadores rechazarían el sitio sin forma de omitir la advertencia.",
+    "warning": "HSTS cubre los subdominios y los navegadores lo recuerdan durante 180 días, así que no se puede deshacer para los visitantes que ya lo vieron.",
+    "recheck": "Verificar de nuevo",
+    "confirm": "Activar HSTS",
+    "enabled": "HSTS está activado",
+    "enableError": "No se pudo activar HSTS"
+  },
+  "sessions": {
+    "tableLabel": "Sesiones activas",
+    "title": "Sesiones activas",
+    "description": "Navegadores con la sesión iniciada en esta cuenta. La ubicación es la red a la que pertenece la dirección, no un lugar.",
+    "viewing": "Viendo la cuenta",
+    "self": "Tu cuenta",
+    "browser": "Navegador",
+    "network": "Red",
+    "created": "Inicio de sesión",
+    "lastSeen": "Última actividad",
+    "current": "Este navegador",
+    "revoke": "Cerrar sesión",
+    "revokeAria": "Cerrar la sesión {{id}}",
+    "revoked": "Sesión cerrada.",
+    "revokeError": "No se pudo cerrar esa sesión.",
+    "revokeOthers": "Cerrar todas las demás sesiones",
+    "revokeOthersAdmin": "Cerrar todas las sesiones de esta cuenta",
+    "revokeOthersDone": "Se cerraron {{count}} sesión(es). También se restablecieron los navegadores de confianza y los inicios de sesión en espera.",
+    "empty": "No hay sesiones activas.",
+    "devicesTitle": "Navegadores de confianza",
+    "devicesDescription": "Navegadores que se saltan la aprobación de navegador nuevo. Quita los que no reconozcas.",
+    "devicesEmpty": "No hay navegadores de confianza.",
+    "deviceRemove": "Quitar",
+    "deviceRemoved": "Navegador eliminado.",
+    "tokensTitle": "Tokens de API",
+    "tokensDescription": "Tokens de esta cuenta, con la fecha de su último uso.",
+    "tokensEmpty": "No hay tokens de API.",
+    "neverUsed": "Nunca usado",
+    "usedAgo": "Usado {{time}}",
+    "manageTokens": "Gestionar tokens",
+    "confirmTitle": "¿Cerrar las demás sesiones?",
+    "confirmBody": "Se cierra la sesión de todos los demás navegadores de esta cuenta y se restablecen los navegadores de confianza y los inicios de sesión en espera.",
+    "confirm": "Cerrar sus sesiones",
+    "cancel": "Cancelar"
+  },
+  "policy": {
+    "title": "Política de seguridad",
+    "description": "Reglas de la plataforma para la aprobación de inicios de sesión y la higiene de los tokens de API. Los cambios se aplican de inmediato.",
+    "adminOnly": "Solo los administradores pueden cambiar la política de seguridad.",
+    "source": {
+      "saved": "Guardado aquí",
+      "env": "Desde el entorno",
+      "default": "Predeterminado"
+    },
+    "approvalScope": "La aprobación de navegador nuevo se aplica a",
+    "scopePasswordOnly": "Solo inicios de sesión con contraseña",
+    "scopeAllMethods": "Todos los métodos de inicio de sesión (contraseña, passkey, OAuth)",
+    "approvalOff": "La aprobación de navegador nuevo está desactivada en este servidor, así que este ajuste no tiene efecto hasta que se vuelva a activar.",
+    "maxLifetime": "Vida máxima de un token de API (días, 0 para sin límite)",
+    "warnUnused": "Marcar tokens sin uso durante (días, 0 para desactivar)",
+    "disableUnused": "Deshabilitar tokens sin uso durante (días, 0 para desactivar)",
+    "disableHint": "Un token recibe primero un aviso y se deshabilita {{days}} días después si no se usa.",
+    "save": "Guardar política",
+    "saved": "Política de seguridad guardada.",
+    "saveError": "No se pudo guardar la política de seguridad."
+  },
+  "account": {
+    "title": "Exigir aprobación para navegadores nuevos en mi cuenta",
+    "description": "Pide a una de tus sesiones abiertas que apruebe cualquier navegador nuevo, sea cual sea el método de inicio de sesión.",
+    "on": "Se exige aprobación para todos los métodos de inicio de sesión en tu cuenta.",
+    "off": "Tu cuenta sigue la política de la plataforma.",
+    "saveError": "No se pudo cambiar este ajuste.",
+    "flagged": "Se reportó un inicio de sesión en tu cuenta que no era tuyo. Cambia tu contraseña ahora; así se quita esta advertencia."
+  },
+  "alertPage": {
+    "title": "¿No fuiste tú en este inicio de sesión?",
+    "description": "Confirma para cerrar la sesión de ese navegador, olvidar tus navegadores de confianza y marcar tu cuenta para cambiar la contraseña.",
+    "confirm": "No fui yo, cerrar esa sesión",
+    "working": "Cerrando la sesión...",
+    "done": "Listo. Se cerró la sesión de ese navegador y tu cuenta quedó marcada. Inicia sesión y cambia tu contraseña ahora.",
+    "doneNoSession": "Listo. Esa sesión ya había terminado. Tu cuenta quedó marcada: inicia sesión y cambia tu contraseña ahora.",
+    "signIn": "Ir a iniciar sesión",
+    "missing": "A este enlace le falta el token. Vuelve a abrir el enlace del correo.",
+    "error": "Este enlace no es válido, ya se usó o expiró."
+  },
+  "advisories": {
+    "title": "Avisos conocidos",
+    "off": "No hay ningún feed de avisos configurado. Define APP_ADVISORY_FEED en el servidor para activarlo.",
+    "unsigned": "sin firmar",
+    "verified": "firmado, verificado",
+    "invalid": "firma no válida",
+    "feed": "{{count}} avisos, {{signature}}",
+    "none": "Ninguna imagen en ejecución coincide con un aviso conocido.",
+    "summary_one": "{{count}} imagen en ejecución coincide con un aviso conocido",
+    "summary_other": "{{count}} imágenes en ejecución coinciden con un aviso conocido",
+    "fixedIn": "Corregido en {{version}}",
+    "reference": "Referencia",
+    "loadError": "No se pudieron cargar los avisos."
+  }
+}
