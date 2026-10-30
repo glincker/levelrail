@@ -1,4 +1,4 @@
-import { ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useNowTick } from '../../hooks/useNowTick'
@@ -35,7 +35,7 @@ export function DeployLiveStatus({
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="warning">{t('live.polling')}</Badge>
         <Button variant="outline" size="sm" onClick={onRetry}>
-          <ArrowClockwiseIcon className="size-3.5" data-icon="inline-start" />
+          <RotateCwGlassIcon className="size-5" data-icon="inline-start" />
           {t('live.retryNow')}
         </Button>
       </div>
@@ -60,7 +60,7 @@ export function DeployLiveStatus({
           {`, ${lastEvent}`}
         </Badge>
         <Button variant="outline" size="sm" onClick={onRetry}>
-          <ArrowClockwiseIcon className="size-3.5" data-icon="inline-start" />
+          <RotateCwGlassIcon className="size-5" data-icon="inline-start" />
           {t('live.retryNow')}
         </Button>
       </div>

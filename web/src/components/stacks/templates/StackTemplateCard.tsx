@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import type { StackTemplateSummary } from '../../../types/stackTemplates'
 
@@ -30,7 +30,7 @@ export function StackTemplateCard({
         ))}
         {template.secret_names.length > 0 ? (
           <Badge variant="warning">
-            <KeyIcon aria-hidden="true" />
+            <KeyGlassIcon size="1.4em" aria-hidden="true" />
             {t('templates.secretCount', {
               count: template.secret_names.length,
             })}

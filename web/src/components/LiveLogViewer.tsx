@@ -1,4 +1,4 @@
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useLogStream } from '../hooks/useLogStream'
@@ -62,7 +62,10 @@ export function LiveLogViewer({
 
       {problem ? (
         <div className="flex items-start gap-2.5 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-3 text-tone-warning">
-          <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <TriangleAlertGlassIcon
+            className="mt-0.5 size-6 shrink-0 text-tone-warning"
+            aria-hidden="true"
+          />
           <div className="min-w-0 flex-1 text-sm">
             <p className="font-medium">
               {t('liveLogs.noContainer', { reason: problem.Reason })}

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -44,6 +45,10 @@ func (rt *Router) handleDeleteBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.backupDeleter.DeleteBackup(r.Context(), historyID); err != nil {
+		if errors.Is(err, store.ErrBackupInUse) {
+			writeError(w, http.StatusConflict, fmt.Sprintf("backup %q cannot be deleted: it was used by a restore or clone (%s); the restore history is kept", historyID, err.Error()))
+			return
+		}
 		rt.internalError(w, "api: delete backup failed", err, slog.String("backup_id", historyID), slog.String("database", name))
 		return
 	}
@@ -75,6 +80,10 @@ func (rt *Router) handleDeleteVolumeBackup(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := rt.backupDeleter.DeleteBackup(r.Context(), historyID); err != nil {
+		if errors.Is(err, store.ErrBackupInUse) {
+			writeError(w, http.StatusConflict, fmt.Sprintf("backup %q cannot be deleted: it was used by a restore or clone (%s); the restore history is kept", historyID, err.Error()))
+			return
+		}
 		rt.internalError(w, "api: delete volume backup failed", err, slog.String("backup_id", historyID), slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}

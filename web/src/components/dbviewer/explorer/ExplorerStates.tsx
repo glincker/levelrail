@@ -1,13 +1,13 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  MagnifyingGlassIcon,
-  PlugsIcon,
-  TableIcon,
-  TerminalWindowIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  PlugGlassIcon,
+  RefreshCwGlassIcon,
+  SearchGlassIcon,
+  SpreadsheetGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { CopyFailureDetail } from '@/components/attention/CopyFailureDetail'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,7 +44,7 @@ function Panel({
       )}
     >
       <div className="flex items-center gap-2">
-        <span className="[&_svg]:size-5" aria-hidden="true">
+        <span className="[&_svg]:size-6" aria-hidden="true">
           {icon}
         </span>
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
@@ -81,7 +81,7 @@ export function ExplorerReadError({
   return (
     <div role="alert">
       <Panel
-        icon={<PlugsIcon />}
+        icon={<PlugGlassIcon size="1.4em" />}
         title={t('viewer.states.errorTitle')}
         tone="danger"
       >
@@ -91,7 +91,7 @@ export function ExplorerReadError({
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" size="sm" disabled={retrying} onClick={onRetry}>
-            <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+            <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
             {t('viewer.states.retry')}
           </Button>
         </div>
@@ -167,7 +167,13 @@ export function ExplorerEmpty({
   const sizeKnown = evidence !== undefined
   return (
     <Panel
-      icon={hasWarning ? <WarningCircleIcon /> : <TableIcon />}
+      icon={
+        hasWarning ? (
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
+        ) : (
+          <SpreadsheetGlassIcon size="1.4em" />
+        )
+      }
       title={
         isTarget || hasWarning
           ? t('viewer.states.emptyVerifyTitle')
@@ -233,7 +239,7 @@ export function ExplorerEmpty({
           params={{ name: databaseName }}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
-          <TerminalWindowIcon className="size-4" aria-hidden="true" />
+          <TerminalGlassIcon className="size-5" aria-hidden="true" />
           {t('viewer.states.openConsole')}
         </Link>
       )}
@@ -251,8 +257,8 @@ export function ExplorerNoMatches({
   const { t } = useTranslation('databases')
   return (
     <div className="space-y-2 p-4 text-center">
-      <MagnifyingGlassIcon
-        className="mx-auto size-5 text-muted-foreground"
+      <SearchGlassIcon
+        className="mx-auto size-6 text-muted-foreground"
         aria-hidden="true"
       />
       <p className="text-sm">{t('viewer.states.noMatches', { query })}</p>

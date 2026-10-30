@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BookmarkSimpleIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { BookmarkGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -53,7 +53,7 @@ export function SavedViews({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <BookmarkSimpleIcon />
+        <BookmarkGlassIcon size="1.4em" />
         {t('views.button')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 space-y-3">
@@ -88,7 +88,7 @@ export function SavedViews({
                     })
                   }
                 >
-                  <TrashIcon />
+                  <TrashGlassIcon size="1.4em" />
                 </Button>
               </li>
             ))}

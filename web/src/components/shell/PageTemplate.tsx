@@ -21,7 +21,7 @@ export interface PageTemplateProps {
   eyebrow?: ReactNode
   /** A BrandTile, or any hero tile. Wins over `icon`. */
   logo?: ReactNode
-  /** Phosphor icon rendered in a neutral hero tile. */
+  /** UI icon rendered in a neutral hero tile. */
   icon?: ReactNode
   /** Status badge or pill beside the title. */
   status?: ReactNode
@@ -88,7 +88,7 @@ export function PageTemplate({
     (icon ? (
       <span
         aria-hidden="true"
-        className="flex size-(--glinr-hero-tile-size) shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border [&_svg]:size-5"
+        className="flex size-(--glinr-hero-tile-size) shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border [&_svg]:size-6"
       >
         {icon}
       </span>

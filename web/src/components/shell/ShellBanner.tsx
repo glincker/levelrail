@@ -1,10 +1,10 @@
 import { useSyncExternalStore } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
-  WarningCircleIcon,
-  WifiSlashIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  WifiOffGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   dismissConnectionBanner,
@@ -35,7 +35,7 @@ function Bar({
       role="alert"
       className="flex min-h-9 shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-1 text-sm text-destructive"
     >
-      <span aria-hidden="true" className="[&_svg]:size-4">
+      <span aria-hidden="true" className="[&_svg]:size-5">
         {icon}
       </span>
       <span className="min-w-0 flex-1 break-words">{children}</span>
@@ -48,7 +48,7 @@ function Bar({
         title="Dismiss"
         onClick={onDismiss}
       >
-        <XIcon />
+        <XGlassIcon size="1.4em" />
       </Button>
     </div>
   )
@@ -78,7 +78,7 @@ export function ShellBanner() {
   if (kind === 'connection') {
     return (
       <Bar
-        icon={<WifiSlashIcon />}
+        icon={<WifiOffGlassIcon size="1.4em" />}
         onDismiss={dismissConnectionBanner}
         action={
           <Button
@@ -102,7 +102,9 @@ export function ShellBanner() {
   if (kind === 'docker') {
     return (
       <Bar
-        icon={<WarningCircleIcon />}
+        icon={
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
+        }
         onDismiss={() => snoozeNow('banner:docker-down', '1h')}
         action={
           <Button size="sm" variant="outline" render={<Link to="/nodes" />}>
@@ -119,7 +121,9 @@ export function ShellBanner() {
     const detail = find('disk')?.detail ?? ''
     return (
       <Bar
-        icon={<WarningCircleIcon />}
+        icon={
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
+        }
         onDismiss={() => snoozeNow('banner:disk', '1d')}
         action={<CleanUpDockerDialog />}
       >

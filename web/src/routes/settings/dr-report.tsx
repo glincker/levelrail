@@ -3,10 +3,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  ClipboardTextIcon,
-  PlayIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ClipboardListGlassIcon,
+  PlayGlassIcon,
+  RotateCcwGlassIcon,
+} from '@thesvg/ui-react'
 import { PageHeader } from '@/components/shell/PageHeader'
 import {
   Card,
@@ -87,7 +87,7 @@ function DrReportPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <ClipboardTextIcon className="size-4" />
+          <ClipboardListGlassIcon className="size-5" />
         </div>
         <PageHeader
           title={t('rehydrate.title')}
@@ -122,12 +122,12 @@ function DrReportPage() {
                 })
               }
             >
-              <ArrowCounterClockwiseIcon data-icon="inline-start" />
+              <RotateCcwGlassIcon size="1.4em" data-icon="inline-start" />
               {t('rehydrate.plan')}
             </Button>
             {!confirming ? (
               <Button disabled={running} onClick={() => setConfirming(true)}>
-                <PlayIcon data-icon="inline-start" />
+                <PlayGlassIcon size="1.4em" data-icon="inline-start" />
                 {t('rehydrate.run')}
               </Button>
             ) : null}

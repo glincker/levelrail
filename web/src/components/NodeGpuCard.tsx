@@ -1,8 +1,8 @@
 import {
-  CheckCircleIcon,
-  CpuIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CpuGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -24,17 +24,23 @@ export function NodeGpuCard({ gpu }: { gpu?: NodeGpuResource }) {
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2">
-          <CpuIcon className="size-4" aria-hidden="true" />
+          <CpuGlassIcon className="size-5" aria-hidden="true" />
           GPU
         </CardTitle>
         {runtimeMissing ? (
           <Badge variant="warning">
-            <WarningIcon className="size-3" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             nvidia runtime missing
           </Badge>
         ) : (
           <Badge variant="success">
-            <CheckCircleIcon className="size-3" aria-hidden="true" />
+            <CircleCheckGlassIcon
+              className="size-4.5 text-tone-success"
+              aria-hidden="true"
+            />
             ready
           </Badge>
         )}

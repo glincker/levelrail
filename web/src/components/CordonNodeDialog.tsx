@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockIcon, LockOpenIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, LockOpenGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
@@ -28,7 +28,7 @@ export function CordonNodeDialog({
   const uncordon = useUncordonNode()
   const mutation = node.schedulable ? cordon : uncordon
   const key = node.schedulable ? 'cordon' : 'uncordon'
-  const TriggerIcon = node.schedulable ? LockIcon : LockOpenIcon
+  const TriggerIcon = node.schedulable ? LockGlassIcon : LockOpenGlassIcon
 
   return (
     <>
@@ -41,7 +41,7 @@ export function CordonNodeDialog({
             setOpen(true)
           }}
         >
-          <TriggerIcon className="size-3.5" aria-hidden="true" />
+          <TriggerIcon className="size-4.5" aria-hidden="true" />
           {t(`${key}.trigger`)}
         </Button>
       )}

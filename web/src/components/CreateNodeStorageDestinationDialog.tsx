@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ServerGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -81,7 +81,7 @@ export function CreateNodeStorageDestinationDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" />}>
-        <HardDrivesIcon className="size-4" aria-hidden="true" />
+        <ServerGlassIcon className="size-5" aria-hidden="true" />
         {t('storageDestinations.node.add')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

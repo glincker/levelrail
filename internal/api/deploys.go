@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/release"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -44,11 +45,25 @@ type deployTriggerRequest struct {
 	Rollback bool `json:"rollback,omitempty"`
 	// RerunOf is the deploy attempt of this app that this deploy retries.
 	RerunOf string `json:"rerun_of,omitempty"`
+	// ReleaseID deploys this release of the app, by its digest pinned ref.
+	ReleaseID string `json:"release_id,omitempty"`
 	// QueueWhileOffline accepts the change for an offline node as a pending
 	// attempt instead of refusing it.
 	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 	freezeOverride
 	policyOverride
+	// releaseID is set by a rollback while bindings are authoritative, after
+	// the ownership check on ReleaseID; it is never read from the body.
+	releaseID string
+	// bindingReason overrides the history reason for a release deploy.
+	bindingReason string
+}
+
+func (r deployTriggerRequest) bindingReasonOr(def string) string {
+	if r.bindingReason != "" {
+		return r.bindingReason
+	}
+	return def
 }
 
 // deployTriggerResult is POST .../deploys and POST .../promote's shared
@@ -101,6 +116,17 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	if !decodeReq(w, r, &req) {
 		return
 	}
+	if req.ReleaseID != "" {
+		rel, ok := rt.requestedRelease(w, r, name, req.ReleaseID)
+		if !ok {
+			return
+		}
+		req.Image, req.releaseID = rel.ImageRef, rel.ID
+		req.bindingReason = release.ReasonDeploy
+		if req.Rollback {
+			req.bindingReason = bindingReasonRollback
+		}
+	}
 	if req.Image == "" {
 		writeError(w, http.StatusBadRequest, "image is required")
 		return
@@ -115,7 +141,8 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Rollback && !rt.checkRollbackTarget(w, r, *existing, req.Image) {
+	// A release ref is digest pinned and already owned, so the history check is moot.
+	if req.Rollback && req.ReleaseID == "" && !rt.checkRollbackTarget(w, r, *existing, req.Image) {
 		return
 	}
 
@@ -184,7 +211,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 	if protected {
-		approval, ok := rt.requestDeployApproval(w, r, env, existing.Name, "", store.DeployApprovalActionDeploy, req.Image, deployApprovalOptions{freezeOverride: note, pull: req.Pull})
+		approval, ok := rt.requestDeployApproval(w, r, env, existing.Name, "", store.DeployApprovalActionDeploy, req.Image, deployApprovalOptions{freezeOverride: note, pull: req.Pull, releaseID: req.releaseID})
 		if !ok {
 			return
 		}
@@ -211,10 +238,16 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 			return
 		}
 	}
+	undo, err := rt.retargetBinding(r.Context(), existing, req.releaseID, req.bindingReasonOr(bindingReasonRollback), rt.actorLabel(r), "")
+	if err != nil {
+		rt.internalError(w, "api: rollback: retarget binding failed", err, slog.String("name", name))
+		return
+	}
 	var attemptID string
 	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf, attemptID: &attemptID})
 	rt.attachPredeploySnapshots(r.Context(), name, snapshotIDs, attemptID)
 	if err != nil {
+		undo()
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if errors.Is(err, docker.ErrImageNotFound) {
 			writeError(w, http.StatusUnprocessableEntity, "image pull failed: "+err.Error())

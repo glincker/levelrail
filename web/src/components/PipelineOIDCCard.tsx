@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckIcon, CopyIcon, KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon, KeyGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { HelpLink } from '@/components/HelpLink'
@@ -23,7 +23,7 @@ export function PipelineOIDCCard() {
 
   return (
     <Alert>
-      <KeyIcon className="size-4" aria-hidden="true" />
+      <KeyGlassIcon className="size-5" aria-hidden="true" />
       <AlertDescription className="space-y-2">
         <p>
           Jobs can mint OIDC tokens for cloud provider federation (AWS IAM, GCP
@@ -51,7 +51,11 @@ export function PipelineOIDCCard() {
                 })
             }}
           >
-            {copied ? <CheckIcon /> : <CopyIcon />}
+            {copied ? (
+              <CheckGlassIcon size="1.4em" />
+            ) : (
+              <CopyGlassIcon size="1.4em" />
+            )}
             {copied ? 'Copied' : 'Copy'}
           </Button>
         </div>

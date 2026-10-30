@@ -7,7 +7,7 @@
 # -light. The demo banner, tour and blocked-write toast are hidden per shot.
 # Everything lives under a throwaway scratch dir removed on exit.
 #
-# Requires: Go, Node/npm, Python 3 with playwright, and shot-scraper on PATH.
+# Requires: Go, sqlite3 (optional, release rows), Node/npm, Python 3 with playwright, and shot-scraper on PATH.
 # Env: OUT_DIR (default docs/assets/screenshots), KEEP_SCRATCH=1.
 set -uo pipefail
 
@@ -81,10 +81,20 @@ log "seeding demo data"
 APP_BRAND_FILE="$REPO_ROOT/brand.yaml" APP_DATA_DIR="$DATA_DIR" "$BIN" demo seed --seed 1 --scenario "${SCENARIO:-calm}" >"$SCRATCH_DIR/seed.log" 2>&1 \
   || { cat "$SCRATCH_DIR/seed.log"; fail "demo seed failed"; }
 
+# Release rows for the app overview Releases card (best effort).
+if command -v sqlite3 >/dev/null 2>&1; then
+  sqlite3 "$DATA_DIR/levelrail.db" <"$SCRIPT_DIR/demo-extra-seed.sql" || log "extra seed failed, release shots will be empty"
+else
+  log "sqlite3 not found, skipping extra release seed"
+fi
+
 # demo serve refuses to start when any of the unset variables is present.
 env -u DOCKER_HOST -u APP_AGENT_ADDR -u APP_INGRESS_HTTP_ADDR -u APP_INGRESS_HTTPS_ADDR \
   APP_BRAND_FILE="$REPO_ROOT/brand.yaml" \
   APP_DEMO_MODE=1 \
+  APP_RELEASE_BINDINGS=shadow \
+  APP_ANALYSIS_ENABLED=on \
+  APP_STATUS_PAGE_SAMPLE_INTERVAL=2s \
   APP_DATA_DIR="$DATA_DIR" \
   APP_HTTP_ADDR="127.0.0.1:${HTTP_PORT}" \
   "$BIN" demo serve >"$SERVER_LOG" 2>&1 &

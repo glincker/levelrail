@@ -1,4 +1,4 @@
-import { KeyboardIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyboardGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -14,7 +14,7 @@ export function ShortcutsHelp() {
       <PopoverTrigger
         render={
           <Button variant="ghost" size="sm" className="hidden md:inline-flex">
-            <KeyboardIcon aria-hidden="true" />
+            <KeyboardGlassIcon size="1.4em" aria-hidden="true" />
             Shortcuts
           </Button>
         }

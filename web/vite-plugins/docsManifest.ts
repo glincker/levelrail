@@ -51,8 +51,9 @@ function filePathToRoutePath(relFile: string): string {
 // "plain Markdown, deliberately" every other page here promises
 // (docs/README.md). It's built for the separate hosted VitePress site,
 // not this in-app viewer, so it's excluded the same way .vitepress/
-// itself already is.
-const EXCLUDED_TOP_LEVEL_DIRS = new Set(['changelog'])
+// itself already is. docs/i18n/ holds translated READMEs and their sync
+// notes: they are not pages of the hosted docs site (not in docs.json).
+const EXCLUDED_TOP_LEVEL_DIRS = new Set(['changelog', 'i18n'])
 
 function listMarkdownFiles(dir: string, base = ''): string[] {
   const out: string[] = []
@@ -122,6 +123,40 @@ function extractBody(lines: string[]): string {
   return parts.join(' ').slice(0, BODY_EXCERPT_MAX_CHARS)
 }
 
+const ACRONYMS = new Set([
+  'api',
+  'cdn',
+  'ci',
+  'cli',
+  'dns',
+  'gpu',
+  'http',
+  'https',
+  'iam',
+  'mfa',
+  'oidc',
+  'saml',
+  'scim',
+  'sql',
+  'ssh',
+  'sso',
+  'tcp',
+  'tls',
+  'udp',
+  'ui',
+  'url',
+])
+
+function humanizeFile(relFile: string): string {
+  const base = (relFile.split('/').pop() ?? relFile).replace(/\.md$/i, '')
+  const words = base
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((w) => (ACRONYMS.has(w.toLowerCase()) ? w.toUpperCase() : w))
+  const text = words.join(' ')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 function extractPage(relFile: string): DocPageMeta {
   const raw = readFileSync(path.join(docsDir, relFile), 'utf8')
   const body = stripFrontmatter(raw)
@@ -129,7 +164,14 @@ function extractPage(relFile: string): DocPageMeta {
   let title: string | undefined
   const headings: DocPageMeta['headings'] = []
   const seen = new Map<string, number>()
+  let inFence = false
   for (const line of lines) {
+    // A "# comment" inside a code block is not a heading.
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
     const h1 = /^#\s+(.+)$/.exec(line)
     if (h1 && !title) {
       title = h1[1]?.trim()
@@ -144,7 +186,7 @@ function extractPage(relFile: string): DocPageMeta {
   }
   return {
     file: relFile,
-    title: title ?? relFile,
+    title: title ?? humanizeFile(relFile),
     headings,
     body: extractBody(lines),
   }
@@ -183,12 +225,51 @@ function extractCategories(
   return categories
 }
 
+interface NavNode {
+  tab?: string
+  group?: string
+  pages?: (string | NavNode)[]
+  groups?: NavNode[]
+}
+
+// The hosted docs site publishes what docs/docs.json lists, so that is the source of truth:
+// each listed page maps to "Tab / Group". Pages not listed (internal notes) get no section.
+function publishedSections(): Map<string, string> {
+  const out = new Map<string, string>()
+  try {
+    const nav = JSON.parse(
+      readFileSync(path.join(docsDir, 'docs.json'), 'utf8'),
+    ) as { navigation?: { tabs?: NavNode[] } }
+    const walk = (node: NavNode, tab: string, group: string) => {
+      const g = node.group ?? group
+      for (const g2 of node.groups ?? []) walk(g2, tab, g)
+      for (const entry of node.pages ?? []) {
+        if (typeof entry === 'string') {
+          const route =
+            entry === 'index' ? '/' : `/${entry.replace(/^\/+/, '')}`
+          if (!out.has(route)) out.set(route, g ? `${tab} / ${g}` : tab)
+        } else walk(entry, tab, g)
+      }
+    }
+    for (const t of nav.navigation?.tabs ?? []) walk(t, t.tab ?? '', '')
+  } catch {
+    // no docs.json: nothing is marked published and search keeps every page
+  }
+  return out
+}
+
 export function buildDocsManifest(): DocsManifest {
   const files = listMarkdownFiles(docsDir).filter((f) => f !== 'index.md')
 
   const pages: Record<string, DocPageMeta> = {}
   for (const relFile of files) {
     pages[filePathToRoutePath(relFile)] = extractPage(relFile)
+  }
+
+  const sections = publishedSections()
+  for (const [route, section] of sections) {
+    const page = pages[route]
+    if (page) page.section = section
   }
 
   const pagesByPath = new Map(Object.entries(pages))

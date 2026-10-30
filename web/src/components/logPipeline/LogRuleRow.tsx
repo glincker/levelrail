@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowDownGlassIcon,
+  ArrowUpGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -86,7 +86,7 @@ export function LogRuleRow({
             onMove(-1)
           }}
         >
-          <ArrowUpIcon />
+          <ArrowUpGlassIcon size="1.4em" />
         </Button>
         <Button
           type="button"
@@ -98,7 +98,7 @@ export function LogRuleRow({
             onMove(1)
           }}
         >
-          <ArrowDownIcon />
+          <ArrowDownGlassIcon size="1.4em" />
         </Button>
         <Button
           type="button"
@@ -107,7 +107,7 @@ export function LogRuleRow({
           aria-label={t('rules.remove', { index: n })}
           onClick={onRemove}
         >
-          <TrashIcon />
+          <TrashGlassIcon size="1.4em" />
         </Button>
       </div>
     </li>

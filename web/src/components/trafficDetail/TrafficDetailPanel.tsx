@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChartLineGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -194,7 +194,7 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
 
       {data && !data.has_traffic ? (
         <EmptyState
-          icon={<ChartLineUpIcon className="size-5" />}
+          icon={<ChartLineGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           action={

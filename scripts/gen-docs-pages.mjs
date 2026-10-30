@@ -34,7 +34,7 @@ for (const t of templates) {
     .join('\n')
   const env = t.env.length
     ? `| Service | Variable | Value |\n| --- | --- | --- |\n${t.env
-        .map((e) => `| \`${e.service}\` | \`${e.key}\` | ${kindLabel[e.kind] ?? e.kind} |`)
+        .map((e) => `| \`${e.service}\` | \`${e.name}\` | ${kindLabel[e.kind] ?? e.kind} |`)
         .join('\n')}`
     : 'This template sets no environment variables.'
   const req = t.requirements

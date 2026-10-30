@@ -1,4 +1,4 @@
-import { ArrowRightIcon, ArrowsSplitIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, SplitGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,11 +17,17 @@ function Diagram({ replicas }: { replicas: number }) {
       className="flex flex-wrap items-center justify-center gap-2 text-xs"
     >
       <span className="rounded-lg border px-2.5 py-1">Clients</span>
-      <ArrowRightIcon className="size-3.5 text-muted-foreground" aria-hidden />
+      <ArrowRightGlassIcon
+        className="size-5 text-muted-foreground"
+        aria-hidden
+      />
       <span className="rounded-lg border border-tone-accent-border bg-tone-accent-soft px-2.5 py-1">
         Proxy
       </span>
-      <ArrowRightIcon className="size-3.5 text-muted-foreground" aria-hidden />
+      <ArrowRightGlassIcon
+        className="size-5 text-muted-foreground"
+        aria-hidden
+      />
       <span className="flex gap-1">
         {Array.from({ length: shown }, (_, i) => (
           <span
@@ -51,7 +57,7 @@ export function LbEmptyState({
   return (
     <div className="space-y-6">
       <EmptyState
-        icon={<ArrowsSplitIcon />}
+        icon={<SplitGlassIcon size="1.4em" />}
         title="Spread traffic across replicas"
         description="Health checks, retries and clean cutovers. Least connections with passive failure detection is a good start. Add an active health check once your app serves one."
         action={

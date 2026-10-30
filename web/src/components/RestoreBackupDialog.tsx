@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
-import {
-  ClockCounterClockwiseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -91,13 +88,16 @@ export function ConfirmRestoreDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <ClockCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RestoreGlassIcon className="size-5" aria-hidden="true" />
         Restore
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             Restore &ldquo;{target}&rdquo;?
           </DialogTitle>
           <DialogDescription>

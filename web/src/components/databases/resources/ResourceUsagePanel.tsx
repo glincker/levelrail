@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { GaugeIcon } from '@phosphor-icons/react/dist/ssr'
+import { GaugeGlassIcon } from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -33,7 +33,7 @@ export function ResourceUsagePanel({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GaugeIcon className="size-4" aria-hidden="true" />
+          <GaugeGlassIcon className="size-5" aria-hidden="true" />
           {t('sizing.usageTitle')}
         </CardTitle>
         <CardDescription>{t('sizing.usageDescription')}</CardDescription>

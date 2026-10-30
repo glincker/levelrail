@@ -127,8 +127,21 @@ describe('spanIndices', () => {
 
 describe('withRecentSearch', () => {
   it('moves a repeat to the front and caps the list', () => {
-    expect(withRecentSearch(['a', 'b'], 'b')).toEqual(['b', 'a'])
-    expect(withRecentSearch(['1', '2', '3', '4', '5'], '6')).toHaveLength(5)
-    expect(withRecentSearch(['a'], '  ')).toEqual(['a'])
+    expect(withRecentSearch(['alpha', 'bravo'], 'bravo')).toEqual([
+      'bravo',
+      'alpha',
+    ])
+    const full = [
+      'one1',
+      'two2',
+      'three',
+      'four4',
+      'five5',
+      'six66',
+      'seven',
+      'eight',
+    ]
+    expect(withRecentSearch(full, 'nine9')).toHaveLength(8)
+    expect(withRecentSearch(['alpha'], '  ')).toEqual(['alpha'])
   })
 })

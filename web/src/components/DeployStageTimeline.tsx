@@ -1,12 +1,12 @@
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  MinusCircleIcon,
-  QuestionIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  CircleMinusGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  LoaderCircleGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { DeployStage, DeployStageStatus } from '../lib/deployStages'
 import { formatDurationMs } from '../lib/deployDuration'
 import { useNowTick } from '../hooks/useNowTick'
@@ -36,13 +36,13 @@ export function DeployStageTimeline({ stages }: { stages: DeployStage[] }) {
   )
 }
 
-const STATUS_ICON: Record<DeployStageStatus, Icon> = {
-  pending: CircleIcon,
-  running: SpinnerGapIcon,
-  done: CheckCircleIcon,
-  failed: WarningCircleIcon,
-  skipped: MinusCircleIcon,
-  unknown: QuestionIcon,
+const STATUS_ICON: Record<DeployStageStatus, UiIcon> = {
+  pending: CircleGlassIcon,
+  running: LoaderCircleGlassIcon,
+  done: CircleCheckGlassIcon,
+  failed: CircleAlertGlassIcon,
+  skipped: CircleMinusGlassIcon,
+  unknown: CircleQuestionMarkGlassIcon,
 }
 
 const STATUS_ICON_CLASS: Record<DeployStageStatus, string> = {
@@ -70,7 +70,7 @@ function DeployStageRow({ stage }: { stage: DeployStage }) {
   return (
     <li className="flex items-start gap-3">
       <StatusIcon
-        className={`mt-0.5 size-4 shrink-0 ${STATUS_ICON_CLASS[stage.status]}`}
+        className={`mt-0.5 size-5 shrink-0 ${STATUS_ICON_CLASS[stage.status]}`}
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1">

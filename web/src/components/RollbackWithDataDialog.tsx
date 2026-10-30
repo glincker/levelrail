@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  DatabaseIcon,
-  ArrowCounterClockwiseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  RotateCcwGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -73,7 +73,7 @@ export function RollbackWithDataDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <DatabaseIcon className="size-4" aria-hidden="true" />
+            <DatabaseGlassIcon className="size-5" aria-hidden="true" />
             {t('rollbackWithData.title')}
           </DialogTitle>
           <DialogDescription>
@@ -102,7 +102,7 @@ export function RollbackWithDataDialog({
           </ul>
         ) : null}
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{t('rollbackWithData.warning')}</AlertDescription>
         </Alert>
         {blockedReason ? (
@@ -112,7 +112,10 @@ export function RollbackWithDataDialog({
         ) : null}
         {rollback.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{rollback.error.message}</AlertDescription>
           </Alert>
         ) : null}
@@ -140,10 +143,7 @@ export function RollbackWithDataDialog({
               })
             }}
           >
-            <ArrowCounterClockwiseIcon
-              className="size-3.5"
-              aria-hidden="true"
-            />
+            <RotateCcwGlassIcon className="size-5" aria-hidden="true" />
             {rollback.isPending
               ? t('rollbackWithData.working')
               : t('rollbackWithData.confirm')}

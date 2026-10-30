@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { TONE } from '../kit/tone'
@@ -80,7 +80,7 @@ export function StatementEditor({
             onClick={onRemove}
             aria-label={t('builder.removeStatement', { n })}
           >
-            <TrashIcon className="text-destructive" />
+            <TrashGlassIcon size="1.4em" className="text-destructive" />
           </Button>
         ) : null}
       </header>

@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeftIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowLeftGlassIcon,
+  PlusGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { closestNames } from '@/lib/closestNames'
@@ -61,8 +61,8 @@ export function NotFoundState({
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <MagnifyingGlassIcon
-              className="size-5 text-muted-foreground"
+            <SearchGlassIcon
+              className="size-6 text-muted-foreground"
               aria-hidden="true"
             />
             <CardTitle>{t(`notFound.resources.${resource}.title`)}</CardTitle>
@@ -94,7 +94,7 @@ export function NotFoundState({
             {resource === 'app' ? (
               <Link to="/apps/new">
                 <Button type="button" variant="outline" size="sm">
-                  <PlusIcon aria-hidden="true" />
+                  <PlusGlassIcon size="1.4em" aria-hidden="true" />
                   {t('notFound.resources.app.create')}
                 </Button>
               </Link>
@@ -115,7 +115,7 @@ function ListLink({
 }) {
   const body = (
     <Button type="button" variant="outline" size="sm">
-      <ArrowLeftIcon aria-hidden="true" />
+      <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
       {label}
     </Button>
   )

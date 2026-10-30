@@ -84,6 +84,7 @@ type Engine struct {
 	usage    UsageStore
 	limits   Limits
 	logger   *slog.Logger
+	modeFn   ModeSource
 	now      func() time.Time
 }
 
@@ -222,7 +223,7 @@ func (e *Engine) executeConfirmation(ctx context.Context, tools ToolExecutor, co
 	text, callIsError, err := tools.Call(ctx, conf.ToolName, conf.ToolInput)
 	attr.Abilities = cred.drain()
 	if err != nil {
-		return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, err.Error())), true, attr
+		return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, ScrubToolError(err.Error()))), true, attr
 	}
 	return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, TruncateToolOutput(text, e.limits.ToolOutputMaxBytes))), callIsError, attr
 }
@@ -252,6 +253,7 @@ func (e *Engine) applyConfirmationResult(ctx context.Context, conf store.AIChatC
 
 // Loops for another model call only when a full round of read-only calls left nothing pending.
 func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID string, llm Provider, sink Sink) error {
+	tools = newGuardedTools(tools, e.limits)
 	for step := 0; ; step++ {
 		if e.limits.MaxSteps > 0 && step >= e.limits.MaxSteps {
 			return e.stopAtMaxSteps(ctx, sessionID, sink)
@@ -371,6 +373,14 @@ func (e *Engine) dispatchToolCalls(ctx context.Context, tools ToolExecutor, sess
 		// Malformed calls never reach a tool or the approval queue: the model
 		// gets the reason back and can correct itself. This holds for every provider.
 		if reason := invalidCallReason(byName, call); reason != "" {
+			record.Status = "auto_executed"
+			record.Result = toJSONRawMessage(reason)
+			record.IsError = true
+			emitToolResult(sink, call.ID, call.Name, record.Result, true, ToolAttribution{})
+			records = append(records, record)
+			continue
+		}
+		if reason := e.writeRefusal(ctx, callTraits, call.Name); reason != "" {
 			record.Status = "auto_executed"
 			record.Result = toJSONRawMessage(reason)
 			record.IsError = true

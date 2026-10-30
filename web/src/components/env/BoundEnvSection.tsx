@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { useBoundEnv } from '../../queries/envProtection'
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -59,7 +59,7 @@ export function BoundEnvSection({ app }: BoundEnvSectionProps) {
             </span>
             {row.masked ? (
               <Badge variant="outline" className="w-fit gap-1">
-                <LockSimpleIcon aria-hidden />
+                <LockGlassIcon size="1.4em" aria-hidden />
                 {t('bound.masked')}
               </Badge>
             ) : (

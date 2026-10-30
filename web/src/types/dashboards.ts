@@ -11,6 +11,12 @@ export type WidgetType =
   | 'alert_status'
   | 'node_capacity'
   | 'link'
+  | 'fleet_health'
+  | 'fleet_traffic'
+  | 'top_apps'
+  | 'deploy_activity'
+  | 'fleet_capacity'
+  | 'attention'
 
 export type WidgetSize = 'S' | 'M' | 'L'
 export type TargetKind = 'app' | 'database' | 'node'

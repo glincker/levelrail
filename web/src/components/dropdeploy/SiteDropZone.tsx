@@ -1,10 +1,10 @@
 import { useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  FileZipIcon,
-  FolderOpenIcon,
-  UploadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FileArchiveGlassIcon,
+  FolderGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -51,8 +51,8 @@ export function SiteDropZone({
         dragging && 'border-brand bg-muted',
       )}
     >
-      <UploadSimpleIcon
-        className="size-6 text-muted-foreground"
+      <UploadGlassIcon
+        className="size-8 text-muted-foreground"
         aria-hidden="true"
       />
       <div className="min-w-0 sm:flex-1">
@@ -71,7 +71,7 @@ export function SiteDropZone({
           disabled={disabled}
           onClick={() => folderRef.current?.click()}
         >
-          <FolderOpenIcon aria-hidden="true" />
+          <FolderGlassIcon size="1.4em" aria-hidden="true" />
           {t('drop.chooseFolder')}
         </Button>
         <Button
@@ -81,7 +81,7 @@ export function SiteDropZone({
           disabled={disabled}
           onClick={() => zipRef.current?.click()}
         >
-          <FileZipIcon aria-hidden="true" />
+          <FileArchiveGlassIcon size="1.4em" aria-hidden="true" />
           {t('drop.chooseZip')}
         </Button>
       </div>

@@ -1,11 +1,11 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  FileTextIcon,
-  PencilSimpleIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FileTextGlassIcon,
+  PencilGlassIcon,
+  PlusGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -45,7 +45,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <CardTitle className="flex items-center gap-2">
-          <FileTextIcon className="size-4" aria-hidden="true" />
+          <FileTextGlassIcon className="size-5" aria-hidden="true" />
           {t('title')}
         </CardTitle>
         <Button
@@ -54,7 +54,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
           variant="outline"
           onClick={() => setEditing('new')}
         >
-          <PlusIcon />
+          <PlusGlassIcon size="1.4em" />
           {t('add')}
         </Button>
       </CardHeader>
@@ -93,7 +93,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
                     size="icon-sm"
                     onClick={() => setEditing(file)}
                   >
-                    <PencilSimpleIcon />
+                    <PencilGlassIcon size="1.4em" />
                     <span className="sr-only">
                       {t('edit', { path: file.path })}
                     </span>
@@ -104,7 +104,7 @@ export function AppFilesCard({ appName }: { appName: string }) {
                     size="icon-sm"
                     onClick={() => setDeleting(file)}
                   >
-                    <TrashIcon />
+                    <TrashGlassIcon size="1.4em" />
                     <span className="sr-only">
                       {t('delete', { path: file.path })}
                     </span>

@@ -1,8 +1,8 @@
 import {
-  ClockCounterClockwiseIcon,
-  WifiHighIcon,
-  WifiSlashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  RestoreGlassIcon,
+  WifiHighGlassIcon,
+  WifiOffGlassIcon,
+} from '@thesvg/ui-react'
 import { useMeshStatus } from '../queries/mesh'
 import type { MeshPeerResource } from '../types/mesh'
 import { ApiError } from '../lib/apiError'
@@ -57,17 +57,17 @@ function PeerRow({ peer }: { peer: MeshPeerResource }) {
       <div role="cell">
         {!peer.live ? (
           <Badge variant="muted">
-            <ClockCounterClockwiseIcon className="size-3" aria-hidden="true" />
+            <RestoreGlassIcon className="size-4.5" aria-hidden="true" />
             Not peered yet
           </Badge>
         ) : peer.healthy ? (
           <Badge variant="success">
-            <WifiHighIcon className="size-3" aria-hidden="true" />
+            <WifiHighGlassIcon className="size-4.5" aria-hidden="true" />
             Healthy
           </Badge>
         ) : (
           <Badge variant="destructive">
-            <WifiSlashIcon className="size-3" aria-hidden="true" />
+            <WifiOffGlassIcon className="size-4.5" aria-hidden="true" />
             Stale
           </Badge>
         )}
@@ -138,7 +138,7 @@ export function NodeMeshCard({
         </CardHeader>
         <CardContent>
           <EmptyState
-            icon={<WifiSlashIcon className="size-5" />}
+            icon={<WifiOffGlassIcon className="size-6" />}
             title="Mesh networking is not enabled"
             description={
               error instanceof ApiError && error.status === 501

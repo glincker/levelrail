@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -158,8 +158,8 @@ export function AuditSinkFields({
         </label>
         {values.insecure ? (
           <p className="flex items-start gap-1.5 text-xs text-tone-danger">
-            <WarningIcon
-              className="mt-0.5 size-3.5 shrink-0"
+            <TriangleAlertGlassIcon
+              className="mt-0.5 size-6 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {t('form.insecureWarning')}

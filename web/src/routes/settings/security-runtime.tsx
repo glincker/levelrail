@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SlidersHorizontalIcon } from '@phosphor-icons/react/dist/ssr'
+import { SlidersHorizontalGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,7 +42,7 @@ function SecurityRuntimePage() {
 
   return (
     <PageTemplate
-      icon={<SlidersHorizontalIcon />}
+      icon={<SlidersHorizontalGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       banners={
@@ -70,7 +70,7 @@ function SecurityRuntimePage() {
       ) : null}
       {data && settings.length === 0 ? (
         <EmptyState
-          icon={<SlidersHorizontalIcon className="size-6" />}
+          icon={<SlidersHorizontalGlassIcon className="size-8" />}
           title={t('empty.title')}
           description={t('empty.body')}
           action={

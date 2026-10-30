@@ -33,6 +33,6 @@ class LevelrailCli < Formula
   end
 
   test do
-    assert_match "scriptable client", shell_output("#{bin}/levelrail-cli help")
+    assert_match "deploy and run apps on your servers", shell_output("#{bin}/levelrail-cli help")
   end
 end

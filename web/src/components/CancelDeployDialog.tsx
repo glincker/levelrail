@@ -1,4 +1,4 @@
-import { ProhibitIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { BanGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,10 @@ export function CancelDeployDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="size-6 text-tone-warning"
+              aria-hidden="true"
+            />
             Cancel this deploy?
           </DialogTitle>
           <DialogDescription>
@@ -55,7 +58,10 @@ export function CancelDeployDialog({
         </DialogHeader>
         {cancelDeploy.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{cancelDeploy.error.message}</AlertDescription>
           </Alert>
         ) : null}
@@ -82,7 +88,7 @@ export function CancelDeployDialog({
               })
             }}
           >
-            <ProhibitIcon className="size-3.5" aria-hidden="true" />
+            <BanGlassIcon className="size-5" aria-hidden="true" />
             {cancelDeploy.isPending ? 'Canceling...' : 'Cancel deploy'}
           </Button>
         </DialogFooter>

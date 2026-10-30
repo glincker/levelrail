@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { cn } from '@/lib/utils'
 import { CleanupHistoryTab } from '../../components/cleanup/CleanupHistoryTab'
@@ -25,7 +25,7 @@ function CleanupPage() {
 
   return (
     <PageTemplate
-      icon={<BroomIcon />}
+      icon={<BroomGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       tabs={

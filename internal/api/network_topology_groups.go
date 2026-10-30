@@ -130,6 +130,14 @@ func localAddress(advertiseHost string) string {
 	return h
 }
 
+// hostname hides the capture machine's real name in demo mode.
+func (rt *Router) hostname() string {
+	if rt.demo != nil {
+		return "demo-01"
+	}
+	return localHostname()
+}
+
 func localHostname() string {
 	h, err := os.Hostname()
 	if err != nil || h == "" {

@@ -67,7 +67,11 @@ func (db *DB) FinishRunningDeployAttempt(ctx context.Context, id, status string,
 		UPDATE deploy_attempts SET status = ?, finished_at = ?, error = NULLIF(?, '')
 		WHERE id = ? AND status = ?
 	`, status, finishedAt.UTC().Format(time.RFC3339Nano), errMsg, id, DeployAttemptStatusRunning)
-	return movedRows(res, err, "finish running deploy attempt", id)
+	moved, err := movedRows(res, err, "finish running deploy attempt", id)
+	if moved && status == DeployAttemptStatusSucceeded {
+		db.notifyAttempt(ctx, id)
+	}
+	return moved, err
 }
 
 // CancelDeployAttempt moves an attempt from status from to canceled,

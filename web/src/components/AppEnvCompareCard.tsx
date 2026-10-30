@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { diffAppEnv } from '../lib/appEnvDiff'
 import { toRows, type EnvRowStatus } from '../lib/appEnvRows'
@@ -77,7 +77,7 @@ export function AppEnvCompareCard({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ArrowsLeftRightIcon className="size-4 text-muted-foreground" />
+          <ArrowLeftRightGlassIcon className="size-5 text-muted-foreground" />
           {t('envCompare.title')}
         </CardTitle>
       </CardHeader>

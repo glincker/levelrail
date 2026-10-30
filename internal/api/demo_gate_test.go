@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -74,24 +75,30 @@ func TestDemoGateEveryNonGETRoute(t *testing.T) {
 	for _, a := range demoWriteAllowlist {
 		allowed[a] = true
 	}
-	var checked int
+	var nonGet []matrixRoute
 	for _, rte := range openAPIRoutes {
 		if rte.Method == http.MethodGet || rte.Method == http.MethodHead {
 			continue
 		}
-		checked++
-		key := rte.Method + " " + rte.Path
-		rec := e.do(rte.Method, samplePath(rte.Path), nil)
+		nonGet = append(nonGet, matrixRoute{method: rte.Method, pattern: rte.Path})
+	}
+	checked := len(nonGet)
+	for _, msg := range probeParallel(nonGet, func(rte matrixRoute) string {
+		key := rte.key()
+		rec := e.do(rte.method, samplePath(rte.pattern), nil)
 		code := demoErrCode(t, rec)
 		if allowed[key] {
 			if code == demoCodeReadonly {
-				t.Errorf("%s is allowlisted but was blocked", key)
+				return key + " is allowlisted but was blocked"
 			}
-			continue
+			return ""
 		}
 		if rec.Code != http.StatusForbidden || code != demoCodeReadonly {
-			t.Errorf("%s: status = %d code = %q, want 403 %s", key, rec.Code, code, demoCodeReadonly)
+			return fmt.Sprintf("%s: status = %d code = %q, want 403 %s", key, rec.Code, code, demoCodeReadonly)
 		}
+		return ""
+	}) {
+		t.Error(msg)
 	}
 	if checked < 100 {
 		t.Fatalf("only %d non-GET routes enumerated, route table looks empty", checked)

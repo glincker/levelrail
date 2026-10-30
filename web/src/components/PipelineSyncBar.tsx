@@ -1,7 +1,4 @@
-import {
-  ArrowsClockwiseIcon,
-  GitBranchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { GitBranchGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -35,7 +32,7 @@ export function PipelineSyncBar({ appName }: { appName: string }) {
   if (!status.connected) {
     return (
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <GitBranchIcon className="size-4" aria-hidden="true" />
+        <GitBranchGlassIcon className="size-5" aria-hidden="true" />
         Connect a git repository to keep pipelines in sync with your pipeline
         directory.
       </p>
@@ -45,7 +42,7 @@ export function PipelineSyncBar({ appName }: { appName: string }) {
     <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex min-w-48 flex-1 flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <GitBranchIcon className="size-4" aria-hidden="true" />
+          <GitBranchGlassIcon className="size-5" aria-hidden="true" />
           {status.last_sha ? (
             <Badge variant="outline" title={status.last_sha}>
               synced from {status.last_sha.slice(0, 7)}
@@ -80,7 +77,7 @@ export function PipelineSyncBar({ appName }: { appName: string }) {
             })
           }
         >
-          <ArrowsClockwiseIcon aria-hidden="true" />
+          <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
           {sync.isPending ? 'Syncing...' : 'Sync now'}
         </Button>
       </div>

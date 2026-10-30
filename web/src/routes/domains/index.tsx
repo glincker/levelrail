@@ -4,10 +4,10 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  GlobeIcon,
-  PlusIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  GlobeGlassIcon,
+  PlusGlassIcon,
+} from '@thesvg/ui-react'
 import { routeErrorMessage } from '@/lib/apiError'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -104,7 +104,7 @@ function DomainsPage() {
         setAddOpen(true)
       }}
     >
-      <PlusIcon />
+      <PlusGlassIcon size="1.4em" />
       {t('page.add')}
     </Button>
   )
@@ -115,7 +115,7 @@ function DomainsPage() {
       description={t('page.description')}
       banner={
         <PageBanner
-          icon={<GlobeIcon />}
+          icon={<GlobeGlassIcon size="1.4em" />}
           titleKey="domains:page.title"
           descriptionKey={
             noDomains
@@ -201,7 +201,7 @@ function DomainsError({ error, reset }: ErrorComponentProps) {
   return (
     <PageTemplate title={t('page.title')}>
       <EmptyState
-        icon={<WarningCircleIcon className="size-5" />}
+        icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
         title={t('page.error.title')}
         description={routeErrorMessage(error)}
         action={

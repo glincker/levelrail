@@ -1,10 +1,10 @@
 import {
-  CheckIcon,
-  CopyIcon,
-  DownloadSimpleIcon,
-  MagnifyingGlassIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CopyGlassIcon,
+  DownloadGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import { useState } from 'react'
 import type { LogFilter, LogLevelFilter } from '../lib/logFilter'
 import { Button } from './ui/button'
@@ -49,8 +49,8 @@ export function LogToolbar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="relative min-w-48 flex-1">
-        <MagnifyingGlassIcon
-          className="absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+        <SearchGlassIcon
+          className="absolute top-1/2 left-2 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -88,7 +88,11 @@ export function LogToolbar({
         ))}
       </div>
       <Button type="button" size="xs" variant="outline" onClick={onJumpToError}>
-        <WarningCircleIcon aria-hidden="true" />
+        <CircleAlertGlassIcon
+          className="text-tone-danger"
+          size="1.4em"
+          aria-hidden="true"
+        />
         Jump to first error
       </Button>
       <Button
@@ -98,14 +102,14 @@ export function LogToolbar({
         onClick={() => void handleCopy()}
       >
         {copied ? (
-          <CheckIcon aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
         {copied ? 'Copied' : 'Copy'}
       </Button>
       <Button type="button" size="xs" variant="outline" onClick={onDownload}>
-        <DownloadSimpleIcon aria-hidden="true" />
+        <DownloadGlassIcon size="1.4em" aria-hidden="true" />
         Download
       </Button>
       <span

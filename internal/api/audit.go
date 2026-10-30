@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -109,6 +110,14 @@ func sensitiveReadRoute(r *http.Request) bool {
 		return sensitiveLokiQueryPath.MatchString(r.URL.Path)
 	}
 	return false
+}
+
+// RouteAudited reports whether a request to method and path, gated at
+// ability, lands in the audit log (sensitive reads count, assuming the
+// audit_sensitive_reads setting is on). Exposed for the MCP route audit test.
+func RouteAudited(method, path, ability string) bool {
+	r := &http.Request{Method: method, URL: &url.URL{Path: path}}
+	return auditWorthy(ability) || sensitiveReadRoute(r)
 }
 
 // auditActorName resolves the real display name behind an audited

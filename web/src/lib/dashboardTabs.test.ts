@@ -84,7 +84,16 @@ describe('dashboardTabs', () => {
 
   it('builds a metrics doc from target-less widgets only', () => {
     const doc = metricsDoc('Metrics')
-    expect(doc.widgets.map((w) => w.type)).toEqual(['resource_counts', 'cost'])
+    expect(doc.widgets.map((w) => w.type)).toEqual([
+      'fleet_health',
+      'attention',
+      'fleet_traffic',
+      'top_apps',
+      'deploy_activity',
+      'fleet_capacity',
+      'resource_counts',
+      'cost',
+    ])
     expect(doc.widgets.every((w) => w.target === undefined)).toBe(true)
   })
 })

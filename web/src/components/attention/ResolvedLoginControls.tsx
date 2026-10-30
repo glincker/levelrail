@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { XIcon } from '@phosphor-icons/react/dist/ssr'
+import { XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { FixCli } from '../fixit/FixCli'
@@ -52,7 +52,7 @@ export function ResolvedLoginControls({
             })
           }}
         >
-          <XIcon />
+          <XGlassIcon size="1.4em" />
         </Button>
       </div>
       <div className="w-full">

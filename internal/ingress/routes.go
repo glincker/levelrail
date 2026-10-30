@@ -807,6 +807,15 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 	}
 
+	// With inherited sockets port 80 is already held by systemd, so the plain
+	// server takes over that descriptor instead of a new listener.
+	if opts.PlainHTTP && opts.Inherited.Active() && opts.Inherited.HTTP != 0 {
+		plain := *server
+		plain.Listen = []string{"fd/" + strconv.Itoa(opts.Inherited.HTTP)}
+		plain.AutomaticHTTPS = &AutoHTTPSConfig{Disabled: true}
+		cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = &plain
+	}
+
 	if opts.PlainHTTP && opts.HTTPPort != 0 && !opts.Inherited.Active() {
 		plain := *server
 		plain.Listen = []string{net.JoinHostPort(opts.HTTPBindHost, strconv.Itoa(opts.HTTPPort))}

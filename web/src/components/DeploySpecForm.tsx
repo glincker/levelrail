@@ -2,7 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import type { Control, UseFormRegister } from 'react-hook-form'
 import { z } from 'zod'
-import { PlusIcon, RocketIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  PlusGlassIcon,
+  RocketGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { useDeploySpec } from '../queries/appGroup'
 import type { DeploySpecResult } from '../types/appGroup'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -156,7 +160,7 @@ export function DeploySpecForm({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RocketIcon className="size-4" />
+          <RocketGlassIcon className="size-5" />
           Deploy multiple services
         </CardTitle>
         <CardDescription>
@@ -255,7 +259,7 @@ export function DeploySpecForm({ appName }: { appName: string }) {
               onClick={() => append(emptyService)}
               disabled={deploySpec.isPending}
             >
-              <PlusIcon className="size-3.5" data-icon="inline-start" />
+              <PlusGlassIcon className="size-5" data-icon="inline-start" />
               Add service
             </Button>
             <Button type="submit" disabled={deploySpec.isPending}>
@@ -365,7 +369,7 @@ function ServiceRow({
             disabled={disabled}
             aria-label="Remove service"
           >
-            <TrashIcon className="size-4" />
+            <TrashGlassIcon className="size-5" />
           </Button>
         ) : null}
       </div>

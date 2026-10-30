@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -29,7 +29,11 @@ export function CardError({
   const { t } = useTranslation('settings')
   return (
     <Alert variant="destructive">
-      <WarningIcon aria-hidden="true" />
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.7em"
+        aria-hidden="true"
+      />
       <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
         <span>{t('accountPage.loadError')}</span>
         <Button

@@ -1,4 +1,4 @@
-import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { RelativeTime } from '@/components/kit'
@@ -39,7 +39,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         copy(value, label)
       }}
     >
-      <CopyIcon aria-hidden="true" />
+      <CopyGlassIcon size="1.4em" aria-hidden="true" />
       Copy
     </Button>
   )

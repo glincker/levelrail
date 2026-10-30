@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { preflightQueryOptions, type UpdateStatus } from '@/queries/updates'
 import { ReleaseNotes } from '../ReleaseNotes'
 
@@ -60,9 +60,9 @@ export function UpdateChanges({ status }: { status: UpdateStatus }) {
           }}
         >
           {open ? (
-            <CaretDownIcon className="size-4" />
+            <ChevronDownGlassIcon className="size-5" />
           ) : (
-            <CaretRightIcon className="size-4" />
+            <ChevronRightGlassIcon className="size-5" />
           )}
           {t('changes.notesToggle')}
         </button>

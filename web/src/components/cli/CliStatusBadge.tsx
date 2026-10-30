@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { TerminalWindowIcon } from '@phosphor-icons/react/dist/ssr'
+import { TerminalGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { openCliModal } from '../../lib/cliModalStore'
@@ -29,7 +29,7 @@ export function CliStatusBadge() {
       }
       onClick={openCliModal}
     >
-      <TerminalWindowIcon aria-hidden="true" />
+      <TerminalGlassIcon size="1.4em" aria-hidden="true" />
       <span className="hidden @3xl:inline">
         {connected > 0
           ? t('cliModal.badgeConnected', { count: connected })

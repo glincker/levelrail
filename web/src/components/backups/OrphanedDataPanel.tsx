@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { formatBytes, formatDate } from '../../lib/format'
 import {
   useReclaimOrphan,
@@ -142,7 +142,11 @@ export function OrphanedDataPanel() {
           {orphans.data &&
           orphans.data.total_bytes >= orphans.data.threshold_bytes ? (
             <Alert>
-              <WarningIcon aria-hidden="true" />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+                aria-hidden="true"
+              />
               <AlertDescription>
                 {t('orphans.large', {
                   size: formatBytes(orphans.data.total_bytes),

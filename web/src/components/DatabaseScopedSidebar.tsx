@@ -1,18 +1,18 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCircleUpIcon,
-  ArrowLeftIcon,
-  SquaresFourIcon,
-  CpuIcon,
-  PulseIcon,
-  ScrollIcon,
-  GaugeIcon,
-  KeyIcon,
-  ShareNetworkIcon,
-  TableIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  ArrowLeftGlassIcon,
+  ArrowUpGlassIcon,
+  CpuGlassIcon,
+  GaugeGlassIcon,
+  KeyGlassIcon,
+  LayoutGridGlassIcon,
+  ScrollGlassIcon,
+  Share2GlassIcon,
+  SpreadsheetGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -63,7 +63,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 render={<Link to="/databases" />}
                 tooltip="Back to Databases"
               >
-                <ArrowLeftIcon />
+                <ArrowLeftGlassIcon size="1.4em" />
                 <span>Back to Databases</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -90,7 +90,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/overview')}
                 tooltip="Overview"
               >
-                <SquaresFourIcon />
+                <LayoutGridGlassIcon size="1.4em" />
                 <span>Overview</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -103,7 +103,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/resources')}
                   tooltip="Resources"
                 >
-                  <CpuIcon />
+                  <CpuGlassIcon size="1.4em" />
                   <span>Resources</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -117,7 +117,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/metrics')}
                   tooltip="Metrics"
                 >
-                  <PulseIcon />
+                  <ActivityGlassIcon size="1.4em" />
                   <span>Metrics</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -129,7 +129,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/logs')}
                   tooltip="Logs"
                 >
-                  <ScrollIcon />
+                  <ScrollGlassIcon size="1.4em" />
                   <span>Logs</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -146,7 +146,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/slow-queries')}
                   tooltip="Slow Queries"
                 >
-                  <GaugeIcon />
+                  <GaugeGlassIcon size="1.4em" />
                   <span>Slow Queries</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -159,7 +159,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/explorer')}
                 tooltip={t('viewer.nav.explorer')}
               >
-                <TableIcon />
+                <SpreadsheetGlassIcon size="1.4em" />
                 <span>{t('viewer.nav.explorer')}</span>
                 <BetaBadge className="ml-auto" />
               </SidebarMenuButton>
@@ -172,7 +172,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/console')}
                 tooltip={t('viewer.nav.console')}
               >
-                <TerminalWindowIcon />
+                <TerminalGlassIcon size="1.4em" />
                 <span>{t('viewer.nav.console')}</span>
                 <BetaBadge className="ml-auto" />
               </SidebarMenuButton>
@@ -186,7 +186,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                   isActive={pathname.endsWith('/upgrades')}
                   tooltip={t('upgrades.nav')}
                 >
-                  <ArrowCircleUpIcon />
+                  <ArrowUpGlassIcon size="1.4em" />
                   <span>{t('upgrades.nav')}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -197,7 +197,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/access')}
                 tooltip={tAccess('nav.access')}
               >
-                <KeyIcon />
+                <KeyGlassIcon size="1.4em" />
                 <span>{tAccess('nav.access')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -209,7 +209,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 isActive={pathname.endsWith('/network')}
                 tooltip={tAccess('nav.network')}
               >
-                <ShareNetworkIcon />
+                <Share2GlassIcon size="1.4em" />
                 <span>{tAccess('nav.network')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>

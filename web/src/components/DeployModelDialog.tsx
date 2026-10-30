@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -134,7 +134,7 @@ export function DeployModelDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusIcon aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {t('deploy.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl">
@@ -314,8 +314,8 @@ export function DeployModelDialog({
                     {t('deploy.sections.advancedHint')}
                   </span>
                 </span>
-                <CaretDownIcon
-                  className={`size-4 shrink-0 text-muted-foreground transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+                <ChevronDownGlassIcon
+                  className={`size-5 shrink-0 text-muted-foreground transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
                   aria-hidden="true"
                 />
               </CollapsibleTrigger>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -179,7 +179,10 @@ export function AttachDialog({
           />
           {error ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : null}

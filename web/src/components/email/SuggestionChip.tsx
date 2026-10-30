@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SparkleIcon } from '@phosphor-icons/react/dist/ssr'
+import { SparklesGlassIcon } from '@thesvg/ui-react'
 import { PRESS } from './emailStyles'
 
 interface Props {
@@ -21,7 +21,7 @@ export function SuggestionChip({ value, current, onUse }: Readonly<Props>) {
       aria-label={t('emailSender.useSuggestionLabel', { value })}
       className={`inline-flex max-w-full items-center gap-1 self-start rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${PRESS}`}
     >
-      <SparkleIcon className="size-3 shrink-0" aria-hidden="true" />
+      <SparklesGlassIcon className="size-4.5 shrink-0" aria-hidden="true" />
       <span className="truncate">
         {t('emailSender.useSuggestion', { value })}
       </span>

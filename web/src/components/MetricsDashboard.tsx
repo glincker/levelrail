@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PulseIcon } from '@phosphor-icons/react/dist/ssr'
+import { ActivityGlassIcon } from '@thesvg/ui-react'
 import { RequestMetricsSection } from './RequestMetricsSection'
 import { MetricChartCard } from './MetricChartCard'
 import { TimeRangeControls } from './TimeRangeControls'
@@ -276,8 +276,8 @@ export function MetricsDashboard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <PulseIcon
-              className="size-4 text-muted-foreground"
+            <ActivityGlassIcon
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             {t('dashboard.title')}

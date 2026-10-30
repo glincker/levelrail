@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -106,7 +103,10 @@ export function SecretRotationSection({ appName }: { appName: string }) {
       <CardContent className="space-y-3">
         {needsRedeploy ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertTitle>
               {t('redeploy.title', { key: needsRedeploy })}
             </AlertTitle>
@@ -155,7 +155,7 @@ export function SecretRotationSection({ appName }: { appName: string }) {
         ) : null}
         {secretKeys.length === 0 ? (
           <EmptyState
-            icon={<ArrowsClockwiseIcon />}
+            icon={<RefreshCwGlassIcon size="1.4em" />}
             title={t('empty.title')}
             description={t('empty.description')}
           />

@@ -1,15 +1,15 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  CheckCircleIcon,
-  EyeIcon,
-  HourglassIcon,
-  PushPinIcon,
-  ShieldCheckIcon,
-  SignOutIcon,
-  TrafficSignIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  CountdownGlassIcon,
+  EyeGlassIcon,
+  LogOutGlassIcon,
+  PinGlassIcon,
+  RotateCcwGlassIcon,
+  ShieldCheckGlassIcon,
+  SignpostGlassIcon,
+} from '@thesvg/ui-react'
 import type { ReactNode } from 'react'
 import { Timeline, type TimelineItem } from '@/components/kit'
 import type { Tone } from '@/components/kit/tone'
@@ -27,13 +27,19 @@ import type {
 const MAX_VISIBLE_EVENTS = 40
 
 const PHASE_ICON: Record<GatePhase, ReactNode> = {
-  readiness: <HourglassIcon aria-hidden="true" />,
-  stability: <ShieldCheckIcon aria-hidden="true" />,
-  cutover: <TrafficSignIcon aria-hidden="true" />,
-  drain: <SignOutIcon aria-hidden="true" />,
-  watch: <EyeIcon aria-hidden="true" />,
-  rollback: <ArrowCounterClockwiseIcon aria-hidden="true" />,
-  pin: <PushPinIcon aria-hidden="true" />,
+  readiness: <CountdownGlassIcon size="1.4em" aria-hidden="true" />,
+  stability: (
+    <ShieldCheckGlassIcon
+      className="text-tone-success"
+      size="1.4em"
+      aria-hidden="true"
+    />
+  ),
+  cutover: <SignpostGlassIcon size="1.4em" aria-hidden="true" />,
+  drain: <LogOutGlassIcon size="1.4em" aria-hidden="true" />,
+  watch: <EyeGlassIcon size="1.4em" aria-hidden="true" />,
+  rollback: <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />,
+  pin: <PinGlassIcon size="1.4em" aria-hidden="true" />,
 }
 
 const STAGE_TONE: Record<GateStage, Tone> = {
@@ -88,7 +94,13 @@ export function GateView({ gate }: { gate: DeployGate }) {
   const items: TimelineItem[] = gate.events.slice(hidden).map((e, i) => ({
     id: `${e.at}-${i}`,
     at: e.at,
-    icon: PHASE_ICON[e.phase] ?? <CheckCircleIcon aria-hidden="true" />,
+    icon: PHASE_ICON[e.phase] ?? (
+      <CircleCheckGlassIcon
+        className="text-tone-success"
+        size="1.4em"
+        aria-hidden="true"
+      />
+    ),
     tone: eventTone(e),
     title: t(`phase.${e.phase}`, { defaultValue: e.phase }),
     detail: e.reason ? `${e.message} (${e.reason})` : e.message,
@@ -105,7 +117,7 @@ export function GateView({ gate }: { gate: DeployGate }) {
         <StatusBadge
           tone={STAGE_TONE[gate.stage]}
           label={t(`stage.${gate.stage}`)}
-          icon={failed ? XCircleIcon : ShieldCheckIcon}
+          icon={failed ? CircleXGlassIcon : ShieldCheckGlassIcon}
         />
       </div>
       <p className="text-sm text-muted-foreground">

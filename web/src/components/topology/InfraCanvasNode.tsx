@@ -2,13 +2,13 @@ import { memo, useRef } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsSplitIcon,
-  CpuIcon,
-  DatabaseIcon,
-  GlobeIcon,
-  HardDrivesIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CpuGlassIcon,
+  DatabaseGlassIcon,
+  GlobeGlassIcon,
+  LayersGlassIcon,
+  ServerGlassIcon,
+  SplitGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { ProjectTopologyNode } from '../../types/projectTopology'
 import {
@@ -19,12 +19,12 @@ import {
 } from '../../lib/infraCanvasLayout'
 
 const KIND_ICON = {
-  app: StackIcon,
-  database: DatabaseIcon,
-  volume: HardDrivesIcon,
-  domain: GlobeIcon,
-  load_balancer: ArrowsSplitIcon,
-  node: CpuIcon,
+  app: LayersGlassIcon,
+  database: DatabaseGlassIcon,
+  volume: ServerGlassIcon,
+  domain: GlobeGlassIcon,
+  load_balancer: SplitGlassIcon,
+  node: CpuGlassIcon,
 } as const
 
 // Shape and icon carry the kind too, so it never relies on color alone.
@@ -154,7 +154,7 @@ function InfraCanvasNodeBase({
       )}
     >
       <Icon
-        className="size-4 shrink-0 text-muted-foreground"
+        className="size-5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
       <span className="min-w-0 flex-1">

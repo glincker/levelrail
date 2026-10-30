@@ -19,7 +19,9 @@ Recommended memory: about 256 MiB.
 
 ## Environment variables
 
-This template sets no environment variables.
+| Service | Variable | Value |
+| --- | --- | --- |
+| `copyparty` | `ADMIN_PASSWORD` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -30,7 +32,7 @@ Level: **Standard**.
 What this template needs:
 
 - Publishes ports directly on the host (`copyparty`): 3923:3923.
-- You must provide one or more secrets before it can deploy (`copyparty`): command[1].
+- Passwords and keys are generated at deploy time (`copyparty`): ADMIN_PASSWORD.
 - Stores data in named volumes (`copyparty`): copyparty_config, copyparty_files.
 
 What Levelrail adds around it:
@@ -43,8 +45,6 @@ What Levelrail adds around it:
 - Exposure report shows what is reachable from outside.
 - Host firewall rules managed for published ports.
 
-<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
-
 ## Deploy copyparty with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select copyparty. Review the Compose body and deploy.
@@ -52,9 +52,7 @@ In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, 
 With the CLI:
 
 ```bash
-levelrail-cli templates get copyparty --output json | jq -r .compose > copyparty.compose.yaml
-# edit copyparty.compose.yaml to set the variables you must provide
-levelrail-cli apps deploy-compose my-copyparty --file copyparty.compose.yaml
+levelrail-cli templates deploy copyparty --name my-copyparty
 ```
 
 See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.

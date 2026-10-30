@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  KeyIcon,
-  PaperPlaneTiltIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  KeyGlassIcon,
+  SendGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -134,7 +134,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
                 setShowLog((v) => !v)
               }}
             >
-              <CaretDownIcon className="size-3.5" aria-hidden="true" />
+              <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
               {t('card.log')}
             </Button>
             <Button
@@ -143,7 +143,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
               disabled={test.isPending}
               onClick={runTest}
             >
-              <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
+              <SendGlassIcon className="size-5" aria-hidden="true" />
               {test.isPending ? t('card.testing') : t('card.test')}
             </Button>
             <Button
@@ -158,7 +158,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
                 })
               }}
             >
-              <KeyIcon className="size-3.5" aria-hidden="true" />
+              <KeyGlassIcon className="size-5" aria-hidden="true" />
               {t('card.rotate')}
             </Button>
             <Button
@@ -168,7 +168,7 @@ export function EventWebhookCard({ webhook }: { webhook: EventWebhook }) {
                 setConfirmOpen(true)
               }}
             >
-              <TrashIcon className="size-3.5" aria-hidden="true" />
+              <TrashGlassIcon className="size-5" aria-hidden="true" />
               {t('card.delete')}
             </Button>
           </div>

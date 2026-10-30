@@ -2,10 +2,10 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowRightIcon,
-  ArrowUpIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowRightGlassIcon,
+  ArrowUpGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { TONE, type Tone } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
@@ -71,10 +71,10 @@ export function UpdateStripView({
           TONE[tone].text,
         )}
       >
-        <ArrowUpIcon weight="bold" aria-hidden="true" className="size-4" />
+        <ArrowUpGlassIcon aria-hidden="true" className="size-5" />
         <span className="flex items-center gap-1.5 tabular-nums">
           {displayVersion(info.current_version)}
-          <ArrowRightIcon aria-hidden="true" className="size-3.5" />
+          <ArrowRightGlassIcon aria-hidden="true" className="size-5" />
           <span className="sr-only">{t('updateStrip.to')}</span>
           {displayVersion(latest)}
         </span>
@@ -126,7 +126,7 @@ export function UpdateStripView({
               dismissUpdate(latest)
             }}
           >
-            <XIcon aria-hidden="true" />
+            <XGlassIcon size="1.4em" aria-hidden="true" />
           </Button>
         )}
       </span>

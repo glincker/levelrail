@@ -1,5 +1,4 @@
-import type { Icon } from '@phosphor-icons/react'
-import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageGlassIcon, type UiIcon } from '@thesvg/ui-react'
 import { CATEGORY_ICONS } from '../components/ServiceTemplateGrid'
 
 // Literal class strings so Tailwind's scanner keeps them.
@@ -22,11 +21,11 @@ const CATEGORY_TONE: Record<string, keyof typeof TONES> = {
 }
 
 export function categoryStyle(category: string): {
-  icon: Icon
+  icon: UiIcon
   toneClass: string
 } {
   return {
-    icon: CATEGORY_ICONS[category] ?? PackageIcon,
+    icon: CATEGORY_ICONS[category] ?? PackageGlassIcon,
     toneClass: TONES[CATEGORY_TONE[category] ?? 'info'],
   }
 }

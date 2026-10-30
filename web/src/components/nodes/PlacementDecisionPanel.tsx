@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  QuestionIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  CircleXGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,10 +26,10 @@ function EvaluationRow({ e }: { e: PlacementEvaluation }) {
   const state = !e.eligible ? 'refused' : e.unverified ? 'unverified' : 'fits'
   const Icon =
     state === 'refused'
-      ? XCircleIcon
+      ? CircleXGlassIcon
       : state === 'unverified'
-        ? QuestionIcon
-        : CheckCircleIcon
+        ? CircleQuestionMarkGlassIcon
+        : CircleCheckGlassIcon
   const detail = e.eligible
     ? e.dimensions
         .map((d) =>
@@ -46,7 +46,7 @@ function EvaluationRow({ e }: { e: PlacementEvaluation }) {
     : e.reason
   return (
     <div className="flex items-start gap-2 px-3 py-2 text-sm">
-      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <Icon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
       <div className="min-w-0 space-y-0.5">
         <p className="font-medium text-foreground">
           {nodeName(e.node_id)}{' '}
@@ -83,7 +83,7 @@ function DecisionBlock({
       )}
       {(decision.warnings ?? []).map((w) => (
         <Alert key={w}>
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{w}</AlertDescription>
         </Alert>
       ))}
@@ -118,7 +118,7 @@ export function PlacementDecisionPanel({
   if (decision.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription className="space-y-2">
           <p>
             {t('decision.loadFailed')} {decision.error.message}

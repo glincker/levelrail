@@ -3,10 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  GlobeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  GlobeGlassIcon,
+  RefreshCwGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -129,7 +129,7 @@ export function ReachabilityPanel() {
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2">
-            <GlobeIcon className="size-4 text-muted-foreground" />
+            <GlobeGlassIcon className="size-5 text-muted-foreground" />
             {t('reach.title')}
           </CardTitle>
           <CardDescription>{t('reach.description')}</CardDescription>
@@ -149,7 +149,7 @@ export function ReachabilityPanel() {
             })
           }
         >
-          <ArrowsClockwiseIcon className="size-4" />
+          <RefreshCwGlassIcon className="size-5" />
           {recheck.isPending ? t('reach.rechecking') : t('reach.recheck')}
         </Button>
       </CardHeader>
@@ -165,7 +165,7 @@ export function ReachabilityPanel() {
         {rep ? (
           rep.findings.length === 0 ? (
             <p className="flex items-center gap-2 text-sm">
-              <CheckCircleIcon className="size-4 text-green-700 dark:text-green-400" />
+              <CircleCheckGlassIcon className="size-5 text-green-700 dark:text-green-400" />
               {t('reach.clean', { count: rep.restricted_ports })}
             </p>
           ) : (

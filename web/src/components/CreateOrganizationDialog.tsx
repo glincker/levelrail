@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
-  BuildingsIcon,
-  PlusIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlusGlassIcon,
+  TriangleAlertGlassIcon,
+  UniversityGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -56,13 +56,13 @@ export function CreateOrganizationDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
-        <PlusIcon />
+        <PlusGlassIcon size="1.4em" />
         New organization
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BuildingsIcon className="size-4 text-muted-foreground" />
+            <UniversityGlassIcon className="size-5 text-muted-foreground" />
             New organization
           </DialogTitle>
           <DialogDescription>
@@ -86,7 +86,10 @@ export function CreateOrganizationDialog() {
 
           {createOrganization.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>
                 {createOrganization.error.message}
               </AlertDescription>

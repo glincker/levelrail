@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ProhibitIcon,
-  ShieldCheckIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  ShieldCheckGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -131,9 +131,9 @@ export function IpListCard({
             compact
             icon={
               block ? (
-                <ProhibitIcon className="size-5" />
+                <BanGlassIcon className="size-6" />
               ) : (
-                <ShieldCheckIcon className="size-5" />
+                <ShieldCheckGlassIcon className="size-6 text-tone-success" />
               )
             }
             title={
@@ -181,7 +181,7 @@ export function IpListCard({
                   })}
                   onClick={() => remove(r)}
                 >
-                  <TrashIcon />
+                  <TrashGlassIcon size="1.4em" />
                 </Button>
               </div>
             )}

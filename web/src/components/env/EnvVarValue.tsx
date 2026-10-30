@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  CopyIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  PencilSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  PencilGlassIcon,
+  RotateCcwGlassIcon,
+} from '@thesvg/ui-react'
 import { MASKED_VALUE, type EnvRow } from '../../lib/envRows'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -136,7 +136,7 @@ export function EnvVarValue({
               onChange({ ...row, value: row.original?.value ?? '' })
             }}
           >
-            <ArrowCounterClockwiseIcon />
+            <RotateCcwGlassIcon size="1.4em" />
           </Button>
         ) : null}
       </div>
@@ -158,7 +158,7 @@ export function EnvVarValue({
             onCopy(revealed)
           }}
         >
-          <CopyIcon />
+          <CopyGlassIcon size="1.4em" />
         </Button>
         <Button
           type="button"
@@ -167,7 +167,7 @@ export function EnvVarValue({
           aria-label={`${t('actions.hide')} ${row.key}`}
           onClick={onHide}
         >
-          <EyeSlashIcon />
+          <EyeOffGlassIcon size="1.4em" />
         </Button>
         {expiresAt ? <Countdown until={expiresAt} /> : null}
       </div>
@@ -185,7 +185,7 @@ export function EnvVarValue({
       )}
       {storedHidden && canReveal ? (
         <Button type="button" variant="ghost" size="sm" onClick={onReveal}>
-          <EyeIcon />
+          <EyeGlassIcon size="1.4em" />
           {t('actions.reveal')}
         </Button>
       ) : null}
@@ -198,7 +198,7 @@ export function EnvVarValue({
             onChange({ ...row, value: '' })
           }}
         >
-          <PencilSimpleIcon />
+          <PencilGlassIcon size="1.4em" />
           {t('actions.replace')}
         </Button>
       ) : null}

@@ -1,12 +1,12 @@
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  FingerprintIcon,
-  SpinnerGapIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  FingerprintPatternGlassIcon,
+  LoaderCircleGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   type PasskeyResource,
   type RegisterPhase,
@@ -132,14 +132,11 @@ export function AddPasskeyDialog({
                   }
                 >
                   {state === 'done' ? (
-                    <CheckCircleIcon
-                      className="size-4 text-tone-success"
-                      weight="fill"
-                    />
+                    <CircleCheckGlassIcon className="size-5 text-tone-success" />
                   ) : state === 'active' && working ? (
-                    <SpinnerGapIcon className="size-4 animate-spin" />
+                    <LoaderCircleGlassIcon className="size-5 animate-spin" />
                   ) : (
-                    <CircleIcon className="size-4" />
+                    <CircleGlassIcon className="size-5" />
                   )}
                   {t(labelKey)}
                 </li>
@@ -149,7 +146,10 @@ export function AddPasskeyDialog({
 
           {stage === 'done' && created ? (
             <Alert>
-              <CheckCircleIcon />
+              <CircleCheckGlassIcon
+                className="text-tone-success"
+                size="1.4em"
+              />
               <AlertTitle>{t('addDialog.savedTitle')}</AlertTitle>
               <AlertDescription>
                 <p>{t('addDialog.savedBody', { name: created.label })}</p>
@@ -191,7 +191,10 @@ export function AddPasskeyDialog({
 
           {errorKind ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <TriangleAlertGlassIcon
+                className="text-tone-warning"
+                size="1.7em"
+              />
               <AlertDescription>{t(`errors.${errorKind}`)}</AlertDescription>
             </Alert>
           ) : null}
@@ -218,7 +221,7 @@ export function AddPasskeyDialog({
                   {t('addDialog.cancel')}
                 </Button>
                 <Button type="submit" disabled={working}>
-                  <FingerprintIcon />
+                  <FingerprintPatternGlassIcon size="1.4em" />
                   {errorKind && isRetryablePasskeyError(errorKind)
                     ? t('addDialog.retry')
                     : t('addDialog.continue')}

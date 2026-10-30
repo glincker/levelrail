@@ -196,6 +196,7 @@ func buildDemoHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, 
 		api.WithAlertNoise(alertingDB),
 		api.WithInbox(alertingDB),
 		api.WithStatusPage(db, statusPageConfig(logger), statusPageRateLimit(logger)),
+		api.WithAnalysisReports(db),
 		api.WithDBPinger(db),
 		api.WithDockerPinger(fakes),
 		api.WithImageLister(fakes),
@@ -209,6 +210,8 @@ func buildDemoHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, 
 	}
 	opts = append(opts, authOpts...)
 	rt := api.NewRouter(logger, b, db, opts...)
+	// Without a sampler the public status page reads Unknown for every component.
+	go func() { _ = rt.RunStatusPageSampler(ctx) }()
 	return demoStaticHeaders(composeMux(rt.Handler(), nil, web.Handler(b))), nil
 }
 

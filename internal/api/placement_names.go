@@ -48,7 +48,7 @@ func (rt *Router) placementResolver(ctx context.Context) placementResolver {
 			rt.logger.Warn("api: placement resolver: list nodes failed", slog.String("error", err.Error()))
 		}
 	}
-	return newPlacementResolver(nodes, rt.localNodeID, localHostname())
+	return newPlacementResolver(nodes, rt.localNodeID, rt.hostname())
 }
 
 func (p placementResolver) stampApp(res *appResource) {

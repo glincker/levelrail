@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  BellRingingIcon,
-  CheckIcon,
-  ClockCounterClockwiseIcon,
-  DownloadSimpleIcon,
-  LinkIcon,
-  MagnifyingGlassIcon,
-  SortAscendingIcon,
-  TextAlignLeftIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  CheckGlassIcon,
+  DownloadGlassIcon,
+  LinkGlassIcon,
+  RestoreGlassIcon,
+  SearchGlassIcon,
+  SortAzGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
+import { ListGlassIcon } from '@thesvg/ui-react'
 import { LogFilterBar } from './LogFilterBar'
 import { Button } from './ui/button'
 import {
@@ -266,8 +266,8 @@ export function LogSearchPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            <MagnifyingGlassIcon
-              className="size-4 text-muted-foreground"
+            <SearchGlassIcon
+              className="size-5 text-muted-foreground"
               aria-hidden="true"
             />
             Log search
@@ -298,7 +298,7 @@ export function LogSearchPanel({
               setAlertOpen(true)
             }}
           >
-            <BellRingingIcon className="size-3.5" aria-hidden="true" />
+            <BellRingGlassIcon className="size-5" aria-hidden="true" />
             {t('explorer.alertFromSearch')}
           </Button>
           <Button
@@ -310,7 +310,7 @@ export function LogSearchPanel({
               setWrap((w) => !w)
             }}
           >
-            <TextAlignLeftIcon className="size-3.5" aria-hidden="true" />
+            <ListGlassIcon className="size-5.5" aria-hidden="true" />
             {t('explorer.wrap')}
           </Button>
           <a
@@ -318,7 +318,7 @@ export function LogSearchPanel({
             download
             className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
-            <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+            <DownloadGlassIcon className="size-5" aria-hidden="true" />
             Download logs
           </a>
           <Button
@@ -328,9 +328,9 @@ export function LogSearchPanel({
             onClick={copyPermalink}
           >
             {copied ? (
-              <CheckIcon className="size-3.5" aria-hidden="true" />
+              <CheckGlassIcon className="size-5" aria-hidden="true" />
             ) : (
-              <LinkIcon className="size-3.5" aria-hidden="true" />
+              <LinkGlassIcon className="size-5" aria-hidden="true" />
             )}
             {copied ? t('logs.copied') : t('logs.copyPermalink')}
           </Button>
@@ -338,8 +338,8 @@ export function LogSearchPanel({
       </div>
 
       <div className="relative mt-3">
-        <MagnifyingGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+        <SearchGlassIcon
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -362,7 +362,7 @@ export function LogSearchPanel({
             aria-label={t('explorer.clearSearch')}
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <XIcon className="size-3.5" aria-hidden="true" />
+            <XGlassIcon className="size-5" aria-hidden="true" />
           </button>
         ) : null}
       </div>
@@ -390,15 +390,9 @@ export function LogSearchPanel({
                   }}
                 >
                   {mode === 'relevance' ? (
-                    <SortAscendingIcon
-                      className="size-3.5"
-                      aria-hidden="true"
-                    />
+                    <SortAzGlassIcon className="size-5" aria-hidden="true" />
                   ) : (
-                    <ClockCounterClockwiseIcon
-                      className="size-3.5"
-                      aria-hidden="true"
-                    />
+                    <RestoreGlassIcon className="size-5" aria-hidden="true" />
                   )}
                   {mode === 'relevance'
                     ? t('explorer.orderRelevance')

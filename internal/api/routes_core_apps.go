@@ -310,6 +310,14 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// automatically.
 	mux.HandleFunc("GET /api/v1/apps/{name}/resource-recommendation", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppResourceRecommendation))
 
+	rt.registerAnalysisRoutes(mux)
+
+	// Read-only list of the app's release snapshots (app_releases.go),
+	// newest first, plus its current binding. AbilityRead, same
+	// sensitivity as resource-recommendation above; empty while
+	// APP_RELEASE_BINDINGS is off.
+	mux.HandleFunc("GET /api/v1/apps/{name}/releases", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppReleases))
+
 	// Read-only "what this would cost elsewhere" estimate
 	// (cost_estimate.go): compares the app's declared or observed
 	// CPU/memory against illustrative reference pricing. AbilityRead,

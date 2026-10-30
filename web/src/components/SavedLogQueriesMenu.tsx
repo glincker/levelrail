@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  BookmarkSimpleIcon,
-  ClockCounterClockwiseIcon,
-  PushPinIcon,
-  TrashIcon,
-  UsersIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BookmarkGlassIcon,
+  PinGlassIcon,
+  RestoreGlassIcon,
+  TrashGlassIcon,
+  UsersGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
@@ -59,7 +59,7 @@ export function SavedLogQueriesMenu({
       <PopoverTrigger
         render={<Button type="button" size="sm" variant="outline" />}
       >
-        <BookmarkSimpleIcon className="size-3.5" aria-hidden="true" />
+        <BookmarkGlassIcon className="size-5" aria-hidden="true" />
         {t('explorer.saved')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)]">
@@ -84,13 +84,16 @@ export function SavedLogQueriesMenu({
                 }}
               >
                 {q.pinned ? (
-                  <PushPinIcon
-                    className="size-3.5 shrink-0"
+                  <PinGlassIcon
+                    className="size-5 shrink-0"
                     aria-hidden="true"
                   />
                 ) : null}
                 {q.visibility === 'instance' ? (
-                  <UsersIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                  <UsersGlassIcon
+                    className="size-5 shrink-0"
+                    aria-hidden="true"
+                  />
                 ) : null}
                 <span className="truncate">{q.name}</span>
               </Button>
@@ -105,7 +108,7 @@ export function SavedLogQueriesMenu({
                     remove.mutate(q.id)
                   }}
                 >
-                  <TrashIcon className="size-3.5" aria-hidden="true" />
+                  <TrashGlassIcon className="size-5" aria-hidden="true" />
                 </Button>
               ) : null}
             </div>
@@ -114,10 +117,7 @@ export function SavedLogQueriesMenu({
           {recent.length > 0 ? (
             <>
               <p className="mt-1 flex items-center gap-1 px-1 text-xs font-medium text-muted-foreground">
-                <ClockCounterClockwiseIcon
-                  className="size-3.5"
-                  aria-hidden="true"
-                />
+                <RestoreGlassIcon className="size-5" aria-hidden="true" />
                 {t('explorer.recent')}
               </p>
               {recent.map((r) => (

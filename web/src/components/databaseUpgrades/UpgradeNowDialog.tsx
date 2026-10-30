@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowCircleUpIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowUpGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -48,7 +48,7 @@ export function UpgradeNowDialog({
       <DialogTrigger
         render={<Button variant="outline" size="sm" disabled={disabled} />}
       >
-        <ArrowCircleUpIcon className="size-3.5" aria-hidden="true" />
+        <ArrowUpGlassIcon className="size-5" aria-hidden="true" />
         {t('targets.upgradeNow')}
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">

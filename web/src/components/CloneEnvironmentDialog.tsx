@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { CopySimpleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -145,7 +145,7 @@ export function CloneEnvironmentDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        <CopySimpleIcon className="size-3.5" aria-hidden="true" />
+        <CopyGlassIcon className="size-5" aria-hidden="true" />
         Clone environment...
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
@@ -181,8 +181,8 @@ export function CloneEnvironmentDialog({
 
           {newName.trim() && previewErrorMessage ? (
             <p className="flex items-start gap-1.5 text-sm text-destructive">
-              <WarningIcon
-                className="mt-0.5 size-4 shrink-0"
+              <TriangleAlertGlassIcon
+                className="mt-0.5 size-6 shrink-0 text-tone-warning"
                 aria-hidden="true"
               />
               {previewErrorMessage}
@@ -292,7 +292,10 @@ export function CloneEnvironmentDialog({
 
         {clone.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{clone.error.message}</AlertDescription>
           </Alert>
         ) : null}

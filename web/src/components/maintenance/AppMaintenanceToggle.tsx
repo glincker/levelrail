@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -33,7 +33,7 @@ export function AppMaintenanceToggle({ appName }: { appName: string }) {
       </div>
       <div className="flex items-center gap-2">
         <Badge variant={data.enabled ? 'warning' : 'muted'}>
-          <WrenchIcon className="size-3" />
+          <WrenchGlassIcon className="size-4.5" />
           {data.enabled
             ? t('appToggle.on', {
                 active: data.active_domains,

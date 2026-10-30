@@ -202,32 +202,19 @@ func bootstrapTestAdmin(t *testing.T, db *store.DB) {
 	}
 }
 
-// loginTestSession bootstraps the admin account (if not already done by
-// the caller) and logs in through the real handler, returning the
-// session cookie subsequent authenticated requests need. Exercises
-// handleLogin itself rather than reaching into the session store
-// directly, so auth tests cover the real login path, not a shortcut
-// around it.
+// loginTestSession returns an authenticated admin session cookie. A fresh
+// DB gets the baked admin and session; a DB that already holds users keeps
+// the real login so custom setups behave as before.
 func loginTestSession(t *testing.T, rt *Router, db *store.DB) *http.Cookie {
 	t.Helper()
-	bootstrapTestAdmin(t, db)
-
-	body := strings.NewReader(`{"username":"` + testAdminUsername + `","password":"` + testAdminPassword + `"}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", body)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("login setup: status = %d, body = %s", rec.Code, rec.Body.String())
+	if n, err := db.CountUsers(context.Background()); err == nil && n == 0 {
+		return installBakedAdmin(t, db)
 	}
-	cookies := rec.Result().Cookies()
-	for _, c := range cookies {
-		if c.Name == sessionCookieName {
-			return c
-		}
+	c, err := loginTestSessionSlow(rt, db)
+	if err != nil {
+		t.Fatal(err)
 	}
-	t.Fatal("login setup: no session cookie returned")
-	return nil
+	return c
 }
 
 // storeUserForTest inserts a plain, no-password user row directly (not

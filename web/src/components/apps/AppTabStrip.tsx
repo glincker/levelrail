@@ -1,167 +1,132 @@
-import { useRef, type KeyboardEvent } from 'react'
+import type { ComponentType, SVGProps } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ActivityGlassIcon,
+  ChevronDownIcon,
+  DatabaseGlassIcon,
+  GlobeGlassIcon,
+  RocketGlassIcon,
+  SlidersHorizontalGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
-import { splitForNarrow, type AppTabGroupId } from '@/lib/appTabGroups'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
+import type { AppTabGroupId } from '@/lib/appTabGroups'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLinkItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { BetaBadge } from '../BetaBadge'
 import { useAppTabs } from './useAppTabs'
 
-const NARROW_QUERY = '(max-width: 639px)'
-const TAB_BASE =
-  'flex shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60'
+type GroupIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>
 
-function nextIndex(key: string, i: number, n: number): number | null {
-  if (key === 'ArrowRight') return (i + 1) % n
-  if (key === 'ArrowLeft') return (i - 1 + n) % n
-  if (key === 'Home') return 0
-  if (key === 'End') return n - 1
-  return null
+const GROUP_ICONS: Record<AppTabGroupId, GroupIcon> = {
+  basics: RocketGlassIcon,
+  network: GlobeGlassIcon,
+  data: DatabaseGlassIcon,
+  observe: ActivityGlassIcon,
+  advanced: SlidersHorizontalGlassIcon,
 }
 
-/** Five section switcher plus the active section's pages, with a More menu on narrow screens. */
+const FOCUS =
+  'outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-0'
+const HIDE_SCROLLBAR = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+
+/** One row: a section menu, then the pages of that section as tabs. */
 export function AppTabStrip({ name }: { name: string }) {
   const { t } = useTranslation('common')
-  const narrow = useMediaQuery(NARROW_QUERY)
   const tabs = useAppTabs(name)
-  const listRef = useRef<HTMLDivElement>(null)
-  const { visible, more } = splitForNarrow(
-    tabs.groups,
-    tabs.activeGroup,
-    narrow,
-  )
   const current = tabs.groups.find((g) => g.id === tabs.activeGroup)
   const label = (id: AppTabGroupId) => t(`appTabs.groups.${id}`)
-
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const nodes = Array.from(
-      listRef.current?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [],
-    )
-    const i = nodes.findIndex((n) => n === document.activeElement)
-    const target = i === -1 ? null : nextIndex(e.key, i, nodes.length)
-    if (target === null) return
-    e.preventDefault()
-    nodes[target]?.focus()
-  }
+  const CurrentIcon = current ? GROUP_ICONS[current.id] : null
 
   return (
-    <div className="min-w-0 space-y-2" data-slot="app-tab-strip">
-      <div className="flex min-w-0 items-center gap-1">
-        <div
-          ref={listRef}
-          role="tablist"
-          aria-label={t('appTabs.sections')}
-          onKeyDown={onKeyDown}
-          className="flex min-w-0 gap-1 overflow-x-auto"
-        >
-          {visible.map((g) => {
-            const first = g.items[0]
-            if (!first) return null
-            const selected = g.id === tabs.activeGroup
-            return (
-              <Link
-                key={g.id}
-                to={first.to}
-                params={{ name }}
-                role="tab"
-                id={`app-tab-${g.id}`}
-                aria-selected={selected}
-                aria-controls="app-tab-panel"
-                tabIndex={selected || !tabs.activeGroup ? 0 : -1}
-                className={cn(
-                  TAB_BASE,
-                  selected
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {label(g.id)}
-              </Link>
-            )
-          })}
-        </div>
-        {more.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label={t('appTabs.moreLabel')}
-              className={cn(
-                TAB_BASE,
-                'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {t('appTabs.more')}
-              <CaretDownIcon className="size-3.5" aria-hidden="true" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {more.map((g) => {
-                const first = g.items[0]
-                if (!first) return null
-                return (
-                  <DropdownMenuLinkItem
-                    key={g.id}
-                    render={<Link to={first.to} params={{ name }} />}
-                  >
-                    {label(g.id)}
-                  </DropdownMenuLinkItem>
-                )
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-      </div>
-      {current ? (
-        <div
-          id="app-tab-panel"
-          role="tabpanel"
-          aria-labelledby={`app-tab-${current.id}`}
-        >
+    <div className="min-w-0" data-slot="app-tab-strip">
+      <div className="flex min-w-0 items-center gap-2 border-b border-border">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label={t('appTabs.sections')}
+            className={cn(
+              'my-1 flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/70',
+              FOCUS,
+            )}
+          >
+            {CurrentIcon ? <CurrentIcon size={16} aria-hidden="true" /> : null}
+            {current ? label(current.id) : t('appTabs.sections')}
+            <ChevronDownIcon
+              size={14}
+              className="text-muted-foreground"
+              aria-hidden="true"
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-44">
+            {tabs.groups.map((g) => {
+              const first = g.items[0]
+              if (!first) return null
+              const Icon = GROUP_ICONS[g.id]
+              return (
+                <DropdownMenuLinkItem
+                  key={g.id}
+                  render={<Link to={first.to} params={{ name }} />}
+                  className={cn(g.id === tabs.activeGroup && 'bg-muted')}
+                >
+                  <Icon size={16} aria-hidden="true" />
+                  {label(g.id)}
+                </DropdownMenuLinkItem>
+              )
+            })}
+            {tabs.isStatic ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    tabs.setShowAll(!tabs.showAll)
+                  }}
+                >
+                  {tabs.showAll
+                    ? t('appTabs.showLess')
+                    : t('appTabs.showAll', { count: tabs.hiddenCount })}
+                </DropdownMenuItem>
+              </>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {current ? (
           <nav
             aria-label={t('appTabs.pages', { section: label(current.id) })}
-            className="flex gap-1 overflow-x-auto border-b border-border pb-2"
+            className={cn(
+              'flex min-w-0 gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px',
+              HIDE_SCROLLBAR,
+            )}
           >
-            {current.items.map((item) => (
-              <Link
-                key={item.id}
-                to={item.to}
-                params={{ name }}
-                aria-current={
-                  item.slug === tabs.activeSlug ? 'page' : undefined
-                }
-                className={cn(
-                  TAB_BASE,
-                  'text-[13px]',
-                  item.slug === tabs.activeSlug
-                    ? 'bg-primary/10 text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {item.label}
-                {item.beta ? <BetaBadge /> : null}
-              </Link>
-            ))}
+            {current.items.map((item) => {
+              const active = item.slug === tabs.activeSlug
+              return (
+                <Link
+                  key={item.id}
+                  to={item.to}
+                  params={{ name }}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    '-mb-px flex shrink-0 items-center gap-1 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                    FOCUS,
+                    active
+                      ? 'border-primary text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {item.label}
+                  {item.beta ? <BetaBadge /> : null}
+                </Link>
+              )
+            })}
           </nav>
-        </div>
-      ) : null}
-      {tabs.isStatic ? (
-        <button
-          type="button"
-          onClick={() => {
-            tabs.setShowAll(!tabs.showAll)
-          }}
-          className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none"
-        >
-          {tabs.showAll
-            ? t('appTabs.showLess')
-            : t('appTabs.showAll', { count: tabs.hiddenCount })}
-        </button>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   )
 }

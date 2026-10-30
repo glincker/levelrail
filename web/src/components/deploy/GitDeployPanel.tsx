@@ -2,10 +2,10 @@ import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowClockwiseIcon,
-  GitBranchIcon,
-  RocketLaunchIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GitBranchGlassIcon,
+  RocketGlassIcon,
+  RotateCwGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -107,7 +107,7 @@ export function GitDeployPanel({
               className="w-full font-mono"
               aria-label={t('git.branch')}
             >
-              <GitBranchIcon aria-hidden="true" />
+              <GitBranchGlassIcon size="1.4em" aria-hidden="true" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -128,7 +128,7 @@ export function GitDeployPanel({
             void query.refetch()
           }}
         >
-          <ArrowClockwiseIcon aria-hidden="true" />
+          <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
         </Button>
       </div>
       {activeBranch !== source.branch ? (
@@ -199,7 +199,7 @@ export function GitDeployPanel({
                     if (data.head) actions.deployCommit(data.head.sha)
                   }}
                 >
-                  <RocketLaunchIcon aria-hidden="true" />
+                  <RocketGlassIcon size="1.4em" aria-hidden="true" />
                   {actions.buildPending
                     ? t('git.starting')
                     : t('git.deployHead')}

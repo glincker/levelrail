@@ -282,6 +282,10 @@ func (rt *Router) handleStartBackupDrill(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be drilled", req.BackupID, h.Status))
 		return
 	}
+	if t, terr := rt.backupTargets.GetBackupTarget(r.Context(), h.TargetID); terr == nil && (strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) || strings.HasPrefix(t.Endpoint, backup.AgentEndpointScheme)) {
+		writeError(w, http.StatusConflict, "restore drills are "+backup.DrillNotApplicable)
+		return
+	}
 	id, err := rt.backupProtection.StartDrill(r.Context(), req.BackupID)
 	if err != nil {
 		rt.internalError(w, "api: start drill failed", err, slog.String("backup_id", req.BackupID))

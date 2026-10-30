@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"net/url"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -140,6 +141,13 @@ func (x *executor) afterApp(ctx context.Context, r *Resource, want appFields, li
 			return fmt.Errorf("set secret %s: %w", name, err)
 		}
 	}
+	if err := x.syncRollout(ctx, r.Name, want.Rollout); err != nil {
+		return err
+	}
+	filesChanged, err := x.syncFiles(ctx, r.Name, want.Files)
+	if err != nil {
+		return err
+	}
 	connsChanged, err := x.syncConnections(ctx, r.Name, want.Connections, live, prune)
 	if err != nil {
 		return err
@@ -148,10 +156,61 @@ func (x *executor) afterApp(ctx context.Context, r *Resource, want appFields, li
 	if err != nil {
 		return err
 	}
-	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0 || connsChanged || volsChanged) {
+	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0 || connsChanged || volsChanged || filesChanged) {
 		return x.do(ctx, http.MethodPost, app+"/restart", nil, nil)
 	}
 	return nil
+}
+
+// syncRollout saves a declared rollout policy; an undeclared one is left alone.
+func (x *executor) syncRollout(ctx context.Context, app string, want *rolloutFields) error {
+	if want == nil {
+		return nil
+	}
+	if la, ok := x.st.apps[app]; ok && la.rollout != nil && *la.rollout == *want {
+		return nil
+	}
+	if err := x.do(ctx, http.MethodPut, "/api/v1/apps/"+esc(app)+"/rollout", want, nil); err != nil {
+		return fmt.Errorf("set rollout: %w", err)
+	}
+	return nil
+}
+
+// syncFiles makes the live non-secret files equal the declared list; an
+// undeclared list is left alone. Files are fixed at container create, so a
+// change reports true for a restart.
+func (x *executor) syncFiles(ctx context.Context, app string, want []fileFields) (bool, error) {
+	if len(want) == 0 {
+		return false, nil
+	}
+	var have []fileFields
+	if la, ok := x.st.apps[app]; ok {
+		have = la.files
+	}
+	byPath := make(map[string]fileFields, len(have))
+	for _, f := range have {
+		byPath[f.Path] = f
+	}
+	base := "/api/v1/apps/" + esc(app) + "/files"
+	changed := false
+	for _, f := range want {
+		same := byPath[f.Path] == f
+		delete(byPath, f.Path)
+		if same {
+			continue
+		}
+		changed = true
+		if err := x.do(ctx, http.MethodPut, base, map[string]any{"path": f.Path, "content": f.Content, "mode": f.Mode}, nil); err != nil {
+			return false, fmt.Errorf("set file %s: %w", f.Path, err)
+		}
+	}
+	for _, p := range sortedKeys(byPath) {
+		changed = true
+		if err := x.do(ctx, http.MethodDelete, base+"?path="+url.QueryEscape(p), nil, nil); err != nil {
+			return false, fmt.Errorf("remove file %s: %w", p, err)
+		}
+	}
+	return changed, nil
 }
 
 func lookupSecret(m map[string]string, app, name string) (string, bool) {

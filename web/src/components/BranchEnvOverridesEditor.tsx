@@ -3,10 +3,10 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  TrashIcon,
-  GitBranchIcon,
-  LockIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GitBranchGlassIcon,
+  LockGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -84,7 +84,7 @@ export function BranchEnvOverridesEditor({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitBranchIcon className="size-4" />
+          <GitBranchGlassIcon className="size-5" />
           Branch env overrides
         </CardTitle>
         <CardDescription>
@@ -109,7 +109,7 @@ export function BranchEnvOverridesEditor({ appName }: { appName: string }) {
                   <span>{o.key}</span>
                   {o.secret ? (
                     <span className="flex items-center gap-1 text-muted-foreground">
-                      <LockIcon className="size-3.5" />
+                      <LockGlassIcon className="size-5" />
                       hidden
                     </span>
                   ) : (
@@ -126,7 +126,7 @@ export function BranchEnvOverridesEditor({ appName }: { appName: string }) {
                   }}
                   aria-label={`Remove ${o.key} for ${o.branchPattern}`}
                 >
-                  <TrashIcon className="size-4 text-muted-foreground" />
+                  <TrashGlassIcon className="size-5 text-muted-foreground" />
                 </Button>
               </li>
             ))}

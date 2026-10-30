@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CloudArrowUpIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -62,7 +59,7 @@ function TestButton({ target }: { target: BackupTarget }) {
         })
       }}
     >
-      <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
+      <PlugGlassIcon className="size-5" aria-hidden="true" />
       {testTarget.isPending
         ? t('backupTargetsPage.table.testing')
         : t('backupTargetsPage.table.test')}
@@ -87,7 +84,7 @@ export function BackupTargetTable({
     return (
       <EmptyState
         className="gap-2 border-0 bg-transparent py-4"
-        icon={<CloudArrowUpIcon className="size-5" />}
+        icon={<UploadGlassIcon className="size-6" />}
         title={t('backupTargetsPage.empty.title')}
         description={t('backupTargetsPage.empty.body')}
         action={action}

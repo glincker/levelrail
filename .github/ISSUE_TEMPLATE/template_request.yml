@@ -1,0 +1,66 @@
+name: Template request
+description: Ask for a service template to be added to the catalog
+title: "template: "
+labels: ["type/feature", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the existing catalog first. You can also add a template yourself with one file in `internal/catalog/contrib/`. See the [service template guide](https://github.com/glincker/levelrail/blob/main/.github/CONTRIBUTING.md#adding-a-service-template).
+
+  - type: input
+    id: service
+    attributes:
+      label: Service name
+    validations:
+      required: true
+
+  - type: input
+    id: upstream
+    attributes:
+      label: Upstream link
+      description: Project website, docs or repository.
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: input
+    id: image
+    attributes:
+      label: Container image
+      description: Name and a specific tag, not latest. Say if you have pulled and run it.
+      placeholder: "ghcr.io/org/app:1.2.3"
+    validations:
+      required: false
+
+  - type: textarea
+    id: ports
+    attributes:
+      label: Ports
+      description: Each port and what it serves, for example 8080 for the web UI.
+    validations:
+      required: true
+
+  - type: textarea
+    id: volumes
+    attributes:
+      label: Volumes
+      description: Paths that hold state, for example /data.
+    validations:
+      required: false
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment variables
+      description: Variable names and what they do. Do not paste secret values.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked that this service is not already in the catalog.
+          required: true

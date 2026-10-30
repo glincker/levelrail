@@ -1,6 +1,6 @@
 import { lazy, Suspense, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SpinnerIcon, SwapIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowLeftRightGlassIcon, LoaderGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -230,7 +230,7 @@ export function ProxyProviderCard() {
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SwapIcon className="size-4" aria-hidden="true" />
+          <ArrowLeftRightGlassIcon className="size-5" aria-hidden="true" />
           {t('proxyPicker.title')}
         </CardTitle>
         <CardDescription>{t('proxyPicker.description')}</CardDescription>
@@ -336,7 +336,11 @@ export function ProxyProviderCard() {
                   onClick={() => run(true)}
                 >
                   {setup.isPending && setup.variables?.confirm ? (
-                    <SpinnerIcon className="animate-spin" aria-hidden="true" />
+                    <LoaderGlassIcon
+                      size="1.4em"
+                      className="animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : null}
                   {setup.isPending && setup.variables?.confirm
                     ? t('proxyPicker.applying')

@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  QuestionIcon,
-  ShieldWarningIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  ShieldAlertGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Card,
   CardContent,
@@ -118,28 +118,28 @@ export function PostureScoreCard({ posture }: { posture: SecurityPosture }) {
 function StatusIcon({ item }: { item: PostureItem }) {
   if (item.status === 'pass') {
     return (
-      <CheckCircleIcon
-        className="size-5 shrink-0 text-green-600"
+      <CircleCheckGlassIcon
+        className="size-6 shrink-0 text-green-600"
         aria-hidden="true"
       />
     )
   }
   if (item.status === 'unknown') {
     return (
-      <QuestionIcon
-        className="size-5 shrink-0 text-muted-foreground"
+      <CircleQuestionMarkGlassIcon
+        className="size-6 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
     )
   }
   return item.severity === 'critical' || item.severity === 'high' ? (
-    <ShieldWarningIcon
-      className="size-5 shrink-0 text-destructive"
+    <ShieldAlertGlassIcon
+      className="size-6 shrink-0 text-destructive"
       aria-hidden="true"
     />
   ) : (
-    <WarningCircleIcon
-      className="size-5 shrink-0 text-amber-600"
+    <CircleAlertGlassIcon
+      className="size-6 shrink-0 text-amber-600"
       aria-hidden="true"
     />
   )

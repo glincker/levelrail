@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  ClockIcon,
-  HandIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  ClockGlassIcon,
+  HandGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
@@ -21,11 +21,11 @@ import type { AppImportSession } from '../queries/appImport'
 
 const MANUAL_GATES = ['source-backup', 'traffic-cycle', 'leftovers'] as const
 
-const statusIcon: Record<GateStatus, typeof CheckCircleIcon> = {
-  pass: CheckCircleIcon,
-  fail: XCircleIcon,
-  pending: ClockIcon,
-  manual: HandIcon,
+const statusIcon: Record<GateStatus, typeof CircleCheckGlassIcon> = {
+  pass: CircleCheckGlassIcon,
+  fail: CircleXGlassIcon,
+  pending: ClockGlassIcon,
+  manual: HandGlassIcon,
 }
 
 const statusTone: Record<GateStatus, string> = {
@@ -78,7 +78,7 @@ function Gate({
     <li className="space-y-1 rounded-md border p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Icon
-          className={`size-4 shrink-0 ${statusTone[gate.status]}`}
+          className={`size-5 shrink-0 ${statusTone[gate.status]}`}
           aria-hidden
         />
         <span className="font-medium">

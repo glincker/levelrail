@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { LightbulbIcon } from '@phosphor-icons/react/dist/ssr'
+import { LightbulbGlassIcon } from '@thesvg/ui-react'
 import { useAttentionSummary } from '../shell/useAttentionSummary'
 import { SetupChip } from './SetupChip'
 
@@ -20,7 +20,7 @@ export function RecommendationsLineView({
           to="/status"
           className="inline-flex items-center gap-1.5 hover:text-foreground"
         >
-          <LightbulbIcon aria-hidden="true" className="size-4" />
+          <LightbulbGlassIcon aria-hidden="true" className="size-5" />
           {t('recommendations.line', { count })}
         </Link>
       ) : null}

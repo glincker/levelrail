@@ -56,6 +56,7 @@ func (db *DB) SetDeployAttemptDigest(ctx context.Context, id, digest, reason str
 	if n, err := res.RowsAffected(); err == nil && n == 0 {
 		return ErrDeployAttemptNotFound
 	}
+	db.notifyAttempt(ctx, id)
 	return nil
 }
 

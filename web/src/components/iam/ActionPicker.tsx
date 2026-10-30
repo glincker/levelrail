@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -55,8 +55,8 @@ export function ActionPicker({
       )}
     >
       <div className="relative">
-        <MagnifyingGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+        <SearchGlassIcon
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input

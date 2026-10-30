@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -52,12 +52,12 @@ export function IamWorkspace() {
 
   return (
     <PageTemplate
-      icon={<ShieldCheckIcon />}
+      icon={<ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />}
       title={t('page.title')}
       description={t('page.description')}
       actions={
         <Button onClick={() => setBuilder({ open: true })}>
-          <PlusIcon />
+          <PlusGlassIcon size="1.4em" />
           {t('page.createPolicy')}
         </Button>
       }

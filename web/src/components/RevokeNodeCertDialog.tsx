@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ProhibitIcon } from '@phosphor-icons/react/dist/ssr'
+import { BanGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
@@ -22,7 +22,7 @@ export function RevokeNodeCertDialog({ node }: { node: NodeResource }) {
           setOpen(true)
         }}
       >
-        <ProhibitIcon className="size-3.5" aria-hidden="true" />
+        <BanGlassIcon className="size-5" aria-hidden="true" />
         {t('revoke.trigger')}
       </Button>
       <ConfirmDialog

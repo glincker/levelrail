@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  CheckIcon,
-  CopyIcon,
-  HardDrivesIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  ChevronDownGlassIcon,
+  CircleAlertGlassIcon,
+  CopyGlassIcon,
+  ServerGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -52,7 +52,11 @@ function CopyValue({ value }: { value: string }) {
         copy(value)
       }}
     >
-      {copied ? <CheckIcon /> : <CopyIcon />}
+      {copied ? (
+        <CheckGlassIcon size="1.4em" />
+      ) : (
+        <CopyGlassIcon size="1.4em" />
+      )}
     </Button>
   )
 }
@@ -92,8 +96,8 @@ function Notes({ data }: { data: ServerAddress }) {
           key={n}
           className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400"
         >
-          <WarningCircleIcon
-            className="mt-0.5 size-3.5 shrink-0"
+          <CircleAlertGlassIcon
+            className="mt-0.5 size-5 shrink-0 text-tone-danger"
             aria-hidden="true"
           />
           <span>{n}</span>
@@ -126,7 +130,7 @@ function OverrideForm({ data }: { data: ServerAddress }) {
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <CaretDownIcon className="size-3" aria-hidden="true" />
+        <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
         {t('serverAddress.override')}
       </CollapsibleTrigger>
       <CollapsiblePanel className="space-y-2 pt-2">
@@ -295,7 +299,7 @@ export function ServerAddressCard() {
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HardDrivesIcon className="size-4" aria-hidden="true" />
+          <ServerGlassIcon className="size-5" aria-hidden="true" />
           {t('serverAddress.title')}
           {data ? (
             <Badge variant="muted">

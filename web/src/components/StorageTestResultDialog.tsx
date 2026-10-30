@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  WrenchIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  WrenchGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -150,13 +150,13 @@ export function StorageTestResultDialog({
           {result.steps.map((s) => (
             <li key={s.name} className="flex items-center gap-2">
               {s.ok ? (
-                <CheckCircleIcon
-                  className="size-4 text-emerald-600"
+                <CircleCheckGlassIcon
+                  className="size-5 text-emerald-600"
                   aria-hidden="true"
                 />
               ) : (
-                <XCircleIcon
-                  className="size-4 text-destructive"
+                <CircleXGlassIcon
+                  className="size-5 text-destructive"
                   aria-hidden="true"
                 />
               )}
@@ -171,7 +171,7 @@ export function StorageTestResultDialog({
         </ul>
         {fix ? (
           <Alert>
-            <WrenchIcon className="size-4" aria-hidden="true" />
+            <WrenchGlassIcon className="size-5" aria-hidden="true" />
             <AlertTitle>{t(`storageDestinations.fix.${fix}.title`)}</AlertTitle>
             <AlertDescription>
               {t(`storageDestinations.fix.${fix}.description`)}

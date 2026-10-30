@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GitDiffIcon } from '@phosphor-icons/react/dist/ssr'
+import { GitCompareGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { usePendingDeployDiff } from '../../queries/pendingDeployDiff'
 import type { DeployCompareEnvChange } from '../../types/deployCompare'
@@ -55,7 +55,7 @@ export function PendingChangesCard({
       className="space-y-2 rounded-lg border bg-muted/30 p-3"
     >
       <h3 className="flex items-center gap-1.5 text-sm font-medium">
-        <GitDiffIcon className="size-4" aria-hidden="true" />
+        <GitCompareGlassIcon className="size-5" aria-hidden="true" />
         {t('pending.title')}
       </h3>
       {empty ? (

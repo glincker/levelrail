@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { PlayIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlayGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRunScheduledTaskNow } from '../queries/scheduledTasks'
@@ -38,7 +38,7 @@ export function RunScheduledTaskButton({
         })
       }}
     >
-      <PlayIcon className="size-3.5" aria-hidden="true" />
+      <PlayGlassIcon className="size-5" aria-hidden="true" />
       {runNow.isPending ? t('run.starting') : t('run.now')}
     </Button>
   )

@@ -31,7 +31,7 @@ export function StatusCard({
         <span
           aria-hidden="true"
           className={cn(
-            'flex size-12 items-center justify-center rounded-xl [&_svg]:size-6',
+            'flex size-12 items-center justify-center rounded-xl [&_svg]:size-7',
             TONE[tone].soft,
             TONE[tone].text,
           )}

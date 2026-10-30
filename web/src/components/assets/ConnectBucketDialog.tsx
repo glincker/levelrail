@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -96,7 +96,7 @@ export function ConnectBucketDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger render={<Button />}>
-        <PlusIcon aria-hidden="true" />
+        <PlusGlassIcon size="1.4em" aria-hidden="true" />
         {t('connect.button')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

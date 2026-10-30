@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 
 // Mounted on app and database pages by the slice that knows their `managed_by` field.
@@ -14,7 +14,7 @@ export function ManagedByStackBadge({ stack }: Readonly<{ stack: string }>) {
       className="inline-flex"
     >
       <Badge variant="info">
-        <StackIcon aria-hidden="true" />
+        <LayersGlassIcon size="1.4em" aria-hidden="true" />
         {t('badge.short', { name: stack })}
       </Badge>
     </Link>

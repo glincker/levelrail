@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  SealCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BadgeCheckGlassIcon,
+  CheckGlassIcon,
+  CopyGlassIcon,
+} from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import { Switch } from '@/components/ui/switch'
@@ -38,9 +38,9 @@ function CopySnippet({ text }: { text: string }) {
         }}
       >
         {copied ? (
-          <CheckIcon aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <CopyIcon aria-hidden="true" />
+          <CopyGlassIcon size="1.4em" aria-hidden="true" />
         )}
         {copied ? t('actions.copied') : t('actions.copy')}
       </Button>
@@ -85,7 +85,7 @@ export function BadgeSettingsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SealCheckIcon className="size-4 text-muted-foreground" />
+          <BadgeCheckGlassIcon className="size-5 text-muted-foreground" />
           {t('badgeSettings.title')}
           <InfoTip label={t('badgeSettings.infoTipLabel')}>
             {t('badgeSettings.description')}

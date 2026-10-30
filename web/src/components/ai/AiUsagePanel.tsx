@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChartLineGlassIcon } from '@thesvg/ui-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
@@ -70,7 +70,7 @@ export function AiUsagePanel({
     return (
       <EmptyState
         compact
-        icon={<ChartLineIcon className="size-5" />}
+        icon={<ChartLineGlassIcon className="size-6" />}
         title={t('aiAssistantPage.usage.emptyTitle')}
         description={
           usage.isError

@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowsClockwiseIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,7 +30,7 @@ export function IngressConnectivityCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+          <PlugGlassIcon className="size-5" aria-hidden="true" />
           {t('connectivityCard.title')}
         </CardTitle>
         <CardDescription>{t('connectivityCard.description')}</CardDescription>
@@ -82,8 +79,8 @@ export function IngressConnectivityCard() {
             void refetch()
           }}
         >
-          <ArrowsClockwiseIcon
-            className={isFetching ? 'size-3.5 animate-spin' : 'size-3.5'}
+          <RefreshCwGlassIcon
+            className={isFetching ? 'size-5 animate-spin' : 'size-5'}
             aria-hidden="true"
           />
           {t('connectivityCard.check')}

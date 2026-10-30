@@ -4,37 +4,85 @@
       "additionalProperties": false,
       "properties": {
         "app": {
+          "description": "Name of the app the rule watches.",
           "minLength": 1,
           "type": "string"
         },
         "channel": {
+          "description": "Notification channel to alert.",
           "type": "string"
         },
         "comparator": {
+          "description": "Comparison of the metric against threshold: \u003e, \u003c, \u003e= or \u003c=. Required for threshold rules and ignored by other kinds.",
           "type": "string"
         },
         "enabled": {
+          "description": "Whether the rule is active.",
           "type": "boolean"
         },
         "for": {
+          "description": "How long the condition must hold before alerting.",
           "pattern": "^[0-9]+(ms|s|m|h)$",
           "type": "string"
         },
         "metric": {
+          "description": "Metric the rule evaluates.",
           "type": "string"
         },
         "restartCountThreshold": {
+          "description": "Restarts within restartWindow that fire a crashloop alert. Also the consecutive failed runs for scheduled_task_failure and failed backups for database_backup_failing.",
           "minimum": 0,
           "type": "integer"
         },
         "restartWindow": {
+          "description": "Window the restart count is measured over.",
           "pattern": "^[0-9]+(ms|s|m|h)$",
           "type": "string"
         },
         "threshold": {
+          "description": "Value the metric is compared against.",
           "type": "number"
         },
         "type": {
+          "description": "Kind of alert rule. Decides which other fields apply, such as metric, comparator and threshold for a threshold rule.",
+          "enum": [
+            "backup_copy_behind",
+            "backup_failed",
+            "backup_missing",
+            "budget_threshold",
+            "cert_expiring",
+            "cert_expiry",
+            "cert_renewal_stalled",
+            "control_plane_backup_stale",
+            "crashloop",
+            "database_backup_failing",
+            "database_backup_stale",
+            "database_connections_high",
+            "database_disk_high",
+            "database_down",
+            "deploy_failed",
+            "domain_health",
+            "domain_not_resolving",
+            "email_delivery_failing",
+            "export_behind",
+            "log_archive_stale",
+            "log_level_rate",
+            "log_pattern",
+            "node_cert_expiring",
+            "node_disk_space",
+            "node_host_guardrail",
+            "node_offline",
+            "node_resource_usage",
+            "patch_status",
+            "registry_refresh_failing",
+            "restore_drill_failed",
+            "scheduled_task_failure",
+            "scheduled_task_missed",
+            "scheduled_task_running_long",
+            "slo_burn",
+            "threshold",
+            "version_skew"
+          ],
           "minLength": 1,
           "type": "string"
         }
@@ -49,17 +97,21 @@
       "additionalProperties": false,
       "properties": {
         "environment": {
+          "description": "Name of the environment the app deploys to.",
           "minLength": 1,
           "type": "string"
         },
         "project": {
+          "description": "Name of the project the app belongs to.",
           "minLength": 1,
           "type": "string"
         },
         "service": {
-          "$ref": "#/$defs/service"
+          "$ref": "#/$defs/service",
+          "description": "The service definition, same fields as an app.yaml service."
         },
         "tags": {
+          "description": "Tags attached to the app.",
           "items": {
             "maxLength": 64,
             "minLength": 1,
@@ -77,18 +129,22 @@
       "additionalProperties": false,
       "properties": {
         "max": {
+          "description": "Highest replica count.",
           "minimum": 1,
           "type": "integer"
         },
         "max_step_down": {
+          "description": "Most replicas removed in one scaling step.",
           "minimum": 1,
           "type": "integer"
         },
         "max_step_up": {
+          "description": "Most replicas added in one scaling step.",
           "minimum": 1,
           "type": "integer"
         },
         "metric": {
+          "description": "Metric the target applies to.",
           "enum": [
             "cpu_percent",
             "memory_percent",
@@ -96,32 +152,39 @@
           ]
         },
         "min": {
+          "description": "Lowest replica count.",
           "minimum": 1,
           "type": "integer"
         },
         "scale_down_cooldown": {
+          "description": "Minimum time between scale-downs.",
           "pattern": "^[0-9]+(s|m|h)$",
           "type": "string"
         },
         "scale_down_tolerance": {
+          "description": "Percent under target tolerated before scaling down.",
           "maximum": 99,
           "minimum": 1,
           "type": "integer"
         },
         "scale_up_cooldown": {
+          "description": "Minimum time between scale-ups.",
           "pattern": "^[0-9]+(s|m|h)$",
           "type": "string"
         },
         "scale_up_tolerance": {
+          "description": "Percent over target tolerated before scaling up.",
           "maximum": 100,
           "minimum": 1,
           "type": "integer"
         },
         "stabilization": {
+          "description": "Window over which the metric is smoothed.",
           "pattern": "^[0-9]+(s|m|h)$",
           "type": "string"
         },
         "target": {
+          "description": "Target value of the metric per replica.",
           "exclusiveMinimum": 0,
           "type": "number"
         }
@@ -137,10 +200,12 @@
       "additionalProperties": false,
       "properties": {
         "retain": {
+          "description": "Number of backups kept.",
           "minimum": 1,
           "type": "integer"
         },
         "schedule": {
+          "description": "Cron expression for backups.",
           "minLength": 1,
           "type": "string"
         }
@@ -154,6 +219,7 @@
       "additionalProperties": false,
       "properties": {
         "action": {
+          "description": "What happens when the budget is crossed: none, throttle or pause.",
           "enum": [
             "none",
             "throttle",
@@ -161,14 +227,17 @@
           ]
         },
         "cost": {
+          "description": "Cost allowed per period.",
           "minimum": 0,
           "type": "number"
         },
         "egress": {
+          "description": "Egress volume allowed per period, such as 100GiB.",
           "pattern": "^[0-9.]+ ?([kKmMgGtT]i?[bB]?|[bB])?$",
           "type": "string"
         },
         "thresholds": {
+          "description": "Percent-of-budget levels that raise a warning.",
           "items": {
             "maximum": 100,
             "minimum": 1,
@@ -178,6 +247,7 @@
           "type": "array"
         },
         "throttle_rps": {
+          "description": "Requests per second allowed while throttled.",
           "minimum": 1,
           "type": "integer"
         }
@@ -191,33 +261,41 @@
           "additionalProperties": {
             "type": "string"
           },
+          "description": "Dockerfile build arguments.",
           "type": "object"
         },
         "baseDirectory": {
+          "description": "Subdirectory used as the build context, such as apps/web in a monorepo.",
           "minLength": 1,
           "type": "string"
         },
         "command": {
+          "description": "Shell command that builds a static site.",
           "minLength": 1,
           "type": "string"
         },
         "image": {
+          "description": "Registry image reference to deploy when type is image.",
           "minLength": 1,
           "type": "string"
         },
         "path": {
+          "description": "Path to the Dockerfile or compose file.",
           "minLength": 1,
           "type": "string"
         },
         "publish": {
+          "description": "Directory the static build writes to, relative to the base directory.",
           "minLength": 1,
           "type": "string"
         },
         "registryCredential": {
+          "description": "Name of the registry credential used for a private pull.",
           "minLength": 1,
           "type": "string"
         },
         "secrets": {
+          "description": "App secrets exposed to the build as BuildKit secrets.",
           "items": {
             "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
             "type": "string"
@@ -226,6 +304,7 @@
           "uniqueItems": true
         },
         "type": {
+          "description": "Build input: dockerfile, compose, railpack, static or image.",
           "enum": [
             "dockerfile",
             "compose",
@@ -244,19 +323,23 @@
       "additionalProperties": false,
       "properties": {
         "interval": {
+          "description": "Time to hold each stage.",
           "pattern": "^[0-9]+(s|m|h)$",
           "type": "string"
         },
         "max_error_rate": {
+          "description": "Error rate above which the canary aborts.",
           "exclusiveMinimum": 0,
           "maximum": 1,
           "type": "number"
         },
         "max_p95_ratio": {
+          "description": "Canary p95 latency over stable p95 above which the canary aborts.",
           "exclusiveMinimum": 1,
           "type": "number"
         },
         "stages": {
+          "description": "Traffic percentages to step through.",
           "items": {
             "maximum": 100,
             "minimum": 1,
@@ -274,6 +357,7 @@
       "properties": {
         "build": {
           "additionalProperties": false,
+          "description": "Build overrides for this context.",
           "properties": {
             "args": {
               "additionalProperties": {
@@ -294,6 +378,7 @@
           "additionalProperties": {
             "type": "string"
           },
+          "description": "Environment variables for this context.",
           "type": "object"
         }
       },
@@ -303,9 +388,11 @@
       "additionalProperties": false,
       "properties": {
         "backup": {
-          "$ref": "#/$defs/backup"
+          "$ref": "#/$defs/backup",
+          "description": "Backup schedule."
         },
         "engine": {
+          "description": "Database engine.",
           "enum": [
             "postgres",
             "redis",
@@ -323,12 +410,17 @@
           ]
         },
         "ephemeralInPreviews": {
+          "default": false,
+          "description": "Give each preview its own disposable instance.",
           "type": "boolean"
         },
         "isolatedInPreviews": {
+          "default": false,
+          "description": "Give each preview an isolated credential on this database (Postgres and Redis).",
           "type": "boolean"
         },
         "version": {
+          "description": "Engine version.",
           "minLength": 1,
           "type": "string"
         }
@@ -342,10 +434,12 @@
       "additionalProperties": false,
       "properties": {
         "engine": {
-          "$ref": "#/$defs/database/properties/engine"
+          "$ref": "#/$defs/database/properties/engine",
+          "description": "Database engine."
         },
         "pooler": {
           "additionalProperties": false,
+          "description": "Connection pooler in front of the database.",
           "properties": {
             "enabled": {
               "type": "boolean"
@@ -362,10 +456,12 @@
           "type": "object"
         },
         "project": {
+          "description": "Name of the project the database belongs to.",
           "minLength": 1,
           "type": "string"
         },
         "version": {
+          "description": "Engine version.",
           "minLength": 1,
           "type": "string"
         }
@@ -379,6 +475,7 @@
       "additionalProperties": false,
       "properties": {
         "app": {
+          "description": "Name of the app the domain points to.",
           "minLength": 1,
           "type": "string"
         }
@@ -392,12 +489,14 @@
       "additionalProperties": false,
       "properties": {
         "allow": {
+          "description": "Destinations the container may reach.",
           "items": {
             "$ref": "#/$defs/egressAllow"
           },
           "type": "array"
         },
         "mode": {
+          "description": "Egress mode; allowlist permits only the listed destinations.",
           "enum": [
             "allowlist"
           ]
@@ -412,10 +511,12 @@
       "additionalProperties": false,
       "properties": {
         "host": {
+          "description": "Destination hostname.",
           "minLength": 1,
           "type": "string"
         },
         "port": {
+          "description": "Destination port.",
           "maximum": 65535,
           "minimum": 1,
           "type": "integer"
@@ -437,17 +538,21 @@
           "minProperties": 1,
           "properties": {
             "from": {
+              "description": "Name of the variable to copy the value from.",
               "minLength": 1,
               "type": "string"
             },
             "required": {
+              "description": "Fail the deploy when the value is missing.",
               "type": "boolean"
             },
             "secret": {
+              "description": "Treat the value as a secret.",
               "type": "boolean"
             },
             "vault": {
               "additionalProperties": false,
+              "description": "Read the value from a vault path and key.",
               "properties": {
                 "key": {
                   "minLength": 1,
@@ -519,13 +624,16 @@
       "additionalProperties": false,
       "properties": {
         "env": {
-          "$ref": "#/$defs/literalEnv"
+          "$ref": "#/$defs/literalEnv",
+          "description": "Environment variables for this environment."
         },
         "project": {
+          "description": "Name of the project the environment belongs to.",
           "minLength": 1,
           "type": "string"
         },
         "protected": {
+          "description": "Mark the environment as protected.",
           "type": "boolean"
         }
       },
@@ -538,17 +646,22 @@
       "additionalProperties": false,
       "properties": {
         "content": {
+          "description": "File contents.",
           "type": "string"
         },
         "mode": {
+          "default": "0644",
+          "description": "Octal file mode.",
           "pattern": "^0?[0-7]{3,4}$",
           "type": "string"
         },
         "path": {
+          "description": "Absolute path of the file inside the container.",
           "pattern": "^/",
           "type": "string"
         },
         "secret": {
+          "description": "Treat the content as a secret.",
           "type": "boolean"
         }
       },
@@ -562,10 +675,12 @@
       "additionalProperties": false,
       "properties": {
         "path": {
+          "description": "Path the headers apply to; must start with a slash.",
           "pattern": "^/",
           "type": "string"
         },
         "remove": {
+          "description": "Header names to remove.",
           "items": {
             "minLength": 1,
             "type": "string"
@@ -577,6 +692,7 @@
             "minLength": 1,
             "type": "string"
           },
+          "description": "Header names and values to set.",
           "type": "object"
         }
       },
@@ -589,12 +705,16 @@
       "additionalProperties": false,
       "properties": {
         "liveness": {
-          "$ref": "#/$defs/probe"
+          "$ref": "#/$defs/probe",
+          "description": "Probe that restarts an unhealthy container."
         },
         "readiness": {
-          "$ref": "#/$defs/probe"
+          "$ref": "#/$defs/probe",
+          "description": "Probe that gates traffic to a new container."
         },
         "readyTimeout": {
+          "default": "60s",
+          "description": "How long a deploy waits for readiness to pass.",
           "pattern": "^[0-9]+(ms|s|m|h)$",
           "type": "string"
         }
@@ -606,10 +726,12 @@
       "minProperties": 1,
       "properties": {
         "postDeploy": {
+          "description": "Shell command run after the whole replica set has cut over.",
           "minLength": 1,
           "type": "string"
         },
         "preDeploy": {
+          "description": "Shell command run in the new container before its readiness probe.",
           "minLength": 1,
           "type": "string"
         }
@@ -620,16 +742,19 @@
       "additionalProperties": false,
       "properties": {
         "catchUp": {
+          "description": "What to do about runs missed while down: skip or run-once.",
           "enum": [
             "skip",
             "run-once"
           ]
         },
         "catchUpLookback": {
+          "description": "How far back missed runs are considered.",
           "minLength": 2,
           "type": "string"
         },
         "command": {
+          "description": "Command to run, as an argument list.",
           "items": {
             "minLength": 1,
             "type": "string"
@@ -638,6 +763,8 @@
           "type": "array"
         },
         "concurrency": {
+          "default": "forbid",
+          "description": "Overlap policy when a run is still going: allow, forbid or replace.",
           "enum": [
             "allow",
             "forbid",
@@ -645,47 +772,60 @@
           ]
         },
         "cpu": {
+          "description": "CPU limit for the job container.",
           "exclusiveMinimum": 0,
           "type": "number"
         },
         "enabled": {
+          "default": true,
+          "description": "Whether the job is scheduled.",
           "type": "boolean"
         },
         "memory": {
+          "description": "Memory limit for the job container, such as 512Mi.",
           "pattern": "^[0-9]+(Mi|Gi)$",
           "type": "string"
         },
         "mode": {
+          "default": "fresh",
+          "description": "fresh starts a new container from the service image; exec runs inside the running one.",
           "enum": [
             "fresh",
             "exec"
           ]
         },
         "name": {
+          "description": "Job name, unique within the service.",
           "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$",
           "type": "string"
         },
         "retries": {
+          "description": "Retries after a failed run.",
           "minimum": 0,
           "type": "integer"
         },
         "retryBackoff": {
+          "description": "Wait between retries.",
           "minLength": 2,
           "type": "string"
         },
         "schedule": {
+          "description": "Cron expression for when the job runs.",
           "minLength": 1,
           "type": "string"
         },
         "timeout": {
+          "description": "Maximum run time before the job is stopped.",
           "minLength": 2,
           "type": "string"
         },
         "timezone": {
+          "description": "Time zone the schedule is read in.",
           "minLength": 1,
           "type": "string"
         },
         "warnAfter": {
+          "description": "Run time after which a warning is raised.",
           "minLength": 2,
           "type": "string"
         }
@@ -708,28 +848,35 @@
       "properties": {
         "active_health": {
           "additionalProperties": false,
+          "description": "Periodic health requests sent to each replica.",
           "properties": {
             "expect_status": {
+              "description": "Status code that counts as healthy.",
               "maximum": 599,
               "minimum": 100,
               "type": "integer"
             },
             "fails": {
+              "description": "Failing checks needed to mark a replica unhealthy.",
               "minimum": 0,
               "type": "integer"
             },
             "interval": {
+              "description": "Time between checks.",
               "type": "string"
             },
             "passes": {
+              "description": "Passing checks needed to mark a replica healthy.",
               "minimum": 0,
               "type": "integer"
             },
             "path": {
+              "description": "Path requested on each replica.",
               "pattern": "^/",
               "type": "string"
             },
             "timeout": {
+              "description": "Time to wait for a response.",
               "type": "string"
             }
           },
@@ -739,6 +886,7 @@
           "type": "object"
         },
         "algorithm": {
+          "description": "How requests are spread across replicas.",
           "enum": [
             "round_robin",
             "least_conn",
@@ -750,19 +898,24 @@
           ]
         },
         "cookie_name": {
+          "description": "Cookie used for sticky routing when algorithm is cookie.",
           "minLength": 1,
           "type": "string"
         },
         "drain_timeout": {
+          "description": "Time to let in-flight requests finish before a replica is removed.",
           "type": "string"
         },
         "passive_health": {
           "additionalProperties": false,
+          "description": "Health inferred from live request failures.",
           "properties": {
             "fail_duration": {
+              "description": "Time a replica stays out after failing.",
               "type": "string"
             },
             "max_fails": {
+              "description": "Failures before a replica is taken out.",
               "minimum": 0,
               "type": "integer"
             }
@@ -771,12 +924,15 @@
         },
         "rate_limit": {
           "additionalProperties": false,
+          "description": "Request rate limit.",
           "properties": {
             "burst": {
+              "description": "Extra requests allowed in a burst.",
               "minimum": 0,
               "type": "integer"
             },
             "rps": {
+              "description": "Requests per second allowed.",
               "minimum": 1,
               "type": "integer"
             }
@@ -787,41 +943,51 @@
           "type": "object"
         },
         "request_timeout": {
+          "description": "Maximum time for one upstream request.",
           "type": "string"
         },
         "retries": {
           "additionalProperties": false,
+          "description": "Retry behavior for failed requests.",
           "properties": {
             "count": {
+              "description": "Maximum retries per request.",
               "maximum": 10,
               "minimum": 0,
               "type": "integer"
             },
             "try_duration": {
+              "description": "Total time allowed for retries.",
               "type": "string"
             },
             "try_interval": {
+              "description": "Wait between retries.",
               "type": "string"
             }
           },
           "type": "object"
         },
         "slow_start": {
+          "description": "Time over which a new replica ramps up to full traffic.",
           "type": "string"
         },
         "upstream_tls": {
           "additionalProperties": false,
+          "description": "TLS settings for connections to replicas.",
           "properties": {
             "insecure_skip_verify": {
+              "description": "Skip verifying the replica's certificate.",
               "type": "boolean"
             },
             "server_name": {
+              "description": "Server name used for TLS verification.",
               "type": "string"
             }
           },
           "type": "object"
         },
         "weights": {
+          "description": "Relative weight per replica when algorithm is weighted.",
           "items": {
             "maximum": 100,
             "minimum": 1,
@@ -839,9 +1005,11 @@
           "additionalProperties": {
             "type": "string"
           },
+          "description": "Free-form labels.",
           "type": "object"
         },
         "name": {
+          "description": "Resource name, unique within its kind.",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
           "type": "string"
         }
@@ -855,13 +1023,16 @@
       "additionalProperties": false,
       "properties": {
         "app": {
+          "description": "Name of the app the pipeline belongs to.",
           "minLength": 1,
           "type": "string"
         },
         "enabled": {
+          "description": "Whether the pipeline runs.",
           "type": "boolean"
         },
         "yaml": {
+          "description": "Pipeline definition as YAML text.",
           "minLength": 1,
           "type": "string"
         }
@@ -888,6 +1059,7 @@
       ],
       "properties": {
         "exec": {
+          "description": "Command run inside the container instead of an HTTP request.",
           "oneOf": [
             {
               "minLength": 1,
@@ -903,6 +1075,7 @@
           ]
         },
         "expected_status": {
+          "description": "Status code, range or list that counts as healthy.",
           "oneOf": [
             {
               "$ref": "#/$defs/statusCode"
@@ -927,35 +1100,43 @@
           ]
         },
         "failures": {
+          "description": "Consecutive failures before the probe fails.",
           "minimum": 1,
           "type": "integer"
         },
         "follow_redirects": {
+          "description": "Follow HTTP redirects.",
           "type": "boolean"
         },
         "host": {
+          "description": "Host header sent with the request.",
           "pattern": "^[^/\\s]+$",
           "type": "string"
         },
         "interval": {
+          "description": "Time between checks.",
           "pattern": "^[0-9]+(ms|s|m|h)$",
           "type": "string"
         },
         "path": {
+          "description": "HTTP path to request.",
           "minLength": 1,
           "type": "string"
         },
         "scheme": {
+          "description": "http or https.",
           "enum": [
             "http",
             "https"
           ]
         },
         "timeout": {
+          "description": "Time to wait for a check.",
           "pattern": "^[0-9]+(ms|s|m|h)$",
           "type": "string"
         },
         "tls_skip_verify": {
+          "description": "Skip TLS certificate verification.",
           "type": "boolean"
         }
       },
@@ -965,7 +1146,8 @@
       "additionalProperties": false,
       "properties": {
         "env": {
-          "$ref": "#/$defs/literalEnv"
+          "$ref": "#/$defs/literalEnv",
+          "description": "Environment variables shared by the project."
         }
       },
       "type": "object"
@@ -974,14 +1156,17 @@
       "additionalProperties": false,
       "properties": {
         "cpu": {
+          "description": "CPU limit in cores.",
           "exclusiveMinimum": 0,
           "type": "number"
         },
         "cpuSet": {
+          "description": "Host CPUs to pin to, such as 0-3 or 0,2.",
           "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$",
           "type": "string"
         },
         "gpu": {
+          "description": "NVIDIA GPUs to request: all, a count or a count with devices.",
           "oneOf": [
             {
               "const": "all"
@@ -1018,10 +1203,12 @@
           ]
         },
         "memory": {
+          "description": "Memory limit, such as 512Mi or 1Gi.",
           "pattern": "^[0-9]+(Mi|Gi)$",
           "type": "string"
         },
         "swapMemory": {
+          "description": "Memory plus swap limit; needs memory.",
           "pattern": "^[0-9]+(Mi|Gi)$",
           "type": "string"
         }
@@ -1032,13 +1219,16 @@
       "additionalProperties": false,
       "properties": {
         "max_surge": {
-          "$ref": "#/$defs/rolloutValue"
+          "$ref": "#/$defs/rolloutValue",
+          "description": "Extra replicas allowed above the target during a rolling deploy."
         },
         "max_unavailable": {
-          "$ref": "#/$defs/rolloutValue"
+          "$ref": "#/$defs/rolloutValue",
+          "description": "Replicas allowed to be unavailable during a rolling deploy."
         },
         "min_available": {
-          "$ref": "#/$defs/rolloutValue"
+          "$ref": "#/$defs/rolloutValue",
+          "description": "Replicas that must stay available during a rolling deploy."
         }
       },
       "type": "object"
@@ -1059,9 +1249,11 @@
       "additionalProperties": false,
       "properties": {
         "force": {
+          "description": "Apply the route even when a file exists at the path.",
           "type": "boolean"
         },
         "from": {
+          "description": "Request path to match; must start with a slash.",
           "pattern": "^/",
           "type": "string"
         },
@@ -1070,9 +1262,12 @@
             "minLength": 1,
             "type": "string"
           },
+          "description": "Query parameters that must match.",
           "type": "object"
         },
         "status": {
+          "default": 301,
+          "description": "HTTP status returned for the route.",
           "enum": [
             200,
             301,
@@ -1086,6 +1281,7 @@
           ]
         },
         "to": {
+          "description": "Destination path or URL.",
           "minLength": 1,
           "type": "string"
         }
@@ -1112,22 +1308,29 @@
       ],
       "properties": {
         "autoscale": {
-          "$ref": "#/$defs/autoscale"
+          "$ref": "#/$defs/autoscale",
+          "description": "Autoscaling of replicas on a metric target."
         },
         "bind_address": {
+          "default": "private",
+          "description": "Host interface for the published port: private (loopback), public (all interfaces) or a literal IP.",
           "minLength": 1,
           "type": "string"
         },
         "budget": {
-          "$ref": "#/$defs/budget"
+          "$ref": "#/$defs/budget",
+          "description": "Egress and cost limits with an action when crossed."
         },
         "build": {
-          "$ref": "#/$defs/build"
+          "$ref": "#/$defs/build",
+          "description": "How the image is built or sourced."
         },
         "canary": {
-          "$ref": "#/$defs/canary"
+          "$ref": "#/$defs/canary",
+          "description": "Canary stages and abort thresholds, used when strategy is canary."
         },
         "command": {
+          "description": "Command that overrides the image's default CMD.",
           "items": {
             "type": "string"
           },
@@ -1138,12 +1341,14 @@
           "additionalProperties": {
             "$ref": "#/$defs/contextConfig"
           },
+          "description": "Per-context overrides for deploy previews and branch deploys.",
           "propertyNames": {
             "pattern": "^(deploy-preview|branch-deploy|branch:.+)$"
           },
           "type": "object"
         },
         "dependsOn": {
+          "description": "Sibling services that must have a running container before this one starts.",
           "items": {
             "minLength": 1,
             "type": "string"
@@ -1152,6 +1357,7 @@
           "type": "array"
         },
         "domains": {
+          "description": "Hostnames routed to this service.",
           "items": {
             "minLength": 1,
             "type": "string"
@@ -1159,42 +1365,51 @@
           "type": "array"
         },
         "egress": {
-          "$ref": "#/$defs/egress"
+          "$ref": "#/$defs/egress",
+          "description": "Outbound network allowlist for the container."
         },
         "env": {
           "additionalProperties": {
             "$ref": "#/$defs/envValue"
           },
+          "description": "Environment variables, as literal strings or secret and reference objects.",
           "type": "object"
         },
         "files": {
+          "description": "Inline text files written into the container before it starts.",
           "items": {
             "$ref": "#/$defs/file"
           },
           "type": "array"
         },
         "headers": {
+          "description": "Response headers for a static site, matched by path.",
           "items": {
             "$ref": "#/$defs/headerRule"
           },
           "type": "array"
         },
         "health": {
-          "$ref": "#/$defs/health"
+          "$ref": "#/$defs/health",
+          "description": "Readiness and liveness probes."
         },
         "hooks": {
-          "$ref": "#/$defs/hooks"
+          "$ref": "#/$defs/hooks",
+          "description": "Commands run before and after a deploy."
         },
         "host_port": {
+          "description": "Host port the container port is bound to; unset auto-assigns one.",
           "maximum": 65535,
           "minimum": 1,
           "type": "integer"
         },
         "image": {
+          "description": "Prebuilt image reference to deploy as-is; shorthand for build type image.",
           "minLength": 1,
           "type": "string"
         },
         "jobs": {
+          "description": "Cron-scheduled commands for this service.",
           "items": {
             "$ref": "#/$defs/job"
           },
@@ -1204,17 +1419,21 @@
           "additionalProperties": {
             "type": "string"
           },
+          "description": "Extra Docker labels applied to the container.",
           "type": "object"
         },
         "loadbalancer": {
-          "$ref": "#/$defs/loadbalancer"
+          "$ref": "#/$defs/loadbalancer",
+          "description": "Load balancing, health and timeout settings across replicas."
         },
         "port": {
+          "description": "Container port the service listens on.",
           "maximum": 65535,
           "minimum": 1,
           "type": "integer"
         },
         "published_ports": {
+          "description": "Ports bound straight on the host, bypassing the proxy (for UDP).",
           "items": {
             "additionalProperties": false,
             "properties": {
@@ -1244,28 +1463,37 @@
           "type": "array"
         },
         "replicas": {
+          "default": 1,
+          "description": "Number of container replicas to run.",
           "minimum": 1,
           "type": "integer"
         },
         "resources": {
-          "$ref": "#/$defs/resources"
+          "$ref": "#/$defs/resources",
+          "description": "CPU, memory and GPU limits for each container."
         },
         "restart": {
+          "description": "Container restart policy: no, always, unless-stopped, on-failure or on-failure:N (N is accepted but ignored).",
           "type": "string"
         },
         "rollout": {
-          "$ref": "#/$defs/rollout"
+          "$ref": "#/$defs/rollout",
+          "description": "Surge and availability limits for a rolling deploy."
         },
         "routes": {
+          "description": "Redirects and rewrites for a static site.",
           "items": {
             "$ref": "#/$defs/route"
           },
           "type": "array"
         },
         "static": {
-          "$ref": "#/$defs/staticOptions"
+          "$ref": "#/$defs/staticOptions",
+          "description": "Serving options for a static site."
         },
         "strategy": {
+          "default": "blue-green",
+          "description": "Deploy strategy. Canary promotes through blue-green once the canary passes.",
           "enum": [
             "rolling",
             "recreate",
@@ -1274,6 +1502,7 @@
           ]
         },
         "volumes": {
+          "description": "Named volumes or host bind mounts to mount into the container.",
           "items": {
             "$ref": "#/$defs/volume"
           },
@@ -1286,16 +1515,20 @@
       "additionalProperties": false,
       "properties": {
         "cleanUrls": {
+          "description": "Serve pages without the .html extension.",
           "type": "boolean"
         },
         "notFound": {
+          "description": "File served for a 404.",
           "minLength": 1,
           "type": "string"
         },
         "spa": {
+          "description": "Serve the index page for unknown paths (single-page app).",
           "type": "boolean"
         },
         "trailingSlash": {
+          "description": "Trailing slash handling: off, add or remove.",
           "enum": [
             "off",
             "add",
@@ -1334,18 +1567,22 @@
       ],
       "properties": {
         "hostPath": {
+          "description": "Host directory to bind mount; set this or name.",
           "minLength": 1,
           "type": "string"
         },
         "name": {
+          "description": "Named Docker volume; set this or hostPath.",
           "minLength": 1,
           "type": "string"
         },
         "path": {
+          "description": "Mount path inside the container.",
           "minLength": 1,
           "type": "string"
         },
         "readOnly": {
+          "description": "Mount a host bind read-only.",
           "type": "boolean"
         }
       },

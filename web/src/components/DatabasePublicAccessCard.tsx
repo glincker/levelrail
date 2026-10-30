@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
@@ -278,7 +278,11 @@ export function DatabasePublicAccessCard({
                 variant="outline"
                 onClick={copyConnectionString}
               >
-                {copied ? <CheckIcon /> : <CopyIcon />}
+                {copied ? (
+                  <CheckGlassIcon size="1.4em" />
+                ) : (
+                  <CopyGlassIcon size="1.4em" />
+                )}
                 {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>

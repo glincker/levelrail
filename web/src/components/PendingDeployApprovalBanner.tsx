@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { HourglassMediumIcon } from '@phosphor-icons/react/dist/ssr'
+import { CountdownGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -8,6 +8,8 @@ import {
   useRejectDeployApproval,
 } from '../queries/deployApprovals'
 import { ApiError } from '../lib/apiError'
+import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
+import { PinnedDigestBadge } from './PinnedDigestBadge'
 import { canDecideApproval } from '../lib/deployApprovalStatus'
 
 // PendingDeployApprovalBanner surfaces a blocked deploy/promote directly
@@ -34,6 +36,7 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
   const reject = useRejectDeployApproval()
 
   const approval = pending.data?.[0]
+  const digest = approval ? digestOfImage(approval.image) : ''
   if (!approval || !canDecideApproval(approval.status)) {
     return null
   }
@@ -79,15 +82,20 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
       <div className="flex items-start gap-2">
-        <HourglassMediumIcon
-          className="mt-0.5 size-4 shrink-0"
+        <CountdownGlassIcon
+          className="mt-0.5 size-5 shrink-0"
           aria-hidden="true"
         />
         <div className="text-sm">
           <p className="font-medium">
             {approval.action === 'promote' ? 'Promotion' : 'Deploy'} to{' '}
-            <span className="break-all font-mono">{approval.image}</span> is
-            awaiting approval.
+            <span className="break-all font-mono">
+              {unpinnedImage(approval.image)}
+            </span>
+            {digest ? (
+              <PinnedDigestBadge digest={digest} className="mx-1" />
+            ) : null}{' '}
+            is awaiting approval.
           </p>
           <p className="text-amber-800/90 dark:text-amber-200/80">
             Requested by {approval.requested_by_name}. This environment is

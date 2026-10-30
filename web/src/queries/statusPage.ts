@@ -10,7 +10,19 @@ export interface StatusPageSettings {
   title: string
   description: string
   custom_domain: string
+  accent?: string
+  logo_url?: string
+  about?: string
+  website?: string
+  noindex?: boolean
+  powered_by?: boolean
   public_path?: string
+}
+
+export interface StatusGroup {
+  id?: string
+  name: string
+  position: number
 }
 
 export type StatusComponentKind = 'app' | 'domain' | 'check'
@@ -21,6 +33,8 @@ export interface StatusComponent {
   target: string
   display_name: string
   position: number
+  group_id?: string
+  description?: string
 }
 
 export type IncidentKind = 'incident' | 'maintenance'
@@ -64,6 +78,7 @@ export const statusPageKeys = {
   all: ['status-page'] as const,
   settings: () => [...statusPageKeys.all, 'settings'] as const,
   components: () => [...statusPageKeys.all, 'components'] as const,
+  groups: () => [...statusPageKeys.all, 'groups'] as const,
   incidents: () => [...statusPageKeys.all, 'incidents'] as const,
   preview: () => [...statusPageKeys.all, 'preview'] as const,
 }
@@ -111,6 +126,13 @@ export function useStatusComponents() {
   return useQuery({
     queryKey: statusPageKeys.components(),
     queryFn: () => request<StatusComponent[]>('/components', 'list components'),
+  })
+}
+
+export function useStatusGroups() {
+  return useQuery({
+    queryKey: statusPageKeys.groups(),
+    queryFn: () => request<StatusGroup[]>('/groups', 'list groups'),
   })
 }
 
@@ -183,6 +205,42 @@ export function useDeleteStatusIncident() {
       `/incidents/${encodeURIComponent(id)}`,
       'delete incident',
       send('DELETE'),
+    ),
+  )
+}
+
+export function useCreateStatusGroup() {
+  return useStatusMutation((g: StatusGroup) =>
+    request<StatusGroup>('/groups', 'add group', send('POST', g)),
+  )
+}
+
+export function useUpdateStatusGroup() {
+  return useStatusMutation((g: StatusGroup) =>
+    request<StatusGroup>(
+      `/groups/${encodeURIComponent(g.id ?? '')}`,
+      'update group',
+      send('PUT', g),
+    ),
+  )
+}
+
+export function useDeleteStatusGroup() {
+  return useStatusMutation((id: string) =>
+    request<void>(
+      `/groups/${encodeURIComponent(id)}`,
+      'delete group',
+      send('DELETE'),
+    ),
+  )
+}
+
+export function useUpdateStatusComponent() {
+  return useStatusMutation((c: StatusComponent) =>
+    request<StatusComponent>(
+      `/components/${encodeURIComponent(c.id ?? '')}`,
+      'update component',
+      send('PUT', c),
     ),
   )
 }

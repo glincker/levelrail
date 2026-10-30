@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { useResetPolicy } from '../../queries/domainPolicies'
 import type { DomainPolicies } from '../../queries/domainPolicyTypes'
@@ -67,7 +67,7 @@ export function DangerZoneTab({
                   disabled={!configured}
                   onClick={() => setConfirming(k)}
                 >
-                  <ArrowCounterClockwiseIcon />
+                  <RotateCcwGlassIcon size="1.4em" />
                   {t('danger.reset')}
                 </Button>
               )}

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  DatabaseIcon,
-  GitBranchIcon,
-  PackageIcon,
-  PlusIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  DatabaseGlassIcon,
+  GitBranchGlassIcon,
+  LayersGlassIcon,
+  PackageGlassIcon,
+  PlusGlassIcon,
+} from '@thesvg/ui-react'
 import { BrandIcon } from './BrandIcon'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,7 +39,7 @@ export function NewAppMenu() {
       key: 'git',
       title: t('newApp.items.git.title'),
       hint: t('newApp.items.git.hint'),
-      icon: <GitBranchIcon />,
+      icon: <GitBranchGlassIcon size="1.4em" />,
       to: { kind: 'option', value: 'dockerfile-git' } as const,
     },
     {
@@ -53,21 +53,21 @@ export function NewAppMenu() {
       key: 'template',
       title: t('newApp.items.template.title'),
       hint: t('newApp.items.template.hint'),
-      icon: <PackageIcon />,
+      icon: <PackageGlassIcon size="1.4em" />,
       to: { kind: 'option', value: 'browse-templates' } as const,
     },
     {
       key: 'compose',
       title: t('newApp.items.compose.title'),
       hint: t('newApp.items.compose.hint'),
-      icon: <StackIcon />,
+      icon: <LayersGlassIcon size="1.4em" />,
       to: { kind: 'option', value: 'docker-compose' } as const,
     },
     {
       key: 'database',
       title: t('newApp.items.database.title'),
       hint: t('newApp.items.database.hint'),
-      icon: <DatabaseIcon />,
+      icon: <DatabaseGlassIcon size="1.4em" />,
       to: { kind: 'database' } as const,
     },
   ]
@@ -81,7 +81,7 @@ export function NewAppMenu() {
             setQuick({ kind: 'start' })
           }}
         >
-          <PlusIcon />
+          <PlusGlassIcon size="1.4em" />
           {t('newApp.label')}
         </Button>
         <DropdownMenu>
@@ -94,7 +94,7 @@ export function NewAppMenu() {
               />
             }
           >
-            <CaretDownIcon />
+            <ChevronDownGlassIcon size="1.4em" />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-60">
             {items.map((i) => (

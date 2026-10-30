@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SpinnerIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { LoaderGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -221,7 +221,7 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
           className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200"
         >
           <div className="flex min-w-0 flex-1 items-start gap-2">
-            <WarningIcon className="mt-0.5 size-4 shrink-0" />
+            <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
             <div>
               <p className="text-sm font-medium">{t('nudge.title')}</p>
               <p className="text-sm">{t('nudge.body')}</p>
@@ -435,7 +435,7 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
               }}
             >
               {save.isPending ? (
-                <SpinnerIcon className="size-4 animate-spin" />
+                <LoaderGlassIcon className="size-5 animate-spin" />
               ) : null}
               {save.isPending ? t('saving') : t('save')}
             </Button>

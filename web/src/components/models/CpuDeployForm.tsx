@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -219,7 +219,11 @@ export function CpuDeployForm({
             <FieldHint>{t('cpu.deploy.customFileHint')}</FieldHint>
           </Field>
           <Alert>
-            <WarningIcon aria-hidden="true" />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+              aria-hidden="true"
+            />
             <AlertTitle>{t('cpu.license.title')}</AlertTitle>
             <AlertDescription>
               {fit.data?.license_notice ?? t('cpu.license.generic')}
@@ -304,7 +308,11 @@ export function CpuDeployForm({
       </div>
 
       <Alert>
-        <WarningIcon aria-hidden="true" />
+        <TriangleAlertGlassIcon
+          className="text-tone-warning"
+          size="1.7em"
+          aria-hidden="true"
+        />
         <AlertTitle>{t('cpu.deploy.warnTitle')}</AlertTitle>
         <AlertDescription>
           {t('cpu.deploy.warn', {

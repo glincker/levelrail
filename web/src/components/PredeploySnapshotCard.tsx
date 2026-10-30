@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CameraIcon } from '@phosphor-icons/react/dist/ssr'
+import { CameraGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import {
@@ -55,7 +55,7 @@ export function PredeploySnapshotCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CameraIcon className="size-4 text-muted-foreground" />
+          <CameraGlassIcon className="size-5 text-muted-foreground" />
           {t('predeploySnapshot.title')}
           <InfoTip
             label={t('predeploySnapshot.infoTipLabel')}

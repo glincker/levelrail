@@ -1,14 +1,13 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowCounterClockwiseIcon,
-  CheckIcon,
-  EyeIcon,
-  GitDiffIcon,
-  PushPinIcon,
-  PushPinSlashIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  EyeGlassIcon,
+  GitCompareGlassIcon,
+  PinGlassIcon,
+  RotateCcwGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -124,7 +123,7 @@ export function RevisionHistory({
                   onApprove(r)
                 }}
               >
-                <CheckIcon aria-hidden="true" />
+                <CheckGlassIcon size="1.4em" aria-hidden="true" />
               </Button>
             ) : null}
             {isRoot && r.status === 'pending_approval' ? (
@@ -137,7 +136,7 @@ export function RevisionHistory({
                   onReject(r.number)
                 }}
               >
-                <XIcon aria-hidden="true" />
+                <XGlassIcon size="1.4em" aria-hidden="true" />
               </Button>
             ) : null}
             <Button
@@ -149,7 +148,7 @@ export function RevisionHistory({
                 onView(r.number)
               }}
             >
-              <EyeIcon aria-hidden="true" />
+              <EyeGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -160,7 +159,7 @@ export function RevisionHistory({
                 onDiff(r.number)
               }}
             >
-              <GitDiffIcon aria-hidden="true" />
+              <GitCompareGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -172,7 +171,7 @@ export function RevisionHistory({
                 onRollback(r.number)
               }}
             >
-              <ArrowCounterClockwiseIcon aria-hidden="true" />
+              <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -186,9 +185,9 @@ export function RevisionHistory({
               }}
             >
               {pinned ? (
-                <PushPinSlashIcon aria-hidden="true" />
+                <PinGlassIcon size="1.4em" aria-hidden="true" />
               ) : (
-                <PushPinIcon aria-hidden="true" />
+                <PinGlassIcon size="1.4em" aria-hidden="true" />
               )}
             </Button>
           </span>

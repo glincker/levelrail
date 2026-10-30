@@ -9,11 +9,11 @@ import {
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  DatabaseIcon,
-  FunnelIcon,
-  PackageIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  FunnelGlassIcon,
+  LayersGlassIcon,
+  PlusGlassIcon,
+} from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { PageBanner } from '../../components/PageBanner'
@@ -197,11 +197,11 @@ function AppListPage() {
         render={<Link to="/databases" />}
         nativeButton={false}
       >
-        <DatabaseIcon />
+        <DatabaseGlassIcon size="1.4em" />
         {t('appsList.newDatabase', { defaultValue: 'New database' })}
       </Button>
       <Button size="sm" render={<Link to="/apps/new" />} nativeButton={false}>
-        <PlusIcon />
+        <PlusGlassIcon size="1.4em" />
         {t('appsList.newApp', { defaultValue: 'New app' })}
       </Button>
     </>
@@ -214,7 +214,7 @@ function AppListPage() {
       actions={headerActions}
       banner={
         <PageBanner
-          icon={<PackageIcon />}
+          icon={<LayersGlassIcon size="1.4em" />}
           titleKey="common:appsList.title"
           descriptionKey={
             noApps
@@ -252,7 +252,7 @@ function AppListPage() {
       ) : filteredApps.length === 0 ? (
         <EmptyState
           illustration="chart"
-          icon={<FunnelIcon className="size-6" />}
+          icon={<FunnelGlassIcon className="size-8" />}
           title={t('appsList.noMatchTitle', { defaultValue: 'No apps match' })}
           description={t('appsList.noMatchBody', {
             defaultValue:

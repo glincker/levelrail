@@ -4,6 +4,12 @@ export function shortDigest(digest: string): string {
   return digest.replace(/^sha256:/, '').slice(0, 12)
 }
 
+// Returns the "sha256:..." part of a pinned ref, or "" for a plain tag.
+export function digestOfImage(image: string): string {
+  const at = image.lastIndexOf('@')
+  return at > 0 ? image.slice(at + 1) : ''
+}
+
 export function unpinnedImage(image: string): string {
   const at = image.lastIndexOf('@')
   return at > 0 ? image.slice(0, at) : image

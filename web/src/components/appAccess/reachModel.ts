@@ -49,6 +49,8 @@ export interface ReachModel {
   hero: ReachAddress | null
   /** True when the hero is a private address because nothing public exists. */
   promoted: boolean
+  /** True when an automatic domain failed its probe and an address that answers took its place. */
+  demoted: boolean
   others: ReachAddress[]
   advanced: ReachAddress[]
   autoExpand: boolean
@@ -125,14 +127,30 @@ function fromAddress(
 }
 
 /** Groups the app addresses into hero, other public ways in and advanced rows. */
-export function deriveReach(urls: AppUrls): ReachModel {
+export function deriveReach(
+  urls: AppUrls,
+  probes: ProbeTarget[] = [],
+): ReachModel {
   const all = urls.addresses.map((a, i) => fromAddress(a, i, urls.local_node))
   const withUrl = (k: ReachKind) => all.filter((r) => r.kind === k && r.href)
   const domains = withUrl('domain')
   const publics = withUrl('public')
   const privates = all.filter((r) => r.kind === 'private')
   const custom = domains.find((d) => !d.automatic)
-  const hero = custom ?? domains.find((d) => d.automatic) ?? publics[0] ?? null
+  const firstChoice =
+    custom ?? domains.find((d) => d.automatic) ?? publics[0] ?? null
+  // A free wildcard-DNS name that does not answer (NAT, no port forward) must
+  // not stay first when another address does; a stopped container fails all.
+  const containerDown = probes.some((p) => p.kind === 'container' && !p.ok)
+  const answers = (r: ReachAddress) =>
+    !r.href || !probes.some((p) => p.url.startsWith(r.href ?? '') && !p.ok)
+  const alternative =
+    firstChoice?.automatic && !answers(firstChoice) && !containerDown
+      ? ([...publics, ...privates, ...withUrl('loopback')].find(
+          (r) => r.href && answers(r),
+        ) ?? null)
+      : null
+  const hero = alternative ?? firstChoice
   const promotedHero = hero ? null : (privates.find((r) => r.href) ?? null)
   const top = hero ?? promotedHero
   const others = [...domains, ...publics].filter((r) => r !== hero)
@@ -170,6 +188,7 @@ export function deriveReach(urls: AppUrls): ReachModel {
     running: urls.running,
     hero: top,
     promoted: promotedHero !== null,
+    demoted: alternative !== null,
     others,
     advanced,
     autoExpand: hero === null,

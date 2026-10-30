@@ -7,7 +7,7 @@ import {
   type UseFormRegister,
   type UseFormSetValue,
 } from 'react-hook-form'
-import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import type { ReactNode } from 'react'
 import type { ServiceProbe } from '../types/appDetail'
 import type { ProbeFormValues } from '../lib/healthProbeForm'
@@ -309,8 +309,8 @@ function AdvancedFields({
   return (
     <Collapsible className="rounded-md border border-border/60">
       <CollapsibleTrigger className="group flex w-full items-center gap-1.5 px-2.5 py-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground">
-        <CaretRightIcon
-          className="size-3.5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
+        <ChevronRightGlassIcon
+          className="size-5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
           aria-hidden="true"
         />
         Advanced

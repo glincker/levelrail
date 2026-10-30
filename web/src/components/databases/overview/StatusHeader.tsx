@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PlayIcon, ScrollIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlayGlassIcon, ScrollGlassIcon } from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -102,7 +102,7 @@ export function StatusHeader({
           ) : null}
           {health.action === 'start' ? (
             <Button size="sm" disabled={start.isPending} onClick={runStart}>
-              <PlayIcon aria-hidden="true" />
+              <PlayGlassIcon size="1.4em" aria-hidden="true" />
               {t('detail.start')}
             </Button>
           ) : null}
@@ -112,7 +112,7 @@ export function StatusHeader({
               params={{ name: database.name }}
               className={buttonVariants({ size: 'sm' })}
             >
-              <ScrollIcon aria-hidden="true" />
+              <ScrollGlassIcon size="1.4em" aria-hidden="true" />
               {t('status.viewLogs')}
             </Link>
           ) : null}

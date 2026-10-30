@@ -1,17 +1,17 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Security disclosure (private)
+  - name: Security report (private)
     url: https://github.com/glincker/levelrail/security/advisories/new
-    about: Report a vulnerability privately via GitHub Security Advisories.
-  - name: Discussions
+    about: Report a vulnerability privately. See SECURITY.md for what to include.
+  - name: Questions and help
     url: https://github.com/glincker/levelrail/discussions
-    about: Ask questions, share ideas, discuss the roadmap.
-  - name: 💬 Ask a question on Discord
-    url: https://discord.gg/Ar5pcaZB99
-    about: Questions and help from the community in the #levelrail forum.
+    about: Ask questions, share setups and discuss ideas in GitHub Discussions.
   - name: Documentation
-    url: https://github.com/glincker/levelrail/tree/main/docs
-    about: Getting started, architecture, app spec reference, roadmap.
+    url: https://docs.levelrail.com
+    about: Install guides, reference and troubleshooting.
+  - name: Discord
+    url: https://discord.gg/Ar5pcaZB99
+    about: Quick questions in the #levelrail forum.
   - name: Email support
     url: mailto:support@levelrail.com
-    about: Anything that doesn't fit the options above.
+    about: Anything that does not fit the options above.

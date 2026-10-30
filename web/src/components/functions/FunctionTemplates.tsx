@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useBrand } from '@/hooks/useBrand'
@@ -20,7 +20,11 @@ export function CopyButton({ text }: Readonly<{ text: string }>) {
         })
       }}
     >
-      {copied ? <CheckIcon /> : <CopyIcon />}
+      {copied ? (
+        <CheckGlassIcon size="1.4em" />
+      ) : (
+        <CopyGlassIcon size="1.4em" />
+      )}
       {copied ? t('templates.copied') : t('templates.copy')}
     </Button>
   )

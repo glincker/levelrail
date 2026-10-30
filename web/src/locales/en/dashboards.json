@@ -21,7 +21,13 @@
       "cost": "Cost by tag",
       "alert_status": "Alert status",
       "node_capacity": "Node capacity",
-      "link": "Link"
+      "link": "Link",
+      "fleet_health": "Fleet health",
+      "fleet_traffic": "Fleet traffic",
+      "top_apps": "Top apps",
+      "deploy_activity": "Deploy activity",
+      "fleet_capacity": "Fleet capacity",
+      "attention": "Needs attention"
     },
     "noTraffic": "No requests in the last window.",
     "p95": "p95 latency",
@@ -134,5 +140,54 @@
     "deleteFailed": "Could not delete the dashboard",
     "created": "Created {{name}}",
     "createFailed": "Could not create the dashboard"
+  },
+  "fleet": {
+    "loadFailed": "Could not load this data.",
+    "health": {
+      "empty": "No apps yet.",
+      "barLabel": "{{running}} running, {{failing}} failing, {{stopped}} stopped",
+      "running": "Running",
+      "failing": "Failing",
+      "stopped": "Stopped",
+      "nodesOnline": "Nodes online"
+    },
+    "traffic": {
+      "notConfigured": "Telemetry is not configured.",
+      "empty": "No requests in the last hour.",
+      "requests": "Requests, last hour",
+      "errors": "5xx errors",
+      "tooFew": "Too few requests",
+      "p95": "p95 latency",
+      "spark": "Requests per second across all apps"
+    },
+    "top": {
+      "sortBy": "Sort by",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "requests": "Requests",
+      "empty": "Nothing to rank yet."
+    },
+    "deploys": {
+      "empty": "No finished deploys yet.",
+      "summary": "{{day}} in 24 hours, {{week}} in 7 days ({{ok}} succeeded, {{failed}} failed)",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "sampled": "Based on the {{count}} apps most in need of a look."
+    },
+    "capacity": {
+      "unavailable": "Capacity is not available.",
+      "empty": "No node reports capacity yet.",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "disk": "Disk"
+    },
+    "attention": {
+      "clear": "All clear. Nothing needs attention.",
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Notice",
+      "viewAll": "Open Status",
+      "more": "{{count}} more on Status"
+    }
   }
 }

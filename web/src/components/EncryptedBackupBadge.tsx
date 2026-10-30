@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { LockKeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 
 export function EncryptedBackupBadge({ codec }: { codec?: string }) {
@@ -9,7 +9,7 @@ export function EncryptedBackupBadge({ codec }: { codec?: string }) {
   }
   return (
     <Badge variant="success" className="gap-1.5">
-      <LockKeyIcon className="size-3.5" aria-hidden="true" />
+      <LockGlassIcon className="size-5" aria-hidden="true" />
       {t('encryption.badge')}
     </Badge>
   )

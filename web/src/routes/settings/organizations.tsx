@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
+import { UniversityGlassIcon } from '@thesvg/ui-react'
 import {
   organizationListQueryOptions,
   useOrganizations,
@@ -28,7 +28,7 @@ function OrganizationsPage() {
 
   return (
     <PageTemplate
-      icon={<BuildingsIcon />}
+      icon={<UniversityGlassIcon size="1.4em" />}
       title={t('organizationsPage.title')}
       description={t('organizationsPage.description')}
       actions={<CreateOrganizationDialog />}

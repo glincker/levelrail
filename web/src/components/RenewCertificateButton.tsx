@@ -1,4 +1,4 @@
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRenewDomainCertificate } from '../queries/domainTlsCert'
@@ -47,7 +47,7 @@ export function RenewCertificateButton({
         })
       }}
     >
-      <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+      <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
       {renew.isPending ? 'Renewing...' : 'Renew now'}
     </Button>
   )

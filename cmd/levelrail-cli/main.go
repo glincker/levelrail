@@ -76,6 +76,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBackupAlias(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runRestoreAlias(prog, args[1:], stdout, stderr, lookupEnv)
+	case "analysis":
+		return runAnalysis(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "git":
@@ -138,6 +140,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status-page":
 		return runStatusPage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "monitors":
+		return runMonitors(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env":
 		return runEnv(prog, args[1:], stdout, stderr, lookupEnv)
 	case "shared-env":
@@ -186,10 +190,14 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runPreview(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apply":
 		return runApply(prog, args[1:], stdout, stderr, lookupEnv)
+	case "validate":
+		return runValidate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
 		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "releases":
+		return runReleases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "assets":
 		return runAssets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "stack":
@@ -206,6 +214,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "policy":
 		return runPolicy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "app-types":
+		return runAppTypes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -417,6 +427,7 @@ Usage:
   %[1]s push-subscriptions list|revoke [flags]             list or revoke registered browser push subscriptions
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
+  %[1]s monitors create|list|results|delete                 experimental uptime monitors (http, tcp), needs APP_MONITORS_ENABLED
   %[1]s env pull|push <app> [--file .env] [flags]   sync an app's env vars with a local .env file
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
@@ -449,6 +460,7 @@ Usage:
   %[1]s otel destinations list|add|test|remove                 OTLP/HTTP metric and log export to your own collector
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
   %[1]s policy list|set|check [flags]                           deploy guardrails: registries, probes, limits, mounts, labels, replicas
+  %[1]s app-types list|apply|check [flags]                      admin-defined app types and spec conformance checks
   %[1]s maintenance list|create|delete [flags]               scheduled maintenance windows with banner, status page and optional deploy freeze
   %[1]s cdn overview [--window 1h]                          fleet traffic, edge cache hit rate and per-node request share
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app

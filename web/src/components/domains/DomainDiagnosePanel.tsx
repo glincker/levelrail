@@ -2,16 +2,16 @@ import { useState } from 'react'
 import { GoLiveLink } from '../golive/GoLiveBadge'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsClockwiseIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  CopyIcon,
-  MinusCircleIcon,
-  WarningCircleIcon,
-  WrenchIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CheckGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  CircleXGlassIcon,
+  CopyGlassIcon,
+  RefreshCwGlassIcon,
+  WrenchGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,12 +33,15 @@ import {
 } from '../../queries/domainDiagnose'
 import { BrandIcon } from '../BrandIcon'
 
-const STATE_ICON: Record<DiagnoseState, { icon: Icon; className: string }> = {
-  pass: { icon: CheckCircleIcon, className: 'text-emerald-600' },
-  warn: { icon: WarningCircleIcon, className: 'text-tone-warning' },
-  fail: { icon: XCircleIcon, className: 'text-destructive' },
-  skipped: { icon: MinusCircleIcon, className: 'text-muted-foreground' },
-  unavailable: { icon: MinusCircleIcon, className: 'text-muted-foreground' },
+const STATE_ICON: Record<DiagnoseState, { icon: UiIcon; className: string }> = {
+  pass: { icon: CircleCheckGlassIcon, className: 'text-emerald-600' },
+  warn: { icon: CircleAlertGlassIcon, className: 'text-tone-warning' },
+  fail: { icon: CircleXGlassIcon, className: 'text-destructive' },
+  skipped: { icon: CircleMinusGlassIcon, className: 'text-muted-foreground' },
+  unavailable: {
+    icon: CircleMinusGlassIcon,
+    className: 'text-muted-foreground',
+  },
 }
 
 const NEEDS_FIX: DiagnoseState[] = ['fail', 'warn']
@@ -71,7 +74,11 @@ function RecordRow({ record }: { record: DiagnoseRecord }) {
           copy(`${record.name} ${record.type} ${record.value}`)
         }}
       >
-        {copied ? <CheckIcon /> : <CopyIcon />}
+        {copied ? (
+          <CheckGlassIcon size="1.4em" />
+        ) : (
+          <CopyGlassIcon size="1.4em" />
+        )}
       </Button>
     </li>
   )
@@ -135,7 +142,7 @@ function FixBlock({
               })
             }}
           >
-            <WrenchIcon />
+            <WrenchGlassIcon size="1.4em" />
             {apply.isPending ? t('diagnose.applying') : action.label}
           </Button>
         ) : null}
@@ -150,7 +157,7 @@ function FixBlock({
           </Button>
         ) : null}
         <Button type="button" size="sm" variant="outline" onClick={onApplied}>
-          <ArrowsClockwiseIcon />
+          <RefreshCwGlassIcon size="1.4em" />
           {t('diagnose.recheck')}
         </Button>
       </div>
@@ -171,7 +178,7 @@ function CheckRow({
     <li className="py-2">
       <div className="flex items-start gap-2">
         <StateIcon
-          className={`mt-0.5 size-4 shrink-0 ${className}`}
+          className={`mt-0.5 size-5 shrink-0 ${className}`}
           aria-hidden="true"
         />
         <div className="min-w-0 flex-1">
@@ -264,7 +271,8 @@ export function DomainDiagnosePanel({ domain }: { domain: string }) {
           disabled={running}
           onClick={run}
         >
-          <ArrowsClockwiseIcon
+          <RefreshCwGlassIcon
+            size="1.4em"
             className={running ? 'animate-spin' : undefined}
           />
           {t('diagnose.recheck')}

@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { SettingRow, SettingRows } from '@/components/ui/setting-row'
-import { ShieldCheckIcon, UserIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon, UserGlassIcon } from '@thesvg/ui-react'
 import { sessionQueryOptions, useSession } from '../../queries/security'
 import { formatAbsolute } from '../../lib/dateFormat'
 import { twoFactorStatusQueryOptions } from '../../queries/twoFactor'
@@ -100,7 +100,7 @@ function SecuritySettingsPage() {
               to="/settings/account"
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
-              <UserIcon aria-hidden="true" />
+              <UserGlassIcon size="1.4em" aria-hidden="true" />
               {t('securityPage.account.open')}
             </Link>
           </CardContent>
@@ -115,7 +115,7 @@ function SecuritySettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ShieldCheckIcon className="size-4 text-muted-foreground" />
+              <ShieldCheckGlassIcon className="size-5 text-muted-foreground" />
               {t('securityPage.loginProtection.title')}
             </CardTitle>
           </CardHeader>

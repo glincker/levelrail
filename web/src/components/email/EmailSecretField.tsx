@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, KeyGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SecretInput } from '@/components/ui/secret-input'
@@ -55,7 +55,10 @@ export function EmailSecretField({
         <div className="text-sm font-medium">{label}</div>
         <div className="mt-1.5 flex flex-wrap items-start gap-2">
           <Badge variant="success" className="h-7">
-            <CheckCircleIcon className="size-3" aria-hidden="true" />
+            <CircleCheckGlassIcon
+              className="size-4.5 text-tone-success"
+              aria-hidden="true"
+            />
             {t('emailProviders.secret.set')}
           </Badge>
           <Button
@@ -68,7 +71,7 @@ export function EmailSecretField({
             }}
             aria-label={t('emailProviders.secret.replaceLabel', { label })}
           >
-            <KeyIcon aria-hidden="true" />
+            <KeyGlassIcon size="1.4em" aria-hidden="true" />
             {t('emailProviders.secret.replace')}
           </Button>
           {providerId ? (

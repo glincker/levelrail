@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CodeBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -43,7 +43,7 @@ export function FormEmbed({
     <div className="space-y-3">
       {form.endpoint_source === 'local' && (
         <Alert>
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertTitle>{t('embed.noPublicUrl.title')}</AlertTitle>
           <AlertDescription>
             {t('embed.noPublicUrl.body')}

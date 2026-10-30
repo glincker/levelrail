@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  DesktopIcon,
-  GlobeHemisphereWestIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  GlobeGlassIcon,
+  MonitorGlassIcon,
+  TerminalGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmAction } from '@/components/ui/confirm-action'
@@ -41,9 +41,9 @@ export function SessionDeviceRow({
         {marks.browser ? (
           <BrandIcon name={marks.browser} className="size-5" />
         ) : marks.kind === 'cli' ? (
-          <TerminalWindowIcon className="size-5" aria-hidden="true" />
+          <TerminalGlassIcon className="size-6" aria-hidden="true" />
         ) : (
-          <DesktopIcon className="size-5" aria-hidden="true" />
+          <MonitorGlassIcon className="size-6" aria-hidden="true" />
         )}
         {marks.os && marks.browser ? (
           <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-background ring-1 ring-border">
@@ -64,7 +64,7 @@ export function SessionDeviceRow({
         </p>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <GlobeHemisphereWestIcon className="size-3" aria-hidden="true" />
+            <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
             {session.ip || session.network}
           </span>
           <span className="inline-flex items-center gap-1.5">

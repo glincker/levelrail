@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StackIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayersGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -358,7 +358,7 @@ export function BuildCacheCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <StackIcon className="size-4" aria-hidden="true" />
+          <LayersGlassIcon className="size-5" aria-hidden="true" />
           {appName === '' ? t('buildCache.titleAll') : t('buildCache.title')}
         </CardTitle>
         <CardDescription>{t('buildCache.description')}</CardDescription>

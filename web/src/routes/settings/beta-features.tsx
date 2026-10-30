@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
+import { FlaskConicalGlassIcon } from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
@@ -101,7 +101,7 @@ function BetaFeaturesPage() {
 
   return (
     <PageTemplate
-      icon={<FlaskIcon />}
+      icon={<FlaskConicalGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       banners={

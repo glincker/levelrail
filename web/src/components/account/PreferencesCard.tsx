@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -257,7 +257,10 @@ export function PreferencesCard() {
       <CardContent>
         {prefs.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('common.loadFailed')}</span>
               <Button

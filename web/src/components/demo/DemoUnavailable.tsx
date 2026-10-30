@@ -1,6 +1,6 @@
 import { useContext, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useDemoInfo, useIsDemo } from '@/hooks/useDemo'
 import { BrandContext } from '@/lib/brandContext'
@@ -15,7 +15,7 @@ export function DemoUnavailable({ reason = 'generic' }: { reason?: Reason }) {
   const brandName = brand?.ShortName || brand?.Name || ''
   return (
     <EmptyState
-      icon={<LockSimpleIcon className="size-4" />}
+      icon={<LockGlassIcon className="size-5" />}
       title={t('unavailable.title')}
       description={t(`unavailable.${reason}`)}
       hint={t('unavailable.installHint', { brand: brandName })}

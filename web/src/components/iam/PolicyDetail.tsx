@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  LinkBreakIcon,
-  PencilSimpleIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PencilGlassIcon,
+  PlusGlassIcon,
+  UnlinkGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Sheet,
   SheetContent,
@@ -166,7 +166,7 @@ export function PolicyDetail({
             <div className="space-y-5 px-4 pb-6">
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => onEdit(policy)}>
-                  <PencilSimpleIcon />
+                  <PencilGlassIcon size="1.4em" />
                   {t('list.edit')}
                 </Button>
                 <Button
@@ -174,7 +174,7 @@ export function PolicyDetail({
                   variant="outline"
                   onClick={() => onAttach(policy)}
                 >
-                  <PlusIcon />
+                  <PlusGlassIcon size="1.4em" />
                   {t('list.attach')}
                 </Button>
                 <DeletePolicyDialog policy={policy} />
@@ -224,7 +224,7 @@ export function PolicyDetail({
                             )
                           }
                         >
-                          <LinkBreakIcon />
+                          <UnlinkGlassIcon size="1.4em" />
                           {t('detail.detach')}
                         </Button>
                       </li>

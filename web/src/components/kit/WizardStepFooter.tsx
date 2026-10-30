@@ -1,4 +1,4 @@
-import { ArrowRightIcon, InfoIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, InfoGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 
 export interface WizardStepFooterProps {
@@ -44,7 +44,7 @@ export function WizardStepFooter({
           aria-describedby={showReason ? reasonId : undefined}
         >
           {continueLabel}
-          <ArrowRightIcon />
+          <ArrowRightGlassIcon size="1.4em" />
         </Button>
       </div>
       {showReason ? (
@@ -53,7 +53,10 @@ export function WizardStepFooter({
           aria-live="polite"
           className="flex items-start justify-end gap-1.5 text-right text-xs text-muted-foreground"
         >
-          <InfoIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          <InfoGlassIcon
+            className="mt-0.5 size-5 shrink-0 text-tone-info"
+            aria-hidden="true"
+          />
           {reason}
         </p>
       ) : null}

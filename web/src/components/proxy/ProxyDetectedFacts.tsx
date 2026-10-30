@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import type { DetectedProxy } from '../../queries/proxyIntegration'
@@ -75,7 +75,7 @@ export function ProxyDetectedFacts({
       </dl>
       {detected.complete || quietMissing ? null : (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertTitle>{t('proxySetup.facts.missingTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>{t('proxySetup.facts.missingBody')}</p>

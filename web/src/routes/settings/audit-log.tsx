@@ -5,10 +5,10 @@ import { useTranslation } from 'react-i18next'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
-  ClockCounterClockwiseIcon,
-  DownloadSimpleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DownloadGlassIcon,
+  RestoreGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '../../components/ui/button'
 import {
@@ -108,7 +108,7 @@ function ExportAuditLogLink({
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
-      <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+      <DownloadGlassIcon className="size-5" aria-hidden="true" />
       Export CSV
     </a>
   )
@@ -247,7 +247,7 @@ function AuditLogSettingsPage() {
 
   return (
     <PageTemplate
-      icon={<ClockCounterClockwiseIcon />}
+      icon={<RestoreGlassIcon size="1.4em" />}
       title={t('page.title')}
       description={t('page.description')}
       width="wide"
@@ -351,7 +351,7 @@ function AuditLogSettingsPage() {
       ) : entries.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
-          icon={<ClockCounterClockwiseIcon className="size-5" />}
+          icon={<RestoreGlassIcon className="size-6" />}
           title={t('page.emptyTitle')}
           description={
             filtersActive ? t('page.emptyFiltered') : t('page.emptyNone')
@@ -363,7 +363,7 @@ function AuditLogSettingsPage() {
 
       {loadMoreError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{loadMoreError}</AlertDescription>
         </Alert>
       ) : null}

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  CopyIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CheckGlassIcon,
+  CopyGlassIcon,
+  ShieldCheckGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { FieldLabel } from '@/components/ui/field'
@@ -67,7 +67,7 @@ export function SSHHostKeyVerify({
               }}
               className="accent-primary"
             />
-            <ShieldCheckIcon className="size-4 shrink-0 text-muted-foreground" />
+            <ShieldCheckGlassIcon className="size-5 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1">
               <span className="block text-xs text-muted-foreground">
                 {k.type}
@@ -92,7 +92,11 @@ export function SSHHostKeyVerify({
                 })
               }}
             >
-              {copied === k.fingerprint ? <CheckIcon /> : <CopyIcon />}
+              {copied === k.fingerprint ? (
+                <CheckGlassIcon size="1.4em" />
+              ) : (
+                <CopyGlassIcon size="1.4em" />
+              )}
             </Button>
           </label>
         ))}

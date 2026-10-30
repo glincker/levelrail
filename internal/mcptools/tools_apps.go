@@ -132,7 +132,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "clone_app",
-		Description: "Duplicate an app under a new name with its config. Domains stay empty unless domain_suffix derives them; secrets copy only with copy_secrets (needs read:sensitive); volume data never copies.",
+		Description: "Duplicate an app under a new name. Domains stay empty unless domain_suffix derives them; secrets copy only with copy_secrets (needs read:sensitive); volumes never copy.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
 		app, err := client.CloneAppWith(ctx, in.Name, apiclient.CloneAppRequest{NewName: in.NewName, CopySecrets: in.CopySecrets, DomainSuffix: in.DomainSuffix, EnvironmentID: in.EnvironmentID, Domains: cloneDomainMode(in.DomainSuffix)})
 		if err != nil {

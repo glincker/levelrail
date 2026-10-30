@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, TrophyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, TrophyGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -132,7 +132,10 @@ export function SplitVariantsTable({
                           variant="outline"
                           onClick={() => void copy(v.qa_link ?? '')}
                         >
-                          <CopyIcon className="size-3.5" aria-hidden="true" />
+                          <CopyGlassIcon
+                            className="size-5"
+                            aria-hidden="true"
+                          />
                           {t('table.copyQa')}
                         </Button>
                       ) : null}
@@ -144,7 +147,10 @@ export function SplitVariantsTable({
                           disabled={busy || v.status === 'unavailable'}
                           onClick={() => onPromote(v)}
                         >
-                          <TrophyIcon className="size-3.5" aria-hidden="true" />
+                          <TrophyGlassIcon
+                            className="size-5"
+                            aria-hidden="true"
+                          />
                           {t('table.promote')}
                         </Button>
                       ) : null}

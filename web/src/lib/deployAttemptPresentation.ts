@@ -1,13 +1,13 @@
 import {
-  CheckCircleIcon,
-  HourglassIcon,
-  PauseCircleIcon,
-  ProhibitIcon,
-  SkipForwardIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  BanGlassIcon,
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CirclePauseGlassIcon,
+  CountdownGlassIcon,
+  LoaderCircleGlassIcon,
+  SkipForwardGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import type { VariantProps } from 'class-variance-authority'
 import type {
   DeployAttemptSource,
@@ -45,15 +45,15 @@ export const DEPLOY_ATTEMPT_STATUS_TONE: Record<DeployAttemptStatus, Tone> = {
   pending: 'warning',
 }
 
-export const DEPLOY_ATTEMPT_STATUS_ICON: Record<DeployAttemptStatus, Icon> = {
-  succeeded: CheckCircleIcon,
-  failed: WarningCircleIcon,
-  running: SpinnerGapIcon,
-  held: PauseCircleIcon,
-  superseded: SkipForwardIcon,
-  queued: HourglassIcon,
-  canceled: ProhibitIcon,
-  pending: HourglassIcon,
+export const DEPLOY_ATTEMPT_STATUS_ICON: Record<DeployAttemptStatus, UiIcon> = {
+  succeeded: CircleCheckGlassIcon,
+  failed: CircleAlertGlassIcon,
+  running: LoaderCircleGlassIcon,
+  held: CirclePauseGlassIcon,
+  superseded: SkipForwardGlassIcon,
+  queued: CountdownGlassIcon,
+  canceled: BanGlassIcon,
+  pending: CountdownGlassIcon,
 }
 
 export const DEPLOY_ATTEMPT_STATUS_LABEL: Record<DeployAttemptStatus, string> =

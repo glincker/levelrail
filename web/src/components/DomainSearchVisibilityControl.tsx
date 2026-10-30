@@ -1,8 +1,8 @@
 import {
-  EyeSlashIcon,
-  EyeIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EyeGlassIcon,
+  EyeOffGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -42,12 +42,12 @@ export function DomainSearchVisibilityControl({
       <div className="flex items-center justify-between gap-2">
         {hidden ? (
           <Badge variant="warning" className="shrink-0">
-            <EyeSlashIcon className="size-3" />
+            <EyeOffGlassIcon className="size-4.5" />
             {t('searchVisibility.hiddenBadge')}
           </Badge>
         ) : (
           <Badge variant="muted" className="shrink-0">
-            <EyeIcon className="size-3" />
+            <EyeGlassIcon className="size-4.5" />
             {t('searchVisibility.visibleBadge')}
           </Badge>
         )}
@@ -70,7 +70,7 @@ export function DomainSearchVisibilityControl({
       </p>
       {set.isError ? (
         <Alert variant="destructive" className="mt-2">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{set.error.message}</AlertDescription>
         </Alert>
       ) : null}

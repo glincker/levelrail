@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  HeartbeatIcon,
-  InfoIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ActivityGlassIcon,
+  CircleAlertGlassIcon,
+  InfoGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '../components/shell/PageTemplate'
@@ -211,8 +211,8 @@ function ItemActions({ item }: { item: AttentionItem }) {
 }
 
 function severityIcon(severity: AttentionItem['severity']) {
-  if (severity === 'critical') return WarningCircleIcon
-  return severity === 'info' ? InfoIcon : WarningIcon
+  if (severity === 'critical') return CircleAlertGlassIcon
+  return severity === 'info' ? InfoGlassIcon : TriangleAlertGlassIcon
 }
 
 export function StatusPage() {
@@ -229,7 +229,7 @@ export function StatusPage() {
       title={t('statusPage.title')}
       banner={
         <PageBanner
-          icon={<HeartbeatIcon />}
+          icon={<ActivityGlassIcon size="1.4em" />}
           titleKey="attention:statusPage.title"
           descriptionKey={
             healthy
@@ -260,7 +260,7 @@ export function StatusPage() {
               >
                 <div className="flex min-w-0 flex-1 items-start gap-2.5">
                   <Icon
-                    className={`mt-0.5 size-4 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : item.severity === 'info' ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'}`}
+                    className={`size-6 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : item.severity === 'info' ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'}`}
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">

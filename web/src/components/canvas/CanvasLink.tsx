@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { LayoutGridGlassIcon } from '@thesvg/ui-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useExperimentalFeatures } from '../../hooks/useExperimental'
@@ -21,7 +21,7 @@ function CanvasLinkButton({ projectId }: { projectId: string }) {
       params={{ id: projectId }}
       className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
     >
-      <SquaresFourIcon aria-hidden="true" />
+      <LayoutGridGlassIcon size="1.4em" aria-hidden="true" />
       {t('link')}
     </Link>
   )

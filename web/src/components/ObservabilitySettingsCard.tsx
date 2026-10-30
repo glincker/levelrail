@@ -4,11 +4,11 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
 import {
-  CheckIcon,
-  ChartLineIcon,
-  CopyIcon,
-  LinkSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChartLineGlassIcon,
+  CheckGlassIcon,
+  CopyGlassIcon,
+  LinkGlassIcon,
+} from '@thesvg/ui-react'
 import type { ObservabilitySettings } from '../queries/observabilitySettings'
 import { useUpdateObservabilitySettings } from '../queries/observabilitySettings'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -51,7 +51,7 @@ export function RemoteReadConnectionCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ChartLineIcon className="size-4" />
+          <ChartLineGlassIcon className="size-5" />
           Remote read (Prometheus)
         </CardTitle>
         <CardDescription>
@@ -71,7 +71,11 @@ export function RemoteReadConnectionCard({
               {remoteReadURL}
             </code>
             <Button type="button" size="sm" variant="outline" onClick={copyURL}>
-              {copied ? <CheckIcon /> : <CopyIcon />}
+              {copied ? (
+                <CheckGlassIcon size="1.4em" />
+              ) : (
+                <CopyGlassIcon size="1.4em" />
+              )}
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
@@ -146,7 +150,7 @@ export function ObservabilitySettingsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LinkSimpleIcon className="size-4" />
+          <LinkGlassIcon className="size-5" />
           External dashboard
         </CardTitle>
         <CardDescription>

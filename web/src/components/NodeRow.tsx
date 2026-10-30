@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsOutIcon,
-  DotsThreeIcon,
-  HardDrivesIcon,
-  LockIcon,
-  LockOpenIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EllipsisGlassIcon,
+  LockGlassIcon,
+  LockOpenGlassIcon,
+  MaximizeGlassIcon,
+  ServerGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { ActionMenu } from '@/components/kit'
 import { StatusPill } from '@/components/kit/StatusPill'
 import type { Tone } from '@/components/kit/tone'
@@ -65,7 +65,7 @@ export function NodeRow({
       className={`${NODE_LIST_GRID} group/row relative h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <HardDrivesIcon className="size-4" aria-hidden="true" />
+        <ServerGlassIcon className="size-5" aria-hidden="true" />
       </span>
 
       <span className="flex min-w-0 flex-col justify-center gap-1">
@@ -151,7 +151,7 @@ export function NodeRow({
               size="icon-sm"
               aria-label={t('row.actions', { name: node.name })}
             >
-              <DotsThreeIcon aria-hidden="true" />
+              <EllipsisGlassIcon size="1.4em" aria-hidden="true" />
             </Button>
           }
           items={[
@@ -160,7 +160,11 @@ export function NodeRow({
               label: node.schedulable
                 ? t('cordon.trigger')
                 : t('uncordon.trigger'),
-              icon: node.schedulable ? <LockIcon /> : <LockOpenIcon />,
+              icon: node.schedulable ? (
+                <LockGlassIcon size="1.4em" />
+              ) : (
+                <LockOpenGlassIcon size="1.4em" />
+              ),
               onSelect: () => {
                 setDialog('cordon')
               },
@@ -168,7 +172,7 @@ export function NodeRow({
             {
               id: 'drain',
               label: t('drain.trigger'),
-              icon: <ArrowsOutIcon />,
+              icon: <MaximizeGlassIcon size="1.4em" />,
               onSelect: () => {
                 setDialog('drain')
               },
@@ -176,7 +180,7 @@ export function NodeRow({
             {
               id: 'delete',
               label: t('delete.trigger'),
-              icon: <TrashIcon />,
+              icon: <TrashGlassIcon size="1.4em" />,
               tone: 'danger',
               onSelect: () => {
                 setDialog('delete')

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  MoonIcon,
-  ProhibitIcon,
-  SunIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BanGlassIcon,
+  CircleCheckGlassIcon,
+  MoonGlassIcon,
+  SunGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { formatBytes } from '../../lib/format'
 import {
@@ -31,19 +31,20 @@ function MoonSunIcon({ asleep, waking }: { asleep: boolean; waking: boolean }) {
       aria-hidden="true"
       className={`relative size-5 shrink-0 ${waking ? 'motion-safe:animate-pulse' : ''}`}
     >
-      <MoonIcon
-        className={`${swap} size-5 ${asleep ? 'opacity-100' : 'rotate-[-30deg] opacity-0'}`}
+      <MoonGlassIcon
+        className={`${swap} size-6 ${asleep ? 'opacity-100' : 'rotate-[-30deg] opacity-0'}`}
       />
-      <SunIcon
-        className={`${swap} size-5 ${asleep ? 'rotate-[30deg] opacity-0' : 'opacity-100'}`}
+      <SunGlassIcon
+        className={`${swap} size-6 ${asleep ? 'rotate-[30deg] opacity-0' : 'opacity-100'}`}
       />
     </span>
   )
 }
 
 function StatusIcon({ state }: { state: SleepUiState }) {
-  if (state === 'blocked') return <ProhibitIcon className="size-3" />
-  if (state === 'ready') return <CheckCircleIcon className="size-3" />
+  if (state === 'blocked') return <BanGlassIcon className="size-4.5" />
+  if (state === 'ready')
+    return <CircleCheckGlassIcon className="size-4.5 text-tone-success" />
   return null
 }
 

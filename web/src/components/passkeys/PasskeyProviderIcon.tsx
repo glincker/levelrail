@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import {
-  DeviceMobileIcon,
-  FingerprintIcon,
-  KeyIcon,
-  LockKeyIcon,
-  UsbIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FingerprintPatternGlassIcon,
+  KeyGlassIcon,
+  LockGlassIcon,
+  SmartphoneGlassIcon,
+  UsbGlassIcon,
+} from '@thesvg/ui-react'
 import { BrandIcon, type BrandIconName } from '@/components/BrandIcon'
 
 const BRAND_BY_PROVIDER: Record<string, BrandIconName> = {
@@ -35,9 +35,13 @@ export function PasskeyProviderIcon({
     return <BrandIcon name={brand} className="size-5" />
   }
   const cls = 'size-5 text-muted-foreground'
-  if (providerKey === 'yubikey') return <UsbIcon className={cls} />
-  if (providerKey === 'samsung') return <DeviceMobileIcon className={cls} />
-  if (MANAGERS.has(providerKey)) return <LockKeyIcon className={cls} />
-  if (providerKey === 'unknown') return <FingerprintIcon className={cls} />
-  return <KeyIcon className={cls} />
+  if (providerKey === 'yubikey')
+    return <UsbGlassIcon size="1.4em" className={cls} />
+  if (providerKey === 'samsung')
+    return <SmartphoneGlassIcon size="1.4em" className={cls} />
+  if (MANAGERS.has(providerKey))
+    return <LockGlassIcon size="1.4em" className={cls} />
+  if (providerKey === 'unknown')
+    return <FingerprintPatternGlassIcon size="1.4em" className={cls} />
+  return <KeyGlassIcon size="1.4em" className={cls} />
 }

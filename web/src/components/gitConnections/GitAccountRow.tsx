@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  KeyIcon,
-  PencilSimpleIcon,
-  PlugsConnectedIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleCheckGlassIcon,
+  CircleXGlassIcon,
+  ExternalLinkGlassIcon,
+  KeyGlassIcon,
+  PencilGlassIcon,
+  PlugGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -42,7 +42,7 @@ export function HealthBadge({
       return (
         <StatusBadge
           tone="danger"
-          icon={XCircleIcon}
+          icon={CircleXGlassIcon}
           label={t('gitConnectionsHub.health.needsReconnect')}
         />
       )
@@ -50,7 +50,7 @@ export function HealthBadge({
       return (
         <StatusBadge
           tone="warning"
-          icon={KeyIcon}
+          icon={KeyGlassIcon}
           label={t('gitConnectionsHub.health.notAuthorized')}
         />
       )
@@ -58,7 +58,7 @@ export function HealthBadge({
       return (
         <StatusBadge
           tone="warning"
-          icon={WarningIcon}
+          icon={TriangleAlertGlassIcon}
           label={t('gitConnectionsHub.health.rateLimited')}
         />
       )
@@ -66,7 +66,7 @@ export function HealthBadge({
       return (
         <StatusBadge
           tone="success"
-          icon={CheckCircleIcon}
+          icon={CircleCheckGlassIcon}
           label={t('gitConnectionsHub.health.connected')}
         />
       )
@@ -235,7 +235,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
                 window.location.assign(account.authorizePath ?? '')
               }
             >
-              <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+              <PlugGlassIcon className="size-5" aria-hidden="true" />
               {t('gitConnections.reconnect')}
             </Button>
           ) : (
@@ -244,7 +244,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
               render={<Link to={account.settingsPath} />}
               nativeButton={false}
             >
-              <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+              <PlugGlassIcon className="size-5" aria-hidden="true" />
               {t('gitConnections.reconnect')}
             </Button>
           )
@@ -256,7 +256,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
             variant="outline"
             onClick={() => setRenaming(true)}
           >
-            <PencilSimpleIcon className="size-4" aria-hidden="true" />
+            <PencilGlassIcon className="size-5" aria-hidden="true" />
             {t('gitConnections.rename.action')}
           </Button>
         ) : null}
@@ -266,7 +266,7 @@ export function GitAccountRow({ account }: Readonly<{ account: GitAccount }>) {
           render={<Link to={account.settingsPath} />}
           nativeButton={false}
         >
-          <ArrowSquareOutIcon className="size-4" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
           {t('gitConnectionsHub.openSettings')}
         </Button>
         <Button

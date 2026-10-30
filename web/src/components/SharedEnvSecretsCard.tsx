@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { LockIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -103,7 +103,7 @@ export function SharedEnvSecretsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockIcon className="size-4" />
+          <LockGlassIcon className="size-5" />
           Secret shared variables
         </CardTitle>
         <CardDescription>
@@ -135,7 +135,7 @@ export function SharedEnvSecretsCard({
                   }}
                   aria-label={`Remove ${k.key}`}
                 >
-                  <XIcon className="size-4" />
+                  <XGlassIcon className="size-5" />
                 </Button>
               </li>
             ))}

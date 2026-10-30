@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -132,7 +132,11 @@ export default function DeployButtonBuilder() {
             {markdown}
           </pre>
           <Button type="button" variant="outline" size="sm" onClick={copy}>
-            {copied ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
+            {copied ? (
+              <CheckGlassIcon size="1.4em" aria-hidden />
+            ) : (
+              <CopyGlassIcon size="1.4em" aria-hidden />
+            )}
             {copied ? t('deployButton.copied') : t('deployButton.copy')}
           </Button>
         </div>

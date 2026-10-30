@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowSquareOutIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { ExternalLinkGlassIcon, GlobeGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { useAppNetwork } from '../queries/appNetwork'
 import { BetaBadge } from './BetaBadge'
@@ -18,8 +18,8 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
   return (
     <div className="space-y-1 rounded-md border border-border px-3 py-2">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <GlobeIcon
-          className="size-4 text-muted-foreground"
+        <GlobeGlassIcon
+          className="size-5 text-muted-foreground"
           aria-hidden="true"
         />
         <span className="font-mono text-foreground">{host}</span>
@@ -34,7 +34,7 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
           className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           {t('automaticDomain.open')}
-          <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
+          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
         </a>
       </div>
       <p className="text-xs text-muted-foreground">

@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
 )
@@ -23,6 +24,8 @@ type DB struct {
 	// ro is the read-only pool for dashboard-style SELECTs; nil means reads
 	// share the single writer connection (in-memory databases, pool disabled).
 	ro *sql.DB
+	// attemptObs is the optional shadow release hook; see SetAttemptObserver.
+	attemptObs atomic.Pointer[AttemptObserver]
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies

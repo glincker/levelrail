@@ -1,4 +1,4 @@
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import { EmptyState } from './ui/empty-state'
 import type { TimeRangeKey } from '../lib/timeRange'
@@ -35,7 +35,7 @@ export function LogSearchEmptyState({
   return (
     <EmptyState
       className="py-8"
-      icon={<MagnifyingGlassIcon className="size-5" />}
+      icon={<SearchGlassIcon className="size-6" />}
       title="No log entries found"
       description={
         query

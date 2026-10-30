@@ -2,10 +2,10 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
-  CheckCircleIcon,
-  GlobeIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  GlobeGlassIcon,
+} from '@thesvg/ui-react'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -102,7 +102,7 @@ export function ProxyReachabilityTable({
     return (
       <EmptyState
         className="py-12"
-        icon={<GlobeIcon className="size-5" />}
+        icon={<GlobeGlassIcon className="size-6" />}
         title={t('empty.title')}
         description={t('empty.description')}
       />
@@ -113,7 +113,7 @@ export function ProxyReachabilityTable({
     <div className="space-y-3">
       {unreachableCount > 0 ? (
         <Alert variant="destructive">
-          <WarningCircleIcon />
+          <CircleAlertGlassIcon className="text-tone-danger" size="1.4em" />
           <AlertTitle>{t('reachable.no')}</AlertTitle>
           <AlertDescription>
             {t('unreachableBanner', { count: unreachableCount })}
@@ -154,14 +154,20 @@ function ReachableBadge({ row }: { row: NetworkProxyDomain }) {
   if (row.reachable) {
     return (
       <Badge variant="success" className="gap-1">
-        <CheckCircleIcon className="size-3" aria-hidden="true" />
+        <CircleCheckGlassIcon
+          className="size-4.5 text-tone-success"
+          aria-hidden="true"
+        />
         {t('reachable.yes')}
       </Badge>
     )
   }
   return (
     <Badge variant="destructive" className="gap-1" title={row.fix_command}>
-      <WarningCircleIcon className="size-3" aria-hidden="true" />
+      <CircleAlertGlassIcon
+        className="size-4.5 text-tone-danger"
+        aria-hidden="true"
+      />
       {t('reachable.no')}
     </Badge>
   )

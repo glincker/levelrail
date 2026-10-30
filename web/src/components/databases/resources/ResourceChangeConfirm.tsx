@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -57,8 +57,8 @@ export function ResourceChangeConfirm({
             className="flex items-start gap-2 text-sm text-destructive"
             role="alert"
           >
-            <WarningIcon
-              className="mt-0.5 size-4 shrink-0"
+            <TriangleAlertGlassIcon
+              className="mt-0.5 size-6 shrink-0 text-tone-warning"
               aria-hidden="true"
             />
             {t('sizing.shrinkWarning')}

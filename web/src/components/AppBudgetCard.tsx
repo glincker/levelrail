@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ChartLineUpIcon,
-  LockKeyIcon,
-  PauseCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChartLineGlassIcon,
+  CirclePauseGlassIcon,
+  LockGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -164,7 +164,7 @@ export function AppBudgetCard({ appName }: { appName: string }) {
     body = (
       <EmptyState
         compact
-        icon={<ChartLineUpIcon className="size-5" />}
+        icon={<ChartLineGlassIcon className="size-6" />}
         title={t('empty.title')}
         description={t('empty.body')}
         action={
@@ -200,7 +200,7 @@ export function AppBudgetCard({ appName }: { appName: string }) {
                 preview.mutate()
               }}
             >
-              <PauseCircleIcon aria-hidden="true" />
+              <CirclePauseGlassIcon size="1.4em" aria-hidden="true" />
               {t('actions.preview')}
             </Button>
             <Button
@@ -244,7 +244,7 @@ export function AppBudgetCard({ appName }: { appName: string }) {
           <Alert variant={cap.guard.allowed ? 'default' : 'destructive'}>
             <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-2">
-                <LockKeyIcon aria-hidden="true" />
+                <LockGlassIcon size="1.4em" aria-hidden="true" />
                 {cap.guard.override
                   ? t('guard.overridden', {
                       time: new Date(

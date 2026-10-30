@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
-  MinusCircleIcon,
-  WarningCircleIcon,
-  ArrowClockwiseIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleMinusGlassIcon,
+  RotateCwGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { DomainResolver } from '@/queries/domainCheck'
@@ -17,10 +17,10 @@ import {
   type ResolverMatch,
 } from '@/lib/trafficResolvers'
 
-const MATCH_ICON: Record<ResolverMatch, Icon> = {
-  matches: CheckCircleIcon,
-  different: WarningCircleIcon,
-  noAnswer: MinusCircleIcon,
+const MATCH_ICON: Record<ResolverMatch, UiIcon> = {
+  matches: CircleCheckGlassIcon,
+  different: CircleAlertGlassIcon,
+  noAnswer: CircleMinusGlassIcon,
 }
 
 const MATCH_TONE: Record<ResolverMatch, string> = {
@@ -68,7 +68,8 @@ export function ResolverAnswers({
           aria-busy={checking}
           onClick={onRecheck}
         >
-          <ArrowClockwiseIcon
+          <RotateCwGlassIcon
+            size="1.4em"
             className={cn(
               checking && 'animate-spin motion-reduce:animate-none',
             )}
@@ -110,7 +111,7 @@ export function ResolverAnswers({
                   </td>
                   <td className={cn('py-1.5', MATCH_TONE[match])}>
                     <span className="inline-flex items-center gap-1">
-                      <MatchIcon aria-hidden="true" className="size-4" />
+                      <MatchIcon aria-hidden="true" className="size-5" />
                       {t(`resolvers.${match}`)}
                     </span>
                   </td>

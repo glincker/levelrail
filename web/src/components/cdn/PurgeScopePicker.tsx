@@ -1,19 +1,31 @@
 import { useId, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  FolderOpenIcon,
-  LinkSimpleIcon,
-  TagIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  FolderGlassIcon,
+  LinkGlassIcon,
+  TagGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { PurgeScope } from '../../queries/cdnCache'
 
 const OPTIONS: { scope: PurgeScope; icon: ReactNode }[] = [
-  { scope: 'url', icon: <LinkSimpleIcon aria-hidden="true" /> },
-  { scope: 'prefix', icon: <FolderOpenIcon aria-hidden="true" /> },
-  { scope: 'tag', icon: <TagIcon aria-hidden="true" /> },
-  { scope: 'all', icon: <WarningIcon aria-hidden="true" /> },
+  { scope: 'url', icon: <LinkGlassIcon size="1.4em" aria-hidden="true" /> },
+  {
+    scope: 'prefix',
+    icon: <FolderGlassIcon size="1.4em" aria-hidden="true" />,
+  },
+  { scope: 'tag', icon: <TagGlassIcon size="1.4em" aria-hidden="true" /> },
+  {
+    scope: 'all',
+    icon: (
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.7em"
+        aria-hidden="true"
+      />
+    ),
+  },
 ]
 
 /** PurgeScopePicker chooses what a purge removes, as keyboard reachable radio cards. */
@@ -56,7 +68,7 @@ export function PurgeScopePicker({
               />
               <span
                 className={cn(
-                  'mt-0.5 shrink-0 text-muted-foreground [&_svg]:size-4',
+                  'mt-0.5 shrink-0 text-muted-foreground [&_svg]:size-5',
                   destructive && 'text-tone-danger',
                 )}
               >

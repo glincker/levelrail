@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import type { DeployFailure } from '../types/deployFailure'
 import {
   failureActionFor,
@@ -20,7 +20,7 @@ function RetryButton({ appName, image }: { appName: string; image: string }) {
       disabled={retry.isPending}
       onClick={retry.redeploy}
     >
-      <ArrowsClockwiseIcon aria-hidden="true" />
+      <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
       {t('failureActions.retry')}
     </Button>
   )

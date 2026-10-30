@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockKeyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { LockGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -60,7 +60,11 @@ export function AiAssistantSettings() {
   if (providersQuery.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon aria-hidden="true" />
+        <TriangleAlertGlassIcon
+          className="text-tone-warning"
+          size="1.7em"
+          aria-hidden="true"
+        />
         <AlertDescription className="flex flex-wrap items-center gap-3">
           {t('aiAssistantPage.loadError')}
           <Button
@@ -96,7 +100,7 @@ export function AiAssistantSettings() {
     <div className="space-y-8">
       {!isRoot ? (
         <Alert>
-          <LockKeyIcon aria-hidden="true" />
+          <LockGlassIcon size="1.4em" aria-hidden="true" />
           <AlertDescription>{t('aiAssistantPage.rootOnly')}</AlertDescription>
         </Alert>
       ) : null}

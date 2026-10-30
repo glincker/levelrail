@@ -1,4 +1,4 @@
-import { HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
+import { ActivityGlassIcon } from '@thesvg/ui-react'
 import { detectionTimes } from './detection'
 import { LbTextField, LbToggleBlock, type LbSectionProps } from './LbField'
 
@@ -10,7 +10,10 @@ export function HealthDetectionPreview({ form }: Pick<LbSectionProps, 'form'>) {
       data-testid="detection-preview"
       className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm"
     >
-      <HeartbeatIcon className="size-4 shrink-0 text-tone-info" aria-hidden />
+      <ActivityGlassIcon
+        className="size-5 shrink-0 text-tone-info"
+        aria-hidden
+      />
       <span>{d.text}</span>
     </p>
   )

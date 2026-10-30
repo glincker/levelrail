@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ScissorsIcon } from '@phosphor-icons/react/dist/ssr'
+import { ScissorsGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useTrimLogBudget } from '../../queries/logBudgets'
@@ -31,7 +31,7 @@ export function TrimLogsButton({ app }: { app: string }) {
         })
       }
     >
-      <ScissorsIcon aria-hidden="true" />
+      <ScissorsGlassIcon size="1.4em" aria-hidden="true" />
       {t('trimNow')}
     </Button>
   )

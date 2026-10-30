@@ -1,4 +1,4 @@
-import { GridFourIcon, RowsIcon } from '@phosphor-icons/react/dist/ssr'
+import { Grid2x2GlassIcon, Rows2GlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { TONE } from '@/components/kit/tone'
 import {
@@ -95,8 +95,8 @@ export function ViewToggle({
       aria-label="View mode"
       className="flex items-center gap-0.5 rounded-lg border border-border p-0.5"
     >
-      {btn('table', 'Table view', <RowsIcon className="size-4" />)}
-      {btn('grid', 'Card view', <GridFourIcon className="size-4" />)}
+      {btn('table', 'Table view', <Rows2GlassIcon className="size-5" />)}
+      {btn('grid', 'Card view', <Grid2x2GlassIcon className="size-5" />)}
     </div>
   )
 }

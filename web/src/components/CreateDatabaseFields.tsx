@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -338,7 +338,7 @@ export function CreateDatabaseFields({
             TONE.warning.text,
           )}
         >
-          <WarningIcon className="mt-0.5 size-4 shrink-0" />
+          <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
           <p className="text-sm">
             No secrets master key is configured on this control plane. This
             database will be created but won&rsquo;t start until one is
@@ -506,7 +506,7 @@ export function CreateDatabaseFields({
         />
       ) : createDatabase.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{createDatabase.error.message}</AlertDescription>
         </Alert>
       ) : null}

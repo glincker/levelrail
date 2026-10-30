@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { CheckIcon, CopyIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon, GlobeGlassIcon } from '@thesvg/ui-react'
 import type { CertificateStatus } from '../queries/certificates'
 import type { IngressSettings } from '../queries/domains'
 import {
@@ -113,9 +113,9 @@ function IngressDomainCheck({ domain }: { domain: string }) {
           }
         >
           {copied ? (
-            <CheckIcon className="size-3.5" />
+            <CheckGlassIcon className="size-5" />
           ) : (
-            <CopyIcon className="size-3.5" />
+            <CopyGlassIcon className="size-5" />
           )}
         </Button>
         <Badge variant={data.host_inferred ? 'muted' : 'success'}>
@@ -214,7 +214,7 @@ export function IngressSettingsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeIcon className="size-4" />
+          <GlobeGlassIcon className="size-5" />
           Platform ingress
         </CardTitle>
         <CardDescription>

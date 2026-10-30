@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CaretLeftIcon,
-  CaretRightIcon,
-  CopyIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronLeftGlassIcon,
+  ChevronRightGlassIcon,
+  CopyGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Sheet,
   SheetContent,
@@ -86,7 +86,7 @@ export function RowDetailDrawer({
                 onRowChange(rowIndex - 1)
               }}
             >
-              <CaretLeftIcon className="size-3.5" aria-hidden="true" />
+              <ChevronLeftGlassIcon className="size-5" aria-hidden="true" />
               {t('viewer.grid.previousRow')}
             </Button>
             <Button
@@ -99,7 +99,7 @@ export function RowDetailDrawer({
               }}
             >
               {t('viewer.grid.nextRow')}
-              <CaretRightIcon className="size-3.5" aria-hidden="true" />
+              <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
             </Button>
           </div>
         </SheetHeader>
@@ -129,7 +129,7 @@ export function RowDetailDrawer({
                         copy(value)
                       }}
                     >
-                      <CopyIcon className="size-3.5" aria-hidden="true" />
+                      <CopyGlassIcon className="size-5" aria-hidden="true" />
                     </Button>
                   ) : null}
                 </dt>

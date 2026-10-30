@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WebhooksLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { WebhookGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -21,7 +21,7 @@ function EventWebhooksPage() {
 
   return (
     <PageTemplate
-      icon={<WebhooksLogoIcon />}
+      icon={<WebhookGlassIcon size="1.4em" />}
       title={t('title')}
       description={t('description')}
       actions={notConfigured ? null : <CreateEventWebhookDialog />}
@@ -46,7 +46,7 @@ function EventWebhooksPage() {
 
       {data && data.length === 0 ? (
         <EmptyState
-          icon={<WebhooksLogoIcon className="size-5" />}
+          icon={<WebhookGlassIcon className="size-6" />}
           title={t('empty.title')}
           description={t('empty.description')}
           className="border-0 bg-transparent py-6"

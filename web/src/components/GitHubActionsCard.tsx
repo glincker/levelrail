@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GithubLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { SocialGithubGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import { Input } from '@/components/ui/input'
@@ -108,7 +108,7 @@ export function GitHubActionsCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GithubLogoIcon className="size-4 text-muted-foreground" />
+          <SocialGithubGlassIcon className="size-5 text-muted-foreground" />
           {t('githubActions.title')}
           <InfoTip label={t('githubActions.infoTipLabel')}>
             {t('githubActions.description')}

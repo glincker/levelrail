@@ -145,6 +145,36 @@
       }
     }
   },
+  "appAnalysis": {
+    "confidence": "{{level}} confidence",
+    "causes": "Suspected causes",
+    "hide": "Hide report",
+    "loadFailed": "Could not load this report.",
+    "loading": "Loading report",
+    "recommendations": "Recommendations",
+    "status": {
+      "complete": "Complete",
+      "insufficient_data": "Insufficient data"
+    },
+    "timeline": "Timeline",
+    "title": "Analysis",
+    "view": "View report"
+  },
+  "appReleases": {
+    "title": "Releases",
+    "current": "Current"
+  },
+  "appResourceTree": {
+    "title": "Resources",
+    "groups": {
+      "databases": "Databases",
+      "deployment": "Deployment",
+      "domains": "Domains",
+      "env": "Env keys",
+      "replicas": "Replicas",
+      "volumes": "Volumes"
+    }
+  },
   "appSectionHelp": "Read the guide for this page",
   "appActions": {
     "deploy": "Deploy",
@@ -211,8 +241,6 @@
   "appTabs": {
     "sections": "App sections",
     "pages": "Pages in {{section}}",
-    "more": "More",
-    "moreLabel": "Other sections",
     "showAll": "Show all tabs ({{count}} hidden)",
     "showLess": "Hide tabs that do not apply",
     "groups": {
@@ -985,5 +1013,10 @@
     "filterLabel": "Filter by label",
     "filterPlaceholder": "env=prod,tier!=db",
     "filterInvalid": "That selector could not be read."
+  },
+  "pinnedDigest": {
+    "tip": "Approval deploys exactly this image even if the tag moves.",
+    "copy": "Copy full image digest",
+    "copied": "Image digest copied"
   }
 }

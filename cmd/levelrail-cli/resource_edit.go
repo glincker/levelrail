@@ -35,8 +35,9 @@ func editUsage(prog string) string {
   %[1]s edit app <name> [flags]
 
 Exports the app as a resource document, opens it in $VISUAL or $EDITOR, and
-applies the result. The save is refused with a conflict when the app changed
-while you were editing, so nothing is overwritten silently. Your edit is kept
+applies only the fields you changed with server-side apply. The save carries
+the version you opened, so the server refuses it when the app changed while
+you were editing and nothing is overwritten silently. Your edit is kept
 in a file whose path is printed on conflict.
 
 Flags:
@@ -166,51 +167,35 @@ func runEdit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return exitOK
 	}
 
-	after, err := c.client.GetV2(ctx, kind.Path, name)
+	origSpec, err := manifestSpec([]byte(original))
 	if err != nil {
-		return c.fail(fmt.Errorf("re-read app %q: %w", name, err))
+		return c.fail(fmt.Errorf("read exported app %q: %w", name, err))
 	}
-	if after.Metadata.ResourceVersion != before.Metadata.ResourceVersion {
-		keep := filepath.Join(os.TempDir(), "levelrail-edit-"+filepath.Base(name)+".yaml")
-		if werr := os.WriteFile(keep, edited, 0o600); werr != nil { //nolint:gosec // the name is a path.Base'd resource name under the temp dir
-			keep = "(could not save)"
-		}
-		return c.fail(fmt.Errorf("conflict: app %q changed to version %s while you edited version %s; your edit is kept at %s, re-run edit and merge it",
-			name, after.Metadata.ResourceVersion, before.Metadata.ResourceVersion, keep))
-	}
-
-	req := apiclient.IaCRequest{Files: []apiclient.IaCFile{{Name: name + ".yaml", Content: string(edited)}}}
-	plan, err := c.client.PlanIaC(ctx, req)
+	editedSpec, err := manifestSpec(edited)
 	if err != nil {
-		return iacFail(c, err)
+		return c.fail(fmt.Errorf("read your edit: %w", err))
 	}
-	if !c.jsonOut {
-		printPlan(stdout, plan)
-	}
-	if !plan.Pending() {
+	changes := specChanges(origSpec, editedSpec)
+	if len(changes) == 0 {
+		_, _ = fmt.Fprintln(stderr, "no changes, nothing applied")
 		return exitOK
-	}
-	if plan.Summary.Error > 0 {
-		_, _ = fmt.Fprintln(stderr, "the plan has errors; nothing was applied")
-		return iacExitError
 	}
 	if !*yes {
 		if err := confirmYes(stderr, "Apply this change?"); err != nil {
-			return iacFail(c, err)
+			return c.fail(err)
 		}
 	}
-	req.ExpectedPlanHash = plan.Hash
-	res, err := c.client.ApplyIaC(ctx, req)
+	// The resourceVersion precondition makes the save a compare-and-swap on the server.
+	manifest := map[string]any{"kind": "App", "metadata": map[string]any{"name": name}, "spec": changes}
+	res, err := c.client.ApplyV2(ctx, kind.Path, name, manifest, apiclient.V2ApplyOptions{
+		FieldManager: defaultFieldManager(prog) + "-edit", Force: true, ResourceVersion: before.Metadata.ResourceVersion,
+	})
 	if err != nil {
-		return iacFail(c, err)
+		keep := filepath.Join(os.TempDir(), "edit-"+filepath.Base(name)+".yaml")
+		if werr := os.WriteFile(keep, edited, 0o600); werr != nil { //nolint:gosec // the name is a path.Base'd resource name under the temp dir
+			keep = "(could not save)"
+		}
+		return c.fail(fmt.Errorf("apply app %q: %w; your edit is kept at %s", name, err, keep))
 	}
-	if c.jsonOut {
-		_ = c.render(res, func() {})
-	} else {
-		printApplyResult(stdout, res)
-	}
-	if !res.OK() {
-		return iacExitError
-	}
-	return exitOK
+	return c.render(res, func() { _, _ = fmt.Fprintf(stdout, "app/%s edited (version %s)\n", name, res.Metadata.ResourceVersion) })
 }

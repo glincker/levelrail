@@ -1,0 +1,68 @@
+{
+  "title": "Salir en vivo",
+  "pageTitle": "Salir en vivo: {{name}}",
+  "intro": "Una sola lista desde tu aplicación en ejecución hasta https en tu dominio. Cada paso muestra lo que se encontró y lo único que debes hacer a continuación.",
+  "domainLabel": "Dominio",
+  "noDomain": "Aún no hay dominio. Los primeros pasos funcionan sin uno.",
+  "loading": "Comprobando tu configuración",
+  "loadFailed": "No se pudo cargar la lista: {{message}}",
+  "retry": "Reintentar",
+  "recheck": "Comprobar de nuevo",
+  "liveBanner": "En vivo: {{url}}",
+  "openSite": "Abrir {{url}}",
+  "state": {
+    "not_live": "No está en vivo",
+    "waiting_dns": "Esperando DNS",
+    "waiting_certificate": "Esperando el certificado",
+    "live": "En vivo",
+    "needs_attention": "Requiere atención"
+  },
+  "status": {
+    "ok": "Hecho",
+    "warn": "Advertencia",
+    "fail": "Requiere acción",
+    "pending": "En espera",
+    "unknown": "Desconocido"
+  },
+  "announce": "{{title}}: {{status}}",
+  "nextCheck": "Próxima comprobación {{time}}",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "copyValue": "Copiar {{label}}",
+  "blocked": "Aún no disponible: {{reason}}",
+  "actionFailed": "La acción falló: {{message}}",
+  "scope": {
+    "control_plane_host": "Se comprueba desde este servidor. No puede demostrar que el resto de internet llegue a él. Un certificado de Let's Encrypt es esa prueba, porque Let's Encrypt validó el dominio desde fuera."
+  },
+  "records": "Registros por crear",
+  "provider": {
+    "title": "Pasos del firewall de {{name}}",
+    "ports": "Abre estos puertos de entrada",
+    "docs": "Abrir la guía de {{name}}",
+    "portRule": "{{port}}/{{protocol}} desde {{source}}"
+  },
+  "fix": {
+    "title": "¿Abrir los puertos 80 y 443?",
+    "description": "Esto cambia el firewall del host. Solo se abren estos puertos, no se toca ninguna otra regla y un firewall desactivado sigue desactivado.",
+    "willRun": "Se ejecutará: {{command}}",
+    "undo": "Para deshacer: {{command}}",
+    "notPersistent": "La regla se pierde al reiniciar a menos que guardes las reglas de tu firewall.",
+    "confirm": "Abrir puertos",
+    "pending": "Abriendo",
+    "refused": "No es automático: {{reason}}"
+  },
+  "timeline": {
+    "title": "Actividad",
+    "empty": "Todavía no ha pasado nada.",
+    "scheduled": "Programado"
+  },
+  "badge": {
+    "link": "Abrir la lista para salir en vivo de {{domain}}"
+  },
+  "cta": {
+    "title": "Tu aplicación está en ejecución: ponla en vivo en tu dominio",
+    "body": "Apunta un dominio a ella y obtén un certificado automático, con el estado en vivo en cada paso.",
+    "button": "Salir en vivo"
+  },
+  "diagnoseLink": "Abrir la lista para salir en vivo"
+}

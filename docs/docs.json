@@ -336,6 +336,7 @@
               "observability",
               "traffic-observability",
               "status-page",
+              "monitors",
               "scheduled-maintenance",
               "deploy-policies",
               "whats-new-panel"
@@ -499,6 +500,7 @@
             "pages": [
               "self-host/anythingllm",
               "self-host/comfyui",
+              "self-host/crawl4ai",
               "self-host/flowise",
               "self-host/flowise-postgres",
               "self-host/jupyter-gpu",
@@ -521,6 +523,7 @@
               "self-host/ollama-mistral",
               "self-host/ollama-phi",
               "self-host/ollama-qwen",
+              "self-host/open-notebook",
               "self-host/open-webui",
               "self-host/openclaw",
               "self-host/speaches",
@@ -579,6 +582,12 @@
               "self-host/prefect",
               "self-host/temporal",
               "self-host/windmill"
+            ]
+          },
+          {
+            "group": "Backups",
+            "pages": [
+              "self-host/backrest"
             ]
           },
           {
@@ -729,12 +738,14 @@
               "self-host/consul",
               "self-host/elasticsearch",
               "self-host/etcd",
+              "self-host/headscale",
               "self-host/nats",
               "self-host/netbox",
               "self-host/nginx-proxy-manager",
               "self-host/pi-hole",
               "self-host/portainer",
               "self-host/rabbitmq",
+              "self-host/rustdesk-server",
               "self-host/snipe-it",
               "self-host/technitium-dns"
             ]
@@ -789,6 +800,7 @@
               "self-host/changedetection",
               "self-host/checkmate",
               "self-host/diun",
+              "self-host/gatus",
               "self-host/glances",
               "self-host/glitchtip",
               "self-host/grafana",
@@ -814,6 +826,7 @@
             "pages": [
               "self-host/affine",
               "self-host/appflowy",
+              "self-host/archivebox",
               "self-host/babybuddy",
               "self-host/bentopdf",
               "self-host/bookstack",
@@ -862,9 +875,11 @@
               "self-host/penpot",
               "self-host/plane",
               "self-host/planka",
+              "self-host/radicale",
               "self-host/rallly",
               "self-host/readeck",
               "self-host/redmine",
+              "self-host/rsshub",
               "self-host/ryot",
               "self-host/shiori",
               "self-host/silverbullet",
@@ -889,6 +904,7 @@
             "group": "Security",
             "pages": [
               "self-host/2fauth",
+              "self-host/authelia",
               "self-host/authentik",
               "self-host/cap-captcha",
               "self-host/cryptgeon",

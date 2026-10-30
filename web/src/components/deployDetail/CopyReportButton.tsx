@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CheckIcon, ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, ClipboardListGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
@@ -40,9 +40,9 @@ export function CopyReportButton({
     <>
       <Button type="button" variant="outline" size="sm" onClick={copy}>
         {copied ? (
-          <CheckIcon aria-hidden="true" />
+          <CheckGlassIcon size="1.4em" aria-hidden="true" />
         ) : (
-          <ClipboardTextIcon aria-hidden="true" />
+          <ClipboardListGlassIcon size="1.4em" aria-hidden="true" />
         )}
         {copied ? t('report.copied') : t('report.copy')}
       </Button>

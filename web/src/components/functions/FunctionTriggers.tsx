@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, KeyIcon, LinkIcon } from '@phosphor-icons/react/dist/ssr'
+import { CopyGlassIcon, KeyGlassIcon, LinkGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
@@ -54,7 +54,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
     <div className="space-y-4 rounded-lg border p-4">
       <div className="space-y-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
-          <LinkIcon aria-hidden="true" />
+          <LinkGlassIcon size="1.4em" aria-hidden="true" />
           {t('triggers.webhook.title')}
         </h3>
         {hook ? (
@@ -77,7 +77,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
                   copy(fullUrl)
                 }}
               >
-                <CopyIcon />
+                <CopyGlassIcon size="1.4em" />
                 {t('templates.copy')}
               </Button>
             </div>
@@ -98,7 +98,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
                       copy(secret)
                     }}
                   >
-                    <CopyIcon />
+                    <CopyGlassIcon size="1.4em" />
                     {t('templates.copy')}
                   </Button>
                 </div>
@@ -117,7 +117,7 @@ function WebhookCard({ name }: Readonly<{ name: string }>) {
                   save(true)
                 }}
               >
-                <KeyIcon />
+                <KeyGlassIcon size="1.4em" />
                 {t('triggers.webhook.rotate')}
               </Button>
               <Button

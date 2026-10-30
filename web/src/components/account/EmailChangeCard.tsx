@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { CircleCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -79,7 +79,7 @@ function ConfirmBanner({ token }: { token: string }) {
   if (confirm.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>
           {confirm.error.code === 'email_taken'
             ? t('email.emailTaken')
@@ -90,7 +90,7 @@ function ConfirmBanner({ token }: { token: string }) {
   }
   return (
     <Alert>
-      <CheckCircleIcon />
+      <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
       <AlertDescription>
         {t('email.confirmed', { email: confirm.data.email })}
       </AlertDescription>
@@ -150,7 +150,10 @@ export function EmailChangeCard() {
         </div>
         {status.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription className="flex items-center justify-between gap-3">
               <span>{t('email.statusFailed')}</span>
               <Button
@@ -165,7 +168,10 @@ export function EmailChangeCard() {
           </Alert>
         ) : !status.data.available ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
               <span>{t('email.notConfigured')}</span>
               <Link
@@ -178,12 +184,15 @@ export function EmailChangeCard() {
           </Alert>
         ) : !session.has_password ? (
           <Alert>
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>{t('email.passwordRequired')}</AlertDescription>
           </Alert>
         ) : request.isSuccess ? (
           <Alert>
-            <CheckCircleIcon />
+            <CircleCheckGlassIcon className="text-tone-success" size="1.4em" />
             <AlertDescription>{t('email.sent')}</AlertDescription>
           </Alert>
         ) : (
@@ -224,7 +233,10 @@ export function EmailChangeCard() {
             ) : null}
             {error ? (
               <Alert variant="destructive" role="alert">
-                <WarningIcon />
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.7em"
+                />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusCircleIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { CirclePlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -17,10 +17,14 @@ import {
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
+import { STATUS_LIMITS } from '../lib/statusPageHelpers'
+import { StatusGroupsManager } from './StatusGroupsManager'
 import {
   useCreateStatusComponent,
   useDeleteStatusComponent,
   useStatusComponents,
+  useStatusGroups,
+  useUpdateStatusComponent,
   type StatusComponent,
   type StatusComponentKind,
 } from '../queries/statusPage'
@@ -29,6 +33,69 @@ const TARGET_HINT: Record<StatusComponentKind, string> = {
   app: 'App name, e.g. web',
   domain: 'Hostname, e.g. example.com (DNS check)',
   check: 'https://example.com/health (probed every minute)',
+}
+
+const NO_GROUP = '__none__'
+
+function ComponentGroupSelect({ c }: { c: StatusComponent }) {
+  const { t } = useTranslation('statusPage')
+  const { data: groups } = useStatusGroups()
+  const update = useUpdateStatusComponent()
+  return (
+    <Select
+      value={c.group_id || NO_GROUP}
+      onValueChange={(v) => {
+        update.mutate({
+          ...c,
+          group_id: typeof v === 'string' && v !== NO_GROUP ? v : '',
+        })
+      }}
+    >
+      <SelectTrigger
+        className="w-full min-w-32"
+        aria-label={t('component.groupLabel', { name: c.display_name })}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NO_GROUP}>{t('component.noGroup')}</SelectItem>
+        {(groups ?? []).map((g) => (
+          <SelectItem key={g.id} value={g.id ?? ''}>
+            {g.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function ComponentDescriptionInput({ c }: { c: StatusComponent }) {
+  const { t } = useTranslation('statusPage')
+  const update = useUpdateStatusComponent()
+  const [value, setValue] = useState(c.description ?? '')
+  const save = () => {
+    const next = value.trim()
+    if (next !== (c.description ?? '')) {
+      update.mutate({ ...c, description: next })
+    }
+  }
+  return (
+    <Input
+      value={value}
+      maxLength={STATUS_LIMITS.description}
+      placeholder={t('component.descriptionPlaceholder')}
+      aria-label={t('component.descriptionLabel', { name: c.display_name })}
+      aria-invalid={update.isError}
+      title={update.isError ? update.error.message : undefined}
+      onChange={(e) => {
+        setValue(e.target.value)
+      }}
+      onBlur={save}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') save()
+      }}
+    />
+  )
 }
 
 function AddComponentForm() {
@@ -110,7 +177,7 @@ function AddComponentForm() {
         </p>
       ) : null}
       <Button type="submit" size="sm" disabled={create.isPending}>
-        <PlusCircleIcon className="size-4" aria-hidden="true" />
+        <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
         Add component
       </Button>
     </form>
@@ -134,6 +201,16 @@ export function StatusComponentsPanel() {
       },
       { id: 'kind', header: 'Kind', priority: 2, cell: (c) => c.kind },
       {
+        id: 'group',
+        header: t('component.group', { ns: 'statusPage' }),
+        cell: (c) => <ComponentGroupSelect c={c} />,
+      },
+      {
+        id: 'description',
+        header: t('component.description', { ns: 'statusPage' }),
+        cell: (c) => <ComponentDescriptionInput c={c} />,
+      },
+      {
         id: 'target',
         header: 'Target (private)',
         cell: (c) => (
@@ -143,11 +220,12 @@ export function StatusComponentsPanel() {
         ),
       },
     ],
-    [],
+    [t],
   )
 
   return (
     <div className="space-y-4">
+      <StatusGroupsManager />
       <AddComponentForm />
       {isLoading ? (
         <TableSkeleton columnCount={4} rowCount={3} />
@@ -175,7 +253,7 @@ export function StatusComponentsPanel() {
                 if (c.id) del.mutate(c.id)
               }}
             >
-              <TrashIcon className="size-3.5" aria-hidden="true" />
+              <TrashGlassIcon className="size-5" aria-hidden="true" />
               Remove
             </Button>
           )}

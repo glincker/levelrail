@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
+import { WrenchGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import type { SSHProbeResult } from '../queries/appImportSSH'
@@ -30,7 +30,7 @@ export function AppImportSSHFix({
   const sockets = SOCKET_CANDIDATES.filter((p) => p !== currentSocket)
   return (
     <Alert variant="destructive" role="alert">
-      <WrenchIcon aria-hidden />
+      <WrenchGlassIcon size="1.4em" aria-hidden />
       <AlertTitle>{t(`appImport.ssh.fix.${kind}.title`)}</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>{t(`appImport.ssh.fix.${kind}.body`)}</p>

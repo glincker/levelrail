@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
-  CloudArrowUpIcon,
-  PlugsConnectedIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  PlugGlassIcon,
+  TriangleAlertGlassIcon,
+  UploadGlassIcon,
+} from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -117,8 +117,8 @@ export function StorageAttachmentCard({ app }: { app: AppDetail }) {
         {app.storage_target_id ? (
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-2">
-              <PlugsConnectedIcon
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              <PlugGlassIcon
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
               <div>
@@ -165,7 +165,7 @@ export function StorageAttachmentCard({ app }: { app: AppDetail }) {
                 <FieldLabel htmlFor="storage-attach-target">Bucket</FieldLabel>
                 {collidingEnvKeys.length > 0 ? (
                   <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-                    <WarningIcon className="mt-0.5 size-4 shrink-0" />
+                    <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
                     <p className="text-sm">
                       This app already has{' '}
                       {collidingEnvKeys.length === 1
@@ -210,7 +210,7 @@ export function StorageAttachmentCard({ app }: { app: AppDetail }) {
                     disabled={pending || !selectedTargetId}
                     onClick={handleAttach}
                   >
-                    <CloudArrowUpIcon className="size-3.5" aria-hidden="true" />
+                    <UploadGlassIcon className="size-5" aria-hidden="true" />
                     {setAppStorage.isPending ? 'Attaching...' : 'Attach'}
                   </Button>
                 </div>

@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  MonitorIcon,
-  MoonIcon,
-  SunIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  CheckGlassIcon,
+  MonitorGlassIcon,
+  MoonGlassIcon,
+  SunGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { Button } from './ui/button'
 import {
   DropdownMenu,
@@ -17,17 +17,18 @@ import {
 import { useTheme, type Theme } from './ThemeProvider'
 import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
 
-const THEMES: { value: Theme; icon: Icon }[] = [
-  { value: 'light', icon: SunIcon },
-  { value: 'dark', icon: MoonIcon },
-  { value: 'system', icon: MonitorIcon },
+const THEMES: { value: Theme; icon: UiIcon }[] = [
+  { value: 'light', icon: SunGlassIcon },
+  { value: 'dark', icon: MoonGlassIcon },
+  { value: 'system', icon: MonitorGlassIcon },
 ]
 
 export function ThemeToggle() {
   const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
   const pageWidth = usePageWidth()
-  const Current = THEMES.find((o) => o.value === theme)?.icon ?? MonitorIcon
+  const Current =
+    THEMES.find((o) => o.value === theme)?.icon ?? MonitorGlassIcon
   const currentLabel = t(`shell.theme.${theme}`)
 
   return (
@@ -48,16 +49,20 @@ export function ThemeToggle() {
       <DropdownMenuContent aria-label={t('shell.theme.menu')}>
         {THEMES.map(({ value, icon: ItemIcon }) => (
           <DropdownMenuItem key={value} onClick={() => setTheme(value)}>
-            <ItemIcon />
+            <ItemIcon size="1.4em" />
             <span className="flex-1">{t(`shell.theme.${value}`)}</span>
-            {value === theme ? <CheckIcon aria-hidden="true" /> : null}
+            {value === theme ? (
+              <CheckGlassIcon size="1.4em" aria-hidden="true" />
+            ) : null}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
         {PAGE_WIDTHS.map((w) => (
           <DropdownMenuItem key={w} onClick={() => setPageWidth(w)}>
             <span className="flex-1">{t(`shell.pageWidth.${w}`)}</span>
-            {w === pageWidth ? <CheckIcon aria-hidden="true" /> : null}
+            {w === pageWidth ? (
+              <CheckGlassIcon size="1.4em" aria-hidden="true" />
+            ) : null}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { SettingRows } from '@/components/ui/setting-row'
 import { toast } from '@/components/ui/toast'
@@ -26,8 +26,8 @@ export function RuntimeSettingsReview() {
       className="space-y-3 rounded-lg border border-border bg-card p-4"
     >
       <div className="flex items-start gap-3">
-        <ShieldCheckIcon
-          className="mt-0.5 size-5 shrink-0 text-tone-success"
+        <ShieldCheckGlassIcon
+          className="mt-0.5 size-6 shrink-0 text-tone-success"
           aria-hidden="true"
         />
         <div className="min-w-0 space-y-1">

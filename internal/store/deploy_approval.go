@@ -97,6 +97,9 @@ type DeployApproval struct {
 	IncludeEnv bool
 	// PromoteEnv is the JSON env diff snapshotted when the promotion was requested.
 	PromoteEnv string
+	// ReleaseID is the release this approval applies when bindings are
+	// authoritative; empty for a tag based approval.
+	ReleaseID string
 }
 
 // deployApprovalIDPrefix mirrors auditEntryIDPrefix's own "short,
@@ -123,13 +126,14 @@ func (db *DB) SaveDeployApproval(ctx context.Context, a DeployApproval) error {
 			requested_by_type, requested_by, requested_by_name,
 			approved_by_type, approved_by, approved_by_name, reason,
 			created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env,
-			requester_user_id
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			requester_user_id, release_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, a.ID, a.ServiceName, a.SourceServiceName, a.EnvironmentID, a.Action, a.Image, a.Status,
 		a.RequestedByType, a.RequestedBy, a.RequestedByName,
 		a.ApprovedByType, a.ApprovedBy, a.ApprovedByName, a.Reason,
 		a.CreatedAt, a.ExpiresAt, a.DecidedAt, a.FreezeOverride, a.Pull, a.IncludeEnv, a.PromoteEnv,
-		sql.NullString{String: a.RequesterUserID, Valid: a.RequesterRecorded})
+		sql.NullString{String: a.RequesterUserID, Valid: a.RequesterRecorded},
+		sql.NullString{String: a.ReleaseID, Valid: a.ReleaseID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save deploy approval %q: %w", a.ID, err)
 	}
@@ -250,7 +254,7 @@ const deployApprovalSelect = `
 		requested_by_type, requested_by, requested_by_name,
 		approved_by_type, approved_by, approved_by_name, reason,
 		created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env,
-		requester_user_id
+		requester_user_id, release_id
 	FROM deploy_approvals
 `
 
@@ -259,14 +263,15 @@ const deployApprovalSelect = `
 // for the same GetX/ListX split.
 func scanDeployApproval(s rowScanner) (DeployApproval, error) {
 	var a DeployApproval
-	var requester sql.NullString
+	var requester, releaseID sql.NullString
 	err := s.Scan(
 		&a.ID, &a.ServiceName, &a.SourceServiceName, &a.EnvironmentID, &a.Action, &a.Image, &a.Status,
 		&a.RequestedByType, &a.RequestedBy, &a.RequestedByName,
 		&a.ApprovedByType, &a.ApprovedBy, &a.ApprovedByName, &a.Reason,
 		&a.CreatedAt, &a.ExpiresAt, &a.DecidedAt, &a.FreezeOverride, &a.Pull, &a.IncludeEnv, &a.PromoteEnv,
-		&requester,
+		&requester, &releaseID,
 	)
+	a.ReleaseID = releaseID.String
 	a.RequesterUserID, a.RequesterRecorded = requester.String, requester.Valid
 	return a, err
 }

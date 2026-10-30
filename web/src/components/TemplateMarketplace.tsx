@@ -1,6 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PackageIcon, WarningIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  PackageGlassIcon,
+  TriangleAlertGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -107,7 +111,11 @@ export function TemplateMarketplace({
   if (templatesQuery.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon aria-hidden="true" />
+        <TriangleAlertGlassIcon
+          className="text-tone-warning"
+          size="1.7em"
+          aria-hidden="true"
+        />
         <AlertDescription>{templatesQuery.error.message}</AlertDescription>
       </Alert>
     )
@@ -150,7 +158,7 @@ export function TemplateMarketplace({
           />
           {visible.length === 0 ? (
             <EmptyState
-              icon={<PackageIcon className="size-5" />}
+              icon={<PackageGlassIcon className="size-6" />}
               title={
                 hasFilters
                   ? t('marketplace.empty.title')
@@ -177,7 +185,7 @@ export function TemplateMarketplace({
                     variant="outline"
                     onClick={clearFilters}
                   >
-                    <XIcon aria-hidden="true" />
+                    <XGlassIcon size="1.4em" aria-hidden="true" />
                     {t('marketplace.empty.clear')}
                   </Button>
                 ) : undefined

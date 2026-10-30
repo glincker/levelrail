@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import {
-  DotsThreeIcon,
-  PauseIcon,
-  TagIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  EllipsisGlassIcon,
+  PauseGlassIcon,
+  TagGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -39,7 +39,7 @@ export function ContainerRowActions({ name }: { name: string }) {
             />
           }
         >
-          <DotsThreeIcon weight="bold" />
+          <EllipsisGlassIcon size="1.4em" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
@@ -55,7 +55,7 @@ export function ContainerRowActions({ name }: { name: string }) {
               })
             }}
           >
-            <PauseIcon />
+            <PauseGlassIcon size="1.4em" />
             Stop
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -63,7 +63,7 @@ export function ContainerRowActions({ name }: { name: string }) {
               setClaiming(true)
             }}
           >
-            <TagIcon />
+            <TagGlassIcon size="1.4em" />
             Claim as app
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -71,7 +71,7 @@ export function ContainerRowActions({ name }: { name: string }) {
               setConfirmRemove(true)
             }}
           >
-            <TrashIcon />
+            <TrashGlassIcon size="1.4em" />
             Remove
           </DropdownMenuItem>
         </DropdownMenuContent>

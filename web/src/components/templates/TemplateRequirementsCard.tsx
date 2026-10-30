@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  CaretDownIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ChevronDownGlassIcon,
+  ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,7 +52,10 @@ export function TemplateRequirementsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2 text-sm">
-          <ShieldCheckIcon className="size-4" aria-hidden="true" />
+          <ShieldCheckGlassIcon
+            className="size-5 text-tone-success"
+            aria-hidden="true"
+          />
           {t('requirements.title')}
           <Badge variant={LEVEL_VARIANT[requirements.level]}>
             {t(`requirements.level.${requirements.level}`)}
@@ -62,7 +65,10 @@ export function TemplateRequirementsCard({
       <CardContent className="space-y-3">
         {elevated ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
             <AlertDescription>
               {t('requirements.elevatedWarning')}
             </AlertDescription>
@@ -91,7 +97,7 @@ export function TemplateRequirementsCard({
         <Collapsible>
           <CollapsibleTrigger className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             {t('requirements.showAll')}
-            <CaretDownIcon className="size-3" aria-hidden="true" />
+            <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsiblePanel>
             <div className="mt-2 space-y-3">

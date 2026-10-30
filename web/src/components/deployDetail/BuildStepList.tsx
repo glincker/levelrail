@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import {
   formatStepDuration,
   hasRecognisedPhases,
@@ -24,7 +24,7 @@ export function BuildStepList({
   if (!hasRecognisedPhases(analysis) || analysis.steps.length === 0) {
     return null
   }
-  const Caret = open ? CaretDownIcon : CaretRightIcon
+  const Caret = open ? ChevronDownGlassIcon : ChevronRightGlassIcon
   const steps = [...analysis.steps].sort((a, b) => a.firstLine - b.firstLine)
 
   return (

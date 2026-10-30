@@ -2,11 +2,11 @@ import type { CSSProperties } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowUUpLeftIcon,
-  BellRingingIcon,
-  XCircleIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BellRingGlassIcon,
+  CircleXGlassIcon,
+  UndoGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import { deployLogsPath } from '../../queries/deployments'
 import { formatDurationMs } from '../../lib/deployDuration'
@@ -55,17 +55,16 @@ function OutcomeIcon({
 }) {
   const Icon =
     status === 'failed'
-      ? XCircleIcon
+      ? CircleXGlassIcon
       : status === 'rolled_back'
-        ? ArrowUUpLeftIcon
+        ? UndoGlassIcon
         : null
   if (!Icon) return null
   return (
     <Icon
       aria-hidden="true"
-      weight="fill"
       className={cn(
-        'pointer-events-none absolute top-0 size-3 -translate-x-1/2',
+        'pointer-events-none absolute top-0 size-3.5 -translate-x-1/2',
         status === 'failed' ? 'text-tone-danger' : 'text-tone-neutral',
       )}
       style={style}
@@ -224,7 +223,7 @@ export function ClusterCollapse({
       )}
       style={{ left: `calc(${String(center)}% + ${String(offset)}px)` }}
     >
-      <XIcon aria-hidden="true" className="size-2.5" />
+      <XGlassIcon aria-hidden="true" className="size-2.5" />
     </button>
   )
 }
@@ -254,7 +253,7 @@ export function AlertMarker({
       className="absolute bottom-0.5 -translate-x-1/2 text-tone-warning"
       style={{ left: `${String(left)}%` }}
     >
-      <BellRingingIcon aria-hidden="true" weight="fill" className="size-3" />
+      <BellRingGlassIcon aria-hidden="true" className="size-4.5" />
     </span>
   )
 }

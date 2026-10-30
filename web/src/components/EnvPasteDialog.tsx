@@ -1,8 +1,5 @@
 import { useMemo, useRef, useState, type DragEvent } from 'react'
-import {
-  ClipboardTextIcon,
-  UploadSimpleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ClipboardListGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import {
   classifyEnvImport,
   parseEnvBlock,
@@ -157,7 +154,7 @@ export function EnvPasteDialog({
       <DialogTrigger
         render={<Button type="button" variant="outline" size="sm" />}
       >
-        <ClipboardTextIcon />
+        <ClipboardListGlassIcon size="1.4em" />
         Paste .env
       </DialogTrigger>
       <DialogContent>
@@ -185,7 +182,7 @@ export function EnvPasteDialog({
           }}
           onDrop={handleDrop}
         >
-          <UploadSimpleIcon className="size-5 text-muted-foreground" />
+          <UploadGlassIcon className="size-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             Drag and drop a .env file here, or
           </p>

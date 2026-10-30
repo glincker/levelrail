@@ -5,14 +5,13 @@ import { Toast as ToastPrimitive } from '@base-ui/react/toast'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
-  XIcon,
-  CheckCircleIcon,
-  InfoIcon,
-  WarningIcon,
-  WarningOctagonIcon,
-  SpinnerIcon,
-} from '@phosphor-icons/react/dist/ssr'
-
+  CircleCheckGlassIcon,
+  InfoGlassIcon,
+  LoaderGlassIcon,
+  OctagonAlertGlassIcon,
+  TriangleAlertGlassIcon,
+  XGlassIcon,
+} from '@thesvg/ui-react'
 const toast = ToastPrimitive.createToastManager()
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
@@ -132,7 +131,7 @@ function ToastClose({
       )}
       {...props}
     >
-      {children ?? <XIcon aria-hidden="true" />}
+      {children ?? <XGlassIcon size="1.4em" aria-hidden="true" />}
     </ToastPrimitive.Close>
   )
 }
@@ -141,25 +140,53 @@ function ToastIcon({ type }: { type: string | undefined }) {
   let icon: React.ReactNode = null
 
   if (type === 'success') {
-    icon = <CheckCircleIcon aria-hidden="true" />
+    icon = (
+      <CircleCheckGlassIcon
+        className="text-tone-success"
+        size="1.4em"
+        aria-hidden="true"
+      />
+    )
   }
 
   if (type === 'info') {
-    icon = <InfoIcon aria-hidden="true" />
+    icon = (
+      <InfoGlassIcon
+        className="text-tone-info"
+        size="1.4em"
+        aria-hidden="true"
+      />
+    )
   }
 
   if (type === 'warning') {
-    icon = <WarningIcon aria-hidden="true" />
+    icon = (
+      <TriangleAlertGlassIcon
+        className="text-tone-warning"
+        size="1.7em"
+        aria-hidden="true"
+      />
+    )
   }
 
   if (type === 'error') {
     icon = (
-      <WarningOctagonIcon className="text-destructive" aria-hidden="true" />
+      <OctagonAlertGlassIcon
+        size="1.4em"
+        className="text-destructive"
+        aria-hidden="true"
+      />
     )
   }
 
   if (type === 'loading') {
-    icon = <SpinnerIcon className="animate-spin" aria-hidden="true" />
+    icon = (
+      <LoaderGlassIcon
+        size="1.4em"
+        className="animate-spin"
+        aria-hidden="true"
+      />
+    )
   }
 
   if (!icon) {
@@ -169,7 +196,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
   return (
     <span
       data-slot="toast-icon"
-      className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4"
+      className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-5"
     >
       {icon}
     </span>

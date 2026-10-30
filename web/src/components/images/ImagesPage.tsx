@@ -2,10 +2,10 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  BroomIcon,
-  HardDrivesIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BroomGlassIcon,
+  LayersGlassIcon,
+  ServerGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { MetricTile, RelativeTime, SkeletonList } from '@/components/kit'
@@ -174,7 +174,7 @@ export function ImagesPage() {
             setCleanupOpen(true)
           }}
         >
-          <BroomIcon aria-hidden="true" />
+          <BroomGlassIcon size="1.4em" aria-hidden="true" />
           {removable.length === 0
             ? t('cleanup.nothing')
             : t('cleanup.button', {
@@ -230,12 +230,12 @@ export function ImagesPage() {
               <MetricTile
                 label={t('tiles.count')}
                 value={data.totals.count}
-                icon={<StackIcon />}
+                icon={<LayersGlassIcon size="1.4em" />}
               />
               <MetricTile
                 label={t('tiles.size')}
                 value={sizeLabel(data.totals.size_bytes)}
-                icon={<HardDrivesIcon />}
+                icon={<ServerGlassIcon size="1.4em" />}
               />
               <MetricTile
                 label={t('tiles.reclaimable')}

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CopyIcon,
-  SparkleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CopyGlassIcon,
+  SparklesGlassIcon,
+  TriangleAlertGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -53,7 +53,7 @@ export function FrameworkPresetPicker({
   if (presets.isError) {
     return (
       <Alert variant="destructive">
-        <WarningIcon />
+        <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
         <AlertDescription>{t('loadFailed')}</AlertDescription>
       </Alert>
     )
@@ -82,8 +82,8 @@ export function FrameworkPresetPicker({
             <BrandIcon name={p.icon} className="size-4 shrink-0" />
             <span className="min-w-0 flex-1 truncate">{p.name}</span>
             {p.id === detectedId ? (
-              <SparkleIcon
-                className="size-3.5 shrink-0 text-muted-foreground"
+              <SparklesGlassIcon
+                className="size-5 shrink-0 text-muted-foreground"
                 aria-label={t('detected')}
               />
             ) : null}
@@ -153,7 +153,7 @@ export function FrameworkPresetPicker({
                 void copyDockerfile(active)
               }}
             >
-              <CopyIcon className="size-4" />
+              <CopyGlassIcon className="size-5" />
               {t('dockerfile')}
             </Button>
           ) : null}
@@ -162,7 +162,7 @@ export function FrameworkPresetPicker({
 
       {active && presetDiffers(active, port, healthPath) ? (
         <Alert>
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertTitle>{t('mismatchTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>

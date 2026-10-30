@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
@@ -25,7 +25,7 @@ export function RenewNowDialog({ node }: { node: NodeResource }) {
           setOpen(true)
         }}
       >
-        <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
+        <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         {t('trust.renewNow')}
       </Button>
       <ConfirmDialog

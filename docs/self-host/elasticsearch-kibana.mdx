@@ -1,11 +1,11 @@
 ---
 title: "Self-host Elasticsearch + Kibana with Docker"
 sidebarTitle: "Elasticsearch + Kibana"
-description: "Elasticsearch paired with Kibana for log and document search with a visual dashboard."
+description: "Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host."
 "og:url": "https://docs.levelrail.com/self-host/elasticsearch-kibana"
 ---
 
-Elasticsearch paired with Kibana for log and document search with a visual dashboard.
+Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host.
 
 This page describes the Levelrail template for Elasticsearch + Kibana (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker.
 
@@ -37,7 +37,6 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`elasticsearch`, `kibana`): 5601:5601, 9200:9200.
 - Passwords and keys are generated at deploy time (`kibana`): XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY.
 - Stores data in named volumes (`elasticsearch`): es_data.
 

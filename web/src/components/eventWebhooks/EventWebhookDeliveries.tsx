@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RotateCwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -91,7 +91,7 @@ export function EventWebhookDeliveries({ webhookId }: { webhookId: string }) {
                 })
               }}
             >
-              <ArrowClockwiseIcon className="size-3.5" aria-hidden="true" />
+              <RotateCwGlassIcon className="size-5" aria-hidden="true" />
               {t('deliveries.replay')}
             </Button>
           ) : null}

@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import type { KeyboardEvent, FocusEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -170,7 +170,7 @@ export function DatabaseVersionPicker({
             setOpen((o) => !o)
           }}
         >
-          <CaretDownIcon className="size-3.5" aria-hidden="true" />
+          <ChevronDownGlassIcon className="size-5" aria-hidden="true" />
         </button>
       ) : null}
       {expanded && data ? (

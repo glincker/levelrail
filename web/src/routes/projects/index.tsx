@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { FolderIcon } from '@phosphor-icons/react/dist/ssr'
+import { FolderGlassIcon } from '@thesvg/ui-react'
 import { projectListQueryOptions, useProjects } from '../../queries/projects'
 import {
   PROJECT_LIST_GRID,
@@ -62,7 +62,7 @@ function ProjectListPage() {
       title={t('banners.projects.title')}
       banner={
         <PageBanner
-          icon={<FolderIcon />}
+          icon={<FolderGlassIcon size="1.4em" />}
           titleKey="common:banners.projects.title"
           descriptionKey={
             isEmpty

@@ -37,7 +37,7 @@ func registerControlPlaneBackupTools(server *mcp.Server, client *apiclient.Clien
 
 	addTool(server, &mcp.Tool{
 		Name:        "verify_control_plane_backup",
-		Description: "Verify a control plane database snapshot by name (see list_control_plane_backups): runs integrity checks and returns ok plus each check's result. A failed check is a normal result. Restores nothing.",
+		Description: "Verify a control plane database snapshot by name: runs integrity checks and returns ok plus each result. A failed check is a normal result. Restores nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in controlPlaneBackupNameInput) (*mcp.CallToolResult, apiclient.ControlPlaneBackupVerification, error) {
 		res, err := client.VerifyControlPlaneBackup(ctx, in.Name)
 		if err != nil {

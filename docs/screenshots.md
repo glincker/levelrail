@@ -75,7 +75,7 @@ All credentials are freshly created for each run and never leave the scratch dat
 
 ## Demo mode captures
 
-`capture.sh` deploys two real apps minutes before shooting, so charts are thin and the dashboard is sparse. For populated hero pages (dashboard home, apps list, metrics, deploy history, deployments, nodes, alerts, inbox) use `scripts/screenshots/capture-demo.sh` instead. It seeds 14 days of fictional history with `levelrail demo seed`, serves it with `levelrail demo serve` on a free loopback port from 8095 up, and logs in as the read-only demo account (`demo` / `demo-readonly`). No Docker is needed.
+`capture.sh` deploys two real apps minutes before shooting, so charts are thin and the dashboard is sparse. For populated hero pages (dashboard home, apps list, metrics, deploy history, deployments, nodes, alerts, inbox, app releases) use `scripts/screenshots/capture-demo.sh` instead. It seeds 14 days of fictional history with `levelrail demo seed`, serves it with `levelrail demo serve` on a free loopback port from 8095 up, and logs in as the read-only demo account (`demo` / `demo-readonly`). No Docker is needed. It also applies `scripts/screenshots/demo-extra-seed.sql` (needs `sqlite3`) and serves with `APP_RELEASE_BINDINGS=shadow` so the app overview shows release records.
 
 ```
 scripts/screenshots/capture-demo.sh

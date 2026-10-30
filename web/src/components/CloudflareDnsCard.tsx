@@ -1,4 +1,4 @@
-import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import type { CloudflareDnsSettings } from '../queries/cloudflareDns'
 import {
   useDisconnectCloudflareDns,
@@ -59,7 +59,7 @@ export function CloudflareDnsCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheckIcon className="size-4" />
+          <ShieldCheckGlassIcon className="size-5 text-tone-success" />
           Wildcard domains (Cloudflare DNS-01)
         </CardTitle>
         <CardDescription>

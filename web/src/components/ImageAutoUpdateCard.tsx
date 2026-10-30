@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -64,7 +64,7 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ArrowsClockwiseIcon className="size-4 text-muted-foreground" />
+          <RefreshCwGlassIcon className="size-5 text-muted-foreground" />
           {t('imageAutoUpdate.title')}
           <InfoTip label={t('imageAutoUpdate.infoTipLabel')}>
             {t('imageAutoUpdate.description')}

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { GearIcon, TerminalWindowIcon } from '@phosphor-icons/react/dist/ssr'
+import { SettingsGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
 import { CliConsole } from '../cliConsole/CliConsole'
 import { useExperimentalFeatures } from '../../hooks/useExperimental'
 import { Button } from '@/components/ui/button'
@@ -13,12 +13,12 @@ export function DockConsoleTab() {
     return (
       <div className="flex h-full min-h-0 flex-col p-3">
         <EmptyState
-          icon={<TerminalWindowIcon className="size-5" />}
+          icon={<TerminalGlassIcon className="size-6" />}
           title={t('cliConsole.dock.offTitle')}
           description={t('cliConsole.dock.offDescription')}
           action={
             <Button size="sm" render={<Link to="/settings/beta-features" />}>
-              <GearIcon />
+              <SettingsGlassIcon size="1.4em" />
               {t('dock.ai.enableInSettings')}
             </Button>
           }

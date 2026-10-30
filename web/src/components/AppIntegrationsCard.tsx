@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -63,7 +63,7 @@ export function AppIntegrationsCard({ appName }: { appName: string }) {
           </div>
         ) : attached.length === 0 ? (
           <EmptyState
-            icon={<PlugsConnectedIcon className="size-5" />}
+            icon={<PlugGlassIcon className="size-6" />}
             title="No integrations attached"
             description="Attach PostHog, Sentry, and other curated tools to inject their env vars automatically at deploy time."
           />
@@ -79,8 +79,8 @@ export function AppIntegrationsCard({ appName }: { appName: string }) {
                     logoId={logoIdForIntegration(integration.integration_key)}
                     className="size-6"
                     fallback={
-                      <PlugsConnectedIcon
-                        className="size-4 shrink-0 text-muted-foreground"
+                      <PlugGlassIcon
+                        className="size-5 shrink-0 text-muted-foreground"
                         aria-hidden="true"
                       />
                     }

@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  PushPinIcon,
-  TagIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  PinGlassIcon,
+  TagGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { summarizeImagePins } from '../../lib/templateTrust'
 
@@ -16,19 +16,22 @@ export function TemplateTrustBadges({ images }: { images: string[] }) {
     <>
       {s.digest > 0 ? (
         <Badge variant="muted" title={t('trust.digestHint')}>
-          <PushPinIcon className="size-3" aria-hidden="true" />
+          <PinGlassIcon className="size-4.5" aria-hidden="true" />
           {t('trust.digest', { count: s.digest })}
         </Badge>
       ) : null}
       {s.tag > 0 ? (
         <Badge variant="muted" title={t('trust.tagHint')}>
-          <TagIcon className="size-3" aria-hidden="true" />
+          <TagGlassIcon className="size-4.5" aria-hidden="true" />
           {t('trust.tag', { count: s.tag })}
         </Badge>
       ) : null}
       {s.floating > 0 ? (
         <Badge variant="outline" title={t('trust.floatingHint')}>
-          <WarningCircleIcon className="size-3" aria-hidden="true" />
+          <CircleAlertGlassIcon
+            className="size-4.5 text-tone-danger"
+            aria-hidden="true"
+          />
           {t('trust.floating', { count: s.floating })}
         </Badge>
       ) : null}

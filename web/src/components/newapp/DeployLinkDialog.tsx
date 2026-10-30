@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -42,7 +42,11 @@ function CopyRow({
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">{label}</span>
         <Button type="button" variant="outline" size="sm" onClick={copy}>
-          {copied ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
+          {copied ? (
+            <CheckGlassIcon size="1.4em" aria-hidden />
+          ) : (
+            <CopyGlassIcon size="1.4em" aria-hidden />
+          )}
           {copied ? t('deployLinkDialog.copied') : t('deployLinkDialog.copy')}
         </Button>
       </div>

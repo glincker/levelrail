@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import type { ReconcileCondition } from '../types/deploy'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RelativeTime } from '@/components/kit'
@@ -81,8 +81,8 @@ export function ConditionsPanel({
                         TONE.warning.text,
                       )}
                     >
-                      <WarningIcon
-                        className="mt-0.5 size-4 shrink-0"
+                      <TriangleAlertGlassIcon
+                        className="mt-0.5 size-6 shrink-0 text-tone-warning"
                         aria-hidden="true"
                       />
                       <p>

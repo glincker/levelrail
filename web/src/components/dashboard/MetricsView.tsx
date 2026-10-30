@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChartLineUpIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChartLineGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DashboardGrid } from '@/components/dashboards/DashboardGrid'
@@ -28,7 +28,7 @@ export function MetricsView({
   if (!hasApps) {
     return (
       <EmptyState
-        icon={<ChartLineUpIcon className="size-5" />}
+        icon={<ChartLineGlassIcon className="size-6" />}
         title={t('tabs.metricsEmptyTitle')}
         description={t('tabs.metricsEmptyBody')}
         action={
@@ -47,7 +47,7 @@ export function MetricsView({
           disabled={busy}
           onClick={onCustomize}
         >
-          <CopyIcon />
+          <CopyGlassIcon size="1.4em" />
           {t('tabs.customize')}
         </Button>
       </div>

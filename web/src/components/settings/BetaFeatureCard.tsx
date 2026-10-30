@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { BetaFeatureServerOptions } from '@/components/settings/BetaFeatureServerOptions'
 import { RestartControlPlaneButton } from '@/components/RestartControlPlaneButton'
 import { useIsRoot } from '@/hooks/useIsRoot'
@@ -40,7 +40,7 @@ export function RestartNeeded() {
             disabled={isFetching}
             onClick={() => void refetch()}
           >
-            <ArrowsClockwiseIcon aria-hidden="true" />
+            <RefreshCwGlassIcon size="1.4em" aria-hidden="true" />
             {t('restart.recheck')}
           </Button>
           {info?.hint ? (

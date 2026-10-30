@@ -4,6 +4,105 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="0.8.6" description="2026-10-27">
+**Features**
+
+* **web:** show failure class and copyable error excerpt on deploys
+
+
+**Bug Fixes**
+
+* **agent:** keep container creation time from remote nodes
+* **cli:** clearer errors for up without git and a non-numeric match
+* **cli:** deploy exits right after the summary
+* **deploy:** a serving release keeps its drain after a restart
+* **deploy:** classify failed build steps correctly and link full docs URLs
+* **deploy:** overlapping deploys no longer cut a release mid-drain
+* **deploy:** rollback no longer leaves older releases running
+* **deploy:** show why a build failed, stop claiming services run early
+* **install:** keep the setup token out of cloud-init and CI logs
+* **install:** one copy-pasteable CLI login sequence after install
+* **podman:** a zero OIDC retry interval no longer spins
+* **podman:** OIDC endpoint waits for the bridge instead of failing to bind
+* **reconcile:** drain each release from when traffic left it
+* **reconcile:** drain replicas removed by a scale-down
+* **security:** keep the first-run setup token out of the service log
+* **security:** strip terminal control codes from build errors
+* stability fixes from real-host QA on Docker and Podman
+
+
+**Documentation**
+
+* **install:** setup-token command that works on the server
+</Update>
+
+<Update label="0.8.5" description="2026-10-26">
+**Features**
+
+* safer rollbacks, hosted imports, Podman and multi-node fixes (#1387)
+* stacks and GitOps, test speed, multi-node fixes (v0.8.6, in progress)
+* v0.8.6 stacks and GitOps, assets, concurrent reconcile, catalog hardening
+
+
+**Bug Fixes**
+
+* CI fan-in, keyed timeout test and first-load bundle
+* keep the ui-kit chunk inside its bundle budget
+</Update>
+
+<Update label="0.8.4" description="2026-10-24">
+**Features**
+
+* cleanup center, security settings, safer enrollment and faster CI (#1376)
+</Update>
+
+<Update label="0.8.3" description="2026-10-23">
+**Features**
+
+* email failover, spend caps, traffic export and ingress rate limits (#1363)
+</Update>
+
+<Update label="0.8.2" description="2026-10-22">
+**Bug Fixes**
+
+* the release image build copies install-cli.ps1 so the web stage builds (#1346)
+</Update>
+
+<Update label="0.8.1" description="2026-10-22">
+**Features**
+
+* Functions, migration agent, cloud readiness and a safer database flow (#1327)
+* group deploy timeline, builds and cost explorer under tabbed sidebar entries
+
+
+**Documentation**
+
+* note what the 0.8 release line adds on the roadmap (#1340)
+</Update>
+
+<Update label="0.8.0" description="2026-10-21">
+**Features**
+
+* 0.8 with inbox, upgrade recovery, secret rotation and zone spread (#1316)
+
+
+**Bug Fixes**
+
+* build the CLI for Windows again by splitting the unix-only inode call (#1325)
+</Update>
+
+<Update label="0.7.0" description="2026-10-20">
+**Features**
+
+* release 0.13 with safer defaults, a plugin marketplace and one search across everything (#1291)
+* release 0.14 with easier migration, one-command deploys, git push deploys and stronger SSO (#1294)
+
+
+**Bug Fixes**
+
+* **ci:** get main green again after 0.14 (#1297)
+</Update>
+
 <Update label="0.6.0" description="2026-10-17">
 **Features**
 

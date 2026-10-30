@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAssetUsage } from '../../queries/assets'
 import { sizeLabel } from '../../lib/assetsFormat'
@@ -48,9 +48,9 @@ export function BucketList({
             <span className="w-28 text-right text-muted-foreground tabular-nums">
               <BucketSize id={b.id} />
             </span>
-            <CaretRightIcon
+            <ChevronRightGlassIcon
               aria-hidden="true"
-              className="size-4 text-muted-foreground"
+              className="size-5 text-muted-foreground"
             />
           </button>
         </li>

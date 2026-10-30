@@ -1,9 +1,6 @@
 import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { Link } from '@tanstack/react-router'
-import {
-  DownloadSimpleIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { DownloadGlassIcon, ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { InfoTip, StatusPill, type Tone } from './kit'
@@ -217,7 +214,10 @@ export function SupplyChainSection({
           onClick={scanNow}
           disabled={!canScan || scan.isPending}
         >
-          <ShieldCheckIcon className="size-4" aria-hidden="true" />
+          <ShieldCheckGlassIcon
+            className="size-5 text-tone-success"
+            aria-hidden="true"
+          />
           {scan.isPending ? 'Scanning' : 'Scan now'}
         </Button>
         <InfoTip label="About scanning">
@@ -232,7 +232,7 @@ export function SupplyChainSection({
             nativeButton={false}
             render={<a href={data.download_url} download />}
           >
-            <DownloadSimpleIcon className="size-4" aria-hidden="true" />
+            <DownloadGlassIcon className="size-5" aria-hidden="true" />
             SBOM
           </Button>
         )}

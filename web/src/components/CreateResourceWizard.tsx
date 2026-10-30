@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  DatabaseIcon,
-  GitBranchIcon,
-  MagnifyingGlassIcon,
-  PackageIcon,
-  StackIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  DatabaseGlassIcon,
+  GitBranchGlassIcon,
+  LayersGlassIcon,
+  PackageGlassIcon,
+  SearchGlassIcon,
+} from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -63,24 +63,24 @@ const FIXED_OPTIONS: WizardOptionDef[] = [
     description:
       "Point us at your repository, we'll build and deploy it for you.",
     // No brand mark for this one: git itself isn't one of the vendored
-    // @thesvg/react logos, so this reuses the same Phosphor icon
+    // @thesvg/react logos, so this reuses the same UI icon
     // DeployTriggerForm.tsx's "Build from source" tab already uses for
     // the same concept.
-    icon: <GitBranchIcon className="size-6" />,
+    icon: <GitBranchGlassIcon className="size-8" />,
   },
   {
     value: 'docker-compose',
     label: 'Docker Compose',
     description:
       'Paste or upload a compose.yaml and deploy every service it defines at once.',
-    icon: <StackIcon className="size-6" />,
+    icon: <LayersGlassIcon className="size-8" />,
   },
   {
     value: 'browse-templates',
     label: 'Browse templates',
     description:
       'Pick from a curated catalog of ready-to-deploy services like n8n, Uptime Kuma, and MinIO.',
-    icon: <PackageIcon className="size-6" />,
+    icon: <PackageGlassIcon className="size-8" />,
   },
 ]
 
@@ -250,11 +250,11 @@ export function CreateResourceWizard({
   const heroEntry = pickerEntries.find((e) => e.key === selectedKey)
   const heroMark =
     selected === 'docker-image' ? (
-      <PackageIcon aria-hidden="true" className="size-7" />
+      <PackageGlassIcon aria-hidden="true" className="size-9" />
     ) : selected === 'dockerfile-git' ? (
-      <GitBranchIcon aria-hidden="true" className="size-7" />
+      <GitBranchGlassIcon aria-hidden="true" className="size-9" />
     ) : selected !== null && isFixedOption(selected) ? (
-      <StackIcon aria-hidden="true" className="size-7" />
+      <LayersGlassIcon aria-hidden="true" className="size-9" />
     ) : heroEntry?.brand ? (
       <BrandIcon name={heroEntry.brand} className="size-8" />
     ) : heroEntry?.flavor ? (
@@ -262,7 +262,7 @@ export function CreateResourceWizard({
         {heroEntry.label.slice(0, 2)}
       </span>
     ) : (
-      <DatabaseIcon aria-hidden="true" className="size-7" />
+      <DatabaseGlassIcon aria-hidden="true" className="size-9" />
     )
   const heroChips: string[] = []
   if (heroEntry?.port)
@@ -324,8 +324,8 @@ export function CreateResourceWizard({
                 <DialogDescription>{pickerDescription}</DialogDescription>
               </DialogHeader>
               <div className="relative">
-                <MagnifyingGlassIcon
-                  className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                <SearchGlassIcon
+                  className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <Input
@@ -408,9 +408,9 @@ export function CreateResourceWizard({
                   className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border p-3 text-left text-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
-                    <PackageIcon
+                    <PackageGlassIcon
                       aria-hidden="true"
-                      className="size-5 text-muted-foreground"
+                      className="size-6 text-muted-foreground"
                     />
                   </span>
                   <span className="min-w-0">

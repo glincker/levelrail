@@ -68,6 +68,14 @@ Linger keeps the user's services running after logout. Point `APP_CONTAINER_RUNT
 - Compose `ports` are not published on the host as written. A service port is published on a random loopback port for ingress, so do not rely on the host port you wrote in the compose file. See [Compose apps](/compose-apps).
 - The exposure controller needs the iptables DOCKER-USER chain. On Podman with netavark and nftables that chain is absent. The check recognises that case (it is not treated as a read failure), stays quiet when no port restrictions are set, and reports once when one is, because the allow-list cannot be applied there. Use firewalld or an nftables rule on the host instead.
 
+## OrbStack for local development
+
+OrbStack is verified for local development with `levelrail-cli dev` on macOS. It is not a server runtime.
+
+- Checked on 2026-10-29: macOS 27.2 (arm64), OrbStack 2.1.3, Docker engine 29.4.0 (linux/arm64). With `DOCKER_HOST` pointing at `~/.orbstack/run/docker.sock` and Docker Desktop also installed, `dev` started, deployed `nginx:alpine`, served the welcome page at `http://<app>.localhost:<port>` with HTTP 200, and logs, restart and stop worked. The app container ran in OrbStack only. Stopping `dev` left no containers behind.
+- `dev` now also finds `~/.orbstack/run/docker.sock` on its own, after the Docker Desktop, Colima and Rancher Desktop sockets. If several runtimes are installed, set `DOCKER_HOST` to pick one.
+- Limits: OrbStack runs all containers in one shared VM, and host path mounts can see your macOS files, so this is not isolation. Its free tier is for personal use only.
+
 ## Verify
 
 ```bash

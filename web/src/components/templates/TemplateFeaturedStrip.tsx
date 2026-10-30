@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { ChevronDownGlassIcon, RocketGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -52,7 +52,8 @@ export function TemplateFeaturedStrip({
             setOpen((v) => !v)
           }}
         >
-          <CaretDownIcon
+          <ChevronDownGlassIcon
+            size="1.4em"
             aria-hidden="true"
             className={cn('transition-transform', !open && '-rotate-90')}
           />
@@ -125,7 +126,7 @@ export function TemplateFeaturedStrip({
                     onDeployNow(template)
                   }}
                 >
-                  <RocketLaunchIcon aria-hidden="true" />
+                  <RocketGlassIcon size="1.4em" aria-hidden="true" />
                   {deploying
                     ? t('marketplace.card.deploying')
                     : t('marketplace.card.deploy')}

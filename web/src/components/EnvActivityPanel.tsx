@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RestoreGlassIcon } from '@thesvg/ui-react'
 import { useAppConfigActivity } from '../queries/auditLog'
 import {
   Card,
@@ -34,7 +34,7 @@ export function EnvActivityPanel({ appName }: { appName: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ClockCounterClockwiseIcon className="size-4" />
+          <RestoreGlassIcon className="size-5" />
           Recent activity
         </CardTitle>
         <CardDescription>

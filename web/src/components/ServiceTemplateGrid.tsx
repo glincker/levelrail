@@ -2,27 +2,27 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  AppWindowIcon,
-  ChartBarIcon,
-  ChartLineIcon,
-  ChatCircleIcon,
-  CheckSquareIcon,
-  CodeIcon,
-  CoinsIcon,
-  DatabaseIcon,
-  HardDrivesIcon,
-  LightningIcon,
-  MagnifyingGlassIcon,
-  PlayCircleIcon,
-  RocketLaunchIcon,
-  ShieldCheckIcon,
-  SparkleIcon,
-  SquaresFourIcon,
-  StackIcon,
-  WarningIcon,
-  WifiHighIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+  AppWindowGlassIcon,
+  ChartColumnGlassIcon,
+  ChartLineGlassIcon,
+  CirclePlayGlassIcon,
+  CodeGlassIcon,
+  CoinsGlassIcon,
+  DatabaseGlassIcon,
+  LayersGlassIcon,
+  LayoutGridGlassIcon,
+  MessageCircleGlassIcon,
+  RocketGlassIcon,
+  SearchGlassIcon,
+  ServerGlassIcon,
+  ShieldCheckGlassIcon,
+  SparklesGlassIcon,
+  SquareCheckGlassIcon,
+  TriangleAlertGlassIcon,
+  WifiHighGlassIcon,
+  ZapGlassIcon,
+  type UiIcon,
+} from '@thesvg/ui-react'
 import { TemplateLogoTile } from './TemplateLogoTile'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -38,24 +38,24 @@ import {
 // internal/catalog/catalog.go's current Category values. Unlisted or
 // future categories fall back to PackageIcon. Shared with the /templates
 // routes so the fallback icon matches whichever this grid last showed.
-export const CATEGORY_ICONS: Record<string, Icon> = {
-  AI: SparkleIcon,
-  Analytics: ChartBarIcon,
-  Applications: AppWindowIcon,
-  Automation: LightningIcon,
-  Communication: ChatCircleIcon,
-  Dashboard: SquaresFourIcon,
-  'Database Tools': DatabaseIcon,
-  'Developer Tools': CodeIcon,
-  Finance: CoinsIcon,
-  Infrastructure: StackIcon,
-  IoT: WifiHighIcon,
-  Media: PlayCircleIcon,
-  Monitoring: ChartLineIcon,
-  Productivity: CheckSquareIcon,
-  Security: ShieldCheckIcon,
-  Storage: HardDrivesIcon,
-  'Starter Kits': RocketLaunchIcon,
+export const CATEGORY_ICONS: Record<string, UiIcon> = {
+  AI: SparklesGlassIcon,
+  Analytics: ChartColumnGlassIcon,
+  Applications: AppWindowGlassIcon,
+  Automation: ZapGlassIcon,
+  Communication: MessageCircleGlassIcon,
+  Dashboard: LayoutGridGlassIcon,
+  'Database Tools': DatabaseGlassIcon,
+  'Developer Tools': CodeGlassIcon,
+  Finance: CoinsGlassIcon,
+  Infrastructure: LayersGlassIcon,
+  IoT: WifiHighGlassIcon,
+  Media: CirclePlayGlassIcon,
+  Monitoring: ChartLineGlassIcon,
+  Productivity: SquareCheckGlassIcon,
+  Security: ShieldCheckGlassIcon,
+  Storage: ServerGlassIcon,
+  'Starter Kits': RocketGlassIcon,
 }
 
 function matchesSearch(
@@ -146,7 +146,7 @@ function TemplateCard({
           onDeployNow(template)
         }}
       >
-        <RocketLaunchIcon />
+        <RocketGlassIcon size="1.4em" />
         {deploying
           ? t('card.deploying')
           : template.requires_configuration
@@ -191,8 +191,8 @@ export function ServiceTemplateGrid({
   return (
     <div className="space-y-4">
       <div className="relative">
-        <MagnifyingGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+        <SearchGlassIcon
+          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -213,7 +213,7 @@ export function ServiceTemplateGrid({
         </div>
       ) : templatesQuery.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
           <AlertDescription>{templatesQuery.error.message}</AlertDescription>
         </Alert>
       ) : (

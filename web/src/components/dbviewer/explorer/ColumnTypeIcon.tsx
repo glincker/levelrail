@@ -1,25 +1,25 @@
 import { useTranslation } from 'react-i18next'
 import {
-  BracketsCurlyIcon,
-  ClockIcon,
-  FingerprintIcon,
-  HashIcon,
-  QuestionIcon,
-  TextTIcon,
-  ToggleLeftIcon,
-  BinaryIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  BinaryGlassIcon,
+  BracesGlassIcon,
+  CircleQuestionMarkGlassIcon,
+  ClockGlassIcon,
+  FingerprintPatternGlassIcon,
+  HashGlassIcon,
+  SwitchGlassIcon,
+  TypeGlassIcon,
+} from '@thesvg/ui-react'
 import type { ColumnKind } from '../../../lib/explorerData'
 
-const ICONS: Record<ColumnKind, typeof HashIcon> = {
-  number: HashIcon,
-  text: TextTIcon,
-  boolean: ToggleLeftIcon,
-  datetime: ClockIcon,
-  json: BracketsCurlyIcon,
-  uuid: FingerprintIcon,
-  binary: BinaryIcon,
-  other: QuestionIcon,
+const ICONS: Record<ColumnKind, typeof HashGlassIcon> = {
+  number: HashGlassIcon,
+  text: TypeGlassIcon,
+  boolean: SwitchGlassIcon,
+  datetime: ClockGlassIcon,
+  json: BracesGlassIcon,
+  uuid: FingerprintPatternGlassIcon,
+  binary: BinaryGlassIcon,
+  other: CircleQuestionMarkGlassIcon,
 }
 
 export function ColumnTypeIcon({
@@ -35,7 +35,7 @@ export function ColumnTypeIcon({
   return (
     <span title={label} className="inline-flex shrink-0">
       <Icon
-        className="size-3.5 text-muted-foreground"
+        className="size-4.5 text-muted-foreground"
         aria-label={label}
         role="img"
       />

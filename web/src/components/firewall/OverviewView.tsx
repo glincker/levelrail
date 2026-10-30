@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import {
-  ShieldCheckIcon,
-  ShieldWarningIcon,
-  SirenIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ShieldAlertGlassIcon,
+  ShieldCheckGlassIcon,
+  SirenGlassIcon,
+} from '@thesvg/ui-react'
 import {
   useFirewallRules,
   useFirewallSeries,
@@ -60,11 +60,17 @@ export function OverviewView({
             tone={tone}
             icon={
               attack?.active ? (
-                <SirenIcon />
+                <SirenGlassIcon size="1.4em" />
               ) : spiking ? (
-                <ShieldWarningIcon />
+                <ShieldAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.4em"
+                />
               ) : (
-                <ShieldCheckIcon />
+                <ShieldCheckGlassIcon
+                  className="text-tone-success"
+                  size="1.4em"
+                />
               )
             }
             title={

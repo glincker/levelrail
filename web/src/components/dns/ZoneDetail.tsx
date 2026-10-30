@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
-  ArrowsDownUpIcon,
-  ListPlusIcon,
-  SignpostIcon,
-  TrashIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  ArrowUpDownGlassIcon,
+  ListPlusGlassIcon,
+  SignpostGlassIcon,
+  TrashGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -76,7 +76,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               variant="outline"
               onClick={() => setModal({ kind: 'wizard' })}
             >
-              <SignpostIcon />
+              <SignpostGlassIcon size="1.4em" />
               {t('zone.nameservers')}
             </Button>
             <Button
@@ -84,7 +84,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               variant="outline"
               onClick={() => setModal({ kind: 'template' })}
             >
-              <ListPlusIcon />
+              <ListPlusGlassIcon size="1.4em" />
               {t('zone.templates')}
             </Button>
             <Button
@@ -92,7 +92,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               variant="outline"
               onClick={() => setModal({ kind: 'import' })}
             >
-              <ArrowsDownUpIcon />
+              <ArrowUpDownGlassIcon size="1.4em" />
               {t('zone.importExport')}
             </Button>
             <Button
@@ -101,7 +101,7 @@ export function ZoneDetail({ zoneRef }: { zoneRef: string }) {
               aria-label={t('zone.delete')}
               onClick={() => setModal({ kind: 'deleteZone' })}
             >
-              <TrashIcon />
+              <TrashGlassIcon size="1.4em" />
             </Button>
           </>
         }

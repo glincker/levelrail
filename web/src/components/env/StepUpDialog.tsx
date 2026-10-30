@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FingerprintIcon, LockKeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { FingerprintPatternGlassIcon, LockGlassIcon } from '@thesvg/ui-react'
 import {
   EnvApiError,
   stepUpWithPasskey,
@@ -136,7 +136,7 @@ export function StepUpDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <LockKeyIcon aria-hidden className="size-4" />
+            <LockGlassIcon aria-hidden className="size-5" />
             {t('stepUp.title')}
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -202,7 +202,7 @@ export function StepUpDialog({
                 void confirmWithPasskey()
               }}
             >
-              <FingerprintIcon />
+              <FingerprintPatternGlassIcon size="1.4em" />
               {t('stepUp.passkey')}
             </Button>
           </div>

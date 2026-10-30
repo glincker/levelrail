@@ -1,9 +1,9 @@
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+  CircleAlertGlassIcon,
+  CircleCheckGlassIcon,
+  CircleGlassIcon,
+  LoaderCircleGlassIcon,
+} from '@thesvg/ui-react'
 import type {
   DeployStepEvent,
   DeployStepStatus,
@@ -33,31 +33,29 @@ function StatusIcon({ status }: { status: RowStatus }) {
   switch (status) {
     case 'done':
       return (
-        <CheckCircleIcon
-          className="size-4 text-success-foreground"
-          weight="fill"
+        <CircleCheckGlassIcon
+          className="size-5 text-success-foreground"
           aria-hidden="true"
         />
       )
     case 'running':
       return (
-        <SpinnerGapIcon
-          className="size-4 animate-spin text-muted-foreground"
+        <LoaderCircleGlassIcon
+          className="size-5 animate-spin text-muted-foreground"
           aria-hidden="true"
         />
       )
     case 'failed':
       return (
-        <WarningCircleIcon
-          className="size-4 text-destructive"
-          weight="fill"
+        <CircleAlertGlassIcon
+          className="size-5 text-destructive"
           aria-hidden="true"
         />
       )
     default:
       return (
-        <CircleIcon
-          className="size-4 text-muted-foreground/50"
+        <CircleGlassIcon
+          className="size-5 text-muted-foreground/50"
           aria-hidden="true"
         />
       )

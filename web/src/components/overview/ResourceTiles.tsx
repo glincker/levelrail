@@ -1,5 +1,5 @@
 import { Display } from '@/components/ui/typography'
-import { CpuIcon, MemoryIcon } from '@phosphor-icons/react/dist/ssr'
+import { CpuGlassIcon, MemoryStickGlassIcon } from '@thesvg/ui-react'
 import { InfoTip, SkeletonTile, Sparkline } from '@/components/kit'
 import { formatBytes } from '../../lib/format'
 import { usageRatio, type ResourceReading } from './useResourceReading'
@@ -82,7 +82,7 @@ export function ResourceTiles({ reading }: { reading: ResourceReading }) {
     <>
       <ResourceTile
         label="CPU"
-        icon={<CpuIcon className="size-3.5" />}
+        icon={<CpuGlassIcon className="size-5" />}
         value={cpuNow === null ? 'n/a' : `${cpuNow.toFixed(1)}%`}
         context={cores > 0 ? `of ${cores} CPU limit` : 'no CPU limit set'}
         ratio={cpuRatio}
@@ -91,7 +91,7 @@ export function ResourceTiles({ reading }: { reading: ResourceReading }) {
       />
       <ResourceTile
         label="Memory"
-        icon={<MemoryIcon className="size-3.5" />}
+        icon={<MemoryStickGlassIcon className="size-5" />}
         value={memNow === null ? 'n/a' : formatBytes(memNow)}
         context={
           memLimit > 0 ? `of ${formatBytes(memLimit)}` : 'no memory limit set'

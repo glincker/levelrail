@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowRightIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRightGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { showGuideEntryPoints } from '../../lib/setupGuide'
 import { useSetGuideHidden, useSetupGuide } from '../../queries/setupGuide'
 
@@ -22,7 +22,7 @@ export function SetupChipView({
         className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-foreground hover:bg-muted"
       >
         {t('chip.cta')}
-        <ArrowRightIcon className="size-3" aria-hidden="true" />
+        <ArrowRightGlassIcon className="size-4.5" aria-hidden="true" />
       </Link>
       <button
         type="button"
@@ -30,7 +30,7 @@ export function SetupChipView({
         onClick={onHide}
         className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <XIcon className="size-3" />
+        <XGlassIcon className="size-4.5" />
       </button>
     </span>
   )
