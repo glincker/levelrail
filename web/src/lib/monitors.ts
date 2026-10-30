@@ -1,14 +1,16 @@
 import type { Monitor, MonitorResults } from '../types/monitor'
 
-export type MonitorState = 'up' | 'down' | 'paused' | 'unknown'
+export type MonitorState =
+  'up' | 'suspect' | 'down' | 'recovering' | 'paused' | 'unknown'
 
-// The API exposes raw results, not the state machine, so the pill reflects
-// the newest probe outcome and says unknown when there is none.
+// The pill prefers the confirmed state from the API and falls back to the
+// newest probe outcome when it is absent (older servers, no probe yet).
 export function deriveMonitorState(
-  monitor: Pick<Monitor, 'enabled'>,
+  monitor: Pick<Monitor, 'enabled' | 'state'>,
   results?: MonitorResults,
 ): MonitorState {
   if (!monitor.enabled) return 'paused'
+  if (monitor.state) return monitor.state
   const raw = results?.raw ?? []
   if (raw.length === 0) return 'unknown'
   const newest = raw.reduce((a, b) => (b.at > a.at ? b : a))

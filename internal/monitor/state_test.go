@@ -29,3 +29,16 @@ func TestTrackerConfirmsAndRecovers(t *testing.T) {
 		t.Fatalf("recovered: %s %v", s, got)
 	}
 }
+
+func TestTrackerStatusCounts(t *testing.T) {
+	tr := NewTracker(3, 2, nil)
+	m := Monitor{ID: "mon_2"}
+	if st := tr.Status(m.ID); st.State != "" {
+		t.Fatalf("unprobed: %+v", st)
+	}
+	tr.Observe(m, Result{})
+	tr.Observe(m, Result{})
+	if st := tr.Status(m.ID); st.State != StateSuspect || st.FailStreak != 2 {
+		t.Fatalf("suspect: %+v", st)
+	}
+}

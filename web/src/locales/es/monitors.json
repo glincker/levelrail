@@ -13,7 +13,9 @@
   },
   "state": {
     "up": "Activo",
+    "suspect": "Sospechoso",
     "down": "Caído",
+    "recovering": "Recuperando",
     "paused": "En pausa",
     "unknown": "Sin datos"
   },

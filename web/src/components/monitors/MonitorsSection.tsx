@@ -21,13 +21,17 @@ import {
 import type { Monitor } from '../../types/monitor'
 import { MonitorForm } from './MonitorForm'
 
-const STATE_VARIANT: Record<MonitorState, 'success' | 'destructive' | 'muted'> =
-  {
-    up: 'success',
-    down: 'destructive',
-    paused: 'muted',
-    unknown: 'muted',
-  }
+const STATE_VARIANT: Record<
+  MonitorState,
+  'success' | 'destructive' | 'muted' | 'warning'
+> = {
+  up: 'success',
+  suspect: 'warning',
+  down: 'destructive',
+  recovering: 'warning',
+  paused: 'muted',
+  unknown: 'muted',
+}
 
 export function MonitorRow({
   monitor,

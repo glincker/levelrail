@@ -37,6 +37,15 @@ describe('monitor helpers', () => {
       'paused',
     )
   })
+  it('prefers the confirmed state and falls back when absent', () => {
+    expect(
+      deriveMonitorState({ enabled: true, state: 'suspect' }, results([true])),
+    ).toBe('suspect')
+    expect(
+      deriveMonitorState({ enabled: true, state: 'recovering' }, undefined),
+    ).toBe('recovering')
+    expect(deriveMonitorState({ enabled: true }, results([false]))).toBe('down')
+  })
   it('computes uptime and name suggestion', () => {
     expect(uptimePercent(results([true]))).toBe(75)
     expect(suggestMonitorName('https://api.example.com/x')).toBe(

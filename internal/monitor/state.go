@@ -106,6 +106,23 @@ func (t *Tracker) State(id string) string {
 	return ""
 }
 
+// Status is a monitor's confirmed state plus the consecutive counts behind it.
+type Status struct {
+	State         string
+	FailStreak    int
+	SuccessStreak int
+}
+
+// Status returns the state and streaks, or a zero Status for a monitor not probed yet.
+func (t *Tracker) Status(id string) Status {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if tr, ok := t.byID[id]; ok {
+		return Status{State: tr.state, FailStreak: tr.fails, SuccessStreak: tr.oks}
+	}
+	return Status{}
+}
+
 // Forget drops a deleted monitor.
 func (t *Tracker) Forget(id string) {
 	t.mu.Lock()

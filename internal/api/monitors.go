@@ -19,6 +19,7 @@ type MonitorService interface {
 	Get(ctx context.Context, id string) (monitor.Monitor, error)
 	Delete(ctx context.Context, id string) error
 	State(id string) string
+	Status(id string) monitor.Status
 	Results(ctx context.Context, id string, window time.Duration, limit int) (monitor.History, error)
 }
 
@@ -68,6 +69,10 @@ type monitorResource struct {
 	Host            string                `json:"host,omitempty"`
 	Port            int                   `json:"port,omitempty"`
 	CreatedAt       time.Time             `json:"created_at"`
+	// State fields are empty before the first probe and always absent for create responses.
+	State         string `json:"state,omitempty"`
+	FailStreak    int    `json:"consecutive_failures,omitempty"`
+	SuccessStreak int    `json:"consecutive_successes,omitempty"`
 }
 
 func toMonitorResource(m monitor.Monitor) monitorResource {
@@ -123,7 +128,10 @@ func (rt *Router) handleListMonitors(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]monitorResource, 0, len(list))
 	for _, m := range list {
-		out = append(out, toMonitorResource(m))
+		res := toMonitorResource(m)
+		st := rt.monitors.Status(m.ID)
+		res.State, res.FailStreak, res.SuccessStreak = st.State, st.FailStreak, st.SuccessStreak
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }

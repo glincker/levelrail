@@ -71,6 +71,9 @@ func New(o Options) *Service {
 // State returns the confirmed state of a monitor, or "" before its first probe.
 func (s *Service) State(id string) string { return s.tracker.State(id) }
 
+// Status returns the confirmed state with its consecutive failure and success counts.
+func (s *Service) Status(id string) Status { return s.tracker.Status(id) }
+
 // Config returns the engine settings.
 func (s *Service) Config() Config { return s.cfg }
 

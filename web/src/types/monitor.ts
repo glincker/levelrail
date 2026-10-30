@@ -19,6 +19,9 @@ export interface Monitor {
   host?: string
   port?: number
   created_at: string
+  state?: 'up' | 'suspect' | 'down' | 'recovering'
+  consecutive_failures?: number
+  consecutive_successes?: number
 }
 
 export interface MonitorResult {
