@@ -66,7 +66,7 @@ func (s *bootState) newIncidentOpener() *incident.Opener {
 	if !cfg.Enabled || s.alertingDB == nil {
 		return nil
 	}
-	guard := incident.AlertGuard{Src: s.alertingDB, Logger: s.logger}
+	guard := incidentAlertGuard{Src: s.alertingDB, Logger: s.logger}
 	s.apiRouter.SetIncidents(s.db, cfg.UpdateBodyMax)
 	return incident.New(cfg, s.db, guard, s.logger)
 }
@@ -81,7 +81,7 @@ func (s *bootState) newMonitorLinker() *incident.Linker {
 	}
 	var guard incident.Guard
 	if s.alertingDB != nil {
-		guard = incident.AlertGuard{Src: s.alertingDB, Logger: s.logger}
+		guard = incidentAlertGuard{Src: s.alertingDB, Logger: s.logger}
 	}
 	audit := func(ctx context.Context, action, monitorID, incidentID string) {
 		detail, _ := json.Marshal(map[string]string{"monitor_id": monitorID, "incident_id": incidentID})

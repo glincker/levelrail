@@ -1,4 +1,4 @@
-package incident
+package main
 
 import (
 	"context"
@@ -8,20 +8,20 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 )
 
-// AlertSource is the slice of the alerting store the guard reads.
-type AlertSource interface {
+// incidentAlertSource is the slice of the alerting store the incident guard reads.
+type incidentAlertSource interface {
 	ListEnabledRules(ctx context.Context) ([]alerting.Rule, error)
 	ListActiveSilences(ctx context.Context, now time.Time) ([]alerting.Silence, error)
 	ListMaintenanceWindows(ctx context.Context) ([]alerting.MaintenanceWindow, error)
 }
 
-// AlertGuard applies the monitor_down rule switch and the silence and maintenance mutes.
-type AlertGuard struct {
-	Src    AlertSource
+// incidentAlertGuard applies the monitor_down rule switch and the silence and maintenance mutes.
+type incidentAlertGuard struct {
+	Src    incidentAlertSource
 	Logger *slog.Logger
 }
 
-func (g AlertGuard) rule(ctx context.Context) (alerting.Rule, bool) {
+func (g incidentAlertGuard) rule(ctx context.Context) (alerting.Rule, bool) {
 	rules, err := g.Src.ListEnabledRules(ctx)
 	if err != nil {
 		g.log().Error("incident guard: list rules failed", slog.String("error", err.Error()))
@@ -35,7 +35,7 @@ func (g AlertGuard) rule(ctx context.Context) (alerting.Rule, bool) {
 	return alerting.Rule{}, false
 }
 
-func (g AlertGuard) log() *slog.Logger {
+func (g incidentAlertGuard) log() *slog.Logger {
 	if g.Logger != nil {
 		return g.Logger
 	}
@@ -43,13 +43,13 @@ func (g AlertGuard) log() *slog.Logger {
 }
 
 // RuleEnabled reports whether an enabled monitor_down rule exists.
-func (g AlertGuard) RuleEnabled(ctx context.Context) bool {
+func (g incidentAlertGuard) RuleEnabled(ctx context.Context) bool {
 	_, ok := g.rule(ctx)
 	return ok
 }
 
 // Muted builds the context the monitor_down rule would use and asks FindMute about it.
-func (g AlertGuard) Muted(ctx context.Context, monitorID, name string, now time.Time) (string, bool) {
+func (g incidentAlertGuard) Muted(ctx context.Context, monitorID, name string, now time.Time) (string, bool) {
 	r, _ := g.rule(ctx)
 	labels := map[string]string{"monitor_id": monitorID, "monitor": name}
 	for k, v := range r.Labels {
