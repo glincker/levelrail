@@ -11,8 +11,8 @@ import (
 
 // Counts are pinned so adding a mutating route forces a human look at whether it is audited.
 const (
-	pinnedNonGETRoutes   = 1067
-	pinnedExemptions     = 121
+	pinnedNonGETRoutes   = 1072
+	pinnedExemptions     = 124
 	pinnedKnownAuditGaps = 0
 )
 
@@ -123,6 +123,11 @@ var restExemptions = restExemptionSet(map[string][]string{
 	"unauthenticated demo endpoint with no platform state": {
 		"POST /api/v1/demo/session",
 		"POST /api/v1/demo/cta",
+	},
+	"OAuth grant lifecycle audited inside the handler (mcp.oauth.* rows); the token endpoint is pre-auth": {
+		"POST /oauth/token",
+		"POST /api/v1/mcp/oauth/consent/{id}/approve",
+		"POST /api/v1/mcp/oauth/consent/{id}/deny",
 	},
 	"pre-auth credential flow; sign-in outcomes land in the account event feed": {
 		"POST /api/v1/auth/login",

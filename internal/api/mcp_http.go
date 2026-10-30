@@ -47,6 +47,7 @@ type mcpHTTP struct {
 	rt           *Router
 	inner        http.Handler
 	limit        *apiRateLimiter
+	oauthLimit   *apiRateLimiter
 	maxBody      int64
 	maxResponse  int64
 	callTimeout  time.Duration
@@ -94,9 +95,14 @@ func (m *mcpHTTP) serve(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, experimental.DisabledMessage(experimental.MCPHTTP))
 		return
 	}
+	var audience string
 	if !m.originAllowed(r) {
 		writeError(w, http.StatusForbidden, "origin not allowed")
 		return
+	}
+	if issuer, ok := mcpIssuer(r); ok {
+		audience = mcpResourceURL(issuer)
+		r = r.WithContext(withMCPAudience(r.Context(), audience))
 	}
 	token, ok := bearerToken(r)
 	if !ok {
@@ -104,7 +110,7 @@ func (m *mcpHTTP) serve(w http.ResponseWriter, r *http.Request) {
 			writeRateLimited(w, retry)
 			return
 		}
-		w.Header().Set("WWW-Authenticate", `Bearer realm="levelrail-mcp"`)
+		w.Header().Set("WWW-Authenticate", mcpChallenge(r))
 		writeError(w, http.StatusUnauthorized, "bearer API token required")
 		return
 	}
@@ -115,7 +121,7 @@ func (m *mcpHTTP) serve(w http.ResponseWriter, r *http.Request) {
 	rec, status, msg := m.authenticate(r.Context(), token)
 	if rec == nil {
 		if status == http.StatusUnauthorized {
-			w.Header().Set("WWW-Authenticate", `Bearer realm="levelrail-mcp"`)
+			w.Header().Set("WWW-Authenticate", mcpChallenge(r))
 		}
 		writeError(w, status, msg)
 		return
@@ -133,7 +139,7 @@ func (m *mcpHTTP) serve(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	client := apiclient.NewClient(mcpHTTPInternalHost, token,
 		apiclient.WithUserAgent("levelrail-mcp/"+version.Version),
-		apiclient.WithTransport(&mcpInprocTransport{inner: m.inner, origin: r, maxResponse: m.maxResponse, timeout: m.callTimeout}))
+		apiclient.WithTransport(&mcpInprocTransport{inner: m.inner, origin: r, maxResponse: m.maxResponse, timeout: m.callTimeout, audience: audience}))
 	server, _ := mcptools.NewServerWithOptions(client, mcptools.Options{Mode: mcptools.ModeReadOnly})
 	server.AddReceivingMiddleware(m.auditMiddleware(r, rec))
 	m.rt.logger.Debug("api: mcp-http server built", slog.Duration("took", time.Since(start)))
@@ -271,12 +277,14 @@ type mcpInprocTransport struct {
 	origin      *http.Request
 	maxResponse int64
 	timeout     time.Duration
+	audience    string
 }
 
 func (t *mcpInprocTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(req.Context(), t.timeout)
 	defer cancel()
-	in := req.Clone(ctx)
+	// The audience travels in the context, which an outside caller cannot set.
+	in := req.Clone(withMCPAudience(ctx, t.audience))
 	in.URL = &url.URL{Path: req.URL.Path, RawPath: req.URL.RawPath, RawQuery: req.URL.RawQuery}
 	in.RequestURI = in.URL.RequestURI()
 	in.Host = t.origin.Host

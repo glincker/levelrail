@@ -32,7 +32,11 @@ func (rt *Router) lookupBearerToken(ctx context.Context, raw string) (*store.API
 	case err != nil:
 		return nil, fmt.Errorf("api: library token lookup: %w", err)
 	}
-	return libraryTokenToStore(rec), nil
+	out := libraryTokenToStore(rec)
+	if !rt.mcpOAuthAudienceOK(ctx, out) {
+		return nil, store.ErrAPITokenNotFound
+	}
+	return out, nil
 }
 
 // legacySystemToken serves tokens the library never holds (system-minted, no

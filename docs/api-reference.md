@@ -2113,6 +2113,17 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mail/dns/provider | AbilityRead | handleMailDNSProvider |
 | GET | /api/v1/mail/dns/domains | AbilityRead | handleMailDNSDomains |
 | GET | /api/v1/mail/dns/applied | AbilityRead | handleMailDNSApplied |
+| GET | /.well-known/oauth-protected-resource | Public | handleMCPProtectedResource |
+| GET | /.well-known/oauth-protected-resource/mcp | Public | handleMCPProtectedResource |
+| GET | /.well-known/oauth-authorization-server | Public | handleMCPAuthServerMetadata |
+| GET | /oauth/authorize | Public | handleMCPAuthorize |
+| POST | /oauth/token | Public | handleMCPToken |
+| GET | /api/v1/mcp/oauth/consent/{id} | Session | handleMCPConsentGet |
+| POST | /api/v1/mcp/oauth/consent/{id}/approve | Session | handleMCPConsentApprove |
+| POST | /api/v1/mcp/oauth/consent/{id}/deny | Session | handleMCPConsentDeny |
+| GET | /api/v1/mcp/oauth/clients | AbilityRoot | handleListMCPClients |
+| POST | /api/v1/mcp/oauth/clients | AbilityRoot | handleCreateMCPClient |
+| DELETE | /api/v1/mcp/oauth/clients/{id} | AbilityRoot | handleDeleteMCPClient |
 | POST | /mcp | Public |  |
 
 ## See also
