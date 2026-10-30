@@ -5,6 +5,7 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import en from '../../locales/en/mailServer.json'
+import dnsEn from '../../locales/en/dnsSetup.json'
 import { MailPage } from './MailPage'
 
 vi.mock('@tanstack/react-router', async (orig) => ({
@@ -34,7 +35,7 @@ vi.mock('@/components/shell/PageTemplate', () => ({
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
-  resources: { en: { mailServer: en } },
+  resources: { en: { mailServer: en, dnsSetup: dnsEn } },
   defaultNS: 'mailServer',
   interpolation: { escapeValue: false },
 })
@@ -186,6 +187,8 @@ describe('MailPage guided setup', () => {
       vi.fn((url: string) => {
         urls.push(url)
         if (url.endsWith('/mail/status')) return jsonRes(up)
+        if (url.includes('server-address'))
+          return jsonRes({ ipv4: '203.0.113.7' })
         if (url.endsWith('/plan'))
           return jsonRes({
             domain: 'example.test',
@@ -203,27 +206,12 @@ describe('MailPage guided setup', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Preview DNS records' }),
     )
-    const domain = await screen.findByLabelText<HTMLInputElement>('Domain')
-    await vi.waitFor(() => expect(domain.value).toBe('example.test'))
-    expect(screen.getByLabelText<HTMLInputElement>('Mail host').value).toBe(
+    expect(await screen.findByTestId('host-line')).toBeTruthy()
+    expect(screen.getByTestId('host-line').textContent).toContain(
       'smtp.example.test',
     )
     await vi.waitFor(() =>
       expect(urls.some((u) => u.endsWith('/plan'))).toBe(true),
-    )
-  })
-
-  it('lets a typed domain win over the prefill', async () => {
-    vi.stubGlobal('fetch', statusFetch(up))
-    const user = userEvent.setup()
-    renderPage()
-    await openDomains()
-    const domain = await screen.findByLabelText<HTMLInputElement>('Domain')
-    await vi.waitFor(() => expect(domain.value).toBe('example.test'))
-    await user.clear(domain)
-    await user.type(domain, 'other.test')
-    expect(screen.getByLabelText<HTMLInputElement>('Mail host').value).toBe(
-      'mail.other.test',
     )
   })
 })
@@ -250,6 +238,17 @@ describe('MailPage', () => {
       'fetch',
       vi.fn((url: string, init?: RequestInit) => {
         calls.push(url)
+        if (url.includes('dns-provider'))
+          return jsonRes({
+            domain: 'example.com',
+            provider: 'cloudflare',
+            connected: true,
+            connectable: true,
+            domain_connect: { supported: false },
+            nameservers: [],
+            can_issue_certificates: false,
+            hint: '',
+          })
         if (url.endsWith('/plan'))
           return jsonRes({
             domain: 'example.com',
@@ -293,14 +292,16 @@ describe('MailPage', () => {
     const user = userEvent.setup()
     renderPage()
     await openDomains()
-    await user.type(screen.getByLabelText('Domain'), 'example.com')
-    await user.click(screen.getByRole('button', { name: 'Preview records' }))
+    await user.type(await screen.findByLabelText('Domain'), 'example.com')
+    await user.click(screen.getByRole('button', { name: 'Use' }))
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(await screen.findByRole('button', { name: 'Continue' }))
     await user.click(
-      await screen.findByRole('button', { name: 'Apply 1 records' }),
+      await screen.findByRole('button', { name: 'Add 1 record' }),
     )
     expect(applyBody).toContain('"plan_hash":"abc123def4567890"')
     expect(applyBody).toContain('"confirm":true')
-    await user.click(screen.getByRole('button', { name: 'Check' }))
+    await user.click(await screen.findByRole('button', { name: 'Check now' }))
     await user.click(screen.getByRole('tab', { name: 'Overview' }))
     expect(await screen.findByText('SPF ok')).toBeTruthy()
   })
