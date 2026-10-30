@@ -1,10 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AllI18n } from '../test/allI18n'
 import { PlatformImportCard } from './PlatformImportCard'
 import type { PlatformImportReport } from '../queries/platformImport'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -56,9 +57,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderCard() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <AllI18n>
       <QueryClientProvider client={client}>

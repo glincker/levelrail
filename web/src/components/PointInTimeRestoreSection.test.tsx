@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PointInTimeRestoreSection } from './PointInTimeRestoreSection'
 import type { DatabaseResource } from '../types/databaseDetail'
+import { renderWithQuery as renderWithClient } from '@/test/renderWithQuery'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -16,13 +16,6 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
     status,
     json: () => Promise.resolve(body),
   } as unknown as Response
-}
-
-function renderWithClient(ui: React.ReactElement) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 
 function makeDatabase(

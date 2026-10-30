@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ModelsI18n } from '../../test/modelsI18n'
 import type {
@@ -9,6 +9,7 @@ import type {
   LocalModelCatalog,
 } from '../../types/modelsCpu'
 import { CpuDeployForm } from './CpuDeployForm'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const fit = (over: Partial<CpuFit> = {}): CpuFit => ({
   verdict: 'fits_comfortably',
@@ -122,9 +123,7 @@ function mockApi(fitOver: Partial<CpuFitReport> = {}) {
 
 function renderForm() {
   const onDeployed = vi.fn()
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   render(
     <QueryClientProvider client={client}>
       <ModelsI18n>

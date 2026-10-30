@@ -5,10 +5,11 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import type { AlertRule } from './../types/alerts'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -56,9 +57,7 @@ const thresholdRule: AlertRule = {
 }
 
 function renderDialog(rule: AlertRule = thresholdRule) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <EditAlertRuleDialog appName="demo-app" rule={rule} />

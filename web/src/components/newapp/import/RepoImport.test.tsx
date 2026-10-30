@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { NewAppI18n } from '../../../test/newAppI18n'
 import { nextAnalysis } from '../../../test/newAppFixtures'
@@ -10,6 +10,7 @@ import type { RepoPreview } from '../../../queries/repoPreview'
 import { PreviewNotice } from './PreviewNotice'
 import { RepoPreviewCard } from './RepoPreviewCard'
 import { RepoSimpleForm } from './RepoSimpleForm'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -47,9 +48,7 @@ const preview: RepoPreview = {
 }
 
 function wrap(node: ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <NewAppI18n>{node}</NewAppI18n>

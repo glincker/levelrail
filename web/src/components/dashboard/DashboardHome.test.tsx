@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
@@ -16,6 +16,7 @@ import type { NextStep } from '../../lib/dashboardHome'
 import type { AppListEntry } from '../../types/appDetail'
 import commonEn from '../../locales/en/common.json'
 import dashboardEn from '../../locales/en/dashboard.json'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // A dedicated instance with the real dashboard.json resources loaded
 // synchronously, same reasoning as AutoRollbackCard.test.tsx's own.
@@ -98,7 +99,7 @@ function routeFetch(handlers: Record<string, unknown>) {
 function renderHome(apps: AppListEntry[], tab: string | null = 'start') {
   window.localStorage.clear()
   if (tab) window.localStorage.setItem('dashboard.tab.v1', tab)
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={qc}>

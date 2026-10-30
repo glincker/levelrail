@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BranchEnvOverridesEditor } from './BranchEnvOverridesEditor'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -19,9 +20,7 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderEditor() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <BranchEnvOverridesEditor appName="demo-app" />

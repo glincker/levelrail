@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../lib/apiError'
 import { NewAppI18n } from '../../test/newAppI18n'
 import { SitePublisher } from './SitePublisher'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const publish = vi.fn<(input: unknown) => Promise<unknown>>()
 let failWith: Error | null = null
@@ -20,7 +21,7 @@ function folderFile(path: string): File {
 }
 
 function renderPublisher(appName?: string) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <QueryClientProvider client={qc}>
       <NewAppI18n>

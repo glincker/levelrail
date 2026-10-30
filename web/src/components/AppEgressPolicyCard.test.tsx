@@ -1,10 +1,11 @@
 import { Suspense } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppEgressPolicyCard } from './AppEgressPolicyCard'
 import type { Brand } from '../types/brand'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // AppEgressPolicyCard now renders a HelpLink, which reads brand.DocsURL
 // via useBrand; mocked the same way CreateRegistryCredentialDialog.test.tsx
@@ -63,9 +64,7 @@ function stubFetch({
 }
 
 function renderCard() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<div>loading</div>}>

@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SupplyChainSettingsCard } from './SupplyChainSettingsCard'
 import type { SupplyChainSettings } from '../types/supplyChain'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -20,9 +21,7 @@ function urlOf(input: RequestInfo | URL): string {
 }
 
 function renderCard() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <SupplyChainSettingsCard appName="web" />

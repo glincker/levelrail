@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NewAppI18n } from '../../../test/newAppI18n'
 import { jsonResponse, nextAnalysis } from '../../../test/newAppFixtures'
@@ -8,6 +8,7 @@ import { applyNewApp, type DatabaseEdit } from '../../../lib/newApp'
 import type { ImportAnalysis } from '../../../queries/importAnalyze'
 import { DatabaseSection } from './DatabaseSection'
 import { injectedVars, suggestDbName } from './databaseSectionLogic'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const withoutDb: ImportAnalysis = { ...nextAnalysis, databases: [], env: [] }
 
@@ -35,9 +36,7 @@ function stubApi(backupTargets: unknown[] = []) {
 }
 
 function mount(analysis: ImportAnalysis, onChange = vi.fn()) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   render(
     <QueryClientProvider client={client}>
       <NewAppI18n>

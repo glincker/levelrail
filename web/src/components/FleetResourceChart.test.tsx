@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FleetResourceChart } from './FleetResourceChart'
 import type { AppResourceUsage } from '../types/appResourceUsage'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function fakeJsonResponse(body: unknown, status = 200): Response {
   return {
@@ -13,9 +14,7 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderChart() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <FleetResourceChart />

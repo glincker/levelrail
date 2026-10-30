@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -14,6 +14,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 })
 
 import { SignInFlow } from './SignInFlow'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function mockFetch(handler: (url: string) => Response) {
   vi.stubGlobal(
@@ -33,9 +34,7 @@ function json(body: unknown, status = 200) {
 }
 
 function renderFlow(username: string) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <SignInFlow username={username} onUsernameChange={vi.fn()} />

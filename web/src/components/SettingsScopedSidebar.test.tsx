@@ -1,13 +1,14 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import settingsEn from '../locales/en/settings.json'
 import { SettingsScopedSidebar } from './SettingsScopedSidebar'
 import { SidebarProvider } from './ui/sidebar'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // No <RouterProvider> is mounted here, so Link and useRouterState (which
 // both need real router context) are stubbed, same pattern as
@@ -45,9 +46,7 @@ void testI18n.use(initReactI18next).init({
 })
 
 function renderSidebar() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>

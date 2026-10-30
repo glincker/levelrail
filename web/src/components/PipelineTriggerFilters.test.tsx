@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PipelineTriggerFilters } from './PipelineTriggerFilters'
 import type { PipelineFilters } from '../types/pipelines'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -25,9 +26,7 @@ function renderPanel(
   onApply: (next: string) => void,
   yaml = 'version: 1\n',
 ) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <PipelineTriggerFilters yaml={yaml} filters={filters} onApply={onApply} />

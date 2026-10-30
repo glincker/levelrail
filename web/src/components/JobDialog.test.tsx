@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import jobsEn from '../locales/en/jobs.json'
 import { JobDialog } from './JobDialog'
 import type { ScheduledTask } from '../types/scheduledTasks'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 void i18next.use(initReactI18next).init({
   lng: 'en',
@@ -32,9 +33,7 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderDialog(task?: ScheduledTask) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <JobDialog appName="demo-app" task={task} />

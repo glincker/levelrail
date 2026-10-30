@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { IncidentsList, IncidentsSection } from './IncidentsSection'
 import type { Incident } from '../../types/incident'
+import { renderWithQuery as wrap } from '@/test/renderWithQuery'
 
 const inc: Incident = {
   id: 'si_1',
@@ -15,11 +15,6 @@ const inc: Incident = {
   published: true,
   updated_at: '2026-10-29T10:00:00Z',
   starts_at: '2026-10-29T09:00:00Z',
-}
-
-function wrap(ui: React.ReactElement) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
 }
 
 describe('IncidentsList', () => {

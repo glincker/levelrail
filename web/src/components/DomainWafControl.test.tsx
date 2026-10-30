@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DomainWafControl } from './DomainWafControl'
 import type { Brand } from '../types/brand'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // Enforcement is covered by DomainMaintenanceControl.test.tsx; here the
 // control's own states are under test, so the domain counts as enforced.
@@ -45,9 +46,7 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderControl() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <DomainWafControl appName="demo-app" domain="app.example.com" />

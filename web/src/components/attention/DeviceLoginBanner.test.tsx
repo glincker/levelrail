@@ -2,7 +2,7 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { DeviceLoginBanner } from './DeviceLoginBanner'
 import attentionEn from '../../locales/en/attention.json'
@@ -10,6 +10,7 @@ import type {
   DeviceActivityItem,
   DeviceAuthRequest,
 } from '../../queries/deviceAuth'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -73,9 +74,7 @@ function request(over: Partial<DeviceAuthRequest>): DeviceAuthRequest {
 }
 
 function renderBanner() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <I18nextProvider i18n={testI18n}>

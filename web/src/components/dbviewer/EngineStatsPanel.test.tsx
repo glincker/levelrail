@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EngineStatsPanel } from './EngineStatsPanel'
 import { DatabasesI18n } from '../../test/databasesI18n'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function stubStats(status: number, body: unknown) {
   vi.stubGlobal(
@@ -20,9 +21,7 @@ function stubStats(status: number, body: unknown) {
 }
 
 function renderPanel(engine: string) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   render(
     <QueryClientProvider client={client}>
       <DatabasesI18n>

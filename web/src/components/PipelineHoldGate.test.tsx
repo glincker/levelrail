@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PipelineHoldGate } from './PipelineHoldGate'
 import { PipelineTriggerLog } from './PipelineTriggerLog'
+import { renderWithQuery as wrap } from '@/test/renderWithQuery'
 
 function jsonResponse(body: unknown): Response {
   return {
@@ -11,11 +11,6 @@ function jsonResponse(body: unknown): Response {
     status: 200,
     json: () => Promise.resolve(body),
   } as unknown as Response
-}
-
-function wrap(node: React.ReactNode) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={qc}>{node}</QueryClientProvider>)
 }
 
 afterEach(() => {

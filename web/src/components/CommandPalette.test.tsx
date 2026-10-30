@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import palette from '../locales/en/palette.json'
 import common from '../locales/en/common.json'
 import type { SearchHit } from '../queries/search'
 import { appListQueryOptions } from '../queries/apps'
 import { CommandPalette } from './CommandPalette'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 let experimentalOn: string[] = ['ai-chat']
 const navigate = vi.fn()
@@ -97,9 +98,7 @@ const fetchMock = vi.fn((url: string, init?: RequestInit) => {
 })
 
 function renderPalette() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <CommandPalette open onOpenChange={onOpenChange} />
@@ -473,9 +472,7 @@ describe('CommandPalette', () => {
   })
 
   it('recommends create and import when there are no apps yet', () => {
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
+    const client = createTestQueryClient()
     client.setQueryData(appListQueryOptions().queryKey, [])
     render(
       <QueryClientProvider client={client}>

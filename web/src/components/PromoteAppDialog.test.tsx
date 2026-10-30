@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PromoteAppDialog } from './PromoteAppDialog'
 import type { AppListEntry } from '../types/appDetail'
 import type { EnvironmentResource } from '../types/environment'
 import type { PromotePreviewResource } from '../types/promote'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -171,9 +172,7 @@ function fakePreview(targetApp: string): PromotePreviewResource {
 }
 
 function renderDialog() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <PromoteAppDialog appName="web" projectId="proj1" />

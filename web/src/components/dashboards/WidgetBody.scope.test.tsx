@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
@@ -8,6 +8,7 @@ import { resetProjectScopeForTests, setProjectScope } from '@/lib/projectScope'
 import { resolveTimeRange } from '@/lib/timeRange'
 import dashboardsEn from '@/locales/en/dashboards.json'
 import dashboardEn from '@/locales/en/dashboard.json'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
@@ -38,9 +39,7 @@ function mockApi(urls: string[]) {
 }
 
 function renderWidget() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <I18nextProvider i18n={i18n}>

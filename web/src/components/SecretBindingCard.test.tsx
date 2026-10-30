@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toast } from '@/components/ui/toast'
 import { SecretBindingCard } from './SecretBindingCard'
 import type { Brand } from '../types/brand'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@/components/ui/toast', () => ({
   toast: { add: vi.fn() },
@@ -33,7 +34,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 function renderCard() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <QueryClientProvider client={qc}>
       <SecretBindingCard />

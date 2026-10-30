@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CacheBucket } from '../../queries/cdnCache'
 import { CdnI18n } from '../../test/cdnI18n'
@@ -10,6 +10,7 @@ import { PurgeHistoryTable } from './PurgeHistoryTable'
 import { PurgePanel } from './PurgePanel'
 import { PurgeScopePicker } from './PurgeScopePicker'
 import { RankedBarList } from './RankedBarList'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children?: ReactNode }) => <a href="#x">{children}</a>,
@@ -42,9 +43,7 @@ function mockFetch(routes: Record<string, () => Response>) {
 }
 
 function wrap(node: ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <CdnI18n>{node}</CdnI18n>

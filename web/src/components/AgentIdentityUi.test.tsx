@@ -13,6 +13,7 @@ import { buildAuditLogParams, type AuditLogEntry } from '../queries/auditLog'
 import auditLogEn from '../locales/en/auditLog.json'
 import settingsEn from '../locales/en/settings.json'
 import type { TokenResource } from '../types/token'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -169,9 +170,7 @@ describe('CreateTokenDialog agent name', () => {
       } as unknown as Response),
     )
     vi.stubGlobal('fetch', fetchMock)
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
+    const queryClient = createTestQueryClient()
     render(
       <QueryClientProvider client={queryClient}>
         <CreateTokenDialog />

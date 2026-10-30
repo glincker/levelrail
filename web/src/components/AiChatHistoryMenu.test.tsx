@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AiChatHistoryMenu } from './AiChatHistoryMenu'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function urlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -20,9 +21,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 function renderWithClient(node: React.ReactNode) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback="loading">{node}</Suspense>

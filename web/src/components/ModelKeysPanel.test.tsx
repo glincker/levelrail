@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ModelKeysPanel } from './ModelKeysPanel'
 import type { ModelKey } from '../types/models'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const KEY: ModelKey = {
   id: 'key-1',
@@ -22,9 +23,7 @@ const KEY: ModelKey = {
 }
 
 function renderPanel() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <ModelKeysPanel modelName="chat" baseUrl="https://chat.example.com/v1" />

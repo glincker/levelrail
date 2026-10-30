@@ -1,12 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AlertHistoryTable } from './AlertHistoryTable'
 import { AlertSilencesPanel } from './AlertSilencesPanel'
 import { SilenceRuleMenu } from './SilenceRuleMenu'
 import { StatusComponentsPanel } from './StatusComponentsPanel'
-import { AllI18n } from '../test/allI18n'
+import { renderWithQueryI18n as renderWithClient } from '@/test/renderWithQuery'
 
 function urlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -20,17 +19,6 @@ function json(body: unknown, status = 200): Response {
     status,
     json: () => Promise.resolve(body),
   } as unknown as Response
-}
-
-function renderWithClient(node: React.ReactNode) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  render(
-    <AllI18n>
-      <QueryClientProvider client={queryClient}>{node}</QueryClientProvider>
-    </AllI18n>,
-  )
 }
 
 describe('alert noise UI', () => {

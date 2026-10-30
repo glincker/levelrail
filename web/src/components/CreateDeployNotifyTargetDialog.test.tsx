@@ -6,9 +6,10 @@ import {
   within,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CreateDeployNotifyTargetDialog } from './CreateDeployNotifyTargetDialog'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -36,7 +37,7 @@ async function pickOption(trigger: HTMLElement, optionText: string) {
 }
 
 function renderDialog() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <QueryClientProvider client={qc}>
       <CreateDeployNotifyTargetDialog appName="web" />

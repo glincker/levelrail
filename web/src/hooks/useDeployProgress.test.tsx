@@ -1,10 +1,11 @@
 import { Suspense } from 'react'
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useDeployProgress } from './useDeployProgress'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const APP_NAME = 'web'
 
@@ -59,9 +60,7 @@ function ProbeComponent() {
 }
 
 function renderProbe() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<div>loading</div>}>

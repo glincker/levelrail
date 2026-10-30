@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { AllI18n } from '../test/allI18n'
 import { StatusWebhooksPanel } from './StatusWebhooksPanel'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const SECRET = 'whsec_testsecretvalue'
 
@@ -40,9 +41,7 @@ function mockApi() {
 }
 
 function renderPanel() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <AllI18n>

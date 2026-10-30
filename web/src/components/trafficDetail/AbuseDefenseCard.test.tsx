@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
@@ -13,6 +13,7 @@ import type {
 } from '../../types/abuse'
 import { AbuseDefenseCard } from './AbuseDefenseCard'
 import { draftFrom, draftToPolicy, parseList } from './abuseDraft'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 void i18next.use(initReactI18next).init({
   lng: 'en',
@@ -100,7 +101,7 @@ function mockApi(get: AppAbuse): Calls {
 }
 
 function renderCard() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <QueryClientProvider client={qc}>
       <AbuseDefenseCard app="web" counters={counters} />

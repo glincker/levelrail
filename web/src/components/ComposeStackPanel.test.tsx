@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +8,7 @@ import { ComposeStackPanel } from './ComposeStackPanel'
 import { TemplateInstallForm } from './TemplateInstallForm'
 import composeEn from '../locales/en/compose.json'
 import type { ComposeStack, TemplateManifest } from '../types/compose'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const navigate = vi.fn()
 vi.mock('@tanstack/react-router', () => ({
@@ -69,9 +70,7 @@ function stubFetch(routes: Record<string, { status: number; body: unknown }>) {
 }
 
 function wrap(ui: React.ReactNode) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>

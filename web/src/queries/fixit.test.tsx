@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useFixForCheck, type Fix } from './fixit'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const addressFix = {
   id: 'mesh.public_address.set',
@@ -16,9 +17,7 @@ const masterKeyFix = {
 } as Fix
 
 function wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
 

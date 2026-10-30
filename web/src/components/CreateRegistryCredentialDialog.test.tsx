@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CreateRegistryCredentialDialog } from './CreateRegistryCredentialDialog'
 import type { Brand } from '../types/brand'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('../hooks/useBrand', () => ({
   useBrand: (): Brand => ({
@@ -50,9 +51,7 @@ function mockFetchRoutes(
 }
 
 function renderDialog() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <CreateRegistryCredentialDialog />

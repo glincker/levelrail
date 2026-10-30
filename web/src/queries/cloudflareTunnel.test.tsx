@@ -1,13 +1,12 @@
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useCloudflareTunnelStatus } from './cloudflareTunnel'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
 

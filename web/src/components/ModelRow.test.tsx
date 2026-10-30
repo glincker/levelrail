@@ -1,10 +1,11 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ModelRow } from './ModelRow'
 import type { ModelResource } from '../types/models'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -58,9 +59,7 @@ function model(overrides: Partial<ModelResource> = {}): ModelResource {
 }
 
 function renderRow(m: ModelResource) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <ModelRow model={m} />

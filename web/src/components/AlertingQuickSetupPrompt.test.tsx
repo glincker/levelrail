@@ -1,9 +1,10 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -39,9 +40,7 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderPrompt() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <AlertingQuickSetupPrompt carrierAppName="demo-app" />

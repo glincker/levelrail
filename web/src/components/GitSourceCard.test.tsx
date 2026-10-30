@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GitSourceCard } from './GitSourceCard'
 import type { AppDetail } from '../types/appDetail'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // GitRepoSourcePicker itself (its provider status suspense queries, its
 // repo/branch Select popups) is covered separately in
@@ -161,12 +162,7 @@ function callsTo(
 }
 
 function renderCard() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <GitSourceCard app={app} />

@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import gitBuildEn from '../locales/en/gitBuild.json'
 import { GitPushRemoteCard } from './GitPushRemoteCard'
 import type { GitRemoteResource } from '../types/gitRemote'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const features: { list: string[] } = { list: ['git-push'] }
 vi.mock('../hooks/useExperimental', () => ({
@@ -41,9 +42,7 @@ function remote(over: Partial<GitRemoteResource> = {}): GitRemoteResource {
 }
 
 function renderCard() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={client}>

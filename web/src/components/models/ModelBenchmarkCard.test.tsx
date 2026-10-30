@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ModelsI18n } from '../../test/modelsI18n'
 import type { CpuFit, ModelBenchmark } from '../../types/modelsCpu'
 import { ModelBenchmarkCard } from './ModelBenchmarkCard'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const bench: ModelBenchmark = {
   model: 'local',
@@ -21,9 +22,7 @@ const bench: ModelBenchmark = {
 const estimate = { tokens_per_sec_low: 1.9, tokens_per_sec_high: 5.3 } as CpuFit
 
 function renderCard(props: Partial<Parameters<typeof ModelBenchmarkCard>[0]>) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   render(
     <QueryClientProvider client={client}>
       <ModelsI18n>

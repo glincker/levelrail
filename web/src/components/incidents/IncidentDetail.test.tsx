@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { IncidentDetail } from './IncidentDetail'
 import type { Incident } from '../../types/incident'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const base: Incident = {
   id: 'si_1',
@@ -38,7 +39,7 @@ function mockApi(afterSave: Incident) {
 }
 
 async function publishFlow() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   render(
     <QueryClientProvider client={qc}>
       <IncidentDetail id="si_1" />

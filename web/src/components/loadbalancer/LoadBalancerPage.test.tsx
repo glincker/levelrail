@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Brand } from '../../types/brand'
 import type { LiveUpstream } from '../../queries/loadBalancerLive'
@@ -12,6 +12,7 @@ import { LbTopology } from './LbTopology'
 import { LoadBalancerPage } from './LoadBalancerPage'
 import { presetById } from './presets'
 import { tokenize } from './highlight'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('../../hooks/useBrand', () => ({
   useBrand: (): Brand => ({
@@ -284,9 +285,7 @@ function stubFetch(stub: Stub) {
 }
 
 function renderPage(replicas = 2) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <LoadBalancerPage appName="demo" replicas={replicas} />

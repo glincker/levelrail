@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LogArchivePanel } from './LogArchivePanel'
 import { StorageProviderPicker } from './StorageProviderPicker'
 import type { StorageProvider } from '../types/storage'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -32,9 +33,7 @@ function mockFetch(routes: Record<string, () => Response>) {
 }
 
 function renderPanel(app: string) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <LogArchivePanel appName={app} />

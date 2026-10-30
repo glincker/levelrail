@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { DatabaseResourceLimitsEditor } from './DatabaseResourceLimitsEditor'
 import type { DatabaseResource } from '../types/databaseDetail'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -47,9 +48,7 @@ function renderEditor(
   fetchMock: ReturnType<typeof vi.fn>,
 ) {
   vi.stubGlobal('fetch', fetchMock)
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <DatabaseResourceLimitsEditor database={database} />

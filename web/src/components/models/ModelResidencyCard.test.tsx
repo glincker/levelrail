@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelResource } from '../../types/models'
 import { AllI18n } from '../../test/allI18n'
 import { ModelResidencyCard } from './ModelResidencyCard'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function model(over: Partial<ModelResource>): ModelResource {
   return {
@@ -27,9 +28,7 @@ function model(over: Partial<ModelResource>): ModelResource {
 }
 
 function renderCard(m: ModelResource) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <AllI18n>
       <QueryClientProvider client={client}>

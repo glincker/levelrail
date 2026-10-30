@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
@@ -11,6 +11,7 @@ import type {
 } from '../../queries/domainDiagnose'
 import { parseDiagnoseChunk } from '../../queries/domainDiagnose'
 import { DomainDiagnosePanel } from './DomainDiagnosePanel'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -99,9 +100,7 @@ function sse(checks: DiagnoseCheck[], rep: DiagnoseReport): Response {
 }
 
 function renderPanel() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   render(
     <QueryClientProvider client={client}>
       <I18nextProvider i18n={testI18n}>

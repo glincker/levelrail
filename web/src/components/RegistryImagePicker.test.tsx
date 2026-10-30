@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RegistryImagePicker } from './RegistryImagePicker'
 import type { RegistrySettings } from '../queries/registry'
 import type { RegistryCredential } from '../types/registryCredential'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -58,9 +59,7 @@ const oneCredential: RegistryCredential = {
 }
 
 function renderPicker() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   const onSelect = vi.fn()
   const result = render(
     <QueryClientProvider client={queryClient}>

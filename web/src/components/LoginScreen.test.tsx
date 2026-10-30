@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +19,7 @@ vi.mock('../hooks/useBrand', () => ({ useBrand: vi.fn() }))
 import { useBrand } from '../hooks/useBrand'
 import { LoginScreen } from './LoginScreen'
 import { ThemeProvider } from './ThemeProvider'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const brand: Brand = {
   Name: 'Test Brand',
@@ -58,9 +59,7 @@ function findTitle(text: string) {
 }
 
 function renderScreen(setup?: string, sessionEnded = false) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <CommonI18n>

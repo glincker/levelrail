@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { makeDeployment } from '../../test/deploymentFixtures'
 import { parseDeploymentsSearch } from '../../lib/deploymentFilters'
 import { DeploymentsPage } from './DeploymentsPage'
 import type { Deployment } from '../../types/deployment'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 class FakeEventSource {
   static CLOSED = 2
@@ -46,7 +47,7 @@ function mockApi(items: Deployment[], listStatus = 200) {
 }
 
 function renderPage(search: Record<string, unknown> = {}) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   const onSearchChange = vi.fn()
   render(
     <QueryClientProvider client={qc}>
