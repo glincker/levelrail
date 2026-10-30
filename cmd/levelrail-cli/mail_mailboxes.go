@@ -95,8 +95,11 @@ func runMailMailboxes(prog, group string, args []string, stdout, stderr io.Write
 			_, _ = fmt.Fprintln(tw, "ADDRESS\tTEAM\tSTATE\tLINKED USER")
 			for _, m := range res {
 				state := "active"
-				if m.Suspended {
+				switch {
+				case m.Suspended:
 					state = "suspended"
+				case m.SuspendPending:
+					state = "suspend pending (mail server unreachable, retried on the next mail call)"
 				}
 				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", m.Address, m.TeamID, state, m.LinkedUserID)
 			}

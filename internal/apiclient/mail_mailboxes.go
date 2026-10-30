@@ -26,9 +26,11 @@ type Mailbox struct {
 	TeamID       string `json:"team_id"`
 	LinkedUserID string `json:"linked_user_id,omitempty"`
 	Suspended    bool   `json:"suspended"`
-	CreatedBy    string `json:"created_by"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	// SuspendPending is an offboarding suspend the mail server has not applied yet.
+	SuspendPending bool   `json:"suspend_pending"`
+	CreatedBy      string `json:"created_by"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
 }
 
 // MailboxSecret is the show-once answer of create and password reset.

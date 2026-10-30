@@ -358,6 +358,7 @@ func (rt *Router) scimDeprovision(r *http.Request, tokenID, legacy string) error
 	}
 	rt.sessions.revokeAll(legacy)
 	rt.revokeTrustedDevices(ctx, r, signInActor{kind: auditActorTypeSCIM, id: tokenID, name: tokenID}, legacy, "scim_deprovisioned")
+	rt.offboardDisabledUser(r, legacy)
 	rt.auditSCIM(r, tokenID, auditActionSCIMUserDeactivated, "/Users/"+legacy, http.StatusOK)
 	return nil
 }

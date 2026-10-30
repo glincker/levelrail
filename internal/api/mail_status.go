@@ -2,10 +2,24 @@ package api
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/mail/mox"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// Mail engine lookup failures. Every one fails closed: no admin call is made.
+var (
+	errMailEngineMissing   = errors.New("mail: the mail container is not running")
+	errMailEngineAmbiguous = errors.New("mail: more than one container claims the mail engine identity")
+	errMailEngineForeign   = errors.New("mail: the mail container does not carry this instance's label")
+	errMailEngineNotMail   = errors.New("mail: the service is not a mail-mox install")
 )
 
 const (
@@ -66,31 +80,72 @@ func mailRank(s mailStatusResponse) int {
 	return 0
 }
 
+// mailEngineContainer finds the one container the reconciler runs for the
+// mail service: its exact content-hashed name from desired state plus this
+// instance's reserved label. Name prefixes and tenant-settable labels never
+// count, so another app cannot stand in for the engine.
+func (rt *Router) mailEngineContainer(ctx context.Context, svc store.DesiredService) (docker.ContainerState, error) {
+	if svc.TemplateID != mailTemplateID {
+		return docker.ContainerState{}, errMailEngineNotMail
+	}
+	if rt.containers == nil {
+		return docker.ContainerState{}, errMailEngineMissing
+	}
+	want := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
+	list, err := rt.containers.ListByPrefix(ctx, want)
+	if err != nil {
+		return docker.ContainerState{}, err
+	}
+	var hits []docker.ContainerState
+	for _, c := range list {
+		if c.Name == want {
+			hits = append(hits, c)
+		}
+	}
+	switch {
+	case len(hits) == 0:
+		return docker.ContainerState{}, errMailEngineMissing
+	case len(hits) > 1:
+		return docker.ContainerState{}, errMailEngineAmbiguous
+	}
+	if rt.instance != nil {
+		info, err := rt.instanceInfo(ctx)
+		if err != nil {
+			return docker.ContainerState{}, fmt.Errorf("mail: read instance identity: %w", err)
+		}
+		if info.InstanceID == "" || hits[0].Labels[appspec.InstanceLabelKey] != info.InstanceID {
+			return docker.ContainerState{}, errMailEngineForeign
+		}
+	}
+	return hits[0], nil
+}
+
+// containerIP is the first app network address of a container.
+func containerIP(c docker.ContainerState) string {
+	for _, n := range c.Networks {
+		if n.IPAddress != "" {
+			return n.IPAddress
+		}
+	}
+	return ""
+}
+
 // mailProbe fills the container state and admin reachability for one mail app.
-func (rt *Router) mailProbe(ctx context.Context, name string, env map[string]string) mailStatusResponse {
-	out := mailStatusResponse{App: name, Installed: true, ContainerState: "unknown", TLS: mailTLSKind(env)}
-	out.Domain, out.Hostname = mailNames(env)
+func (rt *Router) mailProbe(ctx context.Context, svc store.DesiredService) mailStatusResponse {
+	out := mailStatusResponse{App: svc.Name, Installed: true, ContainerState: "unknown", TLS: mailTLSKind(svc.Env)}
+	out.Domain, out.Hostname = mailNames(svc.Env)
 	ip := ""
 	if rt.containers != nil {
-		list, lerr := rt.containers.ListByPrefix(ctx, name)
-		if lerr == nil {
+		c, err := rt.mailEngineContainer(ctx, svc)
+		switch {
+		case errors.Is(err, errMailEngineMissing):
 			out.ContainerState = "missing"
-			for _, c := range list {
-				if c.Labels["levelrail.mail"] != "engine" {
-					continue
-				}
-				out.ContainerState = "stopped"
-				if c.Running {
-					out.ContainerState = "running"
-					for _, n := range c.Networks {
-						if n.IPAddress != "" {
-							ip = n.IPAddress
-							break
-						}
-					}
-				}
-				break
-			}
+		case err != nil:
+			// Ambiguous or foreign: report unknown and never probe it.
+		case c.Running:
+			out.ContainerState, ip = "running", containerIP(c)
+		default:
+			out.ContainerState = "stopped"
 		}
 	}
 	if ip != "" {
@@ -115,7 +170,7 @@ func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
 		if s.TemplateID != mailTemplateID || (want != "" && s.Name != want) {
 			continue
 		}
-		cand := rt.mailProbe(r.Context(), s.Name, s.Env)
+		cand := rt.mailProbe(r.Context(), s)
 		if !found || mailRank(cand) > mailRank(best) {
 			best, found = cand, true
 		}

@@ -24,8 +24,17 @@ func TestMailboxOwnership(t *testing.T) {
 	if err := db.CreateMailbox(ctx, m); !errors.Is(err, ErrMailboxExists) {
 		t.Fatalf("duplicate: %v", err)
 	}
+	if err := db.SetMailboxSuspendPending(ctx, "jo@example.test"); err != nil {
+		t.Fatal(err)
+	}
+	if owed, err := db.ListMailboxesSuspendPending(ctx); err != nil || len(owed) != 1 || !owed[0].SuspendPending {
+		t.Fatalf("pending %+v %v", owed, err)
+	}
 	if err := db.SetMailboxSuspended(ctx, "jo@example.test", true); err != nil {
 		t.Fatal(err)
+	}
+	if owed, _ := db.ListMailboxesSuspendPending(ctx); len(owed) != 0 {
+		t.Fatalf("suspending must settle the owed suspend: %+v", owed)
 	}
 	linked, err := db.ListMailboxesLinkedTo(ctx, "team-a", "u1")
 	if err != nil || len(linked) != 1 || !linked[0].Suspended {

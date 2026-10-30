@@ -14,6 +14,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -256,6 +257,11 @@ func redact(s string, secrets []string) string {
 	return s
 }
 
+// notFoundMessage matches only a whole "<thing> does not exist" or "<thing> not
+// found" clause, so an unrelated failure that mentions "unknown" is never read
+// as a missing account (a delete would then drop the record of a live mailbox).
+var notFoundMessage = regexp.MustCompile(`(?:^|: )(?:account|domain|alias|address|destination|message|mailbox)s? (?:does not exist|not found)$`)
+
 func mapError(e rpcError, secrets []string) error {
 	msg := redact(e.Message, secrets)
 	low := strings.ToLower(msg)
@@ -267,7 +273,7 @@ func mapError(e rpcError, secrets []string) error {
 		kind = mail.ErrInvalid
 	case strings.Contains(low, "already exists") || strings.Contains(low, "already in use") || strings.Contains(low, "already configured") || strings.Contains(low, "already present"):
 		kind = mail.ErrExists
-	case strings.Contains(low, "does not exist") || strings.Contains(low, "no such") || strings.Contains(low, "not found") || strings.Contains(low, "unknown"):
+	case notFoundMessage.MatchString(strings.TrimSpace(low)):
 		kind = mail.ErrNotFound
 	case e.Code == "user:error":
 		kind = mail.ErrInvalid

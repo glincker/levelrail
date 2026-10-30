@@ -83,7 +83,7 @@ func (rt *Router) pickMailApp(r *http.Request, want string) (store.DesiredServic
 		}
 		rank := 0
 		if want == "" {
-			rank = mailRank(rt.mailProbe(r.Context(), s.Name, s.Env))
+			rank = mailRank(rt.mailProbe(r.Context(), s))
 		}
 		if !found || rank > bestRank {
 			best, bestRank, found = s, rank, true

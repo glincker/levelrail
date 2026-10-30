@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -209,9 +210,18 @@ type queueMsg struct {
 
 func (m queueMsg) lastError() string {
 	if n := len(m.Results); n > 0 && !m.Results[n-1].Success {
-		return m.Results[n-1].Error
+		return redactLocalparts(m.Results[n-1].Error)
 	}
 	return ""
+}
+
+// addressInText finds mail addresses inside remote server replies.
+var addressInText = regexp.MustCompile(`[^\s<>"'(),;:\[\]@]+@([A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?)`)
+
+// redactLocalparts keeps only the domain of any address in a remote reply:
+// queue views may show the recipient domain, never the full address (ADR 059 2.8).
+func redactLocalparts(s string) string {
+	return addressInText.ReplaceAllString(s, "*@$1")
 }
 
 func (c *Client) queueMsgs(ctx context.Context, limit int) ([]queueMsg, error) {

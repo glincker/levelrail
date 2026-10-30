@@ -209,6 +209,10 @@ func TestErrorMapping(t *testing.T) {
 		want error
 	}{
 		{rpcError{"user:error", "domain does not exist"}, mail.ErrNotFound},
+		{rpcError{"user:error", "removing account: account does not exist"}, mail.ErrNotFound},
+		{rpcError{"user:error", "unknown error while removing account"}, mail.ErrInvalid},
+		{rpcError{"user:error", "no such file or directory"}, mail.ErrInvalid},
+		{rpcError{"user:error", "account does not exist yet the store failed"}, mail.ErrInvalid},
 		{rpcError{"user:error", "account already exists"}, mail.ErrExists},
 		{rpcError{"user:error", "weird"}, mail.ErrInvalid},
 		{rpcError{"sherpa:badParams", "x"}, mail.ErrInvalid},
@@ -301,5 +305,19 @@ func TestAdminBaseURL(t *testing.T) {
 	t.Setenv(AdminPortEnv, "9090")
 	if got := AdminBaseURL("10.0.0.5"); got != "http://10.0.0.5:9090" {
 		t.Fatalf("env %q", got)
+	}
+}
+
+func TestQueueLastErrorKeepsOnlyRecipientDomain(t *testing.T) {
+	m := queueMsg{Results: []struct {
+		Success bool
+		Error   string
+	}{{Success: false, Error: "550 5.1.1 <Jo.Smith+tag@Example.test>: user unknown; also bob@mx.other.test"}}}
+	got := m.lastError()
+	if strings.Contains(got, "Jo.Smith") || strings.Contains(got, "bob@") {
+		t.Fatalf("local part leaked: %q", got)
+	}
+	if !strings.Contains(got, "*@Example.test") || !strings.Contains(got, "*@mx.other.test") || !strings.Contains(got, "550 5.1.1") {
+		t.Fatalf("domain or code lost: %q", got)
 	}
 }

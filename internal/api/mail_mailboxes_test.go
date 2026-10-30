@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
@@ -102,7 +103,8 @@ func TestOffboardingSuspendsLinkedMailboxes(t *testing.T) {
 	rt := &Router{logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
 	rt.mail.boxes = boxes
 	rt.mail.engine = func(context.Context, string) (mail.Engine, error) { return eng, nil }
-	if n := rt.offboardMailboxes(context.Background(), "team-a", "u1"); n != 1 {
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/teams/team-a/members/u1", nil)
+	if n := rt.offboardMailboxes(req, "team-a", "u1"); n != 1 {
 		t.Fatalf("suspended %d, want 1", n)
 	}
 	if !boxes.boxes["jo@example.test"].Suspended || eng.disabled["jo@example.test"] == "" {

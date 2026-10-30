@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/mail"
 	"github.com/GLINCKER/levelrail/internal/mail/mox"
@@ -42,6 +43,8 @@ type MailboxStore interface {
 	ListMailboxes(ctx context.Context, domain string) ([]store.Mailbox, error)
 	ListMailboxesLinkedTo(ctx context.Context, teamID, userID string) ([]store.Mailbox, error)
 	SetMailboxSuspended(ctx context.Context, address string, suspended bool) error
+	SetMailboxSuspendPending(ctx context.Context, address string) error
+	ListMailboxesSuspendPending(ctx context.Context) ([]store.Mailbox, error)
 	DeleteMailbox(ctx context.Context, address string) error
 }
 
@@ -57,34 +60,29 @@ func (c mailSecretCreds) AdminPassword(ctx context.Context) (string, error) {
 	return c.src.Resolve(ctx, c.service, mailAdminSecretKey)
 }
 
-// defaultMailEngine reaches the admin API on the container's app network
-// address and reads the admin password from secret storage per call.
+// defaultMailEngine reaches the admin API on the engine container's app
+// network address and reads the admin password from secret storage per call.
+// The target comes only from desired state and platform identity.
 func (rt *Router) defaultMailEngine(ctx context.Context, service string) (mail.Engine, error) {
 	if rt.composeSecrets == nil {
 		return nil, errors.New("mail: secret storage is not configured")
 	}
-	ip := ""
-	if rt.containers != nil {
-		list, err := rt.containers.ListByPrefix(ctx, service)
-		if err != nil {
-			return nil, err
-		}
-		for _, c := range list {
-			if c.Labels["levelrail.mail"] != "engine" || !c.Running {
-				continue
-			}
-			for _, n := range c.Networks {
-				if n.IPAddress != "" {
-					ip = n.IPAddress
-					break
-				}
-			}
-		}
+	if rt.apps == nil {
+		return nil, errMailEngineMissing
 	}
-	if ip == "" {
-		return nil, errors.New("mail: the mail container is not running")
+	svc, err := rt.apps.GetDesiredService(ctx, service)
+	if err != nil {
+		return nil, err
 	}
-	return mox.New(mox.Config{BaseURL: mox.AdminBaseURL(ip), Credentials: mailSecretCreds{src: rt.composeSecrets, service: service}})
+	c, err := rt.mailEngineContainer(ctx, *svc)
+	if err != nil {
+		return nil, err
+	}
+	ip := containerIP(c)
+	if !c.Running || ip == "" {
+		return nil, errMailEngineMissing
+	}
+	return mox.New(mox.Config{BaseURL: mox.AdminBaseURL(ip), Credentials: mailSecretCreds{src: rt.composeSecrets, service: svc.Name}})
 }
 
 // mailEngineFor resolves the named mail app and its engine, writing the error itself.
@@ -108,6 +106,7 @@ func (rt *Router) mailEngineFor(w http.ResponseWriter, r *http.Request, app stri
 		writeError(w, http.StatusServiceUnavailable, "the mail server admin API is not reachable; check levelrail-cli mail status")
 		return nil, svc, false
 	}
+	rt.retryPendingSuspends(r, e, svc.Name)
 	return e, svc, true
 }
 
@@ -214,10 +213,22 @@ func (rt *Router) handleListMailDomains(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: list mail domains", err)
 		return
 	}
+	pType, pID, abilities, err := rt.callerPrincipal(r)
+	if err != nil {
+		rt.internalError(w, "api: mail: resolve caller", err)
+		return
+	}
+	var policies []store.Policy
+	if rt.policies != nil {
+		if policies, err = rt.policies.ListPoliciesForPrincipal(r.Context(), pType, pID); err != nil {
+			rt.internalError(w, "api: mail: list policies", err)
+			return
+		}
+	}
 	scope, _ := callerTeamScope(r.Context())
 	out := []mailDomainResource{}
 	for _, d := range list {
-		if scope.allowsTeam(d.TeamID) {
+		if mailDecide(scope, abilities, policies, d.TeamID, AbilityRead, mailResDomain+d.Domain, mailResService+d.Service) == 0 {
 			out = append(out, mailDomainResource{d})
 		}
 	}
@@ -381,6 +392,11 @@ func (rt *Router) handleCreateMailbox(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "mailbox already exists")
 		return
 	}
+	req.LinkedUserID = strings.TrimSpace(req.LinkedUserID)
+	if req.LinkedUserID != "" && !rt.isTeamMember(r.Context(), d.TeamID, req.LinkedUserID) {
+		writeError(w, http.StatusBadRequest, "linked_user_id must be a member of the team that owns the domain")
+		return
+	}
 	e, _, ok := rt.mailEngineFor(w, r, d.Service)
 	if !ok {
 		return
@@ -400,6 +416,16 @@ func (rt *Router) handleCreateMailbox(w http.ResponseWriter, r *http.Request) {
 	}
 	saved, _ := db.GetMailbox(r.Context(), address)
 	writeJSON(w, http.StatusCreated, mailboxSecretResponse{Mailbox: mailboxResource{saved}, Password: pw, Notice: mailShownOnce, SendCapPerHour: capPerHour})
+}
+
+// isTeamMember reports a membership; any lookup failure counts as not a member.
+func (rt *Router) isTeamMember(ctx context.Context, teamID, userID string) bool {
+	ta := rt.teamAdmin()
+	if ta == nil {
+		return false
+	}
+	role, err := ta.TeamMemberRole(ctx, teamID, userID)
+	return err == nil && role != ""
 }
 
 type mailStepUpRequest struct {
@@ -490,6 +516,8 @@ func (rt *Router) handleDeleteMailbox(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	// Only the engine's anchored "account does not exist" counts as already
+	// gone; any other failure keeps the record so the mailbox stays managed.
 	if err := mail.DeleteAccount(r.Context(), e, m.Address, m.Address, req.DeleteMail); err != nil && !errors.Is(err, mail.ErrNotFound) {
 		rt.mailEngineError(w, "delete the mailbox", err)
 		return
@@ -680,14 +708,16 @@ func (rt *Router) handleMailQueueHold(hold bool) http.HandlerFunc {
 }
 
 // offboardMailboxes suspends the mailboxes linked to a user who left a team
-// (ADR 059 decision 2). Best effort: a failure is logged and the record is
-// left active so the dashboard still shows it as needing action.
-func (rt *Router) offboardMailboxes(ctx context.Context, teamID, userID string) int {
+// or was disabled (ADR 059 section 2.5). When the engine cannot apply it, the
+// row is marked suspend_pending, audited, and retried on the next engine call.
+func (rt *Router) offboardMailboxes(r *http.Request, teamID, userID string) int {
 	if rt.mail.boxes == nil || userID == "" {
 		return 0
 	}
+	ctx := context.WithoutCancel(r.Context())
 	list, err := rt.mail.boxes.ListMailboxesLinkedTo(ctx, teamID, userID)
-	if err != nil || len(list) == 0 {
+	if err != nil {
+		rt.logger.Warn("api: mail offboarding: list linked mailboxes failed", slog.String("team", teamID), slog.String("error", err.Error()))
 		return 0
 	}
 	build := rt.mail.engine
@@ -701,16 +731,94 @@ func (rt *Router) offboardMailboxes(ctx context.Context, teamID, userID string) 
 		}
 		e, eerr := build(ctx, m.Service)
 		if eerr == nil {
-			eerr = mail.SuspendAccount(ctx, e, m.Address)
-		}
-		if eerr == nil {
-			eerr = rt.mail.boxes.SetMailboxSuspended(ctx, m.Address, true)
+			eerr = rt.applyOffboardSuspend(r, e, m)
 		}
 		if eerr != nil {
-			rt.logger.Warn("api: mail offboarding: suspend failed", slog.String("mailbox", m.Address), slog.String("error", eerr.Error()))
+			rt.markSuspendPending(r, m, eerr)
 			continue
 		}
 		n++
 	}
 	return n
+}
+
+// applyOffboardSuspend disables logins in the engine, then records it.
+func (rt *Router) applyOffboardSuspend(r *http.Request, e mail.Engine, m store.Mailbox) error {
+	ctx := context.WithoutCancel(r.Context())
+	if err := mail.SuspendAccount(ctx, e, m.Address); err != nil {
+		return err
+	}
+	if err := rt.mail.boxes.SetMailboxSuspended(ctx, m.Address, true); err != nil {
+		return err
+	}
+	rt.auditMailOffboard(r, m.Address, "suspended", http.StatusOK)
+	return nil
+}
+
+// markSuspendPending persists the owed suspend so it is visible and retried.
+func (rt *Router) markSuspendPending(r *http.Request, m store.Mailbox, cause error) {
+	rt.logger.Warn("api: mail offboarding: suspend deferred", slog.String("mailbox", m.Address), slog.String("error", cause.Error()))
+	if err := rt.mail.boxes.SetMailboxSuspendPending(context.WithoutCancel(r.Context()), m.Address); err != nil {
+		rt.logger.Error("api: mail offboarding: record pending suspend failed", slog.String("mailbox", m.Address), slog.String("error", err.Error()))
+	}
+	rt.auditMailOffboard(r, m.Address, "suspend-pending", http.StatusServiceUnavailable)
+}
+
+// retryPendingSuspends applies owed offboarding suspends for one mail app
+// once its engine answers again; it rides on mailbox calls, no polling loop.
+func (rt *Router) retryPendingSuspends(r *http.Request, e mail.Engine, service string) {
+	if rt.mail.boxes == nil {
+		return
+	}
+	owed, err := rt.mail.boxes.ListMailboxesSuspendPending(r.Context())
+	if err != nil {
+		rt.logger.Warn("api: mail offboarding: list pending suspends failed", slog.String("error", err.Error()))
+		return
+	}
+	for _, m := range owed {
+		if m.Service != service {
+			continue
+		}
+		if err := rt.applyOffboardSuspend(r, e, m); err != nil {
+			rt.logger.Warn("api: mail offboarding: retry failed", slog.String("mailbox", m.Address), slog.String("error", err.Error()))
+		}
+	}
+}
+
+// offboardDisabledUser runs the offboarding rule in every team of a disabled user.
+func (rt *Router) offboardDisabledUser(r *http.Request, userID string) {
+	ta := rt.teamAdmin()
+	if ta == nil || rt.mail.boxes == nil {
+		return
+	}
+	roles, err := ta.UserTeamRoles(r.Context(), userID)
+	if err != nil {
+		rt.logger.Warn("api: mail offboarding: list user teams failed", slog.String("error", err.Error()))
+		return
+	}
+	for teamID := range roles {
+		rt.offboardMailboxes(r, teamID, userID)
+	}
+}
+
+// auditMailOffboard writes the offboarding outcome; the subject is the address only.
+func (rt *Router) auditMailOffboard(r *http.Request, address, outcome string, status int) {
+	if rt.auditLog == nil {
+		return
+	}
+	a := rt.accessActor(r)
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: mail offboarding audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	entry := store.AuditEntry{
+		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityWriteSensitive, Method: "OFFBOARD", Path: "/api/v1/mail/mailboxes/" + address + "#" + outcome, StatusCode: status,
+		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: mail offboarding audit save failed", slog.String("error", err.Error()), slog.String("mailbox", address))
+	}
 }

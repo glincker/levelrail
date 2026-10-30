@@ -35,7 +35,9 @@ levelrail-cli mail mailboxes delete jo@example.com --confirm jo@example.com
 
 - `add` and `passwd` print a generated password **once**. Levelrail does not store it, so copy it and hand it to the mailbox user. Users cannot choose their own password. The length comes from `APP_MAIL_PASSWORD_LENGTH` (default 24).
 - `suspend` blocks IMAP, SMTP submission and webmail logins. Mail keeps arriving.
-- When a member leaves a team, or is removed from it, mailboxes linked to them in that team are suspended. Nothing is deleted automatically.
+- When a member leaves a team, is removed from it, or is disabled through SCIM, mailboxes linked to them in that team are suspended. Nothing is deleted automatically.
+- If the mail server is unreachable at that moment, the mailbox is marked `suspend_pending`, the audit log records it, and the suspend is applied on the next mail call that reaches the server. `mailboxes list` shows the pending state.
+- `--linked-user` must be a member of the team that owns the domain.
 - `delete` asks for your password, needs the address typed again, and refuses a mailbox that still holds mail unless you pass `--delete-mail`. Suspending is usually the better choice.
 - Each new mailbox reports a send cap from `APP_MAIL_DEFAULT_SEND_CAP_PER_HOUR` (default 200). It is recorded as data only and is not enforced yet.
 
