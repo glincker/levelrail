@@ -55,7 +55,10 @@
     "unknown": "We could not detect your DNS host. You can copy the records instead.",
     "failed": "Detection failed. You can still copy the records.",
     "domainConnect": "One-click approval available at {{host}}",
-    "without": "Continue without connecting"
+    "without": "Continue without connecting",
+    "demo": "Demo data: demo.example is a fake zone, so no real DNS host can be found. Type a real domain below to try detection (read-only lookups). To turn demo mode off, restart with LOCAL_MAIL_DEMO=0.",
+    "tryLabel": "Try another domain",
+    "tryAction": "Detect"
   },
   "connect": {
     "permissions": "Create a token with Zone DNS Edit on this zone and Zone Read. Nothing else is needed.",

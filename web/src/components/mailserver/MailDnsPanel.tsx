@@ -7,18 +7,21 @@ export function MailDnsPanel({
   onReport,
   onDomain,
   defaults,
+  demo = false,
   previewToken = 0,
 }: {
   report?: MailCheckReport | undefined
   onReport: (r: MailCheckReport) => void
   onDomain?: (domain: string) => void
   defaults?: Pick<MailStatus, 'domain' | 'hostname'>
+  demo?: boolean
   previewToken?: number
 }) {
   return (
     <DomainDnsSetup
       kind="mail"
       defaults={defaults}
+      demo={demo}
       onReport={onReport}
       onDomain={onDomain}
       previewToken={previewToken}

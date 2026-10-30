@@ -159,6 +159,22 @@ describe('DomainDnsSetup', () => {
       await screen.findByRole('button', { name: 'Copy records' }),
     ).toBeTruthy()
   })
+  it('unknown host in demo mode shows the demo note and lets you try another domain', async () => {
+    mockApi(
+      detection({ provider: '', connected: false, connectable: false }),
+      [],
+    )
+    setup({ demo: true })
+    expect(await screen.findByTestId('detect-demo-note')).toBeTruthy()
+    await userEvent.type(
+      await screen.findByLabelText('Try another domain'),
+      'real.org',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Detect' }))
+    expect(
+      await screen.findByRole('heading', { name: /real\.org/ }),
+    ).toBeTruthy()
+  })
   it('Different offers Replace and needs a second confirm', async () => {
     const body = vi.fn()
     const before = { name: 'x', type: 'TXT', ttl: 300, values: ['old'] }

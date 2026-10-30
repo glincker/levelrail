@@ -47,6 +47,7 @@ import { useCopy } from './useCopy'
 import {
   detectState,
   jsonText,
+  normalizeDomain,
   primaryActionOf,
   providerLabel,
   rememberDomain,
@@ -75,6 +76,8 @@ export interface DomainDnsSetupProps {
   domain?: string
   app?: string
   defaults?: { domain?: string; hostname?: string }
+  /** Mail demo mode: the zone is fake, so say so on the detect step. */
+  demo?: boolean
   onReport?: (r: MailCheckReport) => void
   onDomain?: (domain: string) => void
   /** Bumped by the next-step button to jump straight to the records. */
@@ -100,6 +103,7 @@ export function DomainDnsSetup({
   domain: lockedDomain,
   app,
   defaults,
+  demo = false,
   onReport,
   onDomain,
   previewToken = 0,
@@ -112,6 +116,7 @@ export function DomainDnsSetup({
     ? ['detect', 'review', 'verify']
     : ['pick', 'detect', 'review', 'verify']
   const [step, setStep] = useState<SetupStep>(steps[0] ?? 'pick')
+  const [tryRaw, setTryRaw] = useState('')
   const [chosen, setChosen] = useState(lockedDomain ?? rememberedDomain(kind))
   const [hostOverride, setHostOverride] = useState<string | null>(null)
   const [ipOverride, setIpOverride] = useState('')
@@ -523,6 +528,14 @@ export function DomainDnsSetup({
 
       {step === 'detect' && (
         <div className="space-y-3">
+          {demo && (
+            <p
+              className="text-xs text-muted-foreground"
+              data-testid="detect-demo-note"
+            >
+              {t('detect.demo')}
+            </p>
+          )}
           {detect.isLoading ? (
             <div
               role="status"
@@ -557,6 +570,41 @@ export function DomainDnsSetup({
                 host: det.domain_connect?.host ?? label,
               })}
             </p>
+          )}
+          {!detect.isLoading && (state === 'unknown' || detect.isError) && (
+            <form
+              className="flex flex-wrap items-end gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                const typed = normalizeDomain(tryRaw)
+                if (!typed) return
+                pick(typed)
+                setTryRaw('')
+              }}
+            >
+              <div className="space-y-1">
+                <Label htmlFor="dns-try-domain" className="text-xs">
+                  {t('detect.tryLabel')}
+                </Label>
+                <Input
+                  id="dns-try-domain"
+                  value={tryRaw}
+                  onChange={(e) => setTryRaw(e.target.value)}
+                  placeholder={t('pick.placeholder')}
+                  className="h-8 w-56"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                disabled={!normalizeDomain(tryRaw)}
+              >
+                {t('detect.tryAction')}
+              </Button>
+            </form>
           )}
           <div className="flex flex-wrap items-center gap-2">
             {state === 'notConnected' && det?.connectable ? (

@@ -271,6 +271,7 @@ export function MailPage({ tab, onTab, add, queue, onHandled }: Props = {}) {
               onReport={setReport}
               onDomain={setDomain}
               defaults={status}
+              demo={!!status?.demo}
               previewToken={previewToken}
             />
           </div>
