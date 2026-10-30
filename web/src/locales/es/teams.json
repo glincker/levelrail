@@ -1,0 +1,138 @@
+{
+  "page": {
+    "title": "Equipos",
+    "description": "Quién puede ver y cambiar cada proyecto. Cada equipo es dueño de sus proyectos, sus entornos, apps y bases de datos.",
+    "create": "Nuevo equipo",
+    "createTitle": "Crear un equipo",
+    "createName": "Nombre del equipo",
+    "createSubmit": "Crear equipo",
+    "created": "Equipo creado",
+    "empty": "Aún no estás en ningún equipo. Pide un enlace de invitación a un administrador del equipo.",
+    "pick": "Equipo",
+    "defaultTeam": "Predeterminado",
+    "defaultHint": "El equipo predeterminado es la propia instancia. Los administradores de la instancia gestionan sus miembros en la página de Usuarios y aquí.",
+    "eyebrow": "Acceso",
+    "help": "Guía de equipos y roles",
+    "count_one": "{{count}} equipo",
+    "count_other": "{{count}} equipos",
+    "banner": {
+      "title": "Todos están en el equipo predeterminado",
+      "body": "Crea un equipo para dar a un grupo sus propios proyectos, entornos, apps y bases de datos, con sus propios propietarios y miembros."
+    }
+  },
+  "roles": {
+    "owner": "Propietario",
+    "admin": "Administrador",
+    "developer": "Desarrollador",
+    "viewer": "Lector",
+    "ownerHint": "Todo, incluido eliminar el equipo y transferir la propiedad.",
+    "adminHint": "Despliega en cualquier lugar, incluidos los entornos protegidos, y gestiona a los miembros.",
+    "developerHint": "Despliega, edita variables de entorno y lee los logs, excepto en entornos protegidos.",
+    "viewerHint": "Lee apps, bases de datos y logs. No cambia nada.",
+    "yourRole": "Tu rol: {{role}}"
+  },
+  "members": {
+    "tableLabel": "Miembros del equipo",
+    "title": "Miembros",
+    "email": "Correo",
+    "name": "Nombre",
+    "role": "Rol",
+    "actions": "Acciones",
+    "remove": "Quitar",
+    "removed": "Miembro eliminado",
+    "roleChanged": "Rol actualizado",
+    "leave": "Salir del equipo",
+    "left": "Saliste del equipo",
+    "transfer": "Hacer propietario",
+    "transferred": "Propiedad transferida. Ahora eres administrador.",
+    "roleLabel": "Rol de {{email}}"
+  },
+  "invites": {
+    "tableLabel": "Invitaciones del equipo",
+    "statusHeader": "Estado",
+    "title": "Invitaciones",
+    "create": "Invitar",
+    "email": "Correo (opcional)",
+    "emailHint": "Déjalo vacío para un enlace de un solo uso que puede canjear cualquiera que lo tenga.",
+    "role": "Rol",
+    "expires": "Expira en horas (opcional)",
+    "submit": "Crear invitación",
+    "created": "Invitación creada. Copia el enlace ahora, no se vuelve a mostrar.",
+    "copy": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "revoke": "Revocar",
+    "revoked": "Invitación revocada",
+    "link": "Invitación por enlace",
+    "empty": "Aún no hay invitaciones.",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "revoked": "Revocada",
+      "expired": "Expirada"
+    }
+  },
+  "events": {
+    "title": "Auditoría del equipo",
+    "empty": "Aún no se registran cambios de membresía."
+  },
+  "switcher": {
+    "aria": "Equipo y proyecto",
+    "allTeams": "Todos los equipos",
+    "allProjects": "Todos los proyectos",
+    "team": "Equipo",
+    "project": "Proyecto"
+  },
+  "forbidden": {
+    "title": "No tienes acceso aquí",
+    "body": "Tu rol actual en el equipo no lo permite, o pertenece a otro equipo.",
+    "switch": "Cambiar de equipo",
+    "teams": "Abrir Equipos",
+    "home": "Volver al panel"
+  },
+  "accept": {
+    "title": "Unirse a un equipo",
+    "description": "Te invitaron a unirte a un equipo.",
+    "summary": "Unirte a {{team}} como {{role}}",
+    "signedInHint": "Ya iniciaste sesión, así que la invitación une tu cuenta actual.",
+    "newAccountHint": "¿Aún no tienes cuenta? Crea una aquí. Pertenecerá solo a este equipo.",
+    "email": "Correo",
+    "password": "Contraseña",
+    "name": "Nombre para mostrar (opcional)",
+    "submit": "Unirse al equipo",
+    "joined": "Te uniste al equipo",
+    "invalid": "Esta invitación no es válida, expiró, fue revocada o ya se usó. Pide una nueva al administrador del equipo.",
+    "missing": "Este enlace no tiene token de invitación."
+  },
+  "quota": {
+    "title": "Cuotas",
+    "teamHint": "Límites para todo lo que pertenece a este equipo. Un cambio que superaría un límite se rechaza indicando el límite y el uso actual.",
+    "projectHint": "Límites para todo lo que pertenece a este proyecto, además de los límites del equipo.",
+    "resources": {
+      "apps": "Apps",
+      "databases": "Bases de datos",
+      "memory": "Memoria reservada (MB)",
+      "cpu": "CPU reservada (núcleos)",
+      "previews": "Entornos de vista previa"
+    },
+    "fields": {
+      "apps": "Máx. de apps",
+      "databases": "Máx. de bases de datos",
+      "memory": "Memoria máx. (MB)",
+      "cpu": "CPU máx. (núcleos)",
+      "previews": "Máx. de vistas previas"
+    },
+    "usage": "{{used}} de {{limit}}",
+    "usageUnlimited": "{{used}} en uso, sin límite",
+    "full": "En el límite",
+    "nearLimit": "Cerca del límite",
+    "editHint": "0 significa sin límite. Los recursos existentes nunca se detienen al bajar un límite.",
+    "save": "Guardar límites",
+    "clear": "Quitar todos los límites",
+    "saved": "Cuota guardada",
+    "cleared": "Límites de cuota eliminados",
+    "readOnly": "Solo los administradores y propietarios del equipo pueden cambiar estos límites."
+  },
+  "errors": {
+    "generic": "Algo salió mal: {{message}}"
+  }
+}
