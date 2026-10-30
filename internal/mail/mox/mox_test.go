@@ -153,7 +153,8 @@ func TestEngineMethods(t *testing.T) {
 		c.AddAddress(ctx, "b2@example.test", "bob"),
 		c.AddAlias(ctx, mail.Alias{Address: "team@example.test", Targets: []string{"alice@example.test"}}),
 		c.RemoveAlias(ctx, "team@example.test"),
-		c.DropQueue(ctx),
+		c.HoldQueue(ctx),
+		c.ReleaseQueue(ctx),
 		c.Health(ctx),
 	}
 	for i, e := range steps {
@@ -289,5 +290,16 @@ func TestParseRecords(t *testing.T) {
 	k := ExtractDKIM(recs)
 	if len(k) != 1 || k[0].Selector != "x" || k[0].PublicKey != "QUJD" {
 		t.Fatalf("%+v", k)
+	}
+}
+
+func TestAdminBaseURL(t *testing.T) {
+	t.Setenv(AdminPortEnv, "")
+	if got := AdminBaseURL("10.0.0.5"); got != "http://10.0.0.5:8080" {
+		t.Fatalf("default %q", got)
+	}
+	t.Setenv(AdminPortEnv, "9090")
+	if got := AdminBaseURL("10.0.0.5"); got != "http://10.0.0.5:9090" {
+		t.Fatalf("env %q", got)
 	}
 }

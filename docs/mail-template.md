@@ -25,7 +25,7 @@ mox starts as root only to bind its ports, then runs as numeric uid 1000. The co
 | `MAIL_TLS_CERT_FILE`, `MAIL_TLS_KEY_FILE` | Required. Certificate and key paths under `/mox/config`, mapped to `TLS: KeyCerts` on the public listener. The install fails with a clear message when either is missing, and the container refuses to start when the files are not in the config volume. |
 | `MAIL_SMARTHOST_HOST`, `_PORT`, `_USER`, `_PASSWORD` | Optional relay. The password is a secret input. Port defaults to 587. |
 
-The admin password is the generated secret `SERVICE_PASSWORD_MAILADMIN` on the app. The admin API listens on container port 8080 and is not published on the host. The webmail and account UI are published as 8025 (container port 8081).
+The admin password is the generated secret `SERVICE_PASSWORD_MAILADMIN` on the app. The admin API listens on container port 8080 and is not published on the host. The webmail and account UI are published as 8025 (container port 8081). The control plane builds the adapter address from the service's container address on the app network and port 8080 (override with `APP_MAIL_ADMIN_PORT`). Queue operations are hold and release.
 
 ## Ports
 

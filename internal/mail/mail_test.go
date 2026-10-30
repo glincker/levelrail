@@ -19,3 +19,14 @@ func TestAccountSpecRedactsPassword(t *testing.T) {
 		t.Fatalf("bad output: %s", out)
 	}
 }
+
+func TestDefaultSendCapPerHour(t *testing.T) {
+	t.Setenv(SendCapEnv, "")
+	if DefaultSendCapPerHour() != 200 {
+		t.Fatal("default")
+	}
+	t.Setenv(SendCapEnv, "50")
+	if DefaultSendCapPerHour() != 50 {
+		t.Fatal("env")
+	}
+}

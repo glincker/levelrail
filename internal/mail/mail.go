@@ -7,7 +7,24 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"strconv"
 )
+
+// SendCapEnv sets the default per-account hourly send cap carried on
+// AccountSpec. It is data only; nothing enforces it yet.
+const (
+	SendCapEnv     = "APP_MAIL_DEFAULT_SEND_CAP_PER_HOUR"
+	defaultSendCap = 200
+)
+
+// DefaultSendCapPerHour reads the default cap from the environment.
+func DefaultSendCapPerHour() int {
+	if n, err := strconv.Atoi(os.Getenv(SendCapEnv)); err == nil && n > 0 {
+		return n
+	}
+	return defaultSendCap
+}
 
 // Typed failures every adapter maps its engine errors onto.
 var (
@@ -64,6 +81,9 @@ type AccountSpec struct {
 	Name     string
 	Address  string
 	Password string
+	// SendCapPerHour is advisory data for a later enforcement slice; 0 means
+	// use DefaultSendCapPerHour.
+	SendCapPerHour int
 }
 
 // String redacts the password so a printed spec never leaks it.
@@ -128,6 +148,8 @@ type Engine interface {
 	AddAlias(ctx context.Context, a Alias) error
 	RemoveAlias(ctx context.Context, address string) error
 	QueueStats(ctx context.Context) (QueueStats, error)
-	DropQueue(ctx context.Context) error
+	// HoldQueue pauses delivery of every queued message; ReleaseQueue resumes it.
+	HoldQueue(ctx context.Context) error
+	ReleaseQueue(ctx context.Context) error
 	Health(ctx context.Context) error
 }

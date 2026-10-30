@@ -168,9 +168,14 @@ func (c *Client) QueueStats(ctx context.Context) (mail.QueueStats, error) {
 	return st, nil
 }
 
-// DropQueue discards every queued message.
-func (c *Client) DropQueue(ctx context.Context) error {
-	return c.call(ctx, "QueueDrop", []any{map[string]any{}}, nil)
+// HoldQueue pauses delivery of every queued message (mox QueueHoldSet).
+func (c *Client) HoldQueue(ctx context.Context) error {
+	return c.call(ctx, "QueueHoldSet", []any{map[string]any{}, true}, nil)
+}
+
+// ReleaseQueue resumes delivery of held messages.
+func (c *Client) ReleaseQueue(ctx context.Context) error {
+	return c.call(ctx, "QueueHoldSet", []any{map[string]any{}, false}, nil)
 }
 
 // Health checks login and a cheap read.

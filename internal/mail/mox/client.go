@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/netip"
@@ -26,13 +27,26 @@ import (
 const (
 	TimeoutEnv  = "APP_MAIL_API_TIMEOUT"
 	MaxBytesEnv = "APP_MAIL_API_MAX_BYTES"
+	// AdminPortEnv overrides the mox admin listener port inside the container.
+	AdminPortEnv = "APP_MAIL_ADMIN_PORT"
 
 	defaultTimeout  = 10 * time.Second
 	defaultMaxBytes = 1 << 20
+	// DefaultAdminPort is the hardened template's admin listener, never
+	// published on the host.
+	DefaultAdminPort = 8080
 )
 
-// Config configures the adapter. BaseURL is the engine's admin origin, for
-// example http://10.0.0.5:1080. HTTPClient is for tests only.
+// AdminBaseURL builds the adapter address from the service's container
+// address on the app network. The control plane resolves host; the admin
+// port is never reachable from outside that network.
+func AdminBaseURL(host string) string {
+	port := strconv.FormatInt(envInt(AdminPortEnv, DefaultAdminPort), 10)
+	return "http://" + net.JoinHostPort(host, port)
+}
+
+// Config configures the adapter. BaseURL is the engine's admin origin on the
+// app network (see AdminBaseURL), for example http://10.0.0.5:8080. HTTPClient is for tests only.
 type Config struct {
 	BaseURL     string
 	Credentials mail.CredentialSource
