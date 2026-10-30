@@ -1,11 +1,13 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -25,7 +27,9 @@ var mailOpenPorts = []mailPortInfo{
 const (
 	mailPort25Note = "Many hosting providers block outbound and sometimes inbound port 25 by default. Check with your provider that port 25 is allowed for this server. Levelrail does not probe the internet to find out."
 	mailOpenWarn   = "Opening ports 25, 465, 587 and 993 puts this mail server on the public internet. The server must be hardened (firewall on, patched, no open relay) and TLS must be a real certificate, not the self-signed one."
-	mailBindNote   = "The bind address is one setting for the whole app, not per port. Making it public would also publish the web listener on a random public port, so this call will not do that."
+	mailBindNote   = "Each mail port has its own bind. Opening the mail ports makes only 25, 465, 587 and 993 public; the web listener keeps the app's own bind."
+	// mailPortsStepUpApp scopes the step-up grant for opening mail ports.
+	mailPortsStepUpApp = "mail-ports"
 )
 
 type mailPortInfo struct {
@@ -51,8 +55,9 @@ type mailPortsResponse struct {
 }
 
 type mailPortsOpenRequest struct {
-	App     string `json:"app,omitempty"`
-	Confirm bool   `json:"confirm"`
+	App     string       `json:"app,omitempty"`
+	Confirm bool         `json:"confirm"`
+	StepUp  *stepUpProof `json:"step_up,omitempty"`
 }
 
 type mailPortsOpenResponse struct {
@@ -91,16 +96,30 @@ func (rt *Router) pickMailApp(r *http.Request, want string) (store.DesiredServic
 }
 
 func mailBindOf(svc store.DesiredService) string {
-	if svc.BindAddress == "" || svc.BindAddress == bindaddr.Private || svc.BindAddress == "127.0.0.1" {
+	return normalBind(svc.BindAddress)
+}
+
+func normalBind(bind string) string {
+	if bind == "" || bind == bindaddr.Private || bind == "127.0.0.1" {
 		return bindaddr.Private
 	}
 	return bindaddr.Public
 }
 
-func mailPublishedTCP(svc store.DesiredService, port int) bool {
-	return slices.ContainsFunc(svc.PublishedPorts, func(p store.PublishedPort) bool {
+// mailPublishedTCP returns the published tcp entry for host port, if any.
+func mailPublishedTCP(svc store.DesiredService, port int) (store.PublishedPort, bool) {
+	i := slices.IndexFunc(svc.PublishedPorts, func(p store.PublishedPort) bool {
 		return p.HostPort == port && p.EffectiveProtocol() == store.PortProtocolTCP
 	})
+	if i < 0 {
+		return store.PublishedPort{}, false
+	}
+	return svc.PublishedPorts[i], true
+}
+
+// mailPortBind is the effective bind of one published mail port.
+func mailPortBind(svc store.DesiredService, p store.PublishedPort) string {
+	return normalBind(p.EffectiveBind(svc.BindAddress))
 }
 
 // mailFirewallState reads the host firewall once for the published rows of one app.
@@ -125,13 +144,13 @@ func (rt *Router) mailFirewallState(r *http.Request, app string) map[int]string 
 
 // mailPortsView builds the four port rows; firewall is nil when the app is not read yet.
 func mailPortsView(svc store.DesiredService, firewall map[int]string) []mailPortInfo {
-	bind := mailBindOf(svc)
 	out := make([]mailPortInfo, 0, len(mailOpenPorts))
 	for _, p := range mailOpenPorts {
-		p.Published = mailPublishedTCP(svc, p.Port)
+		pub, published := mailPublishedTCP(svc, p.Port)
+		p.Published = published
 		p.Bind, p.Firewall = "not_published", "unknown"
 		if p.Published {
-			p.Bind = bind
+			p.Bind = mailPortBind(svc, pub)
 			if fw, ok := firewall[p.Port]; ok {
 				p.Firewall = fw
 			}
@@ -165,15 +184,19 @@ func (rt *Router) handleMailPorts(w http.ResponseWriter, r *http.Request) {
 	if mailBindOf(svc) == bindaddr.Public {
 		out.WebListener = "public"
 	}
-	out.NextStep = "Run levelrail-cli mail ports open --confirm only after you have read the warning."
+	out.NextStep = "Open the mail ports (mail ports open --confirm in the CLI, or Open mail ports on the Mail page) only after you have read the warning, then set up DNS."
+	if !slices.ContainsFunc(out.Ports, func(p mailPortInfo) bool { return p.Bind != bindaddr.Public }) {
+		out.NextStep = "The mail ports are open. Set up DNS next."
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleMailPortsOpen handles POST /api/v1/mail/ports/open. It never targets
-// the web listener and never changes the bind address, which is service wide.
+// handleMailPortsOpen handles POST /api/v1/mail/ports/open. It sets a public
+// per-port bind on exactly the four mail ports, never on the web listener,
+// and leaves the service bind address alone.
 func (rt *Router) handleMailPortsOpen(w http.ResponseWriter, r *http.Request) {
 	var req mailPortsOpenRequest
-	if err := decodeJSONBodyLimit(r, &req, 1<<10); err != nil {
+	if err := decodeJSONBodyLimit(r, &req, 1<<12); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -192,18 +215,54 @@ func (rt *Router) handleMailPortsOpen(w http.ResponseWriter, r *http.Request) {
 	}
 	out := mailPortsOpenResponse{App: svc.Name, Changed: []int{}, Warning: mailOpenWarn}
 	for _, p := range mailOpenPorts {
-		if !mailPublishedTCP(svc, p.Port) || mailBindOf(svc) != bindaddr.Public {
+		if _, ok := mailPublishedTCP(svc, p.Port); !ok {
 			out.Pending = append(out.Pending, p.Port)
 		}
 	}
-	if len(out.Pending) == 0 {
-		out.Result, out.Message = "unchanged", "All four mail ports are already published on a public bind. Port 25 may still be blocked by your provider."
+	if len(out.Pending) > 0 {
+		out.Result = "refused"
+		out.Message = "This mail app does not publish ports " + joinPorts(out.Pending) + ". Redeploy it from the current mail-mox template, nothing was modified."
+		writeJSON(w, http.StatusConflict, out)
+		return
+	}
+	if _, ok := rt.stepUpOwner(w, r, req.StepUp, mailPortsStepUpApp+":"+svc.Name, "open the mail ports", "opening the mail ports"); !ok {
+		return
+	}
+	next := svc
+	next.PublishedPorts = slices.Clone(svc.PublishedPorts)
+	for i, p := range next.PublishedPorts {
+		if p.EffectiveProtocol() != store.PortProtocolTCP || p.ContainerPort == svc.Port || !isMailOpenPort(p.HostPort) {
+			continue
+		}
+		if mailPortBind(svc, p) != bindaddr.Public || p.Bind != spec.PortBindPublic {
+			next.PublishedPorts[i].Bind = spec.PortBindPublic
+			out.Changed = append(out.Changed, p.HostPort)
+		}
+	}
+	if len(out.Changed) > 0 {
+		if err := rt.apps.SaveDesiredService(r.Context(), next); err != nil {
+			rt.internalError(w, "api: mail ports open: save app failed", err, slog.String("name", svc.Name))
+			return
+		}
+	}
+	if err := rt.syncPublishedPortRules(r.Context(), next); err != nil {
+		rt.internalError(w, "api: mail ports open: firewall rules failed", err, slog.String("name", svc.Name))
+		return
+	}
+	if len(out.Changed) == 0 {
+		out.Result, out.Message = "unchanged", "All four mail ports already have a public bind. Port 25 may still be blocked by your provider."
 		writeJSON(w, http.StatusOK, out)
 		return
 	}
-	out.Result = "refused"
-	out.Message = mailBindNote + " Ports still closed: " + joinPorts(out.Pending) + ". Per-port bind needs a platform change, nothing was modified."
-	writeJSON(w, http.StatusConflict, out)
+	rt.recordAppEvent(r, store.AppEvent{AppName: svc.Name, Kind: store.AppEventConfigChange, Title: "Mail ports opened", Detail: "public bind on " + joinPorts(out.Changed)})
+	rt.nudgeReconciler()
+	out.Result = "opened"
+	out.Message = "Ports " + joinPorts(out.Changed) + " now bind publicly and are allowed in the host firewall; the container is recreated. The web listener was not changed. Next, set up DNS."
+	writeJSON(w, http.StatusOK, out)
+}
+
+func isMailOpenPort(port int) bool {
+	return slices.ContainsFunc(mailOpenPorts, func(p mailPortInfo) bool { return p.Port == port })
 }
 
 func joinPorts(ports []int) string {

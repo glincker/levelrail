@@ -22,7 +22,7 @@ func mailMoxTemplate() Template {
 		Slogan: "Experimental, needs APP_EXPERIMENTAL=mail. Self-hosted mail server: SMTP, IMAP, webmail and an admin API in one small container (MIT).",
 		Description: "Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.\n" +
 			"Install with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\n" +
-			"Ports 25, 465, 587 and 993 bind privately by default: set a public bind for each in the app's Network settings and open them in the firewall. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\n" +
+			"Ports 25, 465, 587 and 993 are published on the host with a private bind by default. After install, open them with the CLI command mail ports open --confirm (or Open mail ports on the Mail page): that makes only those four ports public and allows them in the host firewall, then set up DNS. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\n" +
 			"TLS: the first start makes a self-signed certificate (valid for localhost only, made by mox itself) so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.\n" +
 			"Relay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.\n" +
 			"The admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up the config and data volumes together.\n" +
@@ -98,6 +98,8 @@ services:
       - "465:465"
       - "587:587"
       - "993:993"
+    # Published on their own host ports with a private bind; the web port stays routed and private.
+    x-levelrail-published-ports: [25, 465, 587, 993]
     environment:
       MAIL_HOSTNAME: ${MAIL_HOSTNAME}
       MAIL_FIRST_DOMAIN: ${MAIL_FIRST_DOMAIN}

@@ -2721,12 +2721,12 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		spec.Ports = []docker.PortBinding{binding}
 	}
 	if len(desired.PublishedPorts) > 0 {
-		// Same bind address rule as the routed port, so a UDP port is private unless the service is public.
-		hostIP, err := bindaddr.Resolve(desired.BindAddress)
-		if err != nil {
-			return docker.ContainerSpec{}, fmt.Errorf("bind address: %w", err)
-		}
+		// A port without its own bind follows the routed port's, so it is private unless the service is public.
 		for _, p := range desired.PublishedPorts {
+			hostIP, err := bindaddr.Resolve(p.EffectiveBind(desired.BindAddress))
+			if err != nil {
+				return docker.ContainerSpec{}, fmt.Errorf("bind address of published port %s: %w", p, err)
+			}
 			spec.Ports = append(spec.Ports, docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: hostIP, Protocol: p.EffectiveProtocol()})
 		}
 	}

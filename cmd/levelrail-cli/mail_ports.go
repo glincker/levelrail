@@ -11,7 +11,7 @@ import (
 )
 
 const mailPortsUsageLines = `  %[1]s mail ports [--app name]                  list the four mail ports, their bind and firewall state
-  %[1]s mail ports open --confirm [--app name]    publish the mail ports (read the safety note first)
+  %[1]s mail ports open --confirm [--app name]    make 25, 465, 587, 993 public and allow them in the firewall (asks your password)
 `
 
 // runMailPorts handles "mail ports" and "mail ports open".
@@ -36,7 +36,12 @@ func runMailPorts(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return code
 	}
 	if open {
-		res, err := c.client.OpenMailPorts(context.Background(), app, confirm)
+		if !confirm {
+			return c.fail(fmt.Errorf("mail ports open: pass --confirm after reading the warning: the ports go on the public internet"))
+		}
+		res, err := withStepUp(stderr, func(p *apiclient.StepUpProof) (apiclient.MailPortsOpenResult, error) {
+			return c.client.OpenMailPorts(context.Background(), app, confirm, p)
+		})
 		if err != nil {
 			return c.fail(fmt.Errorf("mail ports open: %w", err))
 		}

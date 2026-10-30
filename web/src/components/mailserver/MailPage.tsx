@@ -10,6 +10,7 @@ import { useMailStatus } from '@/queries/mailStatus'
 import { MailNextStep } from './MailNextStep'
 import { MailChecklist } from './MailChecklist'
 import { MailDnsPanel } from './MailDnsPanel'
+import { MailPortsCard } from './MailPortsCard'
 import { MailSoonPanels } from './MailSoonPanels'
 
 /** MailPage is the experimental mail hub: install link, setup checklist, domain DNS and upcoming panels. */
@@ -47,6 +48,7 @@ export function MailPage() {
           onPreview={() => setPreviewToken((n) => n + 1)}
         />
         <MailChecklist report={report} status={status} />
+        <MailPortsCard />
         <MailDnsPanel
           report={report}
           onReport={setReport}

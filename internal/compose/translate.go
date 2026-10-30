@@ -70,7 +70,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
 		d.Replicas = replicas
-		main, published, err := splitPorts(svc.Ports)
+		main, published, err := splitPorts(svc.Ports, svc.PublishedTCP)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
@@ -126,17 +126,36 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 // splitPorts keeps the first tcp port as the routed one (as before UDP
 // existed) and returns every udp port as a direct host publish, which
 // needs an explicit host port: a random one is unusable for UDP clients.
-func splitPorts(ports []Port) (int, []spec.PublishedPort, error) {
+// A tcp port listed in publishTCP is published the same way with a private
+// bind and is never the routed port; unlisted extra tcp ports stay dropped.
+func splitPorts(ports []Port, publishTCP []int) (int, []spec.PublishedPort, error) {
 	main := 0
 	var published []spec.PublishedPort
+	listed := make(map[int]bool, len(publishTCP))
+	for _, cp := range publishTCP {
+		listed[cp] = true
+	}
 	for _, p := range ports {
 		if p.Protocol != spec.PortProtocolUDP {
+			if listed[p.ContainerPort] {
+				if p.HostPort == 0 {
+					return 0, nil, fmt.Errorf("%w: x-levelrail-published-ports: tcp port %d needs a host port, for example \"%d:%d\"", spec.ErrInvalidPublishedPort, p.ContainerPort, p.ContainerPort, p.ContainerPort)
+				}
+				delete(listed, p.ContainerPort)
+				published = append(published, spec.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: spec.PortProtocolTCP, Bind: spec.PortBindPrivate})
+				continue
+			}
 			if main == 0 {
 				main = p.ContainerPort
 			}
 			continue
 		}
 		published = append(published, spec.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: spec.PortProtocolUDP})
+	}
+	for _, cp := range publishTCP {
+		if listed[cp] {
+			return 0, nil, fmt.Errorf("%w: x-levelrail-published-ports: %d is not a tcp port declared in ports", spec.ErrInvalidPublishedPort, cp)
+		}
 	}
 	if err := spec.ValidatePublishedPorts(published); err != nil {
 		return 0, nil, err

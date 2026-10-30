@@ -98,7 +98,7 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 	if domain != "" {
 		s.Domains = []string{domain}
 	}
-	main, published, err := splitPorts(csvc.Ports)
+	main, published, err := splitPorts(csvc.Ports, csvc.PublishedTCP)
 	if err != nil {
 		return spec.Service{}, "", fmt.Errorf("compose: service %q: %w", key, err)
 	}

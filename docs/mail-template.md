@@ -47,7 +47,15 @@ The admin password is the generated secret `SERVICE_PASSWORD_MAILADMIN` on the a
 | 8025 (8081 in the container) | Account UI, webmail, webapi | Private by default. Has no admin pages |
 | 8080, 8010 (container only) | Admin UI and API, metrics | Never published. Reach them over the app network only |
 
-Published ports bind privately by default ([App ports and exposure](/app-exposure)). Set a public bind for 25, 465, 587 and 993 in the app's Network settings and open them in the host firewall. Plain IMAP on 143 is off and not published. mox's own web server and ACME ports (80 and 443) are not published either: you supply the certificate. The Autoconfig and MTA-STS listeners exist in the container so domain configs load, but port 443 is not reachable. Serve the MTA-STS policy and autoconfig hostnames through your ingress if you want them.
+The template declares 25, 465, 587 and 993 as published host ports with a private bind ([App ports and exposure](/app-exposure)), so right after install they answer on 127.0.0.1 only. Each port has its own bind: making the mail ports public never publishes the web listener.
+
+The journey is:
+
+1. Install the template.
+2. Open the mail ports: `levelrail-cli mail ports open --confirm`, or **Open mail ports** on the Mail page. This sets a public bind on exactly 25, 465, 587 and 993, adds a host firewall allow rule for each, recreates the container and is audited. It asks you to confirm it's you, like other exposure changes. Running it again changes nothing. `levelrail-cli mail ports` shows the bind and firewall state of each port.
+3. Set up DNS ([Mail DNS](/mail-dns)).
+
+Before step 2, replace the self-signed certificate with a real one and harden the server. Many providers block port 25 by default: ask yours to allow it. Plain IMAP on 143 is off and not published. mox's own web server and ACME ports (80 and 443) are not published either: you supply the certificate. The Autoconfig and MTA-STS listeners exist in the container so domain configs load, but port 443 is not reachable. Serve the MTA-STS policy and autoconfig hostnames through your ingress if you want them.
 
 ## Resources
 

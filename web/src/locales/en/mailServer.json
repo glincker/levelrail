@@ -119,5 +119,30 @@
     "installAction": "Install",
     "done": "Running and answering",
     "stopped": "Installed but not running"
+  },
+  "ports": {
+    "title": "Mail ports",
+    "listLabel": "Bind and firewall state of the mail ports",
+    "open": "Open mail ports",
+    "opened": "Mail ports open",
+    "pending": "Opening",
+    "failed": "Could not open the mail ports",
+    "missing": "This mail app does not publish the mail ports. Redeploy it from the current template first.",
+    "webStays": "Webmail and the account UI keep their own bind ({{bind}}). Opening the mail ports never publishes them.",
+    "confirmTitle": "Open ports 25, 465, 587 and 993?",
+    "consequence": "Only these four ports get a public bind and a host firewall allow rule. The container is recreated.",
+    "certificate": "Use a real TLS certificate, not the self-signed one, and keep the server hardened before you open the ports.",
+    "confirm": "Open the ports",
+    "bind": {
+      "public": "public",
+      "private": "private",
+      "not_published": "not published"
+    },
+    "firewall": {
+      "allowed": "firewall allows",
+      "blocked": "firewall blocks",
+      "not_filtering": "firewall not filtering",
+      "unknown": "firewall unknown"
+    }
   }
 }

@@ -49,12 +49,13 @@ func (c *Client) MailPorts(ctx context.Context, app string) (MailPorts, error) {
 }
 
 // OpenMailPorts calls POST /api/v1/mail/ports/open.
-func (c *Client) OpenMailPorts(ctx context.Context, app string, confirm bool) (MailPortsOpenResult, error) {
+func (c *Client) OpenMailPorts(ctx context.Context, app string, confirm bool, proof *StepUpProof) (MailPortsOpenResult, error) {
 	var out MailPortsOpenResult
 	body := struct {
-		App     string `json:"app,omitempty"`
-		Confirm bool   `json:"confirm"`
-	}{app, confirm}
+		App     string       `json:"app,omitempty"`
+		Confirm bool         `json:"confirm"`
+		StepUp  *StepUpProof `json:"step_up,omitempty"`
+	}{app, confirm, proof}
 	err := c.do(ctx, http.MethodPost, "/api/v1/mail/ports/open", body, &out)
 	return out, err
 }

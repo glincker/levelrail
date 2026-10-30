@@ -68,14 +68,20 @@ func publishedPortsDrifted(state *docker.ContainerState, desired *store.DesiredS
 		return false
 	}
 	have := map[store.PublishedPort]bool{}
+	haveIP := map[store.PublishedPort][]string{}
 	for _, p := range ports {
-		have[store.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: bindingProtocol(p)}] = true
+		key := store.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: bindingProtocol(p)}
+		have[key] = true
+		haveIP[key] = append(haveIP[key], p.HostIP)
 	}
 	want := map[store.PublishedPort]bool{}
 	for _, p := range desired.PublishedPorts {
 		key := store.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: p.EffectiveProtocol()}
 		want[key] = true
 		if !have[key] {
+			return true
+		}
+		if p.Bind != "" && bindDrifted(haveIP[key], p.Bind) {
 			return true
 		}
 	}
@@ -86,4 +92,19 @@ func publishedPortsDrifted(state *docker.ContainerState, desired *store.DesiredS
 		}
 	}
 	return false
+}
+
+// bindDrifted reports a port with its own bind whose live host IPs do not
+// include the desired one. Ports without their own bind are not judged here.
+func bindDrifted(have []string, bind string) bool {
+	want, err := bindaddr.Resolve(bind)
+	if err != nil {
+		return false
+	}
+	for _, ip := range have {
+		if ip == "" || ip == want || (want == "0.0.0.0" && ip == "::") {
+			return false
+		}
+	}
+	return true
 }
