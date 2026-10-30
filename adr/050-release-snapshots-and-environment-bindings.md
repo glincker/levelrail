@@ -113,6 +113,10 @@ Honest framing: this makes rollback a pointer move in the store and an
 exact content match, not an instant swap on the node. Containers still
 roll through the normal strategy.
 
+## Rollout status
+
+The flag stays `off` by default until the owner decides. `on` has been reviewed for undo (conditional, uncancelled, audited), approval pinning and private registry digest checks (an auth failure is inconclusive, never a missing manifest). Operator docs: `docs/promotions-and-releases.md`.
+
 ## Alternatives rejected
 
 - **Keep deploy attempts as the release.** Attempts are per app and

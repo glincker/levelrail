@@ -36,6 +36,20 @@ Besides the config fields, the comparison lists:
 
 The same view is in the dashboard under an app's deploy history, using Compare.
 
+## Release bindings (APP_RELEASE_BINDINGS)
+
+A release is an immutable snapshot of a succeeded deploy: its image pinned by digest plus the environment neutral config (health, replicas, strategy, resources, labels). Never env values, domains, ports or volumes. Each app has a binding that names the release it runs, with a history of every move. The server reads `APP_RELEASE_BINDINGS` once at start.
+
+| Mode | What happens |
+| --- | --- |
+| `off` (default) | Nothing is recorded. Promote copies the image tag and rollback redeploys a snapshot, as before. `releases list` is empty. |
+| `shadow` | Releases and bindings are recorded next to each succeeded deploy that has a digest. No deploy decision reads them, so it is safe to leave on and compare. |
+| `on` | Promote and rollback go through the binding. Promote ships the source's release by digest, an approval stores the release id so a tag that moved cannot change what is approved, and `--release ID` works on `apps promote` and `apps rollback`. |
+
+In `on` mode a failed apply puts the binding back where it was, and only while no newer move happened. Every move writes a `release_binding.retargeted` audit entry. An app with no digest recorded keeps the tag path.
+
+Digest checks run on approval. If the registry needs credentials the server does not hold, or answers 401, 403 or a masked "not found", the check is inconclusive and the approval goes ahead. Only a definite "manifest unknown" blocks it. `APP_APPROVE_DIGEST_CHECK_TIMEOUT` bounds the lookup. Moving back from `on` to `shadow` or `off` is safe: stored releases stay, and pending approvals that carry a release id still apply that exact image.
+
 ## Generate release notes
 
 Release notes group the commits between two deploys by conventional-commit type: breaking changes first, then features, fixes, performance, refactors, docs, tests and other changes.
