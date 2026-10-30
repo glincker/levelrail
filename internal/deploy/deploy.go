@@ -311,12 +311,16 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 	dockerfilePath := ""
 	if req.Service.Build.Path != "" {
 		dockerfilePath = filepath.Join(buildRoot, req.Service.Build.Path)
+		if err := build.EnsureWithin(req.SourceDir, dockerfilePath); err != nil {
+			return "", fmt.Errorf("deploy: service %q: build.path %q: %w", req.ServiceName, req.Service.Build.Path, err)
+		}
 	}
 
 	s3Cache, progress, cacheDone := p.prepareBuildCache(ctx, req.ServiceName, progress)
 	buildReq := build.Request{
 		ContextDir:     buildRoot,
 		DockerfilePath: dockerfilePath,
+		RootDir:        req.SourceDir,
 		Tag:            tag,
 		BuildArgs:      req.Service.Build.Args,
 		S3Cache:        s3Cache,

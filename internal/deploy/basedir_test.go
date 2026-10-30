@@ -1,6 +1,12 @@
 package deploy
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/build"
+)
 
 func TestResolveBuildRoot(t *testing.T) {
 	tests := []struct {
@@ -87,5 +93,31 @@ func TestResolveBuildRoot(t *testing.T) {
 				t.Errorf("resolveBuildRoot(%q, %q) = %q, want %q", tt.sourceDir, tt.baseDirectory, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildRootSymlinkContainment(t *testing.T) {
+	outside := t.TempDir()
+	src := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(src, "apps", "web"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(src, "leak")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(src, "apps"), filepath.Join(src, "alias")); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := resolveBuildRoot(src, "leak"); err == nil {
+		t.Fatal("symlink leaving the checkout should be refused")
+	}
+	for _, ok := range []string{"apps/web", "alias/web"} {
+		if _, err := resolveBuildRoot(src, ok); err != nil {
+			t.Fatalf("%s: unexpected error: %v", ok, err)
+		}
+	}
+	if err := build.EnsureWithin(src, filepath.Join(src, "leak", "Dockerfile")); err == nil {
+		t.Fatal("dockerfile path through an outside symlink should be refused")
 	}
 }
