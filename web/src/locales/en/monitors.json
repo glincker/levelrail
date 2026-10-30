@@ -102,7 +102,8 @@
       "pending": "Publishing...",
       "done": "Incident published",
       "already": "Published. Post further public updates from the status page settings.",
-      "stale": "This incident changed since you loaded it. Refresh and review the draft again."
+      "stale": "This incident changed since you loaded it. Refresh and review the draft again.",
+      "changed": "The draft changed while you were publishing. Nothing was published; review it again."
     }
   }
 }

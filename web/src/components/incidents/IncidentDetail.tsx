@@ -139,6 +139,16 @@ function DraftForm({
         draft: { title: title.trim(), status, body: body.trim() },
       })
       const fresh = await fetchIncident(incident.id)
+      // The save response carries no version, so confirm the fetched draft is ours before trusting its updated_at.
+      if (
+        fresh.draft?.title !== title.trim() ||
+        fresh.draft.body !== body.trim() ||
+        fresh.status !== status
+      ) {
+        setConfirming(false)
+        toast.add({ title: t('incidents.publish.changed'), type: 'error' })
+        return
+      }
       await publish.mutateAsync({
         id: incident.id,
         updatedAt: fresh.updated_at,
