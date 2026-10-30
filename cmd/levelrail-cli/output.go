@@ -351,7 +351,7 @@ func printAppHuman(out io.Writer, a appResource) {
 // human-readable form.
 func printAppsTable(out io.Writer, apps []appResource) {
 	if len(apps) == 0 {
-		_, _ = fmt.Fprintln(out, "no apps")
+		_, _ = fmt.Fprintln(out, emptyHint("apps", "apps create --help"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
@@ -690,7 +690,7 @@ func printDatabaseHuman(out io.Writer, d databaseResource) {
 // ("databases list" output), the same shape printAppsTable uses for apps.
 func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 	if len(dbs) == 0 {
-		_, _ = fmt.Fprintln(out, "no databases")
+		_, _ = fmt.Fprintln(out, emptyHint("databases", "databases create --help"))
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)

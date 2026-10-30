@@ -140,7 +140,7 @@ func TestCommandTree_MatchesDispatchSwitches(t *testing.T) {
 
 	for name := range dispatched {
 		if !tree[name] {
-			t.Errorf("command %q is dispatched in source (switch args[0]) but missing from cliCommandTree in completion.go", name)
+			t.Errorf("command %q is dispatched in source (switch args[0]) but missing from clitree.Tree: add `%q: nil,` (or its Subs) to internal/clitree/tree.go, nothing else lists it", name, name)
 		}
 	}
 	for name := range tree {

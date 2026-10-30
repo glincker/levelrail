@@ -24,6 +24,16 @@ func main() {
 
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	cliProg = prog
+	hw := &hintWriter{dst: stderr}
+	code := runDispatch(prog, args, stdout, hw, lookupEnv)
+	if code != exitOK {
+		_, _ = fmt.Fprint(stderr, hw.flagHint(prog, args))
+	}
+	return code
+}
+
+func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	rawLookupEnv = lookupEnv
 	lookupEnv = currentContextLookup(prog, envAliasLookup(lookupEnv))
 	ciMode = forceCI || ciEnv(rawLookupEnv)
@@ -379,8 +389,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 	case "environments":
 		return runEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
-		_, _ = fmt.Fprint(stderr, rootUsage(prog))
+		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, unknownVerbHint(prog, nil, args[0]))
 		return exitUsage
 	}
 }

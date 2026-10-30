@@ -42,7 +42,7 @@ func rolloutResultLabel(result string) string {
 	case rolloutUpToDate:
 		return "already up to date"
 	case rolloutRestarted:
-		return "restarted"
+		return "last rollout: restarted (no new deployment was created)"
 	default:
 		return "converged"
 	}
