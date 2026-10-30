@@ -36,11 +36,13 @@ export function useMonitors() {
   })
 }
 
-export function useMonitorResults(id: string) {
+// enabled lets a list defer the per-row request until the row is on screen.
+export function useMonitorResults(id: string, enabled = true) {
   return useQuery({
     queryKey: monitorKeys.results(id),
     queryFn: () => fetchMonitorResults(id),
     retry: false,
+    enabled,
     refetchInterval: 60_000,
   })
 }

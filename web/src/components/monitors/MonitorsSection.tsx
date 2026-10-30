@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
@@ -42,28 +42,50 @@ export function MonitorRow({
   onDelete: (m: Monitor) => void
 }) {
   const { t } = useTranslation('monitors')
-  const { data } = useMonitorResults(monitor.id)
+  const ref = useRef<HTMLLIElement>(null)
+  const [seen, setSeen] = useState(typeof IntersectionObserver === 'undefined')
+  // Fetch results once the row scrolls into view, not for every row at mount.
+  useEffect(() => {
+    const el = ref.current
+    if (seen || !el) return
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setSeen(true)
+    })
+    io.observe(el)
+    return () => {
+      io.disconnect()
+    }
+  }, [seen])
+  const { data } = useMonitorResults(monitor.id, seen)
   const state = deriveMonitorState(monitor, data)
   const last = lastCheckAt(data)
   const lastIso = last === undefined ? undefined : new Date(last).toISOString()
   const uptime = uptimePercent(data)
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm">
+    <li
+      ref={ref}
+      className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm"
+    >
       <span className="min-w-32 flex-1 font-medium break-words">
         {monitor.name}
       </span>
       <span className="min-w-40 flex-[2] font-mono text-xs break-all text-muted-foreground">
         {monitorTarget(monitor)}
       </span>
-      <Badge variant={STATE_VARIANT[state]}>{t(`state.${state}`)}</Badge>
+      <span className="sm:w-20">
+        <Badge variant={STATE_VARIANT[state]}>{t(`state.${state}`)}</Badge>
+      </span>
       <span
         className="w-28 text-xs text-muted-foreground"
         title={lastIso ? formatAbsoluteTime(lastIso) : undefined}
       >
         {lastIso ? formatRelativeTime(lastIso) : t('never')}
       </span>
-      <span className="w-14 text-right text-xs tabular-nums">
-        {uptime === undefined ? '-' : `${uptime.toFixed(1)}%`}
+      <span
+        className="w-14 text-right text-xs tabular-nums"
+        aria-label={t('columns.uptime')}
+      >
+        {uptime === undefined ? t('notAvailable') : `${uptime.toFixed(1)}%`}
       </span>
       <Button
         type="button"
@@ -92,7 +114,21 @@ export function MonitorsList({
     return <p className="text-sm text-muted-foreground">{t('empty')}</p>
   }
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+    <ul
+      aria-label={t('title')}
+      className="divide-y divide-border rounded-lg border border-border bg-card"
+    >
+      <li
+        aria-hidden
+        className="hidden items-center gap-x-4 px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"
+      >
+        <span className="min-w-32 flex-1">{t('columns.name')}</span>
+        <span className="min-w-40 flex-[2]">{t('columns.target')}</span>
+        <span className="w-20">{t('columns.state')}</span>
+        <span className="w-28">{t('columns.lastCheck')}</span>
+        <span className="w-14 text-right">{t('columns.uptime')}</span>
+        <span className="size-8" />
+      </li>
       {monitors.map((m) => (
         <MonitorRow key={m.id} monitor={m} onDelete={onDelete} />
       ))}

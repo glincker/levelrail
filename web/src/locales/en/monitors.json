@@ -20,6 +20,7 @@
     "paused": "Paused",
     "unknown": "No data"
   },
+  "notAvailable": "n/a",
   "never": "never",
   "form": {
     "kind": "Type",
