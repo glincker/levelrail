@@ -229,6 +229,14 @@ func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowP
 	return token
 }
 
+// gitHubAppTokenAllowed reports whether the request's caller may be handed a
+// GitHub App token. Team-scoped callers use their own deploy token or none;
+// instance-level callers (and default-team members) keep the App.
+func gitHubAppTokenAllowed(ctx context.Context) bool {
+	scope, ok := callerTeamScope(ctx)
+	return !ok || scope == nil || scope.instance
+}
+
 // GitSourceCloneToken resolves the clone credential for a git source's own
 // repository for in-process callers outside this package (the pipeline
 // engine's repo reads and builds): name's stored deploy token, else the
@@ -375,7 +383,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	// fully caller-controlled, so an unscoped mint would let any
 	// deploy-only caller read any private repo the org's installation can
 	// reach. Checked once, in request scope, before the goroutine outlives r.
-	allowPrivateRepoAuth := rt.callerHasAbility(r, AbilityReadSensitive)
+	allowPrivateRepoAuth := rt.callerHasAbility(r, AbilityReadSensitive) && gitHubAppTokenAllowed(r.Context())
 
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	source := store.DeployAttemptSourceManual

@@ -95,6 +95,9 @@ func (rt *Router) gitRepoSources(ctx context.Context, provider string) ([]repoLi
 }
 
 func (rt *Router) githubRepoSources(ctx context.Context) ([]repoListSource, error) {
+	if !gitHubAppTokenAllowed(ctx) {
+		return nil, &repoListConnError{errGitConnNone}
+	}
 	installations, err := rt.githubApp.ListGitHubAppInstallations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list github app installations: %w", err)

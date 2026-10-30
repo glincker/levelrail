@@ -152,7 +152,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// AbilityDeploy alone does not authorize minting a GitHub App installation token.
-	token := rt.tokenForRepo(r.Context(), name, req.RepoURL, rt.callerHasAbility(r, AbilityReadSensitive))
+	token := rt.tokenForRepo(r.Context(), name, req.RepoURL, rt.callerHasAbility(r, AbilityReadSensitive) && gitHubAppTokenAllowed(r.Context()))
 
 	sourceDir, commit, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref, token)
 	if err != nil {
