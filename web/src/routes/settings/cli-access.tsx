@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { tokenListQueryOptions } from '../../queries/tokens'
 import { useCliTokenRows } from '../../queries/myCredentials'
 import { TokenTable } from '../../components/TokenTable'
+import { ConnectedClientsCard } from '../../components/mcp/ConnectedClientsCard'
 import { CliServerCard } from '../../components/settings/CliServerCard'
 import { useTranslation } from 'react-i18next'
 import { ChevronDownGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
@@ -143,6 +144,8 @@ function CliAccessPage() {
           </div>
         </CollapsiblePanel>
       </Collapsible>
+
+      <ConnectedClientsCard />
 
       <section className="space-y-2">
         <h2 className="text-sm font-medium">
