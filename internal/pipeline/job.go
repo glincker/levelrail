@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -384,7 +386,10 @@ func (jr *jobRun) containerSpec(name string) docker.ContainerSpec {
 var keepAliveEntrypoint = []string{"sh", "-c", "trap 'exit 0' TERM; while :; do sleep 3600 & wait $!; done"}
 
 func (e *Engine) cacheVolume(app, key string) string {
-	return fmt.Sprintf("%s-plcache-%s-%s", e.cfg.NamePrefix, sanitizeName(app), sanitizeName(key))
+	// Sanitized parts can join to the same text for different pairs, so the
+	// exact pair is hashed with a separator that cannot appear in either.
+	sum := sha256.Sum256([]byte(app + "\x00" + key))
+	return fmt.Sprintf("%s-plcache-%s-%s-%s", e.cfg.NamePrefix, sanitizeName(app), sanitizeName(key), hex.EncodeToString(sum[:4]))
 }
 
 func sanitizeName(s string) string {
@@ -416,7 +421,8 @@ func (jr *jobRun) ensureContainer(ctx context.Context) (string, error) {
 		}
 	}
 	for _, c := range jr.jd.Cache {
-		if err := jr.rt.EnsureVolume(ctx, e.cacheVolume(jr.run.AppName, c.Key)); err != nil {
+		owner := docker.VolumeOwner{App: jr.run.AppName, Name: "plcache-" + c.Key}
+		if err := docker.EnsureVolumeFor(ctx, jr.rt, e.cacheVolume(jr.run.AppName, c.Key), owner); err != nil {
 			return "", fmt.Errorf("prepare cache volume: %w", err)
 		}
 	}
