@@ -54,6 +54,13 @@ type BackupSpec struct {
 	StagingContainer string
 	Recipients       []age.Recipient
 	Now              func() time.Time
+	// Fetch copies the container staging dir to the host one when they are
+	// not the same directory (a Docker volume the control plane cannot see).
+	Fetch func(ctx context.Context, containerDir, hostDir string) error
+	// Cleanup removes the container staging dir; nil means host removal covers it.
+	Cleanup func(ctx context.Context, containerDir string)
+	// Progress reports each step by name.
+	Progress func(step string)
 }
 
 // RestoreSpec configures one restore run.
@@ -99,3 +106,6 @@ func (e *ChecksumError) Error() string {
 
 func archiveName(id string) string  { return "mail-" + id + ".tar.zst.age" }
 func manifestName(id string) string { return "mail-" + id + ".manifest.json" }
+
+// ManifestName is the sink name of a backup's manifest.
+func ManifestName(id string) string { return manifestName(id) }

@@ -25,6 +25,15 @@ func Backup(ctx context.Context, spec BackupSpec) (Manifest, error) {
 	host := spec.StagingHost + string(os.PathSeparator) + id
 	cont := path.Join(spec.StagingContainer, id)
 	defer func() { _ = os.RemoveAll(host) }()
+	if spec.Cleanup != nil {
+		defer spec.Cleanup(context.WithoutCancel(ctx), cont)
+	}
+	step := func(name string) {
+		if spec.Progress != nil {
+			spec.Progress(name)
+		}
+	}
+	step("version")
 
 	verOut, err := spec.Runner.Run(ctx, "version")
 	if err != nil {
@@ -34,17 +43,26 @@ func Backup(ctx context.Context, spec BackupSpec) (Manifest, error) {
 	if err != nil {
 		return Manifest{}, err
 	}
+	step("backup")
 	if _, err := spec.Runner.Run(ctx, "backup", cont); err != nil {
 		return Manifest{}, fmt.Errorf("mox backup: %w", err)
 	}
+	step("verify")
 	if _, err := spec.Runner.Run(ctx, "verifydata", path.Join(cont, "data")); err != nil {
 		return Manifest{}, fmt.Errorf("mox verifydata: %w", err)
+	}
+	if spec.Fetch != nil {
+		step("copy")
+		if err := spec.Fetch(ctx, cont, host); err != nil {
+			return Manifest{}, fmt.Errorf("copy staging out of the mail container: %w", err)
+		}
 	}
 	files, size, err := scanDir(host)
 	if err != nil {
 		return Manifest{}, fmt.Errorf("scan staging: %w", err)
 	}
 
+	step("archive")
 	sum := sha256.New()
 	pr, pw := io.Pipe()
 	go func() {
@@ -70,6 +88,7 @@ func Backup(ctx context.Context, spec BackupSpec) (Manifest, error) {
 		_ = spec.Sink.Delete(ctx, archiveName(id))
 		return Manifest{}, err
 	}
+	step("prune")
 	if p, ok := spec.Sink.(Pruner); ok {
 		if _, err := p.Prune(ctx); err != nil {
 			return m, err

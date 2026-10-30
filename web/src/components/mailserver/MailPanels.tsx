@@ -1,12 +1,15 @@
 import { isMailUp, useMailStatus } from '../../queries/mailStatus'
 import { useMailDomains } from '../../queries/mailMailboxes'
+import { MailBackupPanel } from './MailBackupPanel'
+import { MailStoragePanel } from './MailStoragePanel'
 import { MailAliasesPanel } from './MailAliasesPanel'
 import { MailMailboxesPanel } from './MailMailboxesPanel'
 import { MailQueuePanel } from './MailQueuePanel'
 
 /** Working mail panels; rendered only once the mail service is installed and healthy. */
 export function MailPanels() {
-  const up = isMailUp(useMailStatus().data)
+  const status = useMailStatus().data
+  const up = isMailUp(status)
   const domains = useMailDomains(up).data ?? []
   if (!up) return null
   return (
@@ -14,6 +17,8 @@ export function MailPanels() {
       <MailMailboxesPanel domains={domains} />
       <MailAliasesPanel domains={domains} />
       <MailQueuePanel />
+      {status?.app && <MailStoragePanel app={status.app} />}
+      {status?.app && <MailBackupPanel app={status.app} />}
     </div>
   )
 }

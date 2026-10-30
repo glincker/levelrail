@@ -207,14 +207,13 @@ describe('MailPage guided setup', () => {
 })
 
 describe('MailPage', () => {
-  it('shows every unchecked step as not checked and lists the coming panels', async () => {
+  it('shows every unchecked step as not checked', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() => Promise.resolve(jsonRes([]))),
     )
     renderPage()
     expect(screen.getAllByText('Not checked').length).toBeGreaterThanOrEqual(8)
-    expect(await screen.findAllByText('Coming next')).toHaveLength(2)
     expect(
       screen.getByRole('link', { name: /Install mail server/ }),
     ).toBeTruthy()

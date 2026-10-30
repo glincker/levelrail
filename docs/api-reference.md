@@ -2089,6 +2089,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/heartbeat/{token} | Public | handleHeartbeatPing |
 | GET | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
 | POST | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
+| GET | /api/v1/mail/backups | AbilityRead | handleListMailBackups |
+| POST | /api/v1/mail/backups | AbilityWriteSensitive | handleRunMailBackup |
+| POST | /api/v1/mail/backups/{id}/restore | AbilityRoot | handleRestoreMailBackup |
+| GET | /api/v1/mail/storage | AbilityRead | handleGetMailStorage |
+| PUT | /api/v1/mail/storage | AbilityRoot | handlePutMailStorage |
+| POST | /api/v1/mail/storage/test | AbilityRoot | handleTestMailStorage |
 | POST | /mcp | Public |  |
 
 ## See also

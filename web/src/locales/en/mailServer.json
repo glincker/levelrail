@@ -65,17 +65,6 @@
     },
     "error": "Request failed: {{message}}"
   },
-  "soon": {
-    "label": "Coming next",
-    "storage": {
-      "title": "Storage",
-      "body": "Mailbox disk usage and the volume the mail lives on."
-    },
-    "backup": {
-      "title": "Backup",
-      "body": "Scheduled mail backups with a restore check."
-    }
-  },
   "next": {
     "title": "Next step",
     "allSet": "Setup looks complete",
@@ -230,5 +219,87 @@
     "badge": "DEMO DATA",
     "hint": "Local demo mode: nothing here is real and nothing reaches a DNS provider or mail server.",
     "reset": "Reset demo"
+  },
+  "backup": {
+    "title": "Backup",
+    "last": "Last backup",
+    "never": "No backup yet",
+    "runNow": "Back up now",
+    "running": "Backing up: {{step}}",
+    "restoring": "Restoring: {{step}}",
+    "usage": "{{used}} of {{cap}} used",
+    "usageLabel": "Backup space used",
+    "notEncrypted": "Backups are off until the server has an encryption key, because they would hold unencrypted mail.",
+    "failed": "Backup failed",
+    "jobFailed": "The last job failed: {{error}}",
+    "verified": "Verified",
+    "unverified": "Not verified",
+    "empty": "No backups stored yet.",
+    "needsWrite": "Needs permission to change mail settings.",
+    "col": {
+      "backup": "Backup",
+      "size": "Size",
+      "mox": "Mox",
+      "where": "Where",
+      "actions": "Actions"
+    },
+    "restore": "Restore",
+    "restoreFor": "Restore backup {{id}}",
+    "steps": {
+      "version": "checking version",
+      "backup": "dumping data",
+      "verify": "verifying",
+      "copy": "copying",
+      "archive": "archiving",
+      "prune": "pruning old backups",
+      "extract": "unpacking",
+      "stage": "staging",
+      "stop": "stopping mail",
+      "swap": "swapping data",
+      "start": "starting mail",
+      "wait": "waiting for mail"
+    }
+  },
+  "restore": {
+    "title": "Restore backup {{id}}",
+    "checking": "Checking the backup...",
+    "summary": "{{files}} files, {{size}}, made with mox {{mox}}.",
+    "warning": "Mail goes down while the restore runs, and current mail is replaced by this backup.",
+    "confirmLabel": "Type {{id}} to confirm",
+    "submit": "Restore now",
+    "working": "Restoring...",
+    "conflict": "This backup cannot be restored right now: the running mox is older than the backup, or another job is running.",
+    "failed": "Restore failed",
+    "started": "Restore started"
+  },
+  "storage": {
+    "title": "Backup storage",
+    "kind": "Destination",
+    "local": "Local folder",
+    "s3": "S3 or R2 bucket",
+    "folder": "Folder",
+    "cap": "Space cap",
+    "endpoint": "Endpoint",
+    "region": "Region",
+    "bucket": "Bucket",
+    "accessKey": "Access key id",
+    "secret": "Secret key",
+    "secretHint": "Never shown again, enter it each time you save.",
+    "pathStyle": "Path style URLs",
+    "save": "Save and check",
+    "saving": "Checking...",
+    "recheck": "Re-check",
+    "saved": "Storage saved",
+    "checks": "Validation",
+    "pass": "passed",
+    "fail": "failed",
+    "step": {
+      "put": "Write",
+      "get": "Read",
+      "list": "List",
+      "delete": "Delete"
+    },
+    "localOnly": "In this release backups are still written to the local folder. The bucket is only checked and saved.",
+    "failed": "Storage check failed"
   }
 }

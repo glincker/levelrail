@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1865 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1871 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1258,6 +1258,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/mail/aliases/{address}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRemoveMailAlias", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/audience-options", Ability: "AbilityRoot", Group: "Other", Handler: "handleMailAudienceOptions", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/audience/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewMailAudience", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/backups", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailBackups", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/backups", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRunMailBackup", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/backups/{id}/restore", Ability: "AbilityRoot", Group: "Other", Handler: "handleRestoreMailBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/broadcasts", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailBroadcasts", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/broadcasts", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMailBroadcast", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/broadcasts/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestMailBroadcast", Description: ""},
@@ -1290,6 +1293,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/mail/queue/hold", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMailQueueHold", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/queue/release", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMailQueueHold", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/status", Ability: "AbilityRead", Group: "Other", Handler: "handleMailStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/storage", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMailStorage", Description: ""},
+	{Method: "PUT", Path: "/api/v1/mail/storage", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutMailStorage", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/storage/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestMailStorage", Description: ""},
 	{Method: "GET", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailSuppressions", Description: ""},
 	{Method: "POST", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddMailSuppression", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/mail/suppressions/{email}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemoveMailSuppression", Description: ""},

@@ -63,6 +63,7 @@ type mailState struct {
 	engine mailEngineFactory
 	// demo is nil unless dev mode and APP_MAIL_DEMO are both on (mail_demo.go).
 	demo *mailDemo
+	backup *mailBackupConfig
 }
 
 func (rt *Router) attachMail(s any) {

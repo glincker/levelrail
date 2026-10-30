@@ -11,7 +11,7 @@ import (
 
 // Counts are pinned so adding a mutating route forces a human look at whether it is audited.
 const (
-	pinnedNonGETRoutes   = 1052
+	pinnedNonGETRoutes   = 1056
 	pinnedExemptions     = 121
 	pinnedKnownAuditGaps = 0
 )
