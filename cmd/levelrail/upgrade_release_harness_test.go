@@ -225,7 +225,12 @@ func (h *harnessEnv) capture() harnessState {
 		AuditIDs:  names(h.mustAPI("GET", "/api/v1/audit-log?limit=1000", nil), "id"),
 		Probe:     h.planted(),
 	}
-	db, err := store.Open(context.Background(), filepath.Join(h.dataDir, "levelrail.db"))
+	// Read a snapshot: opening the live file with this tree would migrate an old schema.
+	snap := filepath.Join(h.t.TempDir(), "capture.db")
+	if _, err := h.sql().Exec("VACUUM INTO ?", snap); err != nil {
+		h.t.Fatal(err)
+	}
+	db, err := store.Open(context.Background(), snap)
 	if err != nil {
 		h.t.Fatal(err)
 	}
@@ -324,6 +329,14 @@ func runReleaseHarness(t *testing.T, tag string) {
 	schemaBefore := h.schema()
 
 	h.publishCurrent(to)
+	planOut, planErr := h.selfUpgrade(to, "--dry-run")
+	if planErr != nil {
+		t.Fatalf("self-upgrade --dry-run failed: %v\n%s", planErr, planOut)
+	}
+	if got := h.runningVersion(); got != tag || h.schema() != schemaBefore || !bytes.Equal(readFile(t, h.bin), oldBinary) || len(h.restorePoints()) != 0 {
+		t.Fatalf("--dry-run changed the instance: version %s schema %d restore points %d", got, h.schema(), len(h.restorePoints()))
+	}
+	assertSeeded(t, h.capture(), "after --dry-run")
 	out, err := h.selfUpgrade(to)
 	if err != nil {
 		log, _ := os.ReadFile(filepath.Join(h.dir, "server.log"))

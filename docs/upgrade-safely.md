@@ -223,19 +223,35 @@ The two most recent starting versions run on every pull request. The full set ru
 The matrix above upgrades synthetic databases in process. The release harness goes further: it runs the actual binary of an earlier release, so the old code writes the data and the old `self-upgrade` command performs the upgrade.
 
 ```bash
-scripts/upgrade-harness.sh v0.8.2 v0.8.1
+scripts/upgrade-harness.sh v0.8.8 v0.8.7 v0.8.6 v0.8.5
 ```
+
+With no arguments it uses the last four released tags. `UPGRADE_HARNESS_FROM` (comma list) or `UPGRADE_HARNESS_VERSIONS_FILE` (one tag per line) override that, and `UPGRADE_HARNESS_COUNT` changes the default count. On linux the script first downloads the published server binary for each tag into a cache outside the repo and verifies it against `checksums.txt`; anywhere else, or when that fails, the tag is built from source.
 
 Each tag is built from its own source (an archive of the tag plus `go build`, in a temporary directory) or taken from `LEVELRAIL_UPGRADE_FROM_BINARY_DIR/<tag>/levelrail`. The test is `TestReleaseUpgradeHarness` in `cmd/levelrail`; it is skipped unless `LEVELRAIL_UPGRADE_FROM_TAGS` is set and under `go test -short`. `LEVELRAIL_UPGRADE_TARGET_VERSION` names the version the current build reports (default `v0.8.99`). It needs about 2 GiB of disk and several minutes per tag.
 
 For each tag the harness:
 
 1. starts the old release on an empty data directory and seeds it through its HTTP API: an app, an app secret, a database record, a second user and the audit rows those calls produce, plus a probe row written straight into the database;
-2. upgrades to the current build with `self-upgrade` and checks that the app, secret value (decrypted with the same master key), database record, user and probe row are unchanged, that no audit row was lost and that the audit chain verifies;
+2. runs `self-upgrade --dry-run` and checks that it changes nothing (version, schema, binary, no restore point), then upgrades to the current build with `self-upgrade` and checks that the app, secret value (decrypted with the same master key), database record, user and probe row are unchanged, that no audit row was lost and that the audit chain verifies;
 3. checks the restore point: it holds the previous release's binary byte for byte and a database copy that passes `PRAGMA integrity_check` and contains the seeded app;
 4. creates a change after the upgrade, then restores the point with `levelrail restore-point` and checks the old version is running again with the seeded data intact;
 5. upgrades to a release that rewrites the database and never becomes healthy, and checks the automatic restore: the previous binary is back byte for byte, the database is the pre-upgrade one and every seeded record is intact;
 6. upgrades again, then attempts a downgrade with `self-upgrade --to <old tag>`, which is refused without touching the binary. It then marks the database as written by a newer release and starts the old binary on it: the binary must exit with status 78, leave the database file byte for byte unchanged, and the current release must start again once the marker is removed.
+
+### Last run
+
+Run on a developer machine (macOS arm64, loopback ports only, each tag built from source), 2026-10-30, against the current release branch. Every row passed the seeded-data, restore point, `--dry-run`, manual restore, automatic restore and refused-downgrade checks. The seeded root token authenticated after each upgrade.
+
+| From | Result | Date |
+| --- | --- | --- |
+| v0.8.8 | pass | 2026-10-30 |
+| v0.8.7 | pass | 2026-10-30 |
+| v0.8.6 | pass | 2026-10-30 |
+| v0.8.5 | pass | 2026-10-30 |
+| v0.8.4 and older | not tested | |
+
+Not covered: published linux binaries on a linux host (the download path is untested here), systemd, agent reconnection.
 
 ### Cross-release schema migration
 
