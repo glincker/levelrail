@@ -83,16 +83,19 @@ func (m *mailFlags) finish(domain string) error {
 
 func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) >= 1 && args[0] == "status" {
-		c, code, ok := parseDBAccess(prog, "mail status", "mail status", args[1:], 0, "", stdout, stderr, lookupEnv, nil)
+		var app string
+		c, code, ok := parseDBAccess(prog, "mail status", "mail status [--app name]", args[1:], 0, "", stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+			fs.StringVar(&app, "app", "", "mail app to report on when several are installed")
+		})
 		if !ok {
 			return code
 		}
-		st, err := c.client.MailStatus(context.Background())
+		st, err := c.client.MailStatus(context.Background(), app)
 		if err != nil {
 			return c.fail(fmt.Errorf("mail status: %w", err))
 		}
 		return c.result(st, func() {
-			_, _ = fmt.Fprintf(stdout, "installed: %t\ncontainer: %s\nadmin api: %t\ntls: %s\nnext: %s\n", st.Installed, st.ContainerState, st.AdminReachable, st.TLS, st.NextStep)
+			_, _ = fmt.Fprintf(stdout, "app: %s\ninstalled: %t\ncontainer: %s\nadmin api: %t\ntls: %s\nnext: %s\n", st.App, st.Installed, st.ContainerState, st.AdminReachable, st.TLS, st.NextStep)
 		})
 	}
 	if len(args) < 2 || args[0] != "dns" {

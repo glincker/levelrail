@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/mail/mox"
 )
@@ -13,6 +15,7 @@ const (
 
 // mailStatusResponse carries no credentials or certificate material.
 type mailStatusResponse struct {
+	App            string `json:"app"`
 	Installed      bool   `json:"installed"`
 	ContainerState string `json:"container_state"`
 	AdminReachable bool   `json:"admin_reachable"`
@@ -20,36 +23,33 @@ type mailStatusResponse struct {
 	NextStep       string `json:"next_step"`
 }
 
-// handleMailStatus handles GET /api/v1/mail/status. With no mail app it is one
-// store read: no probes, goroutines or polling.
-func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
-	out := mailStatusResponse{ContainerState: "none", TLS: "unknown"}
-	svcs, err := rt.apps.ListDesiredServices(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: mail status: list services failed", err)
-		return
+// mailTLSKind reads the kind from the install env: an empty value or the
+// default path means the engine made its own self-signed pair.
+func mailTLSKind(env map[string]string) string {
+	f := env["MAIL_TLS_CERT_FILE"]
+	if f == "" || f == mailSelfSignedCert || strings.HasPrefix(f, "${") {
+		return "self-signed"
 	}
-	var name string
-	for _, s := range svcs {
-		if s.TemplateID != mailTemplateID {
-			continue
-		}
-		out.Installed, name = true, s.Name
-		out.TLS = "self-signed"
-		if f := s.Env["MAIL_TLS_CERT_FILE"]; f != "" && f != mailSelfSignedCert {
-			out.TLS = "provided"
-		}
-		break
+	return "provided"
+}
+
+// mailRank orders candidates: running with admin reachable, then running, then the rest.
+func mailRank(s mailStatusResponse) int {
+	switch {
+	case s.ContainerState == "running" && s.AdminReachable:
+		return 2
+	case s.ContainerState == "running":
+		return 1
 	}
-	if !out.Installed {
-		out.NextStep = "Install the mail-mox template from the catalog. It starts with a self-signed certificate and needs only your domain."
-		writeJSON(w, http.StatusOK, out)
-		return
-	}
-	out.ContainerState = "unknown"
+	return 0
+}
+
+// mailProbe fills the container state and admin reachability for one mail app.
+func (rt *Router) mailProbe(ctx context.Context, name string, env map[string]string) mailStatusResponse {
+	out := mailStatusResponse{App: name, Installed: true, ContainerState: "unknown", TLS: mailTLSKind(env)}
 	ip := ""
 	if rt.containers != nil {
-		list, lerr := rt.containers.ListByPrefix(r.Context(), name)
+		list, lerr := rt.containers.ListByPrefix(ctx, name)
 		if lerr == nil {
 			out.ContainerState = "missing"
 			for _, c := range list {
@@ -71,10 +71,44 @@ func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if ip != "" {
-		out.AdminReachable = mox.AdminReachable(r.Context(), mox.AdminBaseURL(ip))
+		out.AdminReachable = mox.AdminReachable(ctx, mox.AdminBaseURL(ip))
 	}
 	out.NextStep = mailNextStep(out)
-	writeJSON(w, http.StatusOK, out)
+	return out
+}
+
+// handleMailStatus handles GET /api/v1/mail/status. With no mail app it is one
+// store read: no probes, goroutines or polling. ?app=<name> picks one install.
+func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
+	out := mailStatusResponse{ContainerState: "none", TLS: "unknown"}
+	svcs, err := rt.apps.ListDesiredServices(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: mail status: list services failed", err)
+		return
+	}
+	want := r.URL.Query().Get("app")
+	best, found := mailStatusResponse{}, false
+	for _, s := range svcs {
+		if s.TemplateID != mailTemplateID || (want != "" && s.Name != want) {
+			continue
+		}
+		cand := rt.mailProbe(r.Context(), s.Name, s.Env)
+		if !found || mailRank(cand) > mailRank(best) {
+			best, found = cand, true
+		}
+		if want != "" {
+			break
+		}
+	}
+	if !found {
+		out.NextStep = "Install the mail-mox template from the catalog. It starts with a self-signed certificate and needs only your domain."
+		if want != "" {
+			out.NextStep = "No mail app named " + want + " is installed."
+		}
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
+	writeJSON(w, http.StatusOK, best)
 }
 
 func mailNextStep(s mailStatusResponse) string {

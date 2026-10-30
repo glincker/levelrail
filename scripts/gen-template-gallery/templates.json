@@ -19766,7 +19766,7 @@
  {
   "id": "mail-mox",
   "name": "Mail server (mox, experimental)",
-  "slogan": "Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.\nInstall with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\nPorts 25, 465, 587 and 993 bind privately by default: set a public bind for each in the app's Network settings and open them in the firewall. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\nTLS: the first start makes a self-signed certificate so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.\nRelay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.\nThe admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up the config and data volumes together.\nDeliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail template guide. Licence: MIT.",
+  "slogan": "Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.\nInstall with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\nPorts 25, 465, 587 and 993 bind privately by default: set a public bind for each in the app's Network settings and open them in the firewall. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\nTLS: the first start makes a self-signed certificate (valid for localhost only, made by mox itself) so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.\nRelay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.\nThe admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up the config and data volumes together.\nDeliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail template guide. Licence: MIT.",
   "category": "Communication",
   "docUrl": "https://www.xmox.nl/",
   "memoryMiB": 256,
@@ -19785,14 +19785,6 @@
     "volumes": [
      "mail_config -> /mox/config",
      "mail_data -> /mox/data"
-    ]
-   },
-   {
-    "name": "mox-tls",
-    "image": "alpine/openssl:3.5.4@sha256:42c7389ef077aed0eb4e96d0abbd094083d701bbaff1313073b061c0c9cd8278",
-    "ports": [],
-    "volumes": [
-     "mail_config -> /mox/config"
     ]
    }
   ],
@@ -19846,26 +19838,6 @@
     "service": "mox",
     "name": "MAIL_TLS_KEY_FILE",
     "kind": "preset"
-   },
-   {
-    "service": "mox-tls",
-    "name": "MAIL_FIRST_DOMAIN",
-    "kind": "required"
-   },
-   {
-    "service": "mox-tls",
-    "name": "MAIL_HOSTNAME",
-    "kind": "preset"
-   },
-   {
-    "service": "mox-tls",
-    "name": "MAIL_TLS_CERT_FILE",
-    "kind": "preset"
-   },
-   {
-    "service": "mox-tls",
-    "name": "MAIL_TLS_KEY_FILE",
-    "kind": "preset"
    }
   ],
   "requirements": {
@@ -19884,8 +19856,7 @@
      "code": "required_secrets",
      "severity": "info",
      "services": [
-      "mox",
-      "mox-tls"
+      "mox"
      ],
      "detail": "MAIL_FIRST_DOMAIN",
      "message": "You must provide one or more secrets before it can deploy"
@@ -19900,19 +19871,10 @@
      "message": "Passwords and keys are generated at deploy time"
     },
     {
-     "code": "no_healthcheck",
-     "severity": "info",
-     "services": [
-      "mox-tls"
-     ],
-     "message": "No health check, so a deploy is judged by the process starting"
-    },
-    {
      "code": "persistent_data",
      "severity": "info",
      "services": [
-      "mox",
-      "mox-tls"
+      "mox"
      ],
      "detail": "mail_config, mail_data",
      "message": "Stores data in named volumes"

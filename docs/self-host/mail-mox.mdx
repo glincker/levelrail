@@ -1,14 +1,14 @@
 ---
 title: "Self-host Mail server (mox, experimental) with Docker"
 sidebarTitle: "Mail server (mox, experimental)"
-description: "Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.\nInstall with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\nPorts 25, 465, 587 and 993 bind privately by default: set a public bind for each in the app's Network settings and open them in the firewall. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\nTLS: the first start makes a self-signed certificate so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.\nRelay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.\nThe admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up the config and data volumes together.\nDeliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail template guide. Licence: MIT."
+description: "Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.\nInstall with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\nPorts 25, 465, 587 and 993 bind privately by default: set a public bind for each in the app's Network settings and open them in the firewall. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\nTLS: the first start makes a self-signed certificate (valid for localhost only, made by mox itself) so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.\nRelay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.\nThe admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up the config and data volumes together.\nDeliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail template guide. Licence: MIT."
 "og:url": "https://docs.levelrail.com/self-host/mail-mox"
 ---
 
 Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.
 Install with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.
 Ports 25, 465, 587 and 993 bind privately by default: set a public bind for each in the app's Network settings and open them in the firewall. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.
-TLS: the first start makes a self-signed certificate so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.
+TLS: the first start makes a self-signed certificate (valid for localhost only, made by mox itself) so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.
 Relay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.
 The admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up the config and data volumes together.
 Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail template guide. Licence: MIT.
@@ -22,7 +22,6 @@ Recommended memory: about 256 MiB.
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
 | `mox` | `r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e` | 8081, 25, 465, 587, 993 | `mail_config -&#62; /mox/config`<br />`mail_data -&#62; /mox/data` |
-| `mox-tls` | `alpine/openssl:3.5.4@sha256:42c7389ef077aed0eb4e96d0abbd094083d701bbaff1313073b061c0c9cd8278` | none | `mail_config -&#62; /mox/config` |
 
 ## Environment variables
 
@@ -38,10 +37,6 @@ Recommended memory: about 256 MiB.
 | `mox` | `MAIL_SMARTHOST_USER` | Preset in the template |
 | `mox` | `MAIL_TLS_CERT_FILE` | Preset in the template |
 | `mox` | `MAIL_TLS_KEY_FILE` | Preset in the template |
-| `mox-tls` | `MAIL_FIRST_DOMAIN` | You must provide |
-| `mox-tls` | `MAIL_HOSTNAME` | Preset in the template |
-| `mox-tls` | `MAIL_TLS_CERT_FILE` | Preset in the template |
-| `mox-tls` | `MAIL_TLS_KEY_FILE` | Preset in the template |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -52,10 +47,9 @@ Level: **Standard**.
 What this template needs:
 
 - Publishes ports directly on the host (`mox`): 25:25, 465:465, 587:587, 8025:8081, 993:993.
-- You must provide one or more secrets before it can deploy (`mox`, `mox-tls`): MAIL_FIRST_DOMAIN.
+- You must provide one or more secrets before it can deploy (`mox`): MAIL_FIRST_DOMAIN.
 - Passwords and keys are generated at deploy time (`mox`): MAIL_ADMIN_PASSWORD.
-- No health check, so a deploy is judged by the process starting (`mox-tls`).
-- Stores data in named volumes (`mox`, `mox-tls`): mail_config, mail_data.
+- Stores data in named volumes (`mox`): mail_config, mail_data.
 
 What Levelrail adds around it:
 

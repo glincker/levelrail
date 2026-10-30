@@ -7,6 +7,7 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 export const MAIL_STATUS_POLL_MS = 15000
 
 export interface MailStatus {
+  app?: string
   installed: boolean
   container_state: string
   admin_reachable: boolean

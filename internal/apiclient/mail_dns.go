@@ -66,6 +66,7 @@ func (c *Client) CheckMailDNS(ctx context.Context, domain, mailHost, selector st
 
 // MailStatus is the response of GET /api/v1/mail/status.
 type MailStatus struct {
+	App            string `json:"app"`
 	Installed      bool   `json:"installed"`
 	ContainerState string `json:"container_state"`
 	AdminReachable bool   `json:"admin_reachable"`
@@ -73,9 +74,13 @@ type MailStatus struct {
 	NextStep       string `json:"next_step"`
 }
 
-// MailStatus calls GET /api/v1/mail/status.
-func (c *Client) MailStatus(ctx context.Context) (MailStatus, error) {
+// MailStatus calls GET /api/v1/mail/status; app picks one install when several exist.
+func (c *Client) MailStatus(ctx context.Context, app string) (MailStatus, error) {
 	var out MailStatus
-	err := c.do(ctx, http.MethodGet, "/api/v1/mail/status", nil, &out)
+	path := "/api/v1/mail/status"
+	if app != "" {
+		path += "?app=" + url.QueryEscape(app)
+	}
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }

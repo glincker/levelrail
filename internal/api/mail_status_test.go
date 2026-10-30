@@ -29,3 +29,27 @@ func TestMailNextStep(t *testing.T) {
 		t.Fatal("empty")
 	}
 }
+
+func TestMailTLSKindAndRank(t *testing.T) {
+	if mailTLSKind(nil) != "self-signed" || mailTLSKind(map[string]string{"MAIL_TLS_CERT_FILE": mailSelfSignedCert}) != "self-signed" {
+		t.Fatal("default must be self-signed")
+	}
+	if mailTLSKind(map[string]string{"MAIL_TLS_CERT_FILE": "certs/cur.pem"}) != "provided" {
+		t.Fatal("custom path must be provided")
+	}
+	up := mailStatusResponse{ContainerState: "running", AdminReachable: true}
+	if mailRank(up) <= mailRank(mailStatusResponse{ContainerState: "running"}) || mailRank(mailStatusResponse{ContainerState: "running"}) <= mailRank(mailStatusResponse{ContainerState: "missing"}) {
+		t.Fatal("rank order wrong")
+	}
+}
+
+func TestMailStatusUnknownApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/mail/status?app=nope", ""))
+	var got mailStatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got.Installed || got.App != "" {
+		t.Fatalf("unexpected %v %+v", err, got)
+	}
+}
