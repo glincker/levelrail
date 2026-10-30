@@ -82,11 +82,18 @@ func restrictDBFile(path string) {
 	_ = os.Chmod(path, 0o600)
 }
 
+// EnvDBSynchronous sets PRAGMA synchronous (OFF or NORMAL only); unset keeps the default.
+const EnvDBSynchronous = "LEVELRAIL_DB_SYNCHRONOUS"
+
 func dsn(path string) string {
 	q := url.Values{}
 	q.Add("_pragma", "busy_timeout(5000)")
 	q.Add("_pragma", "journal_mode(WAL)")
 	q.Add("_pragma", "foreign_keys(ON)")
+	// Test binaries relax fsync through this env; production leaves it unset and keeps SQLite's default.
+	if mode := strings.ToUpper(os.Getenv(EnvDBSynchronous)); mode == "OFF" || mode == "NORMAL" {
+		q.Add("_pragma", "synchronous("+mode+")")
+	}
 	q.Add("_pragma", "journal_size_limit("+strconv.Itoa(walSizeLimitBytes)+")")
 	return "file:" + path + "?" + q.Encode()
 }
