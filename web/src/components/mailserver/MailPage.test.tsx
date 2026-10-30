@@ -214,7 +214,7 @@ describe('MailPage', () => {
     )
     renderPage()
     expect(screen.getAllByText('Not checked').length).toBeGreaterThanOrEqual(8)
-    expect(await screen.findAllByText('Coming next')).toHaveLength(5)
+    expect(await screen.findAllByText('Coming next')).toHaveLength(2)
     expect(
       screen.getByRole('link', { name: /Install mail server/ }),
     ).toBeTruthy()

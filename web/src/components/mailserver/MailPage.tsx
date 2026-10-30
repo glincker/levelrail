@@ -11,6 +11,7 @@ import { MailNextStep } from './MailNextStep'
 import { MailChecklist } from './MailChecklist'
 import { MailDnsPanel } from './MailDnsPanel'
 import { MailPortsCard } from './MailPortsCard'
+import { MailPanels } from './MailPanels'
 import { MailSoonPanels } from './MailSoonPanels'
 
 /** MailPage is the experimental mail hub: install link, setup checklist, domain DNS and upcoming panels. */
@@ -56,6 +57,7 @@ export function MailPage() {
           defaults={status}
           previewToken={previewToken}
         />
+        <MailPanels />
         <MailSoonPanels />
       </div>
     </PageTemplate>

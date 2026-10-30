@@ -1,17 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import {
-  ArchiveGlassIcon,
-  HardDriveUploadGlassIcon,
-  InboxGlassIcon,
-  QueueWorkerGlassIcon,
-  UsersGlassIcon,
-} from '@thesvg/ui-react'
+import { ArchiveGlassIcon, HardDriveUploadGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 
 const PANELS = [
-  { key: 'mailboxes', icon: <InboxGlassIcon size="1.2em" /> },
-  { key: 'aliases', icon: <UsersGlassIcon size="1.2em" /> },
-  { key: 'queue', icon: <QueueWorkerGlassIcon size="1.2em" /> },
   { key: 'storage', icon: <HardDriveUploadGlassIcon size="1.2em" /> },
   { key: 'backup', icon: <ArchiveGlassIcon size="1.2em" /> },
 ] as const
@@ -20,7 +11,7 @@ const PANELS = [
 export function MailSoonPanels() {
   const { t } = useTranslation('mailServer')
   return (
-    <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+    <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-2">
       {PANELS.map((p) => (
         <li
           key={p.key}

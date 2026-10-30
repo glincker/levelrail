@@ -67,18 +67,6 @@
   },
   "soon": {
     "label": "Coming next",
-    "mailboxes": {
-      "title": "Mailboxes",
-      "body": "Create and remove mailboxes and set quotas for each domain."
-    },
-    "aliases": {
-      "title": "Aliases",
-      "body": "Forward addresses and catch-alls to a mailbox."
-    },
-    "queue": {
-      "title": "Queue",
-      "body": "See messages waiting to be delivered, retry or drop them."
-    },
     "storage": {
       "title": "Storage",
       "body": "Mailbox disk usage and the volume the mail lives on."
@@ -144,5 +132,98 @@
       "not_filtering": "firewall not filtering",
       "unknown": "firewall unknown"
     }
+  },
+  "mailboxes": {
+    "title": "Mailboxes",
+    "failed": "The mail request failed.",
+    "noUser": "None",
+    "needsWrite": "Needs the write:sensitive ability.",
+    "needsRoot": "Only a root user can do this.",
+    "pendingWarning": "The mail server was unreachable, so the suspend is not applied yet. It applies on the next successful mail call.",
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "pending": "Suspend pending"
+    },
+    "col": {
+      "address": "Address",
+      "team": "Team",
+      "user": "Linked user",
+      "status": "Status",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "form": {
+      "localpart": "Name",
+      "domain": "Domain",
+      "linkedUser": "Linked user (optional)",
+      "noUser": "No linked user",
+      "add": "Add mailbox",
+      "localpartHint": "jo"
+    },
+    "empty": {
+      "title": "No mailboxes yet",
+      "claim": "Claim a domain above, then add the first mailbox.",
+      "add": "Add the first mailbox above."
+    },
+    "suspend": "Suspend",
+    "resume": "Resume",
+    "reset": "Reset password",
+    "delete": "Delete",
+    "suspendFor": "Suspend {{address}}",
+    "resumeFor": "Resume {{address}}",
+    "resetFor": "Reset password for {{address}}",
+    "deleteFor": "Delete {{address}}",
+    "deleteTitle": "Delete {{address}}?",
+    "deleteBody": "Type the address to confirm. Suspending is usually the better choice.",
+    "reveal": {
+      "title": "Password for {{address}}",
+      "label": "Generated password",
+      "copy": "Copy",
+      "copied": "Copied",
+      "once": "Shown once. It is not stored.",
+      "saved": "I saved it"
+    }
+  },
+  "aliases": {
+    "title": "Aliases",
+    "needsMailbox": "Add a mailbox first. An alias must point at a mailbox.",
+    "empty": "No aliases yet.",
+    "listLabel": "Aliases",
+    "to": "to",
+    "remove": "Remove",
+    "removeFor": "Remove {{address}}",
+    "form": {
+      "alias": "Alias",
+      "target": "Forward to",
+      "add": "Add alias",
+      "aliasHint": "team"
+    }
+  },
+  "queue": {
+    "title": "Queue",
+    "count_one": "{{count}} message waiting",
+    "count_other": "{{count}} messages waiting",
+    "empty": "Nothing is waiting to be delivered.",
+    "holdAll": "Hold all",
+    "releaseAll": "Release all",
+    "hold": "Hold",
+    "release": "Release",
+    "held": "Held",
+    "holdFor": "Hold message {{id}}",
+    "releaseFor": "Release message {{id}}",
+    "col": {
+      "sender": "Sender",
+      "domain": "To domain",
+      "attempts": "Attempts",
+      "next": "Next attempt",
+      "error": "Last error"
+    }
+  },
+  "domains": {
+    "domain": "Domain",
+    "team": "Team",
+    "claim": "Claim domain",
+    "claimed": "Claimed"
   }
 }
