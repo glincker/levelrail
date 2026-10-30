@@ -2091,4 +2091,4 @@ levelrail-cli analysis list <app> [--json]
 levelrail-cli analysis show <id> [--json]
 ```
 
-Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`.
+Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`. Right-sizing thresholds: `APP_ANALYSIS_HEADROOM_MEMORY` and `APP_ANALYSIS_HEADROOM_CPU` (multiplier over p95, above 1), `APP_ANALYSIS_SIZING_RAISE_AT` and `APP_ANALYSIS_SIZING_LOWER_AT` (p95 as a fraction of the limit), and `APP_ANALYSIS_SIZING_MIN_COVERAGE` (history needed before a suggestion). Unset values keep the engine defaults.

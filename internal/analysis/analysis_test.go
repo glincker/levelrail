@@ -166,3 +166,14 @@ func TestTriggerIsOffByDefaultAndFailureIsolated(t *testing.T) {
 	pr.OnAlert(fired)
 	pr.Wait()
 }
+
+func TestSizingThresholdsComeFromEnv(t *testing.T) {
+	env := map[string]string{"APP_ANALYSIS_HEADROOM_MEMORY": "1.6", "APP_ANALYSIS_SIZING_RAISE_AT": "0.9", "APP_ANALYSIS_SIZING_MIN_COVERAGE": "2h"}
+	cfg := ConfigFromEnv(func(k string) (string, bool) { v, ok := env[k]; return v, ok })
+	if cfg.Sizing.MemoryMargin != 1.6 || cfg.Sizing.RaiseAt != 0.9 || cfg.Sizing.MinCoverage != 2*time.Hour {
+		t.Fatalf("sizing tuning not read from env: %+v", cfg.Sizing)
+	}
+	if cfg.Sizing.CPUMargin != 0 {
+		t.Fatalf("unset margin must stay zero so the engine default applies: %+v", cfg.Sizing)
+	}
+}

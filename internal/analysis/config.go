@@ -6,6 +6,8 @@ package analysis
 import (
 	"strconv"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/rightsizing"
 )
 
 // Config holds every threshold, read from APP_ANALYSIS_* so operators tune them.
@@ -26,6 +28,8 @@ type Config struct {
 	MaxConcurrent   int
 	Timeout         time.Duration
 	Retention       time.Duration
+	// Sizing feeds the right-sizing engine; a zero field keeps the engine default.
+	Sizing rightsizing.Tuning
 }
 
 // ConfigFromEnv reads the knobs. Analysis stays off unless APP_ANALYSIS_ENABLED is "on".
@@ -60,5 +64,12 @@ func ConfigFromEnv(lookup func(string) (string, bool)) Config {
 		MaxConcurrent:   int(num("APP_ANALYSIS_MAX_CONCURRENT", 2)),
 		Timeout:         dur("APP_ANALYSIS_TIMEOUT", 30*time.Second),
 		Retention:       dur("APP_ANALYSIS_RETENTION", 30*24*time.Hour),
+		Sizing: rightsizing.Tuning{
+			MemoryMargin: num("APP_ANALYSIS_HEADROOM_MEMORY", 0),
+			CPUMargin:    num("APP_ANALYSIS_HEADROOM_CPU", 0),
+			RaiseAt:      num("APP_ANALYSIS_SIZING_RAISE_AT", 0),
+			LowerAt:      num("APP_ANALYSIS_SIZING_LOWER_AT", 0),
+			MinCoverage:  dur("APP_ANALYSIS_SIZING_MIN_COVERAGE", 0),
+		},
 	}
 }
