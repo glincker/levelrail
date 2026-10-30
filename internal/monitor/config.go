@@ -10,6 +10,8 @@ import (
 // Defaults apply only when the matching APP_MONITOR_* variable is unset.
 const (
 	DefaultWorkers         = 4
+	DefaultConfirmFailures = 2
+	DefaultRecoveryOKs     = 2
 	DefaultMinIntervalHTTP = 30 * time.Second
 	DefaultMinIntervalTCP  = 30 * time.Second
 	DefaultMaxTimeout      = 30 * time.Second
@@ -50,6 +52,8 @@ type Config struct {
 	JitterPercent   int
 	TickInterval    time.Duration
 	ResultsMaxLimit int
+	ConfirmFailures int
+	RecoveryOKs     int
 	UserAgent       string
 }
 
@@ -112,6 +116,8 @@ func ConfigFromEnv(lookup func(string) (string, bool)) (Config, error) {
 		JitterPercent:   e.num("APP_MONITOR_JITTER_PERCENT", DefaultJitterPercent, 0),
 		TickInterval:    e.dur("APP_MONITOR_TICK_INTERVAL", DefaultTickInterval),
 		ResultsMaxLimit: e.num("APP_MONITOR_RESULTS_MAX_LIMIT", DefaultResultsMaxLimit, 1),
+		ConfirmFailures: e.num("APP_MONITOR_CONFIRM_FAILURES", DefaultConfirmFailures, 1),
+		RecoveryOKs:     e.num("APP_MONITOR_RECOVERY_SUCCESSES", DefaultRecoveryOKs, 1),
 		UserAgent:       "monitor",
 	}
 	if v, ok := e.raw("APP_MONITORS_ENABLED"); ok {

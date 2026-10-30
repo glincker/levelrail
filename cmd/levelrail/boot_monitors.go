@@ -18,7 +18,9 @@ func (s *bootState) startMonitors() {
 		return
 	}
 	cfg.UserAgent = s.b.BinaryName + "-monitor"
-	opts := monitor.Options{Config: cfg, Store: s.db, Logger: s.logger}
+	opts := monitor.Options{Config: cfg, Store: s.db, Logger: s.logger, Notify: func(t monitor.Transition) {
+		s.logger.Warn("monitor state changed", slog.String("monitor", t.Monitor.ID), slog.String("state", t.State), slog.String("reason", t.Reason))
+	}}
 	if s.secretsManager != nil {
 		opts.Secrets = s.secretsManager
 	}

@@ -42,6 +42,7 @@ type Service struct {
 	checker *Checker
 	sched   *Scheduler
 	batcher *Batcher
+	tracker *Tracker
 	logger  *slog.Logger
 	now     func() time.Time
 }
@@ -52,6 +53,8 @@ type Options struct {
 	Store   Store
 	Secrets Secrets
 	Logger  *slog.Logger
+	// Notify receives confirmed down and recovered transitions; nil drops them.
+	Notify Notifier
 }
 
 // New builds a Service.
@@ -61,8 +64,12 @@ func New(o Options) *Service {
 		logger = slog.Default()
 	}
 	return &Service{cfg: o.Config, store: o.Store, secrets: o.Secrets, logger: logger, now: time.Now,
-		checker: NewChecker(o.Config), sched: NewScheduler(o.Config, nil), batcher: NewBatcher(o.Store, o.Config.BufferMax)}
+		checker: NewChecker(o.Config), sched: NewScheduler(o.Config, nil), batcher: NewBatcher(o.Store, o.Config.BufferMax),
+		tracker: NewTracker(o.Config.ConfirmFailures, o.Config.RecoveryOKs, o.Notify)}
 }
+
+// State returns the confirmed state of a monitor, or "" before its first probe.
+func (s *Service) State(id string) string { return s.tracker.State(id) }
 
 // Config returns the engine settings.
 func (s *Service) Config() Config { return s.cfg }
@@ -126,10 +133,14 @@ func (s *Service) probe(ctx context.Context, m Monitor) {
 	defer s.sched.Done(m.ID)
 	headers, err := s.resolveHeaders(ctx, m)
 	if err != nil {
-		s.batcher.Add(Result{MonitorID: m.ID, At: s.now().Unix(), Reason: ReasonSecretMissing})
+		r := Result{MonitorID: m.ID, At: s.now().Unix(), Reason: ReasonSecretMissing}
+		s.batcher.Add(r)
+		s.tracker.Observe(m, r)
 		return
 	}
-	s.batcher.Add(s.checker.Check(ctx, m, headers))
+	r := s.checker.Check(ctx, m, headers)
+	s.batcher.Add(r)
+	s.tracker.Observe(m, r)
 }
 
 func (s *Service) resolveHeaders(ctx context.Context, m Monitor) (map[string]string, error) {
@@ -292,6 +303,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	s.sched.Remove(id)
+	s.tracker.Forget(id)
 	if s.secrets != nil {
 		if err := s.secrets.DeleteAll(ctx, secretService(id)); err != nil {
 			s.logger.Warn("monitors: delete header secrets failed", slog.String("monitor", id), slog.String("error", err.Error()))

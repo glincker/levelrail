@@ -18,6 +18,7 @@ type MonitorService interface {
 	List(ctx context.Context) ([]monitor.Monitor, error)
 	Get(ctx context.Context, id string) (monitor.Monitor, error)
 	Delete(ctx context.Context, id string) error
+	State(id string) string
 	Results(ctx context.Context, id string, window time.Duration, limit int) (monitor.History, error)
 }
 

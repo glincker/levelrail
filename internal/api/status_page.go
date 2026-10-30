@@ -68,6 +68,7 @@ func WithStatusPage(db StatusPageDB, cfg statuspage.Config, perMinute int) Optio
 		if ws, ok := any(db).(statuspage.WindowSource); ok {
 			svc.SetWindows(ws)
 		}
+		svc.SetMonitors(statusMonitorSource{rt})
 		rt.statusPage, rt.statusView, rt.statusSampler = db, svc, svc
 		rt.statusLimiter = newAPIRateLimiter(perMinute)
 	}
@@ -88,6 +89,16 @@ func (rt *Router) RunStatusPageSampler(ctx context.Context) error {
 		return nil
 	}
 	return rt.statusSampler.Run(ctx)
+}
+
+// statusMonitorSource reads rt.monitors lazily because the engine is wired after the status page.
+type statusMonitorSource struct{ rt *Router }
+
+func (s statusMonitorSource) MonitorState(_ context.Context, id string) string {
+	if s.rt.monitors == nil {
+		return ""
+	}
+	return s.rt.monitors.State(id)
 }
 
 type statusAppSource struct{ rt *Router }
@@ -289,8 +300,15 @@ func (rt *Router) validateStatusComponent(ctx context.Context, req *statusCompon
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil {
 			return "target must be an http or https URL without credentials"
 		}
+	case statuspage.KindMonitor:
+		if rt.monitors == nil {
+			return "monitors are not enabled (APP_MONITORS_ENABLED)"
+		}
+		if _, err := rt.monitors.Get(ctx, req.Target); err != nil {
+			return "unknown monitor"
+		}
 	default:
-		return "kind must be app, domain or check"
+		return "kind must be app, domain, check or monitor"
 	}
 	return ""
 }

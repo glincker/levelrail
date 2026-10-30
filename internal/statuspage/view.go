@@ -28,6 +28,8 @@ const (
 	KindApp    = "app"
 	KindDomain = "domain"
 	KindCheck  = "check"
+	// KindMonitor follows an uptime monitor by id (ADR 054).
+	KindMonitor = "monitor"
 )
 
 // Incident kinds, statuses and impacts.

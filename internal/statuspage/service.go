@@ -36,6 +36,11 @@ type DomainSource interface {
 	CheckDomainStatus(ctx context.Context, domain string) (string, error)
 }
 
+// MonitorSource reports a monitor's confirmed state: up, suspect, down, recovering, or "" when unknown.
+type MonitorSource interface {
+	MonitorState(ctx context.Context, id string) string
+}
+
 // Config tunes sampling and caching; zero values take the defaults.
 type Config struct {
 	SampleInterval time.Duration
@@ -54,14 +59,15 @@ const (
 
 // Service samples component health and builds the public View.
 type Service struct {
-	store   Store
-	apps    AppSource
-	domains DomainSource
-	client  *http.Client
-	cfg     Config
-	logger  *slog.Logger
-	now     func() time.Time
-	windows WindowSource
+	store    Store
+	apps     AppSource
+	domains  DomainSource
+	client   *http.Client
+	cfg      Config
+	logger   *slog.Logger
+	now      func() time.Time
+	windows  WindowSource
+	monitors MonitorSource
 
 	mu       sync.Mutex
 	current  map[string]string
@@ -207,6 +213,28 @@ func (s *Service) probe(ctx context.Context, c store.StatusComponent) string {
 		}
 	case KindCheck:
 		return s.httpCheck(ctx, c.Target)
+	case KindMonitor:
+		return s.monitorState(ctx, c.Target)
+	default:
+		return Unknown
+	}
+}
+
+// SetMonitors lets monitor components follow the uptime monitor engine.
+func (s *Service) SetMonitors(m MonitorSource) { s.monitors = m }
+
+// monitorState maps a confirmed state; one failed sample (suspect) stays operational so a blip never shows red.
+func (s *Service) monitorState(ctx context.Context, id string) string {
+	if s.monitors == nil {
+		return Unknown
+	}
+	switch s.monitors.MonitorState(ctx, id) {
+	case "up", "suspect":
+		return Operational
+	case "recovering":
+		return Degraded
+	case "down":
+		return Outage
 	default:
 		return Unknown
 	}
