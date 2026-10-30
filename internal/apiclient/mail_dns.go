@@ -74,6 +74,8 @@ type MailStatus struct {
 	NextStep       string `json:"next_step"`
 	Domain         string `json:"domain,omitempty"`
 	Hostname       string `json:"hostname,omitempty"`
+	// MaintenanceHold is set while a restore holds the mail app stopped.
+	MaintenanceHold string `json:"maintenance_hold,omitempty"`
 }
 
 // MailStatus calls GET /api/v1/mail/status; app picks one install when several exist.

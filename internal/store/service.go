@@ -495,6 +495,11 @@ type DesiredService struct {
 	// UpdateServiceSuspended does.
 	Suspended bool
 
+	// MaintenanceHold, when non-empty, names the operation that holds the
+	// service still: the reconciler leaves its containers exactly as they are.
+	// Only UpdateServiceMaintenanceHold writes it.
+	MaintenanceHold string
+
 	// AppID is which store.App (migrations/0039_apps.sql) this service
 	// belongs to; empty string means none. SaveDesiredService only
 	// writes it on first INSERT, never on an ON CONFLICT update, the
@@ -1206,6 +1211,22 @@ func (db *DB) UpdateServiceApp(ctx context.Context, name, appID string) error {
 	return nil
 }
 
+// UpdateServiceMaintenanceHold sets or clears (hold == "") the service's maintenance hold.
+func (db *DB) UpdateServiceMaintenanceHold(ctx context.Context, name, hold string) error {
+	res, err := db.ExecContext(ctx, `UPDATE desired_services SET maintenance_hold = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`, hold, name)
+	if err != nil {
+		return fmt.Errorf("store: update maintenance hold for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update maintenance hold for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return fmt.Errorf("store: update maintenance hold for service %q: %w", name, ErrServiceNotFound)
+	}
+	return nil
+}
+
 // UpdateServiceSuspended is the only way suspended ever changes, the
 // same "own single-purpose setter, excluded from SaveDesiredService"
 // reasoning UpdateServiceNode/UpdateServiceProject/
@@ -1611,7 +1632,7 @@ func (s DesiredService) LocalImageID() string {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled, depends_on_healthy, published_ports, template_id, files"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled, depends_on_healthy, published_ports, template_id, files, maintenance_hold"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1625,7 +1646,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
 		dependsOnJSON, dependsOnHealthyJSON, publishedPortsJSON, filesJSON                                                                                                                  string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled, &dependsOnHealthyJSON, &publishedPortsJSON, &svc.TemplateID, &filesJSON); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled, &dependsOnHealthyJSON, &publishedPortsJSON, &svc.TemplateID, &filesJSON, &svc.MaintenanceHold); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String

@@ -77,7 +77,7 @@ func TestLiveMoxBackupVerifyRestore(t *testing.T) {
 	if _, err := mailbackup.Restore(ctx, spec, false); err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	stage := RestoreDir + "/" + m.ID
+	stage := StageDir(DataDir, m.ID)
 	if err := Push(ctx, c, c, st.ID, dest+"/data", stage); err != nil {
 		t.Fatalf("push: %v", err)
 	}
@@ -92,7 +92,14 @@ func TestLiveMoxBackupVerifyRestore(t *testing.T) {
 	if err := c.Stop(ctx, st.ID, 30*time.Second); err != nil {
 		t.Fatal(err)
 	}
-	if err := Swap(ctx, c, st.Image, vol, m.ID); err != nil {
+	h, err := StartHelper(ctx, c, st.Image, "mjtest", Volumes{Data: vol}, 10*time.Minute)
+	if err != nil {
+		_ = c.Start(ctx, st.ID)
+		t.Fatal(err)
+	}
+	defer h.Close()
+	if _, err := h.Run(ctx, "swap", DataDir, m.ID, PreRestoreName(m.ID, time.Now()), "data"); err != nil {
+		_, _ = h.Run(ctx, "rollback", DataDir)
 		_ = c.Start(ctx, st.ID)
 		t.Fatalf("swap: %v", err)
 	}

@@ -580,6 +580,9 @@ func IsServiceControllerName(name string) bool {
 	return ok && svc != "" && svc != "delete-finalizer" && svc != "network-cleanup" && !strings.Contains(svc, "/")
 }
 
+// ReasonMaintenanceHold is the result reason while DesiredService.MaintenanceHold is set.
+const ReasonMaintenanceHold = "MaintenanceHold"
+
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	started, err := c.store.GetDesiredService(ctx, c.serviceName)
@@ -606,6 +609,12 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	}
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("application/%s: get desired service: %w", c.serviceName, err)
+	}
+
+	// A maintenance hold wins over everything else: the holder (a mail
+	// restore swapping the data volume) owns the containers until it clears it.
+	if desired.MaintenanceHold != "" {
+		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
@@ -2306,7 +2315,7 @@ func (c *Controller) desiredSuperseded(ctx context.Context, began *store.Desired
 }
 
 func desiredChanged(a, b *store.DesiredService) bool {
-	return a.Image != b.Image || a.RestartNonce != b.RestartNonce || a.Replicas != b.Replicas || a.Suspended != b.Suspended
+	return a.Image != b.Image || a.RestartNonce != b.RestartNonce || a.Replicas != b.Replicas || a.Suspended != b.Suspended || a.MaintenanceHold != b.MaintenanceHold
 }
 
 // abortSuperseded stops the candidate without recording a failure or arming

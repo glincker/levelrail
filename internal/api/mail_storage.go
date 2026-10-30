@@ -152,26 +152,30 @@ func (rt *Router) handlePutMailStorage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "secret storage is not configured, a bucket cannot be saved")
 		return
 	}
-	conn, err := mailstorage.New(r.Context(), cfg.secrets, mailstorage.Spec{
+	spec := mailstorage.Spec{
 		ServiceID: app, Endpoint: req.Endpoint, Region: req.Region, Bucket: req.Bucket,
 		AccessKeyID: req.AccessKeyID, Secret: req.SecretAccessKey, PathStyle: req.PathStyle,
-	})
+	}
+	cand, err := mailstorage.Candidate(spec)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	res := mailstorage.Probe(r.Context(), conn)
-	rec := mailStorageRecord{Kind: mailStorageBucket, Connection: &conn, Steps: res.Steps, UpdatedAt: time.Now().UTC()}
+	// Probe before sealing: the secret slot is shared, so a failed candidate
+	// must leave the working configuration exactly as it was.
+	res := mailstorage.Probe(r.Context(), cand)
 	if !res.OK {
-		// The secret slot is shared, so a failed probe drops the new secret
-		// and the previous bucket, if any, falls back to the local folder.
-		_ = conn.Forget(r.Context())
-		out := cfg.view(app, rec)
+		out := cfg.view(app, mailStorageRecord{Kind: mailStorageBucket, Connection: &cand, Steps: res.Steps, UpdatedAt: time.Now().UTC()})
 		out.OK, out.Saved = false, false
-		_ = cfg.saveRecord(app, mailStorageRecord{Kind: mailStorageLocal, UpdatedAt: rec.UpdatedAt})
 		writeJSON(w, http.StatusUnprocessableEntity, out)
 		return
 	}
+	conn, err := mailstorage.New(r.Context(), cfg.secrets, spec)
+	if err != nil {
+		rt.internalError(w, "api: mail storage: seal", err)
+		return
+	}
+	rec := mailStorageRecord{Kind: mailStorageBucket, Connection: &conn, Steps: res.Steps, UpdatedAt: time.Now().UTC()}
 	if err := cfg.saveRecord(app, rec); err != nil {
 		rt.internalError(w, "api: mail storage: save", err)
 		return

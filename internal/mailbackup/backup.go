@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -55,6 +56,12 @@ func Backup(ctx context.Context, spec BackupSpec) (Manifest, error) {
 		step("copy")
 		if err := spec.Fetch(ctx, cont, host); err != nil {
 			return Manifest{}, fmt.Errorf("copy staging out of the mail container: %w", err)
+		}
+	}
+	if spec.FetchConfig != nil {
+		step("config")
+		if err := spec.FetchConfig(ctx, filepath.Join(host, "config")); err != nil {
+			return Manifest{}, fmt.Errorf("copy the mail config out of the mail container: %w", err)
 		}
 	}
 	files, size, err := scanDir(host)

@@ -24,9 +24,12 @@ import (
 // can hardlink message files instead of copying them.
 const (
 	DataDir    = "/mox/data"
+	ConfigDir  = "/mox/config"
 	StagingDir = DataDir + "/tmp/backup"
-	RestoreDir = DataDir + "/tmp/restore"
-	moxUID     = 1000
+	// WorkDir holds restore staging and pre-restore copies on the same volume
+	// as the live data (so swaps are renames) but outside tmp, which mox owns.
+	WorkDir = ".levelrail"
+	moxUID  = 1000
 )
 
 var idPattern = regexp.MustCompile(`^[0-9]{8}T[0-9]{6}Z$`)
@@ -52,13 +55,26 @@ func (e ExecRunner) Run(ctx context.Context, args ...string) (string, error) {
 		return "", err
 	}
 	defer func() { _ = rc.Close() }()
-	b, err := io.ReadAll(io.LimitReader(rc, 1<<20))
+	return drain(rc)
+}
+
+// maxExecOutput caps how much command output is kept; the rest is discarded.
+const maxExecOutput = 1 << 20
+
+// drain keeps the first maxExecOutput bytes and reads on to EOF, where the
+// Docker runtime reports a non-zero exit as the read error.
+func drain(r io.Reader) (string, error) {
+	b, err := io.ReadAll(io.LimitReader(r, maxExecOutput))
+	if err != nil {
+		return string(b), err
+	}
+	_, err = io.Copy(io.Discard, r)
 	return string(b), err
 }
 
 // RemoveStaging deletes one staging directory inside the container.
 func RemoveStaging(ctx context.Context, rt Execer, containerID, dir string) error {
-	if !strings.HasPrefix(dir, StagingDir+"/") && !strings.HasPrefix(dir, RestoreDir+"/") {
+	if !strings.HasPrefix(dir, StagingDir+"/") && !strings.HasPrefix(dir, DataDir+"/"+WorkDir+"/restore-") && !strings.HasPrefix(dir, ConfigDir+"/"+WorkDir+"/restore-") {
 		return fmt.Errorf("moxrun: refusing to remove %q", dir)
 	}
 	rc, err := rt.Exec(ctx, containerID, []string{"rm", "-rf", "--", dir})
@@ -207,53 +223,6 @@ func tarDir(dir string, w io.Writer) error {
 		return err
 	}
 	return tw.Close()
-}
-
-// swapScript moves the live data aside into tmp/pre-restore-<id> and moves
-// the staged restore into place. The old data stays for a manual rollback.
-const swapScript = `set -e
-cd /mox/data
-s="tmp/restore/$1/data"; p="tmp/pre-restore-$1"
-test -d "$s"
-mkdir -p "$p"
-for f in * .[!.]*; do [ -e "$f" ] || continue; [ "$f" = tmp ] && continue; mv "$f" "$p/"; done
-for f in "$s"/* "$s"/.[!.]*; do [ -e "$f" ] || continue; mv "$f" .; chown -R 1000:1000 "./$(basename "$f")"; done
-rm -rf "tmp/restore/$1"
-`
-
-// Swap runs swapScript in a helper container that mounts only the data volume.
-// The mail container must be stopped first; image is the mail image itself,
-// so the node needs no extra pull.
-func Swap(ctx context.Context, rt docker.Runtime, image, dataVolume, id string) error {
-	if !ValidID(id) {
-		return fmt.Errorf("moxrun: invalid backup id %q", id)
-	}
-	hid, err := rt.Create(ctx, docker.ContainerSpec{
-		Name:       "levelrail-mail-restore-" + strings.ToLower(id),
-		Image:      image,
-		Entrypoint: []string{"sh", "-c"},
-		Command:    []string{"sleep 900"},
-		Volumes:    []docker.VolumeMount{{Name: dataVolume, ContainerPath: DataDir}},
-	})
-	if err != nil {
-		return fmt.Errorf("create restore helper: %w", err)
-	}
-	defer func() { _ = rt.Remove(context.Background(), hid, true) }()
-	if err := rt.Start(ctx, hid); err != nil {
-		return fmt.Errorf("start restore helper: %w", err)
-	}
-	rc, err := rt.Exec(ctx, hid, []string{"sh", "-c", swapScript, "swap", id})
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(io.Discard, rc)
-	if cerr := rc.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		return fmt.Errorf("swap restored data into place: %w", err)
-	}
-	return nil
 }
 
 // WaitRunning polls until the container is running or the timeout passes.

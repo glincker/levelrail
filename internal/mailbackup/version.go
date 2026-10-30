@@ -7,13 +7,21 @@ import (
 	"strings"
 )
 
-var versionRe = regexp.MustCompile(`v?(\d+)\.(\d+)\.(\d+)`)
+var versionRe = regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)(?:$|[-+])`)
 
 type semver [3]int
 
-// parseVersion pulls the first x.y.z out of `mox version` output.
+// parseVersion reads mox's own version from the first token of `mox version`
+// output ("v0.0.17-go1.27.0"); a bare Go version or "(devel)" is refused.
 func parseVersion(out string) (semver, string, error) {
-	m := versionRe.FindStringSubmatch(strings.TrimSpace(out))
+	tok := ""
+	if f := strings.Fields(out); len(f) > 0 {
+		tok = f[0]
+	}
+	var m []string
+	if !strings.HasPrefix(tok, "go") {
+		m = versionRe.FindStringSubmatch(tok)
+	}
 	if m == nil {
 		return semver{}, "", fmt.Errorf("cannot parse mox version from %q", out)
 	}

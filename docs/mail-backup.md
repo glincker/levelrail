@@ -18,22 +18,28 @@ Mail backups use the instance backup encryption key, the same age key that seals
 
 ## Destination
 
-The default destination is a local folder under the control plane data directory, `<data dir>/mail-backups/<app>`. Its cap is `APP_MAIL_BACKUP_LOCAL_CAP_MB` (2048 when unset). After each backup the oldest backups are pruned until the folder fits. The newest verified backup is never pruned. If one backup alone exceeds the cap, the run fails with a cap error and existing backups stay untouched.
+The default destination is a local folder under the control plane data directory, `<data dir>/mail-backups/<app>`. Its cap is `APP_MAIL_BACKUP_LOCAL_CAP_MB` (2048 when unset). After each backup the oldest backups are pruned until the folder fits. The newest `APP_MAIL_BACKUP_MIN_KEEP` (default 3) verified backups are never pruned, so repeated runs cannot push out every older restore point. If one backup alone exceeds the cap, the run fails with a cap error and existing backups stay untouched.
 
-You can also save your own S3 or R2 bucket (`mail storage set --kind s3`). Saving runs put, get, list and delete of a small object and shows each step. The secret access key is sealed in the secrets store and never returned. In this release backups are still written to the local folder; the bucket is checked and saved so uploads can use it later.
+You can also save your own S3 or R2 bucket (`mail storage set --kind s3`). Saving runs put, get, list and delete of a small object with the new key first and shows each step; a failed check keeps the previous working settings. The secret access key is sealed in the secrets store and never returned. In this release backups are still written to the local folder; the bucket is checked and saved so uploads can use it later.
 
 ## Restore
 
 `mail backup restore <id>` without `--confirm` is a dry run: it checks the mox version, the archive checksum and decrypts the whole archive, then reports file and byte counts without writing anything. `mail backup verify <id>` is the same check.
 
-A real restore needs `--confirm <id>`, the root ability and a fresh password step-up. It:
+A real restore needs `--confirm <id>`, the root ability and a fresh password step-up. It decrypts the archive once, checking its checksum in the same pass, and:
 
-1. Refuses when the running mox is older than the backup's mox.
-2. Extracts the backup on the control plane and copies its `data/` into `/mox/data/tmp/restore/<id>` while mail still runs.
-3. Stops the mail container, then a short-lived helper container (the mail image, data volume only) moves the live data to `/mox/data/tmp/pre-restore-<id>` and the restored data into place.
-4. Starts the mail container again and waits until the admin API answers (`APP_MAIL_RESTORE_WAIT_MINUTES`, default 3).
+1. Refuses when the running mox is older than the backup's mox, or when either version is not a mox release version.
+2. Extracts the backup on the control plane and copies its `data/` (and `config/`, for backups that carry it) into `.levelrail/restore-<id>` on the same volume while mail still runs, then removes the control plane copy.
+3. Runs `mox verifydata` on the staged data. A failure stops here and nothing live changes.
+4. Sets a maintenance hold on the mail app before it stops the container. The hold is stored with the app, survives a control plane restart and shows in `mail status`; while it is set the platform does not start, recreate or remove the app's containers.
+5. A helper container (the mail image, no network, only the mail volumes) moves the live entries to `.levelrail/pre-restore-<time>-<id>` and the staged entries into place, writing a journal (`.levelrail/swap`) before each step. The container must still be stopped before and after every step.
+6. Starts mail and waits until the admin API answers (`APP_MAIL_RESTORE_WAIT_MINUTES`, default 3), then closes the journal and releases the hold.
 
-Only the data directory is restored. The config volume (`mox.conf`, `domains.conf`) stays as it is, so accounts must still exist in the live config. The previous data stays in `tmp/pre-restore-<id>` for a manual rollback until you delete it.
+Any failure rolls the swap back from the pre-restore copy and starts mail on the previous data; the job reports `rollback: rolled_back`, or `rollback_failed`, in which case the app stays held and the previous data stays in `.levelrail/` on its volumes. If the control plane stops mid-restore, the next mail backup call finds the hold and finishes the restore (the data journal is closed) or rolls it back (it is not).
+
+Backups include `/mox/config` (DKIM private keys, certificates, `mox.conf`, `domains.conf`) next to `/mox/data`, and a restore swaps both under the same hold and rollback. Backups made before this change carry only the data directory, and restoring one leaves the config volume as it is. The archive is encrypted with the instance backup key, so keep that key off the machine.
+
+`APP_MAIL_RESTORE_KEEP_PRE_RESTORE` (default 2) caps how many pre-restore copies stay on the volume; the oldest goes only after a later restore succeeds. Leftover staging and discarded copies on the volume and plaintext staging on the control plane older than `APP_MAIL_RESTORE_SWEEP_MINUTES` (default 120) are removed at start up and before each backup or restore.
 
 ## Limits
 

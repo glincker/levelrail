@@ -29,10 +29,28 @@ func CapFromEnv(getenv func(string) string) (int64, error) {
 	return mb << 20, nil
 }
 
-// LocalSink stores backups in one folder under a size cap.
+// DefaultMinKeep applies only when APP_MAIL_BACKUP_MIN_KEEP is unset.
+const DefaultMinKeep = 3
+
+// MinKeepFromEnv reads how many newest verified backups pruning always keeps.
+func MinKeepFromEnv(getenv func(string) string) (int, error) {
+	raw := getenv("APP_MAIL_BACKUP_MIN_KEEP")
+	if raw == "" {
+		return DefaultMinKeep, nil
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("APP_MAIL_BACKUP_MIN_KEEP must be an integer of at least 1, got %q", raw)
+	}
+	return n, nil
+}
+
+// LocalSink stores backups in one folder under a size cap. MinKeep newest
+// verified backups survive pruning even when that leaves the folder over the cap.
 type LocalSink struct {
 	Dir      string
 	CapBytes int64
+	MinKeep  int
 }
 
 func (s *LocalSink) path(name string) (string, error) {
@@ -174,8 +192,8 @@ func (s *LocalSink) entries() ([]*localEntry, error) {
 }
 
 // Prune removes oldest backups until the folder fits the cap. The newest
-// verified backup is never removed; if it alone exceeds the cap, a CapError
-// is returned instead.
+// MinKeep (at least one) verified backups are never removed; when they alone
+// exceed the cap, a CapError is returned instead.
 func (s *LocalSink) Prune(ctx context.Context) ([]string, error) {
 	if s.CapBytes <= 0 {
 		return nil, nil
@@ -185,11 +203,12 @@ func (s *LocalSink) Prune(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	var total int64
-	protected := -1
-	for i, e := range es {
-		total += e.size
-		if e.verified {
-			protected = i
+	keep := max(s.MinKeep, 1)
+	protected := map[int]bool{}
+	for i := len(es) - 1; i >= 0; i-- {
+		total += es[i].size
+		if es[i].verified && len(protected) < keep {
+			protected[i] = true
 		}
 	}
 	var removed []string
@@ -197,7 +216,7 @@ func (s *LocalSink) Prune(ctx context.Context) ([]string, error) {
 		if total <= s.CapBytes {
 			break
 		}
-		if i == protected {
+		if protected[i] {
 			continue
 		}
 		for _, n := range e.names {

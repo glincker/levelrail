@@ -92,6 +92,18 @@ func New(ctx context.Context, store SecretStore, spec Spec) (Connection, error) 
 	if store == nil {
 		return Connection{}, errors.New("mailstorage: secret store is required")
 	}
+	if _, err := Candidate(spec); err != nil {
+		return Connection{}, err
+	}
+	if err := store.SetValue(ctx, SecretSlot(spec.ServiceID), secretEnvKey, spec.Secret); err != nil {
+		return Connection{}, fmt.Errorf("mailstorage: seal secret: %w", err)
+	}
+	return Load(store, connectionOf(spec)), nil
+}
+
+// Candidate validates spec and returns a connection that holds its secret in
+// memory only, so it can be probed before anything shared is overwritten.
+func Candidate(spec Spec) (Connection, error) {
 	if !ValidServiceID(spec.ServiceID) {
 		return Connection{}, errors.New("mailstorage: invalid service id")
 	}
@@ -103,14 +115,24 @@ func New(ctx context.Context, store SecretStore, spec Spec) (Connection, error) 
 			return Connection{}, fmt.Errorf("mailstorage: %w", err)
 		}
 	}
-	if err := store.SetValue(ctx, SecretSlot(spec.ServiceID), secretEnvKey, spec.Secret); err != nil {
-		return Connection{}, fmt.Errorf("mailstorage: seal secret: %w", err)
-	}
-	return Load(store, Connection{
+	return Load(memSecret(spec.Secret), connectionOf(spec)), nil
+}
+
+func connectionOf(spec Spec) Connection {
+	return Connection{
 		ServiceID: spec.ServiceID, Endpoint: strings.TrimRight(spec.Endpoint, "/"), Region: spec.Region,
 		Bucket: spec.Bucket, AccessKeyID: spec.AccessKeyID, PathStyle: spec.PathStyle,
-	}), nil
+	}
 }
+
+// memSecret answers every Resolve with one secret and refuses writes.
+type memSecret string
+
+func (m memSecret) SetValue(context.Context, string, string, string) error {
+	return errors.New("mailstorage: a candidate connection cannot store secrets")
+}
+func (m memSecret) Resolve(context.Context, string, string) (string, error) { return string(m), nil }
+func (m memSecret) DeleteValue(context.Context, string, string) error       { return nil }
 
 // Load rebinds a stored record to the secrets store.
 func Load(store SecretStore, rec Connection) Connection {

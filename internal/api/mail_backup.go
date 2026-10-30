@@ -5,18 +5,19 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"filippo.io/age"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/mail/mox"
 	"github.com/GLINCKER/levelrail/internal/mailbackup"
 	"github.com/GLINCKER/levelrail/internal/mailbackup/moxrun"
 	"github.com/GLINCKER/levelrail/internal/mailstorage"
@@ -46,7 +47,9 @@ type mailBackupConfig struct {
 // age keys are the instance backup encryption key (backup.LoadSealer).
 func WithMailBackup(dataDir string, recipients []age.Recipient, identities []age.Identity, secrets mailstorage.SecretStore) Option {
 	return func(rt *Router) {
-		rt.mail.backup = &mailBackupConfig{dataDir: dataDir, recipients: recipients, identities: identities, secrets: secrets, jobs: map[string]*mailBackupJob{}}
+		cfg := &mailBackupConfig{dataDir: dataDir, recipients: recipients, identities: identities, secrets: secrets, jobs: map[string]*mailBackupJob{}}
+		cfg.sweepHostLeftovers(time.Now())
+		rt.mail.backup = cfg
 	}
 }
 
@@ -59,6 +62,8 @@ type mailBackupJob struct {
 	StartedAt  time.Time  `json:"started_at"`
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 	Error      string     `json:"error,omitempty"`
+	// Rollback is rolled_back or rollback_failed when a failed restore was undone.
+	Rollback string `json:"rollback,omitempty"`
 }
 
 type mailBackupItem struct {
@@ -112,7 +117,11 @@ func (c *mailBackupConfig) sink(app string) (*mailbackup.LocalSink, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &mailbackup.LocalSink{Dir: c.localDir(app), CapBytes: capB}, nil
+	keep, err := mailbackup.MinKeepFromEnv(os.Getenv)
+	if err != nil {
+		return nil, err
+	}
+	return &mailbackup.LocalSink{Dir: c.localDir(app), CapBytes: capB, MinKeep: keep}, nil
 }
 
 func (c *mailBackupConfig) current(app string) *mailBackupJob {
@@ -198,6 +207,13 @@ func (rt *Router) mailBackupSetup(w http.ResponseWriter, r *http.Request, app st
 		return nil, t, false
 	}
 	t.svc = svc
+	if strings.HasPrefix(svc.MaintenanceHold, mailRestoreHoldPrefix) {
+		if j := cfg.current(svc.Name); j == nil || j.State != mailJobRunning {
+			rt.startMailRecovery(r.Context(), cfg, svc)
+		}
+		writeError(w, http.StatusConflict, "a mail restore holds this app; it is finishing or being rolled back, check the job in the backup list")
+		return nil, t, false
+	}
 	if !needEngine {
 		return cfg, t, true
 	}
@@ -226,7 +242,7 @@ func (rt *Router) mailBackupSetup(w http.ResponseWriter, r *http.Request, app st
 
 // handleListMailBackups handles GET /api/v1/mail/backups.
 func (rt *Router) handleListMailBackups(w http.ResponseWriter, r *http.Request) {
-	cfg, t, ok := rt.mailBackupSetup(w, r, r.URL.Query().Get("app"), false)
+	cfg, t, ok := rt.mailBackupSetupOrHeld(w, r, r.URL.Query().Get("app"))
 	if !ok {
 		return
 	}
@@ -296,7 +312,17 @@ func (rt *Router) runMailBackup(base context.Context, cfg *mailBackupConfig, t m
 	ctx, cancel := context.WithTimeout(base, envMinutes("APP_MAIL_BACKUP_TIMEOUT_MINUTES", 60))
 	defer cancel()
 	app, cid := t.svc.Name, t.container.ID
+	vols := mailVolumes(t.svc)
+	cfg.sweepHostLeftovers(time.Now())
+	sweepVolume(ctx, t.rt, cid, vols.Config != "")
+	var fetchConfig func(context.Context, string) error
+	if vols.Config != "" {
+		fetchConfig = func(ctx context.Context, host string) error {
+			return moxrun.Fetch(ctx, t.ar, cid, moxrun.ConfigDir, host, sink.CapBytes)
+		}
+	}
 	m, err := mailbackup.Backup(ctx, mailbackup.BackupSpec{
+		FetchConfig:      fetchConfig,
 		Runner:           moxrun.ExecRunner{RT: t.rt, ContainerID: cid},
 		Sink:             sink,
 		StagingHost:      filepath.Join(cfg.dataDir, "mail-backup-staging", app),
@@ -343,26 +369,33 @@ func (rt *Router) handleRestoreMailBackup(w http.ResponseWriter, r *http.Request
 		return
 	}
 	runner := moxrun.ExecRunner{RT: t.rt, ContainerID: t.container.ID}
-	rep, err := mailbackup.Restore(r.Context(), mailbackup.RestoreSpec{Runner: runner, Sink: sink, ID: id, Identities: cfg.identities}, true)
+	spec := mailbackup.RestoreSpec{Runner: runner, Sink: sink, ID: id, Identities: cfg.identities}
+	if req.Confirm != id {
+		rep, err := mailbackup.Restore(r.Context(), spec, true)
+		if err != nil {
+			rt.mailRestoreError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, mailRestoreResponse{App: t.svc.Name, DryRun: true, BackupID: id, MoxVersion: rep.Manifest.MoxVersion, Files: rep.Files, Bytes: rep.Bytes})
+		return
+	}
+	// A confirmed restore decrypts once, in the job: here only the manifest and version guard run.
+	m, err := mailbackup.Check(r.Context(), spec)
 	if err != nil {
 		rt.mailRestoreError(w, err)
 		return
 	}
-	out := mailRestoreResponse{App: t.svc.Name, DryRun: true, BackupID: id, MoxVersion: rep.Manifest.MoxVersion, Files: rep.Files, Bytes: rep.Bytes}
-	if req.Confirm != id {
-		writeJSON(w, http.StatusOK, out)
+	out := mailRestoreResponse{App: t.svc.Name, BackupID: id, MoxVersion: m.MoxVersion, Files: m.Files, Bytes: m.Bytes}
+	holder, ok := rt.apps.(mailHolder)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "this control plane cannot hold the mail app during a restore, restore refused")
 		return
 	}
 	if _, ok := rt.stepUpOwner(w, r, req.StepUp, mailRestoreStepUpApp+":"+t.svc.Name, "restore the mail server", "restoring the mail server"); !ok {
 		return
 	}
-	dataVol := ""
-	for _, v := range t.svc.Volumes {
-		if v.ContainerPath == moxrun.DataDir {
-			dataVol = v.Name
-		}
-	}
-	if dataVol == "" {
+	vols := mailVolumes(t.svc)
+	if vols.Data == "" {
 		writeError(w, http.StatusConflict, "the mail app has no data volume at /mox/data, restore refused")
 		return
 	}
@@ -371,7 +404,7 @@ func (rt *Router) handleRestoreMailBackup(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, "a backup or restore is already running for this mail app")
 		return
 	}
-	go rt.runMailRestore(context.WithoutCancel(r.Context()), cfg, t, sink, id, dataVol)
+	go rt.runMailRestore(context.WithoutCancel(r.Context()), cfg, t, sink, holder, id, vols)
 	out.DryRun, out.Job = false, job
 	writeJSON(w, http.StatusAccepted, out)
 }
@@ -392,53 +425,111 @@ func (rt *Router) mailRestoreError(w http.ResponseWriter, err error) {
 	}
 }
 
-// runMailRestore stages the restore inside the data volume while mox runs,
-// then stops mox only for the swap and waits for the admin API to answer.
-func (rt *Router) runMailRestore(base context.Context, cfg *mailBackupConfig, t mailBackupTarget, sink *mailbackup.LocalSink, id, dataVol string) {
+// runMailRestore extracts and stages the restore on the mail volumes while mox
+// runs, verifies it with mox verifydata, then swaps it in under a persisted
+// hold with rollback (mailSwap). Plaintext copies are removed on every path.
+func (rt *Router) runMailRestore(base context.Context, cfg *mailBackupConfig, t mailBackupTarget, sink *mailbackup.LocalSink, holder mailHolder, id string, vols moxrun.Volumes) {
 	ctx, cancel := context.WithTimeout(base, envMinutes("APP_MAIL_RESTORE_TIMEOUT_MINUTES", 60))
 	defer cancel()
 	app, cid := t.svc.Name, t.container.ID
 	step := func(s string) { cfg.update(app, func(j *mailBackupJob) { j.Step = s }) }
 	work := filepath.Join(cfg.dataDir, "mail-restore", app, id)
+	rollback := ""
 	err := func() error {
 		_ = os.RemoveAll(work)
 		defer func() { _ = os.RemoveAll(filepath.Dir(work)) }()
+		cfg.sweepHostLeftovers(time.Now())
+		sweepVolume(ctx, t.rt, cid, vols.Config != "")
 		step("extract")
 		runner := moxrun.ExecRunner{RT: t.rt, ContainerID: cid}
 		if _, err := mailbackup.Restore(ctx, mailbackup.RestoreSpec{Runner: runner, Sink: sink, ID: id, DestDir: work, Identities: cfg.identities}, false); err != nil {
 			return err
 		}
+		withConfig := false
+		if fi, err := os.Stat(filepath.Join(work, "config")); err == nil && fi.IsDir() && vols.Config != "" {
+			withConfig = true
+		}
+		roots := rootsFor(vols, withConfig)
+		swapped := false
+		defer func() {
+			if !swapped {
+				for _, r := range roots {
+					_ = moxrun.RemoveStaging(context.WithoutCancel(ctx), t.rt, cid, moxrun.StageDir(r.Dir, id))
+				}
+			}
+		}()
 		step("stage")
-		stage := moxrun.RestoreDir + "/" + id
-		if err := moxrun.Push(ctx, t.rt, t.ar, cid, filepath.Join(work, "data"), stage); err != nil {
-			return err
+		for _, r := range roots {
+			if err := moxrun.Push(ctx, t.rt, t.ar, cid, filepath.Join(work, r.Sub), moxrun.StageDir(r.Dir, id)); err != nil {
+				return err
+			}
 		}
-		step("stop")
-		if err := t.rt.Stop(ctx, cid, 30*time.Second); err != nil {
-			return err
+		_ = os.RemoveAll(work)
+		step("verify")
+		if _, err := runner.Run(ctx, "verifydata", moxrun.StageDir(moxrun.DataDir, id)+"/data"); err != nil {
+			return fmt.Errorf("mox verifydata on the staged restore: %w", err)
 		}
-		// Always try to bring mail back, even when the swap failed.
-		defer func() { _ = t.rt.Start(context.WithoutCancel(ctx), cid) }()
-		if st, err := t.rt.InspectByName(ctx, t.container.Name); err != nil || st == nil || st.Running {
-			return errors.New("the mail container did not stay stopped, restore aborted before the swap")
-		}
-		step("swap")
-		if err := moxrun.Swap(ctx, t.rt, t.svc.Image, dataVol, id); err != nil {
-			return err
-		}
-		step("start")
-		if err := t.rt.Start(ctx, cid); err != nil {
-			return err
-		}
-		step("wait")
-		wait := envMinutes("APP_MAIL_RESTORE_WAIT_MINUTES", 3)
-		return moxrun.WaitRunning(ctx, t.rt, t.container.Name, wait, func(c docker.ContainerState) bool {
-			ip := containerIP(c)
-			return ip != "" && mox.AdminReachable(ctx, mox.AdminBaseURL(ip))
-		})
+		swapped = true
+		s := &mailSwap{rt: t.rt, holder: holder, t: t, vols: vols, roots: roots, step: step, logger: rt.logger}
+		var err error
+		rollback, err = s.run(ctx, id)
+		return err
 	}()
 	if err != nil {
-		rt.logger.Warn("api: mail restore failed", slog.String("app", app), slog.String("backup", id), slog.String("error", err.Error()))
+		rt.logger.Warn("api: mail restore failed", slog.String("app", app), slog.String("backup", id), slog.String("rollback", rollback), slog.String("error", err.Error()))
 	}
 	cfg.finish(app, id, err)
+	cfg.update(app, func(j *mailBackupJob) { j.Rollback = rollback })
+}
+
+// mailBackupSetupOrHeld is mailBackupSetup for the list call, which still
+// answers while a hold is being recovered so the dashboard can show the job.
+func (rt *Router) mailBackupSetupOrHeld(w http.ResponseWriter, r *http.Request, app string) (*mailBackupConfig, mailBackupTarget, bool) {
+	var t mailBackupTarget
+	if rt.mail.backup != nil {
+		if svc, found, err := rt.pickMailApp(r, app); err == nil && found && strings.HasPrefix(svc.MaintenanceHold, mailRestoreHoldPrefix) && mailstorage.ValidServiceID(svc.Name) {
+			cfg := rt.mail.backup
+			if j := cfg.current(svc.Name); j == nil || j.State != mailJobRunning {
+				rt.startMailRecovery(r.Context(), cfg, svc)
+			}
+			t.svc = svc
+			return cfg, t, true
+		}
+	}
+	return rt.mailBackupSetup(w, r, app, false)
+}
+
+// startMailRecovery runs mailSwap.recover as a job for an app whose persisted
+// hold outlived its restore job (a control plane restart or crash).
+func (rt *Router) startMailRecovery(ctx context.Context, cfg *mailBackupConfig, svc store.DesiredService) {
+	holder, ok := rt.apps.(mailHolder)
+	if !ok || rt.execRuntime == nil {
+		return
+	}
+	job, started := cfg.start(svc.Name, "recover", strings.TrimPrefix(svc.MaintenanceHold, mailRestoreHoldPrefix))
+	if !started {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), envMinutes("APP_MAIL_RESTORE_TIMEOUT_MINUTES", 60))
+		defer cancel()
+		rollback, err := func() (string, error) {
+			c, err := rt.mailEngineContainer(ctx, svc)
+			if err != nil {
+				return "", fmt.Errorf("find the held mail container: %w", err)
+			}
+			runtime, err := rt.execRuntime(svc.NodeID)
+			if err != nil {
+				return "", fmt.Errorf("reach the mail node: %w", err)
+			}
+			step := func(s string) { cfg.update(svc.Name, func(j *mailBackupJob) { j.Step = s }) }
+			s := &mailSwap{rt: runtime, holder: holder, t: mailBackupTarget{svc: svc, container: c, rt: runtime}, vols: mailVolumes(svc), roots: rootsFor(mailVolumes(svc), true), step: step, logger: rt.logger}
+			return s.recover(ctx)
+		}()
+		if err != nil {
+			rt.logger.Warn("api: mail restore recovery", slog.String("app", svc.Name), slog.String("job", job.ID), slog.String("rollback", rollback), slog.String("error", err.Error()))
+		}
+		cfg.finish(svc.Name, "", err)
+		cfg.update(svc.Name, func(j *mailBackupJob) { j.Rollback = rollback })
+	}()
 }

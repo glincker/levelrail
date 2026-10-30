@@ -57,6 +57,9 @@ type BackupSpec struct {
 	// Fetch copies the container staging dir to the host one when they are
 	// not the same directory (a Docker volume the control plane cannot see).
 	Fetch func(ctx context.Context, containerDir, hostDir string) error
+	// FetchConfig copies the mox config dir (DKIM keys, certificates) into
+	// hostDir; nil leaves the config out of the archive.
+	FetchConfig func(ctx context.Context, hostDir string) error
 	// Cleanup removes the container staging dir; nil means host removal covers it.
 	Cleanup func(ctx context.Context, containerDir string)
 	// Progress reports each step by name.

@@ -110,7 +110,11 @@ func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 			return c.fail(fmt.Errorf("mail status: %w", err))
 		}
 		return c.result(st, func() {
-			_, _ = fmt.Fprintf(stdout, "app: %s\ninstalled: %t\ncontainer: %s\nadmin api: %t\ntls: %s\nnext: %s\n", st.App, st.Installed, st.ContainerState, st.AdminReachable, st.TLS, st.NextStep)
+			_, _ = fmt.Fprintf(stdout, "app: %s\ninstalled: %t\ncontainer: %s\nadmin api: %t\ntls: %s\n", st.App, st.Installed, st.ContainerState, st.AdminReachable, st.TLS)
+			if st.MaintenanceHold != "" {
+				_, _ = fmt.Fprintf(stdout, "hold: %s\n", st.MaintenanceHold)
+			}
+			_, _ = fmt.Fprintf(stdout, "next: %s\n", st.NextStep)
 			if st.Domain != "" {
 				_, _ = fmt.Fprintf(stdout, "domain: %s\nmail host: %s\n", st.Domain, st.Hostname)
 			}

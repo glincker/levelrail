@@ -12,37 +12,44 @@ import (
 	"path/filepath"
 )
 
-// Restore checks the downgrade guard and the archive checksum, then either
-// reports what it would extract (dryRun) or extracts into DestDir.
-func Restore(ctx context.Context, spec RestoreSpec, dryRun bool) (RestoreReport, error) {
-	rep := RestoreReport{DryRun: dryRun}
+// Check reads the manifest and applies the downgrade guard without reading the archive.
+func Check(ctx context.Context, spec RestoreSpec) (Manifest, error) {
+	var m Manifest
 	mrc, err := spec.Sink.Open(ctx, manifestName(spec.ID))
 	if err != nil {
-		return rep, fmt.Errorf("open manifest: %w", err)
+		return m, fmt.Errorf("open manifest: %w", err)
 	}
-	err = json.NewDecoder(mrc).Decode(&rep.Manifest)
+	err = json.NewDecoder(mrc).Decode(&m)
 	_ = mrc.Close()
 	if err != nil {
-		return rep, fmt.Errorf("read manifest: %w", err)
+		return m, fmt.Errorf("read manifest: %w", err)
 	}
 
 	out, err := spec.Runner.Run(ctx, "version")
 	if err != nil {
-		return rep, fmt.Errorf("mox version: %w", err)
+		return m, fmt.Errorf("mox version: %w", err)
 	}
 	target, targetStr, err := parseVersion(out)
 	if err != nil {
-		return rep, err
+		return m, err
 	}
-	have, _, err := parseVersion(rep.Manifest.MoxVersion)
+	have, _, err := parseVersion(m.MoxVersion)
 	if err != nil {
-		return rep, err
+		return m, err
 	}
 	if target.less(have) {
-		return rep, &DowngradeError{Target: targetStr, Backup: rep.Manifest.MoxVersion}
+		return m, &DowngradeError{Target: targetStr, Backup: m.MoxVersion}
 	}
+	return m, nil
+}
 
-	if err := verifyChecksum(ctx, spec, rep.Manifest); err != nil {
+// Restore checks the downgrade guard, then in one pass over the archive
+// verifies its checksum and either counts (dryRun) or extracts into DestDir.
+func Restore(ctx context.Context, spec RestoreSpec, dryRun bool) (RestoreReport, error) {
+	rep := RestoreReport{DryRun: dryRun}
+	m, err := Check(ctx, spec)
+	rep.Manifest = m
+	if err != nil {
 		return rep, err
 	}
 
@@ -66,7 +73,9 @@ func Restore(ctx context.Context, spec RestoreSpec, dryRun bool) (RestoreReport,
 		return rep, fmt.Errorf("open archive: %w", err)
 	}
 	defer func() { _ = rc.Close() }()
-	err = readArchive(rc, spec.Identities, func(h *tar.Header, body io.Reader) error {
+	sum := sha256.New()
+	tee := io.TeeReader(rc, sum)
+	err = readArchive(tee, spec.Identities, func(h *tar.Header, body io.Reader) error {
 		if h.Typeflag == tar.TypeDir {
 			if dryRun {
 				return nil
@@ -104,6 +113,13 @@ func Restore(ctx context.Context, spec RestoreSpec, dryRun bool) (RestoreReport,
 		}
 		return err
 	})
+	if err == nil {
+		// Hash every byte, including any trailer readArchive did not consume.
+		_, err = io.Copy(io.Discard, tee)
+	}
+	if got := hex.EncodeToString(sum.Sum(nil)); got != rep.Manifest.SHA256 {
+		return rep, &ChecksumError{Want: rep.Manifest.SHA256, Got: got}
+	}
 	if err != nil {
 		return rep, fmt.Errorf("extract: %w", err)
 	}
@@ -118,19 +134,3 @@ func Restore(ctx context.Context, spec RestoreSpec, dryRun bool) (RestoreReport,
 }
 
 func manifestArchive(m Manifest) string { return m.ArchiveName }
-
-func verifyChecksum(ctx context.Context, spec RestoreSpec, m Manifest) error {
-	rc, err := spec.Sink.Open(ctx, m.ArchiveName)
-	if err != nil {
-		return fmt.Errorf("open archive: %w", err)
-	}
-	defer func() { _ = rc.Close() }()
-	h := sha256.New()
-	if _, err := io.Copy(h, rc); err != nil {
-		return err
-	}
-	if got := hex.EncodeToString(h.Sum(nil)); got != m.SHA256 {
-		return &ChecksumError{Want: m.SHA256, Got: got}
-	}
-	return nil
-}

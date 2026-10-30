@@ -40,6 +40,8 @@ type mailStatusResponse struct {
 	Hostname string `json:"hostname,omitempty"`
 	// Demo is true only in local demo mode, where every value is fake.
 	Demo bool `json:"demo,omitempty"`
+	// MaintenanceHold names the operation (a restore) that holds the app stopped.
+	MaintenanceHold string `json:"maintenance_hold,omitempty"`
 }
 
 // mailEnvValue returns an env value, or "" when it is unset or still a template placeholder.
@@ -134,7 +136,7 @@ func containerIP(c docker.ContainerState) string {
 
 // mailProbe fills the container state and admin reachability for one mail app.
 func (rt *Router) mailProbe(ctx context.Context, svc store.DesiredService) mailStatusResponse {
-	out := mailStatusResponse{App: svc.Name, Installed: true, ContainerState: "unknown", TLS: mailTLSKind(svc.Env)}
+	out := mailStatusResponse{App: svc.Name, Installed: true, ContainerState: "unknown", TLS: mailTLSKind(svc.Env), MaintenanceHold: svc.MaintenanceHold}
 	out.Domain, out.Hostname = mailNames(svc.Env)
 	ip := ""
 	if rt.containers != nil {
@@ -196,6 +198,8 @@ func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
 
 func mailNextStep(s mailStatusResponse) string {
 	switch {
+	case s.MaintenanceHold != "":
+		return "A mail restore holds this app, so the platform will not start or change it. Check the job with levelrail-cli mail backups list; an interrupted restore is finished or rolled back on that call."
 	case s.ContainerState == "missing" || s.ContainerState == "stopped":
 		return "The mail container is not running. Start or redeploy the app and check its logs."
 	case s.ContainerState == "running" && !s.AdminReachable:
