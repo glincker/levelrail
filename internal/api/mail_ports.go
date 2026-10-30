@@ -70,6 +70,12 @@ type mailPortsOpenResponse struct {
 	Message string `json:"message"`
 }
 
+// authorizeMailApp applies the caller's per-app policy to a named mail app.
+// Read is enough: the route already demands the action's own ability.
+func (rt *Router) authorizeMailApp(w http.ResponseWriter, r *http.Request, app string) bool {
+	return rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "no mail app is installed, install the mail-mox template first"), appRef(app))
+}
+
 // pickMailApp returns the named mail app, or the best ranked one when none is named.
 func (rt *Router) pickMailApp(r *http.Request, want string) (store.DesiredService, bool, error) {
 	if rt.mail.demo != nil {
@@ -171,6 +177,9 @@ func (rt *Router) handleMailPorts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	want := r.URL.Query().Get("app")
+	if !rt.authorizeMailApp(w, r, want) {
+		return
+	}
 	svc, found, err := rt.pickMailApp(r, want)
 	if err != nil {
 		rt.internalError(w, "api: mail ports: list services failed", err)
@@ -212,6 +221,9 @@ func (rt *Router) handleMailPortsOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rt.mailDemoPortsOpen(w) {
+		return
+	}
+	if !rt.authorizeMailApp(w, r, req.App) {
 		return
 	}
 	svc, found, err := rt.pickMailApp(r, req.App)

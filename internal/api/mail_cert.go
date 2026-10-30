@@ -98,7 +98,10 @@ func (rt *Router) mailCertServed(ctx context.Context, svc store.DesiredService, 
 func (rt *Router) handleMailCertStatus(w http.ResponseWriter, r *http.Request) {
 	cfg, err := mailcert.ConfigFromEnv(os.LookupEnv)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		rt.internalError(w, "api: handleMailCertStatus failed", err)
+		return
+	}
+	if !rt.authorizeMailApp(w, r, r.URL.Query().Get("app")) {
 		return
 	}
 	svc, found, err := rt.pickMailApp(r, r.URL.Query().Get("app"))
@@ -140,7 +143,7 @@ func (rt *Router) handleMailCertObtain(w http.ResponseWriter, _ *http.Request) {
 func (rt *Router) handleMailCertUpload(w http.ResponseWriter, r *http.Request) {
 	cfg, err := mailcert.ConfigFromEnv(os.LookupEnv)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		rt.internalError(w, "api: handleMailCertUpload failed", err)
 		return
 	}
 	var req mailCertUploadRequest
@@ -152,6 +155,9 @@ func (rt *Router) handleMailCertUpload(w http.ResponseWriter, r *http.Request) {
 	req.Key = ""
 	if err := cfg.CheckSize(certPEM, keyPEM); err != nil {
 		writeError(w, http.StatusRequestEntityTooLarge, err.Error())
+		return
+	}
+	if !rt.authorizeMailApp(w, r, req.App) {
 		return
 	}
 	svc, found, err := rt.pickMailApp(r, req.App)

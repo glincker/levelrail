@@ -172,6 +172,9 @@ func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	want := r.URL.Query().Get("app")
+	if !rt.authorizeMailApp(w, r, want) {
+		return
+	}
 	best, found := mailStatusResponse{}, false
 	for _, s := range svcs {
 		if !rt.isInstanceMailApp(r.Context(), s) || (want != "" && s.Name != want) {

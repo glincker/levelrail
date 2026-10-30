@@ -260,6 +260,9 @@ func (rt *Router) handleClaimMailDomain(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
+	if !rt.authorizeMailApp(w, r, req.App) {
+		return
+	}
 	e, svc, ok := rt.mailEngineFor(w, r, req.App)
 	if !ok {
 		return
@@ -692,6 +695,9 @@ type mailQueueHoldResponse struct {
 // handleMailQueue handles GET /api/v1/mail/queue?app=&max=: delivery metadata
 // only, never subjects or bodies. The route itself needs read:sensitive.
 func (rt *Router) handleMailQueue(w http.ResponseWriter, r *http.Request) {
+	if !rt.authorizeMailApp(w, r, r.URL.Query().Get("app")) {
+		return
+	}
 	e, svc, ok := rt.mailEngineFor(w, r, r.URL.Query().Get("app"))
 	if !ok {
 		return
@@ -715,6 +721,9 @@ func (rt *Router) handleMailQueueHold(hold bool) http.HandlerFunc {
 		var req mailQueueHoldRequest
 		if err := decodeJSONBodyLimit(r, &req, 1<<16); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		if !rt.authorizeMailApp(w, r, req.App) {
 			return
 		}
 		e, svc, ok := rt.mailEngineFor(w, r, req.App)
