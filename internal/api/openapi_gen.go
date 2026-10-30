@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1834 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1836 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1224,7 +1224,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/incidents", Ability: "AbilityWrite", Group: "Other", Handler: "handlePromoteIncident", Description: ""},
 	{Method: "GET", Path: "/api/v1/incidents/{id}", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleGetIncident", Description: ""},
 	{Method: "POST", Path: "/api/v1/incidents/{id}/ack", Ability: "AbilityWrite", Group: "Other", Handler: "handleAckIncident", Description: ""},
+	{Method: "PUT", Path: "/api/v1/incidents/{id}/draft", Ability: "AbilityWrite", Group: "Other", Handler: "handleSaveIncidentDraft", Description: ""},
 	{Method: "POST", Path: "/api/v1/incidents/{id}/notes", Ability: "AbilityWrite", Group: "Other", Handler: "handleAddIncidentNote", Description: ""},
+	{Method: "POST", Path: "/api/v1/incidents/{id}/publish", Ability: "AbilityWrite", Group: "Other", Handler: "handlePublishIncident", Description: ""},
 	{Method: "POST", Path: "/api/v1/incidents/{id}/resolve", Ability: "AbilityWrite", Group: "Other", Handler: "handleResolveIncident", Description: ""},
 	{Method: "GET", Path: "/api/v1/ingress/connectivity", Ability: "AbilityRead", Group: "Other", Handler: "handleIngressConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/instance", Ability: "Public", Group: "Other", Handler: "handleInstance", Description: "CLI device login (device_auth.go): \"levelrail-cli auth login --device\" prints a code, the operator approves it here. start/token are necessarily public (no credential exists yet); requests/ approve/deny are requireAuth session-only, the same tier tokens.go's own session-only routes use, since approving a device only ever mints a token scoped to the approving operator's own abilities."},

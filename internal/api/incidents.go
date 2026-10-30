@@ -27,6 +27,8 @@ type IncidentStore interface {
 	SetStatusIncidentInternalState(ctx context.Context, id, state, by string, at time.Time) error
 	AddInternalIncidentUpdate(ctx context.Context, u store.StatusIncidentUpdate, visibility, author string) error
 	ListIncidentTimeline(ctx context.Context, incidentID string) ([]store.IncidentTimelineEntry, error)
+	SaveStatusIncidentDraftFields(ctx context.Context, id, title, status, body string) error
+	PublishStatusIncident(ctx context.Context, id string, seenUpdatedAt time.Time, by, updateID string, at time.Time) (store.InternalStatusIncident, error)
 }
 
 // SetIncidents enables the internal incident routes. bodyMax caps a note in bytes.
@@ -65,12 +67,21 @@ type incidentResource struct {
 	SourceRef      string                     `json:"source_ref,omitempty"`
 	InternalState  string                     `json:"internal_state"`
 	Published      bool                       `json:"published"`
+	PublishedAt    *time.Time                 `json:"published_at,omitempty"`
+	PublishedBy    string                     `json:"published_by,omitempty"`
+	UpdatedAt      time.Time                  `json:"updated_at"`
+	Draft          *incidentDraftResource     `json:"draft,omitempty"`
 	ComponentIDs   []string                   `json:"component_ids"`
 	StartsAt       time.Time                  `json:"starts_at"`
 	AcknowledgedAt *time.Time                 `json:"acknowledged_at,omitempty"`
 	AcknowledgedBy string                     `json:"acknowledged_by,omitempty"`
 	ResolvedAt     *time.Time                 `json:"internal_resolved_at,omitempty"`
 	Timeline       []incidentTimelineResource `json:"timeline,omitempty"`
+}
+
+type incidentDraftResource struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
 }
 
 // incidentStateResource is what a mutation returns, so a write-only token never reads incident text back.
@@ -80,7 +91,11 @@ type incidentStateResource struct {
 }
 
 func toIncidentResource(i store.InternalStatusIncident) incidentResource {
-	return incidentResource{ID: i.ID, Title: i.Title, Status: i.Status, Impact: i.Impact, Source: i.Source, SourceRef: i.SourceRef,
+	var draft *incidentDraftResource
+	if i.DraftTitle != "" || i.DraftBody != "" {
+		draft = &incidentDraftResource{Title: i.DraftTitle, Body: i.DraftBody}
+	}
+	return incidentResource{PublishedAt: i.PublishedAt, PublishedBy: i.PublishedBy, UpdatedAt: i.UpdatedAt.UTC(), Draft: draft, ID: i.ID, Title: i.Title, Status: i.Status, Impact: i.Impact, Source: i.Source, SourceRef: i.SourceRef,
 		InternalState: i.InternalState, Published: i.Published, ComponentIDs: nonNilStrings(i.ComponentIDs), StartsAt: i.StartsAt.UTC(),
 		AcknowledgedAt: i.AcknowledgedAt, AcknowledgedBy: i.AcknowledgedBy, ResolvedAt: i.InternalResolvedAt}
 }

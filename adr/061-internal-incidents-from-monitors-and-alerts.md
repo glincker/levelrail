@@ -1,6 +1,7 @@
 # ADR 061: Internal incidents from monitors and alerts, with draft then publish
 
-Status: Proposed
+Status: Slices 1 to 5 shipped (store, public filter, monitor opener, internal API,
+draft and publish). The dashboard slice is open.
 
 Date: 2026-10-29
 
@@ -236,7 +237,7 @@ default, same pattern as `statuspage.TuningFromEnv` and
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_MONITORS_ENABLED` | off | Parent gate. Nothing in this ADR runs without it. |
-| `APP_INCIDENTS_ENABLED` | off | Opens internal incidents from monitors and enables `/api/v1/incidents`. Ignored unless the parent is on. Routes answer 404 when off. |
+| `APP_INCIDENTS_ENABLED` | off | Opens internal incidents from monitors and enables `/api/v1/incidents`. Ignored unless the parent is on. Routes answer 501 when off. |
 | `APP_INCIDENT_FOLD_WINDOW` | 10m | Fold a new down into an open incident on the same component within this window. |
 | `APP_INCIDENT_REOPEN_WINDOW` | 15m | Reopen a resolved monitor incident instead of opening a new one. |
 | `APP_INCIDENT_SWEEP_INTERVAL` | 1m | Reconcile open monitor incidents against monitor state (see failure modes). |
