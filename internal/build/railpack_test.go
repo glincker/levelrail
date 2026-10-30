@@ -516,7 +516,7 @@ func TestGenerateRailpackPlan_RubyPHPStartCommands(t *testing.T) {
 		fixture   string
 		wantStart string
 	}{
-		{"testdata/railpack-rails", "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000} -e $RAILS_ENV"},
+		{"testdata/railpack-rails", "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000}"},
 		{"testdata/railpack-sinatra", "bundle exec rackup config.ru -o 0.0.0.0 -p ${PORT:-3000}"},
 		{"testdata/railpack-laravel", "/start-container.sh"},
 		{"testdata/railpack-php", "/start-container.sh"},
