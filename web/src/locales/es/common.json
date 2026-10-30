@@ -108,6 +108,22 @@
     "newApp": "Nueva aplicación",
     "import": "Importar",
     "connectGit": "Conectar Git",
+    "firstRun": {
+      "title": "Despliega tu primera aplicación",
+      "subtitle": "Elige un punto de partida. En pocos minutos tendrás una aplicación en marcha y un enlace.",
+      "template": {
+        "title": "Desde un template",
+        "body": "Instalaciones en un clic como Postgres, n8n o Ghost."
+      },
+      "git": {
+        "title": "Desde un repositorio Git",
+        "body": "Construye y despliega un repo con Dockerfile."
+      },
+      "image": {
+        "title": "Desde una imagen de contenedor",
+        "body": "Ejecuta cualquier imagen de un registro."
+      }
+    },
     "emptyTitle": "Aún no hay aplicaciones",
     "emptyBody": "Despliega desde un repositorio git o una imagen de contenedor, o importa aplicaciones de otra plataforma.",
     "noMatchTitle": "Ninguna aplicación coincide",

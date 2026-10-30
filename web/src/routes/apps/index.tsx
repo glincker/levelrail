@@ -33,6 +33,7 @@ import {
   AppsStatusChips,
   ViewToggle,
 } from '../../components/apps/AppsStatusChips'
+import { AppsFirstRun } from '../../components/apps/AppsFirstRun'
 import { AppsEmptyActions } from '../../components/apps/AppsEmptyActions'
 import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
 import {
@@ -247,7 +248,9 @@ function AppListPage() {
           />
         </div>
       ) : null}
-      {noApps ? null : pages.isPending ? (
+      {noApps ? (
+        <AppsFirstRun />
+      ) : pages.isPending ? (
         <AppListRowsPending />
       ) : filteredApps.length === 0 ? (
         <EmptyState

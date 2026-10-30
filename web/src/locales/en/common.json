@@ -128,6 +128,22 @@
     "newApp": "New app",
     "import": "Import",
     "connectGit": "Connect Git",
+    "firstRun": {
+      "title": "Deploy your first app",
+      "subtitle": "Pick a starting point. You get a running app and a link in a few minutes.",
+      "template": {
+        "title": "From a template",
+        "body": "One-click installs like Postgres, n8n or Ghost."
+      },
+      "git": {
+        "title": "From a git repository",
+        "body": "Build and deploy a repo with a Dockerfile."
+      },
+      "image": {
+        "title": "From a container image",
+        "body": "Run any image from a registry."
+      }
+    },
     "emptyTitle": "No apps yet",
     "emptyBody": "Deploy from a git repository or a container image, or import apps from another platform.",
     "noMatchTitle": "No apps match",
