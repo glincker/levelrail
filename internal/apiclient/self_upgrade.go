@@ -25,10 +25,30 @@ type SelfUpgradePlan struct {
 	Command        string                `json:"command"`
 	Steps          []string              `json:"steps"`
 	// Schema fields are absent when the database or the target manifest is unreadable.
-	DBSchemaVersion     *int     `json:"db_schema_version,omitempty"`
-	TargetSchemaVersion *int     `json:"target_schema_version,omitempty"`
-	PendingMigrations   *int     `json:"pending_migrations,omitempty"`
-	RollbackCommands    []string `json:"rollback_commands,omitempty"`
+	DBSchemaVersion     *int              `json:"db_schema_version,omitempty"`
+	TargetSchemaVersion *int              `json:"target_schema_version,omitempty"`
+	PendingMigrations   *int              `json:"pending_migrations,omitempty"`
+	RollbackCommands    []string          `json:"rollback_commands,omitempty"`
+	Disk                SelfUpgradeDisk   `json:"disk"`
+	DowntimeSeconds     int               `json:"downtime_seconds"`
+	Restart             string            `json:"restart_behaviour"`
+	Backup              SelfUpgradeBackup `json:"backup"`
+}
+
+// SelfUpgradeDisk is whether the data dir has room for the upgrade.
+type SelfUpgradeDisk struct {
+	Known         bool  `json:"known"`
+	FreeBytes     int64 `json:"free_bytes"`
+	RequiredBytes int64 `json:"required_bytes"`
+	DBBytes       int64 `json:"db_bytes"`
+	OK            bool  `json:"ok"`
+}
+
+// SelfUpgradeBackup is the pre-upgrade backup and how to restore it.
+type SelfUpgradeBackup struct {
+	WillTake       bool   `json:"will_take"`
+	Dir            string `json:"dir,omitempty"`
+	RestoreCommand string `json:"restore_command,omitempty"`
 }
 
 // SelfUpgradeStep is one step of an attempt's timeline.
@@ -161,9 +181,12 @@ func (c *Client) GetSelfUpgradePlan(ctx context.Context, target string) (SelfUpg
 }
 
 // StartSelfUpgrade calls POST /api/v1/updates/self-upgrade.
-func (c *Client) StartSelfUpgrade(ctx context.Context, target string, ack []string) (SelfUpgradeStarted, error) {
+func (c *Client) StartSelfUpgrade(ctx context.Context, target string, ack []string, skipBackup bool) (SelfUpgradeStarted, error) {
 	var out SelfUpgradeStarted
 	body := map[string]any{"target": target, "ack": ack}
+	if skipBackup {
+		body["skip_backup"] = true
+	}
 	err := c.do(ctx, http.MethodPost, "/api/v1/updates/self-upgrade", body, &out)
 	return out, err
 }

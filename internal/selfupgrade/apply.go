@@ -38,11 +38,14 @@ type Deps struct {
 	Log        *slog.Logger
 	Now        func() time.Time
 
-	Fetch       func(ctx context.Context, tag, asset, dir string) (Fetched, error)
-	VerifySig   func(ctx context.Context, checksumsPath, bundlePath string) (string, error)
-	Probe       func(ctx context.Context, binary string) (ProbeInfo, error)
-	DBSchema    func(ctx context.Context) (int, error)
-	Backup      func(ctx context.Context) (BackupInfo, error)
+	Fetch     func(ctx context.Context, tag, asset, dir string) (Fetched, error)
+	VerifySig func(ctx context.Context, checksumsPath, bundlePath string) (string, error)
+	Probe     func(ctx context.Context, binary string) (ProbeInfo, error)
+	DBSchema  func(ctx context.Context) (int, error)
+	Backup    func(ctx context.Context) (BackupInfo, error)
+	// SkipBackup lets a failed Backup continue with no snapshot: the binary
+	// still rolls back, the database does not. Set only by an explicit operator flag.
+	SkipBackup  bool
 	MigrateTest func(ctx context.Context, binary, snapshotPath string) (int, error)
 	Stop        func(ctx context.Context) error
 	Start       func(ctx context.Context) error
@@ -143,8 +146,11 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 	if err := r.step(StepBackup, func() (string, error) {
 		var err error
 		backup, err = d.Backup(ctx)
+		if err != nil && !d.SkipBackup {
+			return "", fmt.Errorf("%w. Nothing was changed; fix the cause or re-run with --skip-backup to upgrade without a database restore point", err)
+		}
 		if err != nil {
-			return "", err
+			backup = BackupInfo{}
 		}
 		a.BackupName, a.SnapshotPath = backup.Name, backup.SnapshotPath
 		a.SnapshotAt = d.now()
@@ -158,7 +164,10 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 			}
 		}
 		detail := "database snapshot " + backup.Name + ", previous binary kept"
-		if d.RestorePoint != nil {
+		if backup.SnapshotPath == "" {
+			detail = "no database snapshot (--skip-backup), previous binary kept"
+		}
+		if d.RestorePoint != nil && backup.SnapshotPath != "" {
 			id, err := d.RestorePoint(ctx, a, backup.SnapshotPath)
 			if err != nil {
 				return "", fmt.Errorf("keep restore point: %w", err)
@@ -171,6 +180,9 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		return r.cleanFail(StepBackup, err)
 	}
 	if err := r.step(StepMigrationCheck, func() (string, error) {
+		if backup.SnapshotPath == "" {
+			return "skipped: no snapshot to try the migrations on (--skip-backup)", nil
+		}
 		schema, err := d.MigrateTest(ctx, fetched.BinaryPath, backup.SnapshotPath)
 		if errors.Is(err, ErrDryRunUnsupported) {
 			return "skipped: target predates the migration dry-run, relying on the snapshot and automatic rollback", nil

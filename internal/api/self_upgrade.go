@@ -3,16 +3,19 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -190,6 +193,55 @@ type selfUpgradePlanResource struct {
 	// PendingMigrations is how many migrations the upgrade will run, when known.
 	PendingMigrations *int     `json:"pending_migrations,omitempty"`
 	RollbackCommands  []string `json:"rollback_commands,omitempty"`
+	// Disk, downtime and backup describe what the upgrade touches, so a dry run is a full report.
+	Disk            selfupgrade.DiskReport `json:"disk"`
+	DowntimeSeconds int                    `json:"downtime_seconds"`
+	Restart         string                 `json:"restart_behaviour"`
+	Backup          selfUpgradeBackupPlan  `json:"backup"`
+}
+
+// selfUpgradeBackupPlan is the pre-upgrade backup the engine takes first.
+type selfUpgradeBackupPlan struct {
+	WillTake       bool   `json:"will_take"`
+	Dir            string `json:"dir,omitempty"`
+	RestoreCommand string `json:"restore_command,omitempty"`
+}
+
+const (
+	envUpgradeDowntime = "APP_UPGRADE_EST_DOWNTIME_SECONDS"
+	// fallbackDowntimeSeconds matches the restart-and-health window of a normal upgrade.
+	fallbackDowntimeSeconds = 15
+	restartBehaviour        = "the control plane stops and starts once; app containers keep running and agents reconnect when it is back"
+)
+
+func (rt *Router) fillPlanHost(plan *selfUpgradePlanResource) {
+	plan.DowntimeSeconds = fallbackDowntimeSeconds
+	if n, err := strconv.Atoi(os.Getenv(envUpgradeDowntime)); err == nil && n > 0 {
+		plan.DowntimeSeconds = n
+	}
+	plan.Restart = restartBehaviour
+	plan.Backup.WillTake = true
+	if rt.dataDir == "" {
+		return
+	}
+	var exeSize int64
+	if exe, err := os.Executable(); err == nil {
+		if fi, err := os.Stat(exe); err == nil {
+			exeSize = fi.Size()
+		}
+	}
+	var dbSize int64
+	if fi, err := os.Stat(filepath.Join(rt.dataDir, liveDBFile)); err == nil {
+		dbSize = fi.Size()
+	}
+	var free int64
+	freeErr := errors.New("data dir free space unavailable")
+	if f := rt.dataDirFreeBytes(); f != nil {
+		free, freeErr = f()
+	}
+	plan.Disk = selfupgrade.PlanDisk(free, freeErr, dbSize, exeSize, os.Getenv("APP_UPGRADE_MIN_FREE_BYTES"))
+	plan.Backup.Dir = filepath.Join(rt.dataDir, cpbackup.DirName)
+	plan.Backup.RestoreCommand = "sudo systemctl stop levelrail && sudo levelrail restore-db " + filepath.Join(plan.Backup.Dir, "NAME")
 }
 
 const errEdgeNotApplicable = "edge builds are container images, not release binaries: pull the image instead, or switch the channel to beta or stable"
@@ -226,6 +278,7 @@ func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (self
 		return plan, http.StatusConflict, "target is not newer than the running version; use rollback to go back"
 	}
 	plan.Command = "sudo levelrail self-upgrade --to " + target
+	rt.fillPlanHost(&plan)
 	releases, err := rt.selfUpgrade.releases(ctx)
 	if err == nil {
 		notes := make([]selfupgrade.ReleaseNotes, 0, len(releases))
@@ -296,6 +349,8 @@ func (rt *Router) handleSelfUpgradePlan(w http.ResponseWriter, r *http.Request) 
 type selfUpgradeStartRequest struct {
 	Target string   `json:"target"`
 	Ack    []string `json:"ack"`
+	// SkipBackup upgrades even when the pre-upgrade backup fails.
+	SkipBackup bool `json:"skip_backup,omitempty"`
 }
 
 // handleSelfUpgradeStart handles POST /api/v1/updates/self-upgrade. Root only.
@@ -357,6 +412,9 @@ func (rt *Router) handleSelfUpgradeStart(w http.ResponseWriter, r *http.Request)
 	args := []string{"--to", plan.TargetVersion, "--yes", "--initiator", initiator, "--json"}
 	if len(req.Ack) > 0 {
 		args = append(args, "--ack", strings.Join(req.Ack, ","))
+	}
+	if req.SkipBackup {
+		args = append(args, "--skip-backup")
 	}
 	if err := rt.selfUpgrade.launch(r.Context(), args); err != nil {
 		rt.logger.Error("api: start self-upgrade failed", slog.String("target", plan.TargetVersion), slog.String("error", err.Error()))

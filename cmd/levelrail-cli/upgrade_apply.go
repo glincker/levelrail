@@ -21,6 +21,8 @@ type upgradeApplyOptions struct {
 	ack    string
 	plan   bool
 	watch  bool
+	// skipBackup upgrades even when the disk check or the backup would refuse.
+	skipBackup bool
 }
 
 // Refuses to upgrade until the flagged breaking changes are acknowledged.
@@ -42,6 +44,9 @@ func runUpgradeApply(ctx context.Context, client *Client, opts upgradeApplyOptio
 	if !plan.CanApply {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("this host cannot apply the upgrade from the API: %s. Run on the host: %s", plan.CannotApplyWhy, plan.Command))
 	}
+	if plan.Disk.Known && !plan.Disk.OK && !opts.skipBackup {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("not enough free disk for the backup and the new release (%d MiB free, about %d MiB needed). Free space, or pass --skip-backup to upgrade without a database restore point", plan.Disk.FreeBytes>>20, plan.Disk.RequiredBytes>>20))
+	}
 	acked := splitCSV(opts.ack)
 	if missing := unackedBreaking(plan.Breaking, acked); len(missing) > 0 {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("breaking changes need acknowledgement: re-run with --ack-breaking %s", strings.Join(missing, ",")))
@@ -52,7 +57,7 @@ func runUpgradeApply(ctx context.Context, client *Client, opts upgradeApplyOptio
 			before[a.ID] = true
 		}
 	}
-	if _, err := client.StartSelfUpgrade(ctx, plan.TargetVersion, acked); err != nil {
+	if _, err := client.StartSelfUpgrade(ctx, plan.TargetVersion, acked, opts.skipBackup); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("start upgrade: %w", err))
 	}
 	if !opts.watch {
@@ -156,7 +161,7 @@ func printUpgradePlan(out io.Writer, p apiclient.SelfUpgradePlan) {
 		_, _ = fmt.Fprintln(out)
 	}
 	_, _ = fmt.Fprintf(out, "steps: %s (automatic rollback if the new release is not healthy)\n", strings.Join(p.Steps, ", "))
-	_, _ = fmt.Fprintln(out, "a database backup is taken before the swap")
+	printUpgradeHostPlan(out, p)
 	if len(p.RollbackCommands) > 0 {
 		_, _ = fmt.Fprintf(out, "to roll back:\n  %s\n", strings.Join(p.RollbackCommands, "\n  "))
 	}
@@ -187,4 +192,23 @@ func unackedBreaking(breaking []apiclient.SelfUpgradeBreaking, acked []string) [
 		}
 	}
 	return out
+}
+
+// printUpgradeHostPlan reports what the upgrade touches on the host: disk,
+// the backup it takes first, the restart it causes and how to restore.
+func printUpgradeHostPlan(out io.Writer, p apiclient.SelfUpgradePlan) {
+	if p.Disk.Known {
+		verdict := "enough"
+		if !p.Disk.OK {
+			verdict = "NOT ENOUGH"
+		}
+		_, _ = fmt.Fprintf(out, "disk: %d MiB free, about %d MiB needed for the backup, restore point and new binary (%s)\n", p.Disk.FreeBytes>>20, p.Disk.RequiredBytes>>20, verdict)
+	}
+	_, _ = fmt.Fprintln(out, "a control plane backup is taken before the swap; the upgrade is refused if it fails (override: --skip-backup)")
+	if p.Restart != "" {
+		_, _ = fmt.Fprintf(out, "restart: %s (about %ds)\n", p.Restart, p.DowntimeSeconds)
+	}
+	if p.Backup.RestoreCommand != "" {
+		_, _ = fmt.Fprintf(out, "restore the backup with (NAME is the backup file the upgrade reports):\n  %s\n", p.Backup.RestoreCommand)
+	}
 }

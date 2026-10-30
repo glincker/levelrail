@@ -1442,14 +1442,15 @@ Shows the control plane's own configured and not configured signals, including w
 ## Upgrade
 
 ```
-levelrail-cli upgrade [--no-backup] [flags]
+levelrail-cli upgrade [--no-backup] [--skip-backup] [flags]
 ```
 
 Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself unless you pass `--apply`. See [Installing](/installing#check-first-then-upgrade).
 
 ```
+levelrail-cli upgrade --dry-run [--version TAG]
 levelrail-cli upgrade --plan [--version TAG]
-levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
+levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait] [--skip-backup]
 levelrail-cli upgrade --attempts
 levelrail-cli upgrade status
 levelrail-cli upgrade backup-now
@@ -1464,7 +1465,7 @@ levelrail-cli upgrade auto set [--mode off|patch|any] [--window-cron EXPR] [--wi
 
 `backup-now` takes a control plane backup and re-runs the preflight. `schedule` queues the upgrade for a time or the next maintenance window; the preflight re-runs at that time and nothing is applied if it fails. `auto` reads and sets the automatic upgrade policy, which is off by default; `set` changes only the flags you pass. All of these need a root token. See [Upgrade safely](/upgrade-safely).
 
-`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. See [Upgrade safely](/upgrade-safely).
+`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. `--dry-run` and `--plan` also print the schema change and migration count, whether the data directory has room for the backup and the new release, the restart behaviour and the command that restores the backup, and change nothing. The upgrade takes a control plane backup first and is refused if it fails; `--skip-backup` goes on without it (no database restore point), and with no flags `upgrade` exits non-zero when its backup fails unless `--skip-backup` is given. See [Upgrade safely](/upgrade-safely#preview-an-upgrade-without-changing-anything).
 
 ## System restart {#system-restart}
 

@@ -12,6 +12,34 @@ This is the runbook for moving a running server to a newer release. The self-upd
 2. Check the preflight card or `levelrail-cli upgrade`: release signature published, Docker Engine not on the known-bad list, free disk (`APP_UPGRADE_MIN_FREE_BYTES`, 2 GiB default), a recent [control plane backup](/control-plane-backup).
 3. Make sure the master key is backed up somewhere safe. A snapshot never contains it.
 
+## Preview an upgrade without changing anything
+
+`levelrail-cli upgrade --dry-run` (the same as `--plan`, and `sudo levelrail self-upgrade --to vX.Y.Z --dry-run` on the host) prints, then exits:
+
+- current and target version, and the breaking changes between them;
+- the database schema now and after the upgrade, and how many migrations will run;
+- whether the data directory has room for the backup, the restore point, the migration trial copy and the new binary (the estimate never drops below `APP_UPGRADE_MIN_FREE_BYTES` when you set it);
+- the restart: the control plane stops and starts once, app containers keep running and agents reconnect. The estimate is 15 seconds, or `APP_UPGRADE_EST_DOWNTIME_SECONDS`;
+- the backup that is taken first and the command that restores it.
+
+The same facts are in `GET /api/v1/updates/self-upgrade/plan` (`disk`, `downtime_seconds`, `restart_behaviour`, `backup`, `pending_migrations`, `target_schema_version`).
+
+## The backup before every upgrade
+
+Every real upgrade takes a control plane backup first and keeps it as the restore point. If the backup fails, the upgrade is refused and nothing changes. `levelrail-cli upgrade --apply` also refuses when the disk check says there is not enough space. To go on anyway, add `--skip-backup` (CLI, or `sudo levelrail self-upgrade --skip-backup`): the binary still rolls back automatically, but the database cannot be restored and the migration trial is skipped. To restore a backup by hand:
+
+```bash
+sudo systemctl stop levelrail
+sudo levelrail restore-db <data dir>/control-plane-backups/<backup file>
+sudo systemctl start levelrail
+```
+
+The upgrade prints the exact backup file name. `levelrail-cli upgrade` (no flags) also takes a backup, prints how to restore it and exits non-zero if the backup fails, unless you pass `--skip-backup`.
+
+## Where it lives on the host
+
+From the host, `levelrail-cli upgrade` is the entry point: it runs the preflight and shows the upgrade command, `--dry-run` previews it and `--apply` runs it. `install.sh upgrade` remains the minimal path that only swaps the binary.
+
 ## Fix a blocked check
 
 Every check that blocks an upgrade says what it protects and carries its own fix. The Version card on Settings > Updates lists only the blockers, so you can clear them without leaving it.
