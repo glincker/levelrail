@@ -44,7 +44,11 @@ function loadExemptFiles() {
       readFileSync(path.join(distDir, '.vite', 'manifest.json'), 'utf8'),
     )
   } catch {
-    return new Set()
+    // No manifest (default local build): elkjs is the one mermaid chunk named
+    // by module, so exempt it by filename rather than fail every local run.
+    return new Set(
+      readdirSync(distAssets).filter((name) => /^elk-[\w-]+\.js$/.test(name)),
+    )
   }
 
   const keys = Object.keys(manifest)
