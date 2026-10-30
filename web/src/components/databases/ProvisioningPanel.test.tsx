@@ -56,7 +56,7 @@ describe('ProvisioningView', () => {
         onFix={vi.fn()}
       />,
     )
-    expect(screen.getAllByRole('listitem')).toHaveLength(10)
+    expect(screen.getAllByRole('listitem')).toHaveLength(STEPS.length)
     expect(screen.getByText('provision.title')).toBeTruthy()
   })
 
