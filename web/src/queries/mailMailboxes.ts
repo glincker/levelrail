@@ -99,6 +99,9 @@ async function send<T>(
   return (await res.json()) as T
 }
 
+/** mailSend is the shared mail write helper; errors keep the step-up code. */
+export const mailSend = send
+
 async function read<T>(path: string): Promise<T> {
   const res = await fetch(path)
   if (!res.ok) {

@@ -27,23 +27,28 @@ swap)
 	test -d "$s" || { echo "staged restore $s is missing" >&2; exit 3; }
 	[ ! -e "$j" ] || { echo "an earlier restore swap in $R is not finished" >&2; exit 4; }
 	[ ! -e "$p" ] || { echo "$p already exists" >&2; exit 5; }
-	chown -R "$(ls -nd . | awk '{print $3":"$4}')" "$s"
+	o="$(ls -nd . | awk '{print $3":"$4}')"
+	case "$o" in [0-9]*:[0-9]*) ;; *) echo "cannot read the owner of $R" >&2; exit 7;; esac
+	chown -Rh "$o" "$s"
 	mkdir -p "$p"; chmod 700 "$p"
 	jw aside
 	for f in * .[!.]* ..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "$f" in tmp|.levelrail) continue;; esac; mv -- "$f" "$p/"; done
 	jw in
-	for f in "$s"/* "$s"/.[!.]* "$s"/..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; mv -- "$f" .; done
+	for f in "$s"/* "$s"/.[!.]* "$s"/..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "${f##*/}" in tmp|.levelrail) continue;; esac; mv -- "$f" .; done
 	jw swapped
 	rm -rf -- "$L/restore-$id"
 	echo swapped ;;
 rollback)
 	[ -e "$j" ] || { echo none; exit 0; }
-	read -r jid jpre phase < "$j"
-	p="$L/$jpre"; d="$L/discarded-$(date -u +%Y%m%dT%H%M%SZ)-$jid"
-	if [ "$phase" != aside ]; then
+	read -r jid jpre phase < "$j" || true
+	case "$jpre" in pre-restore-*) ;; *) echo "the swap journal $j is unreadable" >&2; exit 6;; esac
+	id="$jid"; pre="$jpre"; p="$L/$jpre"; d="$L/discarded-$(date -u +%Y%m%dT%H%M%SZ)-$jid-$$"
+	case "$phase" in aside|rollback) ;; *)
 		mkdir -p "$d"; chmod 700 "$d"
-		for f in * .[!.]* ..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "$f" in tmp|.levelrail) continue;; esac; mv -- "$f" "$d/"; done
-	fi
+		for f in * .[!.]* ..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue; case "$f" in tmp|.levelrail) continue;; esac; mv -- "$f" "$d/"; done ;;
+	esac
+	# From here live entries are originals already moved back, so a rerun must not discard them.
+	jw rollback
 	if [ -d "$p" ]; then
 		for f in "$p"/* "$p"/.[!.]* "$p"/..?*; do { [ -e "$f" ] || [ -L "$f" ]; } || continue
 			b="$(basename -- "$f")"

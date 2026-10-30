@@ -48,13 +48,16 @@ export function useDeployProgress(appName: string): {
   const latestAttempt = attemptsQuery.data[0]
   const stillConverging =
     latestAttempt !== undefined &&
-    computeDeployStages(latestAttempt, conditionsQuery.data, true)[1].status === 'running'
+    computeDeployStages(latestAttempt, conditionsQuery.data, true)[1].status ===
+      'running'
 
   useEffect(() => {
     if (!stillConverging) return
     const id = setInterval(() => {
       void queryClient.refetchQueries({ queryKey: deployKeys.status(appName) })
-      void queryClient.refetchQueries({ queryKey: deployAttemptKeys.list(appName) })
+      void queryClient.refetchQueries({
+        queryKey: deployAttemptKeys.list(appName),
+      })
     }, DEPLOY_PROGRESS_POLL_INTERVAL_MS)
     return () => clearInterval(id)
   }, [appName, queryClient, stillConverging])

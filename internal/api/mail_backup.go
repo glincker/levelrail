@@ -533,3 +533,24 @@ func (rt *Router) startMailRecovery(ctx context.Context, cfg *mailBackupConfig, 
 		cfg.update(svc.Name, func(j *mailBackupJob) { j.Rollback = rollback })
 	}()
 }
+
+// RecoverMailHolds starts the restore recovery once, in the background, for
+// every mail app a crash left held, so it does not wait for the next mail call.
+func (rt *Router) RecoverMailHolds(ctx context.Context) {
+	cfg := rt.mail.backup
+	if cfg == nil || rt.mail.demo != nil {
+		return
+	}
+	svcs, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		rt.logger.Warn("api: mail restore recovery: list services failed", slog.String("error", err.Error()))
+		return
+	}
+	for _, svc := range svcs {
+		if !strings.HasPrefix(svc.MaintenanceHold, mailRestoreHoldPrefix) || !mailstorage.ValidServiceID(svc.Name) || !rt.isInstanceMailApp(ctx, svc) {
+			continue
+		}
+		rt.logger.Info("api: mail restore recovery at start up", slog.String("app", svc.Name), slog.String("hold", svc.MaintenanceHold))
+		rt.startMailRecovery(ctx, cfg, svc)
+	}
+}

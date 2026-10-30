@@ -37,6 +37,11 @@ func emailConfigFromSettings(settings store.EmailSettings, secret func(string) (
 			return email.Config{}, err
 		}
 		cfg.SMTP = smtpCfg(settings.SMTPHost, settings.SMTPPort, settings.SMTPUsername, password)
+		pin, err := secret(store.EmailSecretSMTPTLSPin)
+		if err != nil {
+			return email.Config{}, err
+		}
+		cfg.SMTP.PinSHA256 = email.PinFor(pin, cfg.SMTP.Addr)
 	case store.EmailBackendSESSMTP:
 		host, err := email.SESSMTPHost(settings.SESRegion)
 		if err != nil {

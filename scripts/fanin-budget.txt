@@ -5,6 +5,7 @@
 # v0.8.12: internal/mailstorage adds one dependent each to internal/deploytrace and kit/semver; the status page webhook sender adds one each to internal/docker and kit/netguard (SSRF-guarded dials).
 # v0.8.12: internal/mailrecords reuses the SPF and DMARC grading in internal/email and internal/api imports it, so the API's dependents now depend on internal/email.
 # v0.8.12: internal/mail/demo (the dev-only mail demo zone) imports internal/dnszones, adding one dependent.
+# v0.8.12: internal/mailstorage imports internal/objectstore, adding one dependent to deploytrace and semver; it and internal/statuswebhook (signed subscriber webhooks) each add one to netguard and docker.
 internal/autoscale 142
 internal/bindaddr 142
 internal/bindmount 144

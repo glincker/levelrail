@@ -84,7 +84,7 @@
     },
     "first_app": {
       "title": "Deploy your first app",
-    "titleLive": "Your first app is running",
+      "titleLive": "Your first app is running",
       "what": "Create an app from a repository, a container image or a template. The platform builds it, starts it and gives it an https address.",
       "why": "It proves the build, deploy and rollback loop works on this server.",
       "cta": "Create an app"

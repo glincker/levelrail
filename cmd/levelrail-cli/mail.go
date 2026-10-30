@@ -17,7 +17,7 @@ import (
 func mailUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s mail status                       show whether the mail server is installed, running and ready
-%[3]s%[4]s%[5]s%[6]s  %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
+%[3]s%[4]s%[5]s%[6]s%[7]s  %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
   %[1]s mail dns apply <domain> --plan-hash H --confirm [flags]   write a plan you reviewed
   %[1]s mail dns check <domain> [--host H] [--dkim-selector S]    grade the live mail DNS
 
@@ -32,7 +32,7 @@ Experimental: needs APP_EXPERIMENTAL=mail. The default is add-only: existing
 MX, SPF, DKIM and DMARC records are never replaced unless --replace-existing
 lists their kind (MX, SPF, DKIM, DMARC, HOST, MTASTS, TLSRPT, AUTOCONFIG).
 Presets: %[2]s.
-`, prog, strings.Join(mailrecords.PresetIDs(), ", "), fmt.Sprintf(mailPortsUsageLines, prog), fmt.Sprintf(mailMailboxUsageLines, prog), fmt.Sprintf(mailCertUsageLines, prog), fmt.Sprintf(mailBackupUsageLines, prog))
+`, prog, strings.Join(mailrecords.PresetIDs(), ", "), fmt.Sprintf(mailPortsUsageLines, prog), fmt.Sprintf(mailMailboxUsageLines, prog), fmt.Sprintf(mailCertUsageLines, prog), fmt.Sprintf(mailBackupUsageLines, prog), fmt.Sprintf(mailSystemEmailUsageLines, prog))
 }
 
 type mailFlags struct {
@@ -90,6 +90,9 @@ func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	}
 	if len(args) >= 1 && args[0] == "storage" {
 		return runMailStorage(prog, args[1:], stdout, stderr, lookupEnv)
+	}
+	if len(args) >= 1 && args[0] == "system-email" {
+		return runMailSystemEmail(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	if len(args) >= 1 && args[0] == "ports" {
 		return runMailPorts(prog, args[1:], stdout, stderr, lookupEnv)

@@ -2090,7 +2090,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
 | POST | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
 | GET | /api/v1/mail/backups | AbilityRead | handleListMailBackups |
-| POST | /api/v1/mail/backups | AbilityWriteSensitive | handleRunMailBackup |
+| POST | /api/v1/mail/backups | AbilityRoot | handleRunMailBackup |
 | POST | /api/v1/mail/backups/{id}/restore | AbilityRoot | handleRestoreMailBackup |
 | GET | /api/v1/mail/storage | AbilityRead | handleGetMailStorage |
 | PUT | /api/v1/mail/storage | AbilityRoot | handlePutMailStorage |
@@ -2103,6 +2103,11 @@ Routes that do not fit an existing group.
 | POST | /api/v1/status-page/webhooks/{id}/resume | AbilityWrite | handleResumeStatusWebhook |
 | POST | /api/v1/status-page/webhooks/{id}/test | AbilityWrite | handleTestStatusWebhook |
 | GET | /api/v1/status-page/webhooks/{id}/deliveries | AbilityRead | handleListStatusWebhookDeliveries |
+| GET | /api/v1/mail/system-email | AbilityRead | handleGetSystemEmail |
+| POST | /api/v1/mail/system-email/enable | AbilityRoot | handleEnableSystemEmail |
+| POST | /api/v1/mail/system-email/disable | AbilityRoot | handleDisableSystemEmail |
+| POST | /api/v1/mail/system-email/rotate | AbilityRoot | handleRotateSystemEmail |
+| POST | /api/v1/mail/system-email/test | AbilityRoot | handleTestSystemEmail |
 | POST | /mcp | Public |  |
 
 ## See also

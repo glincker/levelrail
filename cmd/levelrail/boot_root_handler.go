@@ -420,6 +420,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		}))
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
+	rt.RecoverMailHolds(context.Background())
 	if builder != nil {
 		// Spec file deploys (webhook, git push, builds) admit host ports like POST /apps.
 		builder.SetPortAdmitter(rt)

@@ -75,6 +75,13 @@ The queue view shows the sender account, recipient domain, attempts, next attemp
 
 IAM policies can name `mail:service:<app>`, `mail:domain:<domain>` and `mail:mailbox:<address>`. A Deny on a domain hides every mailbox on it. Every change is written to the audit log with the address, never a password.
 
+## System emails
+
+`levelrail-cli mail system-email enable <domain>` (or **System emails** on the Mail page) sends invites, password resets, alerts and status page notices as `noreply@<domain>` through this mail server. It creates or reuses the `noreply` mailbox with a generated password that is sealed straight into the email provider settings and never shown, then sends a test to your own address (`--to` to change it).
+The provider submits to the mail server's private network address on port 587 (STARTTLS, or `--port 465`), trusting exactly the certificate it saw at enable time (a pinned SHA-256 fingerprint), so the self-signed default certificate works without turning verification off.
+An existing provider is never replaced silently: pass `--replace-existing`. `disable` puts the earlier provider back and suspends (never deletes) the mailbox; `rotate` sets a new sealed password; `status` shows the sender, the last test and whether SPF, DKIM and DMARC pass.
+Until DNS passes and the server's PTR matches its mail host, mail to outside recipients lands in spam or is rejected. Enable, rotate and test are rate limited per caller (`APP_MAIL_SYSTEM_EMAIL_ACTIONS_PER_HOUR`, default 10) and every change needs an instance admin and step-up.
+
 ## Limits
 
 - mox keeps one password per account, so revoking one device means resetting the password for all of them.

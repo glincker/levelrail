@@ -1,5 +1,10 @@
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { MailGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import { fetchMailStatus, isMailUp } from '@/queries/mailStatus'
+import { SYSTEM_EMAIL_ANCHOR } from '@/queries/mailSystemEmail'
 import { ProviderMark } from './ProviderMark'
 import {
   EMAIL_PROVIDER_PRESETS,
@@ -15,6 +20,13 @@ interface Props {
 /** EmailProviderPicker lists provider templates; choosing one opens the edit panel already filled. */
 export function EmailProviderPicker({ onPick, onCancel }: Readonly<Props>) {
   const { t } = useTranslation('settings')
+  // Shares the Mail page cache key; no retry, a 404 just means the mail feature is off.
+  const mail = useQuery({
+    queryKey: ['mail', 'status'],
+    queryFn: fetchMailStatus,
+    retry: false,
+    staleTime: 60_000,
+  }).data
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -60,6 +72,25 @@ export function EmailProviderPicker({ onPick, onCancel }: Readonly<Props>) {
             </li>
           )
         })}
+        {isMailUp(mail) ? (
+          <li>
+            <Link
+              to="/mail"
+              hash={SYSTEM_EMAIL_ANCHOR}
+              className={`flex h-full w-full items-start gap-2 rounded-lg border border-border bg-background/40 p-2 text-left transition-colors hover:border-primary hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${PRESS}`}
+            >
+              <MailGlassIcon size="1.6em" />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">
+                  {t('emailPresets.ownMailServer.name')}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {t('emailPresets.ownMailServer.bestFor')}
+                </span>
+              </span>
+            </Link>
+          </li>
+        ) : null}
       </ul>
     </div>
   )

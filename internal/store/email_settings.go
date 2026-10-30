@@ -32,6 +32,8 @@ const (
 	EmailSecretPostmarkToken   = "postmark_server_token" //nolint:gosec // an envKey name, not a credential value
 	EmailSecretSendGridAPIKey  = "sendgrid_api_key"      //nolint:gosec // an envKey name, not a credential value
 	EmailSecretMailgunAPIKey   = "mailgun_api_key"       //nolint:gosec // an envKey name, not a credential value
+	// EmailSecretSMTPTLSPin holds "host:port sha256hex", a certificate pin that applies only to that address.
+	EmailSecretSMTPTLSPin = "smtp_tls_pin" //nolint:gosec // an envKey name, not a credential value
 )
 
 // EmailSettings is the single platform-wide email-sending configuration

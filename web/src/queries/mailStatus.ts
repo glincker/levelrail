@@ -18,6 +18,8 @@ export interface MailStatus {
   hostname?: string
   // True only in local demo mode (APP_MAIL_DEMO with APP_DEV_MODE).
   demo?: boolean
+  // Set while a restore holds the app stopped, for example mail-restore:<id>.
+  maintenance_hold?: string
 }
 
 export async function fetchMailStatus(): Promise<MailStatus> {
