@@ -47,4 +47,12 @@ describe('sanitizeSvg', () => {
     expect(sanitizeSvg('<img src=x onerror=alert(1)>')).toBe('')
     expect(sanitizeSvg('')).toBe('')
   })
+
+  it('drops external use hrefs but keeps fragment refs', () => {
+    const out = sanitizeSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="https://x.test/a.svg#i"/><use xlink:href="https://x.test/b.svg#i"/><use href="#local"/></svg>',
+    )
+    expect(out).not.toContain('x.test')
+    expect(out).toContain('href="#local"')
+  })
 })
