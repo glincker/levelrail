@@ -36,6 +36,14 @@ vi.mock('../queries/silences', async (importOriginal) => ({
   useDeleteSilence: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
+// Both sections fetch their own data and have their own tests.
+vi.mock('../components/monitors/MonitorsSection', () => ({
+  MonitorsSection: () => null,
+}))
+vi.mock('../components/incidents/IncidentsSection', () => ({
+  IncidentsSection: () => null,
+}))
+
 const mutate = vi.fn()
 vi.mock('../queries/apps', () => ({
   useRestartApp: () => ({ mutate, isPending: false }),
