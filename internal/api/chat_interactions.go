@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
@@ -375,6 +376,9 @@ func (rt *Router) decideChatApproval(ctx context.Context, approve bool, approval
 	if err != nil {
 		return err.Error()
 	}
+	if !rt.chatMayDecide(ctx, a) {
+		return chatDecideInDashboardMsg
+	}
 
 	if approve {
 		resp, err := rt.applyAndDecideApproval(ctx, a, chatApprovalActorType, channelID, deciderName)
@@ -389,4 +393,16 @@ func (rt *Router) decideChatApproval(ctx context.Context, approve bool, approval
 		return "Could not deny: " + err.Error()
 	}
 	return fmt.Sprintf("Denied by %s. %s was not deployed.", deciderName, resource.ServiceName)
+}
+
+const chatDecideInDashboardMsg = "This deploy needs a role and environment check that chat cannot make. Decide it in the dashboard."
+
+// chatMayDecide is true only for an approval whose environment is known and
+// unprotected: a chat click carries no role, so it must not decide a gated deploy.
+func (rt *Router) chatMayDecide(ctx context.Context, a store.DeployApproval) bool {
+	if rt.environments == nil || a.EnvironmentID == "" {
+		return false
+	}
+	env, err := rt.environments.GetEnvironment(ctx, a.EnvironmentID)
+	return err == nil && !env.Protected
 }
