@@ -5,6 +5,8 @@ import (
 	"errors"
 	"path/filepath"
 	"reflect"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -297,5 +299,18 @@ func TestSeedUnknownScenario(t *testing.T) {
 	db := openDB(t)
 	if _, err := Seed(context.Background(), db, Options{Seed: 1, Anchor: testAnchor, Scenario: "chaos"}); err == nil {
 		t.Fatal("Seed() with unknown scenario succeeded, want error")
+	}
+}
+
+func TestDemoDigestIsHexSHA256(t *testing.T) {
+	d := demoDigest("acme/web", "a41c9e2")
+	if !regexp.MustCompile(`^sha256:[0-9a-f]{64}$`).MatchString(d) {
+		t.Fatalf("digest %q is not sha256 hex", d)
+	}
+	if strings.Trim(strings.TrimPrefix(d, "sha256:"), "0123456789") == "" {
+		t.Fatalf("digest %q is all digits", d)
+	}
+	if d != demoDigest("acme/web", "a41c9e2") {
+		t.Fatal("digest not deterministic")
 	}
 }

@@ -1,6 +1,8 @@
 package demo
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"time"
@@ -161,6 +163,13 @@ func (s *seeder) deploys() error {
 	return nil
 }
 
+// demoDigest hashes the reference so a rollback to the same sha reuses its
+// digest and the seed stays deterministic without touching the rng stream.
+func demoDigest(image, sha string) string {
+	sum := sha256.Sum256([]byte(image + ":" + sha))
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
 func (s *seeder) saveAttempts(a appSpec, list []attempt) error {
 	if s.lastOK == nil {
 		s.lastOK = map[string]okAttempt{}
@@ -169,6 +178,7 @@ func (s *seeder) saveAttempts(a appSpec, list []attempt) error {
 		id := fmt.Sprintf("dep_%s_%03d", a.name, i+1)
 		da := store.DeployAttempt{
 			ID: id, ServiceName: a.name, Image: a.image + ":" + t.sha, CommitSHA: t.sha,
+			ImageDigest: demoDigest(a.image, t.sha), DigestReason: store.DigestReasonResolved,
 			Source: t.source, Status: store.DeployAttemptStatusRunning, StartedAt: t.at,
 			Sequence: int64(i + 1), Reason: t.reason, Branch: "main", CommitMessage: t.title, Author: t.author,
 			Snapshot: store.DeployAttemptSnapshot{Port: a.port, Replicas: a.replicas, Strategy: a.strategy},
