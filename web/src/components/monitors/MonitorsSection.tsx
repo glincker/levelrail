@@ -96,7 +96,10 @@ export function MonitorRow({
           onDelete(monitor)
         }}
       >
-        <TrashGlassIcon className="size-5" aria-hidden="true" />
+        <TrashGlassIcon
+          className="size-5 hover:text-destructive"
+          aria-hidden="true"
+        />
       </Button>
     </li>
   )

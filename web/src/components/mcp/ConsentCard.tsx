@@ -119,7 +119,10 @@ function ConsentBody({
       {
         onSuccess: (res) => {
           setDone(true)
-          window.location.assign(res.redirect_to)
+          // Script-capable schemes are never a valid OAuth redirect target.
+          if (!/^(javascript|data|vbscript):/i.test(res.redirect_to.trim())) {
+            window.location.assign(res.redirect_to)
+          }
         },
       },
     )

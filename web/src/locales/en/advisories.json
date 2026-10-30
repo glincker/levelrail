@@ -13,7 +13,7 @@
   "feedError": "The feed could not be read: {{error}}",
   "unverifiedNote": "Matches are shown, but Refresh needs a verified feed.",
   "offTitle": "No advisory feed is configured",
-  "offBody": "Set APP_ADVISORY_FEED on the server to the URL of a signed advisory feed, then restart. Refresh also needs APP_ADVISORY_REFRESH_ACTION=on.",
+  "offBody": "Levelrail can warn you when a running image matches a known security advisory. Turn on a signed advisory feed to see affected apps here.",
   "offDocs": "How to enable the feed",
   "emptyTitle": "No deployed image matches a known advisory",
   "emptyBody": "Nothing running is affected by the current feed.",
@@ -50,5 +50,7 @@
   "done": "{{app}} is being redeployed on the newest digest.",
   "pending": "A deploy approval for {{app}} is waiting for review.",
   "reviewApprovals": "Open approvals",
-  "dismiss": "Dismiss"
+  "dismiss": "Dismiss",
+  "offHint": "Server setting:",
+  "docsLink": "Advisory feed docs"
 }

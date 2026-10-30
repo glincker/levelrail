@@ -50,7 +50,8 @@
     "save": "Create",
     "saving": "Creating...",
     "created": "Monitor {{name}} created",
-    "error": "Could not create the monitor: {{message}}"
+    "error": "Could not create the monitor: {{message}}",
+    "urlPlaceholder": "https://example.com/health"
   },
   "delete": {
     "action": "Delete {{name}}",

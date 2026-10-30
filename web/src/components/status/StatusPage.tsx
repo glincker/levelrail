@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 import {
   ActivityGlassIcon,
@@ -258,7 +259,14 @@ export function StatusPage() {
               >
                 <div className="flex min-w-0 flex-1 items-start gap-2.5">
                   <Icon
-                    className={`size-6 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : item.severity === 'info' ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'}`}
+                    className={cn(
+                      'size-6 shrink-0',
+                      item.severity === 'critical'
+                        ? 'text-destructive'
+                        : item.severity === 'info'
+                          ? 'text-muted-foreground'
+                          : 'text-tone-warning',
+                    )}
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">

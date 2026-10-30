@@ -50,7 +50,8 @@
     "pingTitle": "Añade esto a tu tarea",
     "serverDefault": "predeterminado",
     "tls": "Certificado TLS",
-    "warnDays": "Aviso (días)"
+    "warnDays": "Aviso (días)",
+    "urlPlaceholder": "https://example.com/health"
   },
   "delete": {
     "action": "Eliminar {{name}}",

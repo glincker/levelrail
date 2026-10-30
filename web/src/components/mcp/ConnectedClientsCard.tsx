@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { CopyCommand } from '@/components/settings/CopyCommand'
 import { useIsRoot } from '@/hooks/useIsRoot'
 import { devModeQueryOptions } from '../../queries/devMode'
@@ -153,6 +154,7 @@ function ClientsBody() {
       {clients.error ? (
         <Banner variant="critical" title={t('clients.loadError')} />
       ) : null}
+      {clients.isPending ? <ListSkeleton rows={2} /> : null}
       {clients.data && clients.data.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('clients.empty')}</p>
       ) : null}
@@ -178,7 +180,10 @@ function ClientsBody() {
                 aria-label={t('clients.remove', { name: c.name })}
                 onClick={() => setDoomed(c)}
               >
-                <TrashGlassIcon aria-hidden="true" />
+                <TrashGlassIcon
+                  className="size-5 hover:text-destructive"
+                  aria-hidden="true"
+                />
               </Button>
             </li>
           ))}

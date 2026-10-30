@@ -13,7 +13,7 @@
   "feedError": "No se pudo leer el feed: {{error}}",
   "unverifiedNote": "Se muestran las coincidencias, pero Actualizar necesita un feed verificado.",
   "offTitle": "No hay un feed de avisos configurado",
-  "offBody": "Define APP_ADVISORY_FEED en el servidor con la URL de un feed de avisos firmado y reinicia. Actualizar también necesita APP_ADVISORY_REFRESH_ACTION=on.",
+  "offBody": "Levelrail puede avisarte cuando una imagen en ejecución coincide con un aviso de seguridad conocido. Activa un feed de avisos firmado para ver aquí las apps afectadas.",
   "offDocs": "Cómo activar el feed",
   "emptyTitle": "Ninguna imagen desplegada coincide con un aviso conocido",
   "emptyBody": "Nada de lo que se ejecuta está afectado por el feed actual.",
@@ -50,5 +50,7 @@
   "done": "{{app}} se está redesplegando con el digest más reciente.",
   "pending": "Una aprobación de despliegue de {{app}} espera revisión.",
   "reviewApprovals": "Abrir aprobaciones",
-  "dismiss": "Cerrar"
+  "dismiss": "Cerrar",
+  "offHint": "Ajuste del servidor:",
+  "docsLink": "Documentación del feed de avisos"
 }

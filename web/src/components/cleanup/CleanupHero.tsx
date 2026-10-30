@@ -59,7 +59,7 @@ export function CleanupHero({
     >
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="text-sm font-medium text-muted-foreground">
             {t('hero.stored')}
           </p>
           <p className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">

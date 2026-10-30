@@ -70,20 +70,26 @@ function NoteForm({ id }: { id: string }) {
     )
   }
   return (
-    <form onSubmit={onSubmit} className="flex items-end gap-2">
-      <div className="flex-1 space-y-1">
-        <Label htmlFor="incident-note">{t('incidents.note.label')}</Label>
-        <Input
-          id="incident-note"
-          value={body}
-          onChange={(e) => {
-            setBody(e.target.value)
-          }}
-        />
+    <form onSubmit={onSubmit} className="space-y-1">
+      <div className="flex items-end gap-2">
+        <div className="flex-1 space-y-1">
+          <Label htmlFor="incident-note">{t('incidents.note.label')}</Label>
+          <Input
+            id="incident-note"
+            value={body}
+            onChange={(e) => {
+              setBody(e.target.value)
+            }}
+          />
+        </div>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={!body.trim() || add.isPending}
+        >
+          {t('incidents.note.add')}
+        </Button>
       </div>
-      <Button type="submit" size="sm" disabled={!body.trim() || add.isPending}>
-        {t('incidents.note.add')}
-      </Button>
       {add.error ? (
         <p role="alert" className="text-xs text-destructive">
           {add.error.message}
@@ -183,7 +189,7 @@ function DraftForm({
         saveDraft()
       }}
     >
-      <h3 className="text-xs font-medium uppercase text-muted-foreground">
+      <h3 className="text-sm font-medium text-muted-foreground">
         {t('incidents.draft.title')}
       </h3>
       <div className="flex flex-wrap items-end gap-2">

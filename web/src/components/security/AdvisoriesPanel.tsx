@@ -9,6 +9,7 @@ import {
   ShieldGlassIcon,
 } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -32,12 +33,14 @@ const SEVERITY_VARIANT = {
   other: 'muted',
 } as const
 
+const SIGNATURES = ['verified', 'unsigned', 'invalid'] as const
+
 function bucketOf(severity: string): Bucket {
   return SEVERITY_ORDER.find((b) => b === severity) ?? 'other'
 }
 
 function shortDigest(d: string): string {
-  return d.replace(/^sha256:/, 'sha256:').slice(0, 19)
+  return d.slice(0, 19)
 }
 
 function safeUrl(u: string | undefined): string | null {
@@ -57,17 +60,20 @@ export function AdvisoriesPanel() {
   if (query.isPending) return <ListSkeleton rows={4} />
   if (query.error || !query.data) {
     return (
-      <div className="space-y-2 text-sm" role="alert">
-        <p className="text-destructive">{t('loadError')}</p>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => void query.refetch()}
-        >
-          {t('retry')}
-        </Button>
-      </div>
+      <Banner
+        variant="critical"
+        title={t('loadError')}
+        action={
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void query.refetch()}
+          >
+            {t('retry')}
+          </Button>
+        }
+      />
     )
   }
   const data = query.data
@@ -79,11 +85,15 @@ export function AdvisoriesPanel() {
         description={t('offBody')}
         helpPath="/advisory-feed"
         helpLabel={t('offDocs')}
-      />
+      >
+        <p className="text-xs text-muted-foreground">
+          {t('offHint')} <code className="font-mono">APP_ADVISORY_FEED</code>
+        </p>
+      </EmptyState>
     )
   }
 
-  const signature = data.signature ?? 'unsigned'
+  const signature = SIGNATURES.find((x) => x === data.signature) ?? 'unsigned'
   const fetchedAt = data.loaded_at ?? data.generated_at
   const groups = SEVERITY_ORDER.map((b) => ({
     bucket: b,
@@ -110,7 +120,7 @@ export function AdvisoriesPanel() {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h2 className="text-base font-semibold">{t('title')}</h2>
         <Badge variant={signature === 'verified' ? 'success' : 'warning'}>
-          {t('feedLabel')}: {t(`${signature}`)}
+          {t('feedLabel')}: {t(signature)}
         </Badge>
         <span className="text-sm text-muted-foreground">
           {t('count', { count: data.entries.length })}
@@ -127,10 +137,14 @@ export function AdvisoriesPanel() {
           disabled={query.isFetching}
           onClick={() => void query.refetch()}
         >
-          <RefreshCwGlassIcon className="size-4" aria-hidden />
+          <RefreshCwGlassIcon className="size-5" aria-hidden />
           {t('refreshFeed')}
         </Button>
-        <HelpLink path="/advisory-feed" label={t('offDocs')} variant="inline" />
+        <HelpLink
+          path="/advisory-feed"
+          label={t('docsLink')}
+          variant="inline"
+        />
       </div>
       {data.error ? (
         <p className="text-sm text-destructive" role="alert">
@@ -186,7 +200,10 @@ export function AdvisoriesPanel() {
               </span>
             </h3>
             <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full text-left text-sm">
+              <table
+                className="w-full text-left text-sm"
+                aria-label={t(`severity.${g.bucket}`)}
+              >
                 <thead className="bg-muted/40 text-xs text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-3 py-2 font-medium">

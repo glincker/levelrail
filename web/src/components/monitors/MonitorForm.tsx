@@ -162,7 +162,7 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
             id="monitor-url"
             type="url"
             required
-            placeholder="https://example.com/health"
+            placeholder={t('form.urlPlaceholder')}
             value={url}
             onChange={(e) => {
               setUrl(e.target.value)

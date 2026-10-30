@@ -126,7 +126,7 @@ export function CleanupOverviewTab() {
             aria-labelledby={`cleanup-group-${g.category}`}
             className="rounded-lg border border-border bg-card"
           >
-            <header className="sticky top-0 z-10 flex items-baseline justify-between gap-2 rounded-t-lg border-b border-border bg-card px-3 py-2 sm:px-4">
+            <header className="flex items-baseline justify-between gap-2 rounded-t-lg border-b border-border bg-card px-3 py-2 sm:px-4">
               <h2
                 id={`cleanup-group-${g.category}`}
                 className="text-sm font-medium text-foreground"
