@@ -164,4 +164,4 @@ It is not a penetration-test report and it does not claim the absence of other i
 
 ## Advisories about the images you run
 
-Separate from the Levelrail advisories above, the [advisory feed](/advisory-feed) matches the images your own apps run against a signed feed. `levelrail-cli security advisories match` lists each app, image digest, advisory, severity and fixed-in version, and `levelrail-cli security advisories refresh <app>` redeploys a matched app on the newest digest of its tag through the normal deploy approvals.
+Separate from the Levelrail advisories above, the [advisory feed](/advisory-feed) matches the images your own apps run against a feed you provide. The feed is verified only when `APP_ADVISORY_FEED_PUBKEY` is set; a local file without a key is shown as `unsigned`. `levelrail-cli security advisories match` lists each app, image digest, advisory, severity and fixed-in version, and `levelrail-cli security advisories refresh <app>` redeploys a matched app on the newest digest of its tag through the normal deploy approvals.
