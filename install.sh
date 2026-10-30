@@ -1671,6 +1671,44 @@ installed_version() {
 CLI_PRESENT=0
 CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-https://levelrail.com/install-cli.sh}"
 
+# verify_cli_script checks the downloaded CLI installer against the release
+# checksums.txt (signature checked first). A missing entry blocks the run in
+# require mode and only warns in auto mode; a mismatch always blocks.
+verify_cli_script() {
+	script="$1"
+	[ "$VERIFY_MODE" != "off" ] || return 0
+	cli_base="${LEVELRAIL_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
+	cli_proto="$HTTPS_ONLY"
+	case "$cli_base" in
+	https://*) ;;
+	http://*)
+		[ "${LEVELRAIL_INSECURE_MIRROR:-}" = "1" ] || return 1
+		cli_proto="=http"
+		;;
+	*) return 1 ;;
+	esac
+	cli_sums="${script}.checksums"
+	cli_expected=""
+	if curl -fsSL --proto "$cli_proto" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$cli_sums" "${cli_base}/checksums.txt" 2>/dev/null; then
+		verify_signature "$cli_sums" "$cli_base" "$cli_proto"
+		cli_expected="$(grep " install-cli.sh\$" "$cli_sums" | awk '{ print $1 }')"
+	fi
+	rm -f "$cli_sums" "${cli_sums}.sigstore.json"
+	if [ -z "$cli_expected" ]; then
+		if [ "$VERIFY_MODE" = "require" ]; then
+			warn "APP_INSTALL_VERIFY=require and install-cli.sh has no checksum entry for ${VERSION}, not running it"
+			return 1
+		fi
+		warn "install-cli.sh has no checksum entry for ${VERSION}, running it unverified"
+		return 0
+	fi
+	if [ "$(sha256sum "$script" | awk '{ print $1 }')" != "$cli_expected" ]; then
+		warn "install-cli.sh does not match the release checksum, not running it"
+		return 1
+	fi
+	log "CLI installer checksum verified."
+}
+
 # install_cli reuses install-cli.sh so the CLI gets the same checksum and
 # signature checks as the server binary. Never fatal: the server is already up.
 install_cli() {
@@ -1688,6 +1726,7 @@ install_cli() {
 	fi
 	cli_script="$(mktemp)"
 	if curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$cli_script" "$CLI_INSTALLER_URL" 2>/dev/null &&
+		verify_cli_script "$cli_script" &&
 		LEVELRAIL_VERSION="$VERSION" LEVELRAIL_CLI_INSTALL_DIR="${LEVELRAIL_CLI_INSTALL_DIR:-/usr/local/bin}" sh "$cli_script"; then
 		rm -f "$cli_script"
 		CLI_PRESENT=1
