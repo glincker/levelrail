@@ -74,7 +74,12 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 
 	opts := composeDeployOpts{profiles: splitProfiles(r.URL.Query().Get("profiles")), source: store.ComposeRevisionSourceAPI}
 	if id := r.URL.Query().Get("template"); id != "" {
-		if _, ok := catalog.TemplateByID(id); ok {
+		if instanceOnlyTemplates[id] && !callerIsInstance(r) {
+			writeError(w, http.StatusForbidden, msgTemplateInstanceOnly)
+			return
+		}
+		// A tenant's template label is ignored: provenance comes from the catalog paths.
+		if _, ok := catalog.TemplateByID(id); ok && callerIsInstance(r) {
 			opts.source, opts.templateID = store.ComposeRevisionSourceTemplate, id
 		}
 	}
@@ -100,6 +105,10 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 // do but return.
 func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name string, body []byte, opts composeDeployOpts) (composeDeployResponse, bool) {
 	isTrial := opts.isTrial
+	if instanceOnlyTemplates[opts.templateID] && !callerIsInstance(r) {
+		writeError(w, http.StatusForbidden, msgTemplateInstanceOnly)
+		return composeDeployResponse{}, false
+	}
 	trace := deploytrace.NewBuffered()
 	parseSpan := trace.Begin(r.Context(), deploytrace.StepComposeParse, fmt.Sprintf("parsing compose file (%d bytes)", len(body)))
 	file, err := compose.Parse(body)

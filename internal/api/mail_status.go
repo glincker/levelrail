@@ -85,7 +85,7 @@ func mailRank(s mailStatusResponse) int {
 // instance's reserved label. Name prefixes and tenant-settable labels never
 // count, so another app cannot stand in for the engine.
 func (rt *Router) mailEngineContainer(ctx context.Context, svc store.DesiredService) (docker.ContainerState, error) {
-	if svc.TemplateID != mailTemplateID {
+	if !rt.isInstanceMailApp(ctx, svc) {
 		return docker.ContainerState{}, errMailEngineNotMail
 	}
 	if rt.containers == nil {
@@ -167,7 +167,7 @@ func (rt *Router) handleMailStatus(w http.ResponseWriter, r *http.Request) {
 	want := r.URL.Query().Get("app")
 	best, found := mailStatusResponse{}, false
 	for _, s := range svcs {
-		if s.TemplateID != mailTemplateID || (want != "" && s.Name != want) {
+		if !rt.isInstanceMailApp(r.Context(), s) || (want != "" && s.Name != want) {
 			continue
 		}
 		cand := rt.mailProbe(r.Context(), s)

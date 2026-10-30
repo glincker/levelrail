@@ -78,7 +78,7 @@ func (rt *Router) pickMailApp(r *http.Request, want string) (store.DesiredServic
 	var best store.DesiredService
 	bestRank, found := -1, false
 	for _, s := range svcs {
-		if s.TemplateID != mailTemplateID || (want != "" && s.Name != want) {
+		if !rt.isInstanceMailApp(r.Context(), s) || (want != "" && s.Name != want) {
 			continue
 		}
 		rank := 0
