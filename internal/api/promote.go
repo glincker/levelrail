@@ -188,9 +188,16 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		applyPromoteEnv(&target, res.source, buildPromoteDiff(res.source, res.target))
 	}
 	image := promoteImageRef(res.source)
-	undo := func() {}
 	if rel != nil {
 		image = rel.ImageRef
+	}
+	// Same registry check the approval path runs; inconclusive checks pass.
+	if rt.verifyPromotionDigest(r.Context(), image) != nil {
+		writeError(w, http.StatusGone, "image "+image+" is no longer in its registry; rebuild or promote another release")
+		return
+	}
+	undo := func() {}
+	if rel != nil {
 		var err error
 		if undo, err = rt.retargetBinding(r.Context(), target, rel.ID, bindingReasonPromote, rt.actorLabel(r), ""); err != nil {
 			rt.internalError(w, "api: promote app: retarget binding failed", err, slog.String("target", res.target.Name))
