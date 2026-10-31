@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -103,6 +104,9 @@ func (rt *Router) scimBefore(r *http.Request, c scimCall) (scimPre, int, string)
 		}
 		pre.inactive = scimInactive(body.Active)
 		if err := rt.scimPrepareExisting(ctx, body); err != nil {
+			if errors.Is(err, errSCIMRootAccount) {
+				return pre, http.StatusConflict, err.Error()
+			}
 			rt.logger.Error("api: scim: prepare existing account failed", slog.String("error", err.Error()))
 			return pre, http.StatusInternalServerError, "internal error"
 		}
@@ -134,6 +138,9 @@ func (rt *Router) scimBefore(r *http.Request, c scimCall) (scimPre, int, string)
 	return pre, 0, ""
 }
 
+// errSCIMRootAccount keeps directory sync away from accounts that hold root.
+var errSCIMRootAccount = errors.New("accounts with root access are not managed by directory provisioning")
+
 // scimPrepareExisting mirrors a platform account with the posted email into
 // the library and binds it to the posted externalId, so the library's own
 // idempotent create adopts it instead of answering 409.
@@ -148,6 +155,9 @@ func (rt *Router) scimPrepareExisting(ctx context.Context, body scimUserBody) er
 	}
 	if err != nil {
 		return err
+	}
+	if slices.Contains(existing.Abilities, AbilityRoot) {
+		return errSCIMRootAccount
 	}
 	engine, err := rt.libSessions.SyncUser(ctx, toLibUser(*existing))
 	if err != nil {
@@ -170,6 +180,14 @@ func (rt *Router) scimLastRootGuard(ctx context.Context, engineID string) (int, 
 			return http.StatusConflict, err.Error()
 		}
 		return http.StatusInternalServerError, "internal error"
+	}
+	// Any root member, not only the last one, stays out of directory control.
+	user, err := rt.auth.GetUserByID(ctx, legacy)
+	if err != nil {
+		return http.StatusInternalServerError, "internal error"
+	}
+	if slices.Contains(user.Abilities, AbilityRoot) {
+		return http.StatusConflict, errSCIMRootAccount.Error()
 	}
 	return 0, ""
 }

@@ -291,24 +291,33 @@ func TestSCIMGroupsDriveRoles(t *testing.T) {
 	}
 }
 
-func TestSCIMNeverDeprovisionsLastRoot(t *testing.T) {
+func TestSCIMKeepsRootOutOfProvisioning(t *testing.T) {
 	h := newSCIMHarness(t)
-	root, err := h.db.GetUserByEmail(context.Background(), testAdminUsername)
+	ctx := context.Background()
+	root, err := h.db.GetUserByEmail(ctx, testAdminUsername)
 	if err != nil {
 		t.Fatal(err)
 	}
-	rec := h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+testSCIMUserSchema+`"],"userName":"`+root.Email+`","externalId":"ext-root","emails":[{"value":"`+root.Email+`","primary":true}]}`)
-	if rec.Code != http.StatusOK {
-		t.Skipf("root account is not an email address here: %d %s", rec.Code, rec.Body)
-	}
-	id, _ := scimResponseID(rec.Body.Bytes())
-	if rec := h.patch("/Users/"+id, `[{"op":"replace","path":"active","value":false}]`); rec.Code != http.StatusConflict {
-		t.Fatalf("deactivating the last root: %d %s", rec.Code, rec.Body)
-	}
-	if rec := h.do(http.MethodDelete, "/Users/"+id, h.token, ""); rec.Code != http.StatusConflict {
-		t.Fatalf("deleting the last root: %d %s", rec.Code, rec.Body)
-	}
-	if h.rt.accountDisabled(context.Background(), root.ID) {
-		t.Fatal("the last root user was disabled")
-	}
+	t.Run("adopting a root account is refused", func(t *testing.T) {
+		rec := h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+testSCIMUserSchema+`"],"userName":"`+root.Email+`","externalId":"ext-root","emails":[{"value":"`+root.Email+`","primary":true}]}`)
+		if rec.Code != http.StatusConflict {
+			t.Fatalf("adopt root: %d %s", rec.Code, rec.Body)
+		}
+	})
+	t.Run("deprovisioning a non-last root is refused", func(t *testing.T) {
+		id := h.createUser("second@example.com")
+		second := h.platformUser(id)
+		if err := h.db.UpdateUserAbilities(ctx, second.ID, []string{AbilityRoot}); err != nil {
+			t.Fatal(err)
+		}
+		if rec := h.patch("/Users/"+id, `[{"op":"replace","path":"active","value":false}]`); rec.Code != http.StatusConflict {
+			t.Fatalf("deactivate: %d %s", rec.Code, rec.Body)
+		}
+		if rec := h.do(http.MethodDelete, "/Users/"+id, h.token, ""); rec.Code != http.StatusConflict {
+			t.Fatalf("delete: %d %s", rec.Code, rec.Body)
+		}
+		if h.rt.accountDisabled(ctx, second.ID) {
+			t.Fatal("a root member was disabled")
+		}
+	})
 }
