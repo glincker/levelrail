@@ -35,6 +35,7 @@ var categoryOrder = []string{
 	"Database Tools",
 	"Developer Tools",
 	"Finance",
+	"Games",
 	"Infrastructure",
 	"IoT",
 	"Media",

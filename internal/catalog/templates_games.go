@@ -36,7 +36,7 @@ var catalogGamesPlain = []Template{
 		Description: "Players connect on UDP 34197: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 34197 in the host and cloud firewall.\n" +
 			"A new map is generated on first start. Edit server-settings.json under the data volume to set the name, password and visibility.\n" +
 			"RCON is not published. Image is multi-arch (amd64 and arm64).",
-		Category:               "Applications",
+		Category:               "Games",
 		DocumentationURL:       "https://github.com/factoriotools/factorio-docker",
 		RecommendedMemoryBytes: 2147483648, // 2Gi
 		Compose: `services:
@@ -61,7 +61,7 @@ var catalogGamesPlain = []Template{
 		Description: "Players connect on TCP 7777: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 7777 in the host and cloud firewall.\n" +
 			"The world is created on first start and kept in the data volume. The image has no password by default: add one by overriding the start command with -password.\n" +
 			"Image is multi-arch (amd64 and arm64).",
-		Category:               "Applications",
+		Category:               "Games",
 		DocumentationURL:       "https://github.com/Ryshe/terraria-docker",
 		RecommendedMemoryBytes: 1073741824, // 1Gi
 		Compose: `services:
@@ -90,7 +90,7 @@ var catalogGamesPlain = []Template{
 			"The admin password is generated; read it in the service environment settings. Set a join password in the data volume's PalWorldSettings.ini.\n" +
 			"Needs about 16 GB of RAM for a few players, so it does not fit a 12 GB host that also runs other apps. RCON is not published.\n" +
 			"Image is multi-arch (amd64 and arm64); the game itself is x86 software, so on arm64 it runs under emulation and is slow.",
-		Category:               "Applications",
+		Category:               "Games",
 		DocumentationURL:       "https://github.com/thijsvl/palworld-server-docker",
 		RecommendedMemoryBytes: 17179869184, // 16Gi
 		Compose: `services:

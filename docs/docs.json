@@ -576,23 +576,18 @@
               "self-host/cockpit-cms",
               "self-host/drupal",
               "self-host/espocrm",
-              "self-host/factorio",
               "self-host/ghost",
               "self-host/glpi",
               "self-host/joomla",
               "self-host/kutt",
               "self-host/lowcoder",
               "self-host/mediawiki",
-              "self-host/minecraft-bedrock",
-              "self-host/minecraft",
               "self-host/moodle",
               "self-host/nextcloud",
               "self-host/odoo",
               "self-host/orangehrm",
-              "self-host/palworld",
               "self-host/redlib",
               "self-host/searxng",
-              "self-host/terraria",
               "self-host/vvveb",
               "self-host/wordpress"
             ]
@@ -755,6 +750,16 @@
               "self-host/paymenter",
               "self-host/sure",
               "self-host/wallos"
+            ]
+          },
+          {
+            "group": "Games",
+            "pages": [
+              "self-host/factorio",
+              "self-host/minecraft-bedrock",
+              "self-host/minecraft",
+              "self-host/palworld",
+              "self-host/terraria"
             ]
           },
           {

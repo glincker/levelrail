@@ -2,7 +2,7 @@ id: minecraft-bedrock
 name: Minecraft Bedrock Server
 description: "A Minecraft Bedrock Edition dedicated server for phones, consoles and Windows players. You must accept the Minecraft EULA yourself by entering TRUE. Players connect on UDP 19132: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 19132 in the host and cloud firewall. The image publishes amd64 and arm64 builds, but the Bedrock server itself is x86 software, so on arm64 it runs under emulation and needs more CPU."
 icon: cube
-category: Applications
+category: Games
 documentation_url: https://github.com/itzg/docker-minecraft-bedrock-server
 recommended_memory_bytes: 2147483648
 env:
