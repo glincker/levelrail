@@ -240,7 +240,7 @@ func (rt *Router) applyDomainDNS(ctx context.Context, r *http.Request, app, doma
 		return res, nil
 	}
 	res.Record = recordResource(desired)
-	res.Proxied = settings.DNSProxied && target.Proxy != nil && desired.Type != "TXT"
+	res.Proxied = rt.appDNSProxied(ctx, app, settings) && target.Proxy != nil && desired.Type != "TXT"
 
 	existing, err := target.Manager.GetRecords(ctx, target.Zone)
 	if err != nil {

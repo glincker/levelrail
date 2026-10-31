@@ -145,6 +145,16 @@ A static site you deploy with `--ref` is one deploy of one ref. To get a stable 
 
 A source-connected static site gets a preview for each pull request when previews are on. The pull request's head commit is built and published as its own site, `<site>-pr-<number>`, on the preview URL, and the pull request gets the usual comment and commit status. The live site, its domain and its release history are not touched. Closing or merging the pull request, or the stale preview sweep, removes the preview's files. Static previews do not enforce the preview basic auth gate. See [static sites in previews](/preview-environments#static-sites).
 
+## App env in static builds
+
+A static build runs in a throwaway container, so app env does not reach it by default. Levelrail passes the literal env vars of the app whose names start with `VITE_`, `NEXT_PUBLIC_`, `PUBLIC_` or `GATSBY_`, because those frameworks copy them into the published files. Secrets, references to other resources and Vault values are never passed, and neither is anything outside the allowed prefixes. Values in `build.args` win over env of the same name. Set `APP_STATIC_BUILD_ENV_PREFIXES` (comma separated) to change the prefixes, or to an empty value to pass nothing.
+
+Anything a build puts in the published directory is public. Do not give a `PUBLIC_` variable a value you would not print on the page.
+
+## Front a static site with Cloudflare
+
+With a Cloudflare DNS integration connected, Levelrail creates a domain's record as proxied when the server-wide proxy setting is on. The Cache tab of an app has a Cloudflare proxy switch that overrides it for that app alone (`GET` and `PUT /api/v1/apps/{name}/cdn`, body `{"proxied": true | false | null}`, where `null` goes back to the server setting). The change applies to records written afterwards; run the domain's DNS fix to update an existing record. Keep the Cloudflare SSL/TLS mode on Full (strict).
+
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.

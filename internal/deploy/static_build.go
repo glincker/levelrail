@@ -68,6 +68,7 @@ func (p *Pipeline) deployStaticBuilt(ctx context.Context, req Request, progress 
 	if err := spec.ValidateStaticBuild(req.ServiceName, b.Type, b.Command, b.Publish, b.Path, b.Args); err != nil {
 		return "", fmt.Errorf("deploy: %w", err)
 	}
+	b.Args = staticBuildArgs(req.Service.Env, b.Args, StaticBuildEnvPrefixes())
 	buildRoot, err := resolveBuildRoot(req.SourceDir, b.BaseDirectory)
 	if err != nil {
 		return fail("%w", err)
