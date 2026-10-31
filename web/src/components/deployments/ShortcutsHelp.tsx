@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { KeyboardGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,13 +10,14 @@ import { Kbd } from '@/components/kit'
 import { DEPLOYMENT_SHORTCUTS } from '../../lib/deploymentsKeyboard'
 
 export function ShortcutsHelp() {
+  const { t } = useTranslation('deploys')
   return (
     <Popover>
       <PopoverTrigger
         render={
           <Button variant="ghost" size="sm" className="hidden md:inline-flex">
             <KeyboardGlassIcon size="1.4em" aria-hidden="true" />
-            Shortcuts
+            {t('deployList.shortcuts')}
           </Button>
         }
       />

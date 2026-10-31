@@ -1,0 +1,335 @@
+{
+  "nav": {
+    "areas": {
+      "general": {
+        "title": "Espacio de trabajo",
+        "description": "Perfil, organizaciones, entornos y configuración inicial."
+      },
+      "access": {
+        "title": "Personas y acceso",
+        "description": "Quién puede iniciar sesión y qué puede hacer."
+      },
+      "security": {
+        "title": "Seguridad",
+        "description": "Bóveda de secretos, firewall del host y postura de seguridad."
+      },
+      "developer": {
+        "title": "Desarrollo",
+        "description": "Acceso por CLI y API."
+      },
+      "ai": {
+        "title": "IA y agentes",
+        "description": "Conexiones de agentes, control de IA y el asistente."
+      },
+      "domains": {
+        "title": "Dominios y TLS",
+        "description": "Ingreso de la plataforma y certificados."
+      },
+      "backups": {
+        "title": "Copias de seguridad y almacenamiento",
+        "description": "Dónde se guardan las copias de seguridad y los artefactos."
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "description": "Canales de alerta, correo y la página de estado."
+      },
+      "integrations": {
+        "title": "Git y registros",
+        "description": "Aplicaciones de proveedores Git y registros de contenedores."
+      },
+      "beta": {
+        "title": "Funciones beta",
+        "description": "Funciones que ya sirven pero aún se están afinando."
+      },
+      "updates": {
+        "title": "Actualizaciones",
+        "description": "Versión actual y versiones disponibles."
+      },
+      "advanced": {
+        "title": "Sistema",
+        "description": "Proveedores, contenedores, observabilidad y controles de bajo nivel."
+      }
+    },
+    "items": {
+      "account": {
+        "title": "Cuenta",
+        "description": "Perfil y contraseña."
+      },
+      "iam-policies": {
+        "title": "Políticas IAM",
+        "description": "Acceso Allow/Deny por recurso, encima de las habilidades propias del token."
+      },
+      "security": {
+        "title": "Seguridad",
+        "description": "Sesiones y protección del inicio de sesión."
+      },
+      "security-runtime": {
+        "title": "Seguridad y runtime",
+        "description": "Protección contra repetición de webhooks, límites de bind mounts y otras protecciones, activadas por defecto."
+      },
+      "security-center": {
+        "title": "Centro de seguridad",
+        "description": "Puntaje de seguridad, todas las sesiones y dispositivos, y política de tokens."
+      },
+      "tokens": {
+        "title": "Tokens de API",
+        "description": "Credenciales con alcance y revocables para la CLI, CI y MCP."
+      },
+      "mobile-devices": {
+        "title": "Dispositivos móviles",
+        "description": "Vincula un teléfono con un código QR y revoca los teléfonos vinculados."
+      },
+      "plugins": {
+        "title": "Plugins",
+        "description": "Instala plugins firmados, aprueba lo que pueden hacer y confía en claves de editores."
+      },
+      "agents": {
+        "title": "Agentes",
+        "description": "Conecta un agente de IA por MCP y administra sus tokens."
+      },
+      "ai-control": {
+        "title": "Control de IA",
+        "description": "Desactiva el acceso de agentes, déjalo en solo lectura o actívalo, y límitalo a entornos concretos."
+      },
+      "cli-access": {
+        "title": "Acceso por CLI",
+        "description": "Aprueba o rechaza los inicios de sesión hechos con levelrail-cli auth login."
+      },
+      "api-explorer": {
+        "title": "Explorador de API",
+        "description": "Explora y prueba endpoints reales sin salir del panel."
+      },
+      "users": {
+        "title": "Usuarios",
+        "description": "Todas las personas con acceso a esta plataforma."
+      },
+      "teams": {
+        "title": "Equipos",
+        "description": "Miembros, roles e invitaciones de cada equipo."
+      },
+      "roles": {
+        "title": "Roles",
+        "description": "Conjuntos de habilidades con nombre, incluido el rol de invitado."
+      },
+      "oauth": {
+        "title": "Inicio de sesión con OAuth",
+        "description": "Permite iniciar sesión con Google o GitHub."
+      },
+      "sso": {
+        "title": "Inicio de sesión único",
+        "description": "Proveedores de identidad SAML, sincronización de directorio y roles por grupo."
+      },
+      "session-policy": {
+        "title": "Política de sesiones",
+        "description": "Tiempo de inactividad, duración de la sesión, redes permitidas y MFA obligatorio por equipo."
+      },
+      "organizations": {
+        "title": "Organizaciones",
+        "description": "Agrupa proyectos relacionados bajo una organización."
+      },
+      "environments": {
+        "title": "Entornos",
+        "description": "Entornos de desarrollo, pruebas, UAT y producción, y cuáles están protegidos."
+      },
+      "stacks": {
+        "title": "Stacks",
+        "description": "Conjuntos de recursos con historial de revisiones, rollback y fijado."
+      },
+      "stack-templates": {
+        "title": "Plantillas de stack",
+        "description": "Paquetes de stack iniciales para renderizar, previsualizar y copiar."
+      },
+      "github-app": {
+        "title": "Aplicación de GitHub",
+        "description": "Acceso a repositorios privados para despliegues desde Git."
+      },
+      "gitlab-app": {
+        "title": "Aplicación de GitLab",
+        "description": "Acceso a proyectos de gitlab.com o autoalojados para despliegues desde Git."
+      },
+      "bitbucket-app": {
+        "title": "Aplicación de Bitbucket",
+        "description": "Acceso a repositorios de Bitbucket Cloud para despliegues desde Git."
+      },
+      "gitea-app": {
+        "title": "Aplicación de Gitea",
+        "description": "Acceso a repositorios de Gitea autoalojado para despliegues desde Git."
+      },
+      "forgejo-app": {
+        "title": "Aplicación de Forgejo",
+        "description": "Acceso a repositorios de Forgejo autoalojado para despliegues desde Git."
+      },
+      "bitbucket-server-app": {
+        "title": "Bitbucket Server",
+        "description": "Acceso a repositorios de Bitbucket Server y Data Center con un token de acceso personal."
+      },
+      "notification-channels": {
+        "title": "Canales de notificación",
+        "description": "Alertas por Slack, Discord, Telegram, webhook y correo."
+      },
+      "deploy-policies": {
+        "title": "Políticas de despliegue",
+        "description": "Barreras que se revisan antes de cada despliegue: registros, sondas, límites, montajes, etiquetas."
+      },
+      "build-performance": {
+        "title": "Rendimiento de compilación",
+        "description": "Tiempo límite de compilación y cuántas se ejecutan a la vez."
+      },
+      "maintenance": {
+        "title": "Mantenimiento programado",
+        "description": "Planifica el tiempo fuera de servicio, muéstralo en el panel y la página de estado, y retén los despliegues."
+      },
+      "status-page": {
+        "title": "Página de estado",
+        "description": "Página pública opcional con el estado de los componentes, disponibilidad e incidentes."
+      },
+      "backup-targets": {
+        "title": "Destinos de copias de seguridad",
+        "description": "Buckets compatibles con S3 para las copias de seguridad de bases de datos administradas."
+      },
+      "storage": {
+        "title": "Destinos de almacenamiento",
+        "description": "Buckets de AWS S3, R2, B2, MinIO y Wasabi para archivos de logs y copias de seguridad."
+      },
+      "registry-credentials": {
+        "title": "Credenciales de registro",
+        "description": "Descarga imágenes privadas con build.type: image."
+      },
+      "node-providers": {
+        "title": "Proveedores de nodos en la nube",
+        "description": "Tokens de Hetzner y DigitalOcean para aprovisionar nodos automáticamente."
+      },
+      "registry": {
+        "title": "Registro de contenedores",
+        "description": "Registro de imágenes integrado para la caché de compilación multinodo."
+      },
+      "email": {
+        "title": "Correo",
+        "description": "SMTP saliente para alertas y restablecimiento de contraseñas."
+      },
+      "email-templates": {
+        "title": "Plantillas de correo",
+        "description": "Edita cada correo que envía la plataforma, con vista previa en vivo."
+      },
+      "email-audiences": {
+        "title": "Audiencias de correo",
+        "description": "Grupos guardados de personas a quienes escribir, con exclusiones."
+      },
+      "email-messages": {
+        "title": "Mensajes de correo",
+        "description": "Escribe a una audiencia y consulta el historial de entregas."
+      },
+      "cloudflare-tunnel": {
+        "title": "Cloudflare Tunnel",
+        "description": "Expone este plano de control sin abrir un puerto de entrada."
+      },
+      "vault": {
+        "title": "Vault",
+        "description": "Resuelve en vivo los secretos de las aplicaciones desde una instancia externa de HashiCorp Vault."
+      },
+      "data-export": {
+        "title": "Exportación de datos",
+        "description": "Envía logs, eventos de auditoría y métricas a Loki, syslog, un webhook, un bucket o un colector OTLP."
+      },
+      "event-webhooks": {
+        "title": "Webhooks de eventos",
+        "description": "Callbacks HTTPS firmados para eventos de la plataforma, con reintentos y registro de entregas."
+      },
+      "traffic-export": {
+        "title": "Exportación de tráfico",
+        "description": "Envía registros de solicitudes a PostHog, OpenTelemetry o un webhook, sin identidad del visitante por defecto."
+      },
+      "observability": {
+        "title": "Observabilidad",
+        "description": "Datos de conexión de lectura remota y un enlace a tu propio Grafana."
+      },
+      "ai-assistant": {
+        "title": "Asistente de IA",
+        "description": "Usa tu propia clave de API de un LLM para el chat asistente de la plataforma."
+      },
+      "import-platform": {
+        "title": "Importar desde otra plataforma",
+        "description": "Trae aplicaciones desde Coolify, Dokploy o CapRover."
+      },
+      "general": {
+        "title": "General",
+        "description": "Estado y configuración del sistema."
+      },
+      "control-plane-backup": {
+        "title": "Copia del plano de control",
+        "description": "Snapshots, copias fuera del equipo, custodia de claves y simulacros de restauración de esta instancia."
+      },
+      "dr-report": {
+        "title": "Informe de recuperación",
+        "description": "Planifica y ejecuta la recuperación de todo el servidor y revisa lo restaurado."
+      },
+      "control-plane-health": {
+        "title": "Salud del plano de control",
+        "description": "Goroutines, latencia de la base de datos, retraso de reconciliación y carga de streams, con soluciones."
+      },
+      "system-status": {
+        "title": "Doctor",
+        "description": "Comprobaciones de salud con soluciones: Docker, disco, puertos, certificados, copias de seguridad, nodos."
+      },
+      "firewall": {
+        "title": "Firewall",
+        "description": "Reglas de permitir o denegar por puerto, protocolo y origen, reconciliadas en este nodo."
+      },
+      "containers": {
+        "title": "Contenedores",
+        "description": "Todos los contenedores de este nodo, administrados o no por esta plataforma."
+      },
+      "cleanup": {
+        "title": "Limpieza",
+        "description": "Retención, vistas previas e historial de ejecuciones de los datos almacenados, más limpieza de disco y Docker."
+      },
+      "platform": {
+        "title": "Plataforma",
+        "description": "Estado de HTTPS, ingreso, direcciones y proveedores de DNS, con búsqueda en toda la configuración de la plataforma."
+      },
+      "domains": {
+        "title": "Dominios",
+        "description": "Ingreso de la plataforma: dominio del panel y certificados ACME."
+      },
+      "certificates": {
+        "title": "Certificados TLS",
+        "description": "El certificado de cada dominio en un solo lugar: vencimiento, emisor, renovar ahora y carga de certificados propios."
+      },
+      "infrastructure": {
+        "title": "Infraestructura como código",
+        "description": "Planifica y aplica archivos YAML de recursos, y exporta el estado en vivo."
+      },
+      "database-upgrades": {
+        "title": "Actualizaciones de bases de datos",
+        "description": "Política de actualización predeterminada y ventana de mantenimiento."
+      },
+      "updates": {
+        "title": "Actualizaciones",
+        "description": "Versión actual y versiones disponibles."
+      },
+      "beta-features": {
+        "title": "Funciones beta",
+        "description": "Activa funciones que ya sirven pero aún se están afinando."
+      },
+      "audit-log": {
+        "title": "Registro de auditoría",
+        "description": "Quién cambió qué, en cada sesión y token de API."
+      },
+      "git-connections": {
+        "title": "Conexiones Git",
+        "description": "Todas las cuentas de GitHub, GitLab, Bitbucket, Gitea y Forgejo en un solo lugar."
+      },
+      "benchmarks": {
+        "title": "Benchmarks",
+        "description": "Ejecuciones de benchmark guardadas con host, compilación, límites y vista de comparación."
+      }
+    },
+    "search": "Buscar en la configuración",
+    "back": "Volver",
+    "noMatchTitle": "Ninguna configuración coincide con \"{{query}}\"",
+    "noMatchDescription": "Prueba con otra palabra o borra la búsqueda para ver todas las áreas.",
+    "title": "Configuración",
+    "description": "Configuración de la cuenta, el equipo y la plataforma.",
+    "jumpTo": "Ir a un área"
+  }
+}

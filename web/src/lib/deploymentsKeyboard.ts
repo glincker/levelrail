@@ -1,3 +1,4 @@
+import i18n from '../i18n'
 export type DeploymentKeyAction =
   | { type: 'move'; delta: 1 | -1 }
   | { type: 'open' }
@@ -55,13 +56,57 @@ export function nextFocusId(
   return ids[next] ?? ''
 }
 
+function shortcutLabel(id: string, defaultValue: string): string {
+  return i18n.t(`deploys:deployList.shortcutLabels.${id}`, { defaultValue })
+}
+
 export const DEPLOYMENT_SHORTCUTS: { keys: string[]; label: string }[] = [
-  { keys: ['/'], label: 'Search' },
-  { keys: ['f'], label: 'Add filter' },
-  { keys: ['j', 'k'], label: 'Next or previous deployment' },
-  { keys: ['Enter'], label: 'Open details' },
-  { keys: ['Esc'], label: 'Close details' },
-  { keys: ['r'], label: 'Redeploy (asks first)' },
-  { keys: ['b'], label: 'Roll back to it (asks first)' },
-  { keys: ['c'], label: 'Cancel a running deploy (asks first)' },
+  {
+    keys: ['/'],
+    get label() {
+      return shortcutLabel('search', 'Search')
+    },
+  },
+  {
+    keys: ['f'],
+    get label() {
+      return shortcutLabel('addFilter', 'Add filter')
+    },
+  },
+  {
+    keys: ['j', 'k'],
+    get label() {
+      return shortcutLabel('nextPrev', 'Next or previous deployment')
+    },
+  },
+  {
+    keys: ['Enter'],
+    get label() {
+      return shortcutLabel('open', 'Open details')
+    },
+  },
+  {
+    keys: ['Esc'],
+    get label() {
+      return shortcutLabel('close', 'Close details')
+    },
+  },
+  {
+    keys: ['r'],
+    get label() {
+      return shortcutLabel('redeploy', 'Redeploy (asks first)')
+    },
+  },
+  {
+    keys: ['b'],
+    get label() {
+      return shortcutLabel('rollback', 'Roll back to it (asks first)')
+    },
+  },
+  {
+    keys: ['c'],
+    get label() {
+      return shortcutLabel('cancel', 'Cancel a running deploy (asks first)')
+    },
+  },
 ]

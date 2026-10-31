@@ -1,0 +1,141 @@
+{
+  "breadcrumb": {
+    "settings": "Configuración",
+    "platform": "Plataforma",
+    "label": "Ruta de navegación"
+  },
+  "overview": {
+    "title": "Plataforma",
+    "description": "Dónde se puede acceder a este servidor y cómo obtiene certificados. Cada recuadro abre su propia página.",
+    "tilesLabel": "Estado de la plataforma",
+    "open": "Abrir",
+    "loading": "Comprobando",
+    "https": {
+      "title": "HTTPS",
+      "off": "HTTPS no activado",
+      "offLine": "El panel y tus aplicaciones se sirven sin un certificado de confianza.",
+      "on": "HTTPS activado",
+      "onLine": "Sirviendo {{domain}} por HTTPS.",
+      "enable": "Activar HTTPS"
+    },
+    "ingress": {
+      "title": "Ingreso",
+      "healthy": "Ingreso saludable",
+      "healthyLine": "Los puertos 80 y 443 responden en {{host}}.",
+      "healthyNoHost": "Los puertos 80 y 443 responden.",
+      "attention": "El ingreso necesita atención",
+      "attentionLine": "Abre la página para ver qué puerto o dirección tiene el problema."
+    },
+    "addresses": {
+      "title": "Direcciones",
+      "set": "Dirección del panel definida",
+      "setLine": "{{url}}",
+      "unset": "Sin dirección del panel",
+      "unsetLine": "Define la dirección pública que usa la gente para llegar a este panel."
+    },
+    "dns": {
+      "title": "Proveedores de DNS",
+      "connected": "DNS: {{providers}} conectado",
+      "connectedLine": "Podemos encargarnos de los registros y de los certificados DNS-01.",
+      "none": "Ningún proveedor de DNS conectado",
+      "noneLine": "Conecta uno para emitir certificados comodín y crear registros."
+    },
+    "search": {
+      "label": "Buscar en la configuración",
+      "placeholder": "Buscar en la configuración de la plataforma",
+      "hint": "Presiona / para buscar",
+      "results": "Resultados de la configuración de la plataforma",
+      "empty": "Ninguna configuración de la plataforma coincide con \"{{query}}\".",
+      "count_one": "{{count}} configuración",
+      "count_other": "{{count}} configuraciones",
+      "go": "Abrir {{title}} en la página {{page}}"
+    }
+  },
+  "pages": {
+    "https": {
+      "title": "HTTPS",
+      "description": "Activa un certificado de confianza para el panel y revisa cómo van los certificados de cada dominio."
+    },
+    "ingress": {
+      "title": "Ingreso",
+      "description": "Cómo llega el tráfico a este servidor: el proxy, sus puertos y una guía para usar tu propio proxy inverso."
+    },
+    "addresses": {
+      "title": "Direcciones",
+      "description": "La dirección del panel, el dominio base de las aplicaciones, los nombres de host de respaldo automáticos y la automatización de DNS."
+    },
+    "dnsProviders": {
+      "title": "Proveedores de DNS",
+      "description": "Conecta un proveedor de DNS para que los certificados y los registros se administren por ti."
+    }
+  },
+  "pageNames": {
+    "https": "HTTPS",
+    "ingress": "Ingreso",
+    "addresses": "Direcciones",
+    "dns-providers": "Proveedores de DNS"
+  },
+  "index": {
+    "enableHttps": {
+      "title": "Activar HTTPS",
+      "description": "Emite un certificado de confianza y sirve el panel por HTTPS."
+    },
+    "certificates": {
+      "title": "Resumen de certificados",
+      "description": "Vencimiento y emisor de cada certificado, con un enlace al centro de certificados."
+    },
+    "ingressSettings": {
+      "title": "Configuración de ingreso",
+      "description": "Dominio principal, correo ACME y HSTS."
+    },
+    "ingressEdge": {
+      "title": "Borde de ingreso",
+      "description": "El proxy integrado y los puertos en los que escucha."
+    },
+    "connectivity": {
+      "title": "Conectividad de ingreso",
+      "description": "Si los puertos 80 y 443 responden en la dirección de este servidor."
+    },
+    "reverseProxy": {
+      "title": "Guía de proxy inverso",
+      "description": "Ejecuta esta plataforma detrás de tu propio proxy inverso."
+    },
+    "dashboardUrl": {
+      "title": "Dirección del panel",
+      "description": "La URL pública usada en enlaces, correos y webhooks."
+    },
+    "appsBaseDomain": {
+      "title": "Dominio base de las aplicaciones",
+      "description": "El dominio en el que las aplicaciones nuevas reciben un subdominio."
+    },
+    "fallbackDomains": {
+      "title": "Dominios de respaldo",
+      "description": "Nombres de host automáticos para aplicaciones que aún no tienen dominio."
+    },
+    "domainAutomation": {
+      "title": "Automatización de dominios",
+      "description": "Crea automáticamente registros DNS para los dominios nuevos."
+    },
+    "cloudflareDns": {
+      "title": "DNS de Cloudflare",
+      "description": "Token de API para registros DNS y certificados DNS-01."
+    },
+    "route53Dns": {
+      "title": "DNS de Route 53",
+      "description": "Credenciales de AWS para los registros de zonas hospedadas."
+    },
+    "googleCloudDns": {
+      "title": "Google Cloud DNS",
+      "description": "Cuenta de servicio para las zonas de Cloud DNS."
+    }
+  },
+  "strip": {
+    "label": "Estado de la plataforma",
+    "httpsOff": "HTTPS no activado",
+    "httpsOn": "HTTPS activado",
+    "enable": "Activar HTTPS",
+    "address": "Dirección del panel",
+    "addressUnset": "Sin definir",
+    "manage": "Configuración de la plataforma"
+  }
+}

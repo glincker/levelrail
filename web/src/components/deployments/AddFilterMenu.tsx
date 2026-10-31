@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CheckGlassIcon,
   ChevronLeftGlassIcon,
@@ -102,6 +103,7 @@ export function AddFilterMenu({
   onOpenChange,
   onToggle,
 }: AddFilterMenuProps) {
+  const { t } = useTranslation('deploys')
   const [key, setKey] = useState<FilterKey | null>(null)
   const [typed, setTyped] = useState('')
 
@@ -130,9 +132,13 @@ export function AddFilterMenu({
     <Popover open={open} onOpenChange={changeOpen}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm" aria-label="Add filter">
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label={t('deployList.addFilter')}
+          >
             <FunnelGlassIcon size="1.4em" aria-hidden="true" />
-            Add Filter
+            {t('deployList.addFilter')}
             <span className="hidden sm:inline">
               <Kbd keys={['f']} />
             </span>
@@ -141,7 +147,11 @@ export function AddFilterMenu({
       />
       <PopoverContent align="start" className="w-64 gap-1 p-1.5">
         {key === null ? (
-          <div role="menu" aria-label="Filter by" className="flex flex-col">
+          <div
+            role="menu"
+            aria-label={t('deployList.filterBy')}
+            className="flex flex-col"
+          >
             {FILTER_ORDER.map((k) => (
               <button
                 key={k}
@@ -173,8 +183,12 @@ export function AddFilterMenu({
               <Input
                 autoFocus
                 value={typed}
-                placeholder={`Find or type ${FILTER_LABEL[key].toLowerCase()}`}
-                aria-label={`${FILTER_LABEL[key]} value`}
+                placeholder={t('deployList.findOrType', {
+                  what: FILTER_LABEL[key].toLowerCase(),
+                })}
+                aria-label={t('deployList.valueLabel', {
+                  what: FILTER_LABEL[key],
+                })}
                 onChange={(e) => {
                   setTyped(e.target.value)
                 }}
@@ -194,8 +208,8 @@ export function AddFilterMenu({
               {shown.length === 0 && (
                 <p className="px-2 py-1.5 text-xs text-muted-foreground">
                   {canType && typed
-                    ? 'Press Enter to use this value.'
-                    : 'Nothing loaded yet.'}
+                    ? t('deployList.enterToUse')
+                    : t('deployList.nothingLoaded')}
                 </p>
               )}
               {shown.map((o) => (

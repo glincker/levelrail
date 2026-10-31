@@ -1,13 +1,30 @@
 import type { DeploymentFilters, FilterKey } from './deploymentFilters'
+import i18n from '../i18n'
 import { statusView, triggerLabel } from './deploymentPresentation'
 
 export const FILTER_LABEL: Record<FilterKey, string> = {
-  author: 'Author',
-  environment: 'Environment',
-  status: 'Status',
-  app: 'App',
-  branch: 'Branch',
-  trigger: 'Trigger',
+  get author() {
+    return i18n.t('deploys:deployList.keys.author', { defaultValue: 'Author' })
+  },
+  get environment() {
+    return i18n.t('deploys:deployList.keys.environment', {
+      defaultValue: 'Environment',
+    })
+  },
+  get status() {
+    return i18n.t('deploys:deployList.keys.status', { defaultValue: 'Status' })
+  },
+  get app() {
+    return i18n.t('deploys:deployList.keys.app', { defaultValue: 'App' })
+  },
+  get branch() {
+    return i18n.t('deploys:deployList.keys.branch', { defaultValue: 'Branch' })
+  },
+  get trigger() {
+    return i18n.t('deploys:deployList.keys.trigger', {
+      defaultValue: 'Trigger',
+    })
+  },
 }
 
 export function optionLabel(key: FilterKey, value: string): string {

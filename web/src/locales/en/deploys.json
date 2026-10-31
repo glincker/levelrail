@@ -573,5 +573,52 @@
     "description": "A newer queued deploy of a branch replaces older queued ones. Builds already running are never canceled. Set per app.",
     "noApps": "No apps loaded yet.",
     "appLabel": "App"
+  },
+  "deployList": {
+    "shortcuts": "Shortcuts",
+    "addFilter": "Add filter",
+    "filterBy": "Filter by",
+    "findOrType": "Find or type {{what}}",
+    "valueLabel": "{{what}} value",
+    "enterToUse": "Press Enter to use this value.",
+    "nothingLoaded": "Nothing loaded yet.",
+    "keys": {
+      "author": "Author",
+      "environment": "Environment",
+      "status": "Status",
+      "app": "App",
+      "branch": "Branch",
+      "trigger": "Trigger"
+    },
+    "status": {
+      "building": "Building",
+      "queued": "Queued",
+      "ready": "Ready",
+      "failed": "Failed",
+      "canceled": "Canceled",
+      "held": "Held",
+      "awaiting_approval": "Awaiting approval",
+      "rolled_back": "Rolled back",
+      "superseded": "Superseded"
+    },
+    "trigger": {
+      "git push": "Git push",
+      "manual": "Manual",
+      "rollback": "Rollback",
+      "api": "API",
+      "preview": "Preview",
+      "schedule": "Schedule",
+      "pipeline": "Pipeline"
+    },
+    "shortcutLabels": {
+      "search": "Search",
+      "addFilter": "Add filter",
+      "nextPrev": "Next or previous deployment",
+      "open": "Open details",
+      "close": "Close details",
+      "redeploy": "Redeploy (asks first)",
+      "rollback": "Roll back to it (asks first)",
+      "cancel": "Cancel a running deploy (asks first)"
+    }
   }
 }

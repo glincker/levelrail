@@ -573,5 +573,52 @@
     "description": "Un despliegue en cola más reciente de una rama reemplaza a los anteriores en cola. Las compilaciones en curso nunca se cancelan. Se define por aplicación.",
     "noApps": "Aún no hay aplicaciones cargadas.",
     "appLabel": "Aplicación"
+  },
+  "deployList": {
+    "shortcuts": "Atajos",
+    "addFilter": "Agregar filtro",
+    "filterBy": "Filtrar por",
+    "findOrType": "Busca o escribe {{what}}",
+    "valueLabel": "Valor de {{what}}",
+    "enterToUse": "Presiona Enter para usar este valor.",
+    "nothingLoaded": "Aún no se ha cargado nada.",
+    "keys": {
+      "author": "Autor",
+      "environment": "Entorno",
+      "status": "Estado",
+      "app": "Aplicación",
+      "branch": "Rama",
+      "trigger": "Origen"
+    },
+    "status": {
+      "building": "Compilando",
+      "queued": "En cola",
+      "ready": "Listo",
+      "failed": "Fallido",
+      "canceled": "Cancelado",
+      "held": "En espera",
+      "awaiting_approval": "Esperando aprobación",
+      "rolled_back": "Revertido",
+      "superseded": "Reemplazado"
+    },
+    "trigger": {
+      "git push": "Git push",
+      "manual": "Manual",
+      "rollback": "Rollback",
+      "api": "API",
+      "preview": "Vista previa",
+      "schedule": "Programado",
+      "pipeline": "Pipeline"
+    },
+    "shortcutLabels": {
+      "search": "Buscar",
+      "addFilter": "Agregar filtro",
+      "nextPrev": "Despliegue siguiente o anterior",
+      "open": "Abrir detalles",
+      "close": "Cerrar detalles",
+      "redeploy": "Volver a desplegar (pregunta antes)",
+      "rollback": "Revertir a este (pregunta antes)",
+      "cancel": "Cancelar un despliegue en curso (pregunta antes)"
+    }
   }
 }
