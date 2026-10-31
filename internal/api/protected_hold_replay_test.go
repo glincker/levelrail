@@ -189,3 +189,36 @@ func TestGitPushToProtectedAppIsHeldThenBuiltFromMirror(t *testing.T) {
 		t.Fatal("approved branch head is not advertised for the next push")
 	}
 }
+
+func TestApprovedGitPushReplayAdoptsTheHeldAttempt(t *testing.T) {
+	enableAllExperimental()
+	db := openTestDB(t)
+	b := &pushTestBuilder{fakeBuilder: newFakeBuilder("web:x", nil)}
+	cache := sourcecache.New(sourcecache.Config{Dir: t.TempDir()}, nil)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(b), WithSourceCache(cache), WithDeploySafety(db, nil))
+	cookie := loginTestSession(t, rt, db)
+	seedProtectedDeployFixture(t, db)
+	e := newPushEnvFor(t, rt, db, cookie, b)
+	token := e.issue(t, "web")
+
+	repo, _ := pushWorkRepo(t, map[string]string{"hello.txt": "one"})
+	if err := pushTo(repo, e.remoteURL("web"), token, "refs/heads/main:refs/heads/main"); err != nil {
+		t.Fatalf("push: %v", err)
+	}
+	held := heldAttempts(t, db)
+	if len(held) != 1 {
+		t.Fatalf("held attempts = %+v, want one", held)
+	}
+	approver := sessionCookieForTest(t, rt, storeUserWithAbilitiesForTest(t, db, "approver@example.com", []string{AbilityRead, AbilityDeploy}).ID)
+	pending, err := db.ListDeployApprovals(context.Background(), store.DeployApprovalStatusPending, "web")
+	if err != nil || len(pending) != 1 {
+		t.Fatalf("pending = %+v, %v", pending, err)
+	}
+	if rec := serve(rt, authedRequest(t, approver, http.MethodPost, "/api/v1/deploy-approvals/"+pending[0].ID+"/approve", "")); rec.Code != http.StatusOK {
+		t.Fatalf("approve = %d %s", rec.Code, rec.Body.String())
+	}
+	all, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil || len(all) != 1 || all[0].ID != held[0].ID {
+		t.Fatalf("attempts after replay = %+v, %v; want only the adopted %s", all, err, held[0].ID)
+	}
+}

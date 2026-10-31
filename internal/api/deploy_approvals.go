@@ -814,6 +814,10 @@ func (rt *Router) applyReplayApproval(ctx context.Context, a store.DeployApprova
 		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "held deploy " + attempt.ID + " is no longer waiting for approval"}
 	}
 	to, reason := store.DeployAttemptStatusSucceeded, "Approved by "+a.ApprovedByName
+	if req.Kind == deploy.HeldKindPush {
+		// Keeps the held attempt id on the replayed build so it can be cancelled.
+		ctx = withAdoptedAttempt(ctx, attempt.ID)
+	}
 	if err := handler(ctx, *attempt, req); err != nil {
 		rt.logger.Warn("api: replay approved deploy failed", slog.String("attempt_id", attempt.ID), slog.String("error", err.Error()))
 		to, reason = store.DeployAttemptStatusFailed, "Approved, replay failed: "+err.Error()

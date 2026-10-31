@@ -103,3 +103,24 @@ func TestRejectingHeldDeployFailsAttemptWithReason(t *testing.T) {
 		t.Fatalf("desired image = %q, want unchanged", svc.Image)
 	}
 }
+
+func TestCancelOfAttemptAwaitingApprovalRejectsItsApproval(t *testing.T) {
+	rt, db, cookie := newHoldRouter(t)
+	approvalID, attemptID := holdTestDeploy(t, rt, db)
+
+	rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys/"+attemptID+"/cancel", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("cancel = %d %s", rec.Code, rec.Body.String())
+	}
+	ap, err := db.GetDeployApproval(context.Background(), approvalID)
+	if err != nil || ap.Status != store.DeployApprovalStatusRejected || ap.Reason != "Cancelled" {
+		t.Fatalf("approval = %+v, %v; want rejected with reason Cancelled", ap, err)
+	}
+	got, err := db.GetDeployAttempt(context.Background(), attemptID)
+	if err != nil || got.Status != store.DeployAttemptStatusFailed {
+		t.Fatalf("attempt = %+v, %v; want failed", got, err)
+	}
+	if again := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys/"+attemptID+"/cancel", "")); again.Code != http.StatusConflict {
+		t.Fatalf("second cancel = %d, want 409", again.Code)
+	}
+}

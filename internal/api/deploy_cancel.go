@@ -75,6 +75,10 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 			rt.internalError(w, "api: record canceled deploy failed", err, slog.String("attempt_id", a.ID))
 			return
 		}
+	case store.DeployAttemptStatusAwaitingApproval:
+		if !rt.cancelAwaitingApproval(w, r, a) {
+			return
+		}
 	default:
 		writeError(w, http.StatusConflict, "deploy already "+a.Status+", nothing to cancel")
 		return
@@ -83,6 +87,39 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 	rt.logger.Info("api: deploy canceled", slog.String("attempt_id", a.ID), slog.String("name", a.ServiceName), slog.String("by", by))
 	rt.DrainDeployQueue(ctx)
 	rt.writeAttempt(w, r, a.ID)
+}
+
+// cancelAwaitingApproval rejects the pending replay approval of a, which also
+// fails the attempt. It writes its own response and reports whether it landed.
+func (rt *Router) cancelAwaitingApproval(w http.ResponseWriter, r *http.Request, a *store.DeployAttempt) bool {
+	ctx := r.Context()
+	deciderType, deciderID, deciderName, ok := rt.currentActor(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return false
+	}
+	pending, err := rt.deployApprovals.ListDeployApprovals(ctx, store.DeployApprovalStatusPending, a.ServiceName)
+	if err != nil {
+		rt.internalError(w, "api: cancel deploy: list approvals failed", err, slog.String("attempt_id", a.ID))
+		return false
+	}
+	for _, ap := range pending {
+		if ap.Action != store.DeployApprovalActionReplay || ap.HeldAttemptID != a.ID {
+			continue
+		}
+		if _, err := rt.rejectApproval(ctx, ap.ID, deciderType, deciderID, deciderName, "Cancelled"); err != nil {
+			var de *deployApprovalDecisionError
+			if errors.As(err, &de) {
+				rt.writeCancelConflict(w, r, a.ID, "the approval was decided before the cancel landed")
+				return false
+			}
+			rt.internalError(w, "api: cancel deploy: reject approval failed", err, slog.String("attempt_id", a.ID))
+			return false
+		}
+		return true
+	}
+	rt.writeCancelConflict(w, r, a.ID, "no pending approval for this deploy")
+	return false
 }
 
 func (rt *Router) writeCancelConflict(w http.ResponseWriter, r *http.Request, id, why string) {
