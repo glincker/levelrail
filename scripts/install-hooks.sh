@@ -36,3 +36,9 @@ if [ "$repo_root" != "$main_root" ] && [ -f "$main_root/CLAUDE.md" ] && [ ! -e "
 	ln -s "$main_root/CLAUDE.md" "$repo_root/CLAUDE.md"
 	echo "symlinked CLAUDE.md from $main_root"
 fi
+
+# Non fatal: a fresh worktree gets web/node_modules from the shared copy so
+# the pre-push type check has what it needs.
+if [ -f "$repo_root/web/package-lock.json" ]; then
+	"$repo_root/scripts/dev-bootstrap.sh" || echo "warning: dev-bootstrap failed, run scripts/dev-bootstrap.sh later" >&2
+fi

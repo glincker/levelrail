@@ -693,6 +693,10 @@ comparison should use the fastest of several runs, not the median.
   at most every 30 s. A slot whose owner died is reclaimed, and after
   `LEVELRAIL_SLOT_MAX_WAIT` seconds (default 1800) the job runs anyway with a
   warning. `scripts/test-slot.sh` is the self test.
+- `scripts/dev-bootstrap.sh` (run by `scripts/install-hooks.sh`) clones
+  `web/node_modules` into a worktree from one golden copy per lockfile hash under
+  `${XDG_CACHE_HOME:-$HOME/.cache}/levelrail/node_modules` (`LEVELRAIL_GOLDEN_DIR`).
+  `--prune` drops other copies older than `LEVELRAIL_GOLDEN_PRUNE_DAYS` (14).
 - Hooks, `scripts/test-fast.sh` and `scripts/pre-integrate.sh` add `-trimpath`
   to `GOFLAGS`, so worktrees at different paths share compiled Go packages.
 - Pre-push clears the `GIT_*` variables git exports to hooks, so tests that

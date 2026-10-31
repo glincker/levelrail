@@ -251,7 +251,7 @@ if [ "$fail" -eq 0 ]; then
 	if [ -n "$web_changed" ]; then
 		echo "pre-push: web tsc -b"
 		if [ ! -x web/node_modules/.bin/tsc ]; then
-			echo "web/node_modules missing, run npm ci in web/"
+			echo "web/node_modules missing, run scripts/dev-bootstrap.sh"
 			fail=1
 		elif ! scripts/ensure-route-tree.sh; then
 			fail=1
