@@ -168,6 +168,14 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 	if required == AbilityRead && rt.sensitiveReadAudited(r) {
 		entry.Action = AuditActionSensitiveRead
 	}
+	if tool := mcpToolTag(r); tool != "" && actorType == "token" {
+		// The tag is advisory detail only; a read it alone caused is an mcp.tool_call row.
+		if entry.Action == "" && !auditWorthy(required) {
+			entry.Action = AuditActionMCPToolCall
+		}
+		detail, _ := json.Marshal(map[string]any{"tool": tool, "transport": "stdio", "argument_names": mcpArgTags(r)})
+		entry.Detail = string(detail)
+	}
 	if actorType == "token" {
 		entry.AgentName = agentNameFrom(ctx)
 		entry.AgentClient = sanitizeAgentClient(r.Header.Get(AgentClientHeader))
@@ -370,4 +378,26 @@ func csvSafe(v string) string {
 		return "'" + v
 	}
 	return v
+}
+
+const (
+	mcpToolTagHeader  = "X-Levelrail-Mcp-Tool"
+	mcpArgsTagHeader  = "X-Levelrail-Mcp-Args"
+	mcpTagMaxLen      = 64
+	mcpTagMaxArgNames = 32
+)
+
+// mcpToolTag returns the bounded tool name a local MCP server reported.
+func mcpToolTag(r *http.Request) string {
+	return mcpTruncate(sanitizeAgentClient(r.Header.Get(mcpToolTagHeader)), mcpTagMaxLen)
+}
+
+func mcpArgTags(r *http.Request) []string {
+	names := []string{}
+	for _, n := range strings.Split(r.Header.Get(mcpArgsTagHeader), ",") {
+		if n = mcpTruncate(sanitizeAgentClient(n), mcpTagMaxLen); n != "" && len(names) < mcpTagMaxArgNames {
+			names = append(names, n)
+		}
+	}
+	return names
 }

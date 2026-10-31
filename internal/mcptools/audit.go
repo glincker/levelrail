@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 const (
@@ -44,6 +46,20 @@ func auditMiddleware(sink AuditSink) mcp.Middleware {
 			tool, keys := callSummary(req)
 			sink(ctx, AuditCall{Tool: tool, ArgumentNames: keys, Outcome: outcome, Duration: time.Since(start)})
 			return res, err
+		}
+	}
+}
+
+// tagAPICallsMiddleware puts the tool name and argument names on the context
+// so apiclient forwards them as headers on each API request the tool makes.
+func tagAPICallsMiddleware() mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			if method == "tools/call" {
+				tool, keys := callSummary(req)
+				ctx = apiclient.WithMCPCall(ctx, tool, keys)
+			}
+			return next(ctx, method, req)
 		}
 	}
 }

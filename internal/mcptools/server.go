@@ -129,6 +129,9 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	opts.probe = &abilityProbe{client: client}
 	summary := applyOptions(server, client, opts)
 	server.AddReceivingMiddleware(aiControlMiddleware(client), abilityMiddleware(opts.probe), fieldsProjection)
+	if opts.TagAPICalls {
+		server.AddReceivingMiddleware(tagAPICallsMiddleware())
+	}
 	if opts.AuditSink != nil {
 		server.AddReceivingMiddleware(auditMiddleware(opts.AuditSink))
 	}

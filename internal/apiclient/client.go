@@ -158,6 +158,10 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 	if agent := agentClientFrom(ctx); agent != "" {
 		req.Header.Set(AgentClientHeader, agent)
 	}
+	if call := mcpCallFrom(ctx); call.tool != "" {
+		req.Header.Set(MCPToolHeader, call.tool)
+		req.Header.Set(MCPArgsHeader, call.args)
+	}
 
 	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above

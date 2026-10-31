@@ -121,6 +121,10 @@ type Options struct {
 	OmitOutputSchemas bool
 	// AuditSink, when set, is told about every tools/call (names only).
 	AuditSink AuditSink
+	// TagAPICalls sends the tool name and argument names with every API
+	// request, for the local stdio server whose calls the control plane
+	// cannot otherwise attribute. Leave off in process, where AuditSink covers it.
+	TagAPICalls bool
 
 	probe *abilityProbe
 }
