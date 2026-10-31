@@ -7,12 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
 // Cloud preflight checks are read-only, optional and informational. They
@@ -69,14 +69,9 @@ func realCloudDeps() cloudDeps {
 	return cloudDeps{
 		getenv:   os.Getenv,
 		readFile: os.ReadFile,
-		lookPath: exec.LookPath,
+		lookPath: lookPathReal,
 		run:      runRealFirewallCommand,
 		metadata: realCloudMetadata,
-		hostArch: runtime.GOARCH,
-		imageArch: func(ctx context.Context, image string) (string, error) {
-			out, err := exec.CommandContext(ctx, "docker", "image", "inspect", "--format", "{{.Architecture}}", image).Output() //nolint:gosec // image is validated by cloudSafeImage, args are not shell-interpreted
-			return strings.TrimSpace(string(out)), err
-		},
 	}
 }
 
@@ -101,6 +96,18 @@ func realCloudMetadata(ctx context.Context, url string) ([]byte, error) {
 // existing exposure audit so there is one source of truth for published ports.
 func (rt *Router) doctorCheckCloud(ctx context.Context) []doctorCheckResource {
 	d := realCloudDeps()
+	if insp, ok := rt.dockerPinger.(docker.ImageDetailInspector); ok {
+		if p, err := insp.NodePlatform(ctx); err == nil {
+			d.hostArch = p.Arch
+		}
+		d.imageArch = func(ctx context.Context, image string) (string, error) {
+			det, err := insp.InspectImageDetails(ctx, image)
+			if err != nil {
+				return "", err
+			}
+			return det.Arch, nil
+		}
+	}
 	d.ports = func(ctx context.Context) ([]cloudPort, error) {
 		if rt.exposure == nil || rt.apps == nil || rt.databases == nil {
 			return nil, nil

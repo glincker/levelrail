@@ -217,3 +217,6 @@ func doctorCheckIptables(ctx context.Context, lookPath func(string) (string, err
 		DocsPath: doctorFirewallDocsPath,
 	}, true
 }
+
+// lookPathReal lets files outside the process-spawning allowlist resolve a binary.
+func lookPathReal(name string) (string, error) { return exec.LookPath(name) }
