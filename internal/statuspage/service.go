@@ -235,7 +235,7 @@ func (s *Service) monitorState(ctx context.Context, id string) string {
 	switch s.monitors.MonitorState(ctx, id) {
 	case "up", "suspect":
 		return Operational
-	case "recovering":
+	case "recovering", "degraded":
 		return Degraded
 	case "down":
 		return Outage

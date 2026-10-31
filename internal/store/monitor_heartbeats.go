@@ -28,7 +28,8 @@ func scanHeartbeat(row *sql.Row) (monitor.HeartbeatState, error) {
 func (db *DB) SaveHeartbeatToken(ctx context.Context, monitorID, tokenHash string, armedAt int64) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO monitor_heartbeats (monitor_id, token_hash, armed_at) VALUES (?, ?, ?)
-		ON CONFLICT (monitor_id) DO UPDATE SET token_hash = excluded.token_hash, armed_at = excluded.armed_at`,
+		ON CONFLICT (monitor_id) DO UPDATE SET token_hash = excluded.token_hash, armed_at = excluded.armed_at,
+			last_ok_at = 0, last_start_at = 0, last_fail_at = 0`,
 		monitorID, tokenHash, armedAt)
 	if err != nil {
 		return fmt.Errorf("store: save heartbeat token %q: %w", monitorID, err)

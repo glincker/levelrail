@@ -122,6 +122,11 @@ func (t *Tracker) Force(m Monitor, down bool, reason string, degraded bool) stri
 	var fire *Transition
 	tr.degraded = !down && degraded
 	switch {
+	case down && tr.state == StateDown:
+		// Count repeats so a link threshold above the global one can still be met.
+		if tr.fails < math.MaxInt32 {
+			tr.fails++
+		}
 	case down && tr.state != StateDown:
 		if tr.state != StateRecovering {
 			fire = &Transition{Monitor: m, State: StateDown, Reason: reason}

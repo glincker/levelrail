@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -66,4 +67,46 @@ func (db *DB) ListStatusIncidentLinks(ctx context.Context, incidentID string) ([
 		return nil, fmt.Errorf("store: iterate incident links: %w", err)
 	}
 	return out, nil
+}
+
+// AddStatusIncidentComponents merges component ids into an incident so a monitor folded into it
+// shows the components it affects. Existing ids keep their order and nothing is duplicated.
+func (db *DB) AddStatusIncidentComponents(ctx context.Context, incidentID string, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: merge incident components: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	var raw string
+	if err := tx.QueryRowContext(ctx, `SELECT component_ids FROM status_incidents WHERE id = ?`, incidentID).Scan(&raw); err != nil {
+		return fmt.Errorf("store: read incident components %q: %w", incidentID, err)
+	}
+	var have []string
+	_ = json.Unmarshal([]byte(raw), &have)
+	seen := make(map[string]bool, len(have))
+	for _, id := range have {
+		seen[id] = true
+	}
+	changed := false
+	for _, id := range ids {
+		if !seen[id] {
+			seen[id] = true
+			have = append(have, id)
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	b, err := json.Marshal(have)
+	if err != nil {
+		return fmt.Errorf("store: encode incident components: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE status_incidents SET component_ids = ?, updated_at = ? WHERE id = ?`, string(b), statusTime(time.Now()), incidentID); err != nil {
+		return fmt.Errorf("store: merge incident components %q: %w", incidentID, err)
+	}
+	return tx.Commit()
 }
