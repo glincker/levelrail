@@ -748,3 +748,47 @@ func noNotifyDNS(t *testing.T) {
 	t.Helper()
 	t.Setenv(netguard.AllowPrivateEnv, "true")
 }
+
+func TestChatApprovalSetupNeedsRoot(t *testing.T) {
+	noNotifyDNS(t)
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	seedNotificationChannel(t, adb, "chn_plain", alerting.NotifySlack, "https://hooks.slack.com/services/x")
+	if err := adb.SaveNotificationChannel(context.Background(), alerting.NotificationChannel{
+		ID: "chn_live", Name: "Live", Kind: alerting.NotifySlack, NotifyURL: "https://hooks.slack.com/services/x",
+		Enabled: true, InteractiveApprovals: true, InteractiveSecret: "orig",
+	}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	writer := seedMatrixToken(t, db, "tok_w", []string{AbilityWrite})
+	root := seedMatrixToken(t, db, "tok_r", []string{AbilityRoot})
+
+	do := func(token, method, target, body string) int {
+		req := httptest.NewRequest(method, target, strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		return rec.Code
+	}
+	on := `{"name":"x","kind":"slack","notify_url":"https://hooks.slack.com/services/x","interactive_approvals":true,"interactive_secret":"s1"}`
+	swapKey := `{"name":"x","kind":"slack","notify_url":"https://hooks.slack.com/services/x","interactive_approvals":true,"interactive_secret":"s2"}`
+	rename := `{"name":"renamed","kind":"slack","notify_url":"https://hooks.slack.com/services/x","interactive_approvals":true}`
+
+	if got := do(writer, http.MethodPost, "/api/v1/notification-channels", on); got != http.StatusForbidden {
+		t.Errorf("write create with interactive on = %d, want 403", got)
+	}
+	if got := do(writer, http.MethodPut, "/api/v1/notification-channels/chn_plain", on); got != http.StatusForbidden {
+		t.Errorf("write turning interactive on = %d, want 403", got)
+	}
+	if got := do(writer, http.MethodPut, "/api/v1/notification-channels/chn_live", swapKey); got != http.StatusForbidden {
+		t.Errorf("write changing secret = %d, want 403", got)
+	}
+	if got := do(writer, http.MethodPut, "/api/v1/notification-channels/chn_live", rename); got != http.StatusOK {
+		t.Errorf("write renaming = %d, want 200", got)
+	}
+	if got := do(root, http.MethodPut, "/api/v1/notification-channels/chn_plain", on); got != http.StatusOK {
+		t.Errorf("root turning interactive on = %d, want 200", got)
+	}
+	if got := do(root, http.MethodPut, "/api/v1/notification-channels/chn_live", swapKey); got != http.StatusOK {
+		t.Errorf("root changing secret = %d, want 200", got)
+	}
+}

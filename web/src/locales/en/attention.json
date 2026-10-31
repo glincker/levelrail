@@ -111,7 +111,8 @@
     "notifyDeviceLogin": "Notify when a CLI login is waiting",
     "notifyDeviceLoginHint": "Sends a link only, never the code. Turn on a dashboard URL so the link can open this page.",
     "notifyDeviceLoginExpired": "Notify when a CLI login expires",
-    "notifyDeviceLoginExpiredHint": "Sends a link only, never the code, when a login request runs out of time unapproved."
+    "notifyDeviceLoginExpiredHint": "Sends a link only, never the code, when a login request runs out of time unapproved.",
+    "interactiveApprovalsWarning": "Anyone in this channel, including the person who requested the deploy, can approve a protected deploy from chat. Only a root user can turn this on or change its secret or webhook."
   },
   "setup": {
     "title_one": "Pending setup and hardening ({{count}})",

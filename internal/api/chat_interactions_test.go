@@ -152,7 +152,6 @@ func TestHandleSlackInteraction_ApprovesDeploy(t *testing.T) {
 	seedInteractiveSlackChannel(t, adb, secret)
 
 	id := requestPendingApproval(t, rt, requester)
-	unprotectApprovalEnv(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, slackInteractionRequest(t, secret, alerting.SlackApprovalActionApprove, id))
@@ -188,7 +187,6 @@ func TestHandleSlackInteraction_DeniesDeploy(t *testing.T) {
 	seedInteractiveSlackChannel(t, adb, secret)
 
 	id := requestPendingApproval(t, rt, requester)
-	unprotectApprovalEnv(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, slackInteractionRequest(t, secret, alerting.SlackApprovalActionReject, id))
@@ -223,7 +221,6 @@ func TestHandleSlackInteraction_InvalidSignatureRejected(t *testing.T) {
 	seedInteractiveSlackChannel(t, adb, "the-real-secret")
 
 	id := requestPendingApproval(t, rt, requester)
-	unprotectApprovalEnv(t, db)
 
 	// Signed with the wrong secret: verifySlackChannelSignature must
 	// fail to match any configured channel.
@@ -258,7 +255,6 @@ func TestHandleSlackInteraction_ReplayCannotDoubleApprove(t *testing.T) {
 	seedInteractiveSlackChannel(t, adb, secret)
 
 	id := requestPendingApproval(t, rt, requester)
-	unprotectApprovalEnv(t, db)
 
 	first := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(first, slackInteractionRequest(t, secret, alerting.SlackApprovalActionApprove, id))
@@ -334,7 +330,6 @@ func TestHandleDiscordInteraction_ApprovesDeploy(t *testing.T) {
 	seedInteractiveDiscordChannel(t, adb, hex.EncodeToString(pub))
 
 	id := requestPendingApproval(t, rt, requester)
-	unprotectApprovalEnv(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, discordInteractionRequest(t, priv, alerting.DiscordApprovalCustomIDApprove+":"+id))
@@ -373,7 +368,6 @@ func TestHandleDiscordInteraction_InvalidSignatureRejected(t *testing.T) {
 	}
 
 	id := requestPendingApproval(t, rt, requester)
-	unprotectApprovalEnv(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, discordInteractionRequest(t, attackerPriv, alerting.DiscordApprovalCustomIDApprove+":"+id))
@@ -387,34 +381,5 @@ func TestHandleDiscordInteraction_InvalidSignatureRejected(t *testing.T) {
 	}
 	if a.Status != store.DeployApprovalStatusPending {
 		t.Errorf("an unverified request must never decide the approval, Status = %q", a.Status)
-	}
-}
-
-func unprotectApprovalEnv(t *testing.T, db *store.DB) {
-	t.Helper()
-	if err := db.SetEnvironmentProtected(context.Background(), "env_prod", false); err != nil {
-		t.Fatalf("unprotect environment: %v", err)
-	}
-}
-
-func TestChatInteractionRefusesGatedEnvironment(t *testing.T) {
-	rt, db, adb := newTestRouterForChatApprovals(t)
-	requester := loginTestSession(t, rt, db)
-	seedProtectedDeployFixture(t, db)
-	const secret = "slack-signing-secret"
-	seedInteractiveSlackChannel(t, adb, secret)
-	id := requestPendingApproval(t, rt, requester)
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, slackInteractionRequest(t, secret, alerting.SlackApprovalActionApprove, id))
-	if !strings.Contains(rec.Body.String(), "dashboard") {
-		t.Errorf("response = %s, want a pointer to the dashboard", rec.Body.String())
-	}
-	a, err := db.GetDeployApproval(context.Background(), id)
-	if err != nil {
-		t.Fatalf("GetDeployApproval: %v", err)
-	}
-	if a.Status != store.DeployApprovalStatusPending {
-		t.Errorf("Status = %q, want pending", a.Status)
 	}
 }

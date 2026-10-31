@@ -263,6 +263,9 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 
+	if req.InteractiveApprovals && !rt.requireRootForChatApprovals(w, r) {
+		return
+	}
 	channel, err := req.toChannel(id, "")
 	if err == nil {
 		err = rt.validateChannelDestination(r.Context(), channel.Kind, channel.NotifyURL)
@@ -316,6 +319,9 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 
 	if req.NotifyURL != existing.NotifyURL && req.NotifyURL == redactNotifyTarget(existing.Kind, existing.NotifyURL) {
 		req.NotifyURL = existing.NotifyURL
+	}
+	if chatApprovalSetupChanged(*existing, req) && !rt.requireRootForChatApprovals(w, r) {
+		return
 	}
 	channel, err := req.toChannel(id, existing.InteractiveSecret)
 	if err == nil {
@@ -541,4 +547,31 @@ func (rt *Router) handleListNotificationDeliveries(w http.ResponseWriter, r *htt
 		out[i] = toNotificationDeliveryResource(d)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+const chatApprovalsRootMsg = "setting up chat approvals needs the root ability: anyone in the channel can approve a protected deploy"
+
+// chatApprovalSetupChanged is true when an update turns interactive approvals
+// on, replaces its secret, or repoints a channel that already has them on.
+func chatApprovalSetupChanged(existing alerting.NotificationChannel, req createNotificationChannelRequest) bool {
+	if !req.InteractiveApprovals {
+		return false
+	}
+	return !existing.InteractiveApprovals ||
+		(req.InteractiveSecret != "" && req.InteractiveSecret != existing.InteractiveSecret) ||
+		req.NotifyURL != existing.NotifyURL
+}
+
+// requireRootForChatApprovals writes a 403 unless the caller holds root.
+func (rt *Router) requireRootForChatApprovals(w http.ResponseWriter, r *http.Request) bool {
+	abilities, err := rt.callerAbilities(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, msgAuthRequired)
+		return false
+	}
+	if !hasAbility(abilities, AbilityRoot) {
+		writeError(w, http.StatusForbidden, chatApprovalsRootMsg)
+		return false
+	}
+	return true
 }
