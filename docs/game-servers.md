@@ -10,6 +10,8 @@ This page covers running one Minecraft Java server from the Levelrail template o
 
 The template uses the community `itzg/minecraft-server` image. Its own documentation covers every server setting: [docker-minecraft-server](https://github.com/itzg/docker-minecraft-server). See the generated [Minecraft Server template page](/self-host/minecraft) for the template's current ports, volumes and variables.
 
+The template pins an image tag. You must enter `TRUE` for the EULA yourself, it is never accepted for you. The server type is one of VANILLA, PAPER, FABRIC or FORGE. The RCON password is generated and RCON is not published, so run `rcon-cli` from the app's exec shell.
+
 ## Sizing
 
 The numbers below are rough guidance from how Java servers behave in general. They are not benchmarks, and Levelrail has not measured them. Memory use grows with players, view distance, loaded chunks and mods or plugins.
@@ -41,7 +43,13 @@ Docker-published ports often skip the host `INPUT` chain, so the host layer may 
 
 A world is a set of files that change while the server runs. Copying them mid-write can give a corrupted backup. The usual approach is to pause world saving, flush to disk, take the backup, then resume saving. Check the upstream docs above for how to run server console commands in that image.
 
-Levelrail can back up an app volume to an S3-compatible target on a schedule, see [Backup targets and volume backups](/backups-and-storage). Levelrail does not run pre and post backup hooks for you today, so if you need a consistent world, stop the server before the backup runs or take the backup at a time when nobody is online. Rehearse a restore before you rely on it: see [Prove your backups work](/prove-your-backups-work).
+Levelrail can back up an app volume to an S3-compatible target on a schedule, see [Backup targets and volume backups](/backups-and-storage). Each volume can have a pre-backup and a post-backup command, set with `levelrail-cli backups volumes policy set <app> <volume> --pre-hook '...' --post-hook '...'`. The post command always runs, even when the pre command fails or times out. A failed or timed-out pre command still produces a backup, recorded with an `inconsistent:` warning, so check that warning before you rely on the copy. Hooks are capped by `APP_BACKUP_HOOK_TIMEOUT_SECONDS` and `APP_BACKUP_HOOK_MAX_SECONDS`, and their output by `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES`. The `--pause` option freezes the container while the archive streams instead.
+
+For a Minecraft preset that runs `rcon-cli` (save-off, save-all flush, save-on), see the Minecraft example in [Prove your backups work](/prove-your-backups-work). Without hooks, stop the server before the backup runs or take the backup when nobody is online. Rehearse a restore before you rely on it: see [Prove your backups work](/prove-your-backups-work).
+
+## Other game templates
+
+Levelrail also ships templates for Minecraft Bedrock, Palworld, Terraria and Factorio, listed in the [Template catalog](/template-catalog). Bedrock listens on UDP 19132. Bedrock and Palworld are x86 game software, so on an arm64 host they run under emulation and need more CPU. Palworld needs about 16 GB of RAM for a few players, which does not fit a 12 GB host shared with other apps.
 
 ## Arm VMs
 
