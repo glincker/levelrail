@@ -56,15 +56,22 @@ fi
 go_pkg_dirs=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' ':!tools/*' ':!kit/*' ':!integrations/terraform-provider/*' ':!docs-local/*' | xargs -n1 dirname 2>/dev/null | sort -u | while read -r d; do [ -d "$d" ] && echo "./$d"; done)
 go_mod_staged=$(git diff --cached --name-only -- go.mod go.sum)
 
-# vet and golangci-lint are independent, so they run side by side; vet's
-# output is printed after lint so the two logs never interleave.
+# golangci-lint (with tests) already compiles and vets the same packages, so
+# the standalone vet and build run only when lint does not: not installed, or
+# no staged package to lint (a go.mod-only change still gets a whole-tree vet).
 echo "pre-commit: go vet + golangci-lint (changed packages, lint on new issues only)"
 vet_log="$(mktemp)"
 vet_pid=""
-if [ -n "$go_pkg_dirs" ] || [ -n "$go_mod_staged" ]; then
+lint_runs=0
+if [ -n "$go_pkg_dirs" ] && command -v golangci-lint >/dev/null; then
+	lint_runs=1
+fi
+if [ "$lint_runs" -eq 0 ] && { [ -n "$go_pkg_dirs" ] || [ -n "$go_mod_staged" ]; }; then
 	# shellcheck disable=SC2086
 	( go vet ${go_pkg_dirs:-./...} ) >"$vet_log" 2>&1 &
 	vet_pid=$!
+elif [ "$lint_runs" -eq 1 ]; then
+	echo "vet covered by golangci-lint"
 else
 	echo "no staged Go files, vet skipped"
 fi
@@ -208,45 +215,33 @@ if [ -n "$bloat_hits" ]; then
 	fail=1
 fi
 
-echo "pre-commit: go build (changed packages)"
-if [ -n "$go_pkg_dirs" ]; then
+echo "pre-commit: go build (changed packages, only when golangci-lint is not run)"
+if [ -n "$go_pkg_dirs" ] && [ "$lint_runs" -eq 0 ]; then
 	# shellcheck disable=SC2086
 	if ! go build $go_pkg_dirs 2>&1; then
 		fail=1
 	fi
 fi
 
-echo "pre-commit: web (tsc, eslint, prettier)"
+echo "pre-commit: web (eslint, prettier; tsc -b runs in pre-push)"
 staged_web_files=$(git diff --cached --name-only --diff-filter=ACM -- 'web/*.ts' 'web/*.tsx')
 if [ -n "$staged_web_files" ]; then
 	rel_web_files=$(echo "$staged_web_files" | sed 's#^web/##')
-	# routeTree.gen.ts is gitignored and goes stale whenever src/routes
-	# changes; regenerate it (about 0.5s) instead of failing tsc -b.
-	if ! scripts/ensure-route-tree.sh; then
+	web_bin="$PWD/web/node_modules/.bin"
+	if [ ! -x "$web_bin/eslint" ] || [ ! -x "$web_bin/prettier" ]; then
+		echo "web/node_modules missing, run npm ci in web/"
 		fail=1
+	else
+		lint_rc=0
+		# shellcheck disable=SC2086
+		( cd web && "$web_bin/eslint" $rel_web_files ) || lint_rc=1
+		# shellcheck disable=SC2086
+		if ! ( cd web && "$web_bin/prettier" --check $rel_web_files ); then
+			echo "not prettier-formatted (run: npx prettier --write <file>, inside web/)"
+			lint_rc=1
+		fi
+		[ "$lint_rc" -eq 0 ] || fail=1
 	fi
-	# tsc -b, not tsc --noEmit: the root tsconfig only holds project
-	# references, so --noEmit checks nothing. -b is what CI runs. It is the
-	# long pole, so eslint and prettier (under 10s together) run beside it.
-	tsc_log="$(mktemp)"
-	# tsc -b runs out of the default heap on large web changes; raise it unless
-	# the caller set NODE_OPTIONS (LEVELRAIL_HOOK_NODE_HEAP_MB tunes the size).
-	( cd web && slot_run tsc env NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${LEVELRAIL_HOOK_NODE_HEAP_MB:-8192}}" npx tsc -b ) >"$tsc_log" 2>&1 &
-	tsc_pid=$!
-	lint_rc=0
-	# shellcheck disable=SC2086
-	( cd web && npx eslint $rel_web_files ) || lint_rc=1
-	# shellcheck disable=SC2086
-	if ! ( cd web && npx prettier --check $rel_web_files ); then
-		echo "not prettier-formatted (run: npx prettier --write <file>, inside web/)"
-		lint_rc=1
-	fi
-	tsc_rc=0
-	wait "$tsc_pid" || tsc_rc=$?
-	cat "$tsc_log"
-	rm -f "$tsc_log"
-	[ "$tsc_rc" -eq 0 ] || fail=1
-	[ "$lint_rc" -eq 0 ] || fail=1
 fi
 
 # UI icons come from @thesvg/ui-react only: no other icon library may appear in

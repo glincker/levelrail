@@ -680,7 +680,12 @@ comparison should use the fastest of several runs, not the median.
   all worktrees (`LEVELRAIL_LINT_CACHE` overrides the path). If a binary still
   reports the single-run lock, the hook retries for `APP_LINT_LOCK_WAIT_SECONDS`
   (default 300), then fails with a message. Lint is never skipped silently.
-- Heavy hook jobs (`tsc -b`, vitest, golangci-lint, and the `internal/api`
+- `tsc -b` runs in pre-push (when the push touches `web/`), not pre-commit;
+  pre-commit keeps eslint and prettier on staged web files. golangci-lint
+  already compiles and vets, so plain `go vet` and `go build` run at commit
+  only when golangci-lint is not installed.
+- Heavy hook jobs (`tsc -b`, vitest, golangci-lint, `go build ./...`, the
+  fast-lane `go test`, and the `internal/api`
   compile plus shards in `scripts/test-fast.sh`) queue through machine-wide
   slots in `scripts/lib/slot.sh`. `LEVELRAIL_HEAVY_SLOTS` sets how many run at
   once (default 3); slots live under `${TMPDIR:-/tmp}/levelrail-slots`

@@ -117,7 +117,7 @@ if [ "$fail" -eq 0 ] && [ "$scope" != "NONE" ]; then
 	# collected before the verdict, so it no longer adds its own serial 18s.
 	echo "pre-push: go build (running alongside the tests)"
 	build_log="$(mktemp -t levelrail-push-build.XXXXXX)"
-	go build ./... >"$build_log" 2>&1 &
+	slot_run build go build ./... >"$build_log" 2>&1 &
 	build_pid=$!
 fi
 
@@ -158,7 +158,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 		# Background so the internal/api shards below overlap with it.
 		pkg_log="$(mktemp -t levelrail-push-pkgs.XXXXXX)"
 		# shellcheck disable=SC2086
-		go test $fast_pkgs -short -timeout "$go_test_timeout" >"$pkg_log" 2>&1 &
+		slot_run gotest go test $fast_pkgs -short -timeout "$go_test_timeout" >"$pkg_log" 2>&1 &
 		pkg_pid=$!
 	fi
 	api_tests="$(printf '%s\n' "$changed_files" | grep '^internal/api/.*_test\.go$' | while read -r f; do grep -ho '^func Test[A-Za-z0-9_]*' "$f" 2>/dev/null | sed 's/^func //'; done | sort -u | paste -sd'|' -)"
@@ -239,6 +239,28 @@ if [ -n "$build_pid" ]; then
 	fi
 fi
 
+# tsc -b moved here from pre-commit: one type check per push, not per commit.
+# Runs whenever the pushed range touches web/ (a missing base falls back to
+# checking, never skipping).
+if [ "$fail" -eq 0 ]; then
+	if git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+		web_changed="$(git diff --name-only "$base_ref...HEAD" -- web/ 2>/dev/null)"
+	else
+		web_changed="web/"
+	fi
+	if [ -n "$web_changed" ]; then
+		echo "pre-push: web tsc -b"
+		if [ ! -x web/node_modules/.bin/tsc ]; then
+			echo "web/node_modules missing, run npm ci in web/"
+			fail=1
+		elif ! scripts/ensure-route-tree.sh; then
+			fail=1
+		elif ! ( cd web && slot_run tsc env NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${LEVELRAIL_HOOK_NODE_HEAP_MB:-8192}}" node_modules/.bin/tsc -b ) 2>&1; then
+			fail=1
+		fi
+	fi
+fi
+
 if [ "$cov_on" = on ] && [ "$fail" -eq 0 ] && [ -f "$coverage_out" ] && [ -s "$coverage_out" ]; then
 	if [ "$scope" = "ALL" ] || [ "$scope" = "NONE" ]; then
 		echo "pre-push: coverage gate (internal/, 70% aggregate)"
@@ -281,7 +303,7 @@ if [ "$web_tests_on" = on ] && [ "$fail" -eq 0 ] && git rev-parse --verify --qui
 	if [ -n "$web_files" ]; then
 		echo "pre-push: vitest related (changed web files)"
 		# shellcheck disable=SC2086 # web_files is a newline-joined list of repo paths, word-splitting is intended
-		if ! (cd web && slot_run vitest npx vitest related --run $web_files 2>&1); then
+		if ! (cd web && slot_run vitest node_modules/.bin/vitest related --run $web_files 2>&1); then
 			fail=1
 		fi
 	fi
