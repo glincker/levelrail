@@ -1346,6 +1346,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
+	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
 		if err != nil {

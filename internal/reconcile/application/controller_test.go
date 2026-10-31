@@ -755,7 +755,7 @@ func TestController_Reconcile_InstanceLabel_ReachesContainerSpec(t *testing.T) {
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
-	want := map[string]string{"custom": "operator-set", "platform-reserved.instance": "inst-a"}
+	want := map[string]string{"custom": "operator-set", "platform-reserved.instance": "inst-a", "platform-reserved.app": "web"}
 	if got := rt.lastCreateSpec.Labels; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Labels = %+v, want %+v", got, want)
 	}
@@ -765,8 +765,9 @@ func TestController_Reconcile_InstanceLabel_ReachesContainerSpec(t *testing.T) {
 	if _, err := c2.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
-	if got := rt2.lastCreateSpec.Labels; !reflect.DeepEqual(got, desired.Labels) {
-		t.Errorf("created ContainerSpec.Labels without WithInstanceID = %+v, want %+v unchanged", got, desired.Labels)
+	want2 := map[string]string{"custom": "operator-set", "platform-reserved.app": "web"}
+	if got := rt2.lastCreateSpec.Labels; !reflect.DeepEqual(got, want2) {
+		t.Errorf("created ContainerSpec.Labels without WithInstanceID = %+v, want %+v", got, want2)
 	}
 }
 
@@ -3642,19 +3643,19 @@ func TestController_Reconcile_CustomLabels_LandOnCreatedContainer(t *testing.T) 
 	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
 		t.Fatalf("condition = %+v, want Status=True", cond)
 	}
-	want := map[string]string{"team": "platform", "tier": "frontend"}
+	want := map[string]string{"team": "platform", "tier": "frontend", "platform-reserved.app": "web"}
 	if got := rt.lastCreateSpec.Labels; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Labels = %+v, want %+v", got, want)
 	}
 }
 
-// TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil is the
+// TestController_Reconcile_NoLabels_OnlyAppLabel is the
 // regression-safety counterpart, same reasoning
 // TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil documents for DNS: every
 // service before this field existed must keep producing a nil
 // ContainerSpec.Labels, not an accidental empty-but-non-nil map that
 // would change what a real docker.Client.Create sends the Engine API.
-func TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil(t *testing.T) {
+func TestController_Reconcile_NoLabels_OnlyAppLabel(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
 	c := New("web", &fakeStore{svc: desired}, rt)
@@ -3662,8 +3663,9 @@ func TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil(t *testing.T
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
-	if got := rt.lastCreateSpec.Labels; got != nil {
-		t.Errorf("created ContainerSpec.Labels = %+v, want nil", got)
+	want := map[string]string{"platform-reserved.app": "web"}
+	if got := rt.lastCreateSpec.Labels; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Labels = %+v, want %+v", got, want)
 	}
 }
 
@@ -3755,7 +3757,7 @@ func TestController_Reconcile_BindMounts_MountedOnCreate(t *testing.T) {
 
 // TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil is the
 // regression-safety counterpart, same reasoning
-// TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil gives
+// TestController_Reconcile_NoLabels_OnlyAppLabel gives
 // for Labels: every service before this field existed must keep
 // producing a nil ContainerSpec.Volumes.
 func TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil(t *testing.T) {
@@ -3923,5 +3925,21 @@ func TestController_Reconcile_DesiredChangedMidPass_DropsStaleConditions(t *test
 				t.Fatalf("Reconcile() = %+v, %v, want the readiness failure published", result, err)
 			}
 		})
+	}
+}
+
+// A container created before the app label existed must not count as drifted.
+func TestController_Reconcile_MissingAppLabelIsNotRecreated(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	target := ContainerName("web", desired.Image, "")
+	rt := newFakeRuntime(0)
+	rt.seedLabeled(target, true, map[string]string{"platform-reserved.instance": "inst-a"})
+
+	c := New("web", &fakeStore{svc: desired}, rt, WithInstanceID("inst-a"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 for a running container lacking the app label", rt.createCalls)
 	}
 }
