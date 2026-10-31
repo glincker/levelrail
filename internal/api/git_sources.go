@@ -30,6 +30,7 @@ var gitSourceDatabaseNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 // *store.DB satisfies this structurally.
 type GitSourceStore interface {
 	SaveGitSource(ctx context.Context, g store.GitSource) error
+	SaveGitSourceWithAppAuth(ctx context.Context, g store.GitSource, appAuth bool) error
 	GetGitSource(ctx context.Context, serviceName string) (*store.GitSource, error)
 	DeleteGitSource(ctx context.Context, serviceName string) error
 	// ListGitSources backs GET /api/v1/apps/git-sources: every connected
@@ -734,16 +735,12 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 	if triggerMode == "" {
 		triggerMode = spec.TriggerModePush
 	}
-	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
+	if err := rt.gitSources.SaveGitSourceWithAppAuth(ctx, store.GitSource{
 		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory, BuildCommand: p.BuildCommand, PublishDir: p.PublishDir,
 		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
 		TriggerMode: triggerMode,
-	}); err != nil {
+	}, gitHubAppTokenAllowed(ctx)); err != nil {
 		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
-	}
-
-	if err := rt.gitSources.SetGitSourceAppAuth(ctx, name, gitHubAppTokenAllowed(ctx)); err != nil {
-		return connectGitSourceResult{}, fmt.Errorf("save git source app auth: %w", err)
 	}
 
 	saved, err := rt.gitSources.GetGitSource(ctx, name)

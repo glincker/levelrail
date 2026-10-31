@@ -160,6 +160,21 @@ func GitSourceSecretsKey(serviceName string) string {
 // created_at is left untouched by the ON CONFLICT branch, so it reflects
 // when the source was first connected even across later edits.
 func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
+	return db.saveGitSource(ctx, g, nil)
+}
+
+// SaveGitSourceWithAppAuth upserts the source and its app_auth flag in one
+// statement, so a stop between two writes cannot leave a wider grant.
+func (db *DB) SaveGitSourceWithAppAuth(ctx context.Context, g GitSource, appAuth bool) error {
+	return db.saveGitSource(ctx, g, &appAuth)
+}
+
+// saveGitSource leaves app_auth untouched on update when appAuth is nil.
+func (db *DB) saveGitSource(ctx context.Context, g GitSource, appAuth *bool) error {
+	var authArg any
+	if appAuth != nil {
+		authArg = *appAuth
+	}
 	additionalJSON, err := marshalGitSourceAdditionalServices(g.AdditionalServices)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
@@ -177,8 +192,8 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 		triggerMode = spec.TriggerModePush
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, app_auth, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 1), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
@@ -191,8 +206,9 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 			services_spec = excluded.services_spec,
 			databases_spec = excluded.databases_spec,
 			trigger_mode = excluded.trigger_mode,
+			app_auth = COALESCE(?, service_git_sources.app_auth),
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, g.BuildCommand, g.PublishDir, additionalJSON, servicesJSON, databasesJSON, triggerMode)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, g.BuildCommand, g.PublishDir, additionalJSON, servicesJSON, databasesJSON, triggerMode, authArg, authArg)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
