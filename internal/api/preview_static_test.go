@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -158,4 +159,73 @@ func TestStaticPreview_ContainerAppUnchanged(t *testing.T) {
 	if _, err := db.GetStaticSite(context.Background(), "web-pr-42"); err == nil {
 		t.Fatal("a container preview must not create a static site")
 	}
+}
+
+func TestStaticPreview_TeardownRemovesOnlyPreviewFiles(t *testing.T) {
+	rt, db, secret, builder, _, mainDir := setUpStaticPreviewApp(t)
+	ctx := context.Background()
+	if rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main")); rec.Code != http.StatusOK {
+		t.Fatalf("opened: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	other := filepath.Join(builder.root, "web-pr-7", "sha9")
+	if err := os.MkdirAll(other, 0o750); err != nil {
+		t.Fatalf("mkdir other preview: %v", err)
+	}
+	previewTree := filepath.Join(builder.root, "web-pr-42")
+
+	closed := githubPullRequestBody("closed", 42, "sha1", "main")
+	for i := 0; i < 2; i++ {
+		if rec := sendPullRequestWebhook(rt, secret, closed); rec.Code != http.StatusOK {
+			t.Fatalf("closed #%d: status = %d, body = %s", i+1, rec.Code, rec.Body.String())
+		}
+	}
+
+	if _, err := os.Lstat(previewTree); !os.IsNotExist(err) {
+		t.Fatalf("preview files still present, err = %v", err)
+	}
+	if _, err := db.GetStaticSite(ctx, "web-pr-42"); !errors.Is(err, store.ErrServiceNotFound) {
+		t.Fatalf("preview site row still present, err = %v", err)
+	}
+	if _, err := os.Lstat(other); err != nil {
+		t.Fatalf("another preview's files were removed: %v", err)
+	}
+	assertMainSiteIntact(t, db, mainDir)
+}
+
+func TestStaticPreview_SweepRemovesStalePreview(t *testing.T) {
+	rt, db, secret, builder, _, mainDir := setUpStaticPreviewApp(t)
+	ctx := context.Background()
+	rt.previewTTL = time.Hour
+	if rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main")); rec.Code != http.StatusOK {
+		t.Fatalf("opened: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	preview, err := db.GetPreviewEnvironmentByAppAndPR(ctx, "web", 42)
+	if err != nil {
+		t.Fatalf("load preview: %v", err)
+	}
+	preview.UpdatedAt = time.Now().UTC().Add(-2 * time.Hour).Format(time.RFC3339Nano)
+	if err := db.UpdatePreviewEnvironment(ctx, *preview); err != nil {
+		t.Fatalf("backdate preview: %v", err)
+	}
+
+	swept, err := rt.SweepStalePreviewEnvironments(ctx)
+	if err != nil || swept != 1 {
+		t.Fatalf("swept = %d, err %v; want 1", swept, err)
+	}
+	if _, err := os.Lstat(filepath.Join(builder.root, "web-pr-42")); !os.IsNotExist(err) {
+		t.Fatalf("preview files still present after sweep, err = %v", err)
+	}
+	if _, err := db.GetStaticSite(ctx, "web-pr-42"); !errors.Is(err, store.ErrServiceNotFound) {
+		t.Fatalf("preview site row still present after sweep, err = %v", err)
+	}
+	assertMainSiteIntact(t, db, mainDir)
+}
+
+func TestStaticPreview_TeardownIgnoresNonPreviewName(t *testing.T) {
+	rt, db, _, _, _, mainDir := setUpStaticPreviewApp(t)
+
+	if failed := rt.teardownPreviewStatic(context.Background(), "web"); len(failed) != 0 {
+		t.Fatalf("teardownPreviewStatic(web) failed = %v", failed)
+	}
+	assertMainSiteIntact(t, db, mainDir)
 }

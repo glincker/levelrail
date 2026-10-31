@@ -209,6 +209,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 
 	if cur, getErr := rt.previewEnvironments.GetPreviewEnvironmentByAppAndPR(ctx, appName, ev.Number); getErr == nil && cur.Status == store.PreviewStatusAwaitingApproval {
 		rt.teardownPreviewApp(ctx, previewName)
+		rt.teardownPreviewStatic(ctx, previewName)
 		rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)
 		rt.teardownPreviewDatabaseIsolations(ctx, preview.ID)
 		return http.StatusOK, "ignored: a newer fork push revoked this approval\n"

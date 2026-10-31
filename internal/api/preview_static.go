@@ -5,12 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// previewSiteMarker is what previewAppName puts between the app and the PR
+// number; teardown only removes site names that carry it.
+const previewSiteMarker = "-pr-"
 
 // isStaticPreviewSource reports whether previews of gs publish files instead of
 // starting a container: a single-service source whose build type is static.
@@ -76,6 +81,21 @@ func (rt *Router) finishStaticPreviewExposure(ctx context.Context, appName, prev
 		notes = append(notes, "the basic auth gate is not enforced on static previews")
 	}
 	return notes
+}
+
+// teardownPreviewStatic removes a preview's static site row, route and files.
+// It is a no-op for a preview that published none, and never matches a site
+// whose name is not a preview name.
+func (rt *Router) teardownPreviewStatic(ctx context.Context, previewName string) []string {
+	if !strings.Contains(previewName, previewSiteMarker) {
+		return nil
+	}
+	if err := rt.removeStaticSite(ctx, previewName); err != nil {
+		rt.logger.Error("api: teardown preview static site failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewName))
+		return []string{"static:" + previewName}
+	}
+	rt.nudgeReconciler()
+	return nil
 }
 
 // staticPreviewNames lists the site names that belong to a live preview row,
