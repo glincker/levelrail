@@ -17,6 +17,7 @@ type OAuthProviderSettings struct {
 	AllowedEmailDomain string
 	IssuerURL          string
 	DisplayName        string
+	TenantID           string
 	SSOPolicy          OAuthSSOPolicy
 }
 
@@ -31,7 +32,7 @@ type OAuthSSOPolicy struct {
 }
 
 const oauthSettingsColumns = `provider, enabled, client_id, allowed_email_domain, issuer_url, display_name,
-	groups_claim, sync_roles, default_role_id, jit_provisioning, allowed_domains`
+	groups_claim, sync_roles, default_role_id, jit_provisioning, allowed_domains, tenant_id`
 
 func scanOAuthSettings(scan func(dest ...any) error) (OAuthProviderSettings, error) {
 	var (
@@ -43,7 +44,7 @@ func scanOAuthSettings(scan func(dest ...any) error) (OAuthProviderSettings, err
 	)
 	p := &s.SSOPolicy
 	if err := scan(&s.Provider, &enabled, &clientID, &allowedDom, &issuerURL, &dispName,
-		&p.GroupsClaim, &sync, &p.DefaultRoleID, &jit, &domains); err != nil {
+		&p.GroupsClaim, &sync, &p.DefaultRoleID, &jit, &domains, &s.TenantID); err != nil {
 		return OAuthProviderSettings{}, err
 	}
 	if err := json.Unmarshal([]byte(domains), &p.AllowedDomains); err != nil {
@@ -111,7 +112,7 @@ func (db *DB) UpdateOAuthProviderSettings(ctx context.Context, s OAuthProviderSe
 	}
 	_, err := db.ExecContext(ctx, `
 		UPDATE oauth_provider_settings
-		SET enabled = ?, client_id = ?, allowed_email_domain = ?, issuer_url = ?, display_name = ?
+		SET enabled = ?, client_id = ?, allowed_email_domain = ?, issuer_url = ?, display_name = ?, tenant_id = ?
 		WHERE provider = ?
 	`,
 		enabled,
@@ -119,6 +120,7 @@ func (db *DB) UpdateOAuthProviderSettings(ctx context.Context, s OAuthProviderSe
 		sql.NullString{String: s.AllowedEmailDomain, Valid: s.AllowedEmailDomain != ""},
 		sql.NullString{String: s.IssuerURL, Valid: s.IssuerURL != ""},
 		sql.NullString{String: s.DisplayName, Valid: s.DisplayName != ""},
+		s.TenantID,
 		s.Provider,
 	)
 	if err != nil {

@@ -117,8 +117,12 @@ func (r *providerResolver) build(ctx context.Context, s store.OAuthProviderSetti
 			AuthorizeURL: ep.GitHubAuthorize, TokenURL: ep.GitHubToken, UserURL: ep.GitHubUser, EmailsURL: ep.GitHubEmails,
 		}), nil
 	case store.OAuthProviderMicrosoft:
+		tenant := s.TenantID
+		if tenant == "" {
+			tenant = "common"
+		}
 		return microsoftprov.New(microsoftprov.Config{
-			ClientID: s.ClientID, ClientSecret: secret, Scopes: microsoftScopes, Tenant: "common", HTTPClient: hc,
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: microsoftScopes, Tenant: tenant, HTTPClient: hc,
 			AuthorizeURL: ep.MicrosoftAuthorize, TokenURL: ep.MicrosoftToken,
 		}), nil
 	case store.OAuthProviderGitLab:

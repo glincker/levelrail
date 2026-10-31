@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -25,6 +26,8 @@ type fakeIdentity struct {
 	Email    string
 	Name     string
 	Verified bool
+	// Tenant, when set, makes the access token a JWT carrying this tid claim.
+	Tenant string
 	// Claims are extra ID token claims; UserinfoClaims are extra userinfo fields (never trusted).
 	Claims         map[string]any
 	UserinfoClaims map[string]any
@@ -99,6 +102,14 @@ func (f *fakeIDP) grant(t *testing.T, authorizeURL string, id fakeIdentity) stri
 
 func (f *fakeIDP) byToken(r *http.Request) (fakeGrant, bool) {
 	code := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer at-")
+	if parts := strings.Split(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), "."); len(parts) == 3 {
+		var c struct {
+			Code string `json:"code"`
+		}
+		if raw, err := base64.RawURLEncoding.DecodeString(parts[1]); err == nil && json.Unmarshal(raw, &c) == nil {
+			code = c.Code
+		}
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	g, ok := f.grants[code]
@@ -157,8 +168,13 @@ func (f *fakeIDP) token(w http.ResponseWriter, r *http.Request) {
 	if f.tamper != nil {
 		raw = f.tamper(raw)
 	}
+	access := "at-" + r.PostForm.Get("code")
+	if g.id.Tenant != "" {
+		payload, _ := json.Marshal(map[string]string{"tid": g.id.Tenant, "code": r.PostForm.Get("code")})
+		access = "e30." + base64.RawURLEncoding.EncodeToString(payload) + ".sig"
+	}
 	writeFakeJSON(w, map[string]any{
-		"access_token": "at-" + r.PostForm.Get("code"), "token_type": "Bearer", "expires_in": 3600, "id_token": raw,
+		"access_token": access, "token_type": "Bearer", "expires_in": 3600, "id_token": raw,
 	})
 }
 

@@ -4041,6 +4041,7 @@ type OAuthProviderSettingsResource struct {
 	AllowedEmailDomain string `json:"allowed_email_domain,omitempty"`
 	IssuerURL          string `json:"issuer_url,omitempty"`
 	DisplayName        string `json:"display_name,omitempty"`
+	TenantID           string `json:"tenant_id,omitempty"`
 	HasClientSecret    bool   `json:"has_client_secret"`
 }
 
@@ -4055,6 +4056,7 @@ type UpdateOAuthProviderSettingsRequest struct {
 	AllowedEmailDomain string `json:"allowed_email_domain"`
 	IssuerURL          string `json:"issuer_url"`
 	DisplayName        string `json:"display_name"`
+	TenantID           string `json:"tenant_id"`
 }
 
 // EmailSettingsResource mirrors internal/api's emailSettingsResource

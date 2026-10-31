@@ -22,6 +22,7 @@ export interface OAuthProviderSettings {
   allowed_email_domain?: string
   issuer_url?: string
   display_name?: string
+  tenant_id?: string
   has_client_secret: boolean
 }
 
@@ -32,6 +33,7 @@ export interface UpdateOAuthProviderSettingsRequest {
   allowed_email_domain: string
   issuer_url: string
   display_name: string
+  tenant_id: string
 }
 
 export const oauthKeys = {

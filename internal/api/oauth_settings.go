@@ -24,6 +24,7 @@ type oauthProviderSettingsResource struct {
 	AllowedEmailDomain string `json:"allowed_email_domain,omitempty"`
 	IssuerURL          string `json:"issuer_url,omitempty"`
 	DisplayName        string `json:"display_name,omitempty"`
+	TenantID           string `json:"tenant_id,omitempty"`
 	HasClientSecret    bool   `json:"has_client_secret"`
 }
 
@@ -35,6 +36,7 @@ func (rt *Router) toOAuthProviderSettingsResource(ctx context.Context, s store.O
 		AllowedEmailDomain: s.AllowedEmailDomain,
 		IssuerURL:          s.IssuerURL,
 		DisplayName:        s.DisplayName,
+		TenantID:           s.TenantID,
 	}
 	if rt.oauthSecrets == nil {
 		return res
@@ -71,6 +73,7 @@ type updateOAuthProviderSettingsRequest struct {
 	AllowedEmailDomain string `json:"allowed_email_domain"`
 	IssuerURL          string `json:"issuer_url"`
 	DisplayName        string `json:"display_name"`
+	TenantID           string `json:"tenant_id"`
 }
 
 var errOAuthClientSecretRequired = errors.New("client_secret is required the first time a provider is enabled")
@@ -122,6 +125,14 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 		req.IssuerURL = ""
 	}
 
+	req.TenantID = strings.TrimSpace(req.TenantID)
+	if provider != store.OAuthProviderMicrosoft {
+		req.TenantID = ""
+	} else if req.TenantID != "" && !authengine.ValidEntraTenantID(req.TenantID) {
+		writeError(w, http.StatusBadRequest, "tenant_id must be a directory id (a GUID)")
+		return
+	}
+
 	hasSecret := req.ClientSecret != ""
 	if !hasSecret {
 		_, err := rt.oauthSecrets.Resolve(r.Context(), store.OAuthProviderSecretsKey(provider), store.OAuthProviderSecretEnvKey)
@@ -146,6 +157,7 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 		AllowedEmailDomain: req.AllowedEmailDomain,
 		IssuerURL:          req.IssuerURL,
 		DisplayName:        req.DisplayName,
+		TenantID:           req.TenantID,
 	}
 	if err := rt.oauthSettings.UpdateOAuthProviderSettings(r.Context(), settings); err != nil {
 		rt.internalError(w, "api: update oauth settings failed", err, slog.String("provider", provider))

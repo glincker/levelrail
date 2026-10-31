@@ -225,6 +225,11 @@
       "pass": "Every enabled SAML connection limits sign-in to your domains",
       "why": "Without an allowed domain list, any address your identity provider asserts can match an account here. Add your domains in the connection settings."
     },
+    "microsoft_no_tenant": {
+      "title": "Microsoft sign-in is not tied to one tenant",
+      "pass": "Microsoft sign-in is off or tied to your tenant",
+      "why": "On the shared tenant any directory can assert an email address, so no new accounts are created from it. Set your tenant id in the Microsoft provider settings."
+    },
     "agents_outdated": {
       "title": "Node agents older than the minimum version",
       "pass": "Every node agent is current",

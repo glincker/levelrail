@@ -25,6 +25,8 @@ var (
 	errEmailInUse         = errors.New("authengine: email belongs to an existing account")
 	errDomainNotAllowed   = errors.New("authengine: email domain not allowed")
 	errNotProvisioned     = errors.New("authengine: no account for this identity and provisioning is off")
+	errTenantRequired     = fmt.Errorf("%w: set a tenant id on the Microsoft provider to allow sign-up", errNotProvisioned)
+	errTenantMismatch     = errors.New("authengine: microsoft sign-in came from a different tenant")
 	errDryRun             = errors.New("authengine: test sign-in stopped before creating anything")
 )
 
@@ -103,6 +105,11 @@ func (g *gatedProvider) UserInfo(ctx context.Context, tok *theauth.ProviderToken
 	if info.ID == "" || info.Email == "" {
 		flow.fail(OAuthErrUserInfoFailed)
 		return nil, errUserInfoIncomplete
+	}
+	if g.Name() == store.OAuthProviderMicrosoft && g.settings.TenantID != "" &&
+		!strings.EqualFold(accessTokenTenant(tok), g.settings.TenantID) {
+		flow.fail(OAuthErrUserInfoFailed)
+		return nil, errTenantMismatch
 	}
 	if !facts.EmailVerified {
 		flow.fail(OAuthErrUserInfoFailed)
@@ -191,6 +198,43 @@ func (rt *oauthRuntime) graphUserInfo(ctx context.Context, tok *theauth.Provider
 	return &theauth.ProviderUser{ID: body.ID, Email: email, Name: name}, nil
 }
 
+// accessTokenTenant reads the tid claim of the token the token endpoint just
+// returned over TLS; an opaque or foreign token yields "" and is refused.
+func accessTokenTenant(tok *theauth.ProviderToken) string {
+	if tok == nil {
+		return ""
+	}
+	payload := idTokenPayload(tok.AccessToken)
+	if payload == nil {
+		return ""
+	}
+	var c struct {
+		TID string `json:"tid"`
+	}
+	if json.Unmarshal(payload, &c) != nil {
+		return ""
+	}
+	return c.TID
+}
+
+// ValidEntraTenantID reports whether s looks like a directory id (a GUID).
+func ValidEntraTenantID(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i, r := range s {
+		switch {
+		case i == 8 || i == 13 || i == 18 || i == 23:
+			if r != '-' {
+				return false
+			}
+		case !strings.ContainsRune("0123456789abcdefABCDEF", r):
+			return false
+		}
+	}
+	return true
+}
+
 // checkSignup mirrors the in-house order: a linked identity always signs in; an
 // email held by another account is refused (the library links only verified
 // emails); only a brand new account is held to the provider's allowed domain.
@@ -223,6 +267,11 @@ func (rt *oauthRuntime) checkSignup(ctx context.Context, provider string, s stor
 			return errEmailInUse
 		}
 		return nil
+	}
+	// On the shared tenant the mail attribute is controlled by whoever owns the
+	// signing-in directory, so it cannot back a new account.
+	if provider == store.OAuthProviderMicrosoft && s.TenantID == "" {
+		return errTenantRequired
 	}
 	if !s.SSOPolicy.JITProvisioning {
 		return errNotProvisioned

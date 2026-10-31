@@ -813,6 +813,11 @@
       "hint": "Leave blank for gitlab.com. For a self-hosted GitLab, enter its https address.",
       "invalid": "Instance URL must start with https://"
     },
+    "tenantId": {
+      "label": "Directory (tenant) ID",
+      "hint": "Required for new accounts to be created from Microsoft sign-in. Without it, only identities that are already linked can sign in.",
+      "invalid": "Tenant ID must be a GUID"
+    },
     "userPoolId": {
       "label": "User pool ID",
       "hint": "Found on the Cognito user pool overview, for example us-east-1_AbC123. The region is read from it.",

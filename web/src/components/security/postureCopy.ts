@@ -25,6 +25,7 @@ const KNOWN = new Set<string>([
   'hsts_off',
   'domains_unshielded',
   'saml_open_domains',
+  'microsoft_no_tenant',
   'agents_outdated',
   'login_anomalies',
   'own_mfa',
