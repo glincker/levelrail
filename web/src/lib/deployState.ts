@@ -6,6 +6,7 @@ import type { DeployStage } from './deployStages'
 export type DeployPhase =
   | 'queued'
   | 'held'
+  | 'awaiting_approval'
   | 'building'
   | 'rolling_out'
   | 'live'
@@ -133,6 +134,13 @@ export function deriveDeployState(input: DeployStateInput): DeployState {
           values: { reason: attempt.reason ?? '' },
         },
         next: { key: 'state.next.held' },
+      })
+    case 'awaiting_approval':
+      return base(isStatic, {
+        phase: 'awaiting_approval',
+        tone: 'warning',
+        label: { key: 'state.label.awaitingApproval' },
+        headline: { key: 'state.headline.awaitingApproval' },
       })
     case 'canceled':
       return base(isStatic, {

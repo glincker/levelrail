@@ -21,6 +21,7 @@
     "label": {
       "queued": "Queued",
       "held": "Held",
+      "awaitingApproval": "Awaiting approval",
       "canceled": "Canceled",
       "superseded": "Superseded",
       "failed": "Build failed",
@@ -35,6 +36,7 @@
       "queued": "This deploy is queued behind another deploy.",
       "queuedWhy": "This deploy is queued: {{reason}}.",
       "held": "This deploy is held. {{reason}}",
+      "awaitingApproval": "This deploy is waiting for approval. Approve it in the dashboard to run it.",
       "canceled": "This deploy was canceled before it changed anything.",
       "superseded": "A newer deploy replaced this one before it was applied.",
       "failed": "The build failed, so nothing was rolled out.",

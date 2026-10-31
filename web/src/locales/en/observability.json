@@ -42,6 +42,7 @@
     "failed": "Failed",
     "running": "Running",
     "held": "Held (frozen)",
+    "awaiting_approval": "Awaiting approval",
     "superseded": "Superseded",
     "queued": "Queued",
     "canceled": "Canceled",

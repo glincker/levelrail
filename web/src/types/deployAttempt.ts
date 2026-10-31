@@ -18,6 +18,7 @@ export type DeployAttemptStatus =
   | 'succeeded'
   | 'failed'
   | 'held'
+  | 'awaiting_approval'
   | 'superseded'
   | 'queued'
   | 'canceled'

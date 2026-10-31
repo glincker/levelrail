@@ -12,6 +12,7 @@ export const DEPLOY_MARKER_COLOR: Record<DeployAttemptStatus, string> = {
   failed: chartPalette.danger,
   running: chartPalette.neutral,
   held: chartPalette.warning,
+  awaiting_approval: chartPalette.warning,
   superseded: chartPalette.muted,
   queued: chartPalette.muted,
   canceled: chartPalette.muted,

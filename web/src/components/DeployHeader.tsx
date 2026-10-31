@@ -76,7 +76,8 @@ export function DeployHeader({
   const cancelable =
     attempt.status === 'running' ||
     attempt.status === 'queued' ||
-    attempt.status === 'held'
+    attempt.status === 'held' ||
+    attempt.status === 'awaiting_approval'
   const canRollback = attempt.status === 'succeeded' && !isLive
   const tag = imageTagOf(attempt.image)
   const title =
