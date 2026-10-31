@@ -167,6 +167,7 @@ func (rt *Router) expireIfStale(ctx context.Context, a store.DeployApproval) sto
 	if ok {
 		a.Status = store.DeployApprovalStatusExpired
 		a.DecidedAt = now
+		rt.failAwaitingAttempt(ctx, a, "Approval expired")
 	}
 	return a
 }
@@ -434,6 +435,9 @@ func (rt *Router) applyClaimedApproval(ctx context.Context, a store.DeployApprov
 	if a.Action == store.DeployApprovalActionMoveApp || a.Action == store.DeployApprovalActionMoveDatabase {
 		return rt.applyMoveApproval(ctx, a)
 	}
+	if a.Action == store.DeployApprovalActionReplay {
+		return rt.applyReplayApproval(ctx, a)
+	}
 	svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "app " + a.ServiceName + " no longer exists"}
@@ -583,6 +587,11 @@ func (rt *Router) rejectApproval(ctx context.Context, id, deciderType, deciderID
 	if err != nil {
 		return deployApprovalResource{}, fmt.Errorf("api: reject deploy approval: reload failed: %w", err)
 	}
+	why := "Rejected"
+	if reason != "" {
+		why += ": " + reason
+	}
+	rt.failAwaitingAttempt(ctx, final, why)
 	return toDeployApprovalResource(final), nil
 }
 
@@ -674,6 +683,10 @@ func (rt *Router) recoverStaleApprovalClaims(ctx context.Context) (int, error) {
 // desired image alone is not proof (a same-tag redeploy already matches);
 // moves are idempotent, so they are simply decided again.
 func (rt *Router) approvalAlreadyApplied(ctx context.Context, a store.DeployApproval) bool {
+	if a.Action == store.DeployApprovalActionReplay {
+		at, err := rt.deployAttempts.GetDeployAttempt(ctx, a.HeldAttemptID)
+		return err == nil && at.Status != store.DeployAttemptStatusAwaitingApproval
+	}
 	if a.Action != store.DeployApprovalActionDeploy && a.Action != store.DeployApprovalActionPromote {
 		return false
 	}
@@ -711,4 +724,117 @@ func (rt *Router) sweepExpiredDeployApprovals(ctx context.Context) (int, error) 
 		}
 	}
 	return n, nil
+}
+
+// ApprovalActor is the principal a held deploy is requested as: a token or
+// user, or a system actor for deploys that arrive from automatic paths.
+type ApprovalActor struct {
+	Type string
+	ID   string
+	Name string
+}
+
+// SystemApprovalActor is the requester of a deploy no person triggered. It
+// resolves to no human, so any approver may decide it.
+var SystemApprovalActor = ApprovalActor{Type: "system", ID: "system", Name: "system"}
+
+// HoldForApproval parks a deploy as awaiting_approval and opens the replay
+// approval that releases it, returning the approval id. It never uses the
+// held status, so the freeze releaser leaves the attempt alone.
+func (rt *Router) HoldForApproval(ctx context.Context, env store.Environment, serviceName, image, source string, req deploy.HeldRequest, actor ApprovalActor) (string, error) {
+	if rt.deploySafety == nil {
+		return "", errors.New("api: hold for approval: deploy safety store not configured")
+	}
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return "", fmt.Errorf("api: hold %q for approval: marshal: %w", serviceName, err)
+	}
+	attemptID, err := store.NewDeployAttemptID()
+	if err != nil {
+		return "", fmt.Errorf("api: hold %q for approval: %w", serviceName, err)
+	}
+	approvalID, err := store.NewDeployApprovalID()
+	if err != nil {
+		return "", fmt.Errorf("api: hold %q for approval: %w", serviceName, err)
+	}
+	human, err := rt.approvalHuman(ctx, actor.Type, actor.ID)
+	if err != nil {
+		return "", fmt.Errorf("api: hold %q for approval: resolve requester: %w", serviceName, err)
+	}
+	now := time.Now().UTC()
+	if err := rt.deploySafety.SaveDeployAttempt(ctx, store.DeployAttempt{
+		ID: attemptID, ServiceName: serviceName, Image: image, CommitSHA: req.CommitSHA,
+		Source: source, Status: store.DeployAttemptStatusAwaitingApproval, StartedAt: now,
+		Reason: "Waiting for approval " + approvalID, HeldRequest: string(payload),
+	}); err != nil {
+		return "", fmt.Errorf("api: hold %q for approval: %w", serviceName, err)
+	}
+	a := store.DeployApproval{
+		ID: approvalID, ServiceName: serviceName, EnvironmentID: env.ID,
+		Action: store.DeployApprovalActionReplay, Image: image, HeldAttemptID: attemptID,
+		Status:          store.DeployApprovalStatusPending,
+		RequestedByType: actor.Type, RequestedBy: actor.ID, RequestedByName: actor.Name,
+		RequesterUserID: human, RequesterRecorded: true,
+		CreatedAt: store.FormatAuditTime(now),
+		ExpiresAt: store.FormatAuditTime(now.Add(rt.effectiveDeployApprovalTTL())),
+	}
+	if err := rt.deployApprovals.SaveDeployApproval(ctx, a); err != nil {
+		rt.failAwaitingAttempt(ctx, a, "Approval could not be created")
+		return "", fmt.Errorf("api: hold %q for approval: save approval: %w", serviceName, err)
+	}
+	rt.notifyApprovalRequested(ctx, a)
+	return approvalID, nil
+}
+
+// applyReplayApproval replays the awaiting attempt through the same release
+// handlers the freeze releaser uses. The status swap makes it run once.
+func (rt *Router) applyReplayApproval(ctx context.Context, a store.DeployApproval) (deployApprovalDecisionResponse, error) {
+	if rt.deploySafety == nil {
+		return deployApprovalDecisionResponse{}, errors.New("api: replay approval: deploy safety store not configured")
+	}
+	attempt, err := rt.deployAttempts.GetDeployAttempt(ctx, a.HeldAttemptID)
+	if err != nil {
+		return deployApprovalDecisionResponse{}, fmt.Errorf("api: replay approval: load attempt: %w", err)
+	}
+	var req deploy.HeldRequest
+	if err := json.Unmarshal([]byte(attempt.HeldRequest), &req); err != nil {
+		rt.failAwaitingAttempt(ctx, a, "held request unreadable")
+		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "held deploy request is unreadable"}
+	}
+	handler, ok := rt.ReleaseHandlers()[req.Kind]
+	if !ok {
+		rt.failAwaitingAttempt(ctx, a, "no release handler for "+req.Kind)
+		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "no release handler for " + req.Kind}
+	}
+	moved, err := rt.deploySafety.TransitionDeployAttempt(ctx, attempt.ID, store.DeployAttemptStatusAwaitingApproval, store.DeployAttemptStatusRunning, "Approved by "+a.ApprovedByName)
+	if err != nil {
+		return deployApprovalDecisionResponse{}, fmt.Errorf("api: replay approval: start attempt: %w", err)
+	}
+	if !moved {
+		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "held deploy " + attempt.ID + " is no longer waiting for approval"}
+	}
+	to, reason := store.DeployAttemptStatusSucceeded, "Approved by "+a.ApprovedByName
+	if err := handler(ctx, *attempt, req); err != nil {
+		rt.logger.Warn("api: replay approved deploy failed", slog.String("attempt_id", attempt.ID), slog.String("error", err.Error()))
+		to, reason = store.DeployAttemptStatusFailed, "Approved, replay failed: "+err.Error()
+	}
+	if _, err := rt.deploySafety.TransitionDeployAttempt(context.WithoutCancel(ctx), attempt.ID, store.DeployAttemptStatusRunning, to, reason); err != nil {
+		rt.logger.Warn("api: finish replayed deploy failed", slog.String("attempt_id", attempt.ID), slog.String("error", err.Error()))
+	}
+	var resp deployApprovalDecisionResponse
+	if svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName); err == nil {
+		resp.App = toAppResource(*svc)
+	}
+	return resp, nil
+}
+
+// failAwaitingAttempt closes a replay approval's attempt when the approval
+// is rejected, expires or cannot be saved; other actions are ignored.
+func (rt *Router) failAwaitingAttempt(ctx context.Context, a store.DeployApproval, reason string) {
+	if a.Action != store.DeployApprovalActionReplay || a.HeldAttemptID == "" || rt.deploySafety == nil {
+		return
+	}
+	if _, err := rt.deploySafety.TransitionDeployAttempt(context.WithoutCancel(ctx), a.HeldAttemptID, store.DeployAttemptStatusAwaitingApproval, store.DeployAttemptStatusFailed, reason); err != nil {
+		rt.logger.Warn("api: close awaiting deploy attempt failed", slog.String("attempt_id", a.HeldAttemptID), slog.String("error", err.Error()))
+	}
 }

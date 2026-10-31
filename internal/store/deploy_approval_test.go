@@ -175,3 +175,20 @@ func TestDecideDeployApproval_OnlyFromPending(t *testing.T) {
 		t.Fatal("DecideDeployApproval(missing) = true, want false")
 	}
 }
+
+func TestDeployApprovalReplayActionRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	want := testDeployApproval("apr_replay1")
+	want.Action, want.HeldAttemptID = DeployApprovalActionReplay, "att_held1"
+	if err := db.SaveDeployApproval(ctx, want); err != nil {
+		t.Fatalf("SaveDeployApproval() error = %v", err)
+	}
+	got, err := db.GetDeployApproval(ctx, "apr_replay1")
+	if err != nil {
+		t.Fatalf("GetDeployApproval() error = %v", err)
+	}
+	if got != want {
+		t.Errorf("GetDeployApproval() = %+v, want %+v", got, want)
+	}
+}

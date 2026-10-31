@@ -237,6 +237,9 @@ const (
 	// DeployAttemptStatusHeld is an automatic deploy parked by a freeze
 	// window, replayed once the window ends.
 	DeployAttemptStatusHeld = "held"
+	// DeployAttemptStatusAwaitingApproval is a deploy parked until a replay
+	// approval is decided. The freeze releaser never touches it.
+	DeployAttemptStatusAwaitingApproval = "awaiting_approval"
 	// DeployAttemptStatusSuperseded is a deploy that never wrote desired
 	// state because a newer one already had.
 	DeployAttemptStatusSuperseded = "superseded"
