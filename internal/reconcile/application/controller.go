@@ -1361,6 +1361,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if desired.Incarnation != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.IncarnationLabelKey, desired.Incarnation)
 	}
+	if prev := c.supersededRelease(ctx, name); prev != "" {
+		spec.Labels = mergeLabel(spec.Labels, appspec.SupersedesLabelKey, prev)
+	}
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
 		if err != nil {

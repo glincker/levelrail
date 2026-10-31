@@ -87,3 +87,16 @@ recorded progress: wave, waves, updated, ready, unavailable and surge.
 Progress is kept in memory, so it is empty again after the control plane
 restarts. In the dashboard, the Rollout tab of a deploy shows the same
 counts while a rolling deploy runs.
+
+## The held previous release
+
+After a cutover the previous release keeps running for the hold window so a
+rollback is instant. Docker cannot relabel a running container, so the new
+release's containers carry `platform-reserved.supersedes=<container base name>`
+naming the release they replaced; `docker ps --filter
+label=platform-reserved.supersedes` shows which older container is that held
+release and not a stray duplicate. The app page shows a "Previous release
+held, removed in ..." chip until the hold ends (`previous_release_held_until`
+in `GET /api/v1/apps/{name}`).
+
+Deleting an app also deletes its saved rollout progress row.

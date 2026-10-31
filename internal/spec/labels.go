@@ -42,6 +42,12 @@ const AppLabelKey = ReservedLabelPrefix + "app"
 // so a recreated app never adopts an older life's container.
 const IncarnationLabelKey = ReservedLabelPrefix + "incarnation"
 
+// SupersedesLabelKey is set on a new release's containers to the release it
+// replaced, so `docker ps` shows which older container is the held previous
+// release rather than a stray duplicate. Docker cannot relabel a running
+// container, so the marker lives on the successor.
+const SupersedesLabelKey = ReservedLabelPrefix + "supersedes"
+
 // Sanity limits on custom labels: a genuine safety bound against
 // unbounded container metadata growth, not a business threshold, so a
 // fixed constant is appropriate here (the project's "no hardcoded

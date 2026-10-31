@@ -33,3 +33,11 @@ func (db *DB) LoadRolloutProgress(ctx context.Context, serviceName string) ([]by
 	}
 	return []byte(payload), true, nil
 }
+
+// DeleteRolloutProgress drops serviceName's saved progress; absent is fine.
+func (db *DB) DeleteRolloutProgress(ctx context.Context, serviceName string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM rollout_progress WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete rollout progress for %q: %w", serviceName, err)
+	}
+	return nil
+}

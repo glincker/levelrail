@@ -38,7 +38,9 @@
     "attention": "{{count}} need attention",
     "port": "port {{port}}",
     "deployed": "Deployed",
-    "nodeOffline": "Host node offline since"
+    "nodeOffline": "Host node offline since",
+    "previousHeld": "Previous release held, removed",
+    "previousHeldTitle": "Previous release, held until {{time}}. It stays so a rollback is instant."
   },
   "setup": {
     "title": "Recommended setup",
