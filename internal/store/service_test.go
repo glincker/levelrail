@@ -2303,3 +2303,32 @@ func TestSaveDesiredService_RedeployDoesNotResetExecEnabled(t *testing.T) {
 		t.Error("ExecEnabled = true after redeploy, want false (redeploy must not silently re-enable exec)")
 	}
 }
+
+func TestSaveDesiredService_IncarnationIsStableAcrossUpdatesAndNewPerLife(t *testing.T) {
+	ctx := context.Background()
+	db := openTestDB(t)
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := db.GetDesiredService(ctx, "web")
+	if first.Incarnation == "" {
+		t.Fatal("incarnation empty after first insert")
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	again, _ := db.GetDesiredService(ctx, "web")
+	if again.Incarnation != first.Incarnation {
+		t.Errorf("incarnation changed on update: %q -> %q", first.Incarnation, again.Incarnation)
+	}
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 80, Incarnation: first.Incarnation}); err != nil {
+		t.Fatal(err)
+	}
+	next, _ := db.GetDesiredService(ctx, "web")
+	if next.Incarnation == "" || next.Incarnation == first.Incarnation {
+		t.Errorf("recreated app incarnation = %q, want a new id", next.Incarnation)
+	}
+}
