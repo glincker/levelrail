@@ -243,6 +243,9 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_PLUGIN_EGRESS_MAX_TUNNELS` | `16` | Simultaneous tunnels allowed per plugin. Positive integer. Control plane. |
 | `APP_PLUGIN_EGRESS_BYTES_PER_MINUTE` | `268435456` (256 MiB) | Traffic cap per plugin per minute, both directions combined. Positive integer. Control plane. |
 | `APP_PLUGIN_EGRESS_ALLOW_PRIVATE` | `false` | Set to `true` to let plugin tunnels reach targets that resolve to internal addresses. Control plane. |
+| `APP_PLUGIN_EGRESS_POLICY_SOCKET` | none (required) | Unix socket path where the `plugin-egress` sidecar receives its policy. Created with mode 0600 in a 0700 directory. Sidecar only. |
+| `APP_PLUGIN_EGRESS_POLICY_CACHE` | none (cache off) | File where the sidecar keeps the last applied policy (mode 0600) and reloads it on start. With no policy at all the sidecar denies everything. Sidecar only. |
+| `APP_PLUGIN_EGRESS_LISTEN` | `0.0.0.0:3128` | Address the `plugin-egress` sidecar proxy listens on. Sidecar only. |
 
 ## SSH node provisioning
 
