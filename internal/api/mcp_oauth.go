@@ -100,7 +100,8 @@ func (rt *Router) mcpOAuthAudienceOK(ctx context.Context, rec *store.APIToken) b
 	}
 	st := rt.mcpOAuth()
 	if st == nil {
-		return true
+		// Cannot check the grant or audience, so refuse rather than trust the prefix.
+		return false
 	}
 	g, err := st.GetMCPOAuthGrantByToken(ctx, rec.ID)
 	if err != nil || g.Revoked {

@@ -396,3 +396,14 @@ func TestMCPAbilitiesForSensitiveOnlyKeepsRead(t *testing.T) {
 		t.Fatalf("abilities = %v", got)
 	}
 }
+
+func TestMCPOAuthAudienceFailsClosedWithoutStore(t *testing.T) {
+	rt := &Router{}
+	ctx := context.Background()
+	if rt.mcpOAuthAudienceOK(ctx, &store.APIToken{ID: "t1", AgentName: mcpOAuthAgentPrefix + "client"}) {
+		t.Fatal("an OAuth token must be refused when the grant store is missing")
+	}
+	if !rt.mcpOAuthAudienceOK(ctx, &store.APIToken{ID: "t2", AgentName: "ci-deploy"}) {
+		t.Fatal("a non-OAuth token must not depend on the OAuth store")
+	}
+}
