@@ -119,6 +119,9 @@ type OneShot struct {
 	Sleep func(ctx context.Context, d time.Duration) error
 	// Now returns the current time; nil uses time.Now.
 	Now func() time.Time
+	// OnUpdate, when set, receives each new snapshot so the caller can
+	// persist progress. It runs outside the job lock.
+	OnUpdate func(OneShotSnapshot)
 
 	mu        sync.Mutex
 	snap      OneShotSnapshot
@@ -144,8 +147,13 @@ func (o *OneShot) Snapshot() OneShotSnapshot {
 
 func (o *OneShot) update(fn func(s *OneShotSnapshot)) {
 	o.mu.Lock()
-	defer o.mu.Unlock()
 	fn(&o.snap)
+	snap := o.snap
+	snap.RunIDs = append([]string(nil), snap.RunIDs...)
+	o.mu.Unlock()
+	if o.OnUpdate != nil {
+		o.OnUpdate(snap)
+	}
 }
 
 // Init marks the job Running so a snapshot taken before Run starts is valid.
@@ -289,8 +297,8 @@ func (r *Runner) RunAttempt(ctx context.Context, task store.ScheduledTask) (Atte
 }
 
 // OneShotRegistry holds the live and recently finished one-shot jobs of
-// this process, bounded by keep. State is in memory: the per-attempt runs
-// stay in the run history, the job summary does not survive a restart.
+// this process, bounded by keep. The API mirrors each snapshot into the
+// store, so a job that outlives a restart is read back from there.
 type OneShotRegistry struct {
 	mu    sync.Mutex
 	keep  int

@@ -44,10 +44,10 @@ The job ends `Succeeded` when all completions succeeded, or `Failed` once more t
 | `APP_JOB_DEFAULT_TIMEOUT` | `10m` | Per-attempt timeout when the request gives none. |
 | `APP_JOB_MAX_COMPLETIONS` | `100` | Largest `completions` accepted. |
 | `APP_JOB_MAX_PARALLELISM` | `10` | Largest `parallelism` accepted. |
-| `APP_JOB_ONESHOT_KEEP` | `100` | Finished jobs whose status is kept in memory. |
+| `APP_JOB_ONESHOT_KEEP` | `100` | Finished jobs whose status is kept. Older ones are pruned together with their hidden task row. |
 
 ### Limits today
 
-- The job summary is held in memory by the control plane. After a restart `GET` answers 404, though the individual runs stay in the run history. A run in flight during a restart is marked interrupted and not resumed.
+- Job status is stored, so `GET` keeps answering after a restart. A job that was still running when the control plane restarted is marked `Failed` with a message saying so, and its progress counts are kept. It is not resumed, because that could run the command twice: start a new job to redo the remaining work.
 - The command runs against an app. Running a bare image with no app is not supported yet.
-- Each job leaves a hidden, disabled task row so its runs have a history to live in. It is named `oneshot-<job id>` and shows in `jobs list`.
+- Each job leaves a hidden, disabled task row so its runs have a history to live in. It is named `oneshot-<job id>`, shows in `jobs list` and is removed when the job is pruned.
