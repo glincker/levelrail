@@ -259,10 +259,7 @@ func (m *Manager) checkHealth(ctx context.Context, rec Record, in *instance, cli
 }
 
 func (m *Manager) containerSpec(rec Record) docker.ContainerSpec {
-	uid, gid := m.cfg.UID, m.cfg.GID
-	if uid <= 0 {
-		uid, gid = fallbackUID, fallbackUID
-	}
+	uid, gid := m.containerIDs()
 	spec := docker.ContainerSpec{
 		Name:  m.containerName(rec.Name),
 		Image: rec.Image,
@@ -286,11 +283,8 @@ func (m *Manager) containerSpec(rec Record) docker.ContainerSpec {
 
 func (m *Manager) start(ctx context.Context, rec Record, in *instance) error {
 	dir := m.runDir(rec.Name)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("prepare socket dir: %w", err)
-	}
-	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // the socket dir must be owner-only, 0700 is the point
-		return fmt.Errorf("secure socket dir: %w", err)
+	if err := m.securePrivateDir(dir); err != nil {
+		return err
 	}
 	sock := filepath.Join(dir, socketFile)
 	_ = os.Remove(sock)

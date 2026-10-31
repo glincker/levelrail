@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -45,6 +46,7 @@ type Manager struct {
 	egPolicy  map[string]egressEntry
 	egVersion int64
 	egDirty   bool
+	chown     func(path string, uid, gid int) error
 	pushFn    func(ctx context.Context, socket string, p egress.Policy) error
 }
 
@@ -55,7 +57,7 @@ func NewManager(store Store, dk Containers, audit Auditor, cfg Config, log *slog
 	}
 	return &Manager{
 		store: store, docker: dk, audit: audit, cfg: cfg.withDefaults(), log: log,
-		now: time.Now, dial: dialUnix, instances: map[string]*instance{}, pushFn: egress.PushPolicy,
+		now: time.Now, dial: dialUnix, instances: map[string]*instance{}, pushFn: egress.PushPolicy, chown: os.Chown,
 	}
 }
 

@@ -15,6 +15,7 @@ var serverSubcommands = map[string]bool{
 	"self-upgrade": true, "restore-point": true, "migrate-check": true, "recover-admin": true,
 	"emergency-token": true, "approve-signin": true, "restore-db": true, "restore-snapshot": true,
 	"restore": true, "setup-token": true, "healthcheck": true, "demo": true, "access-policy-reset": true,
+	"plugin-egress": true, "wrap-master-key": true,
 }
 
 const serverUsageBody = `Usage:

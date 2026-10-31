@@ -3,6 +3,7 @@ package plugin
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -127,5 +128,33 @@ func TestEgressModeDefaultsToOpen(t *testing.T) {
 	}
 	if c := ConfigFromEnv("ns", "/d", on); c.EgressMode != EgressProxy {
 		t.Fatalf("mode = %q", c.EgressMode)
+	}
+}
+
+func TestPrivateDirsAreChownedToTheContainerUser(t *testing.T) {
+	h, _ := proxyHarness(t)
+	h.m.cfg.UID, h.m.cfg.GID = 0, 0
+	type call struct{ uid, gid int }
+	var got []call
+	h.m.chown = func(_ string, uid, gid int) error {
+		got = append(got, call{uid, gid})
+		return nil
+	}
+	rec := hostRecord()
+	if err := h.m.start(context.Background(), rec, h.m.inst(rec.Name)); err != nil {
+		t.Fatal(err)
+	}
+	// One chown for the sidecar dir and one for the plugin run dir.
+	if len(got) != 2 {
+		t.Fatalf("chown calls = %v", got)
+	}
+	for _, c := range got {
+		if c.uid != fallbackUID || c.gid != fallbackUID {
+			t.Fatalf("chown to %v, want %d", c, fallbackUID)
+		}
+	}
+	st, err := os.Stat(h.m.egressDir())
+	if err != nil || st.Mode().Perm() != 0o700 {
+		t.Fatalf("egress dir = %v, %v", st, err)
 	}
 }

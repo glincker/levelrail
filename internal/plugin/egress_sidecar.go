@@ -98,10 +98,7 @@ func (m *Manager) resetAfterNetworkReplace(ctx context.Context) {
 }
 
 func (m *Manager) sidecarSpec() docker.ContainerSpec {
-	uid, gid := m.cfg.UID, m.cfg.GID
-	if uid <= 0 {
-		uid, gid = fallbackUID, fallbackUID
-	}
+	uid, gid := m.containerIDs()
 	env := map[string]string{
 		egress.EnvPolicySocket: egressRunDir + "/" + egressPolicyFile,
 		egress.EnvPolicyCache:  egressRunDir + "/" + egressCacheFile,
@@ -147,7 +144,7 @@ func (m *Manager) ensureSidecar(ctx context.Context) error {
 	if _, err := m.docker.EnsureNetwork(ctx, m.egressNetwork()); err != nil {
 		return fmt.Errorf("ensure egress network: %w", err)
 	}
-	if err := mkdirPrivate(m.egressDir()); err != nil {
+	if err := m.securePrivateDir(m.egressDir()); err != nil {
 		return err
 	}
 	id, err := m.docker.Create(ctx, m.sidecarSpec())
@@ -257,12 +254,27 @@ func (m *Manager) syncEgress(ctx context.Context) {
 	}
 }
 
-func mkdirPrivate(dir string) error {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("prepare egress dir: %w", err)
+// containerIDs is the uid and gid plugin and sidecar containers run as.
+func (m *Manager) containerIDs() (int, int) {
+	if m.cfg.UID <= 0 {
+		return fallbackUID, fallbackUID
 	}
-	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // owner-only dir holds the policy socket
-		return fmt.Errorf("secure egress dir: %w", err)
+	return m.cfg.UID, m.cfg.GID
+}
+
+// securePrivateDir makes dir owner-only and owned by the container user, so a
+// root control plane still lets the unprivileged container read its mount.
+// The chown is best effort: a non-root control plane already runs as that user.
+func (m *Manager) securePrivateDir(dir string) error {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("prepare private dir: %w", err)
+	}
+	uid, gid := m.containerIDs()
+	if err := m.chown(dir, uid, gid); err != nil && !errors.Is(err, os.ErrPermission) {
+		return fmt.Errorf("chown private dir: %w", err)
+	}
+	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // owner-only dir holds the socket
+		return fmt.Errorf("secure private dir: %w", err)
 	}
 	return nil
 }
