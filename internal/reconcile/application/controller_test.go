@@ -3943,3 +3943,48 @@ func TestController_Reconcile_MissingAppLabelIsNotRecreated(t *testing.T) {
 		t.Errorf("createCalls = %d, want 0 for a running container lacking the app label", rt.createCalls)
 	}
 }
+
+// An upgrade must not restart containers created before the incarnation label existed.
+func TestController_Reconcile_MissingIncarnationLabelIsNotRecreated(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Incarnation: "life-b"}
+	target := ContainerName("web", desired.Image, "")
+	rt := newFakeRuntime(0)
+	rt.seedLabeled(target, true, map[string]string{"platform-reserved.app": "web"})
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 0 || rt.removeCalls != 0 {
+		t.Errorf("createCalls=%d removeCalls=%d, want 0 for a container lacking the incarnation label", rt.createCalls, rt.removeCalls)
+	}
+}
+
+func TestController_Reconcile_MatchingIncarnationIsKept(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Incarnation: "life-b"}
+	rt := newFakeRuntime(0)
+	rt.seedLabeled(ContainerName("web", desired.Image, ""), true, map[string]string{"platform-reserved.incarnation": "life-b"})
+
+	if _, err := New("web", &fakeStore{svc: desired}, rt).Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 0 || rt.removeCalls != 0 {
+		t.Errorf("createCalls=%d removeCalls=%d, want 0", rt.createCalls, rt.removeCalls)
+	}
+}
+
+func TestController_Reconcile_OtherIncarnationIsReplaced(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Incarnation: "life-b", Env: map[string]string{"TOKEN": "new"}}
+	rt := newFakeRuntime(0)
+	rt.seedLabeled(ContainerName("web", desired.Image, ""), true, map[string]string{"platform-reserved.incarnation": "life-a"})
+
+	if _, err := New("web", &fakeStore{svc: desired}, rt).Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 1 || rt.lastCreateEnv["TOKEN"] != "new" {
+		t.Errorf("createCalls=%d env=%v, want one fresh container", rt.createCalls, rt.lastCreateEnv)
+	}
+	if got := rt.lastCreateSpec.Labels["platform-reserved.incarnation"]; got != "life-b" {
+		t.Errorf("incarnation label = %q, want life-b", got)
+	}
+}

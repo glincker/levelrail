@@ -248,12 +248,14 @@ func TestDeleteFinalizer_RemoveAppNetwork(t *testing.T) {
 }
 
 // Failed teardown of app A, then a new app with the same name and image but another env.
-func TestDeleteFinalizer_RecreatedAppSameImageAdoptsOldContainer(t *testing.T) {
+func TestDeleteFinalizer_RecreatedAppSameImageRecreatesOldContainer(t *testing.T) {
 	ctx := context.Background()
 	db := newFinalizerStore(t)
 	rt := newFakeRuntime(0)
-	oldApp := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Env: map[string]string{"TOKEN": "old"}}
-	if _, err := New("web", &fakeStore{svc: oldApp}, rt).Reconcile(ctx); err != nil {
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Env: map[string]string{"TOKEN": "old"}}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if _, err := New("web", db, rt).Reconcile(ctx); err != nil {
 		t.Fatalf("first life Reconcile() error = %v", err)
 	}
 	if rt.createCalls != 1 || rt.lastCreateEnv["TOKEN"] != "old" {
@@ -268,23 +270,21 @@ func TestDeleteFinalizer_RecreatedAppSameImageAdoptsOldContainer(t *testing.T) {
 	if err := f.Finalize(ctx, "web", ""); err == nil {
 		t.Fatal("Finalize() error = nil, want the remove failure")
 	}
-
-	newApp := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Env: map[string]string{"TOKEN": "new"}}
-	if err := db.SaveDesiredService(ctx, newApp); err != nil {
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatalf("DeleteDesiredService() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Env: map[string]string{"TOKEN": "new"}}); err != nil {
 		t.Fatalf("SaveDesiredService() error = %v", err)
 	}
 	if _, err := f.Reconcile(ctx); err != nil {
 		t.Fatalf("finalizer Reconcile() error = %v", err)
 	}
-	if _, err := New("web", &fakeStore{svc: &newApp}, rt).Reconcile(ctx); err != nil {
+	rt.removeErr = nil
+	if _, err := New("web", db, rt).Reconcile(ctx); err != nil {
 		t.Fatalf("second life Reconcile() error = %v", err)
 	}
 
-	// Documents the unsafe behaviour: the old container is adopted and the tombstone is gone.
-	if rt.createCalls != 1 {
-		t.Errorf("createCalls = %d, want 1 (old container adopted)", rt.createCalls)
-	}
-	if got := pendingNames(t, db); len(got) != 0 {
-		t.Errorf("tombstones = %v, want the tombstone dropped", got)
+	if rt.createCalls != 2 || rt.lastCreateEnv["TOKEN"] != "new" {
+		t.Errorf("second life: createCalls=%d env=%v, want a fresh container with the new env", rt.createCalls, rt.lastCreateEnv)
 	}
 }

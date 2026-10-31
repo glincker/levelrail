@@ -617,6 +617,8 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
+	desired = c.withIncarnation(ctx, desired)
+
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
 	// own doc comment): converge to zero containers and return early,
 	// same containers-only teardown removeStale already performs after a
@@ -934,6 +936,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	state, err := c.inspectByName(ctx, target)
 	if err != nil {
 		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
+	}
+
+	if incarnationMismatch(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonIncarnationMismatch}, fmt.Errorf("remove %q left by an earlier life of the app: %w", target, err)
+		}
+		state = nil
 	}
 
 	if pinnedPortUnbound(state, desired) {
@@ -1347,6 +1356,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
 	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	if desired.Incarnation != "" {
+		spec.Labels = mergeLabel(spec.Labels, appspec.IncarnationLabelKey, desired.Incarnation)
+	}
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
 		if err != nil {
@@ -2519,6 +2531,40 @@ func (c *Controller) ownsInstance(cs docker.ContainerState) bool {
 // caller's own map untouched. Used to stamp internal/spec.InstanceLabelKey
 // onto a container spec without createAndStart mutating desired.Labels,
 // which store.DesiredService owns.
+// incarnationBackfiller is implemented by the real store; fakes without it keep legacy rows legacy.
+type incarnationBackfiller interface {
+	EnsureServiceIncarnation(ctx context.Context, name string) (string, error)
+}
+
+const reasonIncarnationMismatch = "IncarnationMismatch"
+
+// withIncarnation fills a legacy row's missing id on the first pass, on a copy so the store's value is never mutated.
+func (c *Controller) withIncarnation(ctx context.Context, desired *store.DesiredService) *store.DesiredService {
+	if desired.Incarnation != "" {
+		return desired
+	}
+	b, ok := c.store.(incarnationBackfiller)
+	if !ok {
+		return desired
+	}
+	id, err := b.EnsureServiceIncarnation(ctx, desired.Name)
+	if err != nil || id == "" {
+		return desired
+	}
+	cp := *desired
+	cp.Incarnation = id
+	return &cp
+}
+
+// incarnationMismatch is true only for a container labeled with another life's id; an unlabeled one is a legacy container and is kept.
+func incarnationMismatch(state *docker.ContainerState, desired *store.DesiredService) bool {
+	if state == nil || desired.Incarnation == "" {
+		return false
+	}
+	got, labeled := state.Labels[appspec.IncarnationLabelKey]
+	return labeled && got != desired.Incarnation
+}
+
 func mergeLabel(labels map[string]string, key, value string) map[string]string {
 	out := make(map[string]string, len(labels)+1)
 	for k, v := range labels {
