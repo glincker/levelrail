@@ -204,6 +204,21 @@ func TestDeploySafety_Live_RestartAndOperatorRollback(t *testing.T) {
 		})
 		time.Sleep(5 * time.Second)
 		s.assertNoFailures(t, load)
+		// One replica: the restarted container plus at most the held previous release.
+		all, err := s.rt.ListByPrefix(ctx, safetyService+"-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var owned []string
+		for _, cs := range all {
+			if application.OwnsContainer(safetyService, cs.Name) {
+				owned = append(owned, cs.Name)
+			}
+		}
+		t.Logf("containers after a one-replica restart: %v", owned)
+		if len(owned) > 2 {
+			t.Errorf("one-replica restart left %d containers %v, want at most 2", len(owned), owned)
+		}
 	})
 
 	t.Run("operator rollback", func(t *testing.T) {
