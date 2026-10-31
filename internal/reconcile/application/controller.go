@@ -1224,7 +1224,9 @@ func (c *Controller) imageOutcome(ctx context.Context, state *docker.ContainerSt
 		}
 		return replicaOutcome{reason: "ImageInspectFailed"}, err
 	}
+	c.unconfirmedMu.Lock()
 	c.servingImageID = state.ImageID
+	c.unconfirmedMu.Unlock()
 	return replicaOutcome{justDeployed: justDeployed, imageID: state.ImageID}, nil
 }
 
