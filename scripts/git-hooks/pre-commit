@@ -9,6 +9,13 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# Shared Go build cache across worktrees: trimpath keeps the package dir out of action IDs.
+case " ${GOFLAGS:-} " in *" -trimpath "*) ;; *) export GOFLAGS="${GOFLAGS:+$GOFLAGS }-trimpath" ;; esac
+# Heavy jobs queue through machine-wide slots; fd 3 keeps the wait line visible when a log captures stderr.
+exec 3>&2
+# shellcheck source=scripts/lib/slot.sh
+. scripts/lib/slot.sh
+
 fail=0
 
 echo "pre-commit: gofmt"
@@ -75,7 +82,7 @@ elif command -v golangci-lint >/dev/null; then
 	lint_start="$(date +%s)"
 	while :; do
 		# shellcheck disable=SC2086
-		GOLANGCI_LINT_CACHE="$lint_cache" golangci-lint run --allow-parallel-runners --new-from-rev=HEAD $go_pkg_dirs >"$lint_log" 2>&1
+		slot_run lint env GOLANGCI_LINT_CACHE="$lint_cache" golangci-lint run --allow-parallel-runners --new-from-rev=HEAD $go_pkg_dirs >"$lint_log" 2>&1
 		lint_rc=$?
 		cat "$lint_log"
 		if [ "$lint_rc" -eq 0 ]; then
@@ -117,7 +124,7 @@ if [ -n "$staged_kit_files" ]; then
 		fail=1
 	fi
 	if command -v golangci-lint >/dev/null; then
-		if ! (cd kit && GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run ./...); then
+		if ! (cd kit && slot_run lint env GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run ./...); then
 			fail=1
 		fi
 	fi
@@ -224,7 +231,7 @@ if [ -n "$staged_web_files" ]; then
 	tsc_log="$(mktemp)"
 	# tsc -b runs out of the default heap on large web changes; raise it unless
 	# the caller set NODE_OPTIONS (LEVELRAIL_HOOK_NODE_HEAP_MB tunes the size).
-	( cd web && NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${LEVELRAIL_HOOK_NODE_HEAP_MB:-8192}}" npx tsc -b ) >"$tsc_log" 2>&1 &
+	( cd web && slot_run tsc env NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${LEVELRAIL_HOOK_NODE_HEAP_MB:-8192}}" npx tsc -b ) >"$tsc_log" 2>&1 &
 	tsc_pid=$!
 	lint_rc=0
 	# shellcheck disable=SC2086

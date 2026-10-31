@@ -20,6 +20,13 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# Shared Go build cache across worktrees: trimpath keeps the package dir out of action IDs.
+case " ${GOFLAGS:-} " in *" -trimpath "*) ;; *) export GOFLAGS="${GOFLAGS:+$GOFLAGS }-trimpath" ;; esac
+# Heavy jobs queue through machine-wide slots; fd 3 keeps the wait line visible when output is captured.
+exec 3>&2
+# shellcheck source=scripts/lib/slot.sh
+. scripts/lib/slot.sh
+
 # git exports these to hooks; tests that spawn their own git repos inherit
 # them and act on this checkout instead (TestCheckPushed fails in foreground).
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY \
@@ -274,7 +281,7 @@ if [ "$web_tests_on" = on ] && [ "$fail" -eq 0 ] && git rev-parse --verify --qui
 	if [ -n "$web_files" ]; then
 		echo "pre-push: vitest related (changed web files)"
 		# shellcheck disable=SC2086 # web_files is a newline-joined list of repo paths, word-splitting is intended
-		if ! (cd web && npx vitest related --run $web_files 2>&1); then
+		if ! (cd web && slot_run vitest npx vitest related --run $web_files 2>&1); then
 			fail=1
 		fi
 	fi

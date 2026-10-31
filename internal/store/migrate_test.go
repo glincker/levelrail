@@ -4,7 +4,6 @@ import (
 	"context"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -134,14 +133,14 @@ func TestLoadMigrations_RealEmbeddedFiles(t *testing.T) {
 // script CI and the git hooks run, so the go test suite backstops the
 // collision check too, not just checkNoDuplicateVersions above.
 func TestCheckMigrationVersionsScript_RealEmbeddedFiles(t *testing.T) {
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller(0) failed")
+	// go test runs in the package dir; runtime.Caller paths are rewritten under -trimpath.
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatal(err)
 	}
-	repoRoot := filepath.Join(filepath.Dir(thisFile), "..", "..")
 	script := filepath.Join(repoRoot, "scripts", "check-migration-versions.sh")
 
-	cmd := exec.Command(script) //nolint:gosec // script path built from runtime.Caller(0), not external input
+	cmd := exec.Command(script) //nolint:gosec // script path is a fixed repo-relative path, not external input
 	cmd.Dir = repoRoot
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("check-migration-versions.sh failed: %v\n%s", err, out)

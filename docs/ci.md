@@ -680,6 +680,16 @@ comparison should use the fastest of several runs, not the median.
   all worktrees (`LEVELRAIL_LINT_CACHE` overrides the path). If a binary still
   reports the single-run lock, the hook retries for `APP_LINT_LOCK_WAIT_SECONDS`
   (default 300), then fails with a message. Lint is never skipped silently.
+- Heavy hook jobs (`tsc -b`, vitest, golangci-lint, and the `internal/api`
+  compile plus shards in `scripts/test-fast.sh`) queue through machine-wide
+  slots in `scripts/lib/slot.sh`. `LEVELRAIL_HEAVY_SLOTS` sets how many run at
+  once (default 3); slots live under `${TMPDIR:-/tmp}/levelrail-slots`
+  (`LEVELRAIL_SLOT_DIR`). A waiting job prints `waiting for a build slot (n busy)`
+  at most every 30 s. A slot whose owner died is reclaimed, and after
+  `LEVELRAIL_SLOT_MAX_WAIT` seconds (default 1800) the job runs anyway with a
+  warning. `scripts/test-slot.sh` is the self test.
+- Hooks, `scripts/test-fast.sh` and `scripts/pre-integrate.sh` add `-trimpath`
+  to `GOFLAGS`, so worktrees at different paths share compiled Go packages.
 - Pre-push clears the `GIT_*` variables git exports to hooks, so tests that
   create their own repositories behave the same in the foreground as in the
   background.

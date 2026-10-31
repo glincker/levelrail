@@ -10,6 +10,8 @@
 # Works on bash 3.2 (no mapfile, no associative arrays).
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)" || exit 2
+# Shared Go build cache across worktrees: trimpath keeps the package dir out of action IDs.
+case " ${GOFLAGS:-} " in *" -trimpath "*) ;; *) export GOFLAGS="${GOFLAGS:+$GOFLAGS }-trimpath" ;; esac
 
 web=0
 base=""
