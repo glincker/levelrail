@@ -56,6 +56,9 @@ func printDetection(out io.Writer, a apiclient.ImportAnalysis) {
 	if d.OutputDir != "" {
 		line("Output dir: %s", d.OutputDir)
 	}
+	if d.SPA {
+		line("SPA mode:   on (unknown paths serve index.html)")
+	}
 	if d.RuntimeVersion.Value != "" {
 		line("Runtime:    %s (%s)", d.RuntimeVersion.Value, d.RuntimeVersion.Source)
 	}

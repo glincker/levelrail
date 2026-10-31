@@ -59,15 +59,17 @@ type EnvVarGuess struct {
 
 // Detection explains what a repository is and how it would be built.
 type Detection struct {
-	Framework      string        `json:"framework"`
-	Language       string        `json:"language"`
-	BuildType      string        `json:"build_type"`
-	Confidence     string        `json:"confidence"`
-	Reasons        []Reason      `json:"reasons"`
-	Port           PortGuess     `json:"port"`
-	StartCommand   string        `json:"start_command,omitempty"`
-	BuildCommand   string        `json:"build_command,omitempty"`
-	OutputDir      string        `json:"output_dir,omitempty"`
+	Framework    string    `json:"framework"`
+	Language     string    `json:"language"`
+	BuildType    string    `json:"build_type"`
+	Confidence   string    `json:"confidence"`
+	Reasons      []Reason  `json:"reasons"`
+	Port         PortGuess `json:"port"`
+	StartCommand string    `json:"start_command,omitempty"`
+	BuildCommand string    `json:"build_command,omitempty"`
+	OutputDir    string    `json:"output_dir,omitempty"`
+	// SPA is true for a client routed single page app: serve index.html for unknown paths.
+	SPA            bool          `json:"spa"`
 	HealthPath     string        `json:"health_path"`
 	RuntimeVersion Sourced       `json:"runtime_version"`
 	EnvVars        []EnvVarGuess `json:"env_vars"`
@@ -153,6 +155,7 @@ type found struct {
 	port                              PortGuess
 	start, build, output, health      string
 	version                           Sourced
+	spa                               bool
 	reasons                           []Reason
 	noLockfile, malformed, noManifest bool
 }
@@ -177,6 +180,7 @@ func Detect(in Input) Detection {
 
 	d.Framework, d.Language, d.BuildType = g.framework, g.language, g.buildType
 	d.StartCommand, d.BuildCommand, d.OutputDir = g.start, g.build, g.output
+	d.SPA = g.spa && g.buildType == buildStatic
 	d.Reasons = append(d.Reasons, g.reasons...)
 	d.RuntimeVersion = g.version
 	d.Port = g.port

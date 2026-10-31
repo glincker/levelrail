@@ -204,6 +204,7 @@ func detectNode(f *files) (found, bool) {
 		g.why("package.json", "package.json has a frontend build tool and no server framework, so it builds a single page app into "+g.output+"/")
 		g.build = orStr(g.build, "vite build")
 		if n.clientRouter() {
+			g.spa = true
 			g.why("package.json", "a client side router is installed, so unknown paths should fall back to index.html (single page app mode)")
 		}
 	case n.parsed && n.pkg.Scripts["start"] != "":

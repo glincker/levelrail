@@ -105,6 +105,11 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&static.Command, "build-command", "", "static sites: command that builds the site in a build container, e.g. \"npm run build\"")
 	fs.StringVar(&static.Publish, "publish-dir", "", "static sites: directory the build writes, relative to the base directory, e.g. dist")
 	fs.BoolVar(&static.Infer, "infer-build", false, "static sites: detect the framework and fill the build command and publish directory")
+	fs.BoolFunc("spa", "static sites: serve index.html for unknown paths, --spa=false turns it off", func(v string) error {
+		on := v != "false" && v != "0"
+		static.SPA = &on
+		return nil
+	})
 	fs.StringVar(&token, "token-secret", "", "personal access token for a private repo; empty on an update leaves the stored token unchanged")
 	fs.StringVar(&triggerMode, "trigger-mode", "", "push or release (default: push); release deploys only on a tag push or a published github release")
 	fs.Usage = func() {
@@ -140,6 +145,7 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	gs, err := client.SetGitSource(context.Background(), name, setGitSourceRequest{
 		BuildCommand:  static.Command,
 		PublishDir:    static.Publish,
+		StaticSPA:     static.SPA != nil && *static.SPA,
 		RepoURL:       repoURL,
 		Branch:        branch,
 		BuildType:     buildType,

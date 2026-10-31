@@ -41,6 +41,7 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 		return "", false, fmt.Errorf("resolve build settings for %q: %w", appName, err)
 	}
 	svcSpec := specServiceFromDesired(*prod, gitBuild)
+	svcSpec.Static = gs.StaticOptions()
 	// A static build reads build args only, so app env never needs to reach it.
 	svcSpec.Port, svcSpec.Env = 0, nil
 	svcSpec.Domains = domainSlice(wantDomain)

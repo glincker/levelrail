@@ -338,6 +338,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 		return "", false, fmt.Errorf("resolve build settings for %q: %w", appName, err)
 	}
 	svcSpec := specServiceFromDesired(*prod, gitBuild)
+	svcSpec.Static = gs.StaticOptions()
 	attachmentVar := ""
 	if prod.DatabaseAttachment != nil {
 		attachmentVar = prod.DatabaseAttachment.EnvVar

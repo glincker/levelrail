@@ -387,6 +387,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		return http.StatusUnprocessableEntity, "invalid build settings: " + err.Error()
 	}
 	svcSpec := specServiceFromDesired(*existing, gitBuild)
+	svcSpec.Static = gs.StaticOptions()
 	svcSpec.Build.Args = mergeBuildArgs(svcSpec.Build.Args, extraBuildArgsFrom(ctx))
 
 	buildReq := deploy.Request{

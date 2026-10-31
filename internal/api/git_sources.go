@@ -41,6 +41,7 @@ type GitSourceStore interface {
 	// SetGitSourcePreviewEnabled backs PUT
 	// /api/v1/apps/{name}/preview-settings (preview_environments_handlers.go):
 	// the opt-in toggle for preview environments per pull request.
+	SetGitSourceStaticSPA(ctx context.Context, serviceName string, enabled bool) error
 	SetGitSourcePreviewEnabled(ctx context.Context, serviceName string, enabled bool) error
 	// SetGitSourcePostPRComments backs the same PUT
 	// /api/v1/apps/{name}/preview-settings route: the opt-in toggle for
@@ -108,6 +109,7 @@ type gitSourceResource struct {
 	BaseDirectory      string                          `json:"base_directory,omitempty"`
 	BuildCommand       string                          `json:"build_command,omitempty"`
 	PublishDir         string                          `json:"publish_dir,omitempty"`
+	StaticSPA          bool                            `json:"static_spa"`
 	ResolvedBuild      gitSourceResolvedBuild          `json:"resolved_build"`
 	AdditionalServices map[string]store.GitSourceBuild `json:"additional_services,omitempty"`
 	// Services is an app.yaml-style services: map (store.GitSource.Services's
@@ -198,6 +200,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		BaseDirectory:          g.BaseDirectory,
 		BuildCommand:           g.BuildCommand,
 		PublishDir:             g.PublishDir,
+		StaticSPA:              g.StaticSPA,
 		ResolvedBuild:          resolveGitSourceBuild(g.BuildType, g.BaseDirectory, g.BuildPath, g.BuildCommand, g.PublishDir),
 		AdditionalServices:     g.AdditionalServices,
 		Services:               g.Services,
@@ -242,6 +245,8 @@ type setGitSourceRequest struct {
 	// (build_type "static" only); see validateGitSourceStaticBuild.
 	BuildCommand string `json:"build_command,omitempty"`
 	PublishDir   string `json:"publish_dir,omitempty"`
+	// StaticSPA serves index.html for unknown paths (build_type "static" only).
+	StaticSPA bool `json:"static_spa,omitempty"`
 	// Token is an optional git hosting personal access token for a
 	// private repo, sent over HTTPS Basic auth as the password
 	// (gitCheckoutWithToken, git_webhook.go). Empty on an update means
@@ -646,7 +651,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := rt.connectGitSource(withRequestOrigin(r.Context(), r), name, connectGitSourceParams{
-		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, BuildCommand: req.BuildCommand, PublishDir: req.PublishDir, Token: req.Token,
+		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, BuildCommand: req.BuildCommand, PublishDir: req.PublishDir, StaticSPA: req.StaticSPA && buildType == spec.BuildStatic, Token: req.Token,
 		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
 		TriggerMode: triggerMode,
 	})
@@ -676,6 +681,7 @@ type connectGitSourceParams struct {
 	BaseDirectory string
 	BuildCommand  string
 	PublishDir    string
+	StaticSPA     bool
 	// Token is optional; empty means "leave whatever is currently
 	// stored unchanged" on an update, matching setGitSourceRequest's own
 	// Token field.
@@ -736,7 +742,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		triggerMode = spec.TriggerModePush
 	}
 	if err := rt.gitSources.SaveGitSourceWithAppAuth(ctx, store.GitSource{
-		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory, BuildCommand: p.BuildCommand, PublishDir: p.PublishDir,
+		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory, BuildCommand: p.BuildCommand, PublishDir: p.PublishDir, StaticSPA: p.StaticSPA,
 		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
 		TriggerMode: triggerMode,
 	}, gitHubAppTokenAllowed(ctx)); err != nil {

@@ -1879,6 +1879,7 @@ type GitSourceResource struct {
 	// BuildCommand and PublishDir build a static site before serving it.
 	BuildCommand string `json:"build_command,omitempty"`
 	PublishDir   string `json:"publish_dir,omitempty"`
+	StaticSPA    bool   `json:"static_spa"`
 	// ResolvedBuild states what a deploy builds, in plain terms.
 	ResolvedBuild GitSourceResolvedBuild `json:"resolved_build"`
 	// TriggerMode mirrors store.GitSource.TriggerMode: "push" (default)
@@ -1945,6 +1946,7 @@ type SetGitSourceRequest struct {
 	BaseDirectory string `json:"base_directory,omitempty"`
 	BuildCommand  string `json:"build_command,omitempty"`
 	PublishDir    string `json:"publish_dir,omitempty"`
+	StaticSPA     bool   `json:"static_spa,omitempty"`
 	Token         string `json:"token,omitempty"`
 	TriggerMode   string `json:"trigger_mode,omitempty"`
 }
@@ -1963,6 +1965,7 @@ type SetGitSourceBuildRequest struct {
 	BaseDirectory string `json:"base_directory"`
 	BuildCommand  string `json:"build_command"`
 	PublishDir    string `json:"publish_dir"`
+	StaticSPA     *bool  `json:"static_spa,omitempty"`
 }
 
 // StaticBuildSuggestion mirrors internal/repolayout's StaticBuildSuggestion.

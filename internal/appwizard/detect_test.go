@@ -261,7 +261,21 @@ func TestDetectStaticGeneratorsVersusServers(t *testing.T) {
 	if !hasReason(spa, "single page app mode") {
 		t.Errorf("router project lacks SPA reason: %+v", spa.Reasons)
 	}
+	if !spa.SPA {
+		t.Error("client routed Vite app should set SPA")
+	}
+	cra := Detect(tree(map[string]string{"package.json": pkg(`"react-router-dom":"6","react-scripts":"5"`, "")}))
+	if !cra.SPA {
+		t.Error("client routed CRA app should set SPA")
+	}
+	noRouter := Detect(tree(map[string]string{"package.json": pkg(`"react":"18"`, `,"devDependencies":{"vite":"5"}`)}))
+	if noRouter.SPA {
+		t.Error("Vite app without a router must not set SPA")
+	}
 	plain := Detect(tree(map[string]string{"package.json": pkg(`"astro":"4"`, "")}))
+	if plain.SPA {
+		t.Error("static generator must not set SPA")
+	}
 	if hasReason(plain, "single page app mode") {
 		t.Error("plain static generator got SPA reason")
 	}
