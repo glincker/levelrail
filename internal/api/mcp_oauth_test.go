@@ -389,3 +389,10 @@ func TestMCPOAuth_TokenRevokeEndsGrantAndAuthorizeIsLimited(t *testing.T) {
 		t.Fatalf("authorize past the limit = %d, want 429", last)
 	}
 }
+
+func TestMCPAbilitiesForSensitiveOnlyKeepsRead(t *testing.T) {
+	got := mcpAbilitiesFor([]string{mcpScopeReadSensitive})
+	if !hasAbility(got, AbilityRead) || !hasAbility(got, AbilityReadSensitive) {
+		t.Fatalf("abilities = %v", got)
+	}
+}

@@ -253,9 +253,15 @@ func (db *DB) CreateMCPOAuthGrant(ctx context.Context, g MCPOAuthGrant, tokenID,
 		return fmt.Errorf("store: create mcp oauth grant: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.ExecContext(ctx, `INSERT INTO mcp_oauth_grants (id, client_id, user_id, scopes, resource, request_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		g.ID, g.ClientID, g.UserID, string(sj), g.Resource, g.RequestID, now, g.ExpiresAt); err != nil {
+	// Insert only while the client row exists, so a deleted client cannot gain a fresh grant.
+	res, err := tx.ExecContext(ctx, `INSERT INTO mcp_oauth_grants (id, client_id, user_id, scopes, resource, request_id, created_at, expires_at)
+		SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM mcp_oauth_clients WHERE id = ?)`,
+		g.ID, g.ClientID, g.UserID, string(sj), g.Resource, g.RequestID, now, g.ExpiresAt, g.ClientID)
+	if err != nil {
 		return fmt.Errorf("store: create mcp oauth grant: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrMCPOAuthNotFound
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO mcp_oauth_tokens (token_id, grant_id, created_at) VALUES (?, ?, ?)`, tokenID, g.ID, now); err != nil {
 		return fmt.Errorf("store: create mcp oauth grant token: %w", err)

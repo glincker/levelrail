@@ -172,7 +172,8 @@ func mcpGrantable(requested, userAbilities []string) []string {
 
 func mcpAbilitiesFor(scopes []string) []string {
 	var out []string
-	if slices.Contains(scopes, mcpScopeRead) {
+	// The MCP endpoint requires read, so sensitive-only grants still need it to connect.
+	if slices.Contains(scopes, mcpScopeRead) || slices.Contains(scopes, mcpScopeReadSensitive) {
 		out = append(out, AbilityRead)
 	}
 	if slices.Contains(scopes, mcpScopeReadSensitive) {
