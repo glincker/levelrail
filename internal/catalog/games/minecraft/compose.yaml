@@ -1,0 +1,29 @@
+services:
+  minecraft:
+    image: itzg/minecraft-server:2026.10.1-java21
+    ports: ["25565:25565"]
+    mem_limit: ${MEMORY_LIMIT}
+    environment:
+      EULA: ${EULA}
+      TYPE: ${SERVER_TYPE}
+      VERSION: ${SERVER_VERSION}
+      MEMORY: ${MEMORY}
+      USE_AIKAR_FLAGS: "true"
+      VIEW_DISTANCE: ${VIEW_DISTANCE}
+      SIMULATION_DISTANCE: ${SIMULATION_DISTANCE}
+      ENABLE_WHITELIST: ${ENABLE_WHITELIST}
+      ENFORCE_WHITELIST: ${ENFORCE_WHITELIST}
+      WHITELIST: ${WHITELIST}
+      OPS: ${OPS}
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: ${RCON_PASSWORD}
+      DIFFICULTY: normal
+      MAX_PLAYERS: "10"
+    volumes:
+      - minecraft_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s

@@ -25,13 +25,13 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (370 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (374 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 34 |
 | [Analytics](#analytics) | 8 |
-| [Applications](#applications) | 19 |
+| [Applications](#applications) | 23 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 19 |
 | [Dashboard](#dashboard) | 8 |
@@ -108,19 +108,23 @@ Generated from `internal/catalog.Templates` (370 entries as of this build). Run 
 | [Cockpit CMS](https://getcockpit.com/documentation/) | A headless content platform for managing structured content behind a clean API, without a big CMS footprint. | `cockpit-cms` |  |
 | [Drupal](https://www.drupal.org/docs) | A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. | `drupal` |  |
 | [EspoCRM](https://docs.espocrm.com) | An open-source CRM for managing sales, support, and customer relationships end to end. | `espocrm` |  |
+| [Factorio Server](https://github.com/factoriotools/factorio-docker) | A dedicated Factorio multiplayer server with saves kept in a volume. | `factorio` |  |
 | [Ghost](https://ghost.org/docs/) | A fast, modern publishing platform for blogs and newsletters, with built-in memberships. | `ghost` |  |
 | [GLPI](https://glpi-project.org/documentation/) | An IT asset and service management platform with helpdesk ticketing built in. | `glpi` |  |
 | [Joomla](https://docs.joomla.org) | A long-established CMS with a large extension ecosystem for business sites, portals, and communities. | `joomla` |  |
 | [Kutt](https://docs.kutt.it/) | A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis. | `kutt` |  |
 | [Lowcoder](https://docs.lowcoder.cloud) | An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop. | `lowcoder` |  |
 | [MediaWiki](https://www.mediawiki.org/wiki/Manual:Contents) | The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history. | `mediawiki` |  |
-| [Minecraft Server](https://github.com/itzg/docker-minecraft-server) | A vanilla Minecraft Java server that downloads and runs the selected version on first boot. | `minecraft` |  |
+| [Minecraft Bedrock Server](https://github.com/itzg/docker-minecraft-bedrock-server) | A Minecraft Bedrock Edition dedicated server for phones, consoles and Windows players. You must accept the Minecraft EULA yourself by entering TRUE. Players connect on UDP 19132: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 19132 in the host and cloud firewall. The image publishes amd64 and arm64 builds, but the Bedrock server itself is x86 software, so on arm64 it runs under emulation and needs more CPU. | `minecraft-bedrock` |  |
+| [Minecraft Server](https://docker-minecraft-server.readthedocs.io/) | A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64). | `minecraft` |  |
 | [Moodle](https://moodle.org) | A widely used, highly customizable learning management system for online courses. | `moodle` |  |
 | [Nextcloud](https://docs.nextcloud.com) | Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives. | `nextcloud` |  |
 | [Odoo](https://www.odoo.com/documentation) | An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder. | `odoo` |  |
 | [OrangeHRM](https://docs.orangehrm.com/) | An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. | `orangehrm` |  |
+| [Palworld Server](https://github.com/thijsvl/palworld-server-docker) | A dedicated Palworld server with a generated admin password and RCON kept internal. | `palworld` |  |
 | [Redlib](https://github.com/redlib-org/redlib) | A private, lightweight front-end for browsing Reddit without tracking or ads. | `redlib` |  |
 | [SearXNG](https://docs.searxng.org) | A privacy-respecting metasearch engine that aggregates results from dozens of search services. | `searxng` |  |
+| [Terraria Server](https://github.com/Ryshe/terraria-docker) | A vanilla Terraria dedicated server that creates a world on first start. | `terraria` |  |
 | [Vvveb CMS](https://docs.vvveb.com) | A CMS for building websites, blogs, and ecommerce stores. | `vvveb` |  |
 | [WordPress](https://wordpress.org/documentation/) | The world's most widely used content management system, self-hosted with its own database. | `wordpress` |  |
 

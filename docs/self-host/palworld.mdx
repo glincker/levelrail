@@ -1,0 +1,72 @@
+---
+title: "Self-host Palworld Server with Docker"
+sidebarTitle: "Palworld Server"
+description: "A dedicated Palworld server with a generated admin password and RCON kept internal."
+"og:url": "https://docs.levelrail.com/self-host/palworld"
+---
+
+A dedicated Palworld server with a generated admin password and RCON kept internal.
+
+This page describes the Levelrail template for Palworld Server (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/thijsvl/palworld-server-docker.
+
+Recommended memory: about 16384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `palworld` | `thijsvanloef/palworld-server-docker:v2.8.1` | 8211 | `palworld_data -&#62; /palworld` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `palworld` | `ADMIN_PASSWORD` | Generated at deploy |
+| `palworld` | `MULTITHREADING` | Preset in the template |
+| `palworld` | `PLAYERS` | Preset in the template |
+| `palworld` | `PORT` | Preset in the template |
+| `palworld` | `RCON_ENABLED` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`palworld`): 8211:8211.
+- Passwords and keys are generated at deploy time (`palworld`): ADMIN_PASSWORD.
+- Stores data in named volumes (`palworld`): palworld_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Palworld Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Palworld Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy palworld --name my-palworld
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+- [Factorio Server](/self-host/factorio)
+
+All templates are listed in the [self-host gallery](/self-host).

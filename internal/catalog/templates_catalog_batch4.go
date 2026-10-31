@@ -145,33 +145,6 @@ var catalogBatch4Templates = []Template{
 `,
 	},
 	{
-		ID:                     "minecraft",
-		Name:                   "Minecraft Server",
-		Slogan:                 "A vanilla Minecraft Java server that downloads and runs the selected version on first boot.",
-		Category:               "Applications",
-		DocumentationURL:       "https://github.com/itzg/docker-minecraft-server",
-		RecommendedMemoryBytes: 3221225472, // 3Gi
-		Compose: `services:
-  minecraft:
-    image: itzg/minecraft-server:java21
-    ports: ["25565:25565"]
-    environment:
-      EULA: "TRUE"
-      TYPE: VANILLA
-      MEMORY: 2G
-      DIFFICULTY: normal
-      MAX_PLAYERS: "10"
-    volumes:
-      - minecraft_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "mc-health"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-`,
-	},
-	{
 		// Tag not independently verified against a live registry in this
 		// environment; the image repository matches upstream's own
 		// self-host instructions.

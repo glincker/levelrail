@@ -1,0 +1,56 @@
+id: minecraft
+name: Minecraft Server
+description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
+icon: cube
+category: Applications
+documentation_url: https://docker-minecraft-server.readthedocs.io/
+recommended_memory_bytes: 3221225472
+env:
+  - key: EULA
+    label: Accept the Minecraft EULA
+    description: Enter TRUE only after reading https://aka.ms/MinecraftEULA. The server refuses to start otherwise.
+    required: true
+  - key: SERVER_TYPE
+    label: Server type
+    description: One of VANILLA, PAPER, FABRIC or FORGE.
+    default: VANILLA
+  - key: SERVER_VERSION
+    label: Minecraft version
+    description: A version such as 1.21.4, or LATEST.
+    default: LATEST
+  - key: MEMORY
+    label: JVM heap
+    description: Heap size, for example 2G. Keep it at least 1G below the container limit.
+    default: 2G
+  - key: MEMORY_LIMIT
+    label: Container memory limit
+    description: Hard cap for the container, about 25 percent above the heap, for example 3G.
+    default: 3G
+  - key: VIEW_DISTANCE
+    label: View distance
+    description: Chunks sent to each player. Lower is lighter on a small host.
+    default: "8"
+  - key: SIMULATION_DISTANCE
+    label: Simulation distance
+    description: Chunks around each player that tick.
+    default: "6"
+  - key: ENABLE_WHITELIST
+    label: Use a whitelist
+    description: TRUE to let only listed players join.
+    default: "FALSE"
+  - key: ENFORCE_WHITELIST
+    label: Enforce the whitelist
+    description: TRUE to kick players who are not listed when the list changes.
+    default: "FALSE"
+  - key: WHITELIST
+    label: Whitelisted players
+    description: Comma separated player names.
+  - key: OPS
+    label: Operators
+    description: Comma separated player names that get operator rights.
+  - key: RCON_PASSWORD
+    label: RCON password
+    description: Generated. Used by rcon-cli inside the container.
+    generate: password
+    length: 24
+    secret: true

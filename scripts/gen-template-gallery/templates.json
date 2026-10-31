@@ -8537,6 +8537,77 @@
   }
  },
  {
+  "id": "factorio",
+  "name": "Factorio Server",
+  "slogan": "A dedicated Factorio multiplayer server with saves kept in a volume.",
+  "category": "Applications",
+  "docUrl": "https://github.com/factoriotools/factorio-docker",
+  "memoryMiB": 2048,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "factorio",
+    "image": "factoriotools/factorio:2.1.24",
+    "ports": [
+     34197
+    ],
+    "volumes": [
+     "factorio_data -> /factorio"
+    ]
+   }
+  ],
+  "env": [],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "published_ports",
+     "severity": "info",
+     "services": [
+      "factorio"
+     ],
+     "detail": "34197:34197",
+     "message": "Publishes ports directly on the host"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "factorio"
+     ],
+     "detail": "factorio_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "fastapi-postgres-starter",
   "name": "FastAPI + PostgreSQL",
   "slogan": "A minimal Python HTTP service wired to a Postgres database, the reference pairing for a FastAPI backend.",
@@ -21433,15 +21504,15 @@
  {
   "id": "minecraft",
   "name": "Minecraft Server",
-  "slogan": "A vanilla Minecraft Java server that downloads and runs the selected version on first boot.",
+  "slogan": "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64).",
   "category": "Applications",
-  "docUrl": "https://github.com/itzg/docker-minecraft-server",
+  "docUrl": "https://docker-minecraft-server.readthedocs.io/",
   "memoryMiB": 3072,
-  "needsConfig": false,
+  "needsConfig": true,
   "services": [
    {
     "name": "minecraft",
-    "image": "itzg/minecraft-server:java21",
+    "image": "itzg/minecraft-server:2026.10.1-java21",
     "ports": [
      25565
     ],
@@ -21458,8 +21529,23 @@
    },
    {
     "service": "minecraft",
-    "name": "EULA",
+    "name": "ENABLE_RCON",
     "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "ENABLE_WHITELIST",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "ENFORCE_WHITELIST",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "EULA",
+    "kind": "required"
    },
    {
     "service": "minecraft",
@@ -21473,7 +21559,42 @@
    },
    {
     "service": "minecraft",
+    "name": "OPS",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "RCON_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "minecraft",
+    "name": "SIMULATION_DISTANCE",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
     "name": "TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "USE_AIKAR_FLAGS",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "VERSION",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "VIEW_DISTANCE",
+    "kind": "preset"
+   },
+   {
+    "service": "minecraft",
+    "name": "WHITELIST",
     "kind": "preset"
    }
   ],
@@ -21490,6 +21611,24 @@
      "message": "Publishes ports directly on the host"
     },
     {
+     "code": "required_secrets",
+     "severity": "info",
+     "services": [
+      "minecraft"
+     ],
+     "detail": "EULA",
+     "message": "You must provide one or more secrets before it can deploy"
+    },
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "minecraft"
+     ],
+     "detail": "RCON_PASSWORD",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
      "code": "persistent_data",
      "severity": "info",
      "services": [
@@ -21503,6 +21642,120 @@
     {
      "code": "https_ingress",
      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "minecraft-bedrock",
+  "name": "Minecraft Bedrock Server",
+  "slogan": "A Minecraft Bedrock Edition dedicated server for phones, consoles and Windows players. You must accept the Minecraft EULA yourself by entering TRUE. Players connect on UDP 19132: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 19132 in the host and cloud firewall. The image publishes amd64 and arm64 builds, but the Bedrock server itself is x86 software, so on arm64 it runs under emulation and needs more CPU.",
+  "category": "Applications",
+  "docUrl": "https://github.com/itzg/docker-minecraft-bedrock-server",
+  "memoryMiB": 2048,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "bedrock",
+    "image": "itzg/minecraft-bedrock-server:2026.10.3",
+    "ports": [
+     19132
+    ],
+    "volumes": [
+     "bedrock_data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "bedrock",
+    "name": "ALLOW_LIST",
+    "kind": "preset"
+   },
+   {
+    "service": "bedrock",
+    "name": "DIFFICULTY",
+    "kind": "preset"
+   },
+   {
+    "service": "bedrock",
+    "name": "EULA",
+    "kind": "required"
+   },
+   {
+    "service": "bedrock",
+    "name": "GAME_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "bedrock",
+    "name": "VERSION",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "published_ports",
+     "severity": "info",
+     "services": [
+      "bedrock"
+     ],
+     "detail": "19132:19132",
+     "message": "Publishes ports directly on the host"
+    },
+    {
+     "code": "required_secrets",
+     "severity": "info",
+     "services": [
+      "bedrock"
+     ],
+     "detail": "EULA",
+     "message": "You must provide one or more secrets before it can deploy"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "bedrock"
+     ],
+     "detail": "bedrock_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
     },
     {
      "code": "volume_backups",
@@ -26907,6 +27160,116 @@
     {
      "code": "https_ingress",
      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "palworld",
+  "name": "Palworld Server",
+  "slogan": "A dedicated Palworld server with a generated admin password and RCON kept internal.",
+  "category": "Applications",
+  "docUrl": "https://github.com/thijsvl/palworld-server-docker",
+  "memoryMiB": 16384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "palworld",
+    "image": "thijsvanloef/palworld-server-docker:v2.8.1",
+    "ports": [
+     8211
+    ],
+    "volumes": [
+     "palworld_data -> /palworld"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "palworld",
+    "name": "ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "palworld",
+    "name": "MULTITHREADING",
+    "kind": "preset"
+   },
+   {
+    "service": "palworld",
+    "name": "PLAYERS",
+    "kind": "preset"
+   },
+   {
+    "service": "palworld",
+    "name": "PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "palworld",
+    "name": "RCON_ENABLED",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "published_ports",
+     "severity": "info",
+     "services": [
+      "palworld"
+     ],
+     "detail": "8211:8211",
+     "message": "Publishes ports directly on the host"
+    },
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "palworld"
+     ],
+     "detail": "ADMIN_PASSWORD",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "palworld"
+     ],
+     "detail": "palworld_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
     },
     {
      "code": "health_gated_deploy",
@@ -35539,6 +35902,77 @@
       "termix"
      ],
      "detail": "termix_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "terraria",
+  "name": "Terraria Server",
+  "slogan": "A vanilla Terraria dedicated server that creates a world on first start.",
+  "category": "Applications",
+  "docUrl": "https://github.com/Ryshe/terraria-docker",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "terraria",
+    "image": "ryshe/terraria:vanilla-1.4.5.8",
+    "ports": [
+     7777
+    ],
+    "volumes": [
+     "terraria_data -> /root/.local/share/Terraria/Worlds"
+    ]
+   }
+  ],
+  "env": [],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "published_ports",
+     "severity": "info",
+     "services": [
+      "terraria"
+     ],
+     "detail": "7777:7777",
+     "message": "Publishes ports directly on the host"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "terraria"
+     ],
+     "detail": "terraria_data",
      "message": "Stores data in named volumes"
     }
    ],

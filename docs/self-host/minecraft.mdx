@@ -1,13 +1,13 @@
 ---
 title: "Self-host Minecraft Server with Docker"
 sidebarTitle: "Minecraft Server"
-description: "A vanilla Minecraft Java server that downloads and runs the selected version on first boot."
+description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
 "og:url": "https://docs.levelrail.com/self-host/minecraft"
 ---
 
-A vanilla Minecraft Java server that downloads and runs the selected version on first boot.
+A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64).
 
-This page describes the Levelrail template for Minecraft Server (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/itzg/docker-minecraft-server.
+This page describes the Levelrail template for Minecraft Server (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://docker-minecraft-server.readthedocs.io/.
 
 Recommended memory: about 3072 MiB.
 
@@ -15,17 +15,27 @@ Recommended memory: about 3072 MiB.
 
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
-| `minecraft` | `itzg/minecraft-server:java21` | 25565 | `minecraft_data -&#62; /data` |
+| `minecraft` | `itzg/minecraft-server:2026.10.1-java21` | 25565 | `minecraft_data -&#62; /data` |
 
 ## Environment variables
 
 | Service | Variable | Value |
 | --- | --- | --- |
 | `minecraft` | `DIFFICULTY` | Preset in the template |
-| `minecraft` | `EULA` | Preset in the template |
+| `minecraft` | `ENABLE_RCON` | Preset in the template |
+| `minecraft` | `ENABLE_WHITELIST` | Preset in the template |
+| `minecraft` | `ENFORCE_WHITELIST` | Preset in the template |
+| `minecraft` | `EULA` | You must provide |
 | `minecraft` | `MAX_PLAYERS` | Preset in the template |
 | `minecraft` | `MEMORY` | Preset in the template |
+| `minecraft` | `OPS` | Preset in the template |
+| `minecraft` | `RCON_PASSWORD` | Generated at deploy |
+| `minecraft` | `SIMULATION_DISTANCE` | Preset in the template |
 | `minecraft` | `TYPE` | Preset in the template |
+| `minecraft` | `USE_AIKAR_FLAGS` | Preset in the template |
+| `minecraft` | `VERSION` | Preset in the template |
+| `minecraft` | `VIEW_DISTANCE` | Preset in the template |
+| `minecraft` | `WHITELIST` | Preset in the template |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -36,16 +46,21 @@ Level: **Standard**.
 What this template needs:
 
 - Publishes ports directly on the host (`minecraft`): 25565:25565.
+- You must provide one or more secrets before it can deploy (`minecraft`): EULA.
+- Passwords and keys are generated at deploy time (`minecraft`): RCON_PASSWORD.
 - Stores data in named volumes (`minecraft`): minecraft_data.
 
 What Levelrail adds around it:
 
 - Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
 - Named volumes can be backed up and restored.
 - Deploys are gated on the health check before traffic switches.
 - One-step rollback to the previous revision.
 - Exposure report shows what is reachable from outside.
 - Host firewall rules managed for published ports.
+
+<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
 
 ## Deploy Minecraft Server with Levelrail
 
@@ -54,7 +69,9 @@ In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, 
 With the CLI:
 
 ```bash
-levelrail-cli templates deploy minecraft --name my-minecraft
+levelrail-cli templates get minecraft --output json | jq -r .compose > minecraft.compose.yaml
+# edit minecraft.compose.yaml to set the variables you must provide
+levelrail-cli apps deploy-compose my-minecraft --file minecraft.compose.yaml
 ```
 
 See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
@@ -65,6 +82,6 @@ See the [service template catalog](/templates-and-registry) for how templates wo
 - [Cockpit CMS](/self-host/cockpit-cms)
 - [Drupal](/self-host/drupal)
 - [EspoCRM](/self-host/espocrm)
-- [Ghost](/self-host/ghost)
+- [Factorio Server](/self-host/factorio)
 
 All templates are listed in the [self-host gallery](/self-host).

@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-370 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+374 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -60,19 +60,23 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Cockpit CMS](/self-host/cockpit-cms): A headless content platform for managing structured content behind a clean API, without a big CMS footprint.
 - [Drupal](/self-host/drupal): A mature, flexible CMS for structured content, multilingual sites, and large editorial teams.
 - [EspoCRM](/self-host/espocrm): An open-source CRM for managing sales, support, and customer relationships end to end.
+- [Factorio Server](/self-host/factorio): A dedicated Factorio multiplayer server with saves kept in a volume.
 - [Ghost](/self-host/ghost): A fast, modern publishing platform for blogs and newsletters, with built-in memberships.
 - [GLPI](/self-host/glpi): An IT asset and service management platform with helpdesk ticketing built in.
 - [Joomla](/self-host/joomla): A long-established CMS with a large extension ecosystem for business sites, portals, and communities.
 - [Kutt](/self-host/kutt): A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.
 - [Lowcoder](/self-host/lowcoder): An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop.
 - [MediaWiki](/self-host/mediawiki): The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history.
-- [Minecraft Server](/self-host/minecraft): A vanilla Minecraft Java server that downloads and runs the selected version on first boot.
+- [Minecraft Bedrock Server](/self-host/minecraft-bedrock): A Minecraft Bedrock Edition dedicated server for phones, consoles and Windows players. You must accept the Minecraft EULA yourself by entering TRUE. Players connect on UDP 19132: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 19132 in the host and cloud firewall. The image publishes amd64 and arm64 builds, but the Bedrock server itself is x86 software, so on arm64 it runs under emulation and needs more CPU.
+- [Minecraft Server](/self-host/minecraft): A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64).
 - [Moodle](/self-host/moodle): A widely used, highly customizable learning management system for online courses.
 - [Nextcloud](/self-host/nextcloud): Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives.
 - [Odoo](/self-host/odoo): An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder.
 - [OrangeHRM](/self-host/orangehrm): An open-source human resources management suite: PTO, recruitment, performance, and an employee directory.
+- [Palworld Server](/self-host/palworld): A dedicated Palworld server with a generated admin password and RCON kept internal.
 - [Redlib](/self-host/redlib): A private, lightweight front-end for browsing Reddit without tracking or ads.
 - [SearXNG](/self-host/searxng): A privacy-respecting metasearch engine that aggregates results from dozens of search services.
+- [Terraria Server](/self-host/terraria): A vanilla Terraria dedicated server that creates a world on first start.
 - [Vvveb CMS](/self-host/vvveb): A CMS for building websites, blogs, and ecommerce stores.
 - [WordPress](/self-host/wordpress): The world's most widely used content management system, self-hosted with its own database.
 
