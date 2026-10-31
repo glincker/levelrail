@@ -226,6 +226,12 @@ func classify(w Want, at []Found) Record {
 		}
 	}
 	rec.Found = append(append(rec.Found, same...), rival...)
+	// Receivers reject a name with two SPF records, so a match among them is not healthy.
+	if owner == "v=spf1" && len(same) > 1 {
+		rec.Status = Conflict
+		rec.Reason = "spf_multiple: " + w.Name + " has more than one SPF record. Merge them into one, receivers reject multiple records."
+		return rec
+	}
 	want := wantKey(w)
 	for _, f := range same {
 		if Normalize(w.Type, f.Value) == want {
