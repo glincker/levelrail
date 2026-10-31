@@ -182,10 +182,10 @@ func TestGitPushToProtectedAppIsHeldThenBuiltFromMirror(t *testing.T) {
 		t.Fatalf("held refs after approval = %v, want none", refs)
 	}
 	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) && !strings.Contains(advertisedRefs(t, e, "web", token), first.String()) {
+	for time.Now().Before(deadline) && !strings.Contains(advertisedRefs(t, e, token), first.String()) {
 		time.Sleep(20 * time.Millisecond)
 	}
-	if !strings.Contains(advertisedRefs(t, e, "web", token), first.String()) {
+	if !strings.Contains(advertisedRefs(t, e, token), first.String()) {
 		t.Fatal("approved branch head is not advertised for the next push")
 	}
 }

@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 )
 
 func TestCheckVolumeOwner(t *testing.T) {
@@ -68,5 +70,12 @@ func TestEnsureOwnedVolumeUnlabelledUsers(t *testing.T) {
 				t.Errorf("EnsureOwnedVolume() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+// containerAppLabel is a copy of spec.AppLabelKey kept here to avoid the import (fan-in budget).
+func TestContainerAppLabelMatchesSpec(t *testing.T) {
+	if containerAppLabel != appspec.AppLabelKey {
+		t.Fatalf("containerAppLabel = %q, spec.AppLabelKey = %q", containerAppLabel, appspec.AppLabelKey)
 	}
 }

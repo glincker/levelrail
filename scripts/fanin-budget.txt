@@ -5,6 +5,7 @@
 # v0.8.12: internal/mailrecords reuses the SPF and DMARC grading in internal/email and internal/api imports it, so the API's dependents now depend on internal/email.
 # v0.8.12: internal/mail/demo (the dev-only mail demo zone) imports internal/dnszones, adding one dependent.
 # v0.8.12: internal/mailstorage imports internal/objectstore, adding one dependent to deploytrace and semver; it and internal/statuswebhook (signed subscriber webhooks) each add one to netguard and docker.
+# v0.8.12: the plugin egress proxy (internal/plugin/egress) dials through kit/netguard, adding three dependents.
 internal/autoscale 142
 internal/bindaddr 142
 internal/bindmount 144
@@ -46,7 +47,7 @@ internal/version 29
 kit/cronexpr 142
 kit/diskspace 37
 kit/ids 68
-kit/netguard 153
+kit/netguard 156
 kit/probe 142
 kit/semver 27
 kit/timeutil 136

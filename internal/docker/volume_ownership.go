@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
@@ -17,6 +16,11 @@ const (
 	VolumeOwnerServiceLabel = "levelrail.volume.service"
 	VolumeOwnerNameLabel    = "levelrail.volume.name"
 )
+
+// containerAppLabel mirrors spec.AppLabelKey. Importing internal/spec here would make every
+// dependent of this package depend on spec and its policy packages (fan-in budget), so a test
+// in this package pins the two values together.
+const containerAppLabel = "platform-reserved.app"
 
 // ErrVolumeOwnerMismatch means a volume of that name belongs to another owner.
 var ErrVolumeOwnerMismatch = errors.New("volume belongs to a different owner")
@@ -76,7 +80,7 @@ func EnsureVolumeFor(ctx context.Context, rt interface {
 // app mounts it, so a legacy volume in use cannot be adopted.
 func checkVolumeUsers(name string, want VolumeOwner, users []map[string]string) error {
 	for _, labels := range users {
-		if app := labels[appspec.AppLabelKey]; app != "" && app != want.App {
+		if app := labels[containerAppLabel]; app != "" && app != want.App {
 			return fmt.Errorf("docker: volume %q is in use by another app: %w", name, ErrVolumeOwnerMismatch)
 		}
 	}

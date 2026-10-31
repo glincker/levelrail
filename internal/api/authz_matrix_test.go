@@ -119,7 +119,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // readOnlyMayMutate lists mutating routes a read-only token may call:
 // public routes (not token-gated at all) and pure computations that
 // change no state.
-var readOnlyMayMutate = map[string]string{
+var readOnlyMayMutate = map[string]string{ //nolint:gosec // route paths and reasons, not credentials
 	"POST /oauth/token":                                          "public OAuth token endpoint, needs a valid code or refresh token, not a token-gated mutation", //nolint:gosec // route path, not a credential
 	"POST /api/v1/apps/{name}/abuse/dry-run":                     "replays recent in-memory access records against a draft policy and counts what it would block, persists nothing",
 	"POST /api/v1/apps/{name}/budget/dry-run":                    "previews what pausing the app would stop and save, persists nothing",
