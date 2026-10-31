@@ -51,6 +51,8 @@ type GitSourceStore interface {
 	SetGitSourceDeploySettings(ctx context.Context, serviceName string, paths, pathsIgnore []string, reportStatus bool) error
 	// SetGitSourceBuild backs PUT /api/v1/apps/{name}/git-source/build.
 	SetGitSourceBuild(ctx context.Context, serviceName, buildType, buildPath, baseDirectory, buildCommand, publishDir string) error
+	// SetGitSourceAppAuth records whether stored-source flows may use the GitHub App.
+	SetGitSourceAppAuth(ctx context.Context, serviceName string, allowed bool) error
 }
 
 // GitSourceSecrets is the surface a git source's connect flow and the
@@ -144,10 +146,13 @@ type gitSourceResource struct {
 	ReportStatus      bool     `json:"report_status"`
 	// WaitForCI and CIRequiredChecks mirror the store fields, set via
 	// PUT .../git-source/deploy-settings.
-	WaitForCI        bool      `json:"wait_for_ci"`
-	CIRequiredChecks []string  `json:"ci_required_checks"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	WaitForCI        bool     `json:"wait_for_ci"`
+	CIRequiredChecks []string `json:"ci_required_checks"`
+	// AppAuth is false when a team scoped caller set the source, so
+	// background flows never clone it with the GitHub App.
+	AppAuth   bool      `json:"app_auth"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 	// WebhookURLWarning is private_address or no_public_url when WebhookURL
 	// cannot be reached by a git host; WebhookURLSource says where it came from.
 	WebhookURLWarning string `json:"webhook_url_warning,omitempty"`
@@ -209,6 +214,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		WaitForCI:              g.WaitForCI,
 		CIRequiredChecks:       nonNilPaths(g.CIRequiredChecks),
 		ConnectionID:           g.ConnectionID,
+		AppAuth:                g.AppAuth,
 		CreatedAt:              g.CreatedAt,
 		UpdatedAt:              g.UpdatedAt,
 	}
@@ -734,6 +740,10 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		TriggerMode: triggerMode,
 	}); err != nil {
 		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
+	}
+
+	if err := rt.gitSources.SetGitSourceAppAuth(ctx, name, gitHubAppTokenAllowed(ctx)); err != nil {
+		return connectGitSourceResult{}, fmt.Errorf("save git source app auth: %w", err)
 	}
 
 	saved, err := rt.gitSources.GetGitSource(ctx, name)

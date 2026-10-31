@@ -208,7 +208,7 @@ func (rt *Router) detectRepoLayout(w http.ResponseWriter, r *http.Request, name,
 		return gs, "", repolayout.Result{}, false
 	}
 
-	token := rt.tokenForRepo(ctx, name, gs.RepoURL, true)
+	token := rt.tokenForRepo(ctx, name, gs.RepoURL, gitHubAppTokenAllowed(ctx))
 	open := rt.repoLayoutSource
 	if open == nil {
 		open = defaultRepoLayoutSource

@@ -184,7 +184,7 @@ func (rt *Router) commitsForRange(ctx context.Context, app, fromSHA, toSHA strin
 	key := app + "\x00" + gs.RepoURL + "\x00" + gs.Branch
 	bundle, hit := rt.gitCommits.get(key)
 	if !hit {
-		token := rt.tokenForRepo(ctx, app, gs.RepoURL, true)
+		token := rt.tokenForRepo(ctx, app, gs.RepoURL, gitHubAppTokenAllowed(ctx))
 		bundle, err = rt.loadGitCommitsBundle(ctx, gs, gs.Branch, token)
 		if err != nil {
 			rt.logger.Warn("api: release notes: load commits failed", slog.String("error", err.Error()), slog.String("name", app))

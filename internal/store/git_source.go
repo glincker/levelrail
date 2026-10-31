@@ -119,8 +119,12 @@ type GitSource struct {
 	// picked from; empty for a pasted URL or a GitHub source. Set only via
 	// SetGitSourceConnection.
 	ConnectionID string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	// AppAuth lets non-request flows (webhooks, poller, pipelines, previews)
+	// clone this source with the GitHub App. False when a team scoped caller
+	// set the source. Set only via SetGitSourceAppAuth.
+	AppAuth   bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // GitSourceBuild is one additional service's own build config within
@@ -199,7 +203,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id, wait_for_ci, ci_required_checks
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id, wait_for_ci, ci_required_checks, app_auth
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -410,6 +414,12 @@ func (db *DB) SetGitSourceCIGate(ctx context.Context, serviceName string, wait b
 	return nil
 }
 
+// SetGitSourceAppAuth records whether non-request flows may clone the source
+// with the GitHub App; it returns ErrGitSourceNotFound if none is connected.
+func (db *DB) SetGitSourceAppAuth(ctx context.Context, serviceName string, allowed bool) error {
+	return db.setGitSourceBoolColumn(ctx, "app_auth", serviceName, allowed)
+}
+
 // SetGitSourceConnection records which provider connection a source's
 // repository was picked from.
 func (db *DB) SetGitSourceConnection(ctx context.Context, serviceName, connectionID string) error {
@@ -511,11 +521,12 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		prCommands, prCommandsForks   int
 		reportStatus                  int
 		waitForCI                     int
+		appAuth                       int
 		ciChecksJSON                  string
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID, &waitForCI, &ciChecksJSON); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID, &waitForCI, &ciChecksJSON, &appAuth); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
@@ -524,6 +535,7 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 	g.PRCommentCommandsForks = prCommandsForks != 0
 	g.ReportStatus = reportStatus != 0
 	g.WaitForCI = waitForCI != 0
+	g.AppAuth = appAuth != 0
 	if err := json.Unmarshal([]byte(ciChecksJSON), &g.CIRequiredChecks); err != nil {
 		return nil, fmt.Errorf("unmarshal ci_required_checks: %w", err)
 	}

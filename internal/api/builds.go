@@ -187,6 +187,16 @@ func (rt *Router) storedGitSourceToken(ctx context.Context, name, repoURL string
 	return token
 }
 
+// storedGitSourceAppAuth reports whether name's stored git source may use
+// the GitHub App; true when there is no source or it cannot be read.
+func (rt *Router) storedGitSourceAppAuth(ctx context.Context, name string) bool {
+	if name == "" || rt.gitSources == nil {
+		return true
+	}
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	return err != nil || gs == nil || gs.AppAuth
+}
+
 // tokenForRepo resolves a token for repoURL: name's own stored
 // git-source PAT first (scoped to that one app and repo already, so no
 // extra permission check needed), else a minted GitHub App installation
@@ -196,6 +206,11 @@ func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowP
 		return token
 	}
 	if !allowPrivateRepoAuth || rt.githubAppSecrets == nil {
+		return ""
+	}
+	// Outside a request there is no caller to check, so the stored source
+	// records whether a team scoped writer set it.
+	if _, inRequest := callerTeamScope(ctx); !inRequest && !rt.storedGitSourceAppAuth(ctx, name) {
 		return ""
 	}
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
