@@ -283,6 +283,10 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label); held {
 		return http.StatusAccepted, msg
 	}
+	tagReq := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}
+	if handled, status, hmsg := rt.holdIfProtected(ctx, name, tagReq, name+":"+label, store.DeployAttemptSourceWebhook, SystemApprovalActor); handled {
+		return status, hmsg
+	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label)
 	defer release()
 	if queued {

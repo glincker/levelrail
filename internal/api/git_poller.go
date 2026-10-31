@@ -303,6 +303,9 @@ func (rt *Router) handlePolledHead(ctx context.Context, name string, gs store.Gi
 	if held, _ := rt.holdIfFrozen(ctx, name, hr, name+":"+head); held {
 		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
 	}
+	if handled, _, _ := rt.holdIfProtected(ctx, name, hr, name+":"+head, store.DeployAttemptSourcePoll, SystemApprovalActor); handled {
+		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
+	}
 	existing, err := rt.apps.GetDesiredService(ctx, name)
 	if err != nil {
 		return fmt.Errorf("load app: %w", err)

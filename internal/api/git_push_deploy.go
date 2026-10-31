@@ -67,6 +67,9 @@ func (rt *Router) prepareGitPush(r *http.Request, ws *pushStream, name string, r
 	if msg := rt.gitPushBlockedReason(ctx, name); msg != "" {
 		return nil, reject("deploys are paused", msg)
 	}
+	if msg := rt.gitPushProtectedReason(ctx, name); msg != "" {
+		return nil, reject("deploy needs approval", msg)
+	}
 	if rt.builder == nil {
 		return nil, reject("builds are not configured", "Builds are not configured on this control plane.")
 	}

@@ -120,6 +120,9 @@ func (rt *Router) admitGitPush(ctx context.Context, name string, ev webhook.Push
 	if held, msg := rt.holdIfFrozen(ctx, name, hr, name+":"+ev.After); held {
 		return http.StatusAccepted, msg, true
 	}
+	if handled, status, msg := rt.holdIfProtected(ctx, name, hr, name+":"+ev.After, store.DeployAttemptSourceWebhook, SystemApprovalActor); handled {
+		return status, msg, true
+	}
 	if rt.builder != nil && rt.deploySafety != nil {
 		hr.Branch = strings.TrimPrefix(ev.Ref, "refs/heads/")
 		if status, msg, ok := rt.enqueueGitPushDeploy(ctx, name, hr); ok {
