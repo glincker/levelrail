@@ -39,7 +39,7 @@ var (
 	migrationTemplateErr  error
 )
 
-func migrationTemplateDB(t *testing.T) string {
+func migrationTemplateDB(t testing.TB) string {
 	t.Helper()
 	migrationTemplateOnce.Do(func() {
 		dir, err := os.MkdirTemp("", "levelrail-test-template-*")
@@ -72,7 +72,7 @@ func migrationTemplateDB(t *testing.T) string {
 	return migrationTemplatePath
 }
 
-func openTestDB(t *testing.T) *store.DB {
+func openTestDB(t testing.TB) *store.DB {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "levelrail.db")
 	if err := copyFileContents(migrationTemplateDB(t), path); err != nil {
@@ -106,7 +106,7 @@ func testBrand() *brand.Brand {
 // bootstrapped yet: tests that need an authenticated session call
 // bootstrapTestAdmin themselves, so tests exercising the "no admin
 // exists" path don't need a workaround.
-func newTestRouter(t *testing.T) (*Router, *store.DB) {
+func newTestRouter(t testing.TB) (*Router, *store.DB) {
 	t.Helper()
 	db := openTestDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
