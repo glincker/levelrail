@@ -106,6 +106,7 @@
     "priority": "priority {{priority}}"
   },
   "verify": {
+    "undelegated": "The domain's nameservers do not point at this zone yet, so these records will not resolve. {{reason}}",
     "summary": "Added {{added}}, already there {{same}}.",
     "liveCount": "{{live}} of {{total}} live",
     "progress": "Records live",

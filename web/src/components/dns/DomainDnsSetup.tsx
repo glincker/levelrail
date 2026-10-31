@@ -277,7 +277,8 @@ export function DomainDnsSetup({
     ? plan.changes.map((c) => rowStatus(c, overlay, liveStatus))
     : []
   const { live, total } = progressOf(statuses, liveStatus)
-  const allLive = total > 0 && live === total
+  const undelegated = det?.delegation_warning === true
+  const allLive = total > 0 && live === total && !undelegated
 
   const runCheck = async () => {
     setChecking(true)
@@ -688,6 +689,13 @@ export function DomainDnsSetup({
                 primary={showCards ? null : primaryNode}
                 onCopy={copyAs}
               />
+              {undelegated && (
+                <p role="alert" className="text-xs text-tone-warning">
+                  {t('verify.undelegated', {
+                    reason: det?.delegation_reason ?? '',
+                  })}
+                </p>
+              )}
               {plan.blocked && (
                 <p role="alert" className="text-xs text-tone-danger">
                   {t('review.blocked')}
@@ -958,6 +966,13 @@ export function DomainDnsSetup({
                 status={ptr?.status === 'pass' ? 'live' : 'waiting'}
               />
               <span>{ptr?.message || t('verify.ptr')}</span>
+            </p>
+          )}
+          {undelegated && (
+            <p role="alert" className="text-xs text-tone-warning">
+              {t('verify.undelegated', {
+                reason: det?.delegation_reason ?? '',
+              })}
             </p>
           )}
           <p className="text-xs text-muted-foreground" aria-live="polite">

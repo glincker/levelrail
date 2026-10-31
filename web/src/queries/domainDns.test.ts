@@ -51,3 +51,21 @@ describe('app domain dns via go-live', () => {
     expect(res.applied).toBe(1)
   })
 })
+
+describe('server address fallback', () => {
+  it('drops the alternative record so copied records do not conflict', async () => {
+    stub(() => ({
+      records: [
+        { type: 'A', name: 'shop.example.com', value: '203.0.113.7' },
+        {
+          type: 'CNAME',
+          name: 'shop.example.com',
+          value: 'host.example.net',
+          alternative: true,
+        },
+      ],
+    }))
+    const plan = await planDomainDns('shop.example.com')
+    expect(plan.changes.map((c) => c.kind)).toEqual(['A'])
+  })
+})

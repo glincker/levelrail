@@ -181,7 +181,9 @@ function delaysFromEnv(): number[] {
   const raw = String(import.meta.env.VITE_DNS_RECHECK_DELAYS_MS ?? '')
   const list = raw
     .split(',')
-    .map((x) => Number(x.trim()))
+    .map((x) => x.trim())
+    .filter((x) => x !== '')
+    .map(Number)
     .filter((n) => Number.isFinite(n) && n >= 0)
   return list.length > 0 ? list : [5000, 10000, 20000, 40000, 60000]
 }
