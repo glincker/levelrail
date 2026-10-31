@@ -244,6 +244,11 @@
       "title": "Tu cuenta necesita una contraseña nueva",
       "pass": "Tu cuenta no está marcada",
       "why": "Se reportó un inicio de sesión en tu cuenta que no era tuyo."
+    },
+    "saml_open_domains": {
+      "pass": "Cada conexión SAML activa limita el inicio de sesión a tus dominios",
+      "title": "Conexiones SAML que aceptan cualquier dominio de correo",
+      "why": "Sin una lista de dominios permitidos, cualquier dirección que tu proveedor de identidad declare puede coincidir con una cuenta aquí. Añade tus dominios en los ajustes de la conexión."
     }
   },
   "actions": {

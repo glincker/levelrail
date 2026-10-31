@@ -1,4 +1,4 @@
-import i18n from '../../i18n'
+import { getActiveLocale } from '../../lib/activeLocale'
 
 // Non-English locales use Intl so units and word order follow the language.
 function localized(lang: string, seconds: number): string {
@@ -25,7 +25,7 @@ export function formatRelative(
   const ms = at instanceof Date ? at.getTime() : Date.parse(at)
   if (!Number.isFinite(ms)) return ''
   const diff = Math.round((now - ms) / 1000)
-  const lang = i18n.language
+  const lang = getActiveLocale()
   if (lang && !lang.startsWith('en')) return localized(lang, -diff)
   if (diff < 0) {
     const ahead = -diff

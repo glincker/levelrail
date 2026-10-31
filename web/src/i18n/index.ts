@@ -2,6 +2,7 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { lazyBackend } from './lazyBackend'
+import { setActiveLocale } from '../lib/activeLocale'
 import './resources'
 
 // New namespace: add here only. lazyBackend loads it on first useTranslation(ns) call.
@@ -152,5 +153,10 @@ void i18n
       useSuspense: true,
     },
   })
+
+// Mirror the active language into the dependency-free holder shared code reads.
+i18n.on('initialized', () => setActiveLocale(i18n.language))
+i18n.on('languageChanged', setActiveLocale)
+setActiveLocale(i18n.language)
 
 export default i18n
