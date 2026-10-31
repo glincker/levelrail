@@ -237,6 +237,18 @@ func probeParallel[T any](items []T, fn func(T) string) []string {
 	return out
 }
 
+// matrixHandlers memoizes one built handler per router so a probe set does
+// not rebuild the whole route table for every request.
+var matrixHandlers sync.Map
+
+func matrixHandler(rt *Router) http.Handler {
+	if h, ok := matrixHandlers.Load(rt); ok {
+		return h.(http.Handler)
+	}
+	h, _ := matrixHandlers.LoadOrStore(rt, rt.Handler())
+	return h.(http.Handler)
+}
+
 func matrixDo(rt *Router, method, path string, mutate func(*http.Request)) int {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -245,7 +257,7 @@ func matrixDo(rt *Router, method, path string, mutate func(*http.Request)) int {
 		mutate(req)
 	}
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
+	matrixHandler(rt).ServeHTTP(rec, req)
 	return rec.Code
 }
 
