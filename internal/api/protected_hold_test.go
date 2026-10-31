@@ -44,6 +44,14 @@ func TestProtectedEnvironmentAutomaticPathsAwaitApproval(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			rt, db, _ := newHoldRouter(t)
+			if err := db.SaveGitSource(context.Background(), store.GitSource{ServiceName: "web", RepoURL: "https://example.com/r.git", Branch: "main"}); err != nil {
+				t.Fatal(err)
+			}
+			rt.gitSourceSecrets = newFakeGitSourceSecrets()
+			rt.resolveBranchSHA = func(context.Context, string, string, string) (string, error) { return sha, nil }
+			prev := resolveTagSHA
+			resolveTagSHA = func(context.Context, string, string, string) (string, error) { return sha, nil }
+			t.Cleanup(func() { resolveTagSHA = prev })
 			status, msg := tc.run(rt)
 			if status != http.StatusAccepted || !strings.Contains(msg, "awaits approval") {
 				t.Fatalf("result = %d %q, want accepted and awaiting approval", status, msg)
@@ -65,18 +73,8 @@ func TestUnprotectedEnvironmentIsNotHeld(t *testing.T) {
 	if handled || status != 0 || msg != "" {
 		t.Fatalf("admitGitPush = %d %q handled %v, want untouched fallthrough", status, msg, handled)
 	}
-	if reason := rt.gitPushProtectedReason(context.Background(), "web"); reason != "" {
-		t.Fatalf("push refused for unprotected app: %q", reason)
-	}
 	if n := len(heldAttempts(t, db)); n != 0 {
 		t.Fatalf("attempts = %d, want none", n)
-	}
-}
-
-func TestProtectedEnvironmentRefusesGitPush(t *testing.T) {
-	rt, _, _ := newHoldRouter(t)
-	if reason := rt.gitPushProtectedReason(context.Background(), "web"); reason == "" {
-		t.Fatal("push to protected environment was not refused")
 	}
 }
 

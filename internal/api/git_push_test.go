@@ -85,6 +85,13 @@ func newPushEnv(t *testing.T) *pushEnv {
 	return &pushEnv{rt: rt, db: db, cookie: cookie, srv: srv, b: b}
 }
 
+func newPushEnvFor(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, b *pushTestBuilder) *pushEnv {
+	t.Helper()
+	srv := httptest.NewServer(rt.Handler())
+	t.Cleanup(srv.Close)
+	return &pushEnv{rt: rt, db: db, cookie: cookie, srv: srv, b: b}
+}
+
 func (e *pushEnv) issue(t *testing.T, app string) string {
 	t.Helper()
 	rec := httptest.NewRecorder()

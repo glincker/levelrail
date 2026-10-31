@@ -2,11 +2,19 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -77,16 +85,188 @@ func (rt *Router) supersedeHeldDeploys(ctx context.Context, name string) {
 	}
 }
 
-// gitPushProtectedReason refuses a push to a protected environment: the
-// pushed commit lives only in the push mirror, which an approval replay
-// cannot rebuild, so the push must go through a reviewed deploy instead.
-func (rt *Router) gitPushProtectedReason(ctx context.Context, name string) string {
+// heldRefPrefix namespaces the mirror refs that keep held pushes alive.
+const heldRefPrefix = "refs/held/"
+
+// pinBranchSHA resolves the commit a branch points at now, so a hold replays
+// that commit even if the branch moves before approval.
+func (rt *Router) pinBranchSHA(ctx context.Context, name, branch string) (string, error) {
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	if err != nil {
+		return "", errors.New("no git source connected")
+	}
+	token, err := rt.resolveGitSourceDeployToken(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("resolve deploy token: %w", err)
+	}
+	sha, err := rt.resolveBranchSHA(ctx, gs.RepoURL, branch, token)
+	if err != nil {
+		return "", fmt.Errorf("resolve latest commit: %w", err)
+	}
+	return sha, nil
+}
+
+// resolveTagSHAFunc is a seam so tests need no network.
+type resolveTagSHAFunc func(ctx context.Context, repoURL, tag, token string) (string, error)
+
+var resolveTagSHA resolveTagSHAFunc = resolveRemoteTagSHA
+
+// resolveRemoteTagSHA returns the commit a tag points at, peeling annotated tags.
+func resolveRemoteTagSHA(ctx context.Context, repoURL, tag, token string) (string, error) {
+	remote := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{Name: "origin", URLs: []string{repoURL}})
+	opts := &git.ListOptions{PeelingOption: git.AppendPeeled}
+	if token != "" {
+		opts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	}
+	refs, err := remote.ListContext(ctx, opts)
+	if err != nil {
+		return "", fmt.Errorf("list refs: %w", err)
+	}
+	want := "refs/tags/" + tag
+	var plain string
+	for _, ref := range refs {
+		switch ref.Name().String() {
+		case want + "^{}":
+			return ref.Hash().String(), nil
+		case want:
+			plain = ref.Hash().String()
+		}
+	}
+	if plain == "" {
+		return "", fmt.Errorf("tag %q not found", tag)
+	}
+	return plain, nil
+}
+
+func (rt *Router) pinTagSHA(ctx context.Context, name, repoURL, tag string) (string, error) {
+	token, err := rt.resolveGitSourceDeployToken(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("resolve deploy token: %w", err)
+	}
+	return resolveTagSHA(ctx, repoURL, tag, token)
+}
+
+// holdGitPush parks a validated push on a protected app. The pushed commit is
+// kept under a held ref, so a later push or the quota reset cannot drop it
+// before the hold is decided. handled is false for an unprotected app.
+func (rt *Router) holdGitPush(ctx context.Context, name string, plan *gitPushPlan) (handled bool, msg string, parked bool) {
 	_, protected, err := rt.protectedEnvironmentOf(ctx, name)
 	if err != nil {
-		return "environment protection could not be checked, push again later"
+		rt.logger.Error("api: git push: check environment protection failed", slog.String("name", name), slog.String("error", err.Error()))
+		return true, "Environment protection could not be checked. Push again later.", false
 	}
-	if protected {
-		return "this app is in a protected environment, deploy it through an approved deploy"
+	if !protected {
+		return false, "", false
 	}
-	return ""
+	refID, err := store.NewDeployAttemptID()
+	if err != nil {
+		return true, "The push could not be parked for approval. Push again later.", false
+	}
+	hash := plan.cmd.New.String()
+	heldRef := heldRefPrefix + refID
+	if err := plan.repo.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName(heldRef), plan.cmd.New)); err != nil {
+		rt.logger.Error("api: git push: keep held commit failed", slog.String("name", name), slog.String("error", err.Error()))
+		return true, "The push could not be parked for approval. Push again later.", false
+	}
+	hr := deploy.HeldRequest{
+		Kind: deploy.HeldKindPush, CheckoutRef: hash, CommitLabel: hash, CommitSHA: hash,
+		Branch: plan.branch, PushMirror: gitPushMirrorURL(name), HeldRef: heldRef,
+	}
+	handled, status, hmsg := rt.holdIfProtected(ctx, name, hr, name+":"+hash, store.DeployAttemptSourceGitPush, SystemApprovalActor)
+	if status != http.StatusAccepted {
+		_ = plan.repo.Storer.RemoveReference(plumbing.ReferenceName(heldRef))
+	}
+	if status != http.StatusAccepted {
+		return handled, strings.TrimSpace(hmsg), false
+	}
+	return true, "Commit " + hash[:7] + " is held: " + strings.TrimSpace(hmsg), true
+}
+
+// replayGitPush builds a held push from the push mirror at the pushed commit.
+func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.HeldRequest) error {
+	defer rt.dropHeldRef(req)
+	if rt.builder == nil {
+		return errors.New("builds are not configured on this control plane")
+	}
+	existing, err := rt.apps.GetDesiredService(ctx, name)
+	if err != nil {
+		return fmt.Errorf("load app: %w", err)
+	}
+	repo, _, release, err := rt.sourceCache.OpenMirror(req.PushMirror)
+	if err != nil {
+		return fmt.Errorf("open push mirror: %w", err)
+	}
+	defer release()
+	commit, err := repo.CommitObject(plumbing.NewHash(req.CommitSHA))
+	if err != nil {
+		return errors.New("the held commit is no longer stored, push again")
+	}
+	buildType, path, base := rt.gitPushBuildConfig(ctx, name, commit)
+	treq := triggerBuildRequest{
+		RepoURL: req.PushMirror, Ref: req.CommitSHA,
+		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base},
+	}
+	buildReq := manualBuildRequest(name, *existing, treq, buildType)
+	dctx := context.WithValue(ctx, commitMetaKey{}, commitMeta{Branch: req.Branch, Message: pushCommitSubject(commit.Message), Author: commit.Author.Name})
+	run := rt.beginManualBuild(dctx, *existing, buildReq, buildType, store.DeployAttemptSourceGitPush, "", "", false)
+	run.repoURL, run.ref, run.fromCache = req.PushMirror, req.CommitSHA, true
+	var buildErr error
+	finish := run.finish
+	run.finish = func(err error) {
+		finish(err)
+		buildErr = err
+		if err == nil {
+			ref := plumbing.NewHashReference(plumbing.NewBranchReferenceName(req.Branch), plumbing.NewHash(req.CommitSHA))
+			if serr := repo.Storer.SetReference(ref); serr != nil {
+				rt.logger.Error("api: git push: advance ref failed", slog.String("name", name), slog.String("error", serr.Error()))
+			}
+		}
+	}
+	rt.runManualBuild(run)
+	return buildErr
+}
+
+// dropHeldRef removes the ref keeping a held push alive once it is decided.
+func (rt *Router) dropHeldRef(req deploy.HeldRequest) {
+	if req.Kind != deploy.HeldKindPush || !strings.HasPrefix(req.HeldRef, heldRefPrefix) {
+		return
+	}
+	repo, _, release, err := rt.sourceCache.OpenMirror(req.PushMirror)
+	if err != nil {
+		return
+	}
+	defer release()
+	if err := repo.Storer.RemoveReference(plumbing.ReferenceName(req.HeldRef)); err != nil {
+		rt.logger.Warn("api: remove held push ref failed", slog.String("error", err.Error()))
+	}
+}
+
+// heldRequestOf reads the held request saved on an attempt.
+func (rt *Router) heldRequestOf(ctx context.Context, attemptID string) (deploy.HeldRequest, bool) {
+	var req deploy.HeldRequest
+	if rt.deployAttempts == nil || attemptID == "" {
+		return req, false
+	}
+	a, err := rt.deployAttempts.GetDeployAttempt(ctx, attemptID)
+	if err != nil || a == nil || json.Unmarshal([]byte(a.HeldRequest), &req) != nil {
+		return req, false
+	}
+	return req, true
+}
+
+// hasPendingPushHold reports whether a held push of name still needs the mirror.
+func (rt *Router) hasPendingPushHold(ctx context.Context, name string) bool {
+	if rt.deployApprovals == nil {
+		return false
+	}
+	pending, err := rt.deployApprovals.ListDeployApprovals(ctx, store.DeployApprovalStatusPending, name)
+	if err != nil {
+		return true
+	}
+	for _, a := range pending {
+		if req, ok := rt.heldRequestOf(ctx, a.HeldAttemptID); ok && req.Kind == deploy.HeldKindPush {
+			return true
+		}
+	}
+	return false
 }

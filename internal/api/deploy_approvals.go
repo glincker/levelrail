@@ -834,6 +834,9 @@ func (rt *Router) failAwaitingAttempt(ctx context.Context, a store.DeployApprova
 	if a.Action != store.DeployApprovalActionReplay || a.HeldAttemptID == "" || rt.deploySafety == nil {
 		return
 	}
+	if req, ok := rt.heldRequestOf(ctx, a.HeldAttemptID); ok {
+		rt.dropHeldRef(req)
+	}
 	if _, err := rt.deploySafety.TransitionDeployAttempt(context.WithoutCancel(ctx), a.HeldAttemptID, store.DeployAttemptStatusAwaitingApproval, store.DeployAttemptStatusFailed, reason); err != nil {
 		rt.logger.Warn("api: close awaiting deploy attempt failed", slog.String("attempt_id", a.HeldAttemptID), slog.String("error", err.Error()))
 	}

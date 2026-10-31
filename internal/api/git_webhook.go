@@ -284,6 +284,14 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 		return http.StatusAccepted, msg
 	}
 	tagReq := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}
+	if _, protected, _ := rt.protectedEnvironmentOf(ctx, name); protected {
+		sha, err := rt.pinTagSHA(ctx, name, gs.RepoURL, rel.TagName)
+		if err != nil {
+			rt.logger.Warn("api: git push webhook: resolve release tag failed", slog.String("name", name), slog.String("error", err.Error()))
+			return http.StatusServiceUnavailable, "deferred: the release tag could not be resolved, retry later\n"
+		}
+		tagReq.CheckoutRef = sha
+	}
 	if handled, status, hmsg := rt.holdIfProtected(ctx, name, tagReq, name+":"+label, store.DeployAttemptSourceWebhook, SystemApprovalActor); handled {
 		return status, hmsg
 	}
