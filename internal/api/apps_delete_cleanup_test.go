@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -91,6 +93,19 @@ func TestDeleteAppRemovesGitSourceAndSecrets(t *testing.T) {
 	if _, err := db.RotateFunctionKVToken(ctx, "site", now); err != nil {
 		t.Fatalf("kv token: %v", err)
 	}
+	integKey := store.AppIntegrationSecretsKey("site", "metrics")
+	if err := db.SaveAppIntegration(ctx, store.AppIntegration{ID: "ai_cleanup", ServiceName: "site", IntegrationKey: "metrics", CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatalf("save integration: %v", err)
+	}
+	prKey := store.PRPreviewEnvSecretsKey("site", 7)
+	if _, err := db.SetPRPreviewEnvOverride(ctx, "site", 7, "API_KEY", "", true); err != nil {
+		t.Fatalf("save pr override: %v", err)
+	}
+	for _, kv := range [][2]string{{integKey, "token"}, {prKey, "API_KEY"}} {
+		if err := mgr.SetValue(ctx, kv[0], kv[1], "value-"+kv[1]); err != nil {
+			t.Fatalf("set %v: %v", kv, err)
+		}
+	}
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/site", ""))
@@ -102,7 +117,7 @@ func TestDeleteAppRemovesGitSourceAndSecrets(t *testing.T) {
 	if _, err := db.GetGitSource(ctx, "site"); !errors.Is(err, store.ErrGitSourceNotFound) {
 		t.Errorf("git source err = %v, want not found", err)
 	}
-	for _, kv := range [][2]string{{gitKey, "deploy_token"}, {gitKey, "webhook_secret"}, {"site", "APP_KEY"}, {hookKey, "hmac"}} {
+	for _, kv := range [][2]string{{gitKey, "deploy_token"}, {gitKey, "webhook_secret"}, {"site", "APP_KEY"}, {hookKey, "hmac"}, {integKey, "token"}, {prKey, "API_KEY"}} {
 		if ok, err := mgr.Exists(ctx, kv[0], kv[1]); err != nil || ok {
 			t.Errorf("secret %v exists = %v, err = %v", kv, ok, err)
 		}
@@ -112,5 +127,67 @@ func TestDeleteAppRemovesGitSourceAndSecrets(t *testing.T) {
 	}
 	if ok, err := db.HasFunctionKVToken(ctx, "site"); err != nil || ok {
 		t.Errorf("kv token = %v, err = %v", ok, err)
+	}
+}
+
+func TestDeleteGitSourceRouteErasesItsSecrets(t *testing.T) {
+	db := openTestDB(t)
+	mk, err := secrets.GenerateMasterKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr := secrets.NewManager(db, mk)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	rt := NewRouter(logger, testBrand(), db, WithSecretSetter(mgr))
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	seedApp(t, db, "site")
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "site", RepoURL: "https://example.test/org/repo.git", Branch: "main"}); err != nil {
+		t.Fatalf("save git source: %v", err)
+	}
+	gitKey := store.GitSourceSecretsKey("site")
+	for _, k := range []string{"deploy_token", "webhook_secret"} {
+		if err := mgr.SetValue(ctx, gitKey, k, "value-"+k); err != nil {
+			t.Fatalf("set %s: %v", k, err)
+		}
+	}
+	if err := mgr.SetValue(ctx, "site", "APP_KEY", "keep"); err != nil {
+		t.Fatalf("set app secret: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/site/git-source", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	for _, k := range []string{"deploy_token", "webhook_secret"} {
+		if ok, err := mgr.Exists(ctx, gitKey, k); err != nil || ok {
+			t.Errorf("secret %s exists = %v, err = %v", k, ok, err)
+		}
+	}
+	if ok, err := mgr.Exists(ctx, "site", "APP_KEY"); err != nil || !ok {
+		t.Errorf("app secret exists = %v, err = %v", ok, err)
+	}
+}
+
+func TestBuildSourceFactsScopedCallerGetsNoAppToken(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	seedApp(t, db, "site")
+	if err := db.SaveGitSource(context.Background(), store.GitSource{ServiceName: "site", RepoURL: "https://github.com/org/repo.git", Branch: "main", BuildType: "dockerfile"}); err != nil {
+		t.Fatalf("save git source: %v", err)
+	}
+	var got []string
+	rt.repoLayoutSource = func(_ context.Context, _, _, token string, _ repolayout.Hosts) (repolayout.Source, error) {
+		got = append(got, token)
+		return nil, errors.New("stop")
+	}
+	ctx := context.WithValue(context.Background(), teamScopeKey{}, &teamScope{projectID: "prj_other"})
+	rt.addBuildSourceFacts(ctx, "site", &diagnose.Facts{})
+	if len(got) != 1 || got[0] != "" {
+		t.Errorf("tokens = %q, want one empty token", got)
+	}
+	if gitHubAppTokenAllowed(ctx) {
+		t.Error("scoped caller allowed an app token")
 	}
 }

@@ -812,10 +812,8 @@ func (rt *Router) handleRotateGitSourceWebhookSecret(w http.ResponseWriter, r *h
 }
 
 // handleDeleteGitSource handles DELETE /api/v1/apps/{name}/git-source.
-// Known gap, matching handleDeleteBackupTarget's own documented one: see
-// store.DeleteGitSource's doc comment, the deploy token and webhook
-// secret this source's connect flow wrote remain in the secrets store,
-// unreferenced but not erased at rest.
+// The deploy token and webhook secret are erased with the row so a later
+// connect starts clean.
 func (rt *Router) handleDeleteGitSource(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -828,6 +826,7 @@ func (rt *Router) handleDeleteGitSource(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: delete git source failed", err, slog.String("name", name))
 		return
 	}
+	rt.eraseGitSourceSecrets(r.Context(), name)
 
 	w.WriteHeader(http.StatusNoContent)
 }

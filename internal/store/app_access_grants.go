@@ -3,11 +3,13 @@ package store
 import (
 	"context"
 	"fmt"
+	"strconv"
 )
 
 // DeleteAppAccessGrants removes the access-granting rows an app owns that
 // have no foreign key to it: its function KV token hash, the webhook
-// triggers of its pipelines and its secret branch overrides. It returns
+// triggers of its pipelines, its secret branch overrides and its pull
+// request env overrides. It returns
 // the secrets namespaces the caller must erase.
 func (db *DB) DeleteAppAccessGrants(ctx context.Context, name string) ([]string, error) {
 	var namespaces []string
@@ -37,6 +39,25 @@ func (db *DB) DeleteAppAccessGrants(ctx context.Context, name string) ([]string,
 	if len(patterns) > 0 {
 		if _, err := db.ExecContext(ctx, `DELETE FROM service_branch_env_overrides WHERE service_name = ? AND is_secret = 1`, name); err != nil {
 			return nil, fmt.Errorf("store: delete secret branch overrides of %q: %w", name, err)
+		}
+	}
+
+	// Pull request overrides have no foreign key, so both rows and their
+	// ciphertext namespaces are collected here.
+	prs, err := db.stringsQuery(ctx, `SELECT DISTINCT CAST(pr_number AS TEXT) FROM preview_pr_env_overrides WHERE service_name = ?`, name)
+	if err != nil {
+		return nil, fmt.Errorf("store: list pr env overrides of %q: %w", name, err)
+	}
+	for _, p := range prs {
+		n, convErr := strconv.Atoi(p)
+		if convErr != nil {
+			continue
+		}
+		namespaces = append(namespaces, PRPreviewEnvSecretsKey(name, n))
+	}
+	if len(prs) > 0 {
+		if _, err := db.ExecContext(ctx, `DELETE FROM preview_pr_env_overrides WHERE service_name = ?`, name); err != nil {
+			return nil, fmt.Errorf("store: delete pr env overrides of %q: %w", name, err)
 		}
 	}
 	return namespaces, nil

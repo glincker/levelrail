@@ -1331,6 +1331,8 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			return nil, err
 		}
 	}
+	// Integration rows cascade with the service, so list them first.
+	integrationNS := rt.appIntegrationSecretNamespaces(ctx, name)
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
@@ -1390,7 +1392,7 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Warn("api: delete app: remove image auto update failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
-	rt.removeAppCredentials(ctx, name)
+	rt.removeAppCredentials(ctx, name, integrationNS)
 	if existing.AppID != "" {
 		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
@@ -1406,8 +1408,9 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 // removeAppCredentials erases the app's stored secrets, git source with its
 // deploy token and webhook secret, and other access grants, so a later app
 // of the same name inherits none of them. Failures are logged only.
-func (rt *Router) removeAppCredentials(ctx context.Context, name string) {
-	var namespaces []string
+// extraNamespaces are secrets namespaces the caller collected earlier.
+func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNamespaces []string) {
+	namespaces := append([]string(nil), extraNamespaces...)
 	if g, ok := rt.apps.(interface {
 		DeleteAppAccessGrants(ctx context.Context, name string) ([]string, error)
 	}); ok {
@@ -1415,7 +1418,7 @@ func (rt *Router) removeAppCredentials(ctx context.Context, name string) {
 		if err != nil {
 			rt.logger.Warn("api: delete app: remove access grants failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
-		namespaces = ns
+		namespaces = append(namespaces, ns...)
 	}
 	if rt.gitSources != nil {
 		if err := rt.gitSources.DeleteGitSource(ctx, name); err != nil && !errors.Is(err, store.ErrGitSourceNotFound) {
@@ -1425,12 +1428,42 @@ func (rt *Router) removeAppCredentials(ctx context.Context, name string) {
 	if rt.secrets == nil {
 		return
 	}
-	namespaces = append(namespaces, name, store.GitSourceSecretsKey(name))
+	namespaces = append(namespaces, name)
 	for _, ns := range namespaces {
 		if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
 			rt.logger.Warn("api: delete app: remove secrets failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	rt.eraseGitSourceSecrets(ctx, name)
+}
+
+// eraseGitSourceSecrets drops a git source's deploy token and webhook
+// secret. Failures are logged only.
+func (rt *Router) eraseGitSourceSecrets(ctx context.Context, name string) {
+	if rt.secrets == nil {
+		return
+	}
+	if err := rt.secrets.DeleteAll(ctx, store.GitSourceSecretsKey(name)); err != nil {
+		rt.logger.Warn("api: remove git source secrets failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+}
+
+// appIntegrationSecretNamespaces lists the secrets namespaces of name's
+// attached integrations, empty when none or on a read failure.
+func (rt *Router) appIntegrationSecretNamespaces(ctx context.Context, name string) []string {
+	if rt.appIntegrations == nil {
+		return nil
+	}
+	rows, err := rt.appIntegrations.ListAppIntegrationsForService(ctx, name)
+	if err != nil {
+		rt.logger.Warn("api: delete app: list integrations failed", slog.String("error", err.Error()), slog.String("name", name))
+		return nil
+	}
+	out := make([]string, 0, len(rows))
+	for _, ai := range rows {
+		out = append(out, store.AppIntegrationSecretsKey(ai.ServiceName, ai.IntegrationKey))
+	}
+	return out
 }
 
 // deleteFinalizer is nil when no runtime resolver or tombstone-capable
