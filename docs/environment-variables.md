@@ -143,6 +143,7 @@ These tune the scheduled off-box copy of the control plane's own state and its r
 | `APP_PITR_BINLOG_EXPIRE_SECONDS` | `604800` (7 days) | How long a MySQL or MariaDB database keeps closed binary log files on its own host. Shipped copies in the backup target are pruned by base backup retention instead. Positive integer. Control plane. |
 | `APP_PITR_MYSQL_TOOLS_IMAGE` | `percona/percona-server:8.4` | Image a MySQL point-in-time restore starts briefly to run `mysqlbinlog`, which the official MySQL image does not ship. MariaDB restores do not use it. Control plane. |
 | `APP_PREVIEW_BUILD_SECRETS` | unset (off) | Set to a true value to let preview (pull request) builds use `build.secrets`. Off by default because a pull request can change the Dockerfile and read the secret. Read on every build. Control plane. |
+| `APP_STATIC_KEEP_RELEASES` | `10` | How many releases of one static site stay on disk after a publish. Values below 3 are raised to 3. The live, previous and in-use releases are never deleted. Read on every publish. Control plane. |
 
 ## Log archive
 

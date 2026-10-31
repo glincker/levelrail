@@ -118,6 +118,8 @@ To remove only the published site and keep the app record, use `levelrail-cli st
 
 If a site is ever left behind without an app, a background sweep removes it after a grace period. The default is 10 minutes. Set `APP_STATIC_ORPHAN_GRACE` (for example `1h`) to change it. An empty or `0` value falls back to the default.
 
+Every deploy writes a release directory. After a successful publish, Levelrail keeps the newest 10 releases of a site and deletes older ones. Set `APP_STATIC_KEEP_RELEASES` to change the count (minimum 3). The live release, the previous one (the rollback target), releases used by queued, running, held or awaiting approval deploys, and releases another site still serves are never deleted, and nothing is deleted while a publish lock is set.
+
 ## List your static sites
 
 From the CLI:
