@@ -302,7 +302,9 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 			route := r.(map[string]any)
 			match := route["match"].([]any)[0].(map[string]any)
 			host := match["host"].([]any)[0].(string)
-			handler := route["handle"].([]any)[0].(map[string]any)
+			handles := route["handle"].([]any)
+			// The encoder sits ahead of the file server on static routes.
+			handler := handles[len(handles)-1].(map[string]any)
 
 			switch handler["handler"] {
 			case "file_server":

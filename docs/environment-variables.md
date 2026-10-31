@@ -40,6 +40,8 @@ Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variab
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_COOKIE_SECURE` | unset (Secure only when the dashboard URL is `https://`) | Set to `true` to always mark the session cookie Secure. Use it when a proxy terminates TLS in front of an `http://` dashboard URL. Control plane. |
+| `APP_STATIC_ASSET_MAX_AGE` | `31536000` | Lifetime in seconds of the `immutable` `Cache-Control` sent for fingerprinted static site assets. See [Static routing](/static-routing#default-caching-and-compression). Ingress. |
+| `APP_STATIC_COMPRESS_MIN_LENGTH` | `256` | Smallest static site response in bytes that is compressed. Ingress. |
 
 ## Supply chain gate
 
