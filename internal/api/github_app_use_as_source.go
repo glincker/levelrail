@@ -83,7 +83,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 
 	result, err := rt.connectGitSource(ctx, req.AppName, connectGitSourceParams{
 		RepoURL: instanceURL + "/" + repoInfo.FullName + ".git", Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, BaseDirectory: req.BaseDirectory,
-		TriggerMode: triggerMode,
+		TriggerMode: triggerMode, KeepStaticBuild: true,
 	})
 	if err != nil {
 		rt.internalError(w, "api: use github repo as source: connect git source failed", err, slog.String("app_name", req.AppName))

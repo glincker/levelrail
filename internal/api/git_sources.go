@@ -246,7 +246,8 @@ type setGitSourceRequest struct {
 	BuildCommand string `json:"build_command,omitempty"`
 	PublishDir   string `json:"publish_dir,omitempty"`
 	// StaticSPA serves index.html for unknown paths (build_type "static" only).
-	StaticSPA bool `json:"static_spa,omitempty"`
+	// Omitted keeps the stored value on a reconnect.
+	StaticSPA *bool `json:"static_spa,omitempty"`
 	// Token is an optional git hosting personal access token for a
 	// private repo, sent over HTTPS Basic auth as the password
 	// (gitCheckoutWithToken, git_webhook.go). Empty on an update means
@@ -651,7 +652,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := rt.connectGitSource(withRequestOrigin(r.Context(), r), name, connectGitSourceParams{
-		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, BuildCommand: req.BuildCommand, PublishDir: req.PublishDir, StaticSPA: req.StaticSPA && buildType == spec.BuildStatic, Token: req.Token,
+		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, BuildCommand: req.BuildCommand, PublishDir: req.PublishDir, StaticSPA: req.StaticSPA, Token: req.Token,
 		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
 		TriggerMode: triggerMode,
 	})
@@ -681,7 +682,11 @@ type connectGitSourceParams struct {
 	BaseDirectory string
 	BuildCommand  string
 	PublishDir    string
-	StaticSPA     bool
+	// StaticSPA nil keeps the stored value on an update.
+	StaticSPA *bool
+	// KeepStaticBuild also keeps the stored build command and publish dir
+	// for callers that never carry them (repo pickers).
+	KeepStaticBuild bool
 	// Token is optional; empty means "leave whatever is currently
 	// stored unchanged" on an update, matching setGitSourceRequest's own
 	// Token field.
@@ -715,10 +720,23 @@ type connectGitSourceResult struct {
 func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGitSourceParams) (connectGitSourceResult, error) {
 	key := store.GitSourceSecretsKey(name)
 
-	_, err := rt.gitSources.GetGitSource(ctx, name)
+	prev, err := rt.gitSources.GetGitSource(ctx, name)
 	creating := errors.Is(err, store.ErrGitSourceNotFound)
 	if err != nil && !creating {
 		return connectGitSourceResult{}, fmt.Errorf("load existing git source: %w", err)
+	}
+	staticSPA := p.StaticSPA != nil && *p.StaticSPA
+	if p.StaticSPA == nil && !creating && prev != nil {
+		staticSPA = prev.StaticSPA
+	}
+	staticSPA = staticSPA && p.BuildType == spec.BuildStatic
+	if p.KeepStaticBuild && !creating && prev != nil && p.BuildType == spec.BuildStatic {
+		if p.BuildCommand == "" {
+			p.BuildCommand = prev.BuildCommand
+		}
+		if p.PublishDir == "" {
+			p.PublishDir = prev.PublishDir
+		}
 	}
 
 	var webhookSecretPlain string
@@ -742,7 +760,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		triggerMode = spec.TriggerModePush
 	}
 	if err := rt.gitSources.SaveGitSourceWithAppAuth(ctx, store.GitSource{
-		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory, BuildCommand: p.BuildCommand, PublishDir: p.PublishDir, StaticSPA: p.StaticSPA,
+		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory, BuildCommand: p.BuildCommand, PublishDir: p.PublishDir, StaticSPA: staticSPA,
 		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
 		TriggerMode: triggerMode,
 	}, gitHubAppTokenAllowed(ctx)); err != nil {
