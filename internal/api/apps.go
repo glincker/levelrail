@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -657,6 +658,8 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// internal/store's service_secret_values table has no foreign key to
 	// desired_services, so this ordering is safe even though the service
 	// row below doesn't exist yet.
+	unlockName := lockAppName(req.Name)
+	defer unlockName()
 	for key, value := range req.Secrets {
 		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
 			if errors.Is(err, secrets.ErrSecretLocked) {
@@ -677,6 +680,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app failed", err, slog.String("name", req.Name))
 		return
 	}
+	unlockName()
 
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
@@ -1316,6 +1320,42 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// appNameLocks serializes a delete's row removal and credential erase with a
+// create's secret writes for the same name. Entries are dropped when unused.
+var appNameLocks = struct {
+	mu sync.Mutex
+	m  map[string]*appNameLock
+}{m: map[string]*appNameLock{}}
+
+type appNameLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+// lockAppName blocks until name is free and returns the release func.
+func lockAppName(name string) func() {
+	appNameLocks.mu.Lock()
+	l := appNameLocks.m[name]
+	if l == nil {
+		l = &appNameLock{}
+		appNameLocks.m[name] = l
+	}
+	l.refs++
+	appNameLocks.mu.Unlock()
+	l.mu.Lock()
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			l.mu.Unlock()
+			appNameLocks.mu.Lock()
+			if l.refs--; l.refs == 0 {
+				delete(appNameLocks.m, name)
+			}
+			appNameLocks.mu.Unlock()
+		})
+	}
+}
+
 // deleteApp removes name's desired state, tears its containers down and
 // drops its App row if it was the last member. A tombstone is written first
 // so a failed teardown (second return) is retried by the reconciler. Callers
@@ -1333,9 +1373,16 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 	}
 	// Integration rows cascade with the service, so list them first.
 	integrationNS := rt.appIntegrationSecretNamespaces(ctx, name)
+	// Erase right after the row is gone, under the name lock: the row is
+	// already deleted so a failure loses nothing, and a same-name create
+	// cannot write secrets that this cleanup then removes.
+	unlock := lockAppName(name)
+	defer unlock()
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
+	rt.removeAppCredentials(ctx, name, integrationNS)
+	unlock()
 	rt.dropMailCertSecret(ctx, *existing)
 	if err := rt.removeStaticSite(ctx, name); err != nil {
 		rt.logger.Warn("api: delete app: remove static site failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -1392,7 +1439,6 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Warn("api: delete app: remove image auto update failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
-	rt.removeAppCredentials(ctx, name, integrationNS)
 	if existing.AppID != "" {
 		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
