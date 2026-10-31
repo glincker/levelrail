@@ -792,3 +792,69 @@ func TestChatApprovalSetupNeedsRoot(t *testing.T) {
 		t.Errorf("root changing secret = %d, want 200", got)
 	}
 }
+
+func TestChatApprovalKindChangeNeedsRoot(t *testing.T) {
+	noNotifyDNS(t)
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	seedNotificationChannel(t, adb, "chn_plain", alerting.NotifySlack, "https://hooks.slack.com/services/x")
+	if err := adb.SaveNotificationChannel(context.Background(), alerting.NotificationChannel{
+		ID: "chn_live", Name: "Live", Kind: alerting.NotifySlack, NotifyURL: "https://hooks.slack.com/services/x",
+		Enabled: true, InteractiveApprovals: true, InteractiveSecret: "orig",
+	}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	writer := seedMatrixToken(t, db, "tok_w", []string{AbilityWrite})
+	root := seedMatrixToken(t, db, "tok_r", []string{AbilityRoot})
+	do := func(token, method, target, body string) int {
+		req := httptest.NewRequest(method, target, strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		return rec.Code
+	}
+	key := strings.Repeat("ab", 32)
+	toDiscord := `{"name":"x","kind":"discord","notify_url":"https://discord.com/api/webhooks/1/x","interactive_approvals":true,"interactive_secret":"` + key + `"}`
+	toDiscordKeepKey := `{"name":"x","kind":"discord","notify_url":"https://discord.com/api/webhooks/1/x","interactive_approvals":true}`
+
+	if got := do(writer, http.MethodPut, "/api/v1/notification-channels/chn_live", toDiscordKeepKey); got != http.StatusForbidden {
+		t.Errorf("write changing kind = %d, want 403", got)
+	}
+	if got := do(root, http.MethodPut, "/api/v1/notification-channels/chn_live", toDiscordKeepKey); got != http.StatusBadRequest {
+		t.Errorf("root changing kind keeping a non hex secret = %d, want 400", got)
+	}
+	if got := do(root, http.MethodPut, "/api/v1/notification-channels/chn_live", toDiscord); got != http.StatusOK {
+		t.Errorf("root changing kind with a fresh key = %d, want 200", got)
+	}
+	if got := do(writer, http.MethodPut, "/api/v1/notification-channels/chn_plain", `{"name":"p","kind":"discord","notify_url":"https://discord.com/api/webhooks/1/x"}`); got != http.StatusOK {
+		t.Errorf("write changing kind on a non interactive channel = %d, want 200", got)
+	}
+}
+
+func TestChatApprovalKindURLShape(t *testing.T) {
+	noNotifyDNS(t)
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	seedNotificationChannel(t, adb, "chn_plain", alerting.NotifySlack, "https://hooks.slack.com/services/x")
+	root := seedMatrixToken(t, db, "tok_r", []string{AbilityRoot})
+	do := func(method, target, body string) int {
+		req := httptest.NewRequest(method, target, strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+root)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		return rec.Code
+	}
+	key := strings.Repeat("ab", 32)
+	cases := map[string]string{
+		"slack kind with a discord url": `{"name":"x","kind":"slack","notify_url":"https://discord.com/api/webhooks/1/x","interactive_approvals":true,"interactive_secret":"s"}`,
+		"discord kind with a slack url": `{"name":"x","kind":"discord","notify_url":"https://hooks.slack.com/services/x","interactive_approvals":true,"interactive_secret":"` + key + `"}`,
+		"discord kind with a short key": `{"name":"x","kind":"discord","notify_url":"https://discord.com/api/webhooks/1/x","interactive_approvals":true,"interactive_secret":"abc"}`,
+		"slack kind with an other host": `{"name":"x","kind":"slack","notify_url":"https://example.com/services/x","interactive_approvals":true,"interactive_secret":"s"}`,
+	}
+	for name, body := range cases {
+		if got := do(http.MethodPost, "/api/v1/notification-channels", body); got != http.StatusBadRequest {
+			t.Errorf("create %s = %d, want 400", name, got)
+		}
+		if got := do(http.MethodPut, "/api/v1/notification-channels/chn_plain", body); got != http.StatusBadRequest {
+			t.Errorf("update %s = %d, want 400", name, got)
+		}
+	}
+}

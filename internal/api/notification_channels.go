@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -267,6 +269,9 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 	channel, err := req.toChannel(id, "")
+	if err == nil && channel.InteractiveApprovals {
+		err = validateInteractiveShape(channel.Kind, channel.NotifyURL, channel.InteractiveSecret)
+	}
 	if err == nil {
 		err = rt.validateChannelDestination(r.Context(), channel.Kind, channel.NotifyURL)
 	}
@@ -320,10 +325,15 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 	if req.NotifyURL != existing.NotifyURL && req.NotifyURL == redactNotifyTarget(existing.Kind, existing.NotifyURL) {
 		req.NotifyURL = existing.NotifyURL
 	}
-	if chatApprovalSetupChanged(*existing, req) && !rt.requireRootForChatApprovals(w, r) {
+	setupChanged := chatApprovalSetupChanged(*existing, req)
+	if setupChanged && !rt.requireRootForChatApprovals(w, r) {
 		return
 	}
 	channel, err := req.toChannel(id, existing.InteractiveSecret)
+	// Only a changed setup is re-checked, so renaming a channel root set up earlier keeps working.
+	if err == nil && setupChanged {
+		err = validateInteractiveShape(channel.Kind, channel.NotifyURL, channel.InteractiveSecret)
+	}
 	if err == nil {
 		err = rt.validateChannelDestination(r.Context(), channel.Kind, channel.NotifyURL)
 	}
@@ -558,8 +568,35 @@ func chatApprovalSetupChanged(existing alerting.NotificationChannel, req createN
 		return false
 	}
 	return !existing.InteractiveApprovals ||
+		string(existing.Kind) != req.Kind ||
 		(req.InteractiveSecret != "" && req.InteractiveSecret != existing.InteractiveSecret) ||
 		req.NotifyURL != existing.NotifyURL
+}
+
+// discordPublicKeyHex matches an ed25519 public key as Discord shows it.
+var discordPublicKeyHex = regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
+
+// validateInteractiveShape ties the channel kind to its webhook URL and the
+// interactive secret, so the stored secret is only read the way it was set up.
+func validateInteractiveShape(kind alerting.NotifyKind, notifyURL, secret string) error {
+	u, err := url.Parse(notifyURL)
+	if err != nil || u.Scheme != "https" {
+		return errors.New("notify_url must be an https webhook URL for this kind when interactive_approvals is true")
+	}
+	switch kind {
+	case alerting.NotifySlack:
+		if u.Hostname() != "hooks.slack.com" || !strings.HasPrefix(u.Path, "/services/") {
+			return errors.New("notify_url must be a Slack incoming webhook URL when kind is slack")
+		}
+	case alerting.NotifyDiscord:
+		if (u.Hostname() != "discord.com" && u.Hostname() != "discordapp.com") || !strings.HasPrefix(u.Path, "/api/webhooks/") {
+			return errors.New("notify_url must be a Discord webhook URL when kind is discord")
+		}
+		if !discordPublicKeyHex.MatchString(secret) {
+			return errors.New("interactive_secret must be the 64 character hex public key for discord")
+		}
+	}
+	return nil
 }
 
 // requireRootForChatApprovals writes a 403 unless the caller holds root.
