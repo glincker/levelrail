@@ -277,3 +277,24 @@ func TestCheckWithFakeResolver(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckDKIMProxiedFails(t *testing.T) {
+	r := fakeResolver{host: map[string][]string{"s1._domainkey.example.com": {"104.21.5.9"}}}
+	it := checkDKIM(context.Background(), r, "example.com", "s1")
+	if it.Status != StatusFail || !strings.Contains(it.Message, "Cloudflare") {
+		t.Fatalf("got %+v", it)
+	}
+}
+
+func TestCheckSPFTooManyLookupsFails(t *testing.T) {
+	r := fakeResolver{txt: map[string][]string{"example.com": {"v=spf1 a mx a mx a mx a mx a mx a ~all"}}}
+	rep, err := Check(context.Background(), r, "example.com", Expect{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range rep.Items {
+		if it.ID == "spf" && it.Status != StatusFail {
+			t.Fatalf("spf = %+v", it)
+		}
+	}
+}
