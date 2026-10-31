@@ -48,6 +48,8 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		return nil, err
 	}
 	logger.Info("auth engine ready", slog.String("prefix", eng.Prefix()))
+	// Pay the one-time argon2id cost at boot so the first unknown-user sign-in is not slower.
+	eng.Auth().WarmDummyHash()
 	importLegacyTokens(ctx, logger, eng)
 	opts := []api.Option{api.WithAuthEngine(eng)}
 	if len(cfg.EncryptionKey) > 0 {
