@@ -336,6 +336,9 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 	if err != nil {
 		return nil, err
 	}
+	// Held from the existence check to the row save so a same-name delete cannot wipe these secrets in between.
+	unlockName := lockAppName(p.Name)
+	defer unlockName()
 	if _, err := rt.apps.GetDesiredService(ctx, p.Name); err == nil {
 		return nil, errors.New("an app with this name already exists")
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
@@ -367,6 +370,7 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		desired.Domains = nil
 		err = rt.apps.SaveDesiredService(ctx, desired)
 	}
+	unlockName()
 	if err != nil {
 		return warnings, fmt.Errorf("save app: %w", err)
 	}

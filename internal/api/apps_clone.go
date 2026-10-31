@@ -63,6 +63,10 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Held through the row save and secret copy; released before any rollback, which takes the lock itself.
+	unlockName := lockAppName(req.NewName)
+	defer unlockName()
+
 	// Same existence check as handleCreateApp; it also rejects a self-clone as a conflict instead of overwriting the source.
 	_, err = rt.apps.GetDesiredService(r.Context(), req.NewName)
 	if err == nil {
@@ -100,6 +104,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 
 	if source.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.NewName, source.ProjectID); err != nil {
+			unlockName()
 			rt.rollbackClone(r.Context(), req.NewName)
 			rt.internalError(w, "api: clone app: assign project failed", err, slog.String("new_name", req.NewName), slog.String("project_id", source.ProjectID))
 			return
@@ -107,6 +112,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.applyCloneExtras(r.Context(), *source, req); err != nil {
+		unlockName()
 		rt.rollbackClone(r.Context(), req.NewName)
 		var bad errCloneRequest
 		if errors.As(err, &bad) {
@@ -116,6 +122,8 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: clone app: apply options failed", err, slog.String("new_name", req.NewName))
 		return
 	}
+
+	unlockName()
 
 	cloned, err := rt.apps.GetDesiredService(r.Context(), req.NewName)
 	if err != nil {

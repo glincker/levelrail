@@ -459,6 +459,8 @@ func (rt *Router) cloneEnvironmentSharedEnv(ctx context.Context, sourceEnvID, ne
 // is called once by the caller after every app in the batch is done, not
 // once per app).
 func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, newName, newEnvID string, domains []string, copySecretValues bool) (store.DesiredService, error) {
+	// Serialized with deleteApp so a same-name delete cannot wipe the secrets copied below.
+	defer lockAppName(newName)()
 	desired := cloneDesiredService(source, newName, domains)
 
 	if err := rt.apps.SaveDesiredService(ctx, desired); err != nil {
