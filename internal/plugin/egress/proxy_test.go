@@ -3,6 +3,7 @@ package egress
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net"
@@ -16,9 +17,11 @@ import (
 	"time"
 )
 
-type fakeID struct{ known bool }
+const testSecret = "s3cret-value"
 
-func (f fakeID) Identify(string) (string, bool) { return "mailer", f.known }
+func testCreds() CredentialStore {
+	return NewHashedCredentials(map[string]SecretHash{"mailer": HashSecret(testSecret), "other": HashSecret("other-secret")})
+}
 
 type fakeResolver map[string][]string
 
@@ -94,7 +97,11 @@ func silentServer(t *testing.T) int {
 
 func newProxy(t *testing.T, known bool, allow StaticAllowlist, res fakeResolver, cfg Config, d *denials) *httptest.Server {
 	t.Helper()
-	p := New(Options{Identifier: fakeID{known}, Allowlist: allow, Resolver: res, OnDeny: d.add, Config: cfg})
+	creds := NewHashedCredentials(nil)
+	if known {
+		creds = testCreds().(*HashedCredentials)
+	}
+	p := New(Options{Credentials: creds, Allowlist: allow, Resolver: res, OnDeny: d.add, Config: cfg})
 	s := httptest.NewServer(p)
 	t.Cleanup(s.Close)
 	return s
@@ -103,13 +110,22 @@ func newProxy(t *testing.T, known bool, allow StaticAllowlist, res fakeResolver,
 // connect opens a CONNECT tunnel and returns the status line, conn and reader.
 func connect(t *testing.T, proxyURL, target string) (string, net.Conn, *bufio.Reader) {
 	t.Helper()
+	return connectAs(t, proxyURL, target, "mailer", testSecret)
+}
+
+func connectAs(t *testing.T, proxyURL, target, user, pass string) (string, net.Conn, *bufio.Reader) {
+	t.Helper()
 	u, _ := url.Parse(proxyURL)
 	c, err := net.Dial("tcp", u.Host)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = c.Close() })
-	_, _ = fmt.Fprintf(c, "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n", target, target)
+	auth := ""
+	if user != "" {
+		auth = "Proxy-Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+pass)) + "\r\n"
+	}
+	_, _ = fmt.Fprintf(c, "CONNECT %s HTTP/1.1\r\nHost: %s\r\n%s\r\n", target, target, auth)
 	br := bufio.NewReader(c)
 	status, err := br.ReadString('\n')
 	if err != nil {
@@ -132,7 +148,7 @@ func TestConnectDecisions(t *testing.T) {
 		status  string
 		reason  string
 	}{
-		{"unknown caller", false, StaticAllowlist{"mailer": {host}}, []string{"127.0.0.1"}, true, target, "403", ReasonUnknownCaller},
+		{"unknown caller", false, StaticAllowlist{"mailer": {host}}, []string{"127.0.0.1"}, true, target, "407", ReasonUnknownCaller},
 		{"host not listed", true, StaticAllowlist{"mailer": {"other.test"}}, []string{"127.0.0.1"}, true, target, "403", ReasonHostNotListed},
 		{"other plugin list ignored", true, StaticAllowlist{"someone": {host}}, []string{"127.0.0.1"}, true, target, "403", ReasonHostNotListed},
 		{"port not declared", true, StaticAllowlist{"mailer": {"api.test"}}, []string{"127.0.0.1"}, true, target, "403", ReasonHostNotListed},
@@ -201,7 +217,7 @@ func TestPlainHTTP(t *testing.T) {
 	for _, private := range []bool{true, false} {
 		d := &denials{}
 		s := newProxy(t, true, StaticAllowlist{"mailer": {host}}, fakeResolver{"api.test": {"127.0.0.1"}}, Config{AllowPrivate: private}, d)
-		pu, _ := url.Parse(s.URL)
+		pu, _ := url.Parse(ProxyURL("mailer", testSecret, strings.TrimPrefix(s.URL, "http://")))
 		cl := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(pu)}}
 		resp, err := cl.Get("http://" + host + "/")
 		if err != nil {

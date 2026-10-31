@@ -31,11 +31,6 @@ const (
 	ReasonBadRequest    = "bad_request"
 )
 
-// Identifier maps a connection's remote address to a plugin name.
-type Identifier interface {
-	Identify(remoteAddr string) (plugin string, ok bool)
-}
-
 // Allowlist says whether a plugin may reach host:port.
 type Allowlist interface {
 	Allowed(plugin, host string, port int) bool
@@ -49,10 +44,10 @@ type Resolver interface {
 // DenyFunc records a refused request. It never receives payload.
 type DenyFunc func(plugin, host string, port int, reason string)
 
-// Options wires the proxy. Identifier and Allowlist are required.
+// Options wires the proxy. Credentials and Allowlist are required.
 type Options struct {
-	Identifier Identifier
-	Allowlist  Allowlist
+	Credentials CredentialStore
+	Allowlist   Allowlist
 	// Resolver defaults to net.DefaultResolver.
 	Resolver Resolver
 	OnDeny   DenyFunc
@@ -61,7 +56,7 @@ type Options struct {
 
 // Proxy is an http.Handler serving CONNECT and absolute-form requests.
 type Proxy struct {
-	id       Identifier
+	creds    CredentialStore
 	allow    Allowlist
 	resolver Resolver
 	onDeny   DenyFunc
@@ -82,11 +77,11 @@ type window struct {
 // New returns a Proxy. It panics on missing required options, which is a
 // programming error rather than a runtime condition.
 func New(o Options) *Proxy {
-	if o.Identifier == nil || o.Allowlist == nil {
-		panic("egress: Identifier and Allowlist are required")
+	if o.Credentials == nil || o.Allowlist == nil {
+		panic("egress: Credentials and Allowlist are required")
 	}
 	p := &Proxy{
-		id: o.Identifier, allow: o.Allowlist, resolver: o.Resolver, onDeny: o.OnDeny,
+		creds: o.Credentials, allow: o.Allowlist, resolver: o.Resolver, onDeny: o.OnDeny,
 		cfg: o.Config.withDefaults(), now: time.Now,
 		tunnels: map[string]int{}, windows: map[string]*window{},
 	}
@@ -128,9 +123,14 @@ func (p *Proxy) deny(w http.ResponseWriter, code int, plugin, host string, port 
 
 // ServeHTTP implements http.Handler.
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	plugin, ok := p.id.Identify(r.RemoteAddr)
-	if !ok {
-		p.deny(w, http.StatusForbidden, "", "", 0, ReasonUnknownCaller)
+	plugin, pass, ok := proxyCredentials(r)
+	if !ok || !p.creds.Verify(plugin, pass) {
+		// One response for every failure so the caller learns nothing about which part was wrong.
+		if p.onDeny != nil {
+			p.onDeny("", "", 0, ReasonUnknownCaller)
+		}
+		w.Header().Set("Proxy-Authenticate", `Basic realm="egress"`)
+		http.Error(w, "proxy authentication required", http.StatusProxyAuthRequired)
 		return
 	}
 	if r.Method == http.MethodConnect {
