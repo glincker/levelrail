@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { RadioTowerGlassIcon } from '@thesvg/ui-react'
 import { StatusComponentsPanel } from '../../components/StatusComponentsPanel'
 import { StatusIncidentsPanel } from '../../components/StatusIncidentsPanel'
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/settings/status-page')({
 })
 
 function StatusPageSettingsRoute() {
+  const { t } = useTranslation('statusPage')
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3">
@@ -21,16 +23,18 @@ function StatusPageSettingsRoute() {
           <RadioTowerGlassIcon className="size-5" aria-hidden="true" />
         </div>
         <PageHeader
-          title="Status page"
-          description="A read-only public page with component status, 90 day uptime bars, incidents and maintenance announcements. It exposes nothing but the public names and statuses you choose."
+          title={t('page.title')}
+          description={t('page.description')}
         />
       </div>
       <Tabs defaultValue="settings">
         <TabsList>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="components">Components</TabsTrigger>
-          <TabsTrigger value="incidents">Incidents and maintenance</TabsTrigger>
-          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+          <TabsTrigger value="settings">{t('page.tabSettings')}</TabsTrigger>
+          <TabsTrigger value="components">
+            {t('page.tabComponents')}
+          </TabsTrigger>
+          <TabsTrigger value="incidents">{t('page.tabIncidents')}</TabsTrigger>
+          <TabsTrigger value="webhooks">{t('page.tabWebhooks')}</TabsTrigger>
         </TabsList>
         <TabsContent value="settings" className="pt-3">
           <StatusPageSettingsPanel />

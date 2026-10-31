@@ -437,7 +437,16 @@
       "alerts": "Alerts",
       "assistant": "AI assistant",
       "settings": "Settings",
-      "help": "Help"
+      "help": "Help",
+      "functions": "Functions",
+      "images": "Images",
+      "assets": "Assets",
+      "mail": "Mail",
+      "resource-advisor": "Resource advisor",
+      "usage": "Usage and cost",
+      "resources": "Resources",
+      "security": "Security center",
+      "console": "Console"
     },
     "quickNav": {
       "label": "Quick navigation (hold L)"
@@ -486,7 +495,8 @@
       "unread": "What's new: {{count}} unread",
       "allCaughtUp": "What's new: all caught up",
       "empty": "No release notes available yet."
-    }
+    },
+    "navAttention": "{{count}} need attention"
   },
   "cliConsole": {
     "title": "Console",

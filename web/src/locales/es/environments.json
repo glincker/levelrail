@@ -1,0 +1,95 @@
+{
+  "kind": {
+    "dev": "Desarrollo",
+    "test": "Pruebas",
+    "uat": "UAT",
+    "production": "Producción",
+    "preview": "Vista previa",
+    "custom": "Personalizado"
+  },
+  "settings": {
+    "title": "Entornos",
+    "description": "Entornos de toda la instancia para apps y bases de datos. Marca uno como protegido para exigir la aprobación de una segunda persona antes de que algo entre o salga de él.",
+    "create": "Crear entorno",
+    "empty": {
+      "title": "Aún no hay entornos",
+      "description": "Crea el primero para empezar a agrupar apps y bases de datos."
+    },
+    "columns": {
+      "name": "Nombre",
+      "kind": "Tipo",
+      "protected": "Protegido",
+      "apps": "Apps",
+      "databases": "Bases de datos",
+      "actions": "Acciones"
+    },
+    "builtIn": "Integrado",
+    "scopeProject": "Proyecto",
+    "protectedToggle": "Protegido, {{name}}",
+    "protectedOn": "El entorno \"{{name}}\" ahora está protegido.",
+    "protectedOff": "El entorno \"{{name}}\" ya no está protegido.",
+    "updateFailed": "No se pudo actualizar el entorno.",
+    "edit": "Editar",
+    "delete": "Eliminar"
+  },
+  "form": {
+    "createTitle": "Crear entorno",
+    "editTitle": "Editar entorno",
+    "description": "Ponle un nombre y elige el tipo que describe su función.",
+    "name": "Nombre",
+    "namePlaceholder": "Staging UE",
+    "kind": "Tipo",
+    "protected": "Protegido",
+    "protectedHint": "Un movimiento hacia o desde este entorno espera a que otra persona lo apruebe.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando",
+    "created": "Entorno \"{{name}}\" creado.",
+    "updated": "Entorno \"{{name}}\" actualizado.",
+    "failed": "No se pudo guardar el entorno."
+  },
+  "delete": {
+    "title": "Eliminar \"{{name}}\"",
+    "description": "Esta acción no se puede deshacer.",
+    "inUse": "{{apps}} app(s) y {{databases}} base(s) de datos tienen esta etiqueta de entorno. Elige a dónde van antes de eliminarlo.",
+    "moveTo": "Moverlas a",
+    "moveToNone": "Elige un entorno",
+    "cancel": "Cancelar",
+    "confirm": "Eliminar entorno",
+    "deleting": "Eliminando",
+    "deleted": "Entorno \"{{name}}\" eliminado.",
+    "failed": "No se pudo eliminar el entorno.",
+    "reserved": "Los entornos integrados no se pueden eliminar.",
+    "protectedBlock": "Un entorno protegido no puede participar en un movimiento masivo. Quítale la protección primero, o mueve los elementos uno por uno."
+  },
+  "switcher": {
+    "label": "Entorno",
+    "all": "Todos los entornos",
+    "aria": "Filtrar el panel por entorno"
+  },
+  "move": {
+    "trigger": "Cambiar",
+    "title": "Mover \"{{name}}\" a un entorno",
+    "description": "Elige el entorno al que pertenece.",
+    "field": "Entorno",
+    "none": "Sin entorno",
+    "current": "(actual)",
+    "protectedNotice": "Este movimiento afecta al entorno protegido \"{{environment}}\". No se aplicará de inmediato: queda como una aprobación pendiente que otra persona debe aprobar.",
+    "confirmLabel": "Entiendo que esto necesita aprobación",
+    "request": "Solicitar movimiento",
+    "save": "Guardar",
+    "saving": "Guardando",
+    "cancel": "Cancelar",
+    "moved": "\"{{name}}\" movido.",
+    "pending": "El movimiento de \"{{name}}\" está esperando aprobación.",
+    "failed": "No se pudo mover \"{{name}}\".",
+    "frozen": "Hay un congelamiento de despliegues activo. Inténtalo de nuevo cuando termine."
+  },
+  "picker": {
+    "aria": "Elige proyecto y entorno",
+    "allProjects": "Todos los proyectos",
+    "projects": "Proyectos",
+    "environments": "Entornos",
+    "allEnvironments": "Todos los entornos"
+  }
+}

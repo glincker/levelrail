@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,7 @@ const STATUS_VARIANT = {
 } as const
 
 function SettingsForm({ initial }: { initial: StatusPageSettings }) {
+  const { t } = useTranslation('statusPage')
   const [enabled, setEnabled] = useState(initial.enabled)
   const [title, setTitle] = useState(initial.title)
   const [description, setDescription] = useState(initial.description)
@@ -59,7 +61,7 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
           },
           {
             onSuccess: () => {
-              toast.add({ title: 'Status page saved.', type: 'success' })
+              toast.add({ title: t('settings.saved'), type: 'success' })
             },
           },
         )
@@ -74,21 +76,21 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
           checked={enabled}
           onCheckedChange={setEnabled}
         />
-        Publish the status page
+        {t('settings.publish')}
       </label>
       <Field>
-        <FieldLabel htmlFor="sp-title">Title</FieldLabel>
+        <FieldLabel htmlFor="sp-title">{t('settings.title')}</FieldLabel>
         <Input
           id="sp-title"
           value={title}
-          placeholder="Service status"
+          placeholder={t('settings.titlePlaceholder')}
           onChange={(e) => {
             setTitle(e.target.value)
           }}
         />
       </Field>
       <Field>
-        <FieldLabel htmlFor="sp-desc">Description</FieldLabel>
+        <FieldLabel htmlFor="sp-desc">{t('settings.description')}</FieldLabel>
         <Input
           id="sp-desc"
           value={description}
@@ -98,20 +100,18 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
         />
       </Field>
       <Field>
-        <FieldLabel htmlFor="sp-domain">Custom domain</FieldLabel>
+        <FieldLabel htmlFor="sp-domain">
+          {t('settings.customDomain')}
+        </FieldLabel>
         <Input
           id="sp-domain"
           value={domain}
-          placeholder="status.example.com"
+          placeholder={t('settings.domainPlaceholder')}
           onChange={(e) => {
             setDomain(e.target.value)
           }}
         />
-        <FieldDescription>
-          Optional. Routed once its DNS record points here, with a TLS
-          certificate issued automatically; on that host only the status page is
-          served.
-        </FieldDescription>
+        <FieldDescription>{t('settings.domainHint')}</FieldDescription>
       </Field>
       <StatusBrandingFields value={branding} onChange={setBranding} />
       {save.isError ? (
@@ -123,29 +123,30 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
         type="submit"
         disabled={save.isPending || !brandingValid(branding)}
       >
-        {save.isPending ? 'Saving...' : 'Save'}
+        {save.isPending ? t('settings.saving') : t('settings.save')}
       </Button>
     </form>
   )
 }
 
 function PreviewCard() {
+  const { t } = useTranslation('statusPage')
   const { data, isError } = useStatusPreview()
   if (isError || !data) return null
   return (
     <section
       className="space-y-2 rounded-lg border border-border p-4"
-      aria-label="What the public sees"
+      aria-label={t('settings.previewTitle')}
     >
       <h2 className="text-sm font-semibold text-foreground">
-        What the public sees
+        {t('settings.previewTitle')}
       </h2>
       <p className="text-sm text-muted-foreground">
         {data.title}: {data.status_text}
       </p>
       {data.components.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          No components yet. Add some on the Components tab.
+          {t('settings.previewEmpty')}
         </p>
       ) : (
         <ul className="divide-y divide-border text-sm">
@@ -157,15 +158,15 @@ function PreviewCard() {
               <span>{c.name}</span>
               <span className="flex items-center gap-2 text-xs text-muted-foreground">
                 {c.uptime_90d === null
-                  ? 'no data'
-                  : `${c.uptime_90d.toFixed(2)}% uptime`}
+                  ? t('settings.noData')
+                  : t('settings.uptime', { value: c.uptime_90d.toFixed(2) })}
                 <Badge
                   variant={
                     STATUS_VARIANT[c.status as keyof typeof STATUS_VARIANT] ??
                     'muted'
                   }
                 >
-                  {c.status}
+                  {t(`status.${c.status}`, { defaultValue: c.status })}
                 </Badge>
               </span>
             </li>
@@ -177,6 +178,7 @@ function PreviewCard() {
 }
 
 export function StatusPageSettingsPanel() {
+  const { t } = useTranslation('statusPage')
   const { data, isLoading, error } = useStatusPageSettings()
   if (isLoading) {
     return <ListSkeleton rows={3} />
@@ -193,13 +195,11 @@ export function StatusPageSettingsPanel() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-sm text-primary underline underline-offset-2"
         >
-          Open the public page
+          {t('settings.openPublic')}
           <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
         </a>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          The page is off. Nothing is published until you switch it on.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('settings.off')}</p>
       )}
       <SettingsForm key={data.title + String(data.enabled)} initial={data} />
       <StatusPublicLinks settings={data} />

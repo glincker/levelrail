@@ -24,6 +24,24 @@
     "groupLabel": "Group for {{name}}",
     "noGroup": "No group"
   },
+  "components": {
+    "add": "Add component",
+    "added": "Component added.",
+    "empty": "No components yet. Add the apps, domains or health checks you want on the page.",
+    "hintApp": "App name, e.g. web",
+    "hintCheck": "https://example.com/health (probed every minute)",
+    "hintDomain": "Hostname, e.g. example.com (DNS check)",
+    "kind": "Kind",
+    "kindApp": "App",
+    "kindCheck": "HTTP check",
+    "kindDomain": "Domain",
+    "privateNote": "Only the public name is ever shown. The target stays private.",
+    "publicName": "Public name",
+    "publicNamePlaceholder": "Website",
+    "remove": "Remove",
+    "removeLabel": "Remove {{name}}",
+    "target": "Target (private)"
+  },
   "groups": {
     "add": "Add group",
     "confirmBody": "Its components stay on the page and move to the ungrouped list at the top.",
@@ -40,6 +58,46 @@
     "save": "Save name",
     "title": "Groups"
   },
+  "incidents": {
+    "affected": "Affected components",
+    "delete": "Delete",
+    "empty": "No announcements yet.",
+    "ends": "Ends",
+    "impact": "Impact on components",
+    "impacts": {
+      "critical": "critical",
+      "major": "major",
+      "minor": "minor",
+      "none": "none"
+    },
+    "kinds": {
+      "incident": "incident",
+      "maintenance": "maintenance"
+    },
+    "message": "Message",
+    "messageHint": "Supports **bold**, `code`, - lists and [links](https://example.com). Everything else is shown as plain text.",
+    "postPlaceholder": "Post an update",
+    "postUpdate": "Post update",
+    "posted": "Update posted.",
+    "publish": "Publish",
+    "published": "Announcement published.",
+    "starts": "Starts",
+    "states": {
+      "completed": "completed",
+      "identified": "identified",
+      "in_progress": "in progress",
+      "investigating": "investigating",
+      "monitoring": "monitoring",
+      "resolved": "resolved",
+      "scheduled": "scheduled"
+    },
+    "title": "Title",
+    "type": "Type",
+    "typeIncident": "Incident",
+    "typeMaintenance": "Scheduled maintenance",
+    "updateMessage": "Update message",
+    "updateStatus": "Update status"
+  },
   "links": {
     "atom": "Atom feed",
     "badge": "Status badge",
@@ -51,6 +109,39 @@
     "markdown": "Markdown snippet",
     "page": "Page",
     "title": "Public links"
+  },
+  "page": {
+    "description": "A read-only public page with component status, 90 day uptime bars, incidents and maintenance announcements. It exposes nothing but the public names and statuses you choose.",
+    "tabComponents": "Components",
+    "tabIncidents": "Incidents and maintenance",
+    "tabSettings": "Settings",
+    "tabWebhooks": "Webhooks",
+    "title": "Status page"
+  },
+  "settings": {
+    "customDomain": "Custom domain",
+    "description": "Description",
+    "domainHint": "Optional. Routed once its DNS record points here, with a TLS certificate issued automatically; on that host only the status page is served.",
+    "domainPlaceholder": "status.example.com",
+    "noData": "no data",
+    "off": "The page is off. Nothing is published until you switch it on.",
+    "openPublic": "Open the public page",
+    "previewEmpty": "No components yet. Add some on the Components tab.",
+    "previewTitle": "What the public sees",
+    "publish": "Publish the status page",
+    "save": "Save",
+    "saved": "Status page saved.",
+    "saving": "Saving...",
+    "title": "Title",
+    "titlePlaceholder": "Service status",
+    "uptime": "{{value}}% uptime"
+  },
+  "status": {
+    "degraded": "degraded",
+    "maintenance": "maintenance",
+    "operational": "operational",
+    "outage": "outage",
+    "unknown": "unknown"
   },
   "webhooks": {
     "active": "Active",

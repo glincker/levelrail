@@ -1,0 +1,326 @@
+{
+  "prefill": {
+    "loading": "Abriendo {{slug}}",
+    "notFoundTitle": "Plantilla no encontrada",
+    "notFoundDescription": "Esta instancia no tiene una plantilla llamada \"{{slug}}\". Puede estar escrita de otra forma o no estar en el catálogo de esta versión.",
+    "errorTitle": "No se pudo abrir la plantilla",
+    "browse": "Explorar plantillas"
+  },
+  "description": {
+    "label": "Notas de configuración"
+  },
+  "verified": {
+    "badge": "Verificada",
+    "hint": "Pasó la última prueba de humo en vivo: arrancó y su comprobación de salud fue exitosa.",
+    "filter": "Solo verificadas"
+  },
+  "detail": {
+    "back": "Volver a plantillas",
+    "ramRecommended": "~{{size}} de RAM recomendados",
+    "needsGpu": "Requiere GPU NVIDIA",
+    "facts": {
+      "title": "Datos",
+      "images": "Imágenes de Docker",
+      "docs": "Documentación oficial",
+      "docsLink": "Abrir documentación",
+      "memory": "Memoria recomendada",
+      "ports": "Puertos expuestos",
+      "volumes": "Volúmenes",
+      "registryLink": "{{image}} en {{registry}}"
+    },
+    "deployed": {
+      "title": "Qué se despliega",
+      "description": "Cada servicio de abajo se crea a partir del archivo compose de la plantilla.",
+      "image": "Imagen",
+      "port": "Puerto {{port}}",
+      "roleMain": "Servicio principal",
+      "roleSupport": "Servicio de apoyo",
+      "dependsOn": "Inicia después de {{names}}",
+      "loading": "Leyendo la plantilla",
+      "unavailable": "El desglose de servicios no está disponible para esta plantilla por ahora. Desplegarla sigue funcionando."
+    },
+    "env": {
+      "title": "Variables de entorno",
+      "description": "Solo los nombres. Los valores se definen al desplegar.",
+      "required": "Tú los indicas",
+      "generated": "Generadas para ti",
+      "optional": "Opcional, tiene valor por defecto"
+    },
+    "related": {
+      "title": "Más en {{category}}"
+    },
+    "deploy": {
+      "title": "Despliega esta plantilla",
+      "now": "Desplegar ahora",
+      "deploying": "Desplegando...",
+      "configure": "Configurar y desplegar",
+      "trial": "Se despliega como una instancia de prueba que puedes detener y eliminar cuando quieras desde su propia página.",
+      "configureHint": "Esta plantilla necesita algunos valores tuyos antes de poder iniciar."
+    }
+  },
+  "page": {
+    "title": "Plantillas de servicio",
+    "description": "Aplicaciones y bases de datos listas para usar. Elige una para ver qué obtienes antes de desplegar.",
+    "new": "Nuevo desde una plantilla"
+  },
+  "marketplace": {
+    "search": {
+      "label": "Buscar plantillas",
+      "placeholder": "Busca entre {{count}} plantillas por nombre o descripción"
+    },
+    "sort": {
+      "label": "Ordenar",
+      "relevance": "Relevancia",
+      "name": "Nombre, de A a Z",
+      "memory": "Las más ligeras primero"
+    },
+    "density": {
+      "label": "Diseño",
+      "comfortable": "Tarjetas",
+      "compact": "Lista"
+    },
+    "count": "{{shown}} de {{total}} plantillas",
+    "categories": {
+      "label": "Categorías de plantillas",
+      "filterLabel": "Filtrar plantillas por categoría",
+      "all": "Todas las plantillas",
+      "heading": "Categorías"
+    },
+    "featured": {
+      "title": "Kits de inicio",
+      "subtitle": "Stacks multiservicio funcionales. Despliega uno y luego cambia por tus propias imágenes.",
+      "hide": "Ocultar kits de inicio",
+      "show": "Mostrar kits de inicio"
+    },
+    "card": {
+      "deploy": "Desplegar",
+      "deployNeedsSetup": "Desplegar (requiere configuración)",
+      "deploying": "Desplegando...",
+      "ram": "~{{size}} de RAM",
+      "ramLabel": "Memoria recomendada {{size}}",
+      "services": "{{count}} servicios",
+      "gpu": "Requiere GPU",
+      "details": "Ver {{name}}",
+      "database": "Requiere base de datos",
+      "volume": "Guarda datos"
+    },
+    "empty": {
+      "title": "Ninguna plantilla coincide",
+      "filtered": "Nada en {{category}} coincide con \"{{query}}\". Prueba una búsqueda más corta u otra categoría.",
+      "filteredNoQuery": "Aún no hay plantillas en {{category}}.",
+      "clear": "Borrar filtros",
+      "catalogTitle": "El catálogo está vacío",
+      "catalogDescription": "No hay plantillas disponibles por ahora. Puedes iniciar un servicio nuevo desde cero."
+    }
+  },
+  "requirements": {
+    "title": "Qué necesita esto y qué añade Levelrail",
+    "level": {
+      "standard": "Estándar",
+      "review": "Revisar",
+      "elevated": "Acceso elevado"
+    },
+    "needsTitle": "Qué necesita",
+    "needsNone": "Nada más allá de un contenedor estándar.",
+    "addsTitle": "Qué añade Levelrail",
+    "showAll": "Mostrar detalles",
+    "hideAll": "Ocultar detalles",
+    "services": "Servicios: {{services}}",
+    "elevatedWarning": "Esta plantilla pide acceso elevado al host. Levelrail nunca lo concede automáticamente.",
+    "acknowledge": "Entiendo y acepto el acceso elevado indicado arriba",
+    "acknowledgeRequired": "Reconoce el acceso elevado para desplegar.",
+    "finding": {
+      "privileged": "Se ejecuta en modo privilegiado, lo que da al contenedor acceso casi root al host",
+      "docker_socket": "Monta el socket de Docker, lo que equivale a root en el host",
+      "host_network": "Usa la red del host y omite la red de la aplicación y el ingress",
+      "host_namespace": "Comparte un espacio de nombres de procesos, IPC o usuarios del host",
+      "cap_add": "Añade capacidades extra de Linux",
+      "devices": "Pasa dispositivos del host al contenedor",
+      "security_opt": "Cambia las opciones de seguridad del contenedor",
+      "host_mount": "Monta un directorio del host",
+      "unpinned_image": "La imagen no está fijada a una etiqueta de versión, así que un nuevo despliegue puede traer código distinto",
+      "published_ports": "Publica puertos directamente en el host",
+      "required_secrets": "Debes proporcionar uno o más secretos antes de poder desplegar",
+      "generated_secrets": "Las contraseñas y claves se generan al desplegar",
+      "no_healthcheck": "Sin comprobación de salud, así que el despliegue se juzga solo porque el proceso inicie",
+      "persistent_data": "Guarda datos en volúmenes con nombre",
+      "gpu": "Reserva una GPU NVIDIA",
+      "unparsed": "No se pudo analizar el cuerpo de Compose, revísalo antes de desplegar"
+    },
+    "protection": {
+      "https_ingress": "HTTPS automático y un escudo de ingress frente a cada dominio",
+      "secret_masking": "Los secretos se generan, se guardan cifrados y se ocultan en los registros y la interfaz",
+      "volume_backups": "Los volúmenes con nombre se pueden respaldar y restaurar",
+      "health_gated_deploy": "Los despliegues dependen de la comprobación de salud antes de cambiar el tráfico",
+      "rollback": "Rollback en un paso a la revisión anterior",
+      "exposure_report": "El informe de exposición muestra qué es accesible desde fuera",
+      "firewall": "Reglas de firewall del host gestionadas para los puertos publicados"
+    }
+  },
+  "banner": {
+    "description": "Elige del catálogo, define algunos valores y la aplicación se ejecuta en tu propio servidor.",
+    "diagram": {
+      "catalog": "catálogo",
+      "oneClick": "un clic",
+      "server": "tu servidor"
+    }
+  },
+  "what": {
+    "title": "Qué obtendrás",
+    "description_one": "Un servicio, listo para ejecutarse.",
+    "description_other": "{{count}} servicios, listos para ejecutarse juntos.",
+    "url": "Dirección web",
+    "urlValue": "{{slug}}.<dominio de tu servidor>",
+    "ports": "Puertos",
+    "portsNone": "Sin puerto web",
+    "resources": "Memoria y CPU",
+    "memory": "Unos {{size}} de memoria",
+    "memoryNone": "Sin límite de memoria definido",
+    "cpu": "Límite de {{count}} CPU",
+    "cpuShared": "CPU compartida",
+    "volumes": "Almacenamiento",
+    "volumesNone": "Sin almacenamiento persistente",
+    "dependencies": "Dependencias",
+    "databaseCreated": "Se crea una base de datos {{engines}} para ti",
+    "dependenciesNone": "Ninguna, se ejecuta por sí sola",
+    "backups": "Respaldos",
+    "backupsVolumes": "El almacenamiento se puede respaldar y restaurar desde la página de Respaldos",
+    "backupsNone": "Nada que respaldar"
+  },
+  "form": {
+    "title": "Configurar y desplegar",
+    "descriptionRequired": "Completa los valores obligatorios y despliega. Todo lo demás tiene un valor por defecto razonable.",
+    "descriptionNone": "No se requiere nada. Despliega ahora o ajusta antes la configuración opcional.",
+    "generated": {
+      "title": "Generados para ti",
+      "placeholder": "Se crea al desplegar",
+      "reveal": "Mostrar",
+      "hide": "Ocultar",
+      "regenerate": "Regenerar",
+      "hint": "Se guarda cifrado y se reutiliza en cada nuevo despliegue."
+    },
+    "domain": {
+      "title": "Dirección",
+      "auto": "Dirección automática",
+      "custom": "Usar mi propio dominio",
+      "autoHint": "Obtienes una dirección HTTPS funcional de inmediato. Añade tu propio dominio después si quieres.",
+      "customHint": "Apunta su DNS a este servidor y HTTPS se configura por ti.",
+      "none": "Esta plantilla no tiene una dirección web que configurar.",
+      "label": "Dominio para {{service}} (puerto {{port}})",
+      "placeholder": "app.example.com",
+      "hint": "Opcional. Déjalo vacío para usar la dirección automática."
+    },
+    "optional": {
+      "title": "Configuración opcional",
+      "count_one": "({{count}} ajuste)",
+      "count_other": "({{count}} ajustes)"
+    },
+    "name": {
+      "label": "Nombre de la aplicación",
+      "hint": "Letras minúsculas, dígitos y guiones. Déjalo vacío para que se elija uno por ti."
+    },
+    "errors": {
+      "required": "{{field}} es obligatorio",
+      "name": "Usa letras minúsculas, dígitos y guiones, empezando con una letra.",
+      "domain": "Ingresa un dominio válido como app.example.com.",
+      "summary_one": "Corrige {{count}} campo para continuar.",
+      "summary_other": "Corrige {{count}} campos para continuar."
+    },
+    "summary": "{{name}} se ejecutará como {{app}} en {{address}}. Se generan {{generated}} secretos para ti.",
+    "summaryAuto": "una dirección automática",
+    "deploy": "Desplegar",
+    "deploying": "Desplegando...",
+    "success": "{{app}} desplegada"
+  },
+  "card": {
+    "ramRecommended": "~{{size}} de RAM recomendados",
+    "needsGpu": "Requiere GPU NVIDIA",
+    "deployNow": "Desplegar ahora",
+    "deployNowSetup": "Desplegar ahora (requiere configuración)",
+    "deploying": "Desplegando...",
+    "searchPlaceholder": "Buscar plantillas...",
+    "searchLabel": "Buscar plantillas",
+    "noMatch": "Ninguna plantilla coincide con “{{search}}”."
+  },
+  "install": {
+    "title": "Qué instala esto",
+    "description_one": "Se creará un servicio.",
+    "description_other": "Se crearán {{count}} servicios.",
+    "volumes": "Volúmenes",
+    "env": "Variables de entorno",
+    "pin": {
+      "digest": "Fijada por digest",
+      "tag": "Etiqueta de versión",
+      "floating": "Etiqueta flotante"
+    },
+    "envKind": {
+      "generated": "generada",
+      "required": "tú la indicas",
+      "optional": "opcional"
+    }
+  },
+  "trust": {
+    "digest_one": "{{count}} imagen fijada por digest",
+    "digest_other": "{{count}} imágenes fijadas por digest",
+    "digestHint": "El contenido exacto de la imagen está fijo",
+    "tag_one": "{{count}} imagen con etiqueta de versión",
+    "tag_other": "{{count}} imágenes con etiqueta de versión",
+    "tagHint": "Una etiqueta de versión aún puede volver a publicarse en origen",
+    "floating_one": "{{count}} imagen con etiqueta flotante",
+    "floating_other": "{{count}} imágenes con etiqueta flotante",
+    "floatingHint": "La etiqueta latest o ninguna etiqueta: la imagen puede cambiar entre despliegues"
+  },
+  "stackFile": {
+    "title": "Ver como archivo de stack",
+    "preview": "Vista previa del archivo compose que despliega esta plantilla",
+    "download": "Descargar",
+    "label": "Archivo compose de la plantilla"
+  },
+  "result": {
+    "title": "{{name}} se está desplegando",
+    "deployFailed": "El despliegue falló",
+    "address": "Dirección",
+    "addressPending": "La dirección aparece cuando la aplicación esté en ejecución.",
+    "credentials": "Credenciales generadas",
+    "credentialsHint": "Creadas para esta aplicación. Se muestran solo cuando lo pides y luego vuelven a ocultarse.",
+    "noCredentials": "Esta plantilla no generó credenciales.",
+    "reveal": "Mostrar {{key}}",
+    "hide": "Ocultar {{key}}",
+    "copy": "Copiar {{key}}",
+    "copied": "Copiado",
+    "hidesIn": "Se oculta en {{seconds}} s",
+    "revealDenied": "Mostrar valores requiere acceso de propietario o administrador, o está desactivado para esta aplicación.",
+    "openEnvironment": "Abrir Entorno",
+    "nextSteps": "Siguientes pasos",
+    "openApp": "Abrir aplicación",
+    "viewLogs": "Ver registros",
+    "close": "Cerrar",
+    "accessDetails": "Detalles de acceso",
+    "toastDeployed": "\"{{name}}\" desplegada",
+    "toastRunning_one": "{{count}} servicio en ejecución ahora.",
+    "toastRunning_other": "{{count}} servicios en ejecución ahora.",
+    "services_one": "{{count}} servicio iniciando",
+    "services_other": "{{count}} servicios iniciando"
+  },
+  "access": {
+    "title": "Detalles de acceso",
+    "description": "Dirección, credenciales generadas y notas de configuración de esta aplicación.",
+    "open": "Abrir detalles de acceso"
+  },
+  "wizard": {
+    "deployedUnder_one": "{{count}} servicio desplegado bajo \"{{app}}\".",
+    "deployedUnder_other": "{{count}} servicios desplegados bajo \"{{app}}\".",
+    "created": "Creado",
+    "view": "Ver",
+    "done": "Listo",
+    "back": "Volver a plantillas",
+    "ramRecommended": "RAM recomendada",
+    "documentation": "Documentación",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej. mi-stack",
+    "nameHint": "Agrupa todos los servicios que define esta plantilla bajo un solo nombre de aplicación.",
+    "composeHint": "Rellenado desde la plantilla. Edítalo si lo necesitas antes de desplegar.",
+    "deploying": "Desplegando...",
+    "deploy": "Desplegar"
+  }
+}

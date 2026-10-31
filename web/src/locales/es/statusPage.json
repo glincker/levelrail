@@ -24,6 +24,24 @@
     "groupLabel": "Grupo de {{name}}",
     "noGroup": "Sin grupo"
   },
+  "components": {
+    "add": "Añadir componente",
+    "added": "Componente añadido.",
+    "empty": "Aún no hay componentes. Añade las apps, dominios o comprobaciones de salud que quieras en la página.",
+    "hintApp": "Nombre de la app, p. ej. web",
+    "hintCheck": "https://example.com/health (se sondea cada minuto)",
+    "hintDomain": "Nombre de host, p. ej. example.com (comprobación DNS)",
+    "kind": "Tipo",
+    "kindApp": "App",
+    "kindCheck": "Comprobación HTTP",
+    "kindDomain": "Dominio",
+    "privateNote": "Solo se muestra el nombre público. El destino permanece privado.",
+    "publicName": "Nombre público",
+    "publicNamePlaceholder": "Sitio web",
+    "remove": "Quitar",
+    "removeLabel": "Quitar {{name}}",
+    "target": "Destino (privado)"
+  },
   "groups": {
     "add": "Añadir grupo",
     "confirmBody": "Sus componentes permanecen en la página y pasan a la lista sin agrupar, al principio.",
@@ -40,6 +58,46 @@
     "save": "Guardar nombre",
     "title": "Grupos"
   },
+  "incidents": {
+    "affected": "Componentes afectados",
+    "delete": "Eliminar",
+    "empty": "Aún no hay avisos.",
+    "ends": "Fin",
+    "impact": "Impacto en los componentes",
+    "impacts": {
+      "critical": "crítico",
+      "major": "mayor",
+      "minor": "menor",
+      "none": "ninguno"
+    },
+    "kinds": {
+      "incident": "incidente",
+      "maintenance": "mantenimiento"
+    },
+    "message": "Mensaje",
+    "messageHint": "Admite **negrita**, `código`, listas con - y [enlaces](https://example.com). Todo lo demás se muestra como texto sin formato.",
+    "postPlaceholder": "Publica una actualización",
+    "postUpdate": "Publicar actualización",
+    "posted": "Actualización publicada.",
+    "publish": "Publicar",
+    "published": "Aviso publicado.",
+    "starts": "Inicio",
+    "states": {
+      "completed": "completado",
+      "identified": "identificado",
+      "in_progress": "en curso",
+      "investigating": "investigando",
+      "monitoring": "monitoreando",
+      "resolved": "resuelto",
+      "scheduled": "programado"
+    },
+    "title": "Título",
+    "type": "Tipo",
+    "typeIncident": "Incidente",
+    "typeMaintenance": "Mantenimiento programado",
+    "updateMessage": "Mensaje de la actualización",
+    "updateStatus": "Estado de la actualización"
+  },
   "links": {
     "atom": "Feed Atom",
     "badge": "Insignia de estado",
@@ -51,6 +109,39 @@
     "markdown": "Fragmento de Markdown",
     "page": "Página",
     "title": "Enlaces públicos"
+  },
+  "page": {
+    "description": "Una página pública de solo lectura con el estado de los componentes, barras de disponibilidad de 90 días, incidentes y avisos de mantenimiento. Solo expone los nombres y estados públicos que tú elijas.",
+    "tabComponents": "Componentes",
+    "tabIncidents": "Incidentes y mantenimiento",
+    "tabSettings": "Ajustes",
+    "tabWebhooks": "Webhooks",
+    "title": "Página de estado"
+  },
+  "settings": {
+    "customDomain": "Dominio personalizado",
+    "description": "Descripción",
+    "domainHint": "Opcional. Se enruta cuando su registro DNS apunta aquí, con un certificado TLS emitido automáticamente; en ese host solo se sirve la página de estado.",
+    "domainPlaceholder": "status.example.com",
+    "noData": "sin datos",
+    "off": "La página está desactivada. No se publica nada hasta que la actives.",
+    "openPublic": "Abrir la página pública",
+    "previewEmpty": "Aún no hay componentes. Añade algunos en la pestaña Componentes.",
+    "previewTitle": "Lo que ve el público",
+    "publish": "Publicar la página de estado",
+    "save": "Guardar",
+    "saved": "Página de estado guardada.",
+    "saving": "Guardando...",
+    "title": "Título",
+    "titlePlaceholder": "Estado del servicio",
+    "uptime": "{{value}}% de disponibilidad"
+  },
+  "status": {
+    "degraded": "degradado",
+    "maintenance": "mantenimiento",
+    "operational": "operativo",
+    "outage": "caído",
+    "unknown": "desconocido"
   },
   "webhooks": {
     "active": "Activo",
