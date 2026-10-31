@@ -167,3 +167,26 @@ func TestV2WatchResumeFiltersPerObject(t *testing.T) {
 		t.Fatalf("events = [%s], want %s", got, want)
 	}
 }
+
+func TestV2ListFieldSelector(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedV2Apps(t, db)
+
+	get := func(q string) (int, v2List) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v2/apps?fieldSelector="+q, ""))
+		var l v2List
+		_ = json.Unmarshal(rec.Body.Bytes(), &l)
+		return rec.Code, l
+	}
+	if code, l := get("metadata.name%3Dworker"); code != http.StatusOK || len(l.Items) != 1 || l.Items[0].Metadata.Name != "worker" {
+		t.Fatalf("name match = %d %+v", code, l)
+	}
+	if code, l := get("metadata.name!%3Dworker"); code != http.StatusOK || len(l.Items) == 0 {
+		t.Fatalf("name exclude = %d %+v", code, l)
+	}
+	if code, _ := get("spec.image%3Dx"); code != http.StatusBadRequest {
+		t.Fatalf("unsupported field = %d", code)
+	}
+}
