@@ -81,6 +81,7 @@
               "installing",
               "container-runtimes",
               "install-on-cloud",
+              "install-on-oracle-cloud",
               "local-development",
               "getting-started",
               "quickstart-one-command",
@@ -115,6 +116,7 @@
             "group": "Guides",
             "pages": [
               "guides/index",
+              "game-servers",
               "guides/coolify-vs-levelrail",
               "guides/self-host-postgres-with-backups",
               "guides/zero-downtime-deploys-without-kubernetes",

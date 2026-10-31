@@ -148,6 +148,10 @@ irm https://levelrail.com/install-cli.ps1 | iex
 
 The first two work on any supported platform, the third is for macOS and Linux, the last for Windows PowerShell.
 
+### Run it on a free Arm VM
+
+Levelrail's release binaries and images are built for `arm64`, so it runs on an Oracle Cloud Always Free Arm VM. You open two firewalls (the cloud network rules and the host firewall), then run the same installer. Oracle sets the free limits and its idle-instance rule, and both can change. Read the [Oracle Cloud guide](docs/install-on-oracle-cloud.md) and Oracle's [Always Free page](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm) first. App images vary on Arm, so check an image's platforms before installing a template.
+
 ## How it works
 
 ```mermaid
