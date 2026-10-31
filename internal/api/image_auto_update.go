@@ -218,6 +218,10 @@ func (rt *Router) handleRotateImageUpdateWebhook(w http.ResponseWriter, r *http.
 // wrong token and opted-out all answer the same 404 so the URL leaks nothing.
 func (rt *Router) handleImageUpdateWebhook(w http.ResponseWriter, r *http.Request) {
 	name, token := r.PathValue("name"), r.PathValue("token")
+	if ok, retry := rt.buildHookLimits().failures.allow("image-probe:" + clientIP(r)); !ok {
+		tooManyBuildHookRequests(w, retry)
+		return
+	}
 	u, err := rt.imageAutoUpdates.GetImageAutoUpdate(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: image update webhook", err, slog.String("name", name))

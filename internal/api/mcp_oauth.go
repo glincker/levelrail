@@ -7,7 +7,6 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -104,9 +103,6 @@ func (rt *Router) mcpOAuthAudienceOK(ctx context.Context, rec *store.APIToken) b
 		return true
 	}
 	g, err := st.GetMCPOAuthGrantByToken(ctx, rec.ID)
-	if errors.Is(err, store.ErrMCPOAuthNotFound) {
-		return true
-	}
 	if err != nil || g.Revoked {
 		return false
 	}

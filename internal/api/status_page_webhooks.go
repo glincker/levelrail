@@ -6,6 +6,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/statuspage"
@@ -97,11 +99,32 @@ func (rt *Router) handleListStatusWebhooks(w http.ResponseWriter, r *http.Reques
 		rt.webhookError(w, "list", err)
 		return
 	}
+	full := rt.callerHasAbility(r, AbilityWrite)
 	out := make([]statusWebhookResource, 0, len(list))
 	for _, x := range list {
-		out = append(out, toStatusWebhookResource(x))
+		res := toStatusWebhookResource(x)
+		if !full {
+			res.URL = redactWebhookURL(res.URL)
+		}
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// redactWebhookURL keeps scheme and host and masks the path, which often carries a bearer token.
+func redactWebhookURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return "***"
+	}
+	if p := strings.Trim(u.Path, "/"); p != "" {
+		tail := ""
+		if len(p) > 8 {
+			tail = p[len(p)-4:]
+		}
+		return u.Scheme + "://" + u.Host + "/***" + tail
+	}
+	return u.Scheme + "://" + u.Host
 }
 
 func (rt *Router) handleCreateStatusWebhook(w http.ResponseWriter, r *http.Request) {
