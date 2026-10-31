@@ -83,6 +83,8 @@ type triggerBuildBuildInput struct {
 	// meaningless field" pattern Path's own doc comment establishes for
 	// railpack.
 	Args map[string]string `json:"args,omitempty"`
+	// StaticSPA serves index.html for unknown paths; for a static build it defaults to the connected git source's setting.
+	StaticSPA bool `json:"static_spa,omitempty"`
 }
 
 // triggerBuildRequest is POST /api/v1/apps/{name}/builds's body: a git
@@ -428,6 +430,11 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	// reach. Checked once, in request scope, before the goroutine outlives r.
 	allowPrivateRepoAuth := rt.callerHasAbility(r, AbilityReadSensitive) && gitHubAppTokenAllowed(r.Context())
 
+	if buildType == spec.BuildStatic && !req.Build.StaticSPA {
+		if gs, gerr := rt.gitSources.GetGitSource(r.Context(), name); gerr == nil {
+			req.Build.StaticSPA = gs.StaticSPA
+		}
+	}
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	source := store.DeployAttemptSourceManual
 	attemptCtx := r.Context()
