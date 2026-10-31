@@ -331,5 +331,12 @@
     "title": "Configuración",
     "description": "Configuración de la cuenta, el equipo y la plataforma.",
     "jumpTo": "Ir a un área"
+  },
+  "oauthPage": {
+    "tenantId": {
+      "label": "ID de directorio (inquilino)",
+      "hint": "Obligatorio para que las cuentas nuevas se creen desde el inicio de sesión de Microsoft. Sin él, solo pueden entrar las identidades que ya están vinculadas.",
+      "invalid": "El ID de inquilino debe ser un GUID"
+    }
   }
 }
