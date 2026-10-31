@@ -119,6 +119,8 @@ type Options struct {
 	// OmitOutputSchemas drops outputSchema from tools/list. Results still
 	// carry structured content; only the schema advertisement is left out.
 	OmitOutputSchemas bool
+	// AuditSink, when set, is told about every tools/call (names only).
+	AuditSink AuditSink
 
 	probe *abilityProbe
 }

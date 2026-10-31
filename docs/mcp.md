@@ -157,7 +157,7 @@ Environment:
 | `APP_MCP_HTTP_CALL_TIMEOUT_SECONDS` | 30 | Time limit for one tool's REST call |
 | `APP_MCP_HTTP_ALLOWED_ORIGINS` | empty | Extra browser origins, comma separated. The dashboard URL is always allowed |
 
-A request with an `Origin` header outside that list gets 403, which blocks DNS rebinding and browser abuse. Clients that send no `Origin` are unaffected. Each tool call writes an audit row with action `mcp.tool_call` holding the tool name, token id, outcome and argument names, never argument values.
+A request with an `Origin` header outside that list gets 403, which blocks DNS rebinding and browser abuse. Clients that send no `Origin` are unaffected. Each tool call writes an audit row with action `mcp.tool_call` holding the tool name, token id, outcome and argument names, never argument values. The server emits that event for every tool call through one audit hook (`mcptools.Options.AuditSink`), including calls that are denied or fail validation, and a registry test fails when any tool skips it. The local stdio server has no sink wired yet, so its read-only calls are not in the audit log; only the API requests behind write tools are.
 
 ## OAuth for remote clients
 
