@@ -107,6 +107,7 @@ type postureInput struct {
 	Strict            bool
 	OpenSAML          []string
 	SAMLKnown         bool
+	MicrosoftNoTenant bool
 }
 
 func pass(id, sev string) postureItem {
@@ -219,6 +220,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		hstsRule(in),
 		shieldRule(in),
 		samlDomainsRule(in),
+		microsoftTenantRule(in),
 		agentsRule(in),
 		anomalyRule(in),
 	}
@@ -378,6 +380,14 @@ func samlDomainsRule(in postureInput) postureItem {
 		return pass(id, postureMedium)
 	}
 	return failing(id, postureMedium, in.OpenSAML, linkFix("/settings/sso"))
+}
+
+func microsoftTenantRule(in postureInput) postureItem {
+	const id = "microsoft_no_tenant"
+	if in.MicrosoftNoTenant {
+		return failing(id, postureMedium, nil, linkFix("/settings/sso"))
+	}
+	return pass(id, postureMedium)
 }
 
 func shieldRule(in postureInput) postureItem {

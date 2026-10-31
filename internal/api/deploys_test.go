@@ -17,6 +17,7 @@ import (
 
 // TestHandleTriggerDeploy_RunningAttemptRejected guards against a rollback being overwritten when a running build finishes.
 func TestHandleTriggerDeploy_RunningAttemptRejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -48,6 +49,7 @@ func TestHandleTriggerDeploy_RunningAttemptRejected(t *testing.T) {
 }
 
 func TestHandleTriggerDeploy(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -98,6 +100,7 @@ func TestHandleTriggerDeploy(t *testing.T) {
 
 // TestHandleTriggerDeploy_ProtectedEnvironment checks a protected deploy is 409 without confirm, then becomes a pending approval.
 func TestHandleTriggerDeploy_ProtectedEnvironment(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -158,6 +161,7 @@ func TestHandleTriggerDeploy_ProtectedEnvironment(t *testing.T) {
 
 // TestHandleTriggerDeploy_RecordsDeployAttempt checks the image-tag deploy records a succeeded attempt, since no build runs.
 func TestHandleTriggerDeploy_RecordsDeployAttempt(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -213,6 +217,7 @@ func TestHandleTriggerDeploy_RecordsDeployAttempt(t *testing.T) {
 }
 
 func TestHandleDeployHistory(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -263,6 +268,7 @@ func TestHandleDeployHistory(t *testing.T) {
 
 // The ingress controller reports the unreachable state, not the app's own controller, so handleDeployHistory injects it.
 func TestHandleDeployHistory_CrossNodeDomainApp_AddsUnreachableCondition(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -315,6 +321,7 @@ func TestHandleDeployHistory_CrossNodeDomainApp_AddsUnreachableCondition(t *test
 }
 
 func TestHandleAutoRollback_GetDefaultOffAndSetToggles(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -368,6 +375,7 @@ func TestHandleAutoRollback_GetDefaultOffAndSetToggles(t *testing.T) {
 }
 
 func TestHandleAutoRollbackSLOBurn_GetDefaultOffAndSetModes(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -417,6 +425,7 @@ func TestHandleAutoRollbackSLOBurn_GetDefaultOffAndSetModes(t *testing.T) {
 }
 
 func TestApplicationControllerName(t *testing.T) {
+	t.Parallel()
 	if got, want := applicationControllerName("web"), "application/web"; got != want {
 		t.Errorf("applicationControllerName(%q) = %q, want %q", "web", got, want)
 	}
@@ -429,6 +438,7 @@ func (missingImageResolver) ResolveImage(_ context.Context, ref string, _ *docke
 }
 
 func TestHandleTriggerDeploy_MissingImageFailsPull(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithDeploySafety(db, missingImageResolver{}))
 	cookie := loginTestSession(t, rt, db)
@@ -447,6 +457,7 @@ func TestHandleTriggerDeploy_MissingImageFailsPull(t *testing.T) {
 }
 
 func TestHandleTriggerDeploy_ReturnsCreatedAttemptID(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

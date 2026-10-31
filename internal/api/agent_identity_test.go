@@ -42,6 +42,7 @@ func auditEntriesFor(t *testing.T, rt *Router, cookieReq func(string) *http.Requ
 }
 
 func TestAgentTokens_ScopeAndAudit(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.UpdateAIControlSettings(context.Background(), "operate", []string{"custom"}, "test"); err != nil {
@@ -104,6 +105,7 @@ func TestAgentTokens_ScopeAndAudit(t *testing.T) {
 }
 
 func TestCreateToken_AgentValidation(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	tests := []struct {

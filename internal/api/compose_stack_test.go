@@ -54,6 +54,7 @@ func composeDo(t *testing.T, rt *Router, cookie *http.Cookie, method, path, body
 }
 
 func TestComposeStack_DeployStatusRollbackDown(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -132,6 +133,7 @@ func TestComposeStack_DeployStatusRollbackDown(t *testing.T) {
 }
 
 func TestComposeStack_RollbackWithoutEarlierRevision(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/apps/solo/compose", stackV2, http.StatusOK)
@@ -139,6 +141,7 @@ func TestComposeStack_RollbackWithoutEarlierRevision(t *testing.T) {
 }
 
 func TestComposeStackPhase(t *testing.T) {
+	t.Parallel()
 	svc := func(ready string, suspended bool) composeServiceStatus {
 		return composeServiceStatus{Ready: ready, Suspended: suspended}
 	}
@@ -166,6 +169,7 @@ func TestComposeStackPhase(t *testing.T) {
 }
 
 func TestPreviewCompose(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		body      string

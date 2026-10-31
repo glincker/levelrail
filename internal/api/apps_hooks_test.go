@@ -12,6 +12,7 @@ import (
 )
 
 func TestAppHookRunsRoute_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/apps/web/hook-runs", nil)
@@ -23,6 +24,7 @@ func TestAppHookRunsRoute_RequiresAuth(t *testing.T) {
 }
 
 func TestHandleGetAppHookRuns_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -34,6 +36,7 @@ func TestHandleGetAppHookRuns_NotFound(t *testing.T) {
 }
 
 func TestHandleGetAppHookRuns_NoneRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -57,6 +60,7 @@ func TestHandleGetAppHookRuns_NoneRecorded(t *testing.T) {
 }
 
 func TestHandleGetAppHookRuns_BothRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -93,6 +97,7 @@ func TestHandleGetAppHookRuns_BothRecorded(t *testing.T) {
 // (apps.go) is a settable field, not response-only: a PUT that adds
 // hooks must be readable back on the very next GET.
 func TestAppResource_Hooks_RoundTripsThroughUpdate(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -121,6 +126,7 @@ func TestAppResource_Hooks_RoundTripsThroughUpdate(t *testing.T) {
 // own new check: a non-nil hooks block with neither command set can only
 // be a caller mistake.
 func TestAppResource_Hooks_BothEmpty_Rejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

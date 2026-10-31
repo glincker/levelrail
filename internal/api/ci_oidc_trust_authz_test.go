@@ -11,6 +11,7 @@ import (
 )
 
 func TestCITrustCreateNeedsDeployAndRootForCustomIssuer(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -62,6 +63,7 @@ func TestCITrustCreateNeedsDeployAndRootForCustomIssuer(t *testing.T) {
 }
 
 func TestCITrustUniquePerProviderAndIssuer(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")

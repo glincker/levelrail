@@ -161,13 +161,16 @@ func TestOAuthGoldenAllProvidersSignIn(t *testing.T) {
 	ids := map[string]fakeIdentity{
 		"google":    {Sub: "g-1", Email: "g@example.test", Name: "G", Verified: true},
 		"github":    {Sub: "4242", Email: "gh@example.test", Name: "GH", Verified: true},
-		"microsoft": {Sub: "ms-object-id", Email: "ms@example.test", Name: "MS", Verified: false},
+		"microsoft": {Sub: "ms-object-id", Email: "ms@example.test", Name: "MS", Verified: false, Tenant: msTenantA},
 		"oidc":      {Sub: "o-1", Email: "o@example.test", Name: "O", Verified: true},
 	}
 	for _, provider := range allOAuthProviders {
 		t.Run(provider, func(t *testing.T) {
 			h := newOAuthHarness(t, modeLibrary)
 			h.enable(provider, "")
+			if provider == "microsoft" {
+				h.setTenant(msTenantA, "")
+			}
 			rec := h.signIn(provider, ids[provider])
 			if rec.Header().Get("Location") != "/oauth/complete" {
 				t.Fatalf("location = %q, want /oauth/complete", rec.Header().Get("Location"))

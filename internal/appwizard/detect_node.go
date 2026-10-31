@@ -42,6 +42,29 @@ func (n *nodePkg) depPrefix(prefix string) bool {
 	return strings.Contains(n.raw, `"`+prefix)
 }
 
+var (
+	astroServerRe  = regexp.MustCompile(`output\s*:\s*['"]server['"]`)
+	svelteCfgPages = regexp.MustCompile(`pages\s*:\s*['"]([^'"]+)['"]`)
+	nodeStartRe    = regexp.MustCompile(`(^|\s)(node|nodemon|tsx|ts-node|bun)\s|server\.(js|ts|mjs|cjs)`)
+)
+
+// astroAdapters are the Astro adapters that add a server runtime.
+var astroAdapters = []string{"@astrojs/node", "@astrojs/vercel", "@astrojs/cloudflare", "@astrojs/netlify", "@astrojs/deno"}
+
+// hasServerRuntime is true when a frontend project also ships its own server.
+func (n *nodePkg) hasServerRuntime() bool {
+	for _, d := range []string{"express", "fastify", "koa", "@hono/node-server", "@nestjs/core"} {
+		if n.dep(d) {
+			return true
+		}
+	}
+	return n.parsed && nodeStartRe.MatchString(n.pkg.Scripts["start"])
+}
+
+func (n *nodePkg) clientRouter() bool {
+	return n.dep("react-router") || n.dep("react-router-dom") || n.dep("vue-router")
+}
+
 var nextOutputRe = regexp.MustCompile(`output\s*:\s*['"](export|standalone)['"]`)
 
 func lockfile(f *files) (pm, file string) {
@@ -92,11 +115,13 @@ func detectNode(f *files) (found, bool) {
 		}
 	}
 
+	static := false
 	switch {
 	case n.dep("next"):
 		g.framework, g.buildType = "Next.js", buildRailpack
 		g.why("package.json", "package.json has next in dependencies")
 		nextDetails(f, &g)
+		static = g.output != "" && g.start == ""
 		setPort(3000, "Next.js default port")
 	case n.dep("nuxt") || n.dep("nuxt3"):
 		g.framework, g.buildType = "Nuxt", buildRailpack
@@ -110,7 +135,13 @@ func detectNode(f *files) (found, bool) {
 		g.build = orStr(g.build, "vite build")
 		if n.dep("@sveltejs/adapter-static") {
 			g.output, g.start = "build", ""
-			g.why("package.json", "@sveltejs/adapter-static is installed, so the site is prerendered into build/")
+			if cfg, ok := f.text("svelte.config.js"); ok {
+				if m := svelteCfgPages.FindStringSubmatch(cfg); m != nil {
+					g.output = strings.Trim(m[1], "/")
+				}
+			}
+			static = true
+			g.why("package.json", "@sveltejs/adapter-static is installed, so the site is prerendered into "+g.output+"/")
 		} else {
 			g.start = orStr(g.start, "node build")
 			setPort(3000, "SvelteKit node adapter default port")
@@ -123,10 +154,26 @@ func detectNode(f *files) (found, bool) {
 			g.start = orStr(g.start, "node ./dist/server/entry.mjs")
 			setPort(4321, "Astro node adapter default port")
 			g.why("package.json", "@astrojs/node is installed, so Astro runs as a server")
+		} else if astroServerOutput(f, n) {
+			setPort(4321, "Astro default port")
+			g.why("package.json", "an Astro server adapter or output: 'server' is configured, so Astro runs as a server")
 		} else {
 			g.output, g.start = "dist", ""
+			static = true
 			g.why("package.json", "no server adapter is installed, so Astro builds a static site into dist/")
 		}
+	case n.dep("@docusaurus/core"):
+		g.framework, g.buildType = "Docusaurus", buildRailpack
+		g.build = orStr(g.build, "docusaurus build")
+		g.output, g.start = "build", ""
+		static = true
+		g.why("package.json", "package.json has @docusaurus/core, so the site builds into build/")
+	case n.dep("@11ty/eleventy") && !n.hasServerRuntime():
+		g.framework, g.buildType = "Eleventy", buildRailpack
+		g.build = orStr(g.build, "eleventy")
+		g.output, g.start = "_site", ""
+		static = true
+		g.why("package.json", "package.json has @11ty/eleventy, so the site builds into _site/")
 	case n.depPrefix("@remix-run/") || n.depPrefix("@react-router/"):
 		g.framework, g.buildType = "Remix", buildRailpack
 		g.why("package.json", "package.json has a @remix-run or @react-router package")
@@ -147,14 +194,19 @@ func detectNode(f *files) (found, bool) {
 		g.framework, g.buildType, g.confidence = "Express", buildRailpack, ConfidenceMedium
 		g.why("package.json", "package.json has express in dependencies")
 		setPort(3000, "Express convention, verify in the server code")
-	case n.dep("vite") || n.dep("react-scripts"):
+	case (n.dep("vite") || n.dep("react-scripts")) && !n.hasServerRuntime():
 		g.framework, g.buildType = "Vite", buildRailpack
 		g.output, g.start = "dist", ""
+		static = true
 		if n.dep("react-scripts") {
 			g.framework, g.output = "Create React App", "build"
 		}
 		g.why("package.json", "package.json has a frontend build tool and no server framework, so it builds a single page app into "+g.output+"/")
 		g.build = orStr(g.build, "vite build")
+		if n.clientRouter() {
+			g.spa = true
+			g.why("package.json", "a client side router is installed, so unknown paths should fall back to index.html (single page app mode)")
+		}
 	case n.parsed && n.pkg.Scripts["start"] != "":
 		g.framework, g.buildType, g.confidence = "Node.js", buildRailpack, ConfidenceMedium
 		g.why("package.json", "package.json defines a start script")
@@ -162,7 +214,26 @@ func detectNode(f *files) (found, bool) {
 		g.framework, g.buildType, g.confidence = "Node.js", buildRailpack, ConfidenceLow
 		g.why("package.json", "package.json exists but no known framework or start script was found")
 	}
+	if static {
+		g.buildType = buildStatic
+		g.start = ""
+		g.port = PortGuess{staticPort, "static sites are served by the built-in static server"}
+	}
 	return g, true
+}
+
+func astroServerOutput(f *files, n *nodePkg) bool {
+	for _, a := range astroAdapters {
+		if n.dep(a) {
+			return true
+		}
+	}
+	name, ok := f.anyOf("astro.config.mjs", "astro.config.ts", "astro.config.js", "astro.config.cjs")
+	if !ok {
+		return false
+	}
+	cfg, _ := f.text(name)
+	return astroServerRe.MatchString(cfg)
 }
 
 func nextDetails(f *files, g *found) {

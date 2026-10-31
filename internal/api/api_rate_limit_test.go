@@ -15,6 +15,7 @@ import (
 )
 
 func TestAPIRateLimiter_AllowsBurstThenBlocks(t *testing.T) {
+	t.Parallel()
 	l := newAPIRateLimiter(60)
 	key := "actor"
 
@@ -33,6 +34,7 @@ func TestAPIRateLimiter_AllowsBurstThenBlocks(t *testing.T) {
 }
 
 func TestAPIRateLimiter_ParallelBurstNeverOverspends(t *testing.T) {
+	t.Parallel()
 	frozen := time.Now()
 	limiter := func(capacity int) *apiRateLimiter {
 		l := newAPIRateLimiter(capacity)
@@ -93,6 +95,7 @@ func TestAPIRateLimiter_ParallelBurstNeverOverspends(t *testing.T) {
 }
 
 func TestAPIRateLimiter_RefillsOverTime(t *testing.T) {
+	t.Parallel()
 	l := newAPIRateLimiter(60) // 1 token/sec
 	key := "actor"
 
@@ -116,6 +119,7 @@ func TestAPIRateLimiter_RefillsOverTime(t *testing.T) {
 }
 
 func TestAPIRateLimiter_KeysAreIndependent(t *testing.T) {
+	t.Parallel()
 	l := newAPIRateLimiter(1)
 
 	if ok, _ := l.allow("actor-a"); !ok {
@@ -130,6 +134,7 @@ func TestAPIRateLimiter_KeysAreIndependent(t *testing.T) {
 }
 
 func TestAPIRateLimiter_DisabledWhenRateIsZeroOrLess(t *testing.T) {
+	t.Parallel()
 	for _, rate := range []int{0, -1} {
 		l := newAPIRateLimiter(rate)
 		for i := 0; i < 500; i++ {
@@ -141,6 +146,7 @@ func TestAPIRateLimiter_DisabledWhenRateIsZeroOrLess(t *testing.T) {
 }
 
 func TestAPIRateLimitTier(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		ability string
 		want    string
@@ -160,6 +166,7 @@ func TestAPIRateLimitTier(t *testing.T) {
 }
 
 func TestAPIRateLimit_ReadAndWriteBudgetsAreIndependent(t *testing.T) {
+	t.Parallel()
 	l := newAPIRateLimit(1, 1)
 	key := "actor"
 
@@ -183,6 +190,7 @@ func newTestRouterWithAPIRateLimit(t *testing.T, readPerMinute, writePerMinute i
 }
 
 func TestRequireAbility_RateLimit_DisabledByDefault(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -198,6 +206,7 @@ func TestRequireAbility_RateLimit_DisabledByDefault(t *testing.T) {
 }
 
 func TestRequireAbility_RateLimit_TokenWriteBudgetExhausted(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAPIRateLimit(t, 100, 2)
 
 	const plaintext = "rl-write-token" //nolint:gosec // fake fixture, not a real credential
@@ -249,6 +258,7 @@ func TestRequireAbility_RateLimit_TokenWriteBudgetExhausted(t *testing.T) {
 }
 
 func TestRequireAbility_RateLimit_SessionAndTokenBudgetsAreIndependent(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAPIRateLimit(t, 100, 1)
 	cookie := loginTestSession(t, rt, db)
 
@@ -285,6 +295,7 @@ func TestRequireAbility_RateLimit_SessionAndTokenBudgetsAreIndependent(t *testin
 }
 
 func TestRequireAbility_RateLimit_UnauthenticatedByIP(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouterWithAPIRateLimit(t, 2, 100)
 
 	doGet := func() *httptest.ResponseRecorder {
@@ -308,6 +319,7 @@ func TestRequireAbility_RateLimit_UnauthenticatedByIP(t *testing.T) {
 }
 
 func TestAPIRateLimit_AdmitSetsHeaders(t *testing.T) {
+	t.Parallel()
 	l := newAPIRateLimit(10, 4)
 	rec := httptest.NewRecorder()
 	if ok, _ := l.admit(rec, AbilityWrite, "k"); !ok {

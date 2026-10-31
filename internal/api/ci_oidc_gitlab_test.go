@@ -52,6 +52,7 @@ func (h *ciGitLabHarness) exchange(app string, mut func(map[string]any)) int {
 }
 
 func TestCITrustGitLabProtectedRefByDefault(t *testing.T) {
+	t.Parallel()
 	h := newCIGitLabHarness(t, "web", "api")
 	code, tr := h.createTrust("web", `{"provider":"gitlab","issuer":"`+h.idp.srv.URL+`","repository":"acme/web","ref_pattern":"refs/heads/main"}`)
 	if code != http.StatusCreated || !tr.ProtectedRefOnly || tr.Warning != "" {
@@ -75,6 +76,7 @@ func TestCITrustGitLabProtectedRefByDefault(t *testing.T) {
 }
 
 func TestCIOIDCGitLabRefusesMergeRequestPipelines(t *testing.T) {
+	t.Parallel()
 	h := newCIGitLabHarness(t, "web")
 	if code, _ := h.createTrust("web", `{"provider":"gitlab","issuer":"`+h.idp.srv.URL+`","repository":"acme/web","ref_pattern":"refs/heads/main","protected_ref_only":false}`); code != http.StatusCreated {
 		t.Fatalf("create = %d", code)
@@ -90,6 +92,7 @@ func TestCIOIDCGitLabRefusesMergeRequestPipelines(t *testing.T) {
 }
 
 func TestCIOIDCGitLabEnvironmentMustBeProtected(t *testing.T) {
+	t.Parallel()
 	h := newCIGitLabHarness(t, "web")
 	if code, _ := h.createTrust("web", `{"provider":"gitlab","issuer":"`+h.idp.srv.URL+`","repository":"acme/web","ref_pattern":"refs/heads/main","environment":"production"}`); code != http.StatusCreated {
 		t.Fatalf("create = %d", code)

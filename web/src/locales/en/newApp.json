@@ -111,6 +111,7 @@
       "title": "Advanced options",
       "buildType": "Build type",
       "dockerfile": "Dockerfile path",
+      "spa": "Single page app mode",
       "baseDirectory": "Build context directory",
       "validateDirectory": "Validate directory",
       "memory": "Memory limit (MiB)",

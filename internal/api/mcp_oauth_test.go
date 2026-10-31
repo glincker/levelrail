@@ -389,3 +389,21 @@ func TestMCPOAuth_TokenRevokeEndsGrantAndAuthorizeIsLimited(t *testing.T) {
 		t.Fatalf("authorize past the limit = %d, want 429", last)
 	}
 }
+
+func TestMCPAbilitiesForSensitiveOnlyKeepsRead(t *testing.T) {
+	got := mcpAbilitiesFor([]string{mcpScopeReadSensitive})
+	if !hasAbility(got, AbilityRead) || !hasAbility(got, AbilityReadSensitive) {
+		t.Fatalf("abilities = %v", got)
+	}
+}
+
+func TestMCPOAuthAudienceFailsClosedWithoutStore(t *testing.T) {
+	rt := &Router{}
+	ctx := context.Background()
+	if rt.mcpOAuthAudienceOK(ctx, &store.APIToken{ID: "t1", AgentName: mcpOAuthAgentPrefix + "client"}) {
+		t.Fatal("an OAuth token must be refused when the grant store is missing")
+	}
+	if !rt.mcpOAuthAudienceOK(ctx, &store.APIToken{ID: "t2", AgentName: "ci-deploy"}) {
+		t.Fatal("a non-OAuth token must not depend on the OAuth store")
+	}
+}

@@ -191,6 +191,7 @@ describe('failure handling', () => {
           buildType: 'railpack',
           dockerfilePath: '',
           baseDirectory: '',
+          spa: false,
           domain: '',
           env: {},
           databases: [edit],

@@ -45,6 +45,7 @@ func saveGuardDecision(t *testing.T, db *store.DB, rule string, denied bool, at 
 }
 
 func TestDockerGuardEndpoints(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	guard := &fakeDockerGuard{status: dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true, Source: dockerguard.SourceDefault}}
@@ -103,6 +104,7 @@ func TestDockerGuardEndpoints(t *testing.T) {
 }
 
 func TestDockerGuardAuditEntryCarriesNoBody(t *testing.T) {
+	t.Parallel()
 	e, err := DockerGuardAuditEntry(dockerguard.Decision{Denied: true, Method: "POST", Path: "/containers/create", Container: "web",
 		Violations: []dockerguard.Violation{{Rule: dockerguard.RulePrivileged, Reason: "HostConfig.Privileged is never allowed"}}, At: time.Now()})
 	if err != nil {
@@ -114,6 +116,7 @@ func TestDockerGuardAuditEntryCarriesNoBody(t *testing.T) {
 }
 
 func TestDoctorCheckDockerGuard(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	tests := []struct {
 		name       string
@@ -162,6 +165,7 @@ func (f fakeSecurityPinger) DaemonSecurity(context.Context) (docker.DaemonSecuri
 }
 
 func TestDoctorCheckDockerPrivilege(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		sec        docker.DaemonSecurity
@@ -186,6 +190,7 @@ func TestDoctorCheckDockerPrivilege(t *testing.T) {
 }
 
 func TestDockerGuardAttentionItems(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	tests := []struct {
 		name      string

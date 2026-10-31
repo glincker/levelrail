@@ -173,9 +173,13 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		domainConflict bool
 		deployErr      error
 	)
-	if len(gs.Services) > 0 {
+	static := isStaticPreviewSource(gs)
+	switch {
+	case len(gs.Services) > 0:
 		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
-	} else {
+	case static:
+		usedDomain, domainConflict, deployErr = rt.deployPreviewStatic(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
+	default:
 		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	}
 	if deployErr != nil {
@@ -184,7 +188,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 
-	if len(gs.Databases) > 0 {
+	if len(gs.Databases) > 0 && !static {
 		provisioned := rt.provisionEphemeralDatabases(ctx, preview.ID, previewName, gs.Databases)
 		if len(gs.Services) == 0 && len(provisioned) == 1 {
 			rt.attachEphemeralDatabase(ctx, previewName, provisioned[0])
@@ -192,23 +196,32 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		rt.provisionDatabaseIsolations(ctx, preview.ID, previewName, gs.Databases)
 	}
 
-	if _, environmentID, envErr := rt.ensurePreviewEnvironmentTier(ctx, appName); envErr != nil {
-		rt.logger.Error("api: pull request webhook: ensure preview environment tier failed", slog.String("error", envErr.Error()), slog.String("app_name", appName))
-	} else if tagErr := rt.tagPreviewWithEnvironment(ctx, previewName, gs, environmentID); tagErr != nil {
-		rt.logger.Error("api: pull request webhook: tag preview environment failed", slog.String("error", tagErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
-	} else {
-		preview.EnvironmentID = environmentID
+	// A static preview has no service row to tag with an environment.
+	if !static {
+		if _, environmentID, envErr := rt.ensurePreviewEnvironmentTier(ctx, appName); envErr != nil {
+			rt.logger.Error("api: pull request webhook: ensure preview environment tier failed", slog.String("error", envErr.Error()), slog.String("app_name", appName))
+		} else if tagErr := rt.tagPreviewWithEnvironment(ctx, previewName, gs, environmentID); tagErr != nil {
+			rt.logger.Error("api: pull request webhook: tag preview environment failed", slog.String("error", tagErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
+		} else {
+			preview.EnvironmentID = environmentID
+		}
 	}
 
 	if cur, getErr := rt.previewEnvironments.GetPreviewEnvironmentByAppAndPR(ctx, appName, ev.Number); getErr == nil && cur.Status == store.PreviewStatusAwaitingApproval {
 		rt.teardownPreviewApp(ctx, previewName)
+		rt.teardownPreviewStatic(ctx, previewName)
 		rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)
 		rt.teardownPreviewDatabaseIsolations(ctx, preview.ID)
 		return http.StatusOK, "ignored: a newer fork push revoked this approval\n"
 	}
 
-	notes := rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
-	notes = append(notes, rt.applyPreviewDatabaseStrategy(ctx, preview, appName, previewName, gs, policy)...)
+	var notes []string
+	if static {
+		notes = rt.finishStaticPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+	} else {
+		notes = rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+		notes = append(notes, rt.applyPreviewDatabaseStrategy(ctx, preview, appName, previewName, gs, policy)...)
+	}
 
 	preview.Status, preview.Domain, preview.StatusReason = store.PreviewStatusActive, usedDomain, strings.Join(notes, "; ")
 	statusCode := http.StatusOK
@@ -325,6 +338,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 		return "", false, fmt.Errorf("resolve build settings for %q: %w", appName, err)
 	}
 	svcSpec := specServiceFromDesired(*prod, gitBuild)
+	svcSpec.Static = gs.StaticOptions()
 	attachmentVar := ""
 	if prod.DatabaseAttachment != nil {
 		attachmentVar = prod.DatabaseAttachment.EnvVar

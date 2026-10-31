@@ -11,6 +11,7 @@ import (
 )
 
 func TestHandleDownloadVolumeBackup_Success(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "tar-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -41,6 +42,7 @@ func TestHandleDownloadVolumeBackup_Success(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_WrongVolume(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "tar-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -73,6 +75,7 @@ func TestHandleDownloadVolumeBackup_WrongVolume(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/apps/web/volumes/data/backups/bkh_1/download", nil)
@@ -84,6 +87,7 @@ func TestHandleDownloadVolumeBackup_RequireAuth(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_NoDownloaderConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithBackupDownloader
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -96,6 +100,7 @@ func TestHandleDownloadVolumeBackup_NoDownloaderConfigured(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_ServiceNotFound(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "tar-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -111,6 +116,7 @@ func TestHandleDownloadVolumeBackup_ServiceNotFound(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_VolumeNotFound(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "tar-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -127,6 +133,7 @@ func TestHandleDownloadVolumeBackup_VolumeNotFound(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "tar-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -143,6 +150,7 @@ func TestHandleDownloadVolumeBackup_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_NotSucceeded(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "tar-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -168,6 +176,7 @@ func TestHandleDownloadVolumeBackup_NotSucceeded(t *testing.T) {
 }
 
 func TestHandleDownloadVolumeBackup_DownloaderFails(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{err: errors.New("s3 error")}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -192,6 +201,7 @@ func TestHandleDownloadVolumeBackup_DownloaderFails(t *testing.T) {
 }
 
 func TestVolumeDownloadFilename(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		h    store.BackupHistory

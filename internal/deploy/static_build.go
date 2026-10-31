@@ -127,6 +127,9 @@ func (p *Pipeline) deployStaticBuilt(ctx context.Context, req Request, progress 
 		return fail("save static site: %w", err)
 	}
 	p.finishStaticPublish(ctx, req, progress, stats, duration, held)
+	if !held {
+		p.pruneStaticReleases(ctx, req.ServiceName)
+	}
 	if p.metrics != nil {
 		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, duration, time.Now()); err != nil {
 			p.logger.Warn("deploy: record build duration metric failed",

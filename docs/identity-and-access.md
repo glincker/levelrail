@@ -326,6 +326,8 @@ Eighteen providers are supported. Group to role mapping, account creation policy
 | `cognito` | AWS Cognito, your user pool, App integrations, app client (confidential, with a secret); needs the user pool ID. | `openid profile email` |
 | `oidc` | Your identity provider's admin console; needs an issuer URL. | `openid email profile` |
 
+Microsoft accepts any directory on the shared endpoint, so Levelrail does not create new accounts from it: only identities that are already linked can sign in. Set the **Directory (tenant) ID** on the provider to allow sign-up; sign-ins from any other tenant are then refused, and the allowed-domain rule still applies.
+
 For Amazon Cognito, put the **User pool ID** (for example `us-east-1_AbC123`) in the row's `issuer_url` field; the region is read from its prefix and the issuer is built from it.
 
 For a self-hosted GitLab, set the optional **Instance URL** on the GitLab row (the `issuer_url` field over the API). It must be an `https` address, the same rule the OIDC issuer follows, and blank means gitlab.com.

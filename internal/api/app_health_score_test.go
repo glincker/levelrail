@@ -14,6 +14,7 @@ import (
 )
 
 func TestHandleGetAppHealthScore_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -26,6 +27,7 @@ func TestHandleGetAppHealthScore_AppNotFound(t *testing.T) {
 
 // TestHandleGetAppHealthScore_MixedCategories checks that one failing category makes the overall status the worst one.
 func TestHandleGetAppHealthScore_MixedCategories(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
 	setter := &fakeSecretSetter{existsValues: map[string]bool{}} // API_KEY deliberately absent
@@ -104,6 +106,7 @@ func TestHandleGetAppHealthScore_MixedCategories(t *testing.T) {
 
 // TestHandleGetAppHealthScore_CrashloopFiringFailsDeployCategory checks a firing crashloop rule outranks a clean deploy history.
 func TestHandleGetAppHealthScore_CrashloopFiringFailsDeployCategory(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
@@ -159,6 +162,7 @@ func TestHandleGetAppHealthScore_CrashloopFiringFailsDeployCategory(t *testing.T
 }
 
 func TestHealthScoreObservability_NoRulesIsAWarningNotAFailure(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithAlertRules(adb), WithNotificationChannels(adb))

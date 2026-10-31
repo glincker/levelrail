@@ -111,6 +111,7 @@
       "title": "Opciones avanzadas",
       "buildType": "Tipo de compilación",
       "dockerfile": "Ruta del Dockerfile",
+      "spa": "Modo de aplicación de una sola página",
       "baseDirectory": "Directorio de contexto de compilación",
       "validateDirectory": "Validar directorio",
       "memory": "Límite de memoria (MiB)",

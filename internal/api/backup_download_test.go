@@ -65,6 +65,7 @@ func seedSucceededBackupForAPI(t *testing.T, db *store.DB, databaseName string) 
 }
 
 func TestHandleDownloadBackup_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/databases/main/backups/bkh_1/download", nil)
@@ -76,6 +77,7 @@ func TestHandleDownloadBackup_RequireAuth(t *testing.T) {
 }
 
 func TestHandleDownloadBackup_NoDownloaderConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithBackupDownloader
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
@@ -90,6 +92,7 @@ func TestHandleDownloadBackup_NoDownloaderConfigured(t *testing.T) {
 }
 
 func TestHandleDownloadBackup_DatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "dump-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -105,6 +108,7 @@ func TestHandleDownloadBackup_DatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleDownloadBackup_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "dump-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -123,6 +127,7 @@ func TestHandleDownloadBackup_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleDownloadBackup_BelongsToDifferentDatabase(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "dump-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -145,6 +150,7 @@ func TestHandleDownloadBackup_BelongsToDifferentDatabase(t *testing.T) {
 }
 
 func TestHandleDownloadBackup_NotSucceeded(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "dump-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -170,6 +176,7 @@ func TestHandleDownloadBackup_NotSucceeded(t *testing.T) {
 }
 
 func TestHandleDownloadBackup_Success(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{content: "dump-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
@@ -200,6 +207,7 @@ func TestHandleDownloadBackup_Success(t *testing.T) {
 }
 
 func TestHandleDownloadBackup_DownloaderFails(t *testing.T) {
+	t.Parallel()
 	downloader := &fakeBackupDownloader{err: errors.New("s3: object not found")}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)

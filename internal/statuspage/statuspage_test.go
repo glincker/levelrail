@@ -340,3 +340,33 @@ func TestPublicOutputsNeverContainInternalTargetsOrErrors(t *testing.T) {
 		t.Error("feed must list the incident")
 	}
 }
+
+// staleReadStore returns the settings it read before a disable landed, as a
+// slow read racing a settings save would.
+type staleReadStore struct {
+	Store
+	db  *store.DB
+	svc *Service
+}
+
+func (s *staleReadStore) GetStatusPageSettings(ctx context.Context) (store.StatusPageSettings, error) {
+	stale, err := s.db.GetStatusPageSettings(ctx)
+	_ = s.db.SaveStatusPageSettings(ctx, store.StatusPageSettings{Enabled: false})
+	s.svc.Invalidate()
+	return stale, err
+}
+
+func TestEnabled_ReadRacingDisableIsNotCached(t *testing.T) {
+	ctx := context.Background()
+	db := openStore(t)
+	_ = db.SaveStatusPageSettings(ctx, store.StatusPageSettings{Enabled: true, Title: "One"})
+	wrap := &staleReadStore{db: db}
+	svc := New(wrap, nil, nil, Config{CacheTTL: time.Minute}, nil)
+	wrap.Store, wrap.svc = db, svc
+
+	_, _ = svc.Enabled(ctx)
+	wrap.Store = db
+	if on, _ := svc.Enabled(ctx); on {
+		t.Error("a read that raced the disable must not be cached as enabled")
+	}
+}

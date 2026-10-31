@@ -40,3 +40,28 @@ func TestGitSourceSpecBuildRejectsEscapingBase(t *testing.T) {
 		t.Fatal("want an error for a base directory that escapes the repository")
 	}
 }
+
+func TestGitSourceStaticSPAReachesSpecOptions(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveGitSource(ctx, GitSource{ServiceName: "site", RepoURL: "https://github.com/org/site.git", Branch: "main", BuildType: "static", StaticSPA: true}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.GetGitSource(ctx, "site")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opt := got.StaticOptions(); opt == nil || !opt.SPA {
+		t.Fatalf("StaticOptions() = %+v, want spa on", opt)
+	}
+	if err := db.SetGitSourceStaticSPA(ctx, "site", false); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = db.GetGitSource(ctx, "site")
+	if got.StaticSPA || got.StaticOptions() != nil {
+		t.Fatalf("spa still on after turning it off: %+v", got)
+	}
+	if err := db.SetGitSourceStaticSPA(ctx, "missing", true); !errors.Is(err, ErrGitSourceNotFound) {
+		t.Fatalf("missing source error = %v", err)
+	}
+}

@@ -648,9 +648,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.RootDir == "" {
 			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
 		}
-		staticHandle := []any{NewFileServerHandler(r.RootDir)}
+		staticHandle := []any{NewStaticEncodeHandler(), NewFileServerHandler(r.RootDir)}
 		if r.Rules != nil {
-			staticHandle = []any{NewStaticSiteHandler(r.RootDir, r.Rules)}
+			staticHandle = []any{NewStaticEncodeHandler(), NewStaticSiteHandler(r.RootDir, r.Rules)}
 		}
 		if DefaultSplits().Active(r.Hosts) {
 			staticHandle = append([]any{NewSplitTestingHandler()}, staticHandle...)

@@ -142,7 +142,7 @@ func host(v string) string { return strings.TrimSuffix(strings.ToLower(strings.T
 func Normalize(typ, v string) string {
 	switch typ {
 	case "TXT":
-		return strings.ToLower(strings.Join(strings.Fields(JoinTXT(v)), " "))
+		return normalizeTXT(strings.Join(strings.Fields(JoinTXT(v)), " "))
 	case "A", "AAAA":
 		if a, err := netip.ParseAddr(strings.TrimSpace(v)); err == nil {
 			return a.String()
@@ -156,6 +156,19 @@ func Normalize(typ, v string) string {
 		return strings.ToLower(strings.Join(f, " "))
 	}
 	return host(v)
+}
+
+// normalizeTXT lowercases a TXT payload except a DKIM p= key, which is case sensitive base64.
+func normalizeTXT(s string) string {
+	parts := strings.Split(s, ";")
+	for i, p := range parts {
+		if t := strings.TrimSpace(p); strings.HasPrefix(strings.ToLower(t), "p=") {
+			parts[i] = strings.ToLower(p[:strings.Index(p, "=")+1]) + p[strings.Index(p, "=")+1:]
+			continue
+		}
+		parts[i] = strings.ToLower(p)
+	}
+	return strings.Join(parts, ";")
 }
 
 func wantKey(w Want) string {
@@ -213,6 +226,12 @@ func classify(w Want, at []Found) Record {
 		}
 	}
 	rec.Found = append(append(rec.Found, same...), rival...)
+	// Receivers reject a name with two SPF records, so a match among them is not healthy.
+	if owner == "v=spf1" && len(same) > 1 {
+		rec.Status = Conflict
+		rec.Reason = "spf_multiple: " + w.Name + " has more than one SPF record. Merge them into one, receivers reject multiple records."
+		return rec
+	}
 	want := wantKey(w)
 	for _, f := range same {
 		if Normalize(w.Type, f.Value) == want {

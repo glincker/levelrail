@@ -13,6 +13,7 @@ import (
 )
 
 func TestDatabasePasswordRotationNotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()
@@ -23,6 +24,7 @@ func TestDatabasePasswordRotationNotConfigured(t *testing.T) {
 }
 
 func TestDatabasePasswordRotationPreviewAndPolicy(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

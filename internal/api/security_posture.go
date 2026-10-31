@@ -150,6 +150,7 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 	rt.collectPostureTLS(ctx, &in, now)
 	rt.collectPostureShield(ctx, &in)
 	rt.collectPostureSAML(ctx, &in)
+	rt.collectPostureMicrosoft(ctx, &in)
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
 		in.AgentsKnown = true
 		for _, n := range nodes {
@@ -451,4 +452,16 @@ func (rt *Router) collectPostureSAML(ctx context.Context, in *postureInput) {
 		}
 	}
 	in.SAMLKnown = true
+}
+
+// collectPostureMicrosoft flags Microsoft sign-in left on the shared tenant.
+func (rt *Router) collectPostureMicrosoft(ctx context.Context, in *postureInput) {
+	if rt.oauthSettings == nil {
+		return
+	}
+	s, err := rt.oauthSettings.GetOAuthProviderSettings(ctx, store.OAuthProviderMicrosoft)
+	if err != nil {
+		return
+	}
+	in.MicrosoftNoTenant = s.Enabled && s.TenantID == ""
 }

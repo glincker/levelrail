@@ -8,6 +8,7 @@ import (
 )
 
 func TestNormalizeDashboardURL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		in      string
 		want    string
@@ -39,6 +40,7 @@ func TestNormalizeDashboardURL(t *testing.T) {
 }
 
 func TestDashboardURLHandlers(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 

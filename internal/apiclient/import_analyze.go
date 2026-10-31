@@ -82,6 +82,7 @@ type Detection struct {
 	StartCommand   string `json:"start_command,omitempty"`
 	BuildCommand   string `json:"build_command,omitempty"`
 	OutputDir      string `json:"output_dir,omitempty"`
+	SPA            bool   `json:"spa"`
 	HealthPath     string `json:"health_path"`
 	RuntimeVersion struct {
 		Value  string `json:"value"`

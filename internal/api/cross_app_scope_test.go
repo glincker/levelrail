@@ -12,6 +12,7 @@ import (
 )
 
 func TestCrossAppListsHideDeniedApps(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 	now := time.Now().UTC()

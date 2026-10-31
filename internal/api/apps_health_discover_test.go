@@ -33,6 +33,7 @@ func containerPort(t *testing.T, srv *httptest.Server) int {
 }
 
 func TestHandleDiscoverAppHealth_FindsTheRealWorkingPath(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/healthz" {
 			w.WriteHeader(http.StatusOK)
@@ -85,6 +86,7 @@ func TestHandleDiscoverAppHealth_FindsTheRealWorkingPath(t *testing.T) {
 }
 
 func TestHandleDiscoverAppHealth_NoMatch(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}))
@@ -122,6 +124,7 @@ func TestHandleDiscoverAppHealth_NoMatch(t *testing.T) {
 }
 
 func TestHandleDiscoverAppHealth_NoPort(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -140,6 +143,7 @@ func TestHandleDiscoverAppHealth_NoPort(t *testing.T) {
 }
 
 func TestHandleDiscoverAppHealth_NoRunningContainer(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Name: "web", Running: false}}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -156,6 +160,7 @@ func TestHandleDiscoverAppHealth_NoRunningContainer(t *testing.T) {
 }
 
 func TestHandleDiscoverAppHealth_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithExecRuntime
 	cookie := loginTestSession(t, rt, db)
 	seedExecApp(t, db)

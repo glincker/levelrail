@@ -50,6 +50,7 @@ func newTestRouterWithVolumeRestoreRunner(t *testing.T, runner ServiceVolumeRest
 }
 
 func TestHandleTriggerVolumeRestore_NoRunnerConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -62,6 +63,7 @@ func TestHandleTriggerVolumeRestore_NoRunnerConfigured(t *testing.T) {
 }
 
 func TestHandleTriggerVolumeRestore_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeRestoreRunner()
 	rt, db := newTestRouterWithVolumeRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -75,6 +77,7 @@ func TestHandleTriggerVolumeRestore_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleTriggerVolumeRestore_BackupBelongsToDifferentVolume(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeRestoreRunner()
 	rt, db := newTestRouterWithVolumeRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -108,6 +111,7 @@ func TestHandleTriggerVolumeRestore_BackupBelongsToDifferentVolume(t *testing.T)
 }
 
 func TestHandleTriggerVolumeRestore_RefusesUnsuccessfulBackup(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeRestoreRunner()
 	rt, db := newTestRouterWithVolumeRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -130,6 +134,7 @@ func TestHandleTriggerVolumeRestore_RefusesUnsuccessfulBackup(t *testing.T) {
 }
 
 func TestHandleTriggerVolumeRestore_Success(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeRestoreRunner()
 	rt, db := newTestRouterWithVolumeRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -170,6 +175,7 @@ func TestHandleTriggerVolumeRestore_Success(t *testing.T) {
 }
 
 func TestHandleListVolumeRestoreHistory_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)

@@ -37,6 +37,7 @@ func seedAbuseTraffic(log *ingress.AccessLog, now time.Time) {
 }
 
 func TestAppAbuse_GetDefaultsToOffWithASuggestion(t *testing.T) {
+	t.Parallel()
 	rt, _, cookie, _ := abuseRouter(t)
 	rec := doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/abuse", "")
 	var res abuseResource
@@ -59,6 +60,7 @@ func TestAppAbuse_GetDefaultsToOffWithASuggestion(t *testing.T) {
 }
 
 func TestAppAbuse_PutRoundTripAndValidation(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie, _ := abuseRouter(t)
 	const path = "/api/v1/apps/web/abuse"
 	rec := doPolicy(t, rt, cookie, http.MethodPut, path, `{"mode":"log_only","rps":10,"deny_cidrs":["203.0.113.0/24"],"deny_user_agents":["python-requests"],"require_user_agent":true}`)
@@ -108,6 +110,7 @@ func TestAppAbuse_PutRoundTripAndValidation(t *testing.T) {
 }
 
 func TestAppAbuse_RoutesRequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _, _, _ := abuseRouter(t)
 	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/apps/web/abuse"},
@@ -117,6 +120,7 @@ func TestAppAbuse_RoutesRequireAuth(t *testing.T) {
 }
 
 func TestAppAbuse_DryRunCountsWouldBlockWithoutSideEffects(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie, log := abuseRouter(t)
 	seedAbuseTraffic(log, time.Now())
 	const path = "/api/v1/apps/web/abuse/dry-run"
@@ -155,6 +159,7 @@ func TestAppAbuse_DryRunCountsWouldBlockWithoutSideEffects(t *testing.T) {
 }
 
 func TestAppAbuse_DryRunUsesSavedPolicyAndRejectsBadInput(t *testing.T) {
+	t.Parallel()
 	rt, _, cookie, log := abuseRouter(t)
 	seedAbuseTraffic(log, time.Now())
 	const path = "/api/v1/apps/web/abuse/dry-run"
@@ -178,6 +183,7 @@ func TestAppAbuse_DryRunUsesSavedPolicyAndRejectsBadInput(t *testing.T) {
 }
 
 func TestAppAbuse_DryRunWithoutAccessLogIs501(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedApp(t, db, "web")
 	cookie := loginTestSession(t, rt, db)

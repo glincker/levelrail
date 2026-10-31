@@ -35,6 +35,9 @@ func DecideStrict(mode GateMode, scan *ScanSummary, overrideReason string, failC
 	strict := failClosed && mode.blocking()
 	if scan == nil {
 		if strict {
+			if overrideReason != "" {
+				return Decision{Action: ActionOverride, Reason: "scan unavailable; overridden: " + overrideReason}
+			}
 			return Decision{Action: ActionBlock, Reason: "scan unavailable"}
 		}
 		return Decision{Action: ActionAllow, Reason: "scan did not complete, release allowed"}

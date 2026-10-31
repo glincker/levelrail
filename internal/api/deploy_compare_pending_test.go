@@ -12,6 +12,7 @@ import (
 )
 
 func TestHandleCompareDeploys_Pending(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -71,6 +72,7 @@ func TestHandleCompareDeploys_Pending(t *testing.T) {
 }
 
 func TestHandleCompareDeploys_PendingWithoutHistory(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {

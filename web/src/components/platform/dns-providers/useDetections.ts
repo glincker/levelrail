@@ -12,6 +12,7 @@ export function useDetections(domains: string[], enabled: boolean) {
     if (!enabled) return
     const started = startedRef.current
     const queue = domains.filter((d) => !started.has(d))
+    const claimed = [...queue]
     queue.forEach((d) => started.add(d))
     let cancelled = false
     const worker = async () => {
@@ -34,8 +35,8 @@ export function useDetections(domains: string[], enabled: boolean) {
     )
     return () => {
       cancelled = true
-      // Unfinished names are retried by the next run.
-      queue.forEach((d) => {
+      // Unfinished names, queued or in flight, are retried by the next run.
+      claimed.forEach((d) => {
         if (!(d in results)) started.delete(d)
       })
     }

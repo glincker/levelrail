@@ -58,15 +58,15 @@ func TestDetectFrameworks(t *testing.T) {
 		}, "Next.js", "railpack", 3000, "default", "", ">=20", "App Router"},
 		{"next static export", map[string]string{
 			"package.json": pkg(`"next":"14"`, ""), "yarn.lock": "", "next.config.js": `module.exports = { output: "export" }`,
-		}, "Next.js", "railpack", 3000, "default", "out", "", "output: 'export'"},
+		}, "Next.js", "static", 80, "static", "out", "", "output: 'export'"},
 		{"vite spa", map[string]string{"package.json": pkg(`"react":"18"`, `,"devDependencies":{"vite":"5"}`), "pnpm-lock.yaml": "", ".nvmrc": "v20.11.0\n"},
-			"Vite", "railpack", 0, "", "dist", "20.11.0", "single page app"},
+			"Vite", "static", 80, "static", "dist", "20.11.0", "single page app"},
 		{"astro static", map[string]string{"package.json": pkg(`"astro":"4"`, ""), "package-lock.json": ""},
-			"Astro", "railpack", 0, "", "dist", "", "static site"},
+			"Astro", "static", 80, "static", "dist", "", "static site"},
 		{"astro ssr", map[string]string{"package.json": pkg(`"astro":"4","@astrojs/node":"8"`, ""), "package-lock.json": ""},
 			"Astro", "railpack", 4321, "default", "", "", "runs as a server"},
 		{"sveltekit static", map[string]string{"package.json": pkg(`"@sveltejs/kit":"2","@sveltejs/adapter-static":"3"`, ""), "package-lock.json": ""},
-			"SvelteKit", "railpack", 0, "", "build", "", "prerendered"},
+			"SvelteKit", "static", 80, "static", "build", "", "prerendered"},
 		{"nuxt", map[string]string{"package.json": pkg(`"nuxt":"3"`, ""), "package-lock.json": ""}, "Nuxt", "railpack", 3000, "default", "", "", "nuxt"},
 		{"remix", map[string]string{"package.json": pkg(`"@remix-run/node":"2"`, ""), "package-lock.json": ""}, "Remix", "railpack", 3000, "default", "", "", "remix"},
 		{"express", map[string]string{"package.json": pkg(`"express":"4"`, `,"scripts":{"start":"node index.js --port 4100"}`), "package-lock.json": ""},
@@ -217,5 +217,66 @@ func TestDetectEnvVarsNeverCarryValues(t *testing.T) {
 	}
 	if !secret {
 		t.Errorf("STRIPE_SECRET_KEY should be guessed secret: %+v", d.EnvVars)
+	}
+}
+
+func TestDetectStaticGeneratorsVersusServers(t *testing.T) {
+	cases := []struct {
+		name      string
+		files     map[string]string
+		framework string
+		buildType string
+		output    string
+	}{
+		{"astro plain", map[string]string{"package.json": pkg(`"astro":"4"`, "")}, "Astro", "static", "dist"},
+		{"astro vercel adapter", map[string]string{"package.json": pkg(`"astro":"4","@astrojs/vercel":"7"`, "")}, "Astro", "railpack", ""},
+		{"astro cloudflare adapter", map[string]string{"package.json": pkg(`"astro":"4","@astrojs/cloudflare":"9"`, "")}, "Astro", "railpack", ""},
+		{"astro netlify adapter", map[string]string{"package.json": pkg(`"astro":"4","@astrojs/netlify":"5"`, "")}, "Astro", "railpack", ""},
+		{"astro server output", map[string]string{"package.json": pkg(`"astro":"4"`, ""), "astro.config.mjs": "export default { output: 'server' }"}, "Astro", "railpack", ""},
+		{"docusaurus", map[string]string{"package.json": pkg(`"@docusaurus/core":"3","react":"18"`, "")}, "Docusaurus", "static", "build"},
+		{"eleventy", map[string]string{"package.json": pkg(`"@11ty/eleventy":"2"`, "")}, "Eleventy", "static", "_site"},
+		{"vite spa with router", map[string]string{"package.json": pkg(`"react":"18","react-router-dom":"6"`, `,"devDependencies":{"vite":"5"},"scripts":{"build":"vite build"}`)}, "Vite", "static", "dist"},
+		{"vite with koa", map[string]string{"package.json": pkg(`"koa":"2"`, `,"devDependencies":{"vite":"5"},"scripts":{"build":"vite build"}`)}, "Node.js", "railpack", ""},
+		{"vite with node start", map[string]string{"package.json": pkg(`"react":"18"`, `,"devDependencies":{"vite":"5"},"scripts":{"start":"node server.js"}`)}, "Node.js", "railpack", ""},
+		{"vite with express", map[string]string{"package.json": pkg(`"express":"4"`, `,"devDependencies":{"vite":"5"}`)}, "Express", "railpack", ""},
+		{"sveltekit adapter static", map[string]string{"package.json": pkg(`"@sveltejs/kit":"2","@sveltejs/adapter-static":"3"`, ""), "svelte.config.js": "adapter({ pages: 'public' })"}, "SvelteKit", "static", "public"},
+		{"sveltekit adapter node", map[string]string{"package.json": pkg(`"@sveltejs/kit":"2","@sveltejs/adapter-node":"5"`, "")}, "SvelteKit", "railpack", ""},
+		{"next without export", map[string]string{"package.json": pkg(`"next":"14"`, ""), "next.config.js": "module.exports = {}"}, "Next.js", "railpack", ""},
+		{"nuxt", map[string]string{"package.json": pkg(`"nuxt":"3"`, "")}, "Nuxt", "railpack", ""},
+		{"remix", map[string]string{"package.json": pkg(`"@remix-run/node":"2"`, "")}, "Remix", "railpack", ""},
+		{"unknown node", map[string]string{"package.json": pkg(`"left-pad":"1"`, "")}, "Node.js", "railpack", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := Detect(tree(tc.files))
+			if d.Framework != tc.framework || d.BuildType != tc.buildType || d.OutputDir != tc.output {
+				t.Fatalf("got %q/%q/%q want %q/%q/%q", d.Framework, d.BuildType, d.OutputDir, tc.framework, tc.buildType, tc.output)
+			}
+			if tc.buildType == "static" && d.StartCommand != "" {
+				t.Errorf("static site has start command %q", d.StartCommand)
+			}
+		})
+	}
+	spa := Detect(tree(map[string]string{"package.json": pkg(`"vue-router":"4"`, `,"devDependencies":{"vite":"5"}`)}))
+	if !hasReason(spa, "single page app mode") {
+		t.Errorf("router project lacks SPA reason: %+v", spa.Reasons)
+	}
+	if !spa.SPA {
+		t.Error("client routed Vite app should set SPA")
+	}
+	cra := Detect(tree(map[string]string{"package.json": pkg(`"react-router-dom":"6","react-scripts":"5"`, "")}))
+	if !cra.SPA {
+		t.Error("client routed CRA app should set SPA")
+	}
+	noRouter := Detect(tree(map[string]string{"package.json": pkg(`"react":"18"`, `,"devDependencies":{"vite":"5"}`)}))
+	if noRouter.SPA {
+		t.Error("Vite app without a router must not set SPA")
+	}
+	plain := Detect(tree(map[string]string{"package.json": pkg(`"astro":"4"`, "")}))
+	if plain.SPA {
+		t.Error("static generator must not set SPA")
+	}
+	if hasReason(plain, "single page app mode") {
+		t.Error("plain static generator got SPA reason")
 	}
 }

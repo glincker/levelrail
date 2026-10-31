@@ -34,6 +34,7 @@ func newTestRouterWithBackupDeleter(t *testing.T, deleter BackupDeleter) (*Route
 }
 
 func TestDeleteBackupRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -43,6 +44,7 @@ func TestDeleteBackupRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleDeleteBackup_NoDeleterConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithBackupDeleter
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
@@ -57,6 +59,7 @@ func TestHandleDeleteBackup_NoDeleterConfigured(t *testing.T) {
 }
 
 func TestHandleDeleteBackup_DatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -72,6 +75,7 @@ func TestHandleDeleteBackup_DatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleDeleteBackup_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -90,6 +94,7 @@ func TestHandleDeleteBackup_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleDeleteBackup_BelongsToDifferentDatabase(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -112,6 +117,7 @@ func TestHandleDeleteBackup_BelongsToDifferentDatabase(t *testing.T) {
 }
 
 func TestHandleDeleteBackup_StillRunning_Refused(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -137,6 +143,7 @@ func TestHandleDeleteBackup_StillRunning_Refused(t *testing.T) {
 }
 
 func TestHandleDeleteBackup_Success(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -162,6 +169,7 @@ func TestHandleDeleteBackup_Success(t *testing.T) {
 // route deliberately allows: an operator cleaning up a failed attempt's
 // clutter, not just succeeded archives.
 func TestHandleDeleteBackup_FailedAttempt_CanStillBeDeleted(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -187,6 +195,7 @@ func TestHandleDeleteBackup_FailedAttempt_CanStillBeDeleted(t *testing.T) {
 }
 
 func TestHandleDeleteBackup_DeleterFails(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{err: errors.New("store: disk full")}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -204,6 +213,7 @@ func TestHandleDeleteBackup_DeleterFails(t *testing.T) {
 }
 
 func TestHandleDeleteVolumeBackup_Success(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -231,6 +241,7 @@ func TestHandleDeleteVolumeBackup_Success(t *testing.T) {
 }
 
 func TestHandleDeleteVolumeBackup_WrongVolume(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)
@@ -266,6 +277,7 @@ func TestHandleDeleteVolumeBackup_WrongVolume(t *testing.T) {
 }
 
 func TestHandleDeleteVolumeBackup_StillRunning_Refused(t *testing.T) {
+	t.Parallel()
 	deleter := &fakeBackupDeleter{}
 	rt, db := newTestRouterWithBackupDeleter(t, deleter)
 	cookie := loginTestSession(t, rt, db)

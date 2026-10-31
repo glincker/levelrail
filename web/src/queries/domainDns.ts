@@ -24,6 +24,9 @@ export interface DnsDetection {
   dashboard_url?: string
   can_issue_certificates: boolean
   hint: string
+  /** Set when the zone is connected but the domain's nameservers do not point at it yet. */
+  delegation_warning?: boolean
+  delegation_reason?: string
 }
 
 export interface MailDnsCandidate {
@@ -71,7 +74,12 @@ export const fetchMailDnsDomains = () =>
   getJson<MailDnsDomains>('/api/v1/mail/dns/domains')
 
 interface ServerAddressRecords {
-  records?: { type: string; name: string; value: string }[]
+  records?: {
+    type: string
+    name: string
+    value: string
+    alternative?: boolean
+  }[]
 }
 
 // One DNS outcome of the committed go-live routes (internal/api/go_live.go).
@@ -155,11 +163,14 @@ export async function planDomainDns(
   const addr = await getJson<ServerAddressRecords>(
     `/api/v1/system/server-address?domain=${encodeURIComponent(domain)}`,
   )
-  const changes = (addr.records ?? []).map((r) => ({
-    action: 'add' as const,
-    kind: r.type,
-    set: { name: r.name, type: r.type, ttl: DEFAULT_TTL, values: [r.value] },
-  }))
+  // Alternatives (a CNAME beside A/AAAA) would conflict if copied together.
+  const changes = (addr.records ?? [])
+    .filter((r) => !r.alternative)
+    .map((r) => ({
+      action: 'add' as const,
+      kind: r.type,
+      set: { name: r.name, type: r.type, ttl: DEFAULT_TTL, values: [r.value] },
+    }))
   return { domain, hash: '', changes, summary: {}, blocked: false }
 }
 

@@ -148,6 +148,15 @@ levelrail-cli static-sites routes lint my-site --redirects ./public/_redirects -
 
 `lint` exits non-zero when the text has problems, so it fits a CI step.
 
+## Default caching and compression
+
+Static sites get these defaults when your rules set nothing for the path.
+
+- **Fingerprinted assets** (a content hash in the file name such as `app.abc123def.js` or `index-9f8e7d6c.css`, or hashed bundles under `/assets/`, `/_astro/`, `/_next/static/` and `/static/`) are sent as `Cache-Control: public, max-age=<N>, immutable`. `N` comes from `APP_STATIC_ASSET_MAX_AGE` (seconds, default 31536000).
+- **Everything else** (HTML, JSON manifests, `sw.js`, `service-worker.js`) is sent as `Cache-Control: no-cache`, so browsers revalidate with the ETag.
+- A `Cache-Control` set or removed in `_headers` or `app.yaml` always wins.
+- Text responses (HTML, CSS, JavaScript, JSON, SVG) are compressed with zstd or gzip when at least `APP_STATIC_COMPRESS_MIN_LENGTH` bytes (default 256). Images, fonts, video and archives are sent as they are.
+
 ## Rollback
 
 Rules are stored beside the published files of each deploy. Rolling back to an earlier deploy (see [Rollback](/rollback)) serves that deploy's files and its rules together. Sites published before routing rules existed have none; deploy them once to enable the options.

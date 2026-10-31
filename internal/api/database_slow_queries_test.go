@@ -44,6 +44,7 @@ func getSlowQueries(t *testing.T, rt *Router, cookie *http.Cookie, url string) s
 }
 
 func TestHandleQueryDatabaseSlowQueries_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithTelemetryQuerier
 	cookie := loginTestSession(t, rt, db)
 	seedSlowQueriesDatabase(t, db, "main", store.EnginePostgres, "16")
@@ -56,6 +57,7 @@ func TestHandleQueryDatabaseSlowQueries_NotConfigured(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseSlowQueries_DatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -67,6 +69,7 @@ func TestHandleQueryDatabaseSlowQueries_DatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseSlowQueries_UnsupportedEngine(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	seedSlowQueriesDatabase(t, db, "cache", store.EngineRedis, "7")
@@ -79,6 +82,7 @@ func TestHandleQueryDatabaseSlowQueries_UnsupportedEngine(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseSlowQueries_Postgres_ParsesAndSortsByDuration(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	seedSlowQueriesDatabase(t, db, "main", store.EnginePostgres, "16")
@@ -120,6 +124,7 @@ const mysqlSlowLogFixture = "# Query_time: 2.000000  Lock_time: 0.000000 Rows_se
 	"SELECT COUNT(*) FROM orders;\n"
 
 func TestHandleQueryDatabaseSlowQueries_MySQL_ExecsAndParsesMultiLineBlocks(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{
 		inspectState: &docker.ContainerState{ID: "container-1", Running: true},
 		execReader:   io.NopCloser(strings.NewReader(mysqlSlowLogFixture)),
@@ -155,6 +160,7 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_ExecsAndParsesMultiLineBlocks(t *t
 // slow query log hasn't been created yet because no statement has ever
 // crossed the threshold) is a normal empty response, not an error.
 func TestHandleQueryDatabaseSlowQueries_MySQL_NoLogFileYet(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{
 		inspectState: &docker.ContainerState{ID: "container-1", Running: true},
 		execReader:   io.NopCloser(strings.NewReader("")),
@@ -170,6 +176,7 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_NoLogFileYet(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseSlowQueries_MySQL_ExecNotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithExecRuntime
 	cookie := loginTestSession(t, rt, db)
 	seedSlowQueriesDatabase(t, db, "main", store.EngineMySQL, "8")
@@ -182,6 +189,7 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_ExecNotConfigured(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseSlowQueries_MySQL_NoRunningContainer(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "container-1", Running: false}}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -195,6 +203,7 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_NoRunningContainer(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseSlowQueries_LimitAndOffset(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	seedSlowQueriesDatabase(t, db, "main", store.EnginePostgres, "16")

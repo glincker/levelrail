@@ -78,6 +78,8 @@ type Service struct {
 	enabled   bool
 	enabledAt time.Time
 	enabledOK bool
+	// gen bumps on Invalidate so a read that started before it never caches its stale result.
+	gen uint64
 }
 
 // New builds a Service. apps and domains may be nil, in which case
@@ -107,6 +109,7 @@ func (s *Service) Invalidate() {
 	s.mu.Lock()
 	s.cached, s.hist = nil, nil
 	s.enabledOK = false
+	s.gen++
 	s.mu.Unlock()
 }
 
@@ -235,7 +238,7 @@ func (s *Service) monitorState(ctx context.Context, id string) string {
 	switch s.monitors.MonitorState(ctx, id) {
 	case "up", "suspect":
 		return Operational
-	case "recovering":
+	case "recovering", "degraded":
 		return Degraded
 	case "down":
 		return Outage
@@ -284,6 +287,7 @@ func (s *Service) View(ctx context.Context) (View, error) {
 		s.mu.Unlock()
 		return v, nil
 	}
+	gen := s.gen
 	s.mu.Unlock()
 
 	v, err := s.build(ctx, recentWindow)
@@ -291,7 +295,9 @@ func (s *Service) View(ctx context.Context) (View, error) {
 		return View{}, err
 	}
 	s.mu.Lock()
-	s.cached, s.cachedAt = &v, s.now()
+	if gen == s.gen {
+		s.cached, s.cachedAt = &v, s.now()
+	}
 	s.mu.Unlock()
 	return v, nil
 }
@@ -305,13 +311,16 @@ func (s *Service) History(ctx context.Context) (View, error) {
 		s.mu.Unlock()
 		return v, nil
 	}
+	gen := s.gen
 	s.mu.Unlock()
 	v, err := s.build(ctx, time.Duration(TuningFromEnv().HistoryDays)*24*time.Hour)
 	if err != nil {
 		return View{}, err
 	}
 	s.mu.Lock()
-	s.hist, s.histAt = &v, s.now()
+	if gen == s.gen {
+		s.hist, s.histAt = &v, s.now()
+	}
 	s.mu.Unlock()
 	return v, nil
 }
@@ -325,13 +334,16 @@ func (s *Service) Enabled(ctx context.Context) (bool, error) {
 		s.mu.Unlock()
 		return on, nil
 	}
+	gen := s.gen
 	s.mu.Unlock()
 	settings, err := s.store.GetStatusPageSettings(ctx)
 	if err != nil {
 		return false, fmt.Errorf("statuspage: load settings: %w", err)
 	}
 	s.mu.Lock()
-	s.enabled, s.enabledAt, s.enabledOK = settings.Enabled, s.now(), true
+	if gen == s.gen {
+		s.enabled, s.enabledAt, s.enabledOK = settings.Enabled, s.now(), true
+	}
 	s.mu.Unlock()
 	return settings.Enabled, nil
 }

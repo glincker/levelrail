@@ -8,6 +8,7 @@ import (
 )
 
 func TestHandleListDatabaseEngines(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -43,6 +44,7 @@ func TestHandleListDatabaseEngines(t *testing.T) {
 }
 
 func TestDatabaseEnginesRoute_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/database-engines", nil)

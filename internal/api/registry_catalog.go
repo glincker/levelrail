@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
@@ -256,8 +257,8 @@ func (rt *Router) loadRegistryCredentialForBrowse(w http.ResponseWriter, r *http
 func (rt *Router) credentialCatalog(ctx context.Context, host string) (RegistryCatalogClient, string) {
 	if rt.registry != nil {
 		if settings, err := rt.registry.GetRegistrySettings(ctx); err == nil && settings.Enabled && settings.Host != "" {
-			cred, cErr := registryHostname(host)
-			own, oErr := registryHostname(settings.Host)
+			cred, cErr := registryHostPort(host)
+			own, oErr := registryHostPort(settings.Host)
 			if cErr == nil && oErr == nil && cred == own {
 				return rt.registryCatalog, registryCatalogBaseURL()
 			}
@@ -267,6 +268,28 @@ func (rt *Router) credentialCatalog(ctx context.Context, host string) (RegistryC
 		return rt.registryCatalogExternal, registryBaseURL(host)
 	}
 	return rt.registryCatalog, registryBaseURL(host)
+}
+
+// registryHostPort is the hostname plus explicit port, so another service on the same
+// host but a different port is never treated as the built-in registry.
+func registryHostPort(raw string) (string, error) {
+	name, err := registryHostname(raw)
+	if err != nil {
+		return "", err
+	}
+	target := strings.TrimSpace(raw)
+	if !strings.Contains(target, "://") {
+		target = "https://" + target
+	}
+	u, err := url.Parse(target)
+	if err != nil {
+		return "", err
+	}
+	port := u.Port()
+	if (u.Scheme == "https" && port == "443") || (u.Scheme == "http" && port == "80") {
+		port = ""
+	}
+	return name + ":" + port, nil
 }
 
 // registryBaseURL turns a stored host[:port] into a base URL, defaulting

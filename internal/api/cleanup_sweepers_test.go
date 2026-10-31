@@ -11,6 +11,7 @@ import (
 )
 
 func TestWebhookDeliverySweeperHonoursSavedRetention(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 	old := store.WebhookDelivery{ID: "whd_old", ServiceName: "s", ReceivedAt: time.Now().Add(-60 * 24 * time.Hour)}
@@ -41,6 +42,7 @@ func TestWebhookDeliverySweeperHonoursSavedRetention(t *testing.T) {
 }
 
 func TestAuditSweeperHonoursSavedWindowsAndFloors(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 	save := func(id string, ageDays int, action string) {

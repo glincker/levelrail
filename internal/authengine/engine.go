@@ -145,6 +145,8 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		PasswordPolicy: theauth.PasswordPolicyConfig{
 			MinLength:         cfg.MinPasswordLen,
 			AllowLegacyBcrypt: true,
+			// One engine per process, so one shared timing-equalization hash is safe.
+			ShareDummyHash: true,
 		},
 		APITokens: &theauth.APITokensConfig{
 			Prefix:           defaultIfEmpty(cfg.TokenPrefix, libraryDefaultTokenPrefix),

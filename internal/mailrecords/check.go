@@ -109,7 +109,7 @@ func fromEmail(rc email.RecordCheck, failOnMissing bool) Item {
 	if rc.Status != email.CheckPass {
 		it.Status = StatusWarn
 		switch rc.Code {
-		case "spf_missing", "spf_multiple", "spf_permissive", "dmarc_missing":
+		case "spf_missing", "spf_multiple", "spf_permissive", "spf_too_many_lookups", "dkim_cname_proxied", "dmarc_missing":
 			if failOnMissing {
 				it.Status = StatusFail
 			}
@@ -128,6 +128,9 @@ func checkDKIM(ctx context.Context, r Resolver, domain, sel string) Item {
 	if val == "" {
 		if c, err := r.LookupCNAME(ctx, name); err == nil && trimDot(c) != name && c != "" {
 			return Item{ID: "dkim", Status: StatusPass, Message: "DKIM selector " + sel + " is delegated by CNAME.", Value: trimDot(c)}
+		}
+		if email.DKIMProxied(ctx, r, name) {
+			return fromEmail(email.RecordCheck{Type: "dkim", Status: email.CheckWarn, Code: email.CodeDKIMProxied, Message: "The DKIM record at " + name + " is proxied through Cloudflare, so receivers get Cloudflare addresses instead of the CNAME. Switch the record to DNS only (grey cloud)."}, true)
 		}
 		return Item{ID: "dkim", Status: StatusFail, Message: "No DKIM record at " + name + "."}
 	}

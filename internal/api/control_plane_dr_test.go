@@ -58,6 +58,7 @@ func drRequest(t *testing.T, rt *Router, db *store.DB, method, path, body string
 }
 
 func TestControlPlaneDR_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	for _, path := range []string{"/api/v1/system/control-plane-dr", "/api/v1/system/control-plane-dr/backups"} {
 		if rec := drRequest(t, rt, db, http.MethodGet, path, ""); rec.Code != http.StatusNotImplemented {
@@ -67,6 +68,7 @@ func TestControlPlaneDR_NotConfigured(t *testing.T) {
 }
 
 func TestControlPlaneDR_StatusSettingsAndRuns(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	fake := &fakeDR{status: cpbackup.Status{Enabled: true, Recipients: []string{"age1abc"}, Warnings: []cpbackup.Warning{}}}
 	rt := NewRouter(discardLogger(), testBrand(), db, WithControlPlaneDR(fake, nil))
@@ -109,6 +111,7 @@ func TestControlPlaneDR_StatusSettingsAndRuns(t *testing.T) {
 }
 
 func TestControlPlaneDR_EscrowNeverLeaksKey(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	const secret = "AGE-SECRET-KEY-PQ-1TESTONLY" //nolint:gosec // fake key for a leak check
 	var gotKey string
@@ -144,6 +147,7 @@ func TestControlPlaneDR_EscrowNeverLeaksKey(t *testing.T) {
 }
 
 func TestControlPlaneDR_AckAndDoctor(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	fake := &fakeDR{ackErr: errors.New("generate an escrow bundle before acknowledging it")}
 	rt := NewRouter(discardLogger(), testBrand(), db, WithControlPlaneDR(fake, nil))
