@@ -17,7 +17,7 @@ func (c *Cache) MirrorSize(repoURL string) int64 {
 	if c.cfg.Dir == "" {
 		return 0
 	}
-	return dirSize(filepath.Join(c.cfg.Dir, mirrorKey(repoURL)))
+	return dirSize(filepath.Join(c.cfg.Dir, mirrorKey(repoURL, "")))
 }
 
 // ResetMirror deletes the mirror for repoURL. Callers must hold no OpenMirror
@@ -26,7 +26,7 @@ func (c *Cache) ResetMirror(repoURL string) error {
 	if c.cfg.Dir == "" {
 		return nil
 	}
-	if err := os.RemoveAll(filepath.Join(c.cfg.Dir, mirrorKey(repoURL))); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.cfg.Dir, mirrorKey(repoURL, ""))); err != nil {
 		return fmt.Errorf("sourcecache: reset mirror: %w", err)
 	}
 	return nil
@@ -39,7 +39,7 @@ func (c *Cache) OpenMirror(repoURL string) (repo *git.Repository, size func() in
 	if c.cfg.Dir == "" {
 		return nil, nil, nil, ErrNoMirrorDir
 	}
-	dir, rel, err := c.acquire(repoURL)
+	dir, rel, err := c.acquire(repoURL, "")
 	if err != nil {
 		return nil, nil, nil, err
 	}

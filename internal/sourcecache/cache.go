@@ -53,6 +53,19 @@ func IsOffline(ctx context.Context) bool {
 	return v
 }
 
+type scopeKey struct{}
+
+// WithScope names the credential identity a Checkout runs under (never the
+// token value, which rotates). Mirrors are only shared within one scope.
+func WithScope(ctx context.Context, scope string) context.Context {
+	return context.WithValue(ctx, scopeKey{}, scope)
+}
+
+func scopeOf(ctx context.Context) string {
+	v, _ := ctx.Value(scopeKey{}).(string)
+	return v
+}
+
 type mirrorState struct {
 	fetchMu sync.Mutex
 	users   int
@@ -104,7 +117,7 @@ func sleepCtx(ctx context.Context, d time.Duration) error {
 // host is down that fails with ErrHostUnreachable. Under WithOffline only
 // the mirror is read.
 func (c *Cache) Checkout(ctx context.Context, repoURL, ref, token string) (Checkout, error) {
-	mirrorDir, release, err := c.acquire(repoURL)
+	mirrorDir, release, err := c.acquire(repoURL, scopeOf(ctx))
 	if err != nil {
 		return Checkout{}, err
 	}
@@ -161,7 +174,7 @@ func (c *Cache) Checkout(ctx context.Context, repoURL, ref, token string) (Check
 }
 
 // acquire returns the mirror directory for repoURL and marks it in use.
-func (c *Cache) acquire(repoURL string) (dir string, release func(), err error) {
+func (c *Cache) acquire(repoURL, scope string) (dir string, release func(), err error) {
 	base := c.cfg.Dir
 	if base == "" {
 		tmp, err := os.MkdirTemp("", "levelrail-mirror-*")
@@ -170,7 +183,7 @@ func (c *Cache) acquire(repoURL string) (dir string, release func(), err error) 
 		}
 		return filepath.Join(tmp, "m"), func() { _ = os.RemoveAll(tmp) }, nil
 	}
-	key := mirrorKey(repoURL)
+	key := mirrorKey(repoURL, scope)
 	st := c.stateFor(key)
 	c.mu.Lock()
 	st.users++
@@ -251,8 +264,18 @@ func resolve(repo *git.Repository, ref string) (plumbing.Hash, bool) {
 	return plumbing.ZeroHash, false
 }
 
-func mirrorKey(repoURL string) string {
-	sum := sha256.Sum256([]byte(normalizeURL(repoURL)))
+// pushMirrorPrefix marks mirrors filled by git push, which hold local data
+// and no remote credential, so they keep their original key.
+const pushMirrorPrefix = "push://local/"
+
+// mirrorKey separates mirrors by credential scope so a cached private commit
+// is only served to callers using the credential that fetched it.
+func mirrorKey(repoURL, scope string) string {
+	if strings.HasPrefix(repoURL, pushMirrorPrefix) {
+		sum := sha256.Sum256([]byte(normalizeURL(repoURL)))
+		return hex.EncodeToString(sum[:16])
+	}
+	sum := sha256.Sum256([]byte(normalizeURL(repoURL) + "\x00" + scope))
 	return hex.EncodeToString(sum[:16])
 }
 

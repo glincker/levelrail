@@ -277,3 +277,63 @@ func TestIsUnreachable(t *testing.T) {
 		})
 	}
 }
+
+func TestMirrorIsSharedOnlyWithinOneScope(t *testing.T) {
+	h := newFakeHost(t)
+	sha := h.commit("one")
+	c, fetches, _ := newTestCache(t)
+	scoped := WithScope(context.Background(), "app:web")
+
+	co, err := c.Checkout(scoped, h.url(), sha, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	co.Cleanup()
+	before := *fetches
+
+	co, err = c.Checkout(scoped, h.url(), sha, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	co.Cleanup()
+	if !co.FromCache || *fetches != before {
+		t.Fatalf("same scope: fromCache=%v fetches=%d want %d", co.FromCache, *fetches, before)
+	}
+
+	for _, ctx := range []context.Context{context.Background(), WithScope(context.Background(), "app:other"), WithScope(context.Background(), "ghapp:acme")} {
+		co, err = c.Checkout(ctx, h.url(), sha, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		co.Cleanup()
+		if co.FromCache {
+			t.Fatalf("scope %q was served another scope's mirror", scopeOf(ctx))
+		}
+	}
+	if *fetches != before+3 {
+		t.Fatalf("fetches = %d, want %d", *fetches, before+3)
+	}
+}
+
+func TestAnonymousCloneUsesOwnMirror(t *testing.T) {
+	h := newFakeHost(t)
+	sha := h.commit("one")
+	c, _, _ := newTestCache(t)
+	co, err := c.Checkout(context.Background(), h.url(), sha, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer co.Cleanup()
+	if readFile(t, co.Dir) != "one" {
+		t.Fatal("wrong content")
+	}
+}
+
+func TestPushMirrorKeyIgnoresScope(t *testing.T) {
+	if mirrorKey("push://local/web", "") != mirrorKey("push://local/web", "app:web") {
+		t.Fatal("push mirror key must not depend on scope")
+	}
+	if mirrorKey("https://example.com/a/b", "") == mirrorKey("https://example.com/a/b", "app:x") {
+		t.Fatal("remote mirror key must depend on scope")
+	}
+}

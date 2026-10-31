@@ -93,10 +93,10 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 		if strings.HasPrefix(m.repoURL, uploadURLPrefix) {
 			sourceDir, commit, cleanup, err = rt.fetchUpload(name, m.repoURL)
 		} else {
-			token := rt.tokenForRepo(ctx, name, m.repoURL, m.allowPrivateRepoAuth)
-			fetchCtx := ctx
+			token, scope := rt.cloneCredential(ctx, name, m.repoURL, m.allowPrivateRepoAuth)
+			fetchCtx := sourcecache.WithScope(ctx, scope)
 			if m.fromCache {
-				fetchCtx = sourcecache.WithOffline(ctx)
+				fetchCtx = sourcecache.WithOffline(fetchCtx)
 			}
 			sourceDir, commit, cleanup, err = rt.fetch(fetchCtx, m.repoURL, m.ref, token)
 		}

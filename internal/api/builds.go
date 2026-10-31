@@ -202,27 +202,34 @@ func (rt *Router) storedGitSourceAppAuth(ctx context.Context, name string) bool 
 // extra permission check needed), else a minted GitHub App installation
 // token when allowPrivateRepoAuth and possible, else empty.
 func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowPrivateRepoAuth bool) string {
-	if token := rt.storedGitSourceToken(ctx, name, repoURL); token != "" {
-		return token
+	token, _ := rt.cloneCredential(ctx, name, repoURL, allowPrivateRepoAuth)
+	return token
+}
+
+// cloneCredential is tokenForRepo plus a stable scope naming whose credential
+// the token is (not the token value, which rotates), for source mirror keys.
+func (rt *Router) cloneCredential(ctx context.Context, name, repoURL string, allowPrivateRepoAuth bool) (token, scope string) {
+	if t := rt.storedGitSourceToken(ctx, name, repoURL); t != "" {
+		return t, "app:" + name
 	}
 	if !allowPrivateRepoAuth || rt.githubAppSecrets == nil {
-		return ""
+		return "", ""
 	}
 	// Outside a request there is no caller to check, so the stored source
 	// records whether a team scoped writer set it.
 	if _, inRequest := callerTeamScope(ctx); !inRequest && !rt.storedGitSourceAppAuth(ctx, name) {
-		return ""
+		return "", ""
 	}
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
 	if err != nil {
-		return ""
+		return "", ""
 	}
 	instanceHost := "github.com"
 	if u, parseErr := url.Parse(conn.InstanceURL); parseErr == nil && u.Host != "" {
 		instanceHost = u.Host
 	}
 	if !isGitHubHTTPSRepoURL(repoURL, instanceHost) {
-		return ""
+		return "", ""
 	}
 
 	connInstanceURL := conn.InstanceURL
@@ -231,17 +238,30 @@ func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowP
 	}
 	owner, repoName, ok := githubOwnerRepoFromURL(repoURL, connInstanceURL)
 	if !ok {
-		return ""
+		return "", ""
 	}
-	token, err := rt.mintGitHubAppCloneToken(ctx, owner, repoName)
+	token, err = rt.mintGitHubAppCloneToken(ctx, owner, repoName)
 	if err != nil {
 		if !errors.Is(err, errGitHubAppNotConnected) && !errors.Is(err, errGitHubAppNotInstalled) {
 			rt.logger.Error("api: mint github app installation token failed, falling back to an unauthenticated clone that will likely fail for a private repo",
 				slog.String("error", err.Error()), slog.String("repo_url", redactURLCredentials(repoURL)))
 		}
-		return ""
+		return "", ""
 	}
-	return token
+	return token, "ghapp:" + strings.ToLower(owner)
+}
+
+// triggerRepoAllowed keeps a team-scoped caller on the app's own connected
+// repository, so a request URL cannot borrow another source's cached mirror.
+func (rt *Router) triggerRepoAllowed(r *http.Request, name, repoURL string) bool {
+	if gitHubAppTokenAllowed(r.Context()) || rt.gitSources == nil {
+		return true
+	}
+	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
+	if err != nil || gs == nil {
+		return true
+	}
+	return sameRepoURL(gs.RepoURL, repoURL)
 }
 
 // gitHubAppTokenAllowed reports whether the request's caller may be handed a
@@ -373,6 +393,14 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		}
 		if req.Ref == "" {
 			writeError(w, http.StatusBadRequest, "ref is required")
+			return
+		}
+		if !rt.triggerRepoAllowed(r, name, req.RepoURL) {
+			writeError(w, http.StatusForbidden, "repo_url must match the app's connected git source")
+			return
+		}
+		if req.FromCache && !rt.callerHasAbility(r, AbilityReadSensitive) {
+			writeError(w, http.StatusForbidden, "from_cache needs read access to sensitive data")
 			return
 		}
 	}
