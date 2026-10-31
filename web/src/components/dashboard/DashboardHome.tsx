@@ -17,6 +17,7 @@ import {
 } from '../../lib/dashboardLayout'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DashboardPending } from './DashboardPending'
 import { cn } from '@/lib/utils'
 import { DashboardHero } from './DashboardHero'
 import { FleetTiles } from './FleetTiles'
@@ -190,7 +191,7 @@ export function DashboardHome({
   const hasApps = summary.total > 0 || anyApps.data === true
 
   if (summary.total === 0 && anyApps.isPending) {
-    return <Skeleton className="h-64 w-full" />
+    return <DashboardPending />
   }
 
   if (!hasApps || (deployStarted && !firstRunDone)) {

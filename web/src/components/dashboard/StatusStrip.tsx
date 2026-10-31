@@ -46,7 +46,7 @@ function OfflineNodes({
         TONE.danger.text,
       )}
     >
-      <ServerGlassIcon aria-hidden="true" className="size-6" />
+      <ServerGlassIcon aria-hidden="true" className="size-5" />
       {t('strip.nodeOffline', { count: nodes.length, names })}
       {since ? (
         <span className="font-normal">
@@ -117,7 +117,7 @@ export function StatusStrip({
                 TONE[tone].text,
               )}
             >
-              <Icon aria-hidden="true" className="size-6" />
+              <Icon aria-hidden="true" className="size-5" />
               {label}
             </span>
           )}

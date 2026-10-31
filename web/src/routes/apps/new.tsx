@@ -30,7 +30,6 @@ function NewAppPage() {
   const search = Route.useSearch()
   const prefill = useDeployLinkPrefill(search)
   const [linkOpen, setLinkOpen] = useState(false)
-  const { t: tl } = useTranslation('newApp')
 
   if (prefill.active && prefill.image !== undefined) {
     return (
@@ -65,7 +64,7 @@ function NewAppPage() {
               }}
             >
               <LinkGlassIcon size="1.4em" aria-hidden />
-              {tl('deployLinkDialog.action')}
+              {t('deployLinkDialog.action')}
             </Button>
           </div>
           {linkOpen ? (

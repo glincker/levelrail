@@ -186,7 +186,7 @@ function AppListPage() {
         </Button>
       ) : null}
       {totalApps > 0 ? (
-        <span className="hidden sm:block">
+        <span>
           <ViewToggle mode={mode} onChange={changeMode} />
         </span>
       ) : null}
@@ -194,7 +194,6 @@ function AppListPage() {
       <Button
         size="sm"
         variant="outline"
-        className="max-sm:hidden"
         render={<Link to="/databases" />}
         nativeButton={false}
       >
@@ -236,16 +235,22 @@ function AppListPage() {
             active={status}
             onChange={setStatus}
           />
-          <AppsFilterBar
-            filters={filters}
-            environments={environments}
-            onChange={setFilters}
-          />
-          <LabelFilterInput
-            value={labelSelector}
-            onChange={setLabelSelector}
-            invalid={labelMatches.isError}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-0 flex-1 basis-64">
+              <AppsFilterBar
+                filters={filters}
+                environments={environments}
+                onChange={setFilters}
+              />
+            </div>
+            <div className="w-full sm:w-72">
+              <LabelFilterInput
+                value={labelSelector}
+                onChange={setLabelSelector}
+                invalid={labelMatches.isError}
+              />
+            </div>
+          </div>
         </div>
       ) : null}
       {noApps ? (

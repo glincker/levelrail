@@ -66,10 +66,7 @@ function BackupsPage() {
                     setProtectOpen(true)
                   }}
                 >
-                  <ShieldCheckGlassIcon
-                    className="text-tone-success"
-                    size="1.4em"
-                  />
+                  <ShieldCheckGlassIcon size="1.4em" />
                   {t('summary.protectEverything')}
                 </Button>
               ) : null}

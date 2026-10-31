@@ -98,7 +98,7 @@ export function PageBanner({
               {title}
             </h1>
             {compact ? (
-              <p className="truncate text-sm text-muted-foreground">
+              <p className="line-clamp-2 text-sm text-muted-foreground md:line-clamp-1">
                 {description}
               </p>
             ) : null}
