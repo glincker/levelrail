@@ -40,7 +40,7 @@ func newVolumeBackupOptions(db *store.DB, local docker.Runtime, registry *agent.
 	}
 	opts := &backup.VolumeBackupOptions{Sealer: sealer, Policies: db, Logger: logger}
 	opts.OptionsFromEnv(os.LookupEnv)
-	opts.Quiesce = &backup.ContainerQuiescer{Resolve: func(ctx context.Context, serviceName string) (docker.Runtime, string, error) {
+	quiescer := &backup.ContainerQuiescer{Logger: logger, Resolve: func(ctx context.Context, serviceName string) (docker.Runtime, string, error) {
 		svc, err := db.GetDesiredService(ctx, serviceName)
 		if err != nil {
 			return nil, "", fmt.Errorf("load app %q: %w", serviceName, err)
@@ -59,6 +59,8 @@ func newVolumeBackupOptions(db *store.DB, local docker.Runtime, registry *agent.
 		}
 		return rt, st.ID, nil
 	}}
+	quiescer.HookBudgetsFromEnv(os.LookupEnv)
+	opts.Quiesce = quiescer
 	return opts, nil
 }
 
