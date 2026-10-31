@@ -24,7 +24,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
     Closing a pull request tears the preview down regardless of whether it merged.
   </Card>
   <Card title="Status back to your git host">
-    On GitHub, each preview shows as a deployment in the preview environment that moves from in progress to success or failure.
+    Each preview gets a commit status and an updated pull request comment. On a GitHub source with status reporting on (the default, off with `APP_GIT_STATUS_ENABLED=false` or the app's `report_status` setting), it also shows as a deployment in the `preview` environment.
   </Card>
   <Card title="Disposable databases">
     An app can provision a full, disposable database for every pull request preview that is destroyed with the preview.
@@ -47,6 +47,15 @@ Each preview keeps one comment on its pull request, edited in place as the previ
 - The **cleanup** time if nothing changes, and how many **env overrides** apply.
 
 The comment never contains an env var name or value, so secrets set for a pull request cannot leak into it.
+
+## Static sites
+
+If the app is a static site (`build.type: static`), the preview publishes the pull request's head commit as its own static site named `<app>-pr-<number>`, with no container. It is built the same way as a production deploy and served on the same preview URL a container preview would get. The live site, its domain and its rollback history are not touched, and the same status checks and pull request comment are posted.
+
+- Closing or merging the pull request, the stale sweep and a manual **Tear down** remove the preview's files, route and site record. Only that preview's own directory is deleted.
+- Without a base domain or primary domain the preview has no host name, so it is built but not reachable.
+- The basic auth gate is not applied to static previews, and the preview is not given a no-index header. The preview comment notes it when the gate is on. Do not put private content in a static preview.
+- Database strategies, disposable databases and idle sleep do not apply, since a static site has no runtime.
 
 ## Env overrides for one pull request
 
@@ -81,7 +90,7 @@ Fork pull requests only receive overrides when you approved sharing the app's se
 
 When a pull request closes or merges, Levelrail removes everything the preview created:
 
-- the preview app and its containers, and the DNS record,
+- the preview app and its containers (or, for a static site, its published files), and the DNS record,
 - every disposable database and its data volumes,
 - the preview's own named volumes (a volume that another service still mounts is kept),
 - the pull request's env overrides and their encrypted values.

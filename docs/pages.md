@@ -141,6 +141,10 @@ This shows every site currently served through the embedded ingress, with no bui
 
 A static site you deploy with `--ref` is one deploy of one ref. To get a stable URL per branch with automatic rebuilds on each push, connect the repository as a source-connected app and turn on [branch deploys](/preview-environments#branch-deploys). Pull request previews are separate and need a pull request.
 
+### Pull request previews
+
+A source-connected static site gets a preview for each pull request when previews are on. The pull request's head commit is built and published as its own site, `<site>-pr-<number>`, on the preview URL, and the pull request gets the usual comment and commit status. The live site, its domain and its release history are not touched. Closing or merging the pull request, or the stale preview sweep, removes the preview's files. Static previews do not enforce the preview basic auth gate. See [static sites in previews](/preview-environments#static-sites).
+
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.
