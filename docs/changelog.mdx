@@ -4,6 +4,388 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="0.8.8" description="2026-10-30">
+**Features**
+
+* add a sync workflow for translated READMEs
+* add app type model, parameter schema subset and Check (ADR 052 slice 1)
+* add app types store and API behind LEVELRAIL_APPTYPE_ENABLED
+* add apps tree command
+* add explain command for config fields
+* add field descriptions and defaults to the config schema
+* add fleet-wide widget types to dashboards
+* add levelrail-cli app-types apply, list and check
+* add offline validate command for resource files
+* add status page and status component terraform resources
+* analysis report API, CLI and MCP read tool
+* apply --server-side and edit as a compare-and-swap
+* apply and export inline app files
+* assistant write, loop, empty-result and error-scrub guards
+* detect the OrbStack socket for local development
+* deterministic incident and cost analysis reports, off by default
+* estimate monthly saving in the app resource recommendation
+* explicit release id on apps promote and rollback
+* grouped, branded status page with atom feed, history pages and badges
+* init --commented and --out render a schema-commented app.yaml
+* Levelrail v0.8.11
+* list an app's releases in the API and CLI
+* list an app's releases on the overview
+* make release bindings authoritative for promote and rollback when on
+* manage status page groups, branding and public links in the dashboard
+* monitors CLI commands and experimental monitors docs
+* monitors REST API behind APP_MONITORS_ENABLED with boot wiring
+* pipeline promote and rollback steps retarget release bindings
+* server-side apply on the v2 app and database API
+* shadow-write release snapshots and environment bindings behind APP_RELEASE_BINDINGS
+* show a QR code on the two factor setup dialog
+* show analysis reports on the app overview
+* show binding history in releases API and CLI
+* show schema field help in the config editor
+* show the pinned image digest on promotion approvals
+* show the resource tree on the app overview
+* show the right-sizing saving on the app page
+* status page groups, branding and new public routes in the API
+* status-page group and branding CLI commands, docs
+* store for analysis reports
+* store release id on approvals and add binding retarget
+* translate new app, deploys and domains into Spanish (part 2)
+* translate the first-run dashboard flow into Spanish (part 1)
+* uptime monitor engine with http and tcp checks, batched results and hourly rollups
+* **web:** fleet overview widgets for the Metrics tab
+* **web:** offer an IP and port or a domain when the app address does not answer
+* **web:** one-row app navigation with thesvg glass icons
+* **web:** palette colour grade with a dark gradient field over a lighter glass panel
+* **web:** search across registries and docs, command pills, recent bubbles with local history
+* **web:** thesvg glass icons everywhere, new banner, one-row app nav and command search
+
+
+**Bug Fixes**
+
+* add fan-in budgets for deploy and kit/upgrade
+* allow existing nolint directives and re-balance the fan-in budget
+* apps create --file saves the spec rollout policy
+* audit invite and device paths even when a later step fails
+* check apps served only through the ingress and flag an unreachable public address
+* clear the CI failures on the release PR
+* correct alert rule schema descriptions
+* deleting a verified backup works and a restored one returns 409
+* flag apps linked to a database as pending after pooler changes
+* gate before binding retarget, release rollback marking, authz before release lookup
+* give the pre-commit tsc stage a larger node heap
+* guard empty file list in check-i18n
+* keep existing status pages noindex after the v2 upgrade
+* keep translated READMEs out of the docs search index and give the CLI reference room
+* lazy-load the app overview sections to stay within the bundle budget
+* make binding undo conditional, uncancelled and audited
+* match the brew test to the current help output
+* pin promotions to the source image digest
+* register the apps tree subcommand in the command tree
+* restore drills skip local targets quietly and report them as not applicable
+* run the locale parity test under the shared vitest setup
+* save and export app rollout policy through apply
+* serve app routes on plain http when systemd holds port 80
+* testing a local backup target checks the directory instead of asking for keys
+* undo binding on failed apply, verify release digest, audit retargets
+* verify pinned digest at promotion approval and pipeline rollback
+* **web:** hide the stray scrollbar on the dashboard tab strip
+* **web:** lead with an address that answers when the free test domain does not
+* wire the assistant write guard to the AI control mode
+* write audit rows for the remaining mutating auth routes
+</Update>
+
+<Update label="0.8.7" description="2026-10-29">
+**Features**
+
+* **agent:** report a silent control plane to an off-host URL
+* **api:** app urls report a plain-http link when the ingress routes one
+* **api:** report deploy outcome and reason on every deploy response
+* **api:** show UDP ports and refuse conflicting compose deploys
+* **api:** v2 list, get and watch for apps, nodes and databases
+* **api:** verify GitLab and CircleCI OIDC identity tokens
+* app status reports the deploy outcome and reason
+* apps deploy-compose prints the API's compose warnings
+* **apps:** private app tunnel from the CLI and dashboard
+* **apps:** show template setup notes in Access details for any template app
+* **backup:** copies verify checksums and carry a manifest, add local directory targets
+* **backup:** copy backups to a second destination with lag alert
+* **backups:** local directory target form and copy manifest indicator
+* **catalog:** add Headscale and Authelia templates
+* **catalog:** add Radicale template
+* **catalog:** add RSSHub template
+* **catalog:** add RustDesk server template
+* **catalog:** add setup notes to RustDesk, Mosquitto and two more templates
+* **catalog:** expose an optional template description in the API
+* **ci:** trust GitLab and CircleCI pipelines to deploy with OIDC
+* **ci:** trust GitLab and CircleCI pipelines to plan and apply stacks
+* CLI status and wait print the server's deploy outcome reason
+* **cli:** add provider-neutral apps ci token and trust commands
+* **cli:** apps create --file sends published_ports
+* **cli:** decode published ports on app and compose deploy responses
+* **cli:** deploy-compose warns about ignored compose keys
+* **cli:** explain a host port already in use
+* **cli:** explain published port refusals with a next step
+* **cli:** explain, api-resources, rollout, config contexts and -n/-A scope flags
+* **cli:** kubectl style get, describe, delete, edit, port-forward and cp
+* **cli:** list, copy and delete volume files with apps volumes ls, cp, rm
+* **cli:** restart --wait exits on the real outcome, add env unset
+* **cli:** set the agent silence URL with settings heartbeat
+* **cli:** show published ports as 53/udp in apps and compose output
+* **cli:** show template setup notes in templates get
+* **cli:** up stops when the remote branch lacks your commit
+* **cli:** up waits for a healthy first deploy
+* **cli:** yaml, wide, name, custom-columns and jsonpath output formats
+* **compose:** accept UDP ports and store them per service
+* **compose:** apply mem_limit, cpus and deploy resource limits
+* **compose:** apply shm_size to /dev/shm with drift recreate
+* **compose:** corpus test and warnings for compose keys that are ignored
+* **compose:** health probes run from outside the container
+* **compose:** record an explicit restart no or on-failure policy
+* **compose:** refuse a UDP port another host process already binds
+* dashboard hero uses the server deploy outcome
+* **dashboard:** give the available update its own strip
+* **databases:** per-database pooler pool size and max client connections
+* **databases:** run an opt-in transaction pooler beside managed Postgres
+* **databases:** toggle and inspect the Postgres pooler from API and CLI
+* **deploy:** snapshot linked databases before a deploy and roll back with data
+* **deploy:** wait for CI checks before a push deploy
+* **domains:** guided four-step domain setup stepper
+* **files:** app files docs, template file checks and a Gatus template
+* **files:** apps files ls, set and rm in the CLI
+* **files:** files API and compose inline configs
+* **files:** Files section on the app Configuration tab
+* **files:** inline config files written into the container before start
+* **firewall:** list published UDP ports in the host firewall view
+* **heartbeat:** off-host dead-man heartbeat with settings card and docs
+* **iac:** declare the Postgres connection pooler on databases
+* **iac:** stacks declare published ports and run-to-completion restart
+* **import:** import k8s command, API route, client and docs
+* **jobs:** run-to-completion one-shot jobs with completions and backoff
+* **k8simport:** map Kubernetes manifests to stack documents with a findings report
+* **labels:** labels on apps, databases, stacks and nodes with selector filtering
+* **mcp:** deploy_app can wait for the outcome and diagnose failures
+* **mcp:** deploy_template installs a catalog template from an agent
+* **mcp:** failed deploy waits return a compact redacted diagnosis
+* **mcp:** stack tools and graduation tests for secrets and lease contention
+* **prcmd:** add /levelrail help for users with write access
+* **prcmd:** audit every refused pull request comment command
+* **prcmd:** ignore oversized pull request comments before parsing
+* **reconcile:** publish UDP ports directly on the host
+* **recovery:** plan and run whole-server data recovery from backups
+* **rollout:** rolling deploys replace replicas in max_surge waves
+* **rollout:** rollout waves API and CLI, min_available blocks disruption
+* **shell:** link the sidebar version to update settings
+* show backup local root and add read-only doctor disk report
+* show backup local root in the target form and document doctor disk
+* **store:** log app changes beside every app write, with backfill
+* **store:** resource change log with versions, CAS and compaction
+* **templates:** add ArchiveBox web archiver template
+* **templates:** add Backrest restic backup web UI
+* **templates:** add Crawl4AI crawler API template
+* **templates:** add Open Notebook research template
+* **templates:** apply guarded template upgrades with auto rollback
+* **templates:** keep access details on the app page and in the wizard
+* **templates:** mark smoke-tested templates as verified in API and CLI
+* **templates:** open a template deploy page from /templates?deploy=&lt;id&gt;
+* **templates:** plan guarded template upgrades with risk and blockers
+* **templates:** show address, logins and notes after a template deploy
+* **templates:** Verified badge and Verified only filter in the dashboard
+* **ui:** confirm app Restart and Stop before running
+* **ui:** follow Restart and Stop until the app is really back
+* v0.8.9 UDP ports, partial PUT, CI OIDC providers, Access details
+* **volumes:** browse, download, upload and delete single volume files
+* **web:** agent silence URL on the heartbeat card
+* **web:** browse, upload, download and delete files on an app volume
+* **web:** choose GitHub, GitLab or CircleCI when trusting a CI pipeline
+* **web:** CI gate card on the Source tab and docs
+* **web:** connection pooler card on the database page
+* **web:** container port step in domain stepper, stepper in first run, palette entries
+* **web:** deploy progress shows rollout waves and replica counts
+* **web:** edit UDP and TCP published ports in the app port editor
+* **web:** explain published port deploy errors with a fix hint
+* **web:** first app always shows an openable address and failure reason
+* **web:** label chips with edit on app and database pages, label filter on lists
+* **web:** one next action on the empty dashboard
+* **web:** open the first app by its direct address when HTTPS is off
+* **web:** pre-deploy snapshot setting and rollback with data from deploy history
+* **web:** recovery report page under settings
+* **web:** say a first deploy can take up to two minutes
+* **web:** second destination copy status on backup settings
+* **web:** show template setup notes in the detail page and deploy dialog
+* **web:** show the approving state on deploy approvals
+* **web:** show UDP and TCP published ports on the app network panel
+* **web:** show UDP rows in the host firewall card and port-in-use hint
+* **web:** stacks page gets palette search keywords and preview
+* **web:** type published ports on apps and compose services
+* **web:** upgrade button with risk diff and progress on template apps
+
+
+**Bug Fixes**
+
+* **agent:** keep container image identity from remote nodes
+* **agent:** stop counting a never-started remote one-shot as completed
+* **api:** block self-approval through the requester's own token
+* **api:** cap pull request comment refusal audit rows
+* **api:** claim a deploy approval before applying it
+* **api:** deny self-approval when a requester token is gone
+* **api:** keep omitted fields on PUT /apps instead of clearing them
+* **api:** keep PR comment refusal reasons and counts in the audit log
+* **api:** reject negative resources and oversize shm on app writes
+* **api:** return a same-tag approval to pending when its apply never ran
+* **api:** stop a stack reject from failing an apply in flight
+* **apps:** accept a UDP-only app with no HTTP port on create and edit
+* **apps:** keep a one-shot restart policy across health edits
+* **apps:** keep and admit published ports on app create and update
+* **apps:** let a portless app edit or clear its published ports
+* **apps:** refuse published ports the control plane or a host port holds
+* **auth:** concurrent first sign-ins now trust exactly one device
+* backup copies read and write local and node destinations
+* build failures no longer log a doubled build prefix
+* build script works in worktrees, upgrade-note help says what it does
+* **catalog:** Authelia keeps users.yml with argon2id or added users
+* **catalog:** Authelia says why it stopped when hashing fails
+* **catalog:** Authelia start fails closed without a valid admin hash
+* **catalog:** drop ignored compose keys from three templates
+* **catalog:** keep the Authelia admin password off the command line
+* **catalog:** mosquitto and registry auth use the generated credentials
+* **catalog:** Open Notebook API_URL from domain, licence notes, Authelia fallback
+* **catalog:** RustDesk template refuses to start without a relay host
+* **ci:** adding a CI trust needs deploy, custom issuers need root
+* **ci:** CI token exchanges are audited and old tokens refused
+* **ci:** docs-only changes no longer trigger Go tests by name suffix
+* **ci:** GitLab trusts require protected refs and environments
+* **ci:** trusts on the same path no longer collide across providers
+* CLI console frees the run slot before its exit frame
+* cli dispatch and usage text cover copy, rehydrate and upgrade flags
+* **cli:** deploy cert wait ends at its window and applies to static deploys
+* **cli:** deploy says when the new URL's certificate is still being issued
+* **cli:** green the CLI tests after the kubectl verbs and new commands
+* **cli:** harden up push check git calls and allowlist it
+* **cli:** import config refuses and quotes unsafe names in printed commands
+* **cli:** list heartbeat and upgrade-plan in shell completion
+* **cli:** up's push check ignores repo git proxy and credential hooks
+* close the self-approval gap and harden first run, import and compose
+* **compose:** cap shm_size by default and count it against memory quota
+* **compose:** enforce project and team quotas on compose deploys
+* **compose:** keep the 2 GiB shm cap when its env value is invalid
+* **compose:** reject NaN, overflowing and zero-rounding resource limits
+* **compose:** warn on and ignore a malformed on-failure:N restart value
+* **console:** mask secrets and strip escapes in console output
+* **console:** run only allowlisted API-only CLI commands
+* **console:** start the CLI in its own session with no extra fds
+* **database:** replace the pooler when the database password rotates
+* **deploy-urls:** retained deploy clones no longer bind published ports
+* **deploy:** app.yaml deploys refuse host ports the API would refuse
+* **deploy:** app.yaml host_port pins get the API's holder checks
+* **deploy:** keep canaries, previews and revives off published host ports
+* **deploy:** report a completed one-shot service as rolled out
+* **deploy:** report a deploy stuck in a crash loop as failed
+* **deploy:** report a one-shot past its completion budget as failed
+* **deploy:** require-mode snapshots need a target and a failed snapshot no longer asks to proceed
+* **deploy:** skip or refuse pre-deploy snapshots when the estimated size is over the cap before backing up
+* **deploywatch:** ignore a one-shot service that exited 0
+* **domains:** refuse a domain on an app with no HTTP port
+* **exec:** wait for a restarting app instead of failing at once
+* green CI lint, fan-in budgets and the editor exec allowlist
+* **import:** import config emits a file apps create accepts
+* installer token gate no longer relies on a guessed cloud-init variable
+* **jobs:** name the group's services when jobs run targets an app group
+* label at top level in the command tree, pooler flags in help, refresh schema and doctor count
+* **mcp:** app tool output no longer fails on a null env
+* **mcp:** deploy_app wait follows the deploy it started
+* **ports:** close published port holes and dial the tcp binding
+* **ports:** proxy and probes dial the service port, not the first binding
+* **ports:** reserve the mesh's configured WireGuard port
+* **publish-lock:** publishing a held build rechecks its host ports
+* PUT app counts Unicode-folded keys as sent
+* **quota:** count /dev/shm of apps without a memory limit in usage
+* **reconcile:** exited port-less service no longer reports Ready
+* **reconcile:** honor depends_on service_completed_successfully
+* **reconcile:** judge a completed dependency by its current release only
+* **reconcile:** keep a worker crash restart from failing its deploy
+* **reconcile:** let a long one-shot finish instead of killing it
+* **reconcile:** stop counting a never-started one-shot as completed
+* **reconcile:** stop rerunning a one-shot service that exited 0
+* restore, verify, download and delete work on local and node backup targets
+* **spec:** keep run-to-completion on app.yaml and compose build deploys
+* **stacks:** accept a UDP-only app with no HTTP port
+* trim MCP tool descriptions back under the token budget and register stacks toolset
+* **ui:** restart no longer reports a false failure while recovering
+* unset GIT_* env in pre-push so Go tests see a clean git context
+* upgrade help lists --dry-run, shutdown test tolerates config pushes
+* **upgrade:** dry-run shows schema move and rollback, emergency-token prints the API URL
+* v2 routes visible to route guards, one-shot job ref authz, rehydrate 500 handling
+* **volumes:** require read:sensitive for file edits and audit real outcomes
+* **web:** 44px tap targets for first-run secondary links on phones
+* **web:** 44px tap targets on phones for first-app and confirm buttons
+* **web:** compact first-run path cards on narrow screens
+* **web:** firewall rows keep bind and state together, loopback reads Local only
+* **web:** first app live state states its status once
+* **web:** focus Cancel first and make Stop confirm solid destructive
+* **web:** hide the published ports hint while its error shows
+* **web:** keep a link's hash across the sign-in redirect
+* **web:** keep the assistant button clear of page actions on phones
+* **web:** live title and real scheme on the first-app screen
+* **web:** map authelia and rsshub marks, list five known-missing logos
+* **web:** map RustDesk mark and list Radicale as known-missing
+* **web:** mount rollback-with-data dialog on demand, list gatus as missing logo
+* **web:** one compact HTTPS prompt in the first-app flow
+* **web:** one compact HTTPS prompt on first run
+* **web:** one HTTPS prompt on the first-app card and no no-op shortcut
+* **web:** only link https release notes from the update strip
+* **web:** published port chips carry the container mapping inside
+* **web:** show a crash-looping first deploy as failed
+* **web:** show one open action for a live first app
+* **web:** show server deploy outcome on deploy history rows
+* **web:** sign-in keeps deploy links and the first-run setup token
+* **web:** trust the server deploy outcome for crash-looping apps
+* **web:** wrap long notes and tokens in the template result dialog
+
+
+**Performance**
+
+* **api:** take the host port lock only for deploys that claim one
+* let parallel agents lint at once with a shared cache and bounded lock wait
+* **mcp:** slim compact tool schemas, free about 1.5k tokens
+
+
+**Documentation**
+
+* add deploy and debug from an AI agent flows to MCP recipes
+* **adr:** plan UDP ports, then gated NET_ADMIN and sysctls
+* **adr:** propose promote from pull request comments
+* **adr:** require resolved-human self-approval check for PR promote
+* **api:** regenerate the API reference with rehydrate routes
+* **api:** regenerate the API reference with v2 and tunnel routes
+* **backup:** document copy verification, manifest sidecar and local targets
+* **catalog:** mark seven new templates verified
+* **ci:** deploy from GitLab CI and CircleCI with OIDC, no stored token
+* **ci:** GitLab safe defaults, audit entries and downgrading
+* **ci:** tested pipeline files for GitHub OIDC, GitLab and CircleCI
+* **compose:** document run-to-completion restart and completed depends_on
+* **compose:** document shm_size and platform hardening keys
+* **compose:** document UDP published ports and what is not yet supported
+* **compose:** fix UDP ports page link and DNS example
+* **console:** add CLI console page and list both beta features in status
+* **console:** document the allowlist, drift tests and per-mode limits
+* **databases:** explain the Postgres pooler, pooled and direct URLs
+* deploy_template tool, PUT keep semantics and template Access details
+* **deploy:** add the pre-deploy database snapshot guide
+* **deploy:** describe rolling back with data from the dashboard
+* describe the template description field for authors
+* explain previous-release hold and rollback pins
+* explain retained deploy containers and when they stop
+* kubectl style CLI verb mapping
+* **labels:** labels and namespaces guide
+* note that chat approvals trust the channel, not a person
+* **recovery:** whole-server recovery guide
+* refresh the MCP tool surface numbers
+* self-hosted guide no longer says autoscaling is missing
+* **setup:** show the setup link with the token in the hash
+* **stacks:** published ports and restart in app documents
+* **udp:** examples verified by running them
+* **volumes:** add the volume files guide and env limits
+</Update>
+
 <Update label="0.8.6" description="2026-10-27">
 **Features**
 

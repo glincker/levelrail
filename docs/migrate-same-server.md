@@ -1,6 +1,6 @@
 ---
 title: Migrate on the same server
-description: "Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, take over ports 80 and 443 with a verified rollback, and what can go wrong."
+description: "Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, then take over ports 80 and 443."
 "og:url": "https://docs.levelrail.com/migrate-same-server"
 ---
 

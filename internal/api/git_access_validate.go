@@ -123,7 +123,7 @@ func (rt *Router) gitAccessCredential(ctx context.Context, name, repoURL string)
 	if t := rt.storedGitSourceToken(ctx, name, repoURL); t != "" {
 		return t, gitAuthDeployToken
 	}
-	if t := rt.tokenForRepo(ctx, name, repoURL, true); t != "" {
+	if t := rt.tokenForRepo(ctx, name, repoURL, gitHubAppTokenAllowed(ctx)); t != "" {
 		return t, gitAuthGitHubApp
 	}
 	return "", gitAuthNone

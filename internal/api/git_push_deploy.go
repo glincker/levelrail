@@ -73,6 +73,9 @@ func (rt *Router) prepareGitPush(r *http.Request, ws *pushStream, name string, r
 
 	mirror := gitPushMirrorURL(name)
 	if rt.sourceCache.MirrorSize(mirror) > gitPushLimits().quotaBytes {
+		if rt.hasPendingPushHold(ctx, name) {
+			return nil, reject("storage quota reached while a push awaits approval", "The server copy is over its size quota and holds a push awaiting approval. Decide that approval, then push again.")
+		}
 		if err := rt.sourceCache.ResetMirror(mirror); err != nil {
 			rt.logger.Error("api: git push: reset over-quota mirror failed", slog.String("name", name), slog.String("error", err.Error()))
 		}
@@ -163,6 +166,13 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 	}
 	hash := plan.cmd.New.String()
 	short := hash[:7]
+	if handled, msg, parked := rt.holdGitPush(ctx, name, plan); handled {
+		ws.say(msg)
+		if !parked {
+			return "the push could not be parked for approval"
+		}
+		return ""
+	}
 	buildType, path, base := rt.gitPushBuildConfig(ctx, name, plan.commit)
 	treq := triggerBuildRequest{
 		RepoURL: gitPushMirrorURL(name), Ref: hash,

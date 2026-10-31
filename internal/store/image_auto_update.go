@@ -96,3 +96,11 @@ func (db *DB) SetImageAutoUpdateWebhookHash(ctx context.Context, serviceName, ha
 	}
 	return nil
 }
+
+// DeleteImageAutoUpdatesForApp drops the opt-in and its webhook token hash.
+func (db *DB) DeleteImageAutoUpdatesForApp(ctx context.Context, serviceName string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM image_auto_updates WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete image auto update for app: %w", err)
+	}
+	return nil
+}

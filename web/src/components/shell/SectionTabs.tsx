@@ -1,9 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
+import type { PlatformTabTo } from '@/lib/platformSettingsIndex'
 import type { GlobalTo } from './navModel'
 
 export interface SectionTabItem {
-  to: GlobalTo
+  to: GlobalTo | PlatformTabTo
   label: string
   active: boolean
 }

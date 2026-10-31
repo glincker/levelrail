@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -15,6 +15,7 @@ import accessEn from '../../locales/en/access.json'
 import { roleKeys } from '../../queries/roles'
 import type { RoleResource } from '../../queries/roles'
 import type { UserResource } from '../../queries/users'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -76,7 +77,7 @@ afterEach(() => {
 })
 
 function wrap(ui: ReactNode) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   qc.setQueryData(roleKeys.list(), roles)
   return render(
     <QueryClientProvider client={qc}>

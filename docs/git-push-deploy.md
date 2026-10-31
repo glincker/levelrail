@@ -62,6 +62,10 @@ levelrail-cli git remote branch my-app release
 - Wrong or missing tokens always answer the same way, requests are rate limited, and repeated bad tokens back off. Every push outcome is written to the audit log.
 - Creating, rotating, changing the branch and revoking need the `write_sensitive` ability on the app.
 
+## GitHub App access for stored sources
+
+Git sources set by a team scoped user no longer clone with the connected GitHub App (`app_auth` is false). Multi-team admins should review stored git sources after upgrading: existing sources keep App access.
+
 ## Limits
 
 | Limit | Default | Setting |

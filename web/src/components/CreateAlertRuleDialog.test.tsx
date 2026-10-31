@@ -5,9 +5,11 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { AllI18n } from '@/test/allI18n'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -71,13 +73,13 @@ async function pickOption(
 }
 
 function renderDialog() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
-    <QueryClientProvider client={queryClient}>
-      <CreateAlertRuleDialog appName="demo-app" />
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={queryClient}>
+        <CreateAlertRuleDialog appName="demo-app" />
+      </QueryClientProvider>
+    </AllI18n>,
   )
 }
 
@@ -241,5 +243,22 @@ describe('CreateAlertRuleDialog', () => {
       expect(body.kind).toBe('control_plane_backup_stale')
       expect(body.for_duration).toBe('72h')
     })
+  })
+  it('offers deploy_failed with no threshold fields and hides monitor_down when monitors are off', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/notification-channels': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
+      'GET /api/v1/monitors': () =>
+        Promise.resolve(fakeJsonResponse(null, 404)),
+    })
+    renderDialog()
+    const popup = await openDialog()
+
+    await pickOption(popup, 'rule-kind', 'Deploy failed')
+    expect(within(popup).getByText(/What to do/)).toBeInTheDocument()
+    expect(popup.querySelector('input#rule-for-duration')).toBeNull()
+
+    fireEvent.click(popup.querySelector('#rule-kind') as HTMLElement)
+    expect(screen.queryByText('Monitor down')).toBeNull()
   })
 })

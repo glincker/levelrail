@@ -16,6 +16,8 @@ const (
 	// HeldKindBuild is a queued manual build, replayed from Build.
 	HeldKindBuild = "build"
 	HeldKindGit   = "git"
+	// HeldKindPush is a git push parked for approval, replayed from the push mirror.
+	HeldKindPush = "push"
 )
 
 // HeldRequest is what a held deploy needs to be replayed after its freeze.
@@ -34,6 +36,12 @@ type HeldRequest struct {
 	FreezeNote string `json:"freeze_note,omitempty"`
 	// Build is a queued manual build's original request body.
 	Build json.RawMessage `json:"build,omitempty"`
+	// BuildArgs are the trigger build args a replay passes to the build again.
+	BuildArgs map[string]string `json:"build_args,omitempty"`
+	// PushMirror and HeldRef locate a held push: the mirror and the ref that
+	// keeps its commit until the hold is decided.
+	PushMirror string `json:"push_mirror,omitempty"`
+	HeldRef    string `json:"held_ref,omitempty"`
 	// AllowPrivateRepoAuth records the requester's ability to mint repo tokens.
 	AllowPrivateRepoAuth bool `json:"allow_private_repo_auth,omitempty"`
 }

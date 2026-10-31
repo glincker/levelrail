@@ -46,7 +46,7 @@ var initiatorPattern = regexp.MustCompile(`^[A-Za-z0-9._@:-]{1,64}$`)
 type selfUpgradeFlags struct {
 	to, ack, verify, initiator, repo, baseURL string
 	latest, dryRun, asJSON, yes, recoverRun   bool
-	skipNotes, unpin                          bool
+	skipNotes, unpin, skipBackup              bool
 	stopCmd, startCmd, healthURL              string
 	timeout                                   time.Duration
 }
@@ -72,6 +72,8 @@ come back automatically. Run it on the host as root.
   --timeout DURATION   how long the new release may take to become healthy
   --recover            finish or undo an upgrade that was interrupted
   --skip-notes-check   continue when release notes cannot be fetched
+  --skip-backup        upgrade even if the pre-upgrade database backup fails; the binary
+                       still rolls back but the database cannot be restored. Off by default
   --initiator NAME     who asked, recorded in upgrade history
   --stop-cmd / --start-cmd / --health-url   same meaning as for rollback
 `
@@ -125,7 +127,7 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	if notesErr != nil && !f.skipNotes {
 		return fail(target, fmt.Errorf("could not read release notes to check for breaking changes: %w. Re-run with --skip-notes-check to continue without that check", notesErr))
 	}
-	plan := selfUpgradePlan{Current: version.Version, Target: target, Breaking: breaking}
+	plan := selfUpgradePlan{Current: version.Version, Target: target, Breaking: breaking, Disk: hostDiskReport(dataDir, live, exe), RestoreCommand: restoreCommandFor(name, dataDir)}
 	if f.dryRun {
 		return printSelfUpgradePlan(stdout, plan, f.asJSON)
 	}
@@ -219,6 +221,9 @@ type selfUpgradePlan struct {
 	Current  string                 `json:"current_version"`
 	Target   string                 `json:"target_version"`
 	Breaking []selfupgrade.Breaking `json:"breaking"`
+	Disk     selfupgrade.DiskReport `json:"disk"`
+	// RestoreCommand puts the pre-upgrade backup back; NAME is the backup file the upgrade reports.
+	RestoreCommand string `json:"restore_command"`
 }
 
 func printSelfUpgradePlan(out io.Writer, p selfUpgradePlan, asJSON bool) error {
@@ -237,6 +242,9 @@ func printSelfUpgradePlan(out io.Writer, p selfUpgradePlan, asJSON bool) error {
 		_, _ = fmt.Fprintf(out, "breaking [%s] %s (%s): %s\n", mark, b.ID, b.Version, b.Summary)
 	}
 	_, _ = fmt.Fprintln(out, "steps: download, verify checksum, verify signature, snapshot, migration dry-run, stop, swap, start, health check (automatic rollback on failure)")
+	_, _ = fmt.Fprintf(out, "disk: %s\n", p.Disk.Summary())
+	_, _ = fmt.Fprintln(out, "a control plane backup is taken first; the upgrade is refused if it fails (override: --skip-backup)")
+	_, _ = fmt.Fprintf(out, "restore it with: %s\n", p.RestoreCommand)
 	return nil
 }
 
@@ -249,6 +257,9 @@ func printAttempt(out io.Writer, a selfupgrade.Attempt, asJSON bool) {
 		_, _ = fmt.Fprintf(out, "  [%s] %s %s\n", s.Status, s.Name, s.Detail)
 	}
 	_, _ = fmt.Fprintf(out, "%s: %s -> %s (backup %s)\n", a.Outcome, a.FromVersion, a.ToVersion, a.BackupName)
+	if a.BackupName != "" {
+		_, _ = fmt.Fprintf(out, "restore the backup with: %s\n", strings.ReplaceAll(restoreCommandFor(filepath.Base(os.Args[0]), dataDirFromEnv()), "NAME", a.BackupName))
+	}
 }
 
 func recoverSelfUpgrade(ctx context.Context, deps selfupgrade.Deps, journal *selfupgrade.Journal, f selfUpgradeFlags, stdout io.Writer) error {
@@ -289,6 +300,7 @@ func parseSelfUpgradeFlags(args []string, stdout io.Writer) (selfUpgradeFlags, e
 	fs.BoolVar(&f.recoverRun, "recover", false, "")
 	fs.BoolVar(&f.skipNotes, "skip-notes-check", false, "")
 	fs.BoolVar(&f.unpin, "unpin-signature", false, "")
+	fs.BoolVar(&f.skipBackup, "skip-backup", false, "")
 	fs.StringVar(&f.stopCmd, "stop-cmd", "", "")
 	fs.StringVar(&f.startCmd, "start-cmd", "", "")
 	fs.StringVar(&f.healthURL, "health-url", "", "")
@@ -481,8 +493,9 @@ func selfUpgradeDeps(f selfUpgradeFlags, exe, name, dataDir, live, healthBase st
 	}
 	return selfupgrade.Deps{
 		BinaryPath: exe, Journal: journal, Log: logger, Now: time.Now,
-		Probe:    probeBinary,
-		DBSchema: func(ctx context.Context) (int, error) { return rollback.DBSchemaVersion(ctx, live) },
+		Probe:      probeBinary,
+		DBSchema:   func(ctx context.Context) (int, error) { return rollback.DBSchemaVersion(ctx, live) },
+		SkipBackup: f.skipBackup,
 		Backup: func(ctx context.Context) (selfupgrade.BackupInfo, error) {
 			db, err := store.Open(ctx, live)
 			if err != nil {

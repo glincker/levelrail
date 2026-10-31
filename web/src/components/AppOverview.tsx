@@ -1,4 +1,5 @@
 import { LayoutGridGlassIcon } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
 import { OptimiseHint } from './resourceAdvisor/ResourceAdvisorTile'
 import type {
   AppDetail,
@@ -20,12 +21,12 @@ import { PinnedDigestBadge } from './PinnedDigestBadge'
 import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
 import { TunnelHint } from './apps/TunnelHint'
 
-// Display labels for internal/spec's three strategy constants.
-const STRATEGY_LABELS: Record<DeployStrategy, string> = {
-  recreate: 'Recreate',
-  'blue-green': 'Blue-green',
-  rolling: 'Rolling',
-}
+// i18n keys for internal/spec's three strategy constants.
+const STRATEGY_KEYS = {
+  recreate: 'appOverview.strategy.recreate',
+  'blue-green': 'appOverview.strategy.blueGreen',
+  rolling: 'appOverview.strategy.rolling',
+} as const satisfies Record<DeployStrategy, string>
 
 // Read-only display of an app's current desired state: image, port,
 // resource limits, health probe config, and (as of this pass) deploy
@@ -36,6 +37,7 @@ const STRATEGY_LABELS: Record<DeployStrategy, string> = {
 // here, matching how ResourceLimitsEditor/HealthCheckEditor already sit
 // next to this read-only card rather than inside it.
 export function AppOverview({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('deploys')
   // Optional convenience only, see useProjectListOptional's own doc
   // comment: resolving project_id to a human-readable name is a display
   // nicety, a failed/slow fetch just means the raw id is shown instead.
@@ -62,47 +64,52 @@ export function AppOverview({ app }: { app: AppDetail }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <LayoutGridGlassIcon className="size-5" />
-          Overview
+          {t('appOverview.title')}
         </CardTitle>
         <OptimiseHint kind="app" name={app.name} />
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
           <Field
-            label="Image"
+            label={t('appOverview.image')}
             value={unpinnedImage(app.image)}
             mono
             digest={app.image_digest || digestOfImage(app.image)}
           />
-          <Field label="Port" value={String(app.port)} />
+          <Field label={t('appOverview.port')} value={String(app.port)} />
           <Field
-            label="Memory limit"
+            label={t('appOverview.memoryLimit')}
             value={formatBytes(app.resources?.memory_bytes)}
           />
           <Field
-            label="CPU limit"
+            label={t('appOverview.cpuLimit')}
             value={formatNanoCpus(app.resources?.nano_cpus)}
           />
           <Field
-            label="Swap limit"
+            label={t('appOverview.swapLimit')}
             value={formatBytes(app.resources?.swap_memory_bytes)}
           />
           <Field
-            label="CPU pinning"
-            value={app.resources?.cpuset_cpus || 'not set'}
+            label={t('appOverview.cpuPinning')}
+            value={app.resources?.cpuset_cpus || t('appOverview.notSet')}
           />
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Deploy strategy
+              {t('appOverview.deployStrategy')}
             </dt>
             <dd className="mt-0.5 text-sm text-foreground">
-              {STRATEGY_LABELS[app.strategy] ?? app.strategy}
+              {STRATEGY_KEYS[app.strategy]
+                ? t(STRATEGY_KEYS[app.strategy])
+                : app.strategy}
             </dd>
           </div>
-          <Field label="Replicas" value={String(app.replicas)} />
+          <Field
+            label={t('appOverview.replicas')}
+            value={String(app.replicas)}
+          />
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Node
+              {t('appOverview.node')}
             </dt>
             <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-foreground">
               <PlacementLabel
@@ -125,13 +132,15 @@ export function AppOverview({ app }: { app: AppDetail }) {
               never hidden or forced. */}
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Project
+              {t('appOverview.project')}
             </dt>
             <dd className="mt-0.5 flex items-center gap-2 text-sm text-foreground">
               {app.project_id ? (
                 (projectName ?? app.project_id)
               ) : (
-                <span className="text-muted-foreground italic">no project</span>
+                <span className="text-muted-foreground italic">
+                  {t('appOverview.noProject')}
+                </span>
               )}
               <MoveToProjectDialog
                 kind="app"
@@ -145,14 +154,14 @@ export function AppOverview({ app }: { app: AppDetail }) {
               valid state. */}
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Environment
+              {t('appOverview.environment')}
             </dt>
             <dd className="mt-0.5 flex items-center gap-2 text-sm text-foreground">
               {app.environment_id ? (
                 (environmentName ?? app.environment_id)
               ) : (
                 <span className="text-muted-foreground italic">
-                  no environment
+                  {t('appOverview.noEnvironment')}
                 </span>
               )}
               {globalEnvironments ? (
@@ -172,8 +181,14 @@ export function AppOverview({ app }: { app: AppDetail }) {
           </div>
         </dl>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <ProbeSummary label="Readiness probe" probe={app.health?.readiness} />
-          <ProbeSummary label="Liveness probe" probe={app.health?.liveness} />
+          <ProbeSummary
+            label={t('appOverview.readinessProbe')}
+            probe={app.health?.readiness}
+          />
+          <ProbeSummary
+            label={t('appOverview.livenessProbe')}
+            probe={app.health?.liveness}
+          />
         </div>
         <TunnelHint
           appName={app.name}
@@ -218,6 +233,7 @@ function ProbeSummary({
   label: string
   probe?: ServiceProbe | null
 }) {
+  const { t } = useTranslation('deploys')
   return (
     <div className="rounded-md bg-muted p-3">
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -226,14 +242,24 @@ function ProbeSummary({
       {probe ? (
         <ul className="mt-1.5 space-y-0.5 text-sm text-foreground/90">
           <li>
-            Path: <span className="font-mono">{probe.path}</span>
+            {t('appOverview.path')}{' '}
+            <span className="font-mono">{probe.path}</span>
           </li>
-          <li>Interval: {formatDurationNs(probe.interval)}</li>
-          <li>Timeout: {formatDurationNs(probe.timeout)}</li>
-          <li>Failure threshold: {probe.failures ?? 'not set'}</li>
+          <li>
+            {t('appOverview.interval')} {formatDurationNs(probe.interval)}
+          </li>
+          <li>
+            {t('appOverview.timeout')} {formatDurationNs(probe.timeout)}
+          </li>
+          <li>
+            {t('appOverview.failureThreshold')}{' '}
+            {probe.failures ?? t('appOverview.notSet')}
+          </li>
         </ul>
       ) : (
-        <p className="mt-1.5 text-sm text-muted-foreground">not configured</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {t('appOverview.notConfigured')}
+        </p>
       )}
     </div>
   )

@@ -1,7 +1,7 @@
 ---
 title: "CLI console (beta)"
 tag: "Beta"
-description: "The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a reviewed command allowlist, an audit row per line and no shell."
+description: "The beta CLI console runs the platform CLI from the dashboard over a WebSocket, with step-up confirmation, a command allowlist and an audit row per line."
 "og:url": "https://docs.levelrail.com/cli-console"
 ---
 

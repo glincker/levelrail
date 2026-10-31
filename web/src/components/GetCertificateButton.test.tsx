@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GetCertificateButton } from './GetCertificateButton'
 import httpsEn from '../locales/en/https.json'
 import type { CertPreflight, DomainCertStatus } from '../queries/domainCert'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -81,9 +82,7 @@ function stub(handler: Handler) {
 }
 
 function renderButton() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>

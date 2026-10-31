@@ -343,6 +343,21 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Add install scripts from the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          sparse-checkout: |
+            install.sh
+            install-cli.sh
+            install-cli.ps1
+          sparse-checkout-cone-mode: false
+          path: src
+          persist-credentials: false
+
+      - name: Copy install scripts into dist
+        run: cp src/install.sh src/install-cli.sh src/install-cli.ps1 dist/
+
       - name: Generate checksums
         working-directory: dist
         run: |

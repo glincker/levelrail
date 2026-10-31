@@ -19,7 +19,7 @@ import {
   useUpdateCodeLoginSettings,
 } from '../queries/signIn'
 import { useIsRoot } from '../hooks/useIsRoot'
-import { SignInRequestsList } from './attention/SignInRequestsBanner'
+import { SignInRequestsList } from './attention/SignInRequestsList'
 
 // Settings > Security: waiting sign-ins, trusted browsers and the
 // auth.code_login setting.

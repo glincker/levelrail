@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -32,9 +33,14 @@ func (rt *Router) handleProbeRegistryCredential(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "registry_host, username and password are required")
 		return
 	}
+	if err := rt.checkRegistryHost(r.Context(), req.RegistryHost); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), registryCredentialTestTimeout)
 	defer cancel()
 	if err := rt.registryAuthTester.TestRegistryAuth(ctx, req.RegistryHost, req.Username, req.Password); err != nil {
+		rt.logger.Warn("api: registry credential probe failed", slog.String("error", err.Error()))
 		writeJSON(w, http.StatusOK, nodeProviderTestResult{OK: false, Message: registryAuthTestErrorMessage(err), TestedAt: time.Now().UTC()})
 		return
 	}

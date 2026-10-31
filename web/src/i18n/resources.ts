@@ -36,8 +36,13 @@ import type migrate from '../locales/en/migrate.json'
 import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
 import type updates from '../locales/en/updates.json'
+import type upgradeSafety from '../locales/en/upgradeSafety.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
 import type canvas from '../locales/en/canvas.json'
+import type mailServer from '../locales/en/mailServer.json'
+import type dnsSetup from '../locales/en/dnsSetup.json'
+import type dnsProviders from '../locales/en/dnsProviders.json'
+import type platformSettings from '../locales/en/platformSettings.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type databaseVersions from '../locales/en/databaseVersions.json'
@@ -64,6 +69,7 @@ import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
+import type mcpConsent from '../locales/en/mcpConsent.json'
 import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
@@ -103,6 +109,8 @@ import type deployEvents from '../locales/en/deployEvents.json'
 import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
+import type advisories from '../locales/en/advisories.json'
+import type monitors from '../locales/en/monitors.json'
 import type secretRotation from '../locales/en/secretRotation.json'
 import type encryptionKeys from '../locales/en/encryptionKeys.json'
 import type templates from '../locales/en/templates.json'
@@ -150,8 +158,13 @@ declare module 'i18next' {
       domains: typeof domains
       attention: typeof attention
       updates: typeof updates
+      upgradeSafety: typeof upgradeSafety
       infraCanvas: typeof infraCanvas
       canvas: typeof canvas
+      mailServer: typeof mailServer
+      dnsSetup: typeof dnsSetup
+      dnsProviders: typeof dnsProviders
+      platformSettings: typeof platformSettings
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions
@@ -177,6 +190,7 @@ declare module 'i18next' {
       smartDeploy: typeof smartDeploy
       dataExport: typeof dataExport
       eventWebhooks: typeof eventWebhooks
+      mcpConsent: typeof mcpConsent
       trafficExport: typeof trafficExport
       compliance: typeof compliance
       deploySafety: typeof deploySafety
@@ -209,6 +223,8 @@ declare module 'i18next' {
       images: typeof images
       buildCenter: typeof buildCenter
       functions: typeof functions
+      advisories: typeof advisories
+      monitors: typeof monitors
       secretRotation: typeof secretRotation
       encryptionKeys: typeof encryptionKeys
       models: typeof models

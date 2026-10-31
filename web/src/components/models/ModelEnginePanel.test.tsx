@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EngineMetricsReport } from '../../types/models'
 import { ModelEnginePanel } from './ModelEnginePanel'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function series(
   id: string,
@@ -45,9 +46,7 @@ function renderPanel(rep: EngineMetricsReport) {
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(
     new Response(JSON.stringify(rep), { status: 200 }),
   )
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <ModelEnginePanel modelName="chat" engine={rep.engine} />

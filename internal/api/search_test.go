@@ -85,13 +85,14 @@ func TestSearch_RestartAPIReturnsOnlyDeployableApps(t *testing.T) {
 		t.Fatalf("action info = %+v", a)
 	}
 
-	got = doSearch(t, rt, deployer, "restart api")
+	// Template docs are global and match the "api" token; this test is about app actions.
+	got = doSearch(t, rt, deployer, "restart api", "kind=action")
 	want = []string{"action:app.restart:api", "action:app.restart:api-gateway"}
 	if strings.Join(got.refs(), ",") != strings.Join(want, ",") {
 		t.Fatalf("deployer with a Deny on secret-api = %v, want %v", got.refs(), want)
 	}
 
-	if got = doSearch(t, rt, reader, "restart api"); len(got.Hits) != 0 {
+	if got = doSearch(t, rt, reader, "restart api", "kind=action"); len(got.Hits) != 0 {
 		t.Fatalf("read-only token must not be offered Restart: %v", got.refs())
 	}
 	if got = doSearch(t, rt, reader, "logs api", "kind=action"); len(got.Hits) == 0 {

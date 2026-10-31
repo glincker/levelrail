@@ -14,6 +14,7 @@
     "image": { "type": "string", "pattern": "@sha256:[0-9a-f]{64}$" },
     "abilities": { "type": "array", "items": { "type": "string" } },
     "outbound_hosts": { "type": ["array", "null"], "maxItems": 16, "items": { "type": "string" } },
+    "outbound_hosts_from_config": { "type": ["array", "null"], "maxItems": 8, "items": { "type": "string" } },
     "contributes": {
       "type": ["object", "null"],
       "additionalProperties": false,

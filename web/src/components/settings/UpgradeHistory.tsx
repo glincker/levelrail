@@ -68,7 +68,7 @@ function HistoryRow({
       {!item.acknowledged ? (
         <div
           role="status"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-500/60 px-3 py-2"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-tone-warning-border px-3 py-2"
         >
           <span className="text-sm text-foreground">
             {t('upgradeHistory.unacknowledged')}
@@ -151,7 +151,7 @@ function HistoryRow({
       </ul>
 
       {item.schema_moved ? (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+        <p className="text-xs text-tone-warning">
           {t('upgradeHistory.schemaMoved')}
         </p>
       ) : null}

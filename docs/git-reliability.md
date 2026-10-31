@@ -1,6 +1,6 @@
 ---
 title: "Git reliability"
-description: What the control plane caches, what it polls, what the connection and webhook statuses mean, the environment variables behind them, and how to recover when a push did not deploy.
+description: "What the control plane caches and polls, what connection and webhook statuses mean, the variables behind them, and how to recover a push that did not deploy."
 "og:url": "https://docs.levelrail.com/git-reliability"
 ---
 

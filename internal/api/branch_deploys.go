@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/branchdeploy"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -201,12 +202,12 @@ func (rt *Router) deployBranchInner(ctx context.Context, appName string, gs stor
 	if row == nil {
 		return status, message
 	}
-	token, err := rt.resolveGitSourceDeployToken(ctx, appName)
+	token, scope, err := rt.resolveGitSourceDeployCredential(ctx, appName)
 	if err != nil {
 		rt.failBranchDeploy(ctx, row, "resolve deploy token: "+err.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
-	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, ev.After, token)
+	sourceDir, cleanup, err := rt.gitSourceFetch(sourcecache.WithScope(ctx, scope), gs.RepoURL, ev.After, token)
 	if err != nil {
 		rt.logger.Error("api: branch deploy: fetch source failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.String("branch", branch))
 		rt.failBranchDeploy(ctx, row, "fetch source: "+err.Error())

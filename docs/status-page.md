@@ -155,3 +155,57 @@ How a custom status domain is routed and gets a certificate.
 
 </Card>
 </CardGroup>
+
+## Automatic incidents from monitors
+
+Monitors with the status link setting open and resolve incidents on the page by themselves. See [Monitors](monitors.md#status-page-link-opt-in). Their timeline entries are labeled "[Automated]".
+
+## Signed webhooks
+
+Admin-created subscribers receive a signed JSON `POST` when a published incident or maintenance changes, or a component is added, renamed or removed. There is no public self-subscribe, so there is no unsubscribe token. Unpublished and internal incidents never produce an event, and the body reuses the public incident serializer, so it carries only what the public page shows.
+
+```bash
+levelrail-cli status-page webhooks add --url https://example.com/hooks/status --event incident_opened --event incident_resolved
+levelrail-cli status-page webhooks test <id>
+levelrail-cli status-page webhooks list
+levelrail-cli status-page webhooks rotate|pause|resume|delete <id>
+```
+
+The signing secret is generated on the server, stored sealed when a master key exists, and shown once on create and on rotate. Events are `incident_opened`, `incident_updated`, `incident_resolved`, `component_changed`, `maintenance_scheduled`, `maintenance_updated` and `maintenance_completed`. No filter means all events.
+
+Each request has `X-Signature` (`sha256=` plus the hex HMAC SHA-256 of `timestamp + "." + body`), `X-Timestamp` (Unix seconds), `X-Event-Id` and `X-Event-Type`. Reject requests whose timestamp is more than 5 minutes old to stop replays, and dedupe on the event id, which is stable across retries. Any 2xx is success.
+
+Node:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto'
+function verify(secret, ts, rawBody, sig) {
+  if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false
+  const want = 'sha256=' + createHmac('sha256', secret).update(`${ts}.${rawBody}`).digest('hex')
+  return want.length === sig.length && timingSafeEqual(Buffer.from(want), Buffer.from(sig))
+}
+```
+
+Go:
+
+```go
+func verify(secret, ts string, body []byte, sig string) bool {
+	m := hmac.New(sha256.New, []byte(secret))
+	m.Write([]byte(ts + "."))
+	m.Write(body)
+	return hmac.Equal([]byte("sha256="+hex.EncodeToString(m.Sum(nil))), []byte(sig))
+}
+```
+
+Delivery is queued in the database and sent by one worker. Failures retry with exponential backoff; a delivery that uses all its attempts counts toward a failure streak, and the subscriber is paused when the streak reaches the limit. Response bodies are never stored; the delivery log keeps status codes and a truncated error. Targets must be public https hosts. Tuning:
+
+| Variable | Default |
+| --- | --- |
+| `APP_STATUS_WEBHOOK_MAX_SUBSCRIBERS` | 20 |
+| `APP_STATUS_WEBHOOK_TIMEOUT` | 10s |
+| `APP_STATUS_WEBHOOK_MAX_ATTEMPTS` | 5 |
+| `APP_STATUS_WEBHOOK_BACKOFF_BASE` / `_BACKOFF_MAX` | 30s / 1h |
+| `APP_STATUS_WEBHOOK_PAUSE_AFTER` | 10 |
+| `APP_STATUS_WEBHOOK_POLL_INTERVAL` | 5s |
+| `APP_STATUS_WEBHOOK_LOG_KEEP` | 50 |
+| `APP_STATUS_WEBHOOK_ALLOW_HTTP` / `_ALLOW_PRIVATE` | off |

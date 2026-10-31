@@ -1,6 +1,6 @@
 ---
 title: "Self-hosted Netlify alternative for static sites and Docker apps"
-description: "Levelrail is an open source, self-hosted alternative to Netlify's Git deploys for static sites: build and publish from git, _redirects and _headers, branch deploys, forms and build hooks on your own server."
+description: "Levelrail is an open source, self-hosted Netlify alternative for static sites: build from git, _redirects and _headers, branch deploys and forms."
 "og:url": "https://docs.levelrail.com/netlify-alternative"
 ---
 

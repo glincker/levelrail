@@ -68,7 +68,7 @@
       "defaultRole": "Default role",
       "defaultRoleNone": "None: refuse people in no mapped group",
       "domains": "Allowed email domains",
-      "domainsHelp": "Comma separated, for example example.com. Empty allows any domain."
+      "domainsHelp": "Required. Comma separated, for example example.com. Only these domains can sign in, which keeps outside accounts from matching yours."
     },
     "attributes": {
       "title": "Attribute names",

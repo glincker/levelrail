@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -78,13 +79,22 @@ type goLiveResult struct {
 	Policy    domainAutomationPolicy `json:"policy"`
 	Undoable  bool                   `json:"undoable,omitempty"`
 	CheckedAt string                 `json:"checked_at"`
-	undo      []undoAction
+	// DNSStatus is set by a plan that asked for status: each required record's live state.
+	DNSStatus *dnsstatus.Status `json:"dns_status,omitempty"`
+	// DelegationWarning is set by a plan when the domain's zone is not delegated yet; it never blocks.
+	DelegationWarning bool   `json:"delegation_warning,omitempty"`
+	DelegationReason  string `json:"delegation_reason,omitempty"`
+	// PlanHash fingerprints the planned records; send it back on run to pin the confirm.
+	PlanHash string `json:"plan_hash,omitempty"`
+	undo     []undoAction
 }
 
 type goLiveRequest struct {
 	Automation *domainAutomationOverride `json:"automation,omitempty"`
 	DNS        string                    `json:"dns,omitempty"`
 	Replace    bool                      `json:"replace,omitempty"`
+	// PlanHash, when set, must match a fresh plan or the run is refused as stale.
+	PlanHash string `json:"plan_hash,omitempty"`
 	// skipVerify leaves propagation, certificate and http unprobed, so a
 	// request that only adds a domain never waits on the network.
 	skipVerify bool

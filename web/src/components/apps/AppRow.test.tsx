@@ -1,10 +1,11 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppRow } from '../AppRow'
 import { withLimit } from '../../queries/fleetTraffic'
 import type { AppListEntry } from '../../types/appDetail'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -66,7 +67,7 @@ function stubFetch(rows: ReturnType<typeof batch>) {
 }
 
 function renderRows(apps: AppListEntry[]) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <QueryClientProvider client={qc}>
       {apps.map((a) => (

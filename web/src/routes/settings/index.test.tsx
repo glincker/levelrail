@@ -54,20 +54,10 @@ describe('settings hub', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Settings' }),
     ).toBeInTheDocument()
-    for (const area of [
-      'Workspace',
-      'People and access',
-      'Security',
-      'Developer',
-      'AI and agents',
-      'Domains and TLS',
-      'Backups and storage',
-      'Notifications',
-      'Git and registries',
-      'Beta features',
-      'Updates',
-      'System',
-    ]) {
+    // Titles come from the catalogue so a rename or a new area keeps this honest.
+    for (const area of Object.values(settingsEn.nav.areas).map(
+      (x) => x.title,
+    )) {
       expect(
         screen.getByRole('heading', { level: 2, name: area }),
       ).toBeInTheDocument()
@@ -81,7 +71,7 @@ describe('settings hub', () => {
   it('filters by search and explains an empty result', async () => {
     const user = userEvent.setup()
     renderHub()
-    const search = screen.getByLabelText('Search settings')
+    const search = screen.getByLabelText(settingsEn.nav.search)
 
     await user.type(search, 'vault')
     expect(screen.getByRole('link', { name: /^Vault/ })).toBeInTheDocument()

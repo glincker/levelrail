@@ -33,6 +33,11 @@ const ReservedLabelPrefix = "platform-reserved."
 // with or spoof it (ValidateLabels below already rejects that prefix).
 const InstanceLabelKey = ReservedLabelPrefix + "instance"
 
+// AppLabelKey names the app a container belongs to, so a volume adoption
+// check can tell whose container uses a volume. Under the reserved prefix,
+// so an operator label cannot spoof it.
+const AppLabelKey = ReservedLabelPrefix + "app"
+
 // Sanity limits on custom labels: a genuine safety bound against
 // unbounded container metadata growth, not a business threshold, so a
 // fixed constant is appropriate here (the project's "no hardcoded

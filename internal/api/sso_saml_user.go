@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
@@ -59,6 +60,10 @@ func (rt *Router) samlPlanSignIn(ctx context.Context, c store.SSOConnection, ide
 	existing, err := rt.auth.GetUserByEmail(ctx, ident.Email)
 	switch {
 	case err == nil:
+		// A mailbox match must never hand a root account to the identity provider.
+		if slices.Contains(existing.Abilities, AbilityRoot) {
+			return samlPlan{}, samlErrRootLink, errors.New("an existing root account is not linked by email")
+		}
 		if rt.accountDisabled(ctx, existing.ID) {
 			return samlPlan{}, samlErrDisabled, nil
 		}

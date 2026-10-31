@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -118,13 +119,13 @@ func runAppsVolumesCp(prog string, args []string, stdout, stderr io.Writer, look
 		return exitUsage
 	}
 	if srcRemote {
-		w, closeFn, err := openLocalDest(dst, stdout)
+		w, finish, err := openLocalDest(dst, stdout)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
 		n, err := client.DownloadVolumeFile(ctx, app, volume, strings.TrimPrefix(src, ":"), w)
-		if cerr := closeFn(); err == nil {
-			err = cerr
+		if ferr := finish(err); err == nil {
+			err = ferr
 		}
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("download %s: %w", src, err))
@@ -150,13 +151,27 @@ func runAppsVolumesCp(prog string, args []string, stdout, stderr io.Writer, look
 	return writeScheduledTaskResult(stdout, stderr, of, res, func() { _, _ = fmt.Fprintf(stdout, "uploaded %d bytes to %s\n", res.Size, res.Path) })
 }
 
-func openLocalDest(dst string, stdout io.Writer) (io.Writer, func() error, error) {
+// openLocalDest writes to a temp file beside dst and renames it on success, so a
+// failed download never leaves an empty file at the destination.
+func openLocalDest(dst string, stdout io.Writer) (io.Writer, func(error) error, error) {
 	if dst == "-" {
-		return stdout, func() error { return nil }, nil
+		return stdout, func(error) error { return nil }, nil
 	}
-	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) //nolint:gosec // the operator names the local destination
+	f, err := os.CreateTemp(filepath.Dir(dst), ".lr-cp-*")
 	if err != nil {
 		return nil, nil, fmt.Errorf("create %s: %w", dst, err)
 	}
-	return f, f.Close, nil
+	finish := func(copyErr error) error {
+		cerr := f.Close()
+		if copyErr != nil || cerr != nil {
+			_ = os.Remove(f.Name())
+			return cerr
+		}
+		if err := os.Rename(f.Name(), dst); err != nil {
+			_ = os.Remove(f.Name())
+			return fmt.Errorf("create %s: %w", dst, err)
+		}
+		return nil
+	}
+	return f, finish, nil
 }

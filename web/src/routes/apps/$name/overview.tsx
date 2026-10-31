@@ -90,7 +90,7 @@ function AppOverviewSkeleton() {
         <Skeleton className="h-4 w-full" />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3">
         {Array.from({ length: 5 }, (_, i) => (
           <div
             key={i}

@@ -109,6 +109,7 @@ func printPluginPreview(out io.Writer, pv apiclient.PluginPreview) {
 		_, _ = fmt.Fprintf(out, "Refused:       %s\n", v.Reason)
 	}
 	_, _ = fmt.Fprintf(out, "Abilities:     %s\nNetwork:       %s\n", joinOrNone(m.Abilities), outboundSummary(m.OutboundHosts))
+	printNetworkNote(out, m.OutboundHosts)
 	if pv.Action == "upgrade" {
 		_, _ = fmt.Fprintf(out, "Upgrade from:  %s (approved: %s)\nAdded:         %s abilities, %s hosts\nRemoved:       %s abilities, %s hosts\n",
 			pv.InstalledVersion, joinOrNone(pv.ApprovedAbilities), joinOrNone(pv.AddedAbilities), joinOrNone(pv.AddedHosts), joinOrNone(pv.RemovedAbilities), joinOrNone(pv.RemovedHosts))

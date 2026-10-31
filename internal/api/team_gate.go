@@ -37,6 +37,8 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/usage/summary":        true,
 	"GET /api/v1/static-sites":         true,
 	"GET /api/v1/domains":              true,
+	"GET /api/v1/domains/dns-provider": true,
+	"GET /api/v1/domains/dns-status":   true,
 	"GET /api/v1/projects":             true,
 	"POST /api/v1/projects":            true,
 	"GET /api/v1/environments":         true,
@@ -47,6 +49,18 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/teams/roles":          true,
 	"POST /api/v1/team-invites/accept": true,
 	"GET /api/v1/team-invites/{token}": true,
+	// Mail resources filter by the owning team and answer 404 outside it.
+	"GET /api/v1/mail/domains":                       true,
+	"POST /api/v1/mail/domains":                      true,
+	"GET /api/v1/mail/mailboxes":                     true,
+	"POST /api/v1/mail/mailboxes":                    true,
+	"POST /api/v1/mail/mailboxes/{address}/suspend":  true,
+	"POST /api/v1/mail/mailboxes/{address}/resume":   true,
+	"POST /api/v1/mail/mailboxes/{address}/password": true,
+	"DELETE /api/v1/mail/mailboxes/{address}":        true,
+	"GET /api/v1/mail/aliases":                       true,
+	"POST /api/v1/mail/aliases":                      true,
+	"DELETE /api/v1/mail/aliases/{address}":          true,
 }
 
 // teamOwnedPrefixes are path prefixes whose {id} names a team owned object;

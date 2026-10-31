@@ -85,6 +85,13 @@ func newPushEnv(t *testing.T) *pushEnv {
 	return &pushEnv{rt: rt, db: db, cookie: cookie, srv: srv, b: b}
 }
 
+func newPushEnvFor(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, b *pushTestBuilder) *pushEnv {
+	t.Helper()
+	srv := httptest.NewServer(rt.Handler())
+	t.Cleanup(srv.Close)
+	return &pushEnv{rt: rt, db: db, cookie: cookie, srv: srv, b: b}
+}
+
 func (e *pushEnv) issue(t *testing.T, app string) string {
 	t.Helper()
 	rec := httptest.NewRecorder()
@@ -159,9 +166,9 @@ func worktreeDir(t *testing.T, repo *git.Repository) string {
 	return wt.Filesystem.Root()
 }
 
-func advertisedRefs(t *testing.T, e *pushEnv, app, token string) string {
+func advertisedRefs(t *testing.T, e *pushEnv, token string) string {
 	t.Helper()
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, e.remoteURL(app)+"/info/refs?service=git-receive-pack", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, e.remoteURL("web")+"/info/refs?service=git-receive-pack", nil)
 	req.SetBasicAuth("git", token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -192,7 +199,7 @@ func TestGitPush_DeploysPushedCommit(t *testing.T) {
 	if a := attempts[0]; a.Source != store.DeployAttemptSourceGitPush || a.CommitSHA != first.String() || a.Status != store.DeployAttemptStatusSucceeded || a.Branch != "main" {
 		t.Fatalf("attempt = %+v", a)
 	}
-	if !strings.Contains(advertisedRefs(t, e, "web", token), "refs/heads/main") {
+	if !strings.Contains(advertisedRefs(t, e, token), "refs/heads/main") {
 		t.Fatal("deployed branch should be advertised for the next push")
 	}
 
@@ -203,7 +210,7 @@ func TestGitPush_DeploysPushedCommit(t *testing.T) {
 	if e.b.callCount() != 2 || e.b.files["hello.txt"] != "two" {
 		t.Fatalf("second deploy: calls=%d files=%v", e.b.callCount(), e.b.files)
 	}
-	if got := advertisedRefs(t, e, "web", token); !strings.Contains(got, second.String()) {
+	if got := advertisedRefs(t, e, token); !strings.Contains(got, second.String()) {
 		t.Fatalf("advertisement does not carry the new head: %q", got)
 	}
 }
@@ -365,7 +372,7 @@ func TestGitPush_FailedBuildKeepsPreviousRelease(t *testing.T) {
 	if gerr != nil || svc.Image != "img:v1" {
 		t.Fatalf("desired image changed: %+v err=%v", svc, gerr)
 	}
-	if strings.Contains(advertisedRefs(t, e, "web", token), "refs/heads/main") {
+	if strings.Contains(advertisedRefs(t, e, token), "refs/heads/main") {
 		t.Fatal("failed deploy advanced the branch, a retry would be skipped")
 	}
 	e.b.fail = nil

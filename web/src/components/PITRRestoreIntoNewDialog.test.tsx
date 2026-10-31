@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PointInTimeRestoreSection } from './PointInTimeRestoreSection'
 import { DatabasesI18n } from '../test/databasesI18n'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function fakeJsonResponse(body: unknown, status = 200): Response {
   return {
@@ -20,9 +21,7 @@ function requestUrlOf(input: RequestInfo | URL): string {
 }
 
 function renderSection(engine: string) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <DatabasesI18n>

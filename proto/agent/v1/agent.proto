@@ -727,6 +727,9 @@ message VolumeFileOp {
   // this and its own env limit, and 0 defers to the env limit alone.
   int64 max_bytes = 4;
   int32 limit = 5;
+  // Private makes PUT create the file 0600 (private keys); an agent that
+  // predates the field writes 0644, so callers check the mode afterwards.
+  bool private = 6;
 }
 
 // FileOp is one object operation on a storage destination directory. The

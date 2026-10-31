@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/build"
 )
 
 // resolveBuildRoot joins sourceDir with baseDirectory, or returns sourceDir
@@ -23,6 +25,10 @@ func resolveBuildRoot(sourceDir, baseDirectory string) (string, error) {
 	joined := filepath.Join(root, cleanBase)
 	if joined != root && !strings.HasPrefix(joined, root+string(filepath.Separator)) {
 		return "", fmt.Errorf("build.baseDirectory %q escapes the repository root", baseDirectory)
+	}
+
+	if err := build.EnsureWithin(root, joined); err != nil {
+		return "", fmt.Errorf("build.baseDirectory %q: %w", baseDirectory, err)
 	}
 
 	return joined, nil

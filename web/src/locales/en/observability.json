@@ -42,6 +42,7 @@
     "failed": "Failed",
     "running": "Running",
     "held": "Held (frozen)",
+    "awaiting_approval": "Awaiting approval",
     "superseded": "Superseded",
     "queued": "Queued",
     "canceled": "Canceled",
@@ -191,6 +192,11 @@
       "label": "Deploy failed",
       "description": "Fires when a deploy stops before the new release serves traffic.",
       "action": "Read the deploy's logs to see why it stopped, fix the cause, then deploy again."
+    },
+    "monitor_down": {
+      "label": "Monitor down",
+      "description": "Fires when an uptime monitor stays down after its confirmation checks, and resolves once it has recovered.",
+      "action": "Open the monitor's results to see the failing reason, then fix the target or its network path."
     },
     "database_down": {
       "label": "Database down",

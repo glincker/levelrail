@@ -57,6 +57,7 @@ function TextField({
   value,
   onChange,
   mono = false,
+  required = false,
 }: {
   id: string
   label: string
@@ -64,12 +65,14 @@ function TextField({
   value: string
   onChange: (v: string) => void
   mono?: boolean
+  required?: boolean
 }) {
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Input
         id={id}
+        required={required}
         value={value}
         className={mono ? 'font-mono' : undefined}
         onChange={(e) => onChange(e.target.value)}
@@ -277,6 +280,7 @@ export function SAMLConnectionForm({
             id={id('domains')}
             label={t('form.access.domains')}
             help={t('form.access.domainsHelp')}
+            required
             value={domains}
             onChange={setDomains}
           />
@@ -340,7 +344,10 @@ export function SAMLConnectionForm({
               {t('saml.test.button')}
             </Button>
           ) : null}
-          <Button type="submit" disabled={save.isPending}>
+          <Button
+            type="submit"
+            disabled={save.isPending || domains.trim() === ''}
+          >
             {t('form.save')}
           </Button>
         </div>

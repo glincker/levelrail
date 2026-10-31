@@ -1,6 +1,6 @@
 ---
 title: "Scheduled deploys"
-description: Redeploy the latest commit on a branch on a recurring cron schedule, or schedule a one-shot image or git ref deploy, with freeze-window and restart-safe catch-up semantics.
+description: "Redeploy the latest commit on a branch on a cron schedule, or schedule a one-shot image or git ref deploy, with freeze windows and catch-up."
 "og:url": "https://docs.levelrail.com/scheduled-deploys"
 ---
 

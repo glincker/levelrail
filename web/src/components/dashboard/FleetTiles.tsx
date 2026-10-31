@@ -96,7 +96,7 @@ export function FleetTiles({
         />
         <MetricTile
           label={tr('tiles.errorRate')}
-          icon={<TriangleAlertGlassIcon className="size-6 text-tone-warning" />}
+          icon={<TriangleAlertGlassIcon className="size-5 text-tone-warning" />}
           value={
             errors.kind === 'value'
               ? Number(errors.pct.toFixed(2))

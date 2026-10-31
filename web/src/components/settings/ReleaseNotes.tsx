@@ -28,7 +28,7 @@ const ALERT_TONE: Record<AlertKind, string> = {
   note: 'border-border',
   tip: 'border-border',
   important: 'border-primary/50',
-  warning: 'border-amber-500/60',
+  warning: 'border-tone-warning-border',
   caution: 'border-destructive/60',
 }
 

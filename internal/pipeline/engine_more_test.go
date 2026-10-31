@@ -257,3 +257,16 @@ jobs:
 		t.Error("an expression as a deploy target must be rejected")
 	}
 }
+
+func TestCheckoutRefusesDashPrefixedRef(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t, okHandler)
+	h.e.cfg.Source = fakeSource{url: "https://example.test/org/app.git"}
+	run := h.start(h.save("version: 1\njobs:\n  t:\n    image: a\n    steps:\n      - run: echo hi\n"), StartOptions{Ref: "--upload-pack=x"})
+	if got := h.done(run.ID); got.Status == store.PipelineStatusSucceeded {
+		t.Fatalf("run succeeded with a dash-prefixed ref")
+	}
+	if h.rt.ran("git remote add") != 0 {
+		t.Errorf("git ran: %v", h.rt.scripts)
+	}
+}

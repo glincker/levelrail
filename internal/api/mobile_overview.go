@@ -221,7 +221,7 @@ func (rt *Router) mobileOpenIncidents(ctx context.Context, now time.Time) int {
 	if rt.statusPage == nil {
 		return 0
 	}
-	incidents, err := rt.statusPage.ListStatusIncidents(ctx, mobileOverviewIncidentScan)
+	incidents, err := rt.statusPage.ListPublicStatusIncidents(ctx, mobileOverviewIncidentScan)
 	if err != nil {
 		rt.logger.Warn("api: mobile overview: list incidents failed")
 		return 0

@@ -8,6 +8,7 @@ func (rt *Router) registerDNSZoneRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/dns/zones", rt.requireAbility(AbilityRead, rt.handleListDNSZones))
 	mux.HandleFunc("POST /api/v1/dns/zones", rt.requireAbility(AbilityRoot, rt.handleCreateDNSZone))
 	mux.HandleFunc("GET /api/v1/dns/zones/{zone}", rt.requireAbility(AbilityRead, rt.handleGetDNSZone))
+	mux.HandleFunc("GET /api/v1/dns/zones/{provider}/{id}", rt.requireAbility(AbilityRead, rt.handleGetDNSZoneDetail))
 	mux.HandleFunc("DELETE /api/v1/dns/zones/{zone}", rt.requireAbility(AbilityRoot, rt.handleDeleteDNSZone))
 	mux.HandleFunc("GET /api/v1/dns/zones/{zone}/nameservers", rt.requireAbility(AbilityRead, rt.handleDNSZoneNameServers))
 	mux.HandleFunc("GET /api/v1/dns/zones/{zone}/delegation", rt.requireAbility(AbilityRead, rt.handleDNSZoneDelegation))

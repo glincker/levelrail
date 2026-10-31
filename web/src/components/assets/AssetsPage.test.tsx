@@ -3,13 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import assetsEn from '../../locales/en/assets.json'
 import commonEn from '../../locales/en/common.json'
 import { BucketDetail } from './BucketDetail'
 import { BucketList } from './BucketList'
 import type { AssetBucket } from '../../types/assets'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
 vi.mock('@/components/shell/PageTemplate', () => ({
@@ -29,9 +30,7 @@ void i18n.use(initReactI18next).init({
 })
 
 function wrap(node: ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <I18nextProvider i18n={i18n}>{node}</I18nextProvider>

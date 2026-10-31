@@ -68,16 +68,16 @@ func udpHostConflict(previous, next []store.DesiredService) (store.PublishedPort
 	var socks []diagnose.BoundSocket
 	read := false
 	for _, svc := range next {
-		ip, err := bindaddr.Resolve(svc.BindAddress)
-		if err != nil {
-			continue
-		}
-		bind, err := netip.ParseAddr(ip)
-		if err != nil {
-			continue
-		}
 		for _, p := range svc.PublishedPorts {
 			if p.EffectiveProtocol() != spec.PortProtocolUDP || held[portKey(p)] {
+				continue
+			}
+			ip, err := bindaddr.Resolve(p.EffectiveBind(svc.BindAddress))
+			if err != nil {
+				continue
+			}
+			bind, err := netip.ParseAddr(ip)
+			if err != nil {
 				continue
 			}
 			if !read {

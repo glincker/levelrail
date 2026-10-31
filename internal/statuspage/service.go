@@ -22,8 +22,8 @@ type Store interface {
 	AddStatusSamples(ctx context.Context, componentID, day string, ok, degraded, down int) error
 	ListStatusDaily(ctx context.Context, sinceDay string) ([]store.StatusDaily, error)
 	PruneStatusDaily(ctx context.Context, beforeDay string) error
-	ListStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
-	ListStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
+	ListPublicStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
+	ListPublicStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
 }
 
 // AppSource reports an app's current status as one of the status constants.
@@ -34,6 +34,11 @@ type AppSource interface {
 // DomainSource is the existing DNS domain check.
 type DomainSource interface {
 	CheckDomainStatus(ctx context.Context, domain string) (string, error)
+}
+
+// MonitorSource reports a monitor's confirmed state: up, suspect, down, recovering, or "" when unknown.
+type MonitorSource interface {
+	MonitorState(ctx context.Context, id string) string
 }
 
 // Config tunes sampling and caching; zero values take the defaults.
@@ -54,21 +59,25 @@ const (
 
 // Service samples component health and builds the public View.
 type Service struct {
-	store   Store
-	apps    AppSource
-	domains DomainSource
-	client  *http.Client
-	cfg     Config
-	logger  *slog.Logger
-	now     func() time.Time
-	windows WindowSource
+	store    Store
+	apps     AppSource
+	domains  DomainSource
+	client   *http.Client
+	cfg      Config
+	logger   *slog.Logger
+	now      func() time.Time
+	windows  WindowSource
+	monitors MonitorSource
 
-	mu       sync.Mutex
-	current  map[string]string
-	cached   *View
-	cachedAt time.Time
-	hist     *View
-	histAt   time.Time
+	mu        sync.Mutex
+	current   map[string]string
+	cached    *View
+	cachedAt  time.Time
+	hist      *View
+	histAt    time.Time
+	enabled   bool
+	enabledAt time.Time
+	enabledOK bool
 }
 
 // New builds a Service. apps and domains may be nil, in which case
@@ -97,6 +106,7 @@ func New(st Store, apps AppSource, domains DomainSource, cfg Config, logger *slo
 func (s *Service) Invalidate() {
 	s.mu.Lock()
 	s.cached, s.hist = nil, nil
+	s.enabledOK = false
 	s.mu.Unlock()
 }
 
@@ -207,6 +217,28 @@ func (s *Service) probe(ctx context.Context, c store.StatusComponent) string {
 		}
 	case KindCheck:
 		return s.httpCheck(ctx, c.Target)
+	case KindMonitor:
+		return s.monitorState(ctx, c.Target)
+	default:
+		return Unknown
+	}
+}
+
+// SetMonitors lets monitor components follow the uptime monitor engine.
+func (s *Service) SetMonitors(m MonitorSource) { s.monitors = m }
+
+// monitorState maps a confirmed state; one failed sample (suspect) stays operational so a blip never shows red.
+func (s *Service) monitorState(ctx context.Context, id string) string {
+	if s.monitors == nil {
+		return Unknown
+	}
+	switch s.monitors.MonitorState(ctx, id) {
+	case "up", "suspect":
+		return Operational
+	case "recovering":
+		return Degraded
+	case "down":
+		return Outage
 	default:
 		return Unknown
 	}
@@ -284,12 +316,23 @@ func (s *Service) History(ctx context.Context) (View, error) {
 	return v, nil
 }
 
-// Enabled reports whether the public page is switched on.
+// Enabled reports whether the public page is switched on. The flag is held
+// for the view TTL and dropped by Invalidate, so a settings save is seen at once.
 func (s *Service) Enabled(ctx context.Context) (bool, error) {
+	s.mu.Lock()
+	if s.enabledOK && s.now().Sub(s.enabledAt) < s.cfg.CacheTTL {
+		on := s.enabled
+		s.mu.Unlock()
+		return on, nil
+	}
+	s.mu.Unlock()
 	settings, err := s.store.GetStatusPageSettings(ctx)
 	if err != nil {
 		return false, fmt.Errorf("statuspage: load settings: %w", err)
 	}
+	s.mu.Lock()
+	s.enabled, s.enabledAt, s.enabledOK = settings.Enabled, s.now(), true
+	s.mu.Unlock()
 	return settings.Enabled, nil
 }
 
@@ -314,11 +357,11 @@ func (s *Service) build(ctx context.Context, window time.Duration) (View, error)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list daily: %w", err)
 	}
-	incidents, err := s.store.ListStatusIncidents(ctx, 500)
+	incidents, err := s.store.ListPublicStatusIncidents(ctx, 500)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list incidents: %w", err)
 	}
-	updates, err := s.store.ListStatusIncidentUpdates(ctx)
+	updates, err := s.store.ListPublicStatusIncidentUpdates(ctx)
 	if err != nil {
 		return View{}, fmt.Errorf("statuspage: list incident updates: %w", err)
 	}

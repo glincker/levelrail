@@ -28,6 +28,8 @@ const (
 	KindApp    = "app"
 	KindDomain = "domain"
 	KindCheck  = "check"
+	// KindMonitor follows an uptime monitor by id (ADR 054).
+	KindMonitor = "monitor"
 )
 
 // Incident kinds, statuses and impacts.
@@ -306,4 +308,14 @@ func renderInline(line string) string {
 	s = codePattern.ReplaceAllString(s, "<code>$1</code>")
 	s = boldPattern.ReplaceAllString(s, "<strong>$1</strong>")
 	return linkPattern.ReplaceAllString(s, `<a href="$2" rel="noopener noreferrer nofollow" target="_blank">$1</a>`)
+}
+
+// NewIncidentView is the one public serializer for an incident. Webhooks use it
+// so they carry exactly the fields the public page does. Pass public updates only.
+func NewIncidentView(i store.StatusIncident, componentNames map[string]string, updates []store.StatusIncidentUpdate) IncidentView {
+	views := make([]UpdateView, 0, len(updates))
+	for _, u := range updates {
+		views = append(views, UpdateView{Status: u.Status, Body: u.Body, At: u.CreatedAt.UTC()})
+	}
+	return incidentView(i, componentNames, views)
 }

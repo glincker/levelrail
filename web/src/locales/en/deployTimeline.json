@@ -106,6 +106,7 @@
       "succeeded": "Succeeded",
       "failed": "Failed",
       "held": "Held",
+      "awaiting_approval": "Awaiting approval",
       "superseded": "Superseded",
       "queued": "Queued",
       "canceled": "Canceled",

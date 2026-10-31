@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
@@ -178,7 +179,8 @@ func (rt *Router) handleListRegistryCredentialRepositories(w http.ResponseWriter
 		return
 	}
 
-	repos, err := rt.registryCatalog.ListRepositories(r.Context(), cred.RegistryHost, cred.Username, password)
+	client, baseURL := rt.credentialCatalog(r.Context(), cred.RegistryHost)
+	repos, err := client.ListRepositories(r.Context(), baseURL, cred.Username, password)
 	if err != nil {
 		rt.logger.Error("api: list registry credential repositories failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusBadGateway, "could not reach the registry")
@@ -204,7 +206,8 @@ func (rt *Router) handleListRegistryCredentialTags(w http.ResponseWriter, r *htt
 		return
 	}
 
-	tags, err := rt.registryCatalog.ListTags(r.Context(), cred.RegistryHost, cred.Username, password, repository)
+	client, baseURL := rt.credentialCatalog(r.Context(), cred.RegistryHost)
+	tags, err := client.ListTags(r.Context(), baseURL, cred.Username, password, repository)
 	if errors.Is(err, registrycatalog.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "repository not found in this registry")
 		return
@@ -245,4 +248,33 @@ func (rt *Router) loadRegistryCredentialForBrowse(w http.ResponseWriter, r *http
 	}
 
 	return cred, password, true
+}
+
+// credentialCatalog picks the client and base URL for a stored credential:
+// the built-in registry's own host uses the unguarded loopback client, any
+// other host the guarded external one.
+func (rt *Router) credentialCatalog(ctx context.Context, host string) (RegistryCatalogClient, string) {
+	if rt.registry != nil {
+		if settings, err := rt.registry.GetRegistrySettings(ctx); err == nil && settings.Enabled && settings.Host != "" {
+			cred, cErr := registryHostname(host)
+			own, oErr := registryHostname(settings.Host)
+			if cErr == nil && oErr == nil && cred == own {
+				return rt.registryCatalog, registryCatalogBaseURL()
+			}
+		}
+	}
+	if rt.registryCatalogExternal != nil {
+		return rt.registryCatalogExternal, registryBaseURL(host)
+	}
+	return rt.registryCatalog, registryBaseURL(host)
+}
+
+// registryBaseURL turns a stored host[:port] into a base URL, defaulting
+// to https, and trims a trailing slash.
+func registryBaseURL(host string) string {
+	host = strings.TrimRight(strings.TrimSpace(host), "/")
+	if strings.Contains(host, "://") {
+		return host
+	}
+	return "https://" + host
 }

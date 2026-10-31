@@ -270,3 +270,55 @@ export function useDisownSignIn() {
     mutationFn: disownSignIn,
   })
 }
+
+export interface AdvisoryMatch {
+  app: string
+  image: string
+  digest?: string
+  advisory_id: string
+  severity: PostureSeverity
+  summary: string
+  fixed_in?: string
+  reference?: string
+  hint: string
+}
+
+export interface AdvisoriesResource {
+  enabled: boolean
+  signature?: 'unsigned' | 'verified' | 'invalid'
+  source?: string
+  loaded_at?: string
+  generated_at?: string
+  error?: string
+  entries: { id: string }[]
+  matches: AdvisoryMatch[]
+}
+
+export function advisoriesQueryOptions() {
+  return queryOptions({
+    queryKey: ['security', 'advisories'] as const,
+    queryFn: () =>
+      send<AdvisoriesResource>('GET', '/api/v1/security/advisories'),
+  })
+}
+
+export interface AdvisoryRefreshResult {
+  pending_approval?: { id: string }
+  deploy_id?: string
+}
+
+// Posts to the deploy-ability refresh endpoint; a protected environment answers
+// 202 with a pending approval instead of deploying.
+export function useAdvisoryRefresh() {
+  const queryClient = useQueryClient()
+  return useMutation<AdvisoryRefreshResult, ApiError, string>({
+    mutationFn: (app) =>
+      send<AdvisoryRefreshResult>(
+        'POST',
+        `/api/v1/apps/${encodeURIComponent(app)}/advisory-refresh`,
+        { confirm: true },
+      ),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ['security', 'advisories'] }),
+  })
+}

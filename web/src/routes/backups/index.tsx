@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon, UploadGlassIcon } from '@thesvg/ui-react'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBanner } from '../../components/PageBanner'
 import { HelpLink } from '../../components/HelpLink'
 import { LazyBackupsDiagram } from '../../components/banners/LazyDiagrams'
@@ -65,10 +66,7 @@ function BackupsPage() {
                     setProtectOpen(true)
                   }}
                 >
-                  <ShieldCheckGlassIcon
-                    className="text-tone-success"
-                    size="1.4em"
-                  />
+                  <ShieldCheckGlassIcon size="1.4em" />
                   {t('summary.protectEverything')}
                 </Button>
               ) : null}
@@ -80,9 +78,21 @@ function BackupsPage() {
       }
     >
       {coverage.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {t('page.loadFailed', { error: coverage.error.message })}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription className="space-y-2">
+            <p>{t('page.loadFailed', { error: coverage.error.message })}</p>
+            <p>{t('page.loadFailedHint')}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void coverage.refetch()
+              }}
+            >
+              {t('page.retry')}
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : !data ? (
         <div className="space-y-3" aria-busy="true">
           <Skeleton className="h-28 w-full" />

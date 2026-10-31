@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ModelPreflightPanel } from './ModelPreflightPanel'
 import type { PreflightResult } from '../types/modelPreflight'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function result(over: Partial<PreflightResult> = {}): PreflightResult {
   return {
@@ -73,9 +74,7 @@ function sentBody(init: RequestInit | undefined): string {
 function renderPanel(
   props: Partial<Parameters<typeof ModelPreflightPanel>[0]> = {},
 ) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   const onPickModel = vi.fn()
   render(
     <QueryClientProvider client={client}>

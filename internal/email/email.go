@@ -49,6 +49,8 @@ type SMTPConfig struct {
 	ReplyTo      string
 	TLSMode      string
 	SkipVerify   bool
+	// PinSHA256 trusts exactly one leaf certificate (hex SHA-256 of its DER) instead of the CA chain.
+	PinSHA256 string
 }
 
 // SESConfig is an AWS SES v2 sender's connection details.

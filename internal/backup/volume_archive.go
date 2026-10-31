@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -37,6 +38,53 @@ func (a *ContainerVolumeArchiver) Archive(ctx context.Context, volumeName string
 		return nil, fmt.Errorf("backup: archive volume %q: %w", volumeName, err)
 	}
 	return &removeContainerOnClose{ReadCloser: rc, runtime: a.Runtime, containerID: id}, nil
+}
+
+// ExcludingArchiver is a VolumeArchiver that can leave tar patterns out of the archive.
+type ExcludingArchiver interface {
+	ArchiveExcluding(ctx context.Context, volumeName string, excludes []string) (io.ReadCloser, error)
+}
+
+// ArchiveExcluding implements ExcludingArchiver with tar's --exclude, matched at any path component boundary.
+func (a *ContainerVolumeArchiver) ArchiveExcluding(ctx context.Context, volumeName string, excludes []string) (io.ReadCloser, error) {
+	id, err := createVolumeHelper(ctx, a.Runtime, volumeName, "volbackup", true)
+	if err != nil {
+		return nil, fmt.Errorf("backup: archive volume %q: %w", volumeName, err)
+	}
+	cmd := []string{"tar", "-cf", "-"}
+	for _, p := range excludes {
+		cmd = append(cmd, "--exclude="+p)
+	}
+	cmd = append(cmd, "-C", volumeMountPath, ".")
+	rc, err := a.Runtime.Exec(ctx, id, cmd)
+	if err != nil {
+		_ = a.Runtime.Remove(context.Background(), id, true)
+		return nil, fmt.Errorf("backup: archive volume %q: %w", volumeName, err)
+	}
+	return &removeContainerOnClose{ReadCloser: rc, runtime: a.Runtime, containerID: id}, nil
+}
+
+// errCannotExclude fails a backup closed rather than archive files it was told to leave out.
+var errCannotExclude = errors.New("backup: this volume has protected files and the archiver cannot leave them out")
+
+// archiveVolume archives one app volume without the files ArchiveExcludes names for it.
+func (r *Runner) archiveVolume(ctx context.Context, serviceName, volumeName, dockerVolumeName string) (io.ReadCloser, error) {
+	var excludes []string
+	if r.ArchiveExcludes != nil {
+		ex, err := r.ArchiveExcludes(ctx, serviceName, volumeName)
+		if err != nil {
+			return nil, fmt.Errorf("backup: resolve protected files of %q: %w", volumeName, err)
+		}
+		excludes = ex
+	}
+	if len(excludes) == 0 {
+		return r.VolumeArchiver.Archive(ctx, dockerVolumeName)
+	}
+	ea, ok := r.VolumeArchiver.(ExcludingArchiver)
+	if !ok {
+		return nil, errCannotExclude
+	}
+	return ea.ArchiveExcluding(ctx, dockerVolumeName, excludes)
 }
 
 // volumeArchiveCmd tars volumeMountPath's entire contents to stdout,

@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { StaticRoutesI18n } from '../../test/staticRoutesI18n'
 import { StaticRoutesPanel } from './StaticRoutesPanel'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function json(body: unknown, status = 200): Response {
   return {
@@ -33,9 +34,7 @@ function mockFetch(routes: Record<string, () => Response>) {
 }
 
 function wrap(node: ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <StaticRoutesI18n>{node}</StaticRoutesI18n>

@@ -29,6 +29,7 @@ const (
 	samlErrNoRole         = "sso_no_role"
 	samlErrNoEmail        = "sso_no_email"
 	samlErrDisabled       = "account_disabled"
+	samlErrRootLink       = "sso_root_not_linkable"
 
 	auditActionSAMLSignIn   = "sso.saml.signed_in"
 	auditActionSAMLRejected = "sso.saml.rejected"

@@ -1,7 +1,8 @@
 import { render, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PipelineRunLogs } from './PipelineRunLogs'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown): Response {
   return {
@@ -25,9 +26,7 @@ describe('PipelineRunLogs', () => {
       (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
     >(() => Promise.resolve(jsonResponse([])))
     vi.stubGlobal('fetch', fetchMock)
-    const qc = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
+    const qc = createTestQueryClient()
     render(
       <QueryClientProvider client={qc}>
         <PipelineRunLogs

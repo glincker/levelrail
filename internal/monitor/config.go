@@ -9,24 +9,37 @@ import (
 
 // Defaults apply only when the matching APP_MONITOR_* variable is unset.
 const (
-	DefaultWorkers         = 4
-	DefaultMinIntervalHTTP = 30 * time.Second
-	DefaultMinIntervalTCP  = 30 * time.Second
-	DefaultMaxTimeout      = 30 * time.Second
-	DefaultMaxCount        = 100
-	DefaultBodyMaxBytes    = 64 * 1024
-	DefaultMaxHeaders      = 16
-	DefaultHeaderMaxBytes  = 4096
-	DefaultMaxRedirects    = 5
-	DefaultFlushInterval   = 5 * time.Second
-	DefaultBufferMax       = 10000
-	DefaultRawRetention    = 48 * time.Hour
-	DefaultHourRetention   = 400 * 24 * time.Hour
-	DefaultPruneInterval   = 10 * time.Minute
-	DefaultPruneBatch      = 1000
-	DefaultJitterPercent   = 10
-	DefaultTickInterval    = time.Second
-	DefaultResultsMaxLimit = 1000
+	DefaultWorkers              = 4
+	DefaultConfirmFailures      = 2
+	DefaultRecoveryOKs          = 2
+	DefaultMinIntervalHTTP      = 30 * time.Second
+	DefaultMinIntervalTCP       = 30 * time.Second
+	DefaultMaxTimeout           = 30 * time.Second
+	DefaultMaxCount             = 100
+	DefaultBodyMaxBytes         = 64 * 1024
+	DefaultMaxHeaders           = 16
+	DefaultHeaderMaxBytes       = 4096
+	DefaultMaxRedirects         = 5
+	DefaultFlushInterval        = 5 * time.Second
+	DefaultBufferMax            = 10000
+	DefaultRawRetention         = 48 * time.Hour
+	DefaultHourRetention        = 400 * 24 * time.Hour
+	DefaultPruneInterval        = 10 * time.Minute
+	DefaultPruneBatch           = 1000
+	DefaultJitterPercent        = 10
+	DefaultTickInterval         = time.Second
+	DefaultResultsMaxLimit      = 1000
+	DefaultMinIntervalHeartbeat = 30 * time.Second
+	DefaultMinIntervalTLS       = time.Hour
+	DefaultHeartbeatGrace       = 5 * time.Minute
+	DefaultHeartbeatMaxGrace    = 7 * 24 * time.Hour
+	DefaultHeartbeatCheck       = 15 * time.Second
+	DefaultHeartbeatPerMinute   = 60
+	DefaultHeartbeatBodyMax     = 1024
+	DefaultHeartbeatMinResponse = 25 * time.Millisecond
+	DefaultTLSWarnDays          = 21
+	DefaultTLSCritDays          = 7
+	DefaultTLSTimeout           = 10 * time.Second
 )
 
 // Config holds every limit of the monitor engine, all read from APP_MONITOR* variables.
@@ -50,7 +63,20 @@ type Config struct {
 	JitterPercent   int
 	TickInterval    time.Duration
 	ResultsMaxLimit int
+	ConfirmFailures int
+	RecoveryOKs     int
 	UserAgent       string
+
+	MinIntervalHeartbeat time.Duration
+	MinIntervalTLS       time.Duration
+	HeartbeatGrace       time.Duration
+	HeartbeatMaxGrace    time.Duration
+	HeartbeatCheck       time.Duration
+	HeartbeatPerMinute   int
+	HeartbeatBodyMax     int
+	HeartbeatMinResponse time.Duration
+	TLSWarnDays          int
+	TLSCritDays          int
 }
 
 type envReader struct {
@@ -112,7 +138,23 @@ func ConfigFromEnv(lookup func(string) (string, bool)) (Config, error) {
 		JitterPercent:   e.num("APP_MONITOR_JITTER_PERCENT", DefaultJitterPercent, 0),
 		TickInterval:    e.dur("APP_MONITOR_TICK_INTERVAL", DefaultTickInterval),
 		ResultsMaxLimit: e.num("APP_MONITOR_RESULTS_MAX_LIMIT", DefaultResultsMaxLimit, 1),
+		ConfirmFailures: e.num("APP_MONITOR_CONFIRM_FAILURES", DefaultConfirmFailures, 1),
+		RecoveryOKs:     e.num("APP_MONITOR_RECOVERY_SUCCESSES", DefaultRecoveryOKs, 1),
 		UserAgent:       "monitor",
+
+		MinIntervalHeartbeat: e.dur("APP_MONITOR_MIN_INTERVAL_HEARTBEAT", DefaultMinIntervalHeartbeat),
+		MinIntervalTLS:       e.dur("APP_MONITOR_MIN_INTERVAL_TLS", DefaultMinIntervalTLS),
+		HeartbeatGrace:       e.dur("APP_MONITOR_HEARTBEAT_GRACE", DefaultHeartbeatGrace),
+		HeartbeatMaxGrace:    e.dur("APP_MONITOR_HEARTBEAT_MAX_GRACE", DefaultHeartbeatMaxGrace),
+		HeartbeatCheck:       e.dur("APP_MONITOR_HEARTBEAT_CHECK_INTERVAL", DefaultHeartbeatCheck),
+		HeartbeatPerMinute:   e.num("APP_MONITOR_HEARTBEAT_RATE_PER_MINUTE", DefaultHeartbeatPerMinute, 1),
+		HeartbeatBodyMax:     e.num("APP_MONITOR_HEARTBEAT_BODY_MAX_BYTES", DefaultHeartbeatBodyMax, 1),
+		HeartbeatMinResponse: e.dur("APP_MONITOR_HEARTBEAT_MIN_RESPONSE", DefaultHeartbeatMinResponse),
+		TLSWarnDays:          e.num("APP_MONITOR_TLS_WARN_DAYS", DefaultTLSWarnDays, 1),
+		TLSCritDays:          e.num("APP_MONITOR_TLS_CRIT_DAYS", DefaultTLSCritDays, 0),
+	}
+	if cfg.TLSCritDays >= cfg.TLSWarnDays {
+		e.errs = append(e.errs, "APP_MONITOR_TLS_CRIT_DAYS must be below APP_MONITOR_TLS_WARN_DAYS")
 	}
 	if v, ok := e.raw("APP_MONITORS_ENABLED"); ok {
 		b, err := strconv.ParseBool(v)
@@ -137,6 +179,10 @@ func (c Config) MinInterval(kind string) time.Duration {
 		return c.MinIntervalHTTP
 	case KindTCP:
 		return c.MinIntervalTCP
+	case KindHeartbeat:
+		return c.MinIntervalHeartbeat
+	case KindTLS:
+		return c.MinIntervalTLS
 	}
 	return 0
 }

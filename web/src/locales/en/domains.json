@@ -257,6 +257,7 @@
   "page": {
     "title": "Domains",
     "description": "Every domain routed to your apps.",
+    "helpLabel": "Domains and ingress guide",
     "add": "Add domain",
     "count_one": "{{count}} domain",
     "count_other": "{{count}} domains",

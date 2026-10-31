@@ -104,7 +104,8 @@ export function DeployAttemptRow({
   const isCancelable =
     attempt.status === 'queued' ||
     attempt.status === 'running' ||
-    attempt.status === 'held'
+    attempt.status === 'held' ||
+    attempt.status === 'awaiting_approval'
   // Stage vocabulary (Build/Roll out) reuses computeDeployStages, the
   // same derivation the live deploy view uses: only meaningful for the
   // latest attempt, since reconcile conditions carry no per-attempt
@@ -270,7 +271,7 @@ export function DeployAttemptRow({
   const note =
     attempt.status === 'queued'
       ? `Position ${attempt.queue_position ?? 1}${attempt.wait_reason ? `, ${attempt.wait_reason}` : ''}`
-      : attempt.status === 'held'
+      : attempt.status === 'held' || attempt.status === 'awaiting_approval'
         ? attempt.wait_reason
         : attempt.status === 'superseded' && attempt.superseded_by
           ? `Superseded by ${attempt.superseded_by}`

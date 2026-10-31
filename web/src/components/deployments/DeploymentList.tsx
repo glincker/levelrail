@@ -197,10 +197,20 @@ export function DeploymentList({
     ],
     [t, now],
   )
+  // Columns with no value on any row are dropped so the headline gets the space.
+  const visibleColumns = useMemo(() => {
+    const filled: Record<string, boolean> = {
+      env: rows.some((d) => Boolean(d.environment)),
+      commit: rows.some((d) => !isRollback(d) && Boolean(d.commit_sha)),
+      branch: rows.some((d) => !isRollback(d) && Boolean(d.branch)),
+      by: rows.some((d) => Boolean(d.author) || d.preview_image_url !== null),
+    }
+    return columns.filter((c) => filled[c.id] !== false)
+  }, [columns, rows])
   return (
     <ResponsiveTable
       rows={rows}
-      columns={columns}
+      columns={visibleColumns}
       getRowId={(d) => d.id}
       ariaLabel={t('table.label')}
       virtualizeOver={VIRTUALIZE_AFTER}

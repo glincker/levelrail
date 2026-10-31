@@ -6,7 +6,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type digestVerifierStub struct {
@@ -44,5 +47,28 @@ func TestVerifyPromotionDigest(t *testing.T) {
 				t.Fatalf("err = %v, want status %d", err, c.status)
 			}
 		})
+	}
+}
+
+func TestHandlePromoteApp_DirectPathVerifiesDigest(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedPromotionFixture(t, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web-staging", Image: "levelrail/web:2@sha256:abc", Port: 3000}); err != nil {
+		t.Fatalf("pin source: %v", err)
+	}
+	rt.imageResolver = digestVerifierStub{}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod","confirm":true}`))
+	if rec.Code != http.StatusGone {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusGone, rec.Body.String())
+	}
+	target, err := db.GetDesiredService(context.Background(), "web-prod")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if target.Image != "levelrail/web:1" {
+		t.Errorf("target image = %q, want unchanged", target.Image)
 	}
 }

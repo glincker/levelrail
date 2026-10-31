@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
@@ -8,6 +8,7 @@ import { toast } from '@/components/ui/toast'
 import { SplitTestingPanel } from './SplitTestingPanel'
 import splitEn from '../locales/en/splitTesting.json'
 import type { SplitTest } from '../queries/splitTesting'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@/components/ui/toast', () => ({
   toast: { add: vi.fn() },
@@ -68,9 +69,7 @@ const running: SplitTest = {
 }
 
 function renderPanel() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>

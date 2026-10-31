@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -152,9 +153,9 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// AbilityDeploy alone does not authorize minting a GitHub App installation token.
-	token := rt.tokenForRepo(r.Context(), name, req.RepoURL, rt.callerHasAbility(r, AbilityReadSensitive))
+	token, cloneScope := rt.cloneCredential(r.Context(), name, req.RepoURL, rt.callerHasAbility(r, AbilityReadSensitive) && gitHubAppTokenAllowed(r.Context()))
 
-	sourceDir, commit, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref, token)
+	sourceDir, commit, cleanup, err := rt.fetch(sourcecache.WithScope(r.Context(), cloneScope), req.RepoURL, req.Ref, token)
 	if err != nil {
 		rt.logger.Error("api: deploy spec: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", redactURLCredentials(req.RepoURL)), slog.String("ref", req.Ref))
 		writeError(w, http.StatusBadRequest, "fetching source failed: check repo_url and ref")

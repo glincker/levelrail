@@ -147,8 +147,10 @@ func (rt *Router) publishedHostPortRows(ctx context.Context) []hostFirewallPubli
 			out = append(out, row)
 		}
 		for _, p := range svc.PublishedPorts {
-			row.Port, row.Protocol = p.HostPort, p.EffectiveProtocol()
-			out = append(out, row)
+			portRow := row
+			portRow.Port, portRow.Protocol = p.HostPort, p.EffectiveProtocol()
+			portRow.BindAddress = p.EffectiveBind(row.BindAddress)
+			out = append(out, portRow)
 		}
 	}
 	return slices.DeleteFunc(out, func(r hostFirewallPublishedPort) bool { return r.Port < 1 || r.Port > 65535 })

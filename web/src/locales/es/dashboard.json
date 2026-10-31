@@ -189,6 +189,7 @@
       "failed": "Fallido",
       "running": "Desplegando",
       "held": "En espera",
+      "awaiting_approval": "Esperando aprobación",
       "superseded": "Reemplazado",
       "queued": "En cola",
       "canceled": "Cancelado",

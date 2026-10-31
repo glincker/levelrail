@@ -97,7 +97,7 @@ export function ScopePicker() {
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start @4xl:w-auto"
+            className="w-full justify-start @5xl:w-auto"
             aria-label={t('picker.aria')}
           />
         }

@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ViewInGrafanaLink } from './ViewInGrafanaLink'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -12,9 +13,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderLink() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <ViewInGrafanaLink />

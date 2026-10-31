@@ -1,3 +1,23 @@
+import { getActiveLocale } from '../../lib/activeLocale'
+
+// Non-English locales use Intl so units and word order follow the language.
+function localized(lang: string, seconds: number): string {
+  const rtf = new Intl.RelativeTimeFormat(lang, {
+    numeric: 'auto',
+    style: 'short',
+  })
+  const abs = Math.abs(seconds)
+  const sign = seconds < 0 ? -1 : 1
+  if (abs < 45) return rtf.format(0, 'second')
+  if (abs < 3600)
+    return rtf.format(sign * Math.max(1, Math.round(abs / 60)), 'minute')
+  if (abs < 86400) return rtf.format(sign * Math.round(abs / 3600), 'hour')
+  if (abs < 86400 * 30) return rtf.format(sign * Math.round(abs / 86400), 'day')
+  if (abs < 86400 * 365)
+    return rtf.format(sign * Math.round(abs / (86400 * 30)), 'month')
+  return rtf.format(sign * Math.round(abs / (86400 * 365)), 'year')
+}
+
 export function formatRelative(
   at: string | Date,
   now: number = Date.now(),
@@ -5,6 +25,8 @@ export function formatRelative(
   const ms = at instanceof Date ? at.getTime() : Date.parse(at)
   if (!Number.isFinite(ms)) return ''
   const diff = Math.round((now - ms) / 1000)
+  const lang = getActiveLocale()
+  if (lang && !lang.startsWith('en')) return localized(lang, -diff)
   if (diff < 0) {
     const ahead = -diff
     if (ahead < 45) return 'in a moment'

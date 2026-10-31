@@ -245,6 +245,11 @@ export const settingsNavSections: SettingsNavSection[] = [
     id: 'domains',
     items: [
       {
+        id: 'platform',
+        to: '/settings/platform',
+        icon: SettingsGlassIcon,
+      },
+      {
         id: 'domains',
         to: '/domains',
         icon: GlobeGlassIcon,

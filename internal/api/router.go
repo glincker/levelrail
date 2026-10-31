@@ -103,6 +103,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
+	"github.com/GLINCKER/levelrail/internal/statuswebhook"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/bitbucketserver"
@@ -212,8 +213,14 @@ type Router struct {
 	inbox                  InboxStore      // nil is valid: notification inbox routes return 501
 	statusPage             StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
 	statusView             StatusPageViewer
+	incidents              IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
+	incidentBodyMax        int
 	statusSampler          *statuspage.Service
+	statusHooks            *statuswebhook.Service // nil is valid: webhook routes return 501
+	statusHooksStore       statuswebhook.Store
 	statusLimiter          *apiRateLimiter
+	heartbeatMu            sync.Mutex
+	heartbeatLimiter       *apiRateLimiter
 	statusHost             statusHostCache
 	sessions               *sessionStore
 	mfaPending             *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has
@@ -283,6 +290,7 @@ type Router struct {
 	domainMaintenance      DomainMaintenanceStore      // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
 	domainTLSCert          DomainTLSCertStore          // always set, same "core Store interface" shape as domainBasicAuth above
 	domainTLSCertSecrets   DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
+	mailCertLocks          sync.Map                    // app name to *sync.Mutex: one mail certificate install at a time per app
 	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainAuthGate         DomainAuthGateStore         // always set, core Store; the auth URL is not secret
 	gate                   GateStore                   // nil when the store lacks it: built-in gate requests fail closed
@@ -502,6 +510,7 @@ type Router struct {
 	// 0 means "use the default", set via WithResourceRecommendationLookback.
 	resourceRecommendationLookback time.Duration
 	analysisReports                AnalysisReportStore // nil is valid: report routes return 501
+	analysisRunner                 AnalysisRunner      // nil is valid: on-demand runs return 501 (APP_ANALYSIS_ENABLED off)
 	// capacityForecastLookback overrides defaultCapacityForecastLookback
 	// for GET /api/v1/nodes/{id}/capacity-forecast's usage-history
 	// window. 0 means "use the default", set via
@@ -694,11 +703,13 @@ type Router struct {
 	domainAuto                   domainAutoSeams                                            // zero value uses the real DNS provider, TLS and HTTP probes; tests replace single funcs
 	dnsZoneProviders             dnsZoneProvidersFunc                                       // nil uses rt.resolveDNSZoneProviders (dns_zones.go); tests swap in fakes
 	dnsQuerier                   dnszones.Querier                                           // nil uses a real miekg/dns querier; tests swap in a fake
+	dnsNS                        dnsNameserverState                                         // lazy delegation checker, registrar lookup and demo zones (dns_zones_delegation.go)
 	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                        VaultSettingsStore                                         // always set, same shape as cloudflareTunnel above
 	vaultSecrets                 VaultSecrets                                               // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
 	registryCatalog              RegistryCatalogClient                                      // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
+	registryCatalogExternal      RegistryCatalogClient                                      // guarded client for operator-supplied registry addresses; nil falls back to registryCatalog (tests)
 	registryCatalogSecrets       RegistryCatalogSecrets                                     // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
 	dockerHubClient              DockerHubClient                                            // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
 	emailSender                  email.Sender                                               // nil is valid: forgot-password still returns its generic success response
@@ -1015,6 +1026,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		registry:                    s,
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),
+		registryCatalogExternal:     registrycatalog.NewExternalClient(),
 		dockerHubClient:             dockerhub.NewClient(),
 		sessionLinkTokens:           s,
 		forgotPasswordByIP:          newLoginLimiter(),

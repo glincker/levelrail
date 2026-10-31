@@ -53,6 +53,7 @@ export function NotificationCenter() {
   const inboxUnread = useInboxUnreadCount()
   const { t } = useTranslation('attention', { useSuspense: false })
   const { t: tInbox } = useTranslation('inbox', { useSuspense: false })
+  const { t: tShell } = useTranslation('common', { useSuspense: false })
   const { ids, set } = useReadIds()
   const { isSnoozed } = useSnoozed()
   const [showSnoozed, setShowSnoozed] = useState(false)
@@ -80,10 +81,10 @@ export function NotificationCenter() {
             className="relative"
             aria-label={
               unread > 0
-                ? `Notifications: ${String(unread)} unread`
-                : 'Notifications: all read'
+                ? tShell('shell.notifications.unread', { count: unread })
+                : tShell('shell.notifications.allRead')
             }
-            title="Notifications"
+            title={tShell('shell.notifications.title')}
           />
         }
       >

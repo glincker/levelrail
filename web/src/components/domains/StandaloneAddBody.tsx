@@ -12,6 +12,7 @@ import { STANDALONE_SCOPE } from '../../lib/standaloneDomain'
 import { useRunGoLive } from '../../queries/goLive'
 import type { StandaloneDomain } from '../../queries/standaloneDomains'
 import { GoLivePanel } from '../GoLivePanel'
+import { DomainDnsSetup } from '../dns/DomainDnsSetup'
 import { DomainRecords } from './ServerAddressCard'
 import { StandaloneDomainForm } from './StandaloneDomainForm'
 
@@ -43,7 +44,11 @@ function StandaloneResult({
         <span className="text-muted-foreground"> {'->'} </span>
         {saved.target_url}
       </p>
-      <DomainRecords domain={saved.domain} />
+      <DomainDnsSetup
+        kind="app"
+        domain={saved.domain}
+        fallback={<DomainRecords domain={saved.domain} />}
+      />
       <GoLivePanel
         app={STANDALONE_SCOPE}
         domain={saved.domain}

@@ -419,6 +419,8 @@ type PublishedPort struct {
 	ContainerPort int    `json:"container_port"`
 	HostPort      int    `json:"host_port"`
 	Protocol      string `json:"protocol,omitempty"`
+	// Bind is this port's own bind (private or public); empty follows the app's bind.
+	Bind string `json:"bind,omitempty"`
 }
 
 // ComposeDeployResult mirrors internal/api's composeDeployResponse

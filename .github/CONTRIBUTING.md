@@ -288,6 +288,17 @@ Migrations are forward-only SQL files in `internal/store/migrations/`, named `NN
 - **No CHECK lists for extensible enums.** Provider names, engine names and similar lists that grow live in a Go allowlist (see `store.IsOAuthProvider`), validated by the store and the API. A CHECK list forces a table rebuild for every new value.
 - **Testing an upgrade.** `cmd/levelrail/upgrade_matrix_test.go` seeds a database at an older schema with `WithMigrationCeiling`, upgrades it to head and asserts no rows are lost. Add a seed there when your migration transforms existing data. Run the full drift sweep once with `go test ./internal/store -run MigrationDrift` (without `-short`).
 
+## Definition of done
+
+For maintainers and agents, before a branch is squash-merged into the release branch:
+
+- An Accepted ADR exists for any new subsystem.
+- The feature sits behind an experimental flag until a real-host run is recorded in `docs/feature-status.md`.
+- `scripts/pre-integrate.sh` passes (add `--web` for dashboard changes).
+- New migration numbers come from `scripts/next-migration.sh`.
+- Generated files are regenerated (`scripts/code-gen-check.sh` is clean).
+- Docs and the CLI help are updated in the same change.
+
 ## Architecture decision records
 
 Significant architectural choices are recorded as ADRs under `/adr`, one

@@ -41,6 +41,12 @@ Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variab
 | --- | --- | --- |
 | `APP_COOKIE_SECURE` | unset (Secure only when the dashboard URL is `https://`) | Set to `true` to always mark the session cookie Secure. Use it when a proxy terminates TLS in front of an `http://` dashboard URL. Control plane. |
 
+## Supply chain gate
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_SUPPLYCHAIN_FAIL_CLOSED` | `false` | Set to `true` so a blocking gate mode (`block_on_critical`, `block_on_high`) denies a release when the scan is unavailable (recorded as "scan unavailable") and counts unknown severity findings as critical. Control plane. |
+
 ## Builds and build cache
 
 The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache on top of that. See [Build node routing](/build-node-routing) for dedicated build nodes.
@@ -55,6 +61,7 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_MEMORY_MB` | `0` | Memory one build may use, in MB. `0` means no limit. A saved global or per-app override wins. Control plane, Linux cgroup v2. |
 | `APP_BUILD_CPU_MILLIS` | `0` | CPU one build may use, in thousandths of a core (`1500` is 1.5 cores). `0` means no limit. A saved override wins. Control plane, Linux cgroup v2. |
 | `APP_BUILD_CGROUP_ROOT` | `/sys/fs/cgroup` | Where the control plane creates the per-build cgroups that enforce the memory and CPU limits. |
+| `APP_REGISTRY_ALLOW_PRIVATE_NETWORKS` | unset (off) | Registries on private LAN ranges (RFC 1918, `fc00::/7`) work by default when you add or browse a registry credential. Set to `true` to also allow loopback registries. Link-local and cloud metadata addresses are always refused. Control plane. |
 
 ## Source cache and git fetches
 
@@ -96,6 +103,7 @@ The pipeline engine's own tuning variables are listed in [Pipelines](/pipelines)
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_PIPELINE_SCHEDULER_INTERVAL` | `30s` | How often the pipeline scheduler runs. Control plane. |
+| `APP_PIPELINE_MAX_REF_LEN` | `255` | Longest git ref a webhook run accepts, in bytes. Positive integer. Control plane. |
 | `APP_GIT_STATUS_TIMEOUT` | `10s` | Time limit for each commit status post a pipeline run sends to the git forge. Control plane. |
 | `APP_OIDC_KEY_RETIRE_GRACE` | `24h` | How long a rotated-out signing key stays published in the JWKS document before it is removed. Control plane. |
 | `APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE` | `60` | Rate limit on the unauthenticated JWKS endpoint. Positive integer. Control plane. |
@@ -225,6 +233,19 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_UPDATE_CHECK_INTERVAL` | `1h` | How often the control plane checks the configured release channel for a newer version. Control plane. |
+
+## Plugin egress proxy
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_PLUGIN_EGRESS_CONNECT_TIMEOUT` | `10s` | Time limit for opening an outbound connection for a plugin. Control plane. |
+| `APP_PLUGIN_EGRESS_IDLE_TIMEOUT` | `60s` | How long a plugin tunnel may sit idle before it is closed. Control plane. |
+| `APP_PLUGIN_EGRESS_MAX_TUNNELS` | `16` | Simultaneous tunnels allowed per plugin. Positive integer. Control plane. |
+| `APP_PLUGIN_EGRESS_BYTES_PER_MINUTE` | `268435456` (256 MiB) | Traffic cap per plugin per minute, both directions combined. Positive integer. Control plane. |
+| `APP_PLUGIN_EGRESS_ALLOW_PRIVATE` | `false` | Set to `true` to let plugin tunnels reach targets that resolve to internal addresses. Control plane. |
+| `APP_PLUGIN_EGRESS_POLICY_SOCKET` | none (required) | Unix socket path where the `plugin-egress` sidecar receives its policy. Created with mode 0600 in a 0700 directory. Sidecar only. |
+| `APP_PLUGIN_EGRESS_POLICY_CACHE` | none (cache off) | File where the sidecar keeps the last applied policy (mode 0600) and reloads it on start. With no policy at all the sidecar denies everything. Sidecar only. |
+| `APP_PLUGIN_EGRESS_LISTEN` | `0.0.0.0:3128` | Address the `plugin-egress` sidecar proxy listens on. Sidecar only. |
 
 ## SSH node provisioning
 

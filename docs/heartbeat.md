@@ -1,4 +1,8 @@
-# Off-host heartbeat
+---
+title: "Off-host heartbeat"
+description: "The control plane calls a URL you choose while it is healthy. An outside monitor alerts when the calls stop, even if the whole server is down."
+"og:url": "https://docs.levelrail.com/heartbeat"
+---
 
 Every alert Levelrail sends comes from the control plane itself. If the box loses power, the disk fills, or the process is killed, nothing is left to send "I am down". The heartbeat closes that gap: while the control plane is healthy it calls a URL you choose every interval. A monitor outside your server alerts when the calls stop.
 

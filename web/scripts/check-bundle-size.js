@@ -44,7 +44,11 @@ function loadExemptFiles() {
       readFileSync(path.join(distDir, '.vite', 'manifest.json'), 'utf8'),
     )
   } catch {
-    return new Set()
+    // No manifest (default local build): elkjs is the one mermaid chunk named
+    // by module, so exempt it by filename rather than fail every local run.
+    return new Set(
+      readdirSync(distAssets).filter((name) => /^elk-[\w-]+\.js$/.test(name)),
+    )
   }
 
   const keys = Object.keys(manifest)
@@ -94,7 +98,7 @@ try {
 
 // Everything index.html pulls before first paint, which the per-chunk budget cannot see.
 const FIRST_LOAD_BUDGET_BYTES =
-  Number(process.env.FIRST_LOAD_BUDGET_BYTES) || 1_900_000
+  Number(process.env.FIRST_LOAD_BUDGET_BYTES) || 1_720_000
 
 function firstLoadBytes() {
   const html = readFileSync(path.join(distDir, 'index.html'), 'utf8')

@@ -140,7 +140,7 @@ func sentryKey(r *http.Request) string {
 	return ""
 }
 
-func (rt *Router) authErrorIngest(ctx context.Context, tok string) string {
+func (rt *Router) authErrorIngest(r *http.Request, tok string) string {
 	if tok == "" || rt.secrets == nil {
 		return ""
 	}
@@ -151,7 +151,10 @@ func (rt *Router) authErrorIngest(ctx context.Context, tok string) string {
 	now := time.Now()
 	want, cached := rt.errTrack.keys.get(app, now)
 	if !cached {
-		v, err := rt.secrets.Resolve(ctx, errorIngestSecretsKey(app), errorIngestSecretName)
+		if !rt.ingestLookupAllowed(r) {
+			return ""
+		}
+		v, err := rt.secrets.Resolve(r.Context(), errorIngestSecretsKey(app), errorIngestSecretName)
 		if err != nil || v == "" {
 			return ""
 		}
@@ -162,6 +165,13 @@ func (rt *Router) authErrorIngest(ctx context.Context, tok string) string {
 		return ""
 	}
 	return app
+}
+
+// ingestLookupAllowed caps uncached key lookups per client IP so unauthenticated
+// guesses cannot drive a database read each.
+func (rt *Router) ingestLookupAllowed(r *http.Request) bool {
+	ok, _ := rt.buildHookLimits().failures.allow("ingest-probe:" + clientIP(r))
+	return ok
 }
 
 func setSentryCORS(w http.ResponseWriter) {
@@ -195,7 +205,7 @@ func (rt *Router) ingestSentry(w http.ResponseWriter, r *http.Request, legacy bo
 		writeError(w, http.StatusNotImplemented, "error tracking is not configured on this control plane")
 		return
 	}
-	app := rt.authErrorIngest(r.Context(), sentryKey(r))
+	app := rt.authErrorIngest(r, sentryKey(r))
 	if app == "" {
 		writeError(w, http.StatusUnauthorized, "missing or invalid DSN key")
 		return

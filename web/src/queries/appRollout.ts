@@ -1,4 +1,9 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
@@ -74,4 +79,60 @@ export function appRolloutQueryOptions(appName: string) {
 
 export function useAppRollout(appName: string) {
   return useQuery(appRolloutQueryOptions(appName))
+}
+
+/** PUT replaces the saved policy; an empty field falls back to the env default. */
+export function useSaveRolloutPolicy(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<RolloutPolicy, ApiError, RolloutPolicy>({
+    mutationFn: async (policy) => {
+      const res = await fetch(
+        `/api/v1/apps/${encodeURIComponent(appName)}/rollout`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(policy),
+        },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(
+            res,
+            `save rollout policy failed: ${res.status}`,
+          ),
+        )
+      }
+      return (await res.json()) as RolloutPolicy
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: appRolloutKeys.rollout(appName),
+      }),
+  })
+}
+
+export function useResetRolloutPolicy(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, void>({
+    mutationFn: async () => {
+      const res = await fetch(
+        `/api/v1/apps/${encodeURIComponent(appName)}/rollout`,
+        { method: 'DELETE' },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(
+            res,
+            `reset rollout policy failed: ${res.status}`,
+          ),
+        )
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: appRolloutKeys.rollout(appName),
+      }),
+  })
 }

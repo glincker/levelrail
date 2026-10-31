@@ -219,3 +219,24 @@ func TestResolveImageRequireFreshPodmanBareNotFound(t *testing.T) {
 		})
 	}
 }
+
+func TestImageDigestExistsTreatsRegistryAuthFailureAsInconclusive(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+	}{
+		{"unauthorized", http.StatusUnauthorized, `{"message":"unauthorized: authentication required"}`},
+		{"masked not found", http.StatusUnauthorized, `{"message":"pull access denied, repository not found"}`},
+		{"forbidden", http.StatusForbidden, `{"message":"forbidden"}`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			cl := newFakeDaemonClientDist(t, c.status, c.body, http.StatusNotFound, `{}`)
+			exists, err := cl.ImageDigestExists(context.Background(), "registry.example.com/web@"+testIndexDigest)
+			if exists || err == nil {
+				t.Fatalf("exists = %v err = %v, want an inconclusive error", exists, err)
+			}
+		})
+	}
+}

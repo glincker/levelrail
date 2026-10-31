@@ -3,8 +3,6 @@ title: Labels and namespaces
 description: Group and filter apps, databases, stacks and nodes with free-form labels.
 ---
 
-# Labels and namespaces
-
 Labels are key and value pairs you attach to apps, databases, stacks and nodes. They do not change how anything runs. Use them to group and find things.
 
 Keys are lowercase letters, digits, `.`, `_`, `-` or `/` (up to 63 characters). Values are letters, digits, `.`, `_` or `-` (up to 63 characters). The number of labels per resource is capped by the `APP_LABELS_MAX_PER_RESOURCE` environment variable (default 32).

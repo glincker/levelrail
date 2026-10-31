@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AllI18n } from '../test/allI18n'
 import { BuildCacheCard } from './BuildCacheCard'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -31,9 +32,7 @@ function mockFetch(routes: Record<string, () => Response>) {
 }
 
 function renderCard(app: string) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <AllI18n>
       <QueryClientProvider client={client}>
@@ -175,9 +174,7 @@ describe('BuildCacheCard', () => {
       'GET /api/v1/build-cache': () => jsonResponse(settings),
       'PUT /api/v1/build-cache': () => jsonResponse(setting),
     })
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
+    const client = createTestQueryClient()
     render(
       <AllI18n>
         <QueryClientProvider client={client}>

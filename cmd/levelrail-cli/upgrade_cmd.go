@@ -16,7 +16,8 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return code
 	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "upgrade", "print the preflight as JSON to stdout and nothing else", stderr)
-	noBackup := fs.Bool("no-backup", false, "skip the automatic control plane backup")
+	noBackup := fs.Bool("no-backup", false, "do not take the control plane backup at all")
+	skipBackup := fs.Bool("skip-backup", false, "do not stop when the control plane backup fails or the disk is short; with --apply the upgrade then has no database restore point")
 	list := fs.Bool("list", false, "list the last 5 releases with a schema compatibility verdict")
 	channel := fs.String("channel", "", "with --list: stable, beta or all (default: the configured channel)")
 	planVersion := fs.String("rollback-plan", "", "preview a rollback to `version` (read-only; applying happens on the host)")
@@ -32,7 +33,7 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	attempts := fs.Bool("attempts", false, "list recorded self-upgrade attempts with their step timelines")
 	noWatch := fs.Bool("no-wait", false, "with --apply: return once the upgrade has started instead of following it")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--plan (or --dry-run) shows breaking changes and the rollback commands and --apply upgrades with automatic rollback;\n--attempts lists self-upgrade runs; --rollback <version> --yes returns to a retained release (binary only); --list shows recent releases; --rollback-plan <version> previews returning to\none. Subcommands: schedule (--at TIME | --window, show, cancel), auto (get, set) and backup-now. A rollback that needs a backup restore is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--plan (or --dry-run) shows breaking changes and the rollback commands and --apply upgrades with automatic rollback;\n--attempts lists self-upgrade runs; --rollback <version> --yes returns to a retained release (binary only); --list shows recent releases; --rollback-plan <version> previews returning to\none. The upgrade is refused when its backup fails or the disk is short unless you pass --skip-backup. Subcommands: schedule (--at TIME | --window, show, cancel), auto (get, set) and backup-now. A rollback that needs a backup restore is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -46,7 +47,7 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runUpgradeRollback(ctx, client, *rollbackTo, *yes, jsonOut, of, stdout, stderr)
 	}
 	if *apply || *planOnly || *dryRun {
-		return runUpgradeApply(ctx, client, upgradeApplyOptions{target: *applyTo, ack: *applyAck, plan: *dryRun || (*planOnly && !*apply), watch: !*noWatch}, jsonOut, of, stdout, stderr)
+		return runUpgradeApply(ctx, client, upgradeApplyOptions{target: *applyTo, ack: *applyAck, plan: *dryRun || (*planOnly && !*apply), watch: !*noWatch, skipBackup: *skipBackup}, jsonOut, of, stdout, stderr)
 	}
 	if *attempts {
 		return runUpgradeAttempts(ctx, client, jsonOut, of, stdout, stderr)
@@ -69,11 +70,13 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("upgrade preflight: %w", err))
 	}
 	backupNote := "skipped (--no-backup)"
+	backupFailed := false
 	if !*noBackup && !pre.Blocked {
 		if b, err := client.CreateControlPlaneBackup(ctx); err != nil {
 			backupNote = "failed: " + err.Error()
+			backupFailed = !*skipBackup
 		} else {
-			backupNote = "taken: " + b.Name
+			backupNote = "taken: " + b.Name + "; restore with: sudo systemctl stop levelrail && sudo levelrail restore-db <data dir>/control-plane-backups/" + b.Name
 		}
 	} else if pre.Blocked {
 		backupNote = "skipped (preflight blocked)"
@@ -81,6 +84,10 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	if err := renderResult(stdout, of.Format, of.Query, pre, func() { printUpgradeHuman(stdout, pre, backupNote) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
+	}
+	if backupFailed {
+		_, _ = fmt.Fprintln(stderr, "upgrade stopped: the control plane backup failed. Fix that, or pass --skip-backup to go on without a restore point.")
+		return exitCheckFailed
 	}
 	if pre.Blocked {
 		return exitCheckFailed

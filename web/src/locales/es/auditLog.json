@@ -1,0 +1,52 @@
+{
+  "table": {
+    "label": "Registro de auditoría",
+    "time": "Hora",
+    "actor": "Actor",
+    "agent": "Agente",
+    "client": "Cliente",
+    "ability": "Permiso",
+    "method": "Método",
+    "path": "Ruta",
+    "status": "Estado"
+  },
+  "page": {
+    "description": "Quién cambió qué: cada escritura, deploy o solicitud de nivel root, además de las renovaciones automáticas de certificados, de la más reciente a la más antigua. Las solicitudes de solo lectura no se registran aquí.",
+    "title": "Registro de auditoría",
+    "emptyTitle": "No se encontraron entradas",
+    "emptyFiltered": "Ninguna entrada coincide con estos filtros.",
+    "emptyNone": "Aún no se registran solicitudes auditadas."
+  },
+  "labels": {
+    "certIssued": "Certificado emitido",
+    "certRenewed": "Certificado renovado",
+    "certRenewalRequested": "Renovación de certificado solicitada",
+    "certUploaded": "Certificado subido",
+    "certRemoved": "Certificado eliminado",
+    "deviceLoginApproved": "Inicio de sesión de la CLI aprobado",
+    "deviceLoginDenied": "Inicio de sesión de la CLI denegado",
+    "deviceLoginExpired": "Inicio de sesión de la CLI expirado",
+    "deviceLoginDismissed": "Aviso de inicio de sesión de la CLI descartado"
+  },
+  "integrity": {
+    "checking": "Verificando la integridad",
+    "intact": "A prueba de manipulación: íntegro",
+    "intactDetail": "Se verificaron {{checked}} entradas y {{checkpoints}} puntos de control firmados.",
+    "failed": "Falló la verificación de integridad",
+    "failedDetail_one": "Se encontró {{count}} problema. El registro de auditoría pudo haber sido editado o truncado.",
+    "failedDetail_other": "Se encontraron {{count}} problemas. El registro de auditoría pudo haber sido editado o truncado.",
+    "unavailable": "Verificación de integridad no disponible",
+    "recheck": "Volver a verificar"
+  },
+  "filters": {
+    "deviceLogin": "Inicio de sesión de dispositivo",
+    "clearPath": "Mostrando una solicitud de inicio de sesión. Quitar filtro",
+    "clientLabel": "Filtrar por cliente",
+    "allClients": "Todos los clientes",
+    "searchPlaceholder": "Buscar actor, ruta, método, dirección",
+    "searchLabel": "Buscar entradas del registro de auditoría",
+    "failedOnly": "Solo fallidas",
+    "loading": "Cargando...",
+    "loadOlder": "Cargar entradas anteriores"
+  }
+}

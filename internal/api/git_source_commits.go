@@ -169,7 +169,7 @@ func (rt *Router) handleListGitSourceCommits(w http.ResponseWriter, r *http.Requ
 	key := name + "\x00" + gs.RepoURL + "\x00" + branch
 	bundle, hit := rt.gitCommits.get(key)
 	if !hit || r.URL.Query().Get("refresh") == "1" {
-		token := rt.tokenForRepo(ctx, name, gs.RepoURL, true)
+		token := rt.tokenForRepo(ctx, name, gs.RepoURL, gitHubAppTokenAllowed(ctx))
 		bundle, err = rt.loadGitCommitsBundle(ctx, gs, branch, token)
 		if err != nil {
 			rt.writeCommitsError(w, name, gs.RepoURL, err)

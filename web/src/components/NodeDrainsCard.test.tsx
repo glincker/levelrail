@@ -1,11 +1,12 @@
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import nodesEn from '../locales/en/nodes.json'
 import { NodeDrainsCard } from './NodeDrainsCard'
 import type { NodeDrain } from '../types/nodeMoves'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 void i18next.use(initReactI18next).init({
   lng: 'en',
@@ -30,9 +31,7 @@ function respond(body: unknown, status = 200) {
 }
 
 function renderCard() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <NodeDrainsCard nodeId="node-1" />

@@ -1,5 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, screen } from '@testing-library/react'
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +6,7 @@ import nodesEn from '../../locales/en/nodes.json'
 import type { NodeDomains, NodeOnboarding } from '../../types/nodeOnboarding'
 import NodeDomainsCard from './NodeDomainsCard'
 import { NodeOnboardingPanel } from './NodeOnboardingPanel'
+import { renderWithQuery } from '@/test/renderWithQuery'
 
 void i18next.use(initReactI18next).init({
   lng: 'en',
@@ -34,13 +34,6 @@ function stubFetch(routes: Routes) {
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
-}
-
-function renderWithQuery(ui: React.ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 
 const baseOnboarding: NodeOnboarding = {

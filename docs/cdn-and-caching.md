@@ -1,6 +1,6 @@
 ---
 title: "CDN and caching"
-description: "The response cache in the ingress: what it stores and what it never does, cache rules, purge by URL, prefix, tag or all, hit rate and bandwidth saved, and how to put a third party CDN in front."
+description: "The response cache in the ingress: what it stores, what it never stores, cache rules, purge by URL, prefix or tag, and a third party CDN in front."
 "og:url": "https://docs.levelrail.com/cdn-and-caching"
 ---
 

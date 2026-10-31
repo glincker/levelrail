@@ -1,6 +1,6 @@
 ---
 title: "Functions"
-description: Deploy a ten line handler in Node, Python or Go as a function that sleeps when idle and answers the first request after a cold start, like a serverless function on your own server.
+description: "Deploy a ten line Node, Python or Go handler as a function that sleeps when idle and answers the first request after a cold start, on your own server."
 "og:url": "https://docs.levelrail.com/functions"
 ---
 

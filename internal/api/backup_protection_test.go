@@ -45,7 +45,7 @@ func (f *fakeBackupProtection) RefreshProtection(_ context.Context, ids []string
 func (f *fakeBackupProtection) VolumeExists(context.Context, docker.Runtime, string) (bool, bool, error) {
 	return f.exists, f.known, nil
 }
-func (f *fakeBackupProtection) RestoreVolumeTo(_ context.Context, _ docker.Runtime, _, svc, vol, newVol, backupID string) error {
+func (f *fakeBackupProtection) RestoreVolumeTo(_ context.Context, _ docker.Runtime, _, svc, vol, newVol, backupID, _ string) error {
 	f.restores <- [3]string{svc + "/" + vol, newVol, backupID}
 	return nil
 }
@@ -291,7 +291,7 @@ func TestHandleVolumeRestoreTo(t *testing.T) {
 	t.Run("existing volume is refused", func(t *testing.T) {
 		p := &fakeBackupProtection{exists: true, known: true, restores: make(chan [3]string, 1)}
 		rt, cookie := newEnv(t, p, nil)
-		rec := do(t, rt, cookie, http.MethodPost, path, `{"backup_id":"bkh_1","new_volume_name":"in-use"}`)
+		rec := do(t, rt, cookie, http.MethodPost, path, `{"backup_id":"bkh_1","new_volume_name":"app-web-in-use"}`)
 		if rec.Code != http.StatusConflict {
 			t.Fatalf("status = %d", rec.Code)
 		}
@@ -304,7 +304,7 @@ func TestHandleVolumeRestoreTo(t *testing.T) {
 	t.Run("explicit name on a node that cannot confirm is refused", func(t *testing.T) {
 		p := &fakeBackupProtection{known: false, restores: make(chan [3]string, 1)}
 		rt, cookie := newEnv(t, p, nil)
-		if rec := do(t, rt, cookie, http.MethodPost, path, `{"backup_id":"bkh_1","new_volume_name":"fresh"}`); rec.Code != http.StatusConflict {
+		if rec := do(t, rt, cookie, http.MethodPost, path, `{"backup_id":"bkh_1","new_volume_name":"app-web-fresh"}`); rec.Code != http.StatusConflict {
 			t.Fatalf("status = %d", rec.Code)
 		}
 	})
@@ -328,4 +328,23 @@ func TestHandleVolumeRestoreTo(t *testing.T) {
 			t.Fatalf("missing id status = %d", rec.Code)
 		}
 	})
+}
+
+func TestRestoreVolumePrefixRequired(t *testing.T) {
+	rt := &Router{}
+	cases := []struct {
+		name string
+		want bool
+	}{
+		{"app-web-data2", true},
+		{"app-other-data", false},
+		{"plain", false},
+	}
+	for _, tc := range cases {
+		rec := httptest.NewRecorder()
+		_, _, ok := rt.chooseRestoreVolumeName(rec, volumeRestoreToRequest{NewVolumeName: tc.name}, "web", "data", "web")
+		if ok != tc.want {
+			t.Errorf("name %q: ok = %v, want %v", tc.name, ok, tc.want)
+		}
+	}
 }

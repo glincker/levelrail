@@ -66,6 +66,12 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
 	"POST /api/v1/auth/cli-pairing/redeem":           "CLI pairing, authenticated by the single-use code a signed-in browser issued, rate limited per IP and code",
+	"GET /.well-known/oauth-protected-resource":      "RFC 9728 discovery document, public by design, 404 unless mcp-http is on",
+	"GET /.well-known/oauth-protected-resource/mcp":  "RFC 9728 discovery document, public by design, 404 unless mcp-http is on",
+	"GET /.well-known/oauth-authorization-server":    "RFC 8414 discovery document, public by design, 404 unless mcp-http is on",
+	"GET /oauth/authorize":                           "OAuth authorize step, validates client and PKCE then parks a request for the signed-in consent page",
+	"POST /oauth/token":                              "OAuth token endpoint, authenticated by single-use code plus PKCE verifier or rotating refresh token, rate limited per client", //nolint:gosec // route path, not a credential
+	"POST /mcp":                                      "read-only remote MCP, authenticated inside the handler by a bearer API token with read, rate limited per token, every tool call re-authorized by the REST gates and audited",
 	"POST /api/v1/mobile/pair":                       "phone pairing, authenticated by the one-time pairing code, rate limited per IP and code",
 	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
 	"GET /api/v1/auth/saml/providers":                "login screen lists enabled SAML connections, id and name only",
@@ -96,6 +102,10 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/hooks/wake":                         "called by the ingress wake route with a per-process secret header; any mismatch answers 404",
 	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
 	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",
+	"GET /api/v1/heartbeat/{token}":                  "cron heartbeat ping, the unguessable stored-hashed token is the credential, rate limited per IP, tiny body cap, a miss is a uniform bare 404",
+	"POST /api/v1/heartbeat/{token}":                 "cron heartbeat ping, same token credential and limits as the GET form",
+	"GET /api/v1/heartbeat/{token}/{signal}":         "cron heartbeat start or fail signal, same token credential and limits",
+	"POST /api/v1/heartbeat/{token}/{signal}":        "cron heartbeat start or fail signal, same token credential and limits",
 	"GET /public/status":                             "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
 	"GET /public/status.json":                        "JSON form of the opt-in public status page, same whitelisted view",
 	"GET /public/status.rss":                         "RSS feed of operator-authored incidents on the opt-in public status page",
@@ -109,10 +119,12 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // readOnlyMayMutate lists mutating routes a read-only token may call:
 // public routes (not token-gated at all) and pure computations that
 // change no state.
-var readOnlyMayMutate = map[string]string{
+var readOnlyMayMutate = map[string]string{ //nolint:gosec // route paths and reasons, not credentials
+	"POST /oauth/token":                                          "public OAuth token endpoint, needs a valid code or refresh token, not a token-gated mutation", //nolint:gosec // route path, not a credential
 	"POST /api/v1/apps/{name}/abuse/dry-run":                     "replays recent in-memory access records against a draft policy and counts what it would block, persists nothing",
 	"POST /api/v1/apps/{name}/budget/dry-run":                    "previews what pausing the app would stop and save, persists nothing",
 	"POST /api/v1/app-types/{name}/check":                        "checks a draft app spec against a published app type and returns violations, persists nothing",
+	"POST /api/v1/mail/dns/plan":                                 "diffs the mail DNS records against the live zone and returns the plan, persists nothing",
 	"POST /api/v1/costs/budgets/{id}/dry-run":                    "previews what pausing a budget's apps would stop and save, persists nothing",
 	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
 	"POST /api/v1/system/doctor/checks/{id}/run":                 "re-runs one read-only health check, persists nothing",
@@ -225,6 +237,18 @@ func probeParallel[T any](items []T, fn func(T) string) []string {
 	return out
 }
 
+// matrixHandlers memoizes one built handler per router so a probe set does
+// not rebuild the whole route table for every request.
+var matrixHandlers sync.Map
+
+func matrixHandler(rt *Router) http.Handler {
+	if h, ok := matrixHandlers.Load(rt); ok {
+		return h.(http.Handler)
+	}
+	h, _ := matrixHandlers.LoadOrStore(rt, rt.Handler())
+	return h.(http.Handler)
+}
+
 func matrixDo(rt *Router, method, path string, mutate func(*http.Request)) int {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -233,7 +257,7 @@ func matrixDo(rt *Router, method, path string, mutate func(*http.Request)) int {
 		mutate(req)
 	}
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
+	matrixHandler(rt).ServeHTTP(rec, req)
 	return rec.Code
 }
 

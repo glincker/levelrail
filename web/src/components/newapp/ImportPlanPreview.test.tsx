@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ImportPlanPreview } from './ImportPlanPreview'
 import { NewAppI18n } from '../../test/newAppI18n'
 import type { RepoPlan } from '../../queries/importRepoPlan'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const source = {
   provider: 'manual' as const,
@@ -45,9 +46,7 @@ const plan: RepoPlan = {
 }
 
 function mount() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   render(
     <QueryClientProvider client={client}>
       <NewAppI18n>

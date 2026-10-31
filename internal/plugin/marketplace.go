@@ -567,7 +567,8 @@ func (m *Marketplace) Preview(ctx context.Context, sourceID, id string) (MarketP
 	if upgrade {
 		p.Action, p.InstalledVersion = "upgrade", rec.Version
 		p.AddedAbilities, _ = diff(rec.RequestedAbilities, r.man.Abilities)
-		p.AddedHosts, _ = diff(rec.OutboundHosts, r.man.OutboundHosts)
+		eff, _ := EffectiveOutboundHosts(r.man, rec.ConfigJSON)
+		p.AddedHosts, _ = diff(rec.OutboundHosts, eff)
 		p.Reapproval = len(p.AddedAbilities) > 0 || len(p.AddedHosts) > 0
 	}
 	return p, nil

@@ -144,7 +144,7 @@ func defaultEngineVersion(engine string) string {
 // analysisToken resolves a read credential for repoURL from the connected
 // provider apps, or "" for a public repository.
 func (rt *Router) analysisToken(ctx context.Context, repoURL string) string {
-	if t := rt.tokenForRepo(ctx, "", repoURL, true); t != "" {
+	if t := rt.tokenForRepo(ctx, "", repoURL, gitHubAppTokenAllowed(ctx)); t != "" {
 		return t
 	}
 	for _, p := range []string{gitProviderGitLab, gitProviderGitea, gitProviderForgejo, gitProviderBitbucketServer} {

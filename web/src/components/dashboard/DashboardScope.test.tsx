@@ -23,6 +23,7 @@ import type { AppsSummary } from '../../queries/appPages'
 import type { DashboardResources } from '../../queries/dashboardResources'
 import commonEn from '../../locales/en/common.json'
 import dashboardEn from '../../locales/en/dashboard.json'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
@@ -110,7 +111,7 @@ function stubApi(routes: Record<string, unknown> = {}) {
 }
 
 function renderUi(ui: ReactNode) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={qc}>{ui}</QueryClientProvider>

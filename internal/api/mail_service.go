@@ -7,9 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/mailcast"
 	"github.com/GLINCKER/levelrail/internal/mailgroups"
+	"github.com/GLINCKER/levelrail/internal/mailrecords"
 	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -58,9 +60,27 @@ type MailStore interface {
 type mailState struct {
 	db     MailStore
 	runner *mailcast.Runner
+	// boxes holds mailbox ownership; engine is nil in production (the default factory is used).
+	boxes  MailboxStore
+	engine mailEngineFactory
+	// demo is nil unless dev mode and APP_MAIL_DEMO are both on (mail_demo.go).
+	demo   *mailDemo
+	backup *mailBackupConfig
+	// sysEmail guards the system email actions (mail_system_email.go).
+	sysEmail sysEmailRuntime
+	// nsResolver is nil in production (net.DefaultResolver); nsCache keeps detections briefly.
+	nsResolver mailrecords.NSResolver
+	nsCache    mailNSCache
+	// statusResolver is nil in production (net.DefaultResolver); statusCache absorbs retry bursts.
+	statusResolver dnsstatus.Resolver
+	statusCache    dnsstatus.Cache
 }
 
 func (rt *Router) attachMail(s any) {
+	rt.initMailDemo()
+	if mb, ok := s.(MailboxStore); ok {
+		rt.mail.boxes = mb
+	}
 	ms, ok := s.(MailStore)
 	if !ok {
 		return

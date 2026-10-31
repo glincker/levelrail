@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/analysis"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -92,4 +93,27 @@ func (rt *Router) handleGetAnalysisReport(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, http.StatusOK, analysisReportDetail{analysisReportSummary: toAnalysisSummary(row), SchemaVersion: row.SchemaVersion, Report: row.Report})
+}
+
+// AnalysisRunner generates one report on demand; *analysis.Runner satisfies it.
+type AnalysisRunner interface {
+	Generate(ctx context.Context, tr analysis.Trigger) (store.AnalysisReport, error)
+}
+
+// SetAnalysisRunner enables the on-demand run route. Without it the route answers 501.
+func (rt *Router) SetAnalysisRunner(r AnalysisRunner) { rt.analysisRunner = r }
+
+// handleRunAnalysisReport handles POST /api/v1/apps/{name}/analysis/reports and returns the stored report. The write-ability middleware audits it.
+func (rt *Router) handleRunAnalysisReport(w http.ResponseWriter, r *http.Request) {
+	if rt.analysisRunner == nil {
+		writeError(w, http.StatusNotImplemented, "analysis is not enabled on this control plane (APP_ANALYSIS_ENABLED)")
+		return
+	}
+	app := r.PathValue("name")
+	row, err := rt.analysisRunner.Generate(r.Context(), analysis.Trigger{Kind: analysis.TriggerManual, ID: "manual", App: app, At: time.Now()})
+	if err != nil {
+		rt.internalError(w, "api: run analysis failed", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, analysisReportDetail{analysisReportSummary: toAnalysisSummary(row), SchemaVersion: row.SchemaVersion, Report: row.Report})
 }

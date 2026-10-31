@@ -55,7 +55,7 @@ export function SettingsHealthCard() {
                 className="flex items-start gap-2 text-sm text-muted-foreground"
               >
                 <CircleCheckGlassIcon
-                  className="mt-0.5 size-5 shrink-0 text-green-700 dark:text-green-400"
+                  className="mt-0.5 size-5 shrink-0 text-tone-success"
                   aria-hidden="true"
                 />
                 <span>{f.detail || f.title}</span>

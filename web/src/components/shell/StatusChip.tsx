@@ -37,7 +37,7 @@ function IssueRow({ issue }: { issue: AttentionItem }) {
       <Icon
         aria-hidden="true"
         className={`mt-0.5 size-5 shrink-0 ${
-          critical ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'
+          critical ? 'text-destructive' : 'text-tone-warning'
         }`}
       />
       <div className="min-w-0 flex-1">
@@ -111,7 +111,7 @@ export function StatusChip() {
           <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center">
             <CircleCheckGlassIcon
               aria-hidden="true"
-              className="size-8 text-emerald-600 dark:text-emerald-400"
+              className="size-8 text-tone-success"
             />
             <p className="text-sm text-muted-foreground">
               {t('shell.status.healthy')}

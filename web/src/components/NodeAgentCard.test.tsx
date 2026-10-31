@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +6,7 @@ import { NodesI18n } from '../test/nodesI18n'
 import type { NodeResource } from '../types/nodeDetail'
 import type { NodeSecurityEvent, NodeTrustResource } from '../types/nodeTrust'
 import { NodeAgentCard } from './NodeAgentCard'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const rootRef = vi.hoisted(() => ({ value: true }))
 vi.mock('../hooks/useIsRoot', () => ({ useIsRoot: () => rootRef.value }))
@@ -103,9 +104,7 @@ function stubApi(t: NodeTrustResource): string[] {
 }
 
 function renderCard(node: NodeResource) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <NodesI18n>

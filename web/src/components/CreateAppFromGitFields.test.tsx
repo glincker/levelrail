@@ -2,10 +2,11 @@ import { Suspense } from 'react'
 import type { ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AllI18n } from '../test/allI18n'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const navigateMock = vi.fn()
 
@@ -165,12 +166,7 @@ function fakeGitSourceResource(overrides: Record<string, unknown> = {}) {
 }
 
 function renderForm() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  })
+  const queryClient = createTestQueryClient()
   const onCreated = vi.fn()
   render(
     <AllI18n>

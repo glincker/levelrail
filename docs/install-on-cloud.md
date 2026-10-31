@@ -2,7 +2,7 @@
 title: "Install on a cloud VM"
 icon: "/assets/icons/download-simple.svg"
 sidebarTitle: "Install on a cloud VM"
-description: Copy-paste user data and startup scripts that install the Levelrail control plane on a fresh AWS, Google Cloud, Azure, DigitalOcean or Hetzner VM, with the firewall ports to open.
+description: "Copy-paste user data and startup scripts that install the control plane on a fresh AWS, Google Cloud, Azure, DigitalOcean or Hetzner VM, with the ports to open."
 "og:url": "https://docs.levelrail.com/install-on-cloud"
 ---
 

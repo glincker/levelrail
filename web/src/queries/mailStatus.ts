@@ -1,0 +1,54 @@
+// GET /api/v1/mail/status (internal/api/mail_status.go): one cheap read of
+// the mail app state, polled until the server is fully up.
+
+import { useQuery } from '@tanstack/react-query'
+import { ApiError, readErrorMessage } from '../lib/apiError'
+
+export const MAIL_STATUS_POLL_MS = 15000
+
+export interface MailStatus {
+  app?: string
+  installed: boolean
+  container_state: string
+  admin_reachable: boolean
+  // False while the app controller reports Ready=False; reconcile_reason is its code.
+  ready?: boolean
+  reconcile_reason?: string
+  tls: string
+  next_step: string
+  // From the install env; used to prefill the DNS form.
+  domain?: string
+  hostname?: string
+  // True only in local demo mode (APP_MAIL_DEMO with APP_DEV_MODE).
+  demo?: boolean
+  // Set while a restore holds the app stopped, for example mail-restore:<id>.
+  maintenance_hold?: string
+}
+
+export async function fetchMailStatus(): Promise<MailStatus> {
+  const res = await fetch('/api/v1/mail/status')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `mail status failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as MailStatus
+}
+
+export const isMailUp = (s: MailStatus | undefined): boolean =>
+  !!s && s.installed && s.container_state === 'running' && s.admin_reachable
+
+// The palette reads status without polling so a closed mail area costs nothing.
+export function useMailStatus(
+  opts: { enabled?: boolean; poll?: boolean } = {},
+) {
+  const { enabled = true, poll = true } = opts
+  return useQuery({
+    queryKey: ['mail', 'status'],
+    queryFn: fetchMailStatus,
+    enabled,
+    refetchInterval: (q) =>
+      poll && !isMailUp(q.state.data) ? MAIL_STATUS_POLL_MS : false,
+  })
+}

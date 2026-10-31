@@ -59,6 +59,10 @@ func NewScheduler(cfg Config, jitter func(time.Duration) time.Duration) *Schedul
 
 // interval clamps to the current floor so raising a floor also applies to stored monitors.
 func (s *Scheduler) interval(m Monitor) time.Duration {
+	// A heartbeat is judged often even when the job runs rarely, so a miss is seen promptly.
+	if m.Kind == KindHeartbeat {
+		return s.cfg.HeartbeatCheck
+	}
 	if floor := s.cfg.MinInterval(m.Kind); m.Interval < floor {
 		return floor
 	}

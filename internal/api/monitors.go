@@ -18,6 +18,9 @@ type MonitorService interface {
 	List(ctx context.Context) ([]monitor.Monitor, error)
 	Get(ctx context.Context, id string) (monitor.Monitor, error)
 	Delete(ctx context.Context, id string) error
+	SetStatusLink(ctx context.Context, id string, l monitor.StatusLink) (monitor.Monitor, error)
+	State(id string) string
+	Status(id string) monitor.Status
 	Results(ctx context.Context, id string, window time.Duration, limit int) (monitor.History, error)
 }
 
@@ -48,32 +51,68 @@ type monitorRequest struct {
 	FollowRedirects bool                  `json:"follow_redirects"`
 	Host            string                `json:"host"`
 	Port            int                   `json:"port"`
+	// StatusLink opts in to a status page incident while the monitor is confirmed down.
+	StatusLink          bool `json:"status_link"`
+	LinkConfirmFailures int  `json:"link_confirm_failures"`
+	LinkRecoverySeconds int  `json:"link_recovery_seconds"`
+	// GraceSeconds is the heartbeat grace period; WarnDays and CritDays override the TLS thresholds.
+	GraceSeconds int `json:"grace_seconds"`
+	WarnDays     int `json:"warn_days"`
+	CritDays     int `json:"crit_days"`
+}
+
+// monitorLinkRequest changes only the status page link settings.
+type monitorLinkRequest struct {
+	StatusLink          bool `json:"status_link"`
+	LinkConfirmFailures int  `json:"link_confirm_failures"`
+	LinkRecoverySeconds int  `json:"link_recovery_seconds"`
 }
 
 // monitorResource never carries header values, only their names.
 type monitorResource struct {
-	ID              string                `json:"id"`
-	Name            string                `json:"name"`
-	Kind            string                `json:"kind"`
-	IntervalSeconds int                   `json:"interval_seconds"`
-	TimeoutMS       int                   `json:"timeout_ms"`
-	Enabled         bool                  `json:"enabled"`
-	URL             string                `json:"url,omitempty"`
-	Method          string                `json:"method,omitempty"`
-	HeaderNames     []string              `json:"header_names,omitempty"`
-	Expect          []monitor.StatusRange `json:"expect,omitempty"`
-	Contains        string                `json:"contains,omitempty"`
-	FollowRedirects bool                  `json:"follow_redirects,omitempty"`
-	Host            string                `json:"host,omitempty"`
-	Port            int                   `json:"port,omitempty"`
-	CreatedAt       time.Time             `json:"created_at"`
+	ID                  string                `json:"id"`
+	Name                string                `json:"name"`
+	Kind                string                `json:"kind"`
+	IntervalSeconds     int                   `json:"interval_seconds"`
+	TimeoutMS           int                   `json:"timeout_ms"`
+	Enabled             bool                  `json:"enabled"`
+	URL                 string                `json:"url,omitempty"`
+	Method              string                `json:"method,omitempty"`
+	HeaderNames         []string              `json:"header_names,omitempty"`
+	Expect              []monitor.StatusRange `json:"expect,omitempty"`
+	Contains            string                `json:"contains,omitempty"`
+	FollowRedirects     bool                  `json:"follow_redirects,omitempty"`
+	Host                string                `json:"host,omitempty"`
+	Port                int                   `json:"port,omitempty"`
+	StatusLink          bool                  `json:"status_link,omitempty"`
+	LinkConfirmFailures int                   `json:"link_confirm_failures,omitempty"`
+	LinkRecoverySeconds int                   `json:"link_recovery_seconds,omitempty"`
+	GraceSeconds        int                   `json:"grace_seconds,omitempty"`
+	WarnDays            int                   `json:"warn_days,omitempty"`
+	CritDays            int                   `json:"crit_days,omitempty"`
+	// PingPath is the public heartbeat path including its secret; only create and rotate return it, once.
+	PingPath  string    `json:"ping_path,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	// State fields are empty before the first probe and always absent for create responses.
+	State         string `json:"state,omitempty"`
+	FailStreak    int    `json:"consecutive_failures,omitempty"`
+	SuccessStreak int    `json:"consecutive_successes,omitempty"`
 }
 
 func toMonitorResource(m monitor.Monitor) monitorResource {
 	return monitorResource{ID: m.ID, Name: m.Name, Kind: m.Kind, IntervalSeconds: int(m.Interval / time.Second),
 		TimeoutMS: int(m.Timeout / time.Millisecond), Enabled: m.Enabled, URL: m.Spec.URL, Method: m.Spec.Method,
 		HeaderNames: m.Spec.HeaderNames, Expect: m.Spec.Expect, Contains: m.Spec.Contains,
-		FollowRedirects: m.Spec.FollowRedirects, Host: m.Spec.Host, Port: m.Spec.Port, CreatedAt: m.CreatedAt}
+		FollowRedirects: m.Spec.FollowRedirects, Host: m.Spec.Host, Port: m.Spec.Port, StatusLink: m.Spec.StatusLink,
+		LinkConfirmFailures: m.Spec.LinkConfirmFailures, LinkRecoverySeconds: m.Spec.LinkRecoverySeconds, GraceSeconds: m.Spec.GraceSeconds,
+		WarnDays: m.Spec.WarnDays, CritDays: m.Spec.CritDays, PingPath: pingPath(m), CreatedAt: m.CreatedAt}
+}
+
+func pingPath(m monitor.Monitor) string {
+	if m.PingToken == "" {
+		return ""
+	}
+	return monitor.PingPath(m.PingToken)
 }
 
 type monitorResultResource struct {
@@ -122,7 +161,10 @@ func (rt *Router) handleListMonitors(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]monitorResource, 0, len(list))
 	for _, m := range list {
-		out = append(out, toMonitorResource(m))
+		res := toMonitorResource(m)
+		st := rt.monitors.Status(m.ID)
+		res.State, res.FailStreak, res.SuccessStreak = st.State, st.FailStreak, st.SuccessStreak
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -140,13 +182,33 @@ func (rt *Router) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 	m := monitor.Monitor{Name: req.Name, Kind: req.Kind, Enabled: enabled,
 		Interval: time.Duration(req.IntervalSeconds) * time.Second, Timeout: time.Duration(req.TimeoutMS) * time.Millisecond,
 		Spec: monitor.Spec{URL: req.URL, Method: req.Method, Expect: req.Expect, Contains: req.Contains,
-			FollowRedirects: req.FollowRedirects, Host: req.Host, Port: req.Port}}
+			FollowRedirects: req.FollowRedirects, Host: req.Host, Port: req.Port,
+			StatusLink: req.StatusLink, LinkConfirmFailures: req.LinkConfirmFailures, LinkRecoverySeconds: req.LinkRecoverySeconds,
+			GraceSeconds: req.GraceSeconds, WarnDays: req.WarnDays, CritDays: req.CritDays}}
 	created, err := rt.monitors.Create(r.Context(), monitor.CreateInput{Monitor: m, Headers: req.Headers})
 	if err != nil {
 		rt.monitorError(w, "create monitor", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, toMonitorResource(created))
+}
+
+func (rt *Router) handleUpdateMonitorLink(w http.ResponseWriter, r *http.Request) {
+	if !rt.monitorsReady(w) {
+		return
+	}
+	var req monitorLinkRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	m, err := rt.monitors.SetStatusLink(r.Context(), r.PathValue("id"), monitor.StatusLink{Enabled: req.StatusLink,
+		ConfirmFailures: req.LinkConfirmFailures, RecoverySeconds: req.LinkRecoverySeconds})
+	if err != nil {
+		rt.monitorError(w, "update monitor", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toMonitorResource(m))
 }
 
 func (rt *Router) handleDeleteMonitor(w http.ResponseWriter, r *http.Request) {

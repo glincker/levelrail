@@ -1,0 +1,829 @@
+{
+  "neverConnected": {
+    "badge": "Nunca conectado",
+    "title": "Este nodo se registró, pero su agente nunca se conectó",
+    "description": "El token de unión ya se usó, así que el agente no puede reintentar por sí solo. Revisa los logs del agente en el host (por ejemplo, el directorio de identidad podría no ser escribible), luego limpia este nodo y regístralo de nuevo con un token de unión nuevo. Un nodo que nunca se conecta también se elimina automáticamente pasado un tiempo.",
+    "cleanUp": "Limpiar nodo",
+    "cleaningUp": "Limpiando",
+    "cleanedUp": "Se eliminó {{name}}, su nombre vuelve a estar libre"
+  },
+  "join": {
+    "trigger": "Añadir nodo",
+    "title": "Añadir nodo",
+    "description": "Genera un token de unión de un solo uso. Ejecuta el comando que produce en la máquina nueva para conectar su agente a este plano de control.",
+    "back": "Atrás",
+    "nameLabel": "Nombre del nodo (opcional)",
+    "namePlaceholder": "worker-2",
+    "nameHint": "Letras minúsculas, dígitos y guiones, empezando por una letra. Déjalo vacío para que el agente informe su hostname.",
+    "nameInvalid": "Usa letras minúsculas, dígitos y guiones, empezando por una letra.",
+    "addrLabel": "Dirección del plano de control",
+    "addrHint": "Host y puerto por el que la máquina nueva puede llegar a este plano de control, puerto 9443 por defecto. Se rellena con la dirección anunciada que cubre el certificado del agente (APP_AGENT_ADVERTISE_HOST). Un nombre distinto falla la verificación TLS.",
+    "meshLabel": "Unirse a la malla",
+    "meshHint": "Conecta el nodo a la malla WireGuard para que las apps y las bases de datos puedan comunicarse entre máquinas. Requiere que la red de malla esté habilitada en el plano de control.",
+    "generate": "Generar token de unión",
+    "generating": "Generando...",
+    "createdTitle": "Token de unión creado",
+    "createdDescription": "Ejecuta el comando de abajo en la máquina nueva para registrarla. El token es una credencial de arranque de un solo uso, no algo para guardar a largo plazo.",
+    "singleUse": "Un solo uso. Este token no se volverá a mostrar y vence a las {{time}}.",
+    "dockerLabel": "Ejecutar con Docker",
+    "dockerHint": "Recomendado. Ejecuta el agente como contenedor en la máquina nueva.",
+    "runtime": {
+      "docker": "Docker",
+      "podman": "Podman",
+      "binary": "Binario del agente"
+    },
+    "podmanLabel": "Ejecutar con Podman",
+    "podmanHint": "Podman con root. El agente monta /run/podman/podman.sock, así que primero hay que habilitar el socket (comando de abajo).",
+    "podmanSocketLabel": "Requisito de Podman (ejecútalo una vez en la máquina nueva)",
+    "binaryLabel": "O ejecuta el binario del agente",
+    "binaryHint": "Para una máquina sin acceso de ejecución de Docker para el contenedor del agente, o cuando administras el servicio tú mismo.",
+    "tokenLabel": "Token de unión",
+    "fallbackLabel": "Comando de registro",
+    "fallbackHint": "Este plano de control no devolvió comandos listos, así que este se arma a partir de la dirección de arriba.",
+    "afterRun": "Aquí no hay verificación de estado en vivo. Cuando el agente se conecte, el nodo aparecerá en la lista de nodos. Ponle nombre al nodo para seguirlo en vivo.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "done": "Listo",
+    "providerLabel": "¿Dónde se ejecuta?",
+    "providerAuto": "Detección automática (recomendado)",
+    "providerHint": "La detección automática lee el servicio de metadatos de la nube en el nodo. Para un servidor doméstico o un proveedor sin ese servicio, elígelo aquí y escribe la región y la zona.",
+    "regionLabel": "Región (opcional)",
+    "zoneLabel": "Zona (opcional)",
+    "domainInvalid": "Usa letras, dígitos, puntos, guiones y guiones bajos, hasta 63 caracteres.",
+    "providers": {
+      "aws": "Amazon EC2",
+      "gcp": "Google Cloud",
+      "azure": "Microsoft Azure",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean",
+      "home": "Servidor doméstico",
+      "other": "Otro VPS"
+    },
+    "afterRunLive": "Ejecuta el comando en la máquina nueva. El progreso aparece abajo en cuanto el agente contacte este plano de control."
+  },
+  "move": {
+    "trigger": "Mover",
+    "title": "Mover \"{{name}}\" a otro nodo",
+    "descriptionApp": "El movimiento se verifica en cada paso y se revierte automáticamente si el destino no puede ejecutar la app. El tráfico queda en espera mientras el destino arranca.",
+    "descriptionDatabase": "La base de datos y su volumen de datos se copian al destino y se verifican antes de detener la copia anterior. Las apps que la usan se reinician después.",
+    "targetLabel": "Mover a",
+    "automatic": "Automático (nodo elegible con menos carga)",
+    "controlPlane": "plano de control",
+    "cordoned": "acordonado",
+    "offline": "sin conexión",
+    "noTargets": "No hay otros nodos a los que mover esto. Añade un nodo primero.",
+    "statefulWarning": "{{name}} tiene volúmenes de datos ({{volumes}}), por lo que se detiene mientras se copian. Espera un tiempo de inactividad que crece con el tamaño del volumen.",
+    "statelessNote": "{{name}} se prepara en el destino y se verifica antes de detener la copia anterior, así que no debería haber tiempo de inactividad.",
+    "start": "Mover",
+    "starting": "Iniciando...",
+    "moving": "Moviendo...",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "done": "Listo",
+    "toastSucceeded": "\"{{name}}\" se movió.",
+    "status": {
+      "running": "Moviendo",
+      "succeeded": "Movimiento completo",
+      "failed": "El movimiento falló",
+      "rolled_back": "Movimiento revertido"
+    },
+    "failedFallback": "El movimiento falló a medio camino. Revisa los pasos de arriba para ver la fase que falló.",
+    "rolledBackHint": "{{name}} sigue en su nodo original. Corrige el error de arriba y vuelve a intentar el movimiento.",
+    "failedHint": "El movimiento se detuvo en la fase marcada como fallida. Corrige la causa y vuelve a iniciar el movimiento."
+  },
+  "phase": {
+    "preflight": "Comprobaciones previas",
+    "stop_source": "Deteniendo en el nodo de origen",
+    "copy_volumes": "Copiando volúmenes",
+    "place": "Iniciando en el nodo de destino",
+    "verify": "Verificando el estado de salud",
+    "stop_old": "Deteniendo la copia anterior",
+    "finalize": "Finalizando",
+    "rollback": "Revirtiendo",
+    "done": "Listo"
+  },
+  "outcome": {
+    "ok": "ok",
+    "retry": "reintentando",
+    "failed": "falló",
+    "waiting": "en espera"
+  },
+  "drain": {
+    "trigger": "Drenar",
+    "title": "¿Drenar \"{{name}}\"?",
+    "description": "Acordona este nodo y luego mueve primero sus bases de datos y después sus apps. Las apps siguen a su base de datos cuando ese nodo es elegible. El drenaje se detiene en el primer movimiento fallido y deja el nodo acordonado.",
+    "targetLabel": "Mover cargas a",
+    "automatic": "Automático (nodo elegible con menos carga)",
+    "cordoned": "acordonado",
+    "cancel": "Cancelar",
+    "start": "Drenar nodo",
+    "starting": "Iniciando...",
+    "close": "Cerrar",
+    "status": {
+      "running": "Drenando",
+      "succeeded": "Drenado",
+      "failed": "El drenaje falló"
+    },
+    "emptyDone": "No había nada en este nodo, así que no hubo nada que mover.",
+    "runningHint": "Se actualiza cada pocos segundos. Puedes cerrar este diálogo, el drenaje sigue en curso.",
+    "movesTitle": "Movimientos",
+    "blockedTitle": "Bloqueado, se queda en este nodo",
+    "errorTitle": "El drenaje se detuvo",
+    "failedHint": "El nodo sigue acordonado. Corrige la causa que se muestra en el movimiento fallido y vuelve a drenar, o desacordona el nodo para devolverlo a la rotación.",
+    "toNode": "a {{node}}",
+    "toAuto": "a un nodo elegido automáticamente"
+  },
+  "drains": {
+    "title": "Drenajes",
+    "description": "Drenajes recientes de este nodo, los más nuevos primero.",
+    "empty": "Este nodo no se ha drenado.",
+    "emptyHint": "Usa Drenar en la parte superior de esta página para mover sus apps y bases de datos a otro lugar.",
+    "loadFailed": "No se pudo cargar el historial de drenajes.",
+    "retry": "Reintentar",
+    "moveCount_one": "{{count}} movimiento",
+    "moveCount_other": "{{count}} movimientos",
+    "startedAt": "Iniciado {{time}}"
+  },
+  "labels": {
+    "title": "Etiquetas",
+    "description": "Pares de clave y valor que las apps y las bases de datos pueden usar con un selector de ubicación. Al guardar se reemplaza todo el conjunto.",
+    "empty": "Aún no hay etiquetas.",
+    "emptyHint": "Añade una, por ejemplo disk = ssd, y luego exígela desde la ubicación de una app.",
+    "keyPlaceholder": "disk",
+    "valuePlaceholder": "ssd",
+    "add": "Añadir etiqueta",
+    "remove": "Quitar la etiqueta {{key}}",
+    "save": "Guardar etiquetas",
+    "saving": "Guardando...",
+    "reset": "Descartar cambios",
+    "saved": "Etiquetas guardadas.",
+    "loadFailed": "No se pudieron cargar las etiquetas.",
+    "retry": "Reintentar",
+    "keyRule": "Claves: letras minúsculas, dígitos, punto, guion bajo, guion y barra, de 1 a 63 caracteres.",
+    "valueRule": "Valores: letras, dígitos, punto, guion bajo y guion, de 1 a 63 caracteres. Máximo 32 etiquetas.",
+    "duplicate": "Cada clave se puede usar una sola vez.",
+    "incomplete": "Completa la clave y el valor, o quita la fila vacía.",
+    "addKnown": "Añadir etiqueta {{key}}",
+    "knownHint": "region, zone y provider nombran el dominio de fallo de este nodo. Cuando hay zonas definidas, las réplicas se reparten entre ellas."
+  },
+  "zones": {
+    "title": "Dominios de fallo",
+    "description": "Cómo se reparten las cargas entre zonas. Con etiquetas de zona definidas, las nuevas ubicaciones y los drenajes prefieren la zona con menos cargas.",
+    "unlabeledZone": "Sin zona",
+    "nodes": "{{online}} de {{total}} nodos en línea",
+    "workloads_one": "{{count}} carga",
+    "workloads_other": "{{count}} cargas",
+    "share": "{{pct}}% de las cargas en {{zone}}",
+    "loadFailed": "No se pudieron cargar las zonas.",
+    "retry": "Reintentar",
+    "unlabeledTitle": "Aún no hay etiquetas de zona",
+    "unlabeledBody": "Sin una etiqueta de zona en al menos un nodo, las réplicas no se reparten entre dominios de fallo.",
+    "fix": "Definir una zona en un nodo",
+    "concentrated": "La mayoría de las cargas están en una sola zona, así que perderla tumba a casi todas.",
+    "whatIf": {
+      "title": "Qué pasaría si",
+      "failureHint": "Elige una zona para ver dónde se reprogramarían sus cargas. No se mueve nada.",
+      "failZone": "Perder {{zone}}",
+      "failureSummary": "{{lost}} nodos perdidos, {{displaced}} cargas desplazadas, {{stuck}} sin lugar a dónde ir.",
+      "failureOk": "Todas las cargas desplazadas caben en los nodos que sobreviven.",
+      "failureStuck": "Añade capacidad fuera de esta zona, o relaja los selectores, para sobrevivir a su pérdida.",
+      "addTitle": "Simular la adición de apps",
+      "addMemory": "Memoria por app (MiB)",
+      "addCpu": "CPU por app (milicores)",
+      "addCount": "Número de apps",
+      "run": "Simular",
+      "workload": "Carga",
+      "from": "Desde",
+      "to": "Hacia",
+      "none": "Ningún nodo",
+      "failed": "La simulación falló.",
+      "invalid": "Ingresa números enteros, con al menos una app."
+    }
+  },
+  "placement": {
+    "title": "Ubicación",
+    "currentNode": "Nodo actual",
+    "unassigned": "Sin asignar",
+    "controlPlane": "Este servidor",
+    "selectorTitle": "Selector de nodo",
+    "selectorHint": "Solo los nodos con todas estas etiquetas son elegibles. Cambiar el selector nunca mueve nada por sí solo.",
+    "selectorEmpty": "Sin selector: cualquier nodo programable es elegible.",
+    "keyPlaceholder": "disk",
+    "valuePlaceholder": "ssd",
+    "addRow": "Añadir selector",
+    "removeRow": "Quitar el selector {{key}}",
+    "save": "Guardar selector",
+    "saving": "Guardando...",
+    "saved": "Ubicación guardada.",
+    "eligibleTitle": "Nodos elegibles",
+    "eligibleEmpty": "Ningún nodo coincide. Relaja el selector, etiqueta un nodo o desacordona uno.",
+    "rejectedTitle": "No elegibles",
+    "loadFailed": "No se pudo cargar la ubicación.",
+    "retry": "Reintentar",
+    "duplicate": "Cada clave se puede usar una sola vez.",
+    "incomplete": "Completa la clave y el valor, o quita la fila vacía.",
+    "thisServer": "Este servidor",
+    "unknownHint": "Esta ubicación apunta al nodo {{id}}, que ya no existe.",
+    "moveHere": "Mover a este servidor",
+    "movedHere": "Ahora está en este servidor.",
+    "moveFailed": "No se pudo mover a este servidor.",
+    "domainWarnings": "Avisos de dominio de fallo"
+  },
+  "allocation": {
+    "title": "Capacidad",
+    "description": "Lo que solicitan las apps y bases de datos de este nodo, frente a lo que el nodo puede asignar.",
+    "dimension": {
+      "cpu": "CPU",
+      "memory": "Memoria",
+      "disk": "Disco"
+    },
+    "requestedOf": "{{used}} solicitados de {{total}} ({{pct}}%)",
+    "usedOf": "{{used}} usados de {{total}} utilizables ({{pct}}%)",
+    "barLabel": "{{name}} {{pct}} por ciento asignado",
+    "unknown": "Aún sin reportar. La ubicación lo trata como desconocido, no como vacío ni ilimitado.",
+    "policy": "{{workloads}} cargas. Lo asignable es {{cpu}}% de la CPU y {{memory}}% de la memoria, con {{disk}}% del disco libre en reserva.",
+    "loadFailed": "No se pudo cargar la capacidad del nodo.",
+    "empty": "Este nodo aún no está en la lista de asignación."
+  },
+  "decision": {
+    "recordedTitle": "Por qué se ubicó aquí",
+    "previewTitle": "Si se ubicara ahora",
+    "noneRecorded": "No se registró ninguna decisión de ubicación para este. Se ubicó antes de que se guardaran las decisiones, o se ejecuta en el servidor local por defecto.",
+    "winner": "Elegido: {{node}}.",
+    "nothingFits": "Ningún nodo tiene espacio ahora mismo. Libera capacidad, añade un nodo o elige un nodo tú mismo.",
+    "loadFailed": "No se pudo cargar la decisión de ubicación.",
+    "dimensionFree": "{{name}} {{free}} libres",
+    "dimensionUnknown": "{{name}} desconocido",
+    "state": {
+      "fits": "tiene espacio",
+      "unverified": "capacidad desconocida, queda al final",
+      "refused": "rechazado"
+    },
+    "trigger": {
+      "create": "Ubicado al crear",
+      "move": "Ubicado por un movimiento",
+      "drain": "Ubicado por un drenaje"
+    }
+  },
+  "connectivity": {
+    "title": "Conectividad de nodos",
+    "description": "Cómo ve cada nodo, por WireGuard, a todos los demás, una fila por par.",
+    "refresh": "Actualizar",
+    "checkedAt": "Comprobado {{time}}",
+    "off": "La red de malla está desactivada",
+    "offDescription": "Los nodos no pueden comunicarse entre sí por WireGuard, así que las apps no pueden usar una base de datos en otro nodo. Define APP_MESH_ENABLED=1 en el plano de control y reinícialo para activarla.",
+    "empty": "Menos de dos nodos",
+    "emptyDescription": "El diagnóstico de pares aparece cuando un segundo nodo se une a la malla.",
+    "loadFailed": "No se pudo comprobar la conectividad.",
+    "retry": "Reintentar",
+    "direction": "{{from}} a {{to}}",
+    "never": "aún sin handshake",
+    "viewError": "{{node}} no pudo reportar su vista de la malla: {{error}}",
+    "pairStatus": {
+      "ok": "OK",
+      "degraded": "Degradado",
+      "down": "Caído",
+      "unknown": "Desconocido"
+    },
+    "linkState": {
+      "healthy": "saludable",
+      "stale": "obsoleto",
+      "never": "nunca conectado",
+      "no_peer": "sin par configurado",
+      "unknown": "desconocido"
+    }
+  },
+  "list": {
+    "title": "Nodos",
+    "tableLabel": "Nodos",
+    "description": "Servidores en los que este plano de control ubica apps y bases de datos.",
+    "help": "Guía multinodo",
+    "count_one": "{{count}} nodo",
+    "count_other": "{{count}} nodos",
+    "name": "Nombre",
+    "address": "Dirección",
+    "usage": "Uso",
+    "resources": "Recursos",
+    "agent": "Agente",
+    "lastSeen": "Última vez visto",
+    "never": "Nunca",
+    "addressNotSet": "Sin definir",
+    "agentUnknown": "Desconocido",
+    "resourceCount_one": "{{count}} recurso",
+    "resourceCount_other": "{{count}} recursos",
+    "emptyTitle": "Este servidor es tu único nodo",
+    "emptyDescription": "Todo se ejecuta en la máquina que aloja el plano de control. Añade un servidor para repartir apps y bases de datos entre máquinas, mantener las compilaciones fuera de producción o sumar capacidad sin redimensionar esta."
+  },
+  "status": {
+    "pending": "En espera",
+    "online": "En línea",
+    "offline": "Sin conexión",
+    "cordoned": "Acordonado"
+  },
+  "row": {
+    "thisServer": "Este servidor",
+    "buildOnly": "Solo compilaciones",
+    "gpuFree": "GPU {{free}}/{{total}} libres",
+    "outdated": "Agente desactualizado",
+    "outdatedHint": "La versión mínima compatible del agente es {{min}}",
+    "actions": "Acciones para {{name}}"
+  },
+  "cordon": {
+    "trigger": "Acordonar",
+    "title": "¿Acordonar \"{{name}}\"?",
+    "description": "Este nodo deja de aceptar nuevas ubicaciones de apps y bases de datos de inmediato. Todo lo que ya se ejecuta en él sigue funcionando. Usa drenar para sacar las cargas existentes.",
+    "confirm": "Acordonar nodo",
+    "saving": "Guardando...",
+    "done": "Nodo \"{{name}}\" acordonado."
+  },
+  "uncordon": {
+    "trigger": "Desacordonar",
+    "title": "¿Desacordonar \"{{name}}\"?",
+    "description": "Este nodo vuelve a aceptar nuevas ubicaciones de apps y bases de datos. No se devuelve nada a él automáticamente.",
+    "confirm": "Desacordonar nodo",
+    "done": "Nodo \"{{name}}\" desacordonado."
+  },
+  "delete": {
+    "trigger": "Eliminar",
+    "title": "¿Eliminar \"{{name}}\"?",
+    "description": "Esto quita el nodo solo del registro. No lo drena ni detiene su agente: si el agente sigue en ejecución, permanece conectado y sus cargas siguen funcionando.",
+    "confirm": "Eliminar nodo",
+    "deleting": "Eliminando...",
+    "deleted": "Nodo \"{{name}}\" eliminado."
+  },
+  "sshVerify": {
+    "verifyButton": "Verificar servidor",
+    "verifying": "Leyendo la clave del host...",
+    "title": "Verifica el servidor",
+    "description": "Estas claves de host se leyeron de {{host}}:{{port}} sin enviar ninguna credencial. Confirma que una coincide con el servidor antes de continuar.",
+    "compareHint": "Compáralo con la salida de este comando ejecutado en el servidor:",
+    "keyLegend": "Clave de host en la que confiar",
+    "copy": "Copiar huella",
+    "copied": "Copiado",
+    "confirm": "Comparé esta huella con el servidor y coincide",
+    "continue": "Continuar",
+    "change": "Cambiar",
+    "pinned": "Confiando en {{type}} {{fingerprint}}",
+    "noKeys": "El servidor no presentó ninguna clave de host."
+  },
+  "agent": {
+    "title": "Agente",
+    "localTitle": "Este servidor",
+    "localBody": "Este nodo se ejecuta dentro del propio plano de control, sin enlace de red que proteger, por lo que no se usa certificado de agente. No es un agente que pueda desconectarse: está tan disponible como este panel.",
+    "version": "Versión",
+    "platform": "Plataforma",
+    "notReported": "Sin reportar",
+    "minimum": "mínimo {{version}}"
+  },
+  "revoke": {
+    "trigger": "Revocar certificado",
+    "title": "¿Revocar el certificado de \"{{name}}\"?",
+    "description": "El plano de control deja de confiar en el agente de este nodo de inmediato.",
+    "consequenceRefused": "Toda conexión y renovación con este certificado se rechaza de ahora en adelante.",
+    "consequenceSession": "La sesión activa del nodo se cierra de inmediato.",
+    "consequenceWorkloads": "Las cargas que ya se ejecutan allí siguen funcionando, pero ya no se pueden administrar.",
+    "consequenceReenroll": "Solo volver a registrar el nodo lo recupera.",
+    "confirm": "Revocar certificado",
+    "pending": "Revocando...",
+    "done": "Certificado de \"{{name}}\" revocado."
+  },
+  "trust": {
+    "loading": "Comprobando cómo se verifica este nodo...",
+    "loadError": "No se pudieron cargar los detalles de seguridad de este nodo.",
+    "rootOnly": "Las huellas de certificados, los detalles de renovación y los eventos de seguridad son visibles para las cuentas root.",
+    "unavailable": "No disponible",
+    "never": "Nunca",
+    "copyFingerprint": "Copiar huella",
+    "status": {
+      "verified": "Conexión verificada: TLS mutuo, el certificado coincide con este nodo",
+      "rejected": "Se rechazaron conexiones recientes ({{reason}}). Revisa los eventos de abajo.",
+      "revoked": "Certificado revocado: toda conexión se rechaza hasta que el nodo se registre de nuevo",
+      "expired": "Certificado vencido: vuelve a registrar el nodo",
+      "idle": "No está conectado ahora mismo. Su última conexión fue verificada.",
+      "no_activity": "Aún no se ha registrado ninguna conexión de este nodo",
+      "local": "Se ejecuta dentro del plano de control"
+    },
+    "caFingerprint": "Huella de la CA del plano de control (SHA-256)",
+    "caCompare": "Compárala con APP_CA_FINGERPRINT en el entorno del agente, o con la huella que imprimió su comando de registro.",
+    "pin": {
+      "pinned": "Fijada al registrar: el agente comprobó esta huella antes de enviar su token de unión.",
+      "trusted_ca": "Registrado de nuevo contra la CA que ya estaba en el nodo.",
+      "unpinned": "Sin fijar: el agente confió en el plano de control en el primer uso. Vuelve a registrar con APP_CA_FINGERPRINT definido para fijarla.",
+      "unknown": "Estado de la fijación sin reportar."
+    },
+    "certFingerprint": "Huella del certificado del agente (SHA-256)",
+    "serial": "Serie",
+    "issued": "Emitido",
+    "expires": "Vence",
+    "daysRemaining_one": "Queda {{count}} día",
+    "daysRemaining_other": "Quedan {{count}} días",
+    "lifetimeUsed": "Proporción de la vida útil del certificado consumida",
+    "nextRenewal": "Próxima renovación programada",
+    "estimated": "estimada hasta que el agente reporte la suya",
+    "lastRenewed": "Última renovación",
+    "notSinceEnrollment": "No desde el registro",
+    "renewalCount_one": "{{count}} renovación",
+    "renewalCount_other": "{{count}} renovaciones",
+    "lastFailure": "Último fallo de renovación",
+    "nextRetry": "próximo reintento {{at}}",
+    "privateKey": "Clave privada",
+    "key": {
+      "agent": "Generada en el nodo. La clave privada nunca salió de él: el plano de control solo firmó una solicitud.",
+      "reenroll_required": "Generada por el plano de control (una beta temprana). Se requiere volver a registrar: este nodo no se renovará hasta que lo registres de nuevo."
+    },
+    "validation": "Comprobaciones en las últimas {{hours}} h",
+    "validationCounts": "{{accepted}} aceptadas, {{rejected}} rechazadas",
+    "timeline": "Eventos de seguridad",
+    "filterAll": "Todos",
+    "filterRejected": "Solo rechazados",
+    "noEvents": "Aún no se han registrado eventos de seguridad.",
+    "noRejected": "No se rechazó nada.",
+    "eventsError": "No se pudieron cargar los eventos de seguridad.",
+    "outcome": {
+      "accepted": "Aceptado",
+      "rejected": "Rechazado",
+      "warning": "Advertencia",
+      "failed": "Falló",
+      "info": "Registrado"
+    },
+    "events": {
+      "enroll": "Nodo registrado con el token de unión {{token}}",
+      "reenroll": "Nuevo registro: {{reason}}",
+      "ca_pin": "Fijación de la CA al registrar: {{reason}}",
+      "connect": "Comprobación de conexión: {{reason}}",
+      "cert_issued": "Certificado emitido ({{reason}}), serie {{serial}}, vence {{expires}}",
+      "renew_failed": "La renovación falló: {{reason}}",
+      "revoke": "Certificado revocado por {{actor}}",
+      "renew_requested": "Renovación solicitada por {{actor}}",
+      "other": "{{kind}}: {{reason}}"
+    },
+    "reasons": {
+      "mutual_tls_verified": "TLS mutuo verificado, el certificado coincide con este nodo",
+      "expired": "certificado vencido",
+      "not_yet_valid": "certificado aún no válido (revisa el reloj del nodo)",
+      "unknown_ca": "certificado de otra CA",
+      "invalid_certificate": "certificado no válido",
+      "revoked": "certificado revocado",
+      "fingerprint_mismatch": "la huella no coincide con el registro de este nodo",
+      "unknown_node": "nodo desconocido",
+      "no_certificate": "no se presentó ningún certificado",
+      "pinned_verified": "fijado y verificado",
+      "trusted_ca": "verificado contra la CA que ya estaba en el nodo",
+      "not_pinned": "sin fijar, confianza en el primer uso",
+      "not_reported": "sin reportar por el agente",
+      "enroll_refused": "token de unión rechazado",
+      "sign_failed": "no se pudo firmar la solicitud",
+      "renewal_conflict": "ganó una renovación simultánea",
+      "agent_upgrade_required": "agente demasiado antiguo para registrarse, actualízalo",
+      "reenroll_required": "se requiere un nuevo registro, la clave del nodo la creó el plano de control",
+      "renew": "renovación",
+      "enroll": "registro",
+      "reenroll": "nuevo registro",
+      "token_issued": "token de nuevo registro emitido",
+      "revoked_by_operator": "revocado por un operador"
+    },
+    "drill": {
+      "button": "Simulacro de rotación",
+      "title": "Simulacro de rotación para \"{{name}}\"",
+      "description": "Rota el certificado de este nodo de punta a punta y comprueba cada paso. El certificado anterior sigue siendo válido, así que un simulacro fallido no cambia nada.",
+      "run": "Ejecutar simulacro",
+      "again": "Ejecutar de nuevo",
+      "running": "Ejecutando...",
+      "close": "Cerrar",
+      "passed": "Simulacro superado: generación de certificado {{from}} a {{to}}.",
+      "failed": "El simulacro falló. El nodo sigue usando su certificado anterior.",
+      "steps": {
+        "preflight": "Comprobaciones previas",
+        "request": "Solicitud de renovación",
+        "new_certificate": "Certificado nuevo",
+        "still_online": "El nodo sigue en línea"
+      }
+    },
+    "renewNow": "Renovar ahora",
+    "renewOffline": "El nodo debe estar conectado para renovar bajo demanda",
+    "renewTitle": "¿Renovar ahora el certificado de \"{{name}}\"?",
+    "renewDescription": "Le pide al agente conectado que renueve su certificado de inmediato en lugar de a la hora programada.",
+    "renewConsequenceVerify": "El agente prueba el certificado nuevo contra el plano de control antes de cambiar a él.",
+    "renewConsequenceKeep": "Si algo falla, el nodo conserva su certificado actual y el fallo se muestra aquí.",
+    "renewConsequenceAudit": "La solicitud queda registrada en el log de auditoría y en los eventos de seguridad del nodo.",
+    "renewConfirm": "Renovar ahora",
+    "renewPending": "Solicitando...",
+    "renewRequested": "Renovación solicitada para \"{{name}}\"."
+  },
+  "reenroll": {
+    "trigger": "Volver a registrar nodo",
+    "title": "Volver a registrar \"{{name}}\"",
+    "description": "Emite un nuevo certificado de agente para este nodo conservando su identidad, ubicaciones e historial. Úsalo cuando el nodo estuvo sin conexión más allá del vencimiento de su certificado, o después de revocar su certificado. El certificado anterior deja de funcionar en cuanto el nodo se registra de nuevo.",
+    "shownOnce": "Este token no se volverá a mostrar. Funciona una sola vez y vence a las {{time}}.",
+    "addrLabel": "Dirección del plano de control",
+    "addrHint": "Host y puerto por el que el nodo llega a este plano de control, puerto 9443 por defecto.",
+    "runOnNode": "Ejecutar en el nodo",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "afterHint": "Un agente en ejecución toma el certificado nuevo en su próxima reconexión; de lo contrario, inicia el agente después de este comando.",
+    "done": "Listo",
+    "generating": "Generando...",
+    "generate": "Generar token de nuevo registro"
+  },
+  "joinTokens": {
+    "title_one": "{{count}} token de unión sin usar",
+    "title_other": "{{count}} tokens de unión sin usar",
+    "description": "Cualquiera que tenga un token de unión sin usar puede registrar un nodo. Revoca los que ya no necesites, un token revocado deja de funcionar al instante.",
+    "expires": "vence {{when}}",
+    "revoke": "Revocar",
+    "revokeAll": "Revocar todos",
+    "revoked_one": "Se revocó {{count}} token de unión",
+    "revoked_other": "Se revocaron {{count}} tokens de unión"
+  },
+  "capacity": {
+    "title": "Capacidad",
+    "freeSpace": "Espacio libre",
+    "waiting": "Esperando la primera lectura del host de este nodo.",
+    "noReading": "Sin lectura",
+    "freePct": "{{pct}}% libre",
+    "usedPct": "{{pct}}% usado",
+    "metrics": {
+      "disk": "Disco",
+      "inodes": "Inodos",
+      "memory": "Memoria",
+      "swap": "Swap"
+    },
+    "levels": {
+      "warn": "Bajo",
+      "critical": "Crítico"
+    },
+    "blocked": "Las compilaciones y los despliegues nuevos en este nodo están bloqueados: {{reason}}. La versión en ejecución sigue sirviendo. Libera espacio para desbloquear.",
+    "cleanupUnsupported": "Por ahora la limpieza solo se ejecuta en el nodo del plano de control. Libera espacio directamente en este nodo.",
+    "dialogTitle": "Liberar espacio",
+    "dialogBody": "Revisa lo que se eliminaría. Las imágenes y volúmenes de rollback nunca se eliminan.",
+    "scanning": "Analizando el nodo...",
+    "neverRemoved": "Nunca se elimina",
+    "more": "y {{count}} más",
+    "cancel": "Cancelar",
+    "confirm": "Liberar {{size}}",
+    "freeing": "Liberando...",
+    "freed": "Se liberaron {{size}}",
+    "classes": {
+      "dangling_images": {
+        "title": "Imágenes huérfanas",
+        "hint": "Capas de imagen sin etiqueta que ningún contenedor usa."
+      },
+      "build_cache": {
+        "title": "Caché de compilación",
+        "hint": "Caché de compilación inactiva que superó su límite de antigüedad o excede el presupuesto."
+      },
+      "stopped_containers": {
+        "title": "Contenedores detenidos",
+        "hint": "Contenedores finalizados que ninguna app necesita ya."
+      },
+      "rollback_images": {
+        "title": "Imágenes conservadas para rollback",
+        "hint": "Imágenes etiquetadas que un rollback podría necesitar."
+      },
+      "orphaned_volumes": {
+        "title": "Volúmenes huérfanos",
+        "hint": "Se muestran solo para revisión. Desde aquí nunca se eliminan volúmenes."
+      }
+    },
+    "settings": "Umbrales y limpieza automática",
+    "settingsHint": "Deja un campo vacío para usar el valor por defecto del plano de control. Los valores de disco, inodos y memoria son porcentaje libre; el swap es porcentaje usado.",
+    "useDefault": "Por defecto",
+    "fields": {
+      "diskWarn": "Aviso de disco (% libre)",
+      "diskCrit": "Disco crítico (% libre)",
+      "inodeWarn": "Aviso de inodos (% libre)",
+      "inodeCrit": "Inodos críticos (% libre)",
+      "memWarn": "Aviso de memoria (% disponible)",
+      "memCrit": "Memoria crítica (% disponible)",
+      "swapWarn": "Aviso de swap (% usado)",
+      "swapCrit": "Swap crítico (% usado)"
+    },
+    "autoClean": "Limpieza automática",
+    "autoCleanHint": "Cuando este nodo tenga poco espacio, elimina por sí solo las imágenes huérfanas, la caché de compilación inactiva y los contenedores detenidos. Desactivada por defecto.",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "saved": "Configuración de capacidad guardada",
+    "history": "Historial de limpieza",
+    "noRuns": "Aún no hay limpiezas.",
+    "triggers": {
+      "manual": "manual",
+      "auto": "automática"
+    }
+  },
+  "failure": {
+    "title": "Manejo de fallos",
+    "description": "Qué pasa cuando este nodo sigue inalcanzable. Las apps sin estado pueden moverse a nodos saludables. Las apps y bases de datos con datos locales del nodo nunca se mueven por su cuenta.",
+    "loadFailed": "No se pudo cargar el estado de fallo.",
+    "retry": "Reintentar",
+    "healthy": "Este nodo es alcanzable. No hay nada que hacer.",
+    "phase": {
+      "healthy": "Saludable",
+      "grace": "Silencioso, en periodo de gracia",
+      "unreachable": "Inalcanzable",
+      "recovering": "Recuperando",
+      "lost": "Marcado como perdido"
+    },
+    "graceTimer": "En silencio por {{silent}} s, quedan {{left}} s de gracia",
+    "kind": {
+      "app": "app",
+      "database": "base de datos"
+    },
+    "class": {
+      "reschedule": "Sin estado: puede iniciarse en un nodo saludable",
+      "needs_decision": "Tiene datos locales del nodo: requiere tu decisión"
+    },
+    "status": {
+      "pending": "En espera",
+      "moving": "Moviendo",
+      "moved": "Movido",
+      "fenced": "Movido, copia anterior detenida",
+      "waiting": "Esperando",
+      "failed": "No se pudo mover"
+    },
+    "target": "en {{node}}",
+    "wait": "Esperar",
+    "restore": "Restaurar en otro nodo",
+    "restoreHint": "El recurso se ubica en un nodo saludable. Restaura allí sus datos desde un backup.",
+    "resolved": {
+      "wait": "Esperando a que el nodo vuelva",
+      "restore": "Ubicado en otro nodo. Restaura allí sus datos desde un backup."
+    },
+    "markLost": "Marcar nodo como perdido",
+    "lostTitle": "¿Marcar este nodo como perdido?",
+    "lostDescription": "Las apps sin estado se mueven ahora a nodos saludables. Todo lo que tenga datos locales del nodo se queda donde está hasta que decidas. Si el nodo vuelve, las copias obsoletas se detienen.",
+    "planMove": "{{name}} se mueve a {{node}}",
+    "planDecide": "{{name}} espera tu decisión",
+    "lostDone": "Nodo marcado como perdido",
+    "saving": "Guardando",
+    "mode": "Cuando el nodo es inalcanzable",
+    "modeDefault": "Valor por defecto del plano de control ({{mode}})",
+    "modes": {
+      "off": "No hacer nada",
+      "notify": "Solo avisarme",
+      "auto": "Mover las apps sin estado automáticamente"
+    },
+    "grace": "Periodo de gracia (segundos)",
+    "graceHint": "0 usa el valor por defecto. De lo contrario, al menos 30.",
+    "save": "Guardar",
+    "saved": "Política de fallos guardada"
+  },
+  "resilience": {
+    "title": "Comprobación de resiliencia",
+    "description": "¿Tus apps seguirán sirviendo si el plano de control se cae? Esto revisa el estado guardado en el que se apoyaría un reinicio.",
+    "recheck": "Volver a comprobar",
+    "simulate": "Simular caída del plano de control",
+    "simulatedNote": "Simulacro: no se detuvo nada. El estado guardado se abrió como lo haría un reinicio.",
+    "fix": "Corregir",
+    "status": {
+      "pass": "Correcto",
+      "fail": "Fallo",
+      "warn": "Advertencia",
+      "unknown": "Desconocido"
+    },
+    "checks": {
+      "route_snapshot": "Instantánea de rutas",
+      "cert_cache": "Caché de certificados",
+      "agent_link": "Enlace del agente",
+      "container_restart": "Contenedores tras reiniciar el host",
+      "telemetry_buffer": "Métricas y logs sin conexión"
+    }
+  },
+  "region": {
+    "title": "Dominio de fallo",
+    "region": "Región",
+    "regionHint": "Una etiqueta como eu-central o home-lab. Las réplicas nuevas prefieren una región que tenga menos de las otras réplicas de la app.",
+    "regionPlaceholder": "p. ej. eu-central",
+    "provider": "Proveedor",
+    "providerPlaceholder": "p. ej. hetzner",
+    "zone": "Zona",
+    "zoneHint": "El dominio de fallo más pequeño, como un centro de datos o una zona de disponibilidad. Las réplicas se reparten primero entre zonas.",
+    "zonePlaceholder": "p. ej. fsn1",
+    "description": "Se completa automáticamente en los nodos creados desde un proveedor de nube. Borra un campo para quitar esa etiqueta.",
+    "save": "Guardar",
+    "saved": "Dominio de fallo actualizado."
+  },
+  "banner": {
+    "description": "Añade servidores para repartir apps y bases de datos entre máquinas. Una malla WireGuard conecta cada nodo con este plano de control.",
+    "diagram": {
+      "controlPlane": "plano de control",
+      "nodes": "nodos",
+      "mesh": "malla WireGuard"
+    }
+  },
+  "detail": {
+    "placed": {
+      "title": "Se ejecuta en este nodo",
+      "apps": "Apps",
+      "databases": "Bases de datos",
+      "none": "Aún no hay nada ubicado en este nodo."
+    },
+    "back": "Volver a nodos",
+    "retry": "Reintentar",
+    "banner": {
+      "pending": "Este nodo está registrado y espera a que su agente se conecte.",
+      "online": "Agente conectado. Acordona o drena este nodo antes del mantenimiento.",
+      "offline": "El agente no es alcanzable, así que aquí no se ubica nada nuevo.",
+      "cordoned": "Las nuevas ubicaciones están en pausa. Las cargas en ejecución no se tocan."
+    },
+    "statusCard": {
+      "title": "Estado",
+      "lastSeen": "Visto por última vez {{when}}",
+      "online": "Agente conectado y saludable",
+      "offline": "Agente no alcanzable",
+      "pending": "Esperando a que el agente se conecte",
+      "cordoned": "Acordonado, no recibe trabajo nuevo",
+      "reenroll": "Volver a registrar agente",
+      "recheck": "Volver a comprobar",
+      "uncordonHint": "Usa Desacordonar en el encabezado para reanudar las ubicaciones."
+    },
+    "overview": {
+      "title": "Resumen",
+      "address": "Dirección",
+      "joined": "Se unió",
+      "lastSeen": "Última vez visto",
+      "never": "Nunca",
+      "notSet": "Sin definir"
+    },
+    "workloads": {
+      "title": "Capacidades de carga",
+      "apps": "Acepta cargas de apps",
+      "appsHint": "Si este nodo es elegible para nuevas ubicaciones de aplicaciones.",
+      "appsOn": "Cargas de apps habilitadas.",
+      "appsOff": "Cargas de apps deshabilitadas.",
+      "builds": "Acepta cargas de compilación",
+      "buildsHint": "Una preferencia de enrutamiento sobre dónde se ejecutan las compilaciones nuevas, no una regla estricta de ubicación.",
+      "buildsOn": "Cargas de compilación habilitadas.",
+      "buildsOff": "Cargas de compilación deshabilitadas.",
+      "buildsTipLabel": "Qué hace aceptar cargas de compilación",
+      "buildsTip": "Define si las compilaciones nuevas prefieren este nodo. No mueve apps ni bases de datos que ya se ejecutan aquí, y no garantiza que las compilaciones nunca corran aquí: si ningún nodo que acepte compilaciones está saludable, la compilación igual se ejecuta en el nodo principal en lugar de fallar."
+    }
+  },
+  "onboarding": {
+    "title": "Uniendo {{name}}",
+    "steps": {
+      "token": "Token de unión creado",
+      "contacted": "El agente contactó al plano de control",
+      "connected": "Conectado por mTLS",
+      "preflight": "Comprobaciones previas"
+    },
+    "waiting": "Esperando a que el agente contacte al plano de control. Esta página se actualiza sola.",
+    "waitingFacts": "El agente está conectado y reuniendo sus datos de comprobación previa.",
+    "detected": "Detectado desde {{source}}: proveedor {{provider}}, región {{region}}, zona {{zone}}.",
+    "notDetected": "No se detectó proveedor, región ni zona. Defínelos en la página del nodo, o vuelve a ejecutar el agente con las etiquetas del formulario de unión.",
+    "applied": "Etiquetas en este nodo: proveedor {{provider}}, región {{region}}, zona {{zone}}.",
+    "source": {
+      "metadata": "los metadatos de la nube",
+      "env": "el comando de unión"
+    },
+    "none": "ninguno",
+    "stale": "El agente dejó de reportar, así que estos resultados podrían estar desactualizados.",
+    "recheck": "Volver a comprobar",
+    "summary": "{{pass}} superadas, {{warn}} advertencias, {{fail}} fallidas, {{unknown}} sin verificar",
+    "fix": "Corregir",
+    "fixViaCli": "Corregir con la CLI",
+    "runOnNode": "Ejecutar en el nodo",
+    "status": {
+      "pass": "Superada",
+      "warn": "Advertencia",
+      "fail": "Fallida",
+      "unknown": "Sin verificar"
+    },
+    "checks": {
+      "control_plane": "Plano de control alcanzable",
+      "docker": "Docker",
+      "architecture": "Arquitectura",
+      "disk": "Espacio en disco",
+      "clock": "Desfase del reloj",
+      "wireguard": "WireGuard del kernel",
+      "mesh_port": "Puerto de la malla",
+      "firewall": "Firewall y grupo de seguridad"
+    }
+  },
+  "domains": {
+    "title": "Capacidad por dominio de fallo",
+    "description": "CPU, memoria y disco libre reportados por proveedor, región y zona. Beta: la capacidad proviene de lo que reporta cada nodo.",
+    "tabs": {
+      "providers": "Proveedores",
+      "regions": "Regiones",
+      "zones": "Zonas"
+    },
+    "nodes": "{{online}} de {{total}} nodos en línea",
+    "workloads_one": "{{count}} carga",
+    "workloads_other": "{{count}} cargas",
+    "capacity": "{{cores}} núcleos, {{memory}} GiB de memoria, {{disk}} GiB de disco libre",
+    "unverified_one": "({{count}} nodo no ha reportado su capacidad)",
+    "unverified_other": "({{count}} nodos no han reportado su capacidad)",
+    "unlabeled_one": "{{count}} de {{total}} nodos no tiene etiqueta de proveedor, región ni zona.",
+    "unlabeled_other": "{{count}} de {{total}} nodos no tienen etiqueta de proveedor, región ni zona.",
+    "noLabels": "Ningún nodo tiene aún etiqueta de proveedor, región ni zona. Añade un nodo con detección automática, o etiqueta uno existente en su página.",
+    "risksTitle": "Réplicas en un solo dominio de fallo",
+    "loadFailed": "No se pudo cargar el resumen de dominios.",
+    "retry": "Reintentar"
+  },
+  "offlineApp": {
+    "title": "El nodo {{node}} está sin conexión, sin verse desde hace {{since}}",
+    "titleUnknown": "El nodo {{node}} está sin conexión",
+    "body": "Los contenedores siguen ejecutándose en él, pero el ingreso por la malla está caído y esta app no se puede modificar hasta que el nodo vuelva.",
+    "view": "Ver nodo"
+  }
+}

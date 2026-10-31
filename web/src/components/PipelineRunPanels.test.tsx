@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PipelinesI18n } from '../test/pipelinesI18n'
 import type { PipelineRun } from '../types/pipelines'
@@ -8,6 +8,7 @@ import { PipelineArtifactsPanel } from './PipelineArtifactsPanel'
 import { PipelineFailureSummary } from './PipelineFailureSummary'
 import { PipelineParamFields } from './PipelineParamFields'
 import { PipelineRunMeta } from './PipelineRunMeta'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown): Response {
   return {
@@ -18,7 +19,7 @@ function jsonResponse(body: unknown): Response {
 }
 
 function wrap(node: React.ReactNode) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <QueryClientProvider client={qc}>
       <PipelinesI18n>{node}</PipelinesI18n>

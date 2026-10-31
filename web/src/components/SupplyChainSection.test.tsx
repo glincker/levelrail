@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SupplyChainSection, VulnCountPills } from './SupplyChainSection'
 import type {
@@ -9,6 +9,7 @@ import type {
   SupplyChainSettings,
   VulnReport,
 } from '../types/supplyChain'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a href="/x">{children}</a>,
@@ -86,9 +87,7 @@ function settings(
 }
 
 function renderSection(sbomPackages: number | null | undefined) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <SupplyChainSection

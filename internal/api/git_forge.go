@@ -89,7 +89,7 @@ func (rt *Router) resolveForge(ctx context.Context, repoURL, connectionID string
 	if repoURL == "" {
 		return nil, errNoForge
 	}
-	if c, ok := rt.githubAppClient.(githubForgeClient); ok && rt.githubApp != nil && rt.githubAppSecrets != nil {
+	if c, ok := rt.githubAppClient.(githubForgeClient); ok && rt.githubApp != nil && rt.githubAppSecrets != nil && gitHubAppTokenAllowed(ctx) {
 		// InstanceURL is a property of the App registration, shared by
 		// every installation, so it's known before minting a token:
 		// owner (needed to pick which installation covers this repo)

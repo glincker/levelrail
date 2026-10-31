@@ -14,6 +14,8 @@ import { SessionsPanel } from '../../components/security/SessionsPanel'
 import { PolicyPanel } from '../../components/security/PolicyPanel'
 import { RotationsPanel } from '../../components/security/RotationsPanel'
 import { CompliancePanel } from '../../components/security/CompliancePanel'
+import { AdvisoriesPanel } from '../../components/security/AdvisoriesPanel'
+import { AdvisoriesCard } from '../../components/security/AdvisoriesCard'
 import { ReachabilityPanel } from '../../components/security/ReachabilityPanel'
 import { useIsRoot } from '../../hooks/useIsRoot'
 
@@ -23,6 +25,7 @@ const TABS = [
   'policy',
   'rotations',
   'compliance',
+  'advisories',
   'exposure',
 ] as const
 type SecurityTab = (typeof TABS)[number]
@@ -80,6 +83,9 @@ function SecurityCenterPage() {
           <TabsTrigger value="compliance">
             {t('page.tabs.compliance')}
           </TabsTrigger>
+          <TabsTrigger value="advisories">
+            {t('page.tabs.advisories')}
+          </TabsTrigger>
           {isRoot ? (
             <TabsTrigger value="exposure">
               {t('page.tabs.exposure')}
@@ -103,6 +109,7 @@ function SecurityCenterPage() {
           {posture.data ? (
             <>
               <PostureScoreCard posture={posture.data} />
+              <AdvisoriesCard />
               {posture.data.account.length > 0 ? (
                 <PostureChecklist
                   title={t('checklist.account')}
@@ -131,6 +138,9 @@ function SecurityCenterPage() {
         </TabsContent>
         <TabsContent value="compliance" className="pt-4">
           <CompliancePanel />
+        </TabsContent>
+        <TabsContent value="advisories" className="pt-4">
+          <AdvisoriesPanel />
         </TabsContent>
         {isRoot ? (
           <TabsContent value="exposure" className="pt-4">

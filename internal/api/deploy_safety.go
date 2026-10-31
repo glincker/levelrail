@@ -178,6 +178,12 @@ func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.H
 	if err != nil {
 		return fmt.Errorf("load git source: %w", err)
 	}
+	if req.Branch != "" {
+		gs.Branch = req.Branch
+	}
+	if len(req.BuildArgs) > 0 {
+		ctx = withExtraBuildArgs(ctx, req.BuildArgs)
+	}
 	order := rt.nextOrder(ctx, name, req.CommitSHA, req.Before, req.CommitAt)
 	status, msg := rt.deployFromGitSource(ctx, name, *gs, req.CheckoutRef, req.CommitLabel, order)
 	if status >= http.StatusBadRequest {
@@ -192,6 +198,9 @@ func (rt *Router) ReleaseHandlers() map[string]deploy.ReleaseHandler {
 	return map[string]deploy.ReleaseHandler{
 		deploy.HeldKindGit: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {
 			return rt.replayGitDeploy(ctx, a.ServiceName, req)
+		},
+		deploy.HeldKindPush: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {
+			return rt.replayGitPush(ctx, a.ServiceName, req)
 		},
 		deploy.HeldKindImage: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {
 			existing, err := rt.apps.GetDesiredService(ctx, a.ServiceName)

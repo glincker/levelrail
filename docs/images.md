@@ -1,6 +1,6 @@
 ---
 title: "Images"
-description: "See every container image on a node with its size, layers and deploy lineage, promote an image between environments by digest without rebuilding, free disk space without losing a rollback target, and check image signatures."
+description: "See every container image on a node with its size, layers and deploy lineage, promote images by digest without a rebuild, and check signatures."
 "og:url": "https://docs.levelrail.com/images"
 ---
 

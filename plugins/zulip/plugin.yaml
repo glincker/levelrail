@@ -6,8 +6,7 @@ publisher: GLINCKER
 description: Posts alerts to a Zulip stream topic as a bot.
 image: ghcr.io/glincker/levelrail-plugin-zulip@sha256:0000000000000000000000000000000000000000000000000000000000000000
 abilities: [read]
-outbound_hosts:
-  - zulip.example.com
+outbound_hosts_from_config: [base_url]
 contributes:
   panels:
     - id: delivery

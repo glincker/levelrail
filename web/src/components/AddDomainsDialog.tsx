@@ -44,6 +44,7 @@ import {
 } from '../queries/domainCheck'
 import { GetCertificateButton } from './GetCertificateButton'
 import type { EditDomainsResult } from '../queries/appEnvironmentDomains'
+import { DomainDnsSetup } from './dns/DomainDnsSetup'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
 import { GoLivePanel } from './GoLivePanel'
@@ -149,13 +150,20 @@ function ResultRow({
       ) : null}
       {open ? (
         <div className="mt-2">
-          <DomainCheckPanel
+          <DomainDnsSetup
+            kind="app"
             domain={outcome.domain}
-            data={check.data}
-            isFetching={check.isFetching}
-            onRefetch={() => {
-              void check.refetch()
-            }}
+            app={appName}
+            fallback={
+              <DomainCheckPanel
+                domain={outcome.domain}
+                data={check.data}
+                isFetching={check.isFetching}
+                onRefetch={() => {
+                  void check.refetch()
+                }}
+              />
+            }
           />
         </div>
       ) : null}

@@ -1,22 +1,24 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import updatesEn from '../../locales/en/updates.json'
+import safetyEn from '../../locales/en/upgradeSafety.json'
 import type { SelfUpgradePlan } from '../../queries/selfUpgrade'
 import type { UpdatePreflight } from '../../queries/updates'
 import type { UpgradeScheduleStatus } from '../../queries/upgradeSchedule'
 import { UpgradeNow } from './UpgradeNow'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['updates'],
+  ns: ['updates', 'upgradeSafety'],
   defaultNS: 'updates',
-  resources: { en: { updates: updatesEn } },
+  resources: { en: { updates: updatesEn, upgradeSafety: safetyEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -184,7 +186,7 @@ function setup(opts: {
       return ok({})
     }),
   )
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={qc}>
@@ -243,11 +245,7 @@ describe('UpgradeNow', () => {
       },
     })
     expect(await screen.findByText('v1.0.0 to v1.1.0')).toBeInTheDocument()
-    expect(
-      screen.getByText('3 database migrations to apply'),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/restore point is taken first/)).toBeInTheDocument()
-    expect(screen.getByText(/180 seconds/)).toBeInTheDocument()
+    expect(screen.getByText('3 database migrations')).toBeInTheDocument()
   })
 
   it('explains that the next upgrade verifies and pins, with no command to run', async () => {

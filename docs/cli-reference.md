@@ -59,6 +59,8 @@ Interactive runs print one line to stderr when a newer release exists, at most o
 | `LEVELRAIL_RELEASE_BASE_URL` | asset download base, https only | the release repo's GitHub releases |
 ## Scripting: `--json` and exit codes
 
+A mistyped command or flag gets a did-you-mean line and a next step (`run levelrail-cli <verb> --help`) instead of the whole usage text. Empty lists say what to run next, for example `no apps yet: run levelrail-cli apps create --help`, and name `-A` when a project scope hid the apps.
+
 Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.
 
 On failure, `--json` also prints an error object to stdout (the message still goes to stderr):
@@ -236,7 +238,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 ```
 
 - `apps keep` turns a one-click trial deployment into a permanent app: it stops being flagged as throwaway, with every service of the same app. Repeating it is harmless; an app that never was a trial answers 409.
-- `apps wait` polls until a deploy attempt converges and exits 0 on success, 5 if it converged as a failure, 6 on timeout. On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `restarted`; `--json` carries the same as `outcome`.
+- `apps wait` polls until a deploy attempt converges and exits 0 on success, 5 if it converged as a failure, 6 on timeout. On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `last rollout: restarted (no new deployment was created)`; `--json` carries the same as `outcome`.
 - `apps deploy-spec` fans an app.yaml's `services:` map out into independent builds under one app; `apps group` shows a service's siblings under the same multi-service app.
 - `apps builds trigger` builds an image from a git source and deploys it to an existing app.
 - `apps promote` promotes the app's image onto a sibling app in another environment. `--release` promotes a specific release id from `releases list` instead of the one the app is bound to.
@@ -839,6 +841,18 @@ levelrail-cli domains standalone remove <domain> [flags]
 - `dns` reads and writes the real A, AAAA, CNAME, TXT, MX, SRV and CAA records in the domain's zone through whichever DNS-01 provider is configured. `remove` must match an existing record exactly.
 - `cloudflare-dns set --cf-api-token TOKEN` and `route53-dns set --aws-access-key-id ID --aws-secret-access-key KEY` configure the ACME DNS-01 credentials needed for wildcard domains. A domain is wildcard eligible by having a leading `*.` label; if both providers are enabled, Cloudflare takes precedence.
 
+## Mail DNS
+
+Experimental, needs `APP_EXPERIMENTAL=mail`. See [Mail DNS](/mail-dns).
+
+```
+levelrail-cli mail dns plan <domain> [--host H] [--ipv4 IP] [--ipv6 IP] [--mx-priority N] [--preset ID] [--spf-mode server|include] [--spf-include HOSTS] [--dkim-selector S] [--dkim-key-file F] [--dmarc-policy none|quarantine|reject] [--dmarc-rua ADDR] [--dmarc-pct N] [--mta-sts testing|enforce] [--tls-rpt] [--autoconfig] [--replace-existing KINDS] [--provider P] [--json]
+levelrail-cli mail dns apply <domain> --plan-hash H --confirm [same flags as plan]
+levelrail-cli mail dns check <domain> [--host H] [--dkim-selector S] [--json]
+```
+
+`plan` is a dry run and prints a plan hash. `apply` refuses a stale hash and never replaces existing MX, SPF, DKIM or DMARC records unless `--replace-existing` lists their kind.
+
 ## DNS
 
 See [DNS zones and records](/dns).
@@ -1430,14 +1444,15 @@ Shows the control plane's own configured and not configured signals, including w
 ## Upgrade
 
 ```
-levelrail-cli upgrade [--no-backup] [flags]
+levelrail-cli upgrade [--no-backup] [--skip-backup] [flags]
 ```
 
 Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself unless you pass `--apply`. See [Installing](/installing#check-first-then-upgrade).
 
 ```
+levelrail-cli upgrade --dry-run [--version TAG]
 levelrail-cli upgrade --plan [--version TAG]
-levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
+levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait] [--skip-backup]
 levelrail-cli upgrade --attempts
 levelrail-cli upgrade status
 levelrail-cli upgrade backup-now
@@ -1452,7 +1467,7 @@ levelrail-cli upgrade auto set [--mode off|patch|any] [--window-cron EXPR] [--wi
 
 `backup-now` takes a control plane backup and re-runs the preflight. `schedule` queues the upgrade for a time or the next maintenance window; the preflight re-runs at that time and nothing is applied if it fails. `auto` reads and sets the automatic upgrade policy, which is off by default; `set` changes only the flags you pass. All of these need a root token. See [Upgrade safely](/upgrade-safely).
 
-`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. See [Upgrade safely](/upgrade-safely).
+`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. `--dry-run` and `--plan` also print the schema change and migration count, whether the data directory has room for the backup and the new release, the restart behaviour and the command that restores the backup, and change nothing. The upgrade takes a control plane backup first and is refused if it fails; `--skip-backup` goes on without it (no database restore point), and with no flags `upgrade` exits non-zero when its backup fails unless `--skip-backup` is given. See [Upgrade safely](/upgrade-safely#preview-an-upgrade-without-changing-anything).
 
 ## System restart {#system-restart}
 
@@ -2082,6 +2097,35 @@ levelrail-cli -A apps list
 
 `explain` documents a resource kind or field from the embedded schema and works offline. It also accepts an app.yaml path (`explain services.web.health.readiness`, or a bare service field such as `explain replicas`) and prints the description, type, allowed values and default; `explain appspec` lists the top level fields, an unknown path suggests the closest match, and `--json` prints the result as JSON. `api-resources` lists the kinds. `rollout` forwards to `apps wait`, `apps deploys list`, `apps rollback` and `apps restart`. There is no `rollout pause` or `resume`: no API holds a rollout open, so use `apps freeze` for scheduled windows. `config` works over saved profiles: `use-context` makes one the default, and `--profile` or `APP_PROFILE` still win. `-n` is `--project` before the command name, and `-A` (or `--all-projects`) ignores the saved and environment project for one run. `-o` is shorthand for `--output` when its value is an output format. See [CLI output formats](/cli-output) for `yaml`, `wide`, `name`, `custom-columns` and `jsonpath`.
 
+## MCP OAuth clients
+
+Experimental and root only. With the `mcp-http` feature on, remote MCP clients that use OAuth must be pre-registered here or in the dashboard (Settings > CLI access > Connected AI clients). See [OAuth for remote clients](/mcp#oauth-for-remote-clients).
+
+```
+levelrail-cli mcp-clients create --name N --redirect-uri URI [--redirect-uri URI]... [--redirect-uris URI,URI] [--scope mcp:read|mcp:read:sensitive]... [--json]
+levelrail-cli mcp-clients list [--json]
+levelrail-cli mcp-clients delete --id ID [--json]
+```
+
+`create` prints the generated `client_id`; public clients have no secret. `--scope` defaults to `mcp:read`. `delete` also revokes every token the client was granted.
+
+## Incidents
+
+With `APP_INCIDENTS_ENABLED`, internal incidents opened from monitors and alerts are managed here. Nothing is public until `publish`. See [Monitors](/monitors) for the API and the draft rules.
+
+```
+levelrail-cli incidents list [--state triggered|acknowledged|resolved] [--json]
+levelrail-cli incidents show <id> [--json]
+levelrail-cli incidents ack <id>
+levelrail-cli incidents resolve <id>
+levelrail-cli incidents note <id> --body <text>
+levelrail-cli incidents promote <alert-rule-id> [--title <text>]
+levelrail-cli incidents draft <id> --title <text> --body <text> [--status <s>] [--impact <i>] [--components a,b]
+levelrail-cli incidents publish <id> [--updated-at <ts>]
+```
+
+`list` and `show` need `read:sensitive`; the rest need `write`. `publish` refuses an empty draft client side and sends the `updated_at` it fetched, so a draft edited by someone else in the meantime is not published unreviewed.
+
 ## Analysis reports
 
 With `APP_ANALYSIS_ENABLED=on`, a firing alert or spend alert writes a deterministic report for the affected app: a summary, a timeline, ranked suspected causes with evidence ids, and recommendations. No model is called. Reports are read only.
@@ -2091,4 +2135,4 @@ levelrail-cli analysis list <app> [--json]
 levelrail-cli analysis show <id> [--json]
 ```
 
-Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`.
+Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`. Right-sizing thresholds: `APP_ANALYSIS_HEADROOM_MEMORY` and `APP_ANALYSIS_HEADROOM_CPU` (multiplier over p95, above 1), `APP_ANALYSIS_SIZING_RAISE_AT` and `APP_ANALYSIS_SIZING_LOWER_AT` (p95 as a fraction of the limit), and `APP_ANALYSIS_SIZING_MIN_COVERAGE` (history needed before a suggestion). Unset values keep the engine defaults.

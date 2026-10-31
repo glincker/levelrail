@@ -108,6 +108,22 @@
     "newApp": "Nueva aplicación",
     "import": "Importar",
     "connectGit": "Conectar Git",
+    "firstRun": {
+      "title": "Despliega tu primera aplicación",
+      "subtitle": "Elige un punto de partida. En pocos minutos tendrás una aplicación en marcha y un enlace.",
+      "template": {
+        "title": "Desde un template",
+        "body": "Instalaciones en un clic como Postgres, n8n o Ghost."
+      },
+      "git": {
+        "title": "Desde un repositorio Git",
+        "body": "Construye y despliega un repo con Dockerfile."
+      },
+      "image": {
+        "title": "Desde una imagen de contenedor",
+        "body": "Ejecuta cualquier imagen de un registro."
+      }
+    },
     "emptyTitle": "Aún no hay aplicaciones",
     "emptyBody": "Despliega desde un repositorio git o una imagen de contenedor, o importa aplicaciones de otra plataforma.",
     "noMatchTitle": "Ninguna aplicación coincide",
@@ -115,6 +131,43 @@
     "clearFilters": "Borrar filtros",
     "errorBody": "No se pudo cargar la lista de aplicaciones. {{message}}",
     "retry": "Reintentar"
+  },
+  "appAnalysis": {
+    "confidence": "Confianza {{level}}",
+    "causes": "Causas sospechadas",
+    "hide": "Ocultar informe",
+    "loadFailed": "No se pudo cargar este informe.",
+    "loading": "Cargando informe",
+    "recommendations": "Recomendaciones",
+    "saving": "Ahorra unos ${{amount}}/mes",
+    "status": {
+      "complete": "Completo",
+      "insufficient_data": "Datos insuficientes"
+    },
+    "timeline": "Cronología",
+    "title": "Análisis",
+    "view": "Ver informe",
+    "evidence": {
+      "title": "Evidencia",
+      "metric": "Métrica",
+      "trend": "Tendencia",
+      "anomalies_one": "{{count}} anomalía",
+      "anomalies_other": "{{count}} anomalías",
+      "sizingChange": "{{current}} a {{suggested}}",
+      "logLevel": "{{level}}: {{lines}} líneas, {{groups}} grupos",
+      "restarts_one": "{{count}} reinicio",
+      "restarts_other": "{{count}} reinicios",
+      "dimension": {
+        "memory": "Memoria",
+        "cpu": "CPU"
+      },
+      "trends": {
+        "flat": "estable",
+        "none": "sin datos",
+        "rising": "al alza",
+        "falling": "a la baja"
+      }
+    }
   },
   "appSectionHelp": "Lee la guía de esta página",
   "appActions": {
@@ -191,6 +244,14 @@
         "label": "Secciones de uso y costes",
         "usage": "Uso",
         "costs": "Explorador de costes"
+      },
+      "platform": {
+        "label": "Secciones de la plataforma",
+        "overview": "Resumen",
+        "https": "HTTPS",
+        "ingress": "Ingress",
+        "addresses": "Direcciones",
+        "dnsProviders": "Proveedores de DNS"
       }
     },
     "pins": {
@@ -249,7 +310,8 @@
     },
     "account": {
       "controlPlane": "Plano de control",
-      "signOut": "Cerrar sesión"
+      "signOut": "Cerrar sesión",
+      "updateAvailable": "Actualización disponible: {{version}}"
     },
     "breadcrumb": {
       "label": "Ruta de navegación",
@@ -293,7 +355,17 @@
       "alerts": "Alertas",
       "assistant": "Asistente de IA",
       "settings": "Ajustes",
-      "help": "Ayuda"
+      "help": "Ayuda",
+      "functions": "Funciones",
+      "images": "Imágenes",
+      "assets": "Recursos estáticos",
+      "mail": "Correo",
+      "resource-advisor": "Asesor de recursos",
+      "usage": "Uso y costo",
+      "resources": "Recursos",
+      "security": "Centro de seguridad",
+      "console": "Consola",
+      "inbox": "Bandeja de entrada"
     },
     "quickNav": {
       "label": "Navegación rápida (mantén L)"
@@ -303,6 +375,46 @@
       "comfortable": "Ancho cómodo",
       "wide": "Ancho",
       "full": "Ancho completo"
+    },
+    "banner": {
+      "dismiss": "Descartar",
+      "retryNow": "Reintentar ahora",
+      "offline": "No se puede alcanzar el plano de control. Las actualizaciones en vivo están en pausa.",
+      "dockerDown": "Docker no responde. Los despliegues y reinicios fallarán.",
+      "viewNode": "Ver nodo",
+      "diskFull": "Disco casi lleno.",
+      "diskFullDetail": "Disco casi lleno, {{detail}}."
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "unread": "Notificaciones: {{count}} sin leer",
+      "allRead": "Notificaciones: todas leídas"
+    },
+    "whatsNew": {
+      "title": "Novedades",
+      "unread": "Novedades: {{count}} sin leer",
+      "allCaughtUp": "Novedades: todo al día",
+      "empty": "Aún no hay notas de versión disponibles."
+    },
+    "navAttention": "{{count}} requieren atención",
+    "logoStatus": {
+      "healthy": "Todo está en buen estado",
+      "update": "Hay una actualización disponible",
+      "degraded": "Degradado: algunas comprobaciones requieren atención",
+      "incident": "Incidente: una comprobación de salud está fallando",
+      "busy": "Hay una actualización o reinicio en curso",
+      "unknown": "Estado desconocido"
+    },
+    "accountMenu": {
+      "account": "Ajustes de la cuenta",
+      "feedback": "Comentarios",
+      "theme": "Tema",
+      "changelog": "Novedades",
+      "help": "Ayuda",
+      "docs": "Documentación",
+      "allNormal": "Todos los sistemas funcionan con normalidad",
+      "issues_one": "{{count}} problema requiere atención",
+      "issues_other": "{{count}} problemas requieren atención"
     }
   },
   "login": {
@@ -356,7 +468,8 @@
         "sso_not_provisioned": "Tu cuenta aún no está configurada aquí. Pide a un administrador que te invite o que active la creación automática de cuentas.",
         "sso_no_role": "Los grupos de tu proveedor de identidad no dan acceso aquí. Pide a un administrador que asigne uno de tus grupos a un rol.",
         "sso_no_email": "Tu proveedor de identidad no envió una dirección de correo, por lo que no se pudo asociar ninguna cuenta.",
-        "account_disabled": "Esta cuenta está desactivada. Pide a un administrador que restablezca el acceso."
+        "account_disabled": "Esta cuenta está desactivada. Pide a un administrador que restablezca el acceso.",
+        "sso_root_not_linkable": "Este correo pertenece a una cuenta de administrador que no se puede vincular mediante inicio de sesión único. Inicia sesión con tu contraseña."
       }
     },
     "banner": {
@@ -480,7 +593,8 @@
       "imageAutoUpdate": "Vuelve a desplegar automáticamente cuando se publica una imagen más reciente para tu etiqueta.",
       "badge": "Muestra una insignia de estado de despliegue en vivo que puedes incrustar en un README.",
       "githubActions": "Permite que un flujo de trabajo de GitHub Actions despliegue esta aplicación.",
-      "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación."
+      "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación.",
+      "rolloutPolicy": "Limita cuántas réplicas pueden sobrar o no estar disponibles durante una actualización progresiva."
     },
     "whatItDoes": "Qué hace esto:"
   },

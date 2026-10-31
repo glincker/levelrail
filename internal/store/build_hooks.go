@@ -136,3 +136,11 @@ func buildHookAffected(res sql.Result, err error, op, id string) error {
 	}
 	return nil
 }
+
+// DeleteBuildHooksForService revokes every hook of an app.
+func (db *DB) DeleteBuildHooksForService(ctx context.Context, serviceName string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM build_hooks WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete build hooks for service: %w", err)
+	}
+	return nil
+}

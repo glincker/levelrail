@@ -1,0 +1,54 @@
+{
+  "title": "Before you upgrade",
+  "loading": "Checking disk space, backup and downtime",
+  "loadError": "Could not check this upgrade: {{message}}",
+  "loadErrorNext": "Reload the page or try again in a minute. Nothing was changed.",
+  "retry": "Try again",
+  "change": {
+    "label": "What changes",
+    "fromTo": "{{from}} to {{to}}",
+    "migrations_one": "1 database migration",
+    "migrations_other": "{{count}} database migrations",
+    "noMigrations": "No database migrations",
+    "schema": "schema {{from}} to {{to}}",
+    "schemaNote": "({{schema}})",
+    "breaking_one": "1 breaking change",
+    "breaking_other": "{{count}} breaking changes",
+    "noBreaking": "No breaking changes"
+  },
+  "checks": {
+    "label": "Checks",
+    "diskOk": "Disk OK: {{free}} free, {{needed}} needed",
+    "diskShort": "Disk short: {{free}} free, {{needed}} needed",
+    "diskUnknown": "Free disk space could not be measured",
+    "backupAt": "Backup goes to {{dir}}",
+    "backupSkipped": "Backup skipped, there will be no restore point",
+    "backupNone": "No pre-upgrade backup is configured"
+  },
+  "downtime": {
+    "label": "Downtime",
+    "estimate": "About {{seconds}} s offline while the server restarts",
+    "restart": "Restart: {{behaviour}}"
+  },
+  "restore": {
+    "label": "If something goes wrong, restore with",
+    "after": "Keep this command. It restores the database to how it was before the upgrade.",
+    "copyLabel": "Restore command"
+  },
+  "blocked": {
+    "disk": "Not enough free disk. Free up {{short}} or move the data directory, then reload.",
+    "plan": "This upgrade cannot start: {{reason}}",
+    "planUnknown": "The upgrade plan failed. Reload the page, or run the upgrade from the command line.",
+    "notes": "Release notes for this version are not available yet. Try again shortly."
+  },
+  "skip": {
+    "toggle": "Advanced",
+    "label": "Skip the pre-upgrade backup",
+    "warning": "No restore point will be created. If the upgrade fails you cannot return to the current data.",
+    "hint": "The backup failed. Fix the cause and try again, or skip it at your own risk."
+  },
+  "backupFailed": {
+    "title": "The pre-upgrade backup failed, so nothing was changed",
+    "next": "Free up disk space or check that the backup directory is writable, then press Upgrade again. You can also skip the backup under Advanced."
+  }
+}

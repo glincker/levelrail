@@ -1,0 +1,930 @@
+{
+  "connectDrawer": {
+    "trigger": "Conectar",
+    "title": "Conectar a esta base de datos",
+    "description": "Cadenas de conexión para este motor. Copia una en tu aplicación o cliente.",
+    "passwordNote": "Aquí nunca se muestran las contraseñas. Reemplaza <password> por una credencial de la página Acceso.",
+    "internal": "Desde aplicaciones en este servidor",
+    "public": "Desde internet",
+    "copyUri": "Copiar cadena de conexión",
+    "copyCommand": "Copiar comando",
+    "tunnelTitle": "¿Sin puerto público? Usa un túnel",
+    "tunnelBody": "La CLI abre un puerto local que retransmite a esta base de datos a través del plano de control. No se expone nada a internet.",
+    "tunnelAfter": "El comando imprime una cadena de conexión para el puerto local. Agrega --launch para iniciar psql, mysql o redis-cli automáticamente (define primero LEVELRAIL_DB_PASSWORD)."
+  },
+  "upgrades": {
+    "nav": "Actualizaciones"
+  },
+  "external": {
+    "badge": "Externa",
+    "badgeHint": "Levelrail se conecta a esta base de datos pero no la ejecuta.",
+    "connect": {
+      "trigger": "Conectar existente",
+      "title": "Conectar una base de datos existente",
+      "description": "Apunta tus aplicaciones a una base de datos que ya está en ejecución. No se mueve, copia ni cambia nada en la base de datos.",
+      "sourceAdopt": "Un contenedor en este servidor",
+      "sourceAdoptHint": "Elige un contenedor de base de datos en ejecución. Solo se lee, nunca se detiene, reinicia ni modifica.",
+      "sourceManual": "Ingresar los datos de conexión",
+      "sourceManualHint": "Una base de datos en otro host, un servicio administrado o cualquier cosa a la que llegues por dirección.",
+      "back": "Atrás",
+      "cancel": "Cancelar",
+      "save": "Conectar base de datos",
+      "saving": "Conectando...",
+      "toast": "Se conectó \"{{name}}\". No se cambió nada en la base de datos.",
+      "adoptSafe": "Adoptar no detiene, reinicia, recrea ni modifica este contenedor, y tampoco lo conecta a ninguna red.",
+      "noCandidates": "No se encontraron contenedores de base de datos en ejecución en este servidor. Ingresa los datos de conexión.",
+      "candidatesError": "No se pudieron listar los contenedores de este nodo.",
+      "loadingCandidates": "Buscando contenedores de base de datos...",
+      "fields": {
+        "name": "Nombre",
+        "nameHint": "Las aplicaciones usan este nombre, por ejemplo {{example}}.",
+        "engine": "Motor",
+        "host": "Host",
+        "hostHint": "Un nombre de host, una dirección IP o el nombre de un contenedor en la red de abajo. No localhost.",
+        "port": "Puerto",
+        "network": "Red de Docker",
+        "networkHint": "Opcional. La red a la que está conectado el contenedor de la base de datos, para que Levelrail y tus aplicaciones lleguen a él por nombre.",
+        "user": "Usuario",
+        "password": "Contraseña",
+        "passwordHint": "Se guarda cifrada. No vuelve a mostrarse salvo que un administrador la revele.",
+        "database": "Base de datos",
+        "tls": "TLS",
+        "tlsDisable": "Desactivado",
+        "tlsPrefer": "Si está disponible",
+        "tlsRequire": "Obligatorio"
+      },
+      "test": {
+        "button": "Probar conexión",
+        "running": "Probando...",
+        "discovered": "Bases de datos encontradas, elige una:",
+        "latency": "{{ms}} ms",
+        "server": "Servidor: {{version}}"
+      }
+    },
+    "health": {
+      "reachable": "Accesible",
+      "slow": "Lenta",
+      "auth_failed": "Falló el inicio de sesión",
+      "tls_error": "Problema de TLS",
+      "unreachable": "Inaccesible",
+      "unknown": "Aún sin comprobar",
+      "next": {
+        "reachable": "La conexión funciona.",
+        "slow": "La base de datos respondió, pero con lentitud. Revisa la carga del host de la base de datos y la red entre ambos.",
+        "auth_failed": "La base de datos rechazó el usuario o la contraseña. Revísalos y confirma que este host tiene permiso para conectarse (en Postgres, pg_hba.conf).",
+        "tls_error": "TLS no coincidió con lo que espera el servidor. Cambia el ajuste de TLS entre Desactivado, Si está disponible y Obligatorio.",
+        "unreachable": "Nada respondió en esta dirección. Revisa el host, el puerto y la red de Docker, y que la base de datos esté en ejecución.",
+        "unknown": "No se pudo ejecutar la comprobación. Revisa el detalle e inténtalo de nuevo."
+      }
+    },
+    "overview": {
+      "title": "Conexión",
+      "description": "Levelrail se conecta a esta base de datos donde se ejecuta. No administra su contenedor, volumen ni versión.",
+      "engine": "Motor",
+      "address": "Dirección",
+      "user": "Usuario",
+      "database": "Base de datos",
+      "network": "Red de Docker",
+      "tls": "TLS",
+      "source": "Adoptada del contenedor",
+      "password": "Contraseña",
+      "passwordStored": "Guardada, cifrada",
+      "passwordNone": "Sin contraseña guardada",
+      "reveal": "Revelar contraseña",
+      "hide": "Ocultar",
+      "revealNote": "Revelarla queda registrado en el registro de auditoría.",
+      "health": "Salud",
+      "lastChecked": "Última comprobación {{when}}",
+      "neverChecked": "Aún sin comprobar",
+      "recheck": "Comprobar ahora",
+      "rechecking": "Comprobando...",
+      "recheckedToast": "Comprobación de salud terminada: {{status}}.",
+      "usedBy": "Úsala desde una aplicación: asigna a una variable de entorno el valor {{ref}}."
+    },
+    "delete": {
+      "trigger": "Quitar",
+      "title": "¿Quitar \"{{name}}\" de Levelrail?",
+      "description": "Esto solo elimina el registro de Levelrail y su contraseña guardada. La base de datos, su contenedor y todos sus datos no se tocan. Las aplicaciones que la usan pierden su configuración de conexión.",
+      "confirm": "Quitar registro",
+      "confirmAnyway": "Quitar de todos modos",
+      "removing": "Quitando...",
+      "toast": "Se quitó \"{{name}}\". La base de datos en sí no se tocó."
+    }
+  },
+  "delete": {
+    "trigger": "Eliminar",
+    "title": "¿Eliminar \"{{name}}\"?",
+    "description": "Esto detiene la base de datos y la quita de Levelrail. Su volumen de datos y las copias de seguridad en tu destino de almacenamiento se conservan, así que un operador aún puede recuperar los datos. Las aplicaciones que se conectan a ella perderán la conexión.",
+    "inUseTitle": "Hay aplicaciones que aún usan esta base de datos",
+    "inUseDescription": "Elimínala de todos modos solo si ya moviste o desvinculaste estas aplicaciones.",
+    "cancel": "Cancelar",
+    "confirm": "Eliminar base de datos",
+    "confirmAnyway": "Eliminar de todos modos",
+    "deleting": "Eliminando...",
+    "toast": "Base de datos \"{{name}}\" eliminada.",
+    "typedHint": "Las aplicaciones conectadas a ella pierden la conexión."
+  },
+  "version": {
+    "trigger": "Cambiar",
+    "title": "Cambiar la versión de \"{{name}}\"",
+    "description": "Las actualizaciones menores y de parche recrean el contenedor sobre los mismos datos. Un cambio de versión mayor requiere la actualización mayor guiada (Postgres) de abajo, o restaurar una copia de seguridad en una base de datos nueva. Haz una copia de seguridad primero.",
+    "label": "Versión",
+    "placeholder": "16.4",
+    "cancel": "Cancelar",
+    "submit": "Cambiar versión",
+    "submitting": "Cambiando...",
+    "toast": "La base de datos \"{{name}}\" se recreará en la versión {{version}}.",
+    "pgvectorHint": "Una base de datos pgvector usa una versión como \"17-pgvector\". Cambiar en el lugar entre normal y pgvector se rechaza: usa la actualización mayor guiada de abajo, o restaura una copia de seguridad en una base de datos nueva."
+  },
+  "existingVolume": {
+    "title": "Una base de datos eliminada con este nombre dejó sus datos",
+    "description": "Elige qué hacer con el volumen de datos anterior ({{size}}). Reutilizarlo recupera los datos antiguos; descartarlo lo elimina de forma permanente y empieza vacío.",
+    "reuse": "Reutilizar datos anteriores",
+    "discard": "Descartar y empezar vacío",
+    "working": "Trabajando..."
+  },
+  "walShip": {
+    "label": "Copia de WAL en el bucket",
+    "never": "aún sin enviar",
+    "ok": "último envío {{when}}",
+    "failing": "falla desde {{when}}: {{error}}",
+    "hint": "El WAL archivado se copia al destino de copias de seguridad para que la restauración a un punto en el tiempo sobreviva a la pérdida del disco de este host."
+  },
+  "pitrNew": {
+    "enableBinlog": "Activa el archivado continuo del binary log para poder restaurar esta base de datos a cualquier momento exacto, no solo al de una copia de seguridad.",
+    "restoreButton": "Restaurar a una fecha y hora",
+    "title": "Restaurar {{name}} a un punto en el tiempo",
+    "description": "Esto crea una base de datos nueva a partir de una copia base más el binary log archivado hasta la hora elegida. {{name}} no se modifica.",
+    "restoreTo": "Restaurar a",
+    "window": "Recuperable entre {{start}} y {{end}}.",
+    "replayFrom": "Reproduciendo desde la copia base tomada {{when}}.",
+    "noBackup": "No existe una copia base exitosa en o antes de esa hora.",
+    "newName": "Nombre de la base de datos nueva",
+    "newNameHint": "Se crea una base de datos {{engine}} nueva con este nombre.",
+    "cancel": "Cancelar",
+    "submit": "Restaurar en una base de datos nueva",
+    "submitting": "Iniciando...",
+    "startedTitle": "Restauración a un punto en el tiempo iniciada.",
+    "startedBody": "La base de datos nueva aparece en la lista cuando se crea. Esta tabla se actualiza al terminar.",
+    "failedTitle": "No se pudo iniciar la restauración."
+  },
+  "majorUpgrade": {
+    "title": "Actualización de versión mayor",
+    "description": "Actualiza esta base de datos entre versiones mayores mediante volcado y restauración. Está fuera de línea mientras se ejecuta. Primero se copian los datos anteriores a un snapshot de rollback, y si algo falla después se revierte automáticamente.",
+    "versionLabel": "Versión mayor de destino",
+    "versionPlaceholder": "17",
+    "confirmLabel": "Escribe el nombre de la base de datos para confirmar",
+    "start": "Iniciar actualización",
+    "starting": "Iniciando...",
+    "started": "Se inició la actualización mayor de \"{{name}}\".",
+    "history": "Historial de actualizaciones",
+    "empty": "Aún no hay actualizaciones mayores.",
+    "colFrom": "Desde",
+    "colTo": "Hasta",
+    "colStatus": "Estado",
+    "colPhase": "Fase",
+    "status": {
+      "running": "En ejecución",
+      "succeeded": "Exitosa",
+      "failed": "Fallida",
+      "rolled_back": "Revertida"
+    },
+    "rollback": "Hacer rollback",
+    "rollbackConfirm": "¿Hacer rollback a la versión {{version}}? Se pierde toda escritura posterior a la actualización.",
+    "rollbackStarted": "Rollback iniciado.",
+    "discard": "Descartar snapshot",
+    "discardConfirm": "¿Eliminar el snapshot de rollback? Ya no podrás revertir esta actualización.",
+    "discarded": "Snapshot descartado.",
+    "pitrBlocked": "Desactiva la restauración a un punto en el tiempo antes de actualizar: sus copias base no se pueden reproducir en otra versión mayor.",
+    "pgvectorHint": "Usa una versión como \"17-pgvector\" para pasar una base de datos normal a la imagen pgvector. Volver a Postgres normal no es compatible.",
+    "rollbackTitle": "¿Hacer rollback a {{version}}?",
+    "discardTitle": "¿Descartar el snapshot de rollback?",
+    "rollbackAction": "Hacer rollback",
+    "discardAction": "Descartar snapshot"
+  },
+  "viewer": {
+    "nav": {
+      "explorer": "Explorador",
+      "console": "Consola SQL"
+    },
+    "unsupported": "El visor es compatible con Postgres, MySQL, MariaDB y motores compatibles con Redis. Esta base de datos es {{engine}}.",
+    "notRunning": "El visor necesita una base de datos en ejecución. Inicia la base de datos e inténtalo de nuevo.",
+    "beta": {
+      "label": "Beta",
+      "hint": "Beta: aún no está optimizado para bases de datos grandes ni cargas altas. Lo mejoramos en cada versión."
+    },
+    "explorer": {
+      "title": "Explorador",
+      "refresh": "Actualizar",
+      "loading": "Cargando esquema...",
+      "empty": "Aún no hay tablas de usuario. Crea una tabla y aparecerá aquí.",
+      "emptyTitle": "Nada que explorar",
+      "tables": "Tablas",
+      "selectTable": "Selecciona una tabla para explorar sus datos, columnas e índices.",
+      "tabData": "Datos",
+      "tabStructure": "Estructura",
+      "kind": {
+        "number": "Número",
+        "text": "Texto",
+        "boolean": "Booleano",
+        "datetime": "Fecha u hora",
+        "json": "JSON",
+        "uuid": "UUID",
+        "binary": "Binario",
+        "other": "Otro"
+      },
+      "estimate": "unas {{short}} filas",
+      "size": "Tamaño",
+      "columns": "Columnas",
+      "indexes": "Índices",
+      "colName": "Nombre",
+      "colType": "Tipo",
+      "colNullable": "Admite nulos",
+      "colDefault": "Valor por defecto",
+      "primaryKey": "Clave primaria",
+      "noIndexes": "Sin índices.",
+      "unique": "único",
+      "searchTables": "Buscar tablas",
+      "beta": "Beta",
+      "tableCount_one": "{{count}} tabla",
+      "tableCount_other": "{{count}} tablas",
+      "matches": "{{count}} de {{total}} tablas coinciden",
+      "view": "vista",
+      "truncated": "Se muestran solo las primeras {{count}} tablas. Acota la búsqueda o sube el límite del servidor."
+    },
+    "data": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "noRows": "Ninguna fila coincide.",
+      "noRowsEmptyTable": "Esta tabla no tiene filas.",
+      "sortedBy": "Ordenado por {{column}}",
+      "filterHint": "Escribe en la fila de filtros de columna para acotar las filas en la base de datos. Antepón = para una coincidencia exacta, o usa is:null y not:null.",
+      "filterActive_one": "{{count}} filtro de columna activo",
+      "filterActive_other": "{{count}} filtros de columna activos",
+      "copyAs": "Copiar filas",
+      "copySelected_one": "{{count}} fila seleccionada",
+      "copySelected_other": "{{count}} filas seleccionadas",
+      "copyAll_one": "{{count}} fila cargada",
+      "copyAll_other": "{{count}} filas cargadas",
+      "format": {
+        "csv": "CSV",
+        "json": "JSON",
+        "insert": "INSERT"
+      },
+      "showing": "Mostrando filas {{from}} a {{to}} ({{size}} por página)",
+      "loading": "cargando",
+      "limitsNote": "Las filas se cargan de a {{page}}. El servidor devuelve como máximo {{rows}} filas por solicitud, corta cualquier valor en {{cell}} y detiene una consulta tras {{seconds}} segundos."
+    },
+    "grid": {
+      "null": "NULL",
+      "expand": "Mostrar valor completo",
+      "cellTitle": "{{column}}",
+      "copy": "Copiar",
+      "copied": "Copiado al portapapeles.",
+      "close": "Cerrar",
+      "rowCount": "{{count}} filas",
+      "resultCapped": "Resultado limitado por el máximo de filas o tamaño del servidor.",
+      "cellCapped": "Este valor se cortó en el límite de tamaño de celda del servidor.",
+      "sortAscending": "Orden ascendente",
+      "sortDescending": "Orden descendente",
+      "label": "Filas de la tabla",
+      "emptyString": "cadena vacía",
+      "copyFailed": "No se pudo copiar al portapapeles.",
+      "copied_csv": "Filas copiadas como CSV.",
+      "copied_json": "Filas copiadas como JSON.",
+      "copied_insert": "Filas copiadas como sentencias INSERT.",
+      "selectAll": "Seleccionar todas las filas cargadas",
+      "selectRow": "Seleccionar la fila {{row}}",
+      "headerHint": "Haz clic para ordenar. Arrastra para reordenar, o presiona Alt con las teclas de flecha.",
+      "resize": "Cambiar el tamaño de la columna {{column}}",
+      "filterPlaceholder": "Filtrar",
+      "filterColumn": "Filtrar la columna {{column}}",
+      "rowOf": "Fila {{row}} de {{total}} cargadas",
+      "previousRow": "Fila anterior",
+      "nextRow": "Fila siguiente",
+      "copyValue": "Copiar el valor de {{column}}"
+    },
+    "console": {
+      "title": "Consola SQL",
+      "placeholder": "select * from your_table limit 10",
+      "editorLabel": "Sentencia SQL",
+      "run": "Ejecutar",
+      "running": "Ejecutando...",
+      "explain": "Explain",
+      "explainAnalyze": "Explain analyze",
+      "explainHint": "Explain analyze ejecuta la sentencia (solo lectura) para informar tiempos reales.",
+      "shortcut": "Ejecuta con Ctrl o Cmd más Enter",
+      "readOnly": "Solo lectura",
+      "writesOn": "Escritura habilitada",
+      "writeToggle": "Permitir escrituras",
+      "writeToggleHint": "Solo administradores. Ejecuta una sentencia en una transacción confirmada y queda en el registro de auditoría.",
+      "writeConfirmTitle": "¿Permitir sentencias de escritura?",
+      "writeConfirmDescription": "Las sentencias que ejecutes en esta consola cambiarán datos en \"{{name}}\" y se confirman de inmediato. Cada una queda en el registro de auditoría. Escribe el nombre de la base de datos para continuar.",
+      "writeConfirmLabel": "Nombre de la base de datos",
+      "writeConfirmAction": "Habilitar escrituras",
+      "writeDisable": "Volver a solo lectura",
+      "cancel": "Cancelar",
+      "tabResults": "Resultados",
+      "tabHistory": "Historial",
+      "tabSaved": "Guardadas",
+      "noResultsYet": "Ejecuta una sentencia para ver los resultados aquí.",
+      "okNoRows": "La sentencia se ejecutó. No devolvió filas.",
+      "elapsed": "{{ms}} ms",
+      "history": {
+        "empty": "Tus sentencias recientes para esta base de datos aparecen aquí.",
+        "clear": "Borrar historial",
+        "cleared": "Historial borrado.",
+        "failed": "falló",
+        "load": "Cargar en el editor"
+      },
+      "saved": {
+        "empty": "Guarda una sentencia para reutilizarla después.",
+        "save": "Guardar",
+        "dialogTitle": "Guardar sentencia",
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Registros recientes",
+        "submit": "Guardar sentencia",
+        "toast": "Se guardó \"{{name}}\".",
+        "delete": "Eliminar sentencia guardada",
+        "load": "Cargar en el editor"
+      },
+      "plan": "Plan de consulta"
+    },
+    "keys": {
+      "title": "Explorador de claves",
+      "patternLabel": "Patrón de clave",
+      "patternPlaceholder": "user:*",
+      "scan": "Escanear",
+      "loadMore": "Escanear la página siguiente",
+      "scanComplete": "Escaneo completo.",
+      "empty": "Ninguna clave coincide con este patrón.",
+      "selectKey": "Selecciona una clave para ver su valor.",
+      "type": "Tipo",
+      "ttl": "TTL",
+      "noTtl": "Sin expiración",
+      "ttlSeconds": "{{count}} s",
+      "truncated": "Valor cortado en el límite del servidor.",
+      "readOnlyNote": "Solo lectura. Los valores se obtienen con SCAN, TYPE, TTL y una lectura específica del tipo."
+    },
+    "structure": {
+      "openConsole": "Abrir en la consola",
+      "references": "Referencias",
+      "yes": "SÍ",
+      "no": "NO",
+      "relations": "Relaciones",
+      "noRelations": "Esta tabla no tiene claves foráneas y ninguna tabla la referencia.",
+      "noIncoming": "Ninguna tabla referencia esta tabla.",
+      "noOutgoing": "Sin claves foráneas.",
+      "ddl": "Definición",
+      "ddlCopied": "Definición copiada."
+    },
+    "states": {
+      "loading": "Leyendo el esquema de la base de datos...",
+      "errorTitle": "No se pudo leer esta base de datos",
+      "errorNote": "Esto no significa que tus datos se hayan perdido. El explorador no pudo leerla en este momento.",
+      "retry": "Reintentar",
+      "details": "Mostrar el error sin procesar",
+      "reason": {
+        "permission": "La base de datos rechazó la lectura: permiso denegado para la cuenta que usa el explorador.",
+        "connection": "La base de datos aún no acepta conexiones, o rechazó esta.",
+        "timeout": "La base de datos tardó demasiado en responder y la lectura excedió el tiempo límite.",
+        "notRunning": "La base de datos no está en ejecución. Iníciala y reintenta.",
+        "helper": "El helper que se ejecuta dentro del contenedor de la base de datos falló antes de poder devolver un esquema.",
+        "network": "El navegador no pudo llegar al plano de control.",
+        "unsupported": "Este plano de control no puede ejecutar comandos dentro de los contenedores de bases de datos."
+      },
+      "emptyTitle": "Aún no hay tablas",
+      "emptyVerifyTitle": "No se encontraron tablas, contrástalo con la evidencia de abajo",
+      "emptyBody": "Se revisó esta base de datos y no tiene tablas de usuario. Crea tablas desde la consola SQL, o apunta una aplicación hacia ella.",
+      "openConsole": "Abrir la consola SQL",
+      "migrationTarget": "Esta base de datos se creó como destino de una migración.",
+      "copyStatus": "Estado de la copia:",
+      "copy": {
+        "pending": "sin iniciar",
+        "copying": "copiando",
+        "verified": "verificada",
+        "failed": "fallida",
+        "unsupported": "no compatible"
+      },
+      "openMigrationHub": "Abrir el centro de migración",
+      "copyCli": "o ejecuta: migrate db-copy <database> con la CLI.",
+      "verifiedEmpty": "La copia está marcada como verificada pero la base de datos no tiene tablas. Una copia verificada nunca debería estar vacía, así que trátalo como un error y ejecuta la copia de nuevo.",
+      "contradiction_one": "El catálogo informa {{count}} tabla pero el listado no devolvió ninguna. Reintenta, y si persiste revisa los logs del helper.",
+      "contradiction_other": "El catálogo informa {{count}} tablas pero el listado no devolvió ninguna. Reintenta, y si persiste revisa los logs del helper.",
+      "evidence": {
+        "size": "Tamaño de la base de datos en disco",
+        "schemas": "Esquemas analizados",
+        "tables": "Tablas y vistas en esos esquemas",
+        "excluded": "Esquemas del sistema excluidos",
+        "checked": "Última comprobación",
+        "unavailable": "No se pudieron leer los conteos del catálogo, así que este vacío no está verificado."
+      },
+      "noMatches": "Ninguna tabla coincide con \"{{query}}\".",
+      "noMatchesNote": "La base de datos tiene tablas. Solo tu búsqueda las filtró.",
+      "clearSearch": "Borrar búsqueda"
+    },
+    "engineStats": {
+      "title": "Sin explorador de datos para {{engine}}",
+      "description": "No hay explorador de tablas ni de claves para {{engine}}: léelo y escríbelo mediante su API HTTP desde una aplicación conectada. Abajo están los conteos en vivo del motor.",
+      "descriptionCache": "Memcached no puede listar sus claves, así que no hay nada que explorar. Abajo están las estadísticas del servidor en vivo.",
+      "objectsTitle": "Índices y colecciones",
+      "cacheTitle": "Estadísticas de la caché",
+      "colName": "Nombre",
+      "colDocuments": "Documentos",
+      "colPoints": "Puntos",
+      "emptyObjects": "Aún no hay índices ni colecciones. Aparecen aquí cuando una aplicación crea uno.",
+      "more_one": "y {{count}} más",
+      "more_other": "y {{count}} más",
+      "total_one": "{{count}} elemento en total",
+      "total_other": "{{count}} elementos en total",
+      "loading": "Leyendo estadísticas en vivo",
+      "errorTitle": "No se pudieron leer las estadísticas en vivo",
+      "errorBody": "El motor no respondió. Comprueba que la base de datos esté en ejecución e inténtalo de nuevo.",
+      "retry": "Intentar de nuevo",
+      "items": "Elementos",
+      "memory": "Memoria",
+      "memoryValue": "{{used}} de {{limit}}",
+      "hitRate": "Tasa de aciertos",
+      "hitRateValue": "{{percent}}%",
+      "noLookups": "Aún sin consultas",
+      "evictions": "Expulsiones",
+      "connections": "Conexiones"
+    }
+  },
+  "createFlavor": {
+    "label": "Imagen de Postgres",
+    "none": "Postgres normal",
+    "hint": "Ejecuta {{image}} para que sus extensiones estén disponibles con CREATE EXTENSION. La versión se guarda como {{version}}. Cambiar de variante después es un volcado y restauración guiado, no un cambio en el lugar.",
+    "hintNone": "La imagen oficial de Postgres, sin extensiones adicionales.",
+    "options": {
+      "pgvector": "pgvector (búsqueda por similitud de vectores)",
+      "timescaledb": "TimescaleDB (series de tiempo)",
+      "postgis": "PostGIS (geoespacial)"
+    }
+  },
+  "picker": {
+    "databaseTitle": "Nueva base de datos",
+    "databaseDescription": "Elige un motor. Las credenciales, la red y las copias de seguridad se configuran por ti.",
+    "searchLabel": "Buscar bases de datos",
+    "searchPlaceholder": "Busca motores, por ejemplo Postgres o Redis",
+    "filterLabel": "Familia de base de datos",
+    "genericTagline": "Una base de datos {{label}} administrada, lista para usar.",
+    "families": {
+      "all": "Todas",
+      "relational": "Relacionales",
+      "keyvalue": "Clave-valor y caché",
+      "document": "Documentales",
+      "analytics": "Analítica",
+      "vector": "Vectoriales y búsqueda",
+      "other": "Otras",
+      "search": "Búsqueda y vectoriales"
+    },
+    "taglines": {
+      "postgres": "La opción predeterminada para aplicaciones que necesitan joins, transacciones y restricciones.",
+      "pgvector": "Postgres con búsqueda por similitud de vectores para embeddings y RAG.",
+      "timescaledb": "Postgres optimizado para métricas, eventos y otras series de tiempo.",
+      "postgis": "Postgres con tipos, índices y consultas geoespaciales.",
+      "mysql": "El motor relacional ampliamente alojado detrás de la mayoría de los stacks PHP y de CMS.",
+      "mariadb": "Fork de MySQL impulsado por la comunidad, con protocolo y herramientas conocidos.",
+      "redis": "Almacén en memoria para cachés, colas, sesiones y límites de tasa.",
+      "valkey": "Fork de Redis de código abierto bajo la Linux Foundation, reemplazo directo para clientes de Redis.",
+      "keydb": "Almacén multihilo compatible con Redis para mayor rendimiento en un solo nodo.",
+      "dragonfly": "Almacén moderno compatible con Redis, creado para un rendimiento muy alto.",
+      "mongodb": "Base de datos documental para datos flexibles con forma de JSON.",
+      "clickhouse": "Almacén columnar para consultas analíticas rápidas sobre grandes volúmenes de eventos.",
+      "meilisearch": "Búsqueda de texto completo tolerante a errores tipográficos, con resultados instantáneos mediante una API HTTP.",
+      "qdrant": "Base de datos vectorial para embeddings, búsqueda semántica y recuperación RAG.",
+      "typesense": "Motor de búsqueda rápido y tolerante a errores tipográficos, con facetas y búsqueda geográfica.",
+      "memcached": "Caché simple en memoria para sesiones y resultados de consultas. No se guarda nada en disco."
+    },
+    "chips": {
+      "port": "Puerto {{port}}",
+      "redisCompatible": "Compatible con Redis",
+      "mysqlCompatible": "Compatible con MySQL",
+      "postgresCompatible": "Compatible con Postgres",
+      "backups": "Copias de seguridad",
+      "snapshots": "Snapshots",
+      "httpApi": "API HTTP",
+      "noPersistence": "Sin persistencia"
+    },
+    "empty": {
+      "title": "Ninguna base de datos coincide con \"{{query}}\"",
+      "hint": "Prueba con el nombre de un motor como Postgres o Redis, o borra la búsqueda para ver todas las familias.",
+      "clear": "Borrar búsqueda"
+    },
+    "flavorBadge": "Imagen {{flavor}}"
+  },
+  "list": {
+    "title": "Bases de datos",
+    "tableLabel": "Bases de datos",
+    "count_one": "{{count}} base de datos",
+    "count_other": "{{count}} bases de datos",
+    "new": "Nueva base de datos",
+    "colName": "Nombre",
+    "colEngine": "Motor",
+    "colBackups": "Copias",
+    "colNode": "Nodo",
+    "backupsOn": "Copias activas",
+    "backupsOff": "Sin copias",
+    "emptyTitle": "Aún no hay bases de datos",
+    "emptyBody": "Crea una base de datos administrada de Postgres, MySQL o Redis y conéctale una aplicación. Las credenciales se inyectan por ti.",
+    "errorTitle": "No se pudieron cargar las bases de datos",
+    "errorBody": "La lista de bases de datos no cargó. Comprueba que el plano de control sea accesible e inténtalo de nuevo.",
+    "retry": "Intentar de nuevo",
+    "description": "Bases de datos administradas junto a tus aplicaciones, con copias de seguridad y restauración a un punto en el tiempo.",
+    "colSize": "Memoria",
+    "sizeShared": "Compartida",
+    "sizeGb": "{{value}} GB",
+    "sizeMb": "{{value}} MB",
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "showMore": "Mostrar más",
+    "loading": "Cargando bases de datos",
+    "notCreated": "Aún no creada",
+    "failedToCreate": "Falló la creación",
+    "pendingActionHint": "Disponible cuando se cree la base de datos"
+  },
+  "detail": {
+    "backupNow": "Respaldar ahora",
+    "backupStarting": "Iniciando copia de seguridad...",
+    "backupStarted": "Se inició la copia de seguridad de \"{{name}}\".",
+    "backupSetup": "Configurar copias de seguridad",
+    "backupConfirmTitle": "¿Respaldar {{name}} ahora?",
+    "backupConfirmDescription": "Inicia de inmediato una copia de seguridad en el destino configurado.",
+    "backupConfirmConsequence": "La copia aparece en el historial de abajo una vez que empieza.",
+    "more": "Más acciones",
+    "restart": "Reiniciar",
+    "restarting": "Reiniciando...",
+    "restarted": "Se reinició \"{{name}}\".",
+    "stop": "Detener",
+    "start": "Iniciar",
+    "restore": "Restaurar desde copia de seguridad...",
+    "delete": "Eliminar...",
+    "stopToast": "Deteniendo \"{{name}}\".",
+    "startToast": "Iniciando \"{{name}}\".",
+    "backToList": "Volver a bases de datos"
+  },
+  "connection": {
+    "forApps": "Para aplicaciones (por la malla)",
+    "forAppsHint": "Las aplicaciones en otros nodos reciben este nombre y puerto. Las pestañas de abajo muestran la dirección en el nodo propio de la base de datos.",
+    "title": "Detalles de conexión",
+    "description": "Cómo llegan las aplicaciones y herramientas a esta base de datos.",
+    "engine": "Motor",
+    "address": "Dirección",
+    "addressPrivate": "Solo red privada",
+    "addressPrivateHint": "Las aplicaciones conectadas a esta base de datos reciben la dirección y las credenciales automáticamente. Activa el acceso público para llegar a ella desde tu equipo.",
+    "tls": "Transporte",
+    "tlsOn": "TLS activado",
+    "tlsOff": "Texto plano",
+    "credentials": "Credenciales",
+    "credentialsHint": "Aquí nunca se muestran las contraseñas. Crea un inicio de sesión o una credencial temporal en la pestaña Acceso.",
+    "openAccess": "Administrar acceso",
+    "copyAddress": "Dirección",
+    "passwordNever": "Aquí nunca se muestran las contraseñas. Usa el marcador de posición y crea un inicio de sesión en la pestaña Acceso.",
+    "maskPassword": "Ocultar contraseña",
+    "showPlaceholder": "Mostrar marcador de posición",
+    "unavailable": "No se pudieron cargar los detalles de conexión.",
+    "retry": "Intentar de nuevo",
+    "tab": {
+      "uri": "Cadena de conexión",
+      "env": "Variables de entorno",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "cli": "CLI de {{engine}}"
+    }
+  },
+  "status": {
+    "healthy": "Saludable",
+    "healthyHint": "En ejecución y superando todas las comprobaciones de salud.",
+    "settingUp": "Configurando",
+    "settingUpHint": "Preparándose. Esta página se actualiza sola.",
+    "stopped": "Detenida",
+    "stoppedHint": "No está en ejecución. Inicia la base de datos para aceptar conexiones.",
+    "attention": "Requiere atención",
+    "attentionHint": "Algo falló. Los logs muestran el motivo.",
+    "viewLogs": "Ver logs",
+    "lastBackup": "Última copia de seguridad",
+    "noBackupYet": "Aún sin copia de seguridad",
+    "backupSize": "Tamaño de la copia",
+    "none": "Ninguna",
+    "schedule": "Programación de copias",
+    "notScheduled": "Sin programar",
+    "details": "Detalles"
+  },
+  "quickActions": {
+    "label": "Acciones rápidas",
+    "metrics": "Abrir métricas"
+  },
+  "conditions": {
+    "title": "Comprobaciones de salud",
+    "empty": "Aún no se ha comprobado nada.",
+    "ok": "OK",
+    "failing": "Fallando",
+    "pending": "En espera",
+    "details": "Detalles técnicos",
+    "updated": "Actualizado",
+    "credentialsHelp": "No hay una clave maestra de secretos configurada, o las credenciales de esta base de datos no se pudieron generar.",
+    "credentialsLink": "Configúrala en Ajustes, General"
+  },
+  "publicAccess": {
+    "noPasswordWarning": "Esta base de datos no tiene contraseña. Al activar el acceso público, cualquiera que pueda llegar a este host podrá leer y escribir todos los datos sin autenticación.",
+    "noPasswordOpen": "Esta base de datos no tiene contraseña. Este puerto es accesible desde cualquier red que llegue a este host, lo que da acceso total sin autenticación.",
+    "openPort": "Este puerto es accesible desde cualquier red que llegue a este host, no solo desde tu equipo. Asegúrate de que tu firewall lo permita antes de depender de esto en producción."
+  },
+  "overview": {
+    "title": "Resumen",
+    "version": "Versión",
+    "node": "Nodo",
+    "project": "Proyecto",
+    "noProject": "Sin proyecto"
+  },
+  "slowQueries": {
+    "tableLabel": "Consultas lentas",
+    "sortBy": "Ordenar por"
+  },
+  "wizard": {
+    "back": "Todos los puntos de partida",
+    "custom": {
+      "title": "¿No está en la lista? Ejecuta cualquier imagen de base de datos",
+      "description": "Despliégala como una aplicación normal con un volumen para sus datos. Obtienes despliegues, logs, métricas y rollbacks, pero no las funciones administradas de las bases de datos de arriba: copias de seguridad con comprobaciones de restauración, el explorador de datos y los comandos de base de datos en la CLI."
+    }
+  },
+  "noBackups": {
+    "title": "Copias de seguridad",
+    "body": "Las copias de seguridad no están disponibles para {{engine}}: guarda todo en memoria y nada en disco, así que no hay datos que respaldar.",
+    "hint": "Un reinicio, una actualización o un traslado lo inicia con la caché vacía. Guarda lo que no puedas perder en una base de datos que tenga copias de seguridad."
+  },
+  "links": {
+    "title": "Aplicaciones conectadas",
+    "description": "Conecta una aplicación para inyectar la cadena de conexión de esta base de datos como variable de entorno. Se cifra en reposo, nunca se registra en logs y sigue la rotación de credenciales la próxima vez que la aplicación inicie.",
+    "empty": "Aún no hay ninguna aplicación conectada a esta base de datos.",
+    "appLabel": "Aplicación",
+    "appPlaceholder": "Elige una aplicación",
+    "noApps": "Aún no hay aplicaciones para conectar.",
+    "connect": "Conectar",
+    "connecting": "Conectando...",
+    "envVar": "Variable de entorno",
+    "toastConnected": "Aplicación conectada.",
+    "toastConnectedBody": "{{app}} recibe la cadena de conexión como {{envVar}} en su próximo inicio.",
+    "toastFailed": "No se pudo conectar la aplicación.",
+    "loadFailed": "No se pudieron cargar las aplicaciones conectadas."
+  },
+  "banner": {
+    "title": "Bases de datos",
+    "description": "Crea una base de datos administrada junto a tus aplicaciones. Las credenciales se inyectan por ti, las copias de seguridad corren según una programación y puedes restaurar a un punto en el tiempo.",
+    "whatFor": "Elige un motor, acepta los valores por defecto y tu primera base de datos estará en ejecución en menos de un minuto. ¿Ya tienes una en otro lugar? Conéctala como base de datos externa.",
+    "diagram": {
+      "app": "aplicación",
+      "database": "base de datos",
+      "backups": "copias de seguridad",
+      "restore": "restauración a un punto en el tiempo"
+    }
+  },
+  "flow": {
+    "title": "Crear una base de datos",
+    "description": "Elige un motor y revisa los valores por defecto. Puedes cambiarlo todo después.",
+    "engine": "Motor",
+    "name": "Nombre",
+    "nameHint": "Letras minúsculas, números y guiones.",
+    "nameFree": "El nombre está disponible",
+    "version": "Versión",
+    "versionHint": "Se selecciona por ti la versión recomendada.",
+    "size": "Tamaño",
+    "sizeHint": "Límites de memoria y CPU. Puedes cambiarlos en cualquier momento desde la página de la base de datos.",
+    "presetSpec": "{{memory}} MB, {{cpus}} CPU",
+    "presets": {
+      "small": "Pequeño",
+      "medium": "Mediano",
+      "large": "Grande"
+    },
+    "backups": "Copias de seguridad automáticas",
+    "backupsHint": "Las copias van a tu primer destino de copias de seguridad.",
+    "noTarget": "Aún no hay destino de copias de seguridad, así que quedan desactivadas.",
+    "noTargetLink": "Agregar un destino",
+    "schedule": "Programación de copias",
+    "schedules": {
+      "daily": "Todos los días a las 03:00",
+      "sixHourly": "Cada 6 horas",
+      "weekly": "Todos los domingos a las 03:00"
+    },
+    "advanced": {
+      "title": "Opciones avanzadas",
+      "node": "Nodo",
+      "autoNode": "Elegir automáticamente",
+      "project": "Proyecto",
+      "noProject": "Sin proyecto"
+    },
+    "engines": {
+      "postgres": "Relacional, la opción segura",
+      "redis": "Caché y colas en memoria",
+      "mysql": "Relacional, con amplia compatibilidad",
+      "mongodb": "Almacén documental",
+      "mariadb": "Compatible con MySQL",
+      "keydb": "Fork multihilo de Redis",
+      "dragonfly": "Almacén rápido compatible con Redis",
+      "valkey": "Fork abierto de Redis",
+      "clickhouse": "Analítica y columnar",
+      "meilisearch": "Motor de búsqueda",
+      "qdrant": "Búsqueda vectorial",
+      "typesense": "Motor de búsqueda",
+      "memcached": "Caché simple en memoria"
+    },
+    "secretsWarning": "No hay una clave maestra de secretos configurada, así que esta base de datos se crea pero no iniciará hasta que haya una.",
+    "secretsLink": "Configúrala en Ajustes.",
+    "errors": {
+      "name": {
+        "required": "Ingresa un nombre.",
+        "format": "Usa letras minúsculas, números y guiones, empezando con una letra o un número.",
+        "taken": "Ya existe una base de datos con este nombre."
+      },
+      "version": {
+        "required": "Elige una versión."
+      }
+    },
+    "summary": {
+      "empty": "Elige un motor y un nombre para ver un resumen.",
+      "withBackups": "{{engine}} {{version}} llamada {{name}}, {{memory}} MB, copias {{schedule}}.",
+      "noBackups": "{{engine}} {{version}} llamada {{name}}, {{memory}} MB, sin copias."
+    },
+    "cancel": "Cancelar",
+    "submit": "Crear base de datos",
+    "submitting": "Creando...",
+    "created": "Se está creando la base de datos \"{{name}}\".",
+    "createdPartial": "Se creó la base de datos \"{{name}}\", pero no se pudo aplicar el tamaño o las copias de seguridad. Revisa sus ajustes.",
+    "dockerDown": "Docker no responde en este servidor. No se pueden crear bases de datos hasta que vuelva."
+  },
+  "provision": {
+    "title": "Configurando tu base de datos",
+    "readyTitle": "Tu base de datos está lista",
+    "failedTitle": "La configuración se detuvo",
+    "elapsed": "Transcurrido {{time}}",
+    "pullProgress": "Progreso de la descarga de la imagen",
+    "failedAt": "Se detuvo en {{step}}:",
+    "containerOutput": "Salida del contenedor",
+    "cause": {
+      "permission": {
+        "title": "Permiso o capacidad denegados",
+        "hint": "Al contenedor se le denegó un permiso o una capacidad. Revisa el perfil de seguridad del host y la propiedad del volumen."
+      },
+      "out_of_memory": {
+        "title": "Sin memoria",
+        "hint": "La base de datos se quedó sin memoria. Sube su límite de memoria."
+      },
+      "port_in_use": {
+        "title": "Puerto ya en uso",
+        "hint": "Otro proceso ya usa el puerto. Libéralo o elige otro puerto."
+      },
+      "bad_volume": {
+        "title": "Volumen de datos dañado o incompatible",
+        "hint": "Restaura una copia de seguridad o empieza con un volumen nuevo."
+      },
+      "bad_config": {
+        "title": "Configuración rechazada",
+        "hint": "La base de datos rechazó su configuración. Revisa los ajustes que cambiaste."
+      }
+    },
+    "retry": "Reintentar",
+    "confirmRemoveVolume": "Esto elimina para siempre el volumen de datos anterior. ¿Continuar?",
+    "confirmYes": "Eliminar volumen y reintentar",
+    "cancel": "Cancelar",
+    "open": "Abrir base de datos",
+    "connectApp": "Conectar una aplicación",
+    "details": "Detalles",
+    "steps": {
+      "accepted": "Solicitud aceptada",
+      "docker_check": "Comprobar Docker",
+      "pull_image": "Descargar la imagen",
+      "create_volume": "Crear almacenamiento",
+      "credentials_and_tls": "Credenciales y TLS",
+      "create_container": "Crear el contenedor",
+      "start": "Iniciar la base de datos",
+      "wait_ready": "Esperar conexiones",
+      "apply_settings": "Aplicar tamaño y copias",
+      "ready": "Lista"
+    },
+    "host": "Host",
+    "port": "Puerto",
+    "url": "Cadena de conexión",
+    "passwordNote": "Aquí nunca se muestra la contraseña. Abre la página de acceso de la base de datos para administrar las credenciales.",
+    "editVersion": "Versión",
+    "editMemory": "Memoria (MiB)",
+    "editSchedule": "Programación de copias (cron)",
+    "saveAndRetry": "Guardar y reintentar",
+    "leftoverVolume": "Una base de datos eliminada con este nombre dejó el volumen {{name}} ({{size}}).",
+    "editSettings": "Editar ajustes",
+    "discard": "Descartar",
+    "confirmDiscard": "Esto elimina los ajustes guardados de esta base de datos. No se creó nada. ¿Continuar?",
+    "discardYes": "Descartar base de datos"
+  },
+  "backupSetup": {
+    "title": "Configurar copias de seguridad de {{name}}",
+    "stepOf": "Paso {{current}} de {{total}}",
+    "next": "Siguiente",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "runInBackground": "Cerrar, seguir en ejecución",
+    "saveAndRun": "Guardar y ejecutar la primera copia",
+    "saved": "Copias programadas para {{name}}. Se inició la primera copia.",
+    "target": {
+      "label": "¿Adónde deben ir las copias?",
+      "none": "Aún no hay un destino de copias de seguridad conectado. Conecta primero un bucket y vuelve aquí.",
+      "connect": "Conectar un destino"
+    },
+    "schedule": {
+      "label": "¿Con qué frecuencia?",
+      "daily": "Todos los días a las 03:00",
+      "weekly": "Todos los domingos a las 03:00",
+      "custom": "Programación personalizada",
+      "cronLabel": "Expresión cron",
+      "cronHint": "Cinco campos: minuto, hora, día del mes, mes, día de la semana."
+    },
+    "retention": {
+      "label": "Cuántas copias conservar",
+      "hint": "Las copias más antiguas que superen esta cantidad se eliminan automáticamente."
+    },
+    "run": {
+      "progress": "Ejecutando la primera copia. Puede tardar unos minutos en bases de datos grandes.",
+      "done": "La primera copia terminó ({{size}}). Tu programación está activa.",
+      "failed": "La primera copia falló: {{error}}"
+    },
+    "drill": {
+      "none": "Simulacro de restauración: aún no se ejecuta. Un simulacro demuestra que una copia realmente se puede restaurar.",
+      "running": "Simulacro de restauración: ejecutándose ahora.",
+      "passed": "Simulacro de restauración: el último simulacro pasó.",
+      "failed": "Simulacro de restauración: el último simulacro falló. Revísalo antes de confiar en estas copias."
+    }
+  },
+  "sizing": {
+    "usageTitle": "Uso actual",
+    "usageDescription": "Última hora de uso real, para que dimensiones los límites con datos.",
+    "stopped": "La base de datos está detenida, así que no hay uso en vivo que mostrar. Iníciala para ver memoria y CPU.",
+    "noData": "Aún no hay muestras de uso. Aparecen un minuto después de que la base de datos esté en ejecución.",
+    "memory": "Memoria",
+    "cpu": "CPU",
+    "noLimit": "sin límite",
+    "usedOfLimit": "{{used}} usados, límite {{limit}}",
+    "peak": "Pico en la última hora: {{value}}",
+    "headroom": {
+      "tight": "Justo: el pico de uso está cerca del límite. Súbelo antes de que maten la base de datos.",
+      "ok": "Margen razonable para la carga actual.",
+      "ample": "Mucho margen. Podrías bajar esto y ahorrar memoria."
+    },
+    "confirmTitle": "¿Aplicar estos límites?",
+    "confirmSummary": "Memoria {{memory}}, CPU {{cpu}}.",
+    "impact": {
+      "live": "Se aplica al contenedor en ejecución de inmediato, normalmente sin tiempo de inactividad. Si no se puede aplicar en vivo, espera al próximo reinicio, lo que implica unos 5 segundos de inactividad.",
+      "stopped": "La base de datos está detenida, así que no se interrumpe nada. Los límites toman efecto la próxima vez que inicie.",
+      "none": "La memoria y la CPU no cambian. Los demás ajustes se aplican en el próximo reinicio (unos 5 segundos de inactividad)."
+    },
+    "shrinkWarning": "El nuevo límite de memoria está por debajo del pico de la última hora. Es posible que maten la base de datos por quedarse sin memoria.",
+    "cancel": "Cancelar",
+    "apply": "Aplicar cambios",
+    "applying": "Aplicando..."
+  },
+  "metrics": {
+    "title": "Métricas",
+    "asOf": "Al {{time}}.",
+    "panels": {
+      "memory": "Memoria",
+      "cpu": "CPU",
+      "network": "E/S de red",
+      "disk": "E/S de disco"
+    },
+    "gapsSql": "Aún no se recopilan los conteos de conexiones ni las consultas por segundo. Para encontrar sentencias lentas, usa",
+    "gapsMemory": "Aún no se recopilan los conteos de conexiones, las operaciones por segundo ni las expulsiones de claves. La memoria frente a su límite es la mejor señal temprana para este motor.",
+    "slowQueriesLink": "la vista de consultas lentas.",
+    "empty": {
+      "stopped": {
+        "title": "Esta base de datos está detenida",
+        "body": "No hay nada que graficar mientras está detenida. Iníciala y los gráficos se llenan en uno o dos minutos."
+      },
+      "provisioning": {
+        "title": "Esta base de datos aún se está creando",
+        "body": "Las métricas comienzan cuando la base de datos está en ejecución. Revisa el avance en la página de resumen."
+      },
+      "start": "Iniciar base de datos",
+      "starting": "Iniciando...",
+      "viewProgress": "Ver avance"
+    }
+  },
+  "pooler": {
+    "title": "Pooler de conexiones",
+    "toggle": "Activar el pooler de conexiones",
+    "description": "Pooling por transacción delante de Postgres, para que muchas conexiones de aplicaciones compartan unas pocas conexiones al servidor.",
+    "pooled": "Con pool",
+    "direct": "Directa",
+    "copy": "Copiar URL {{label}}",
+    "remoteNote": "Las aplicaciones en otros nodos no pueden llegar al pooler y usan la URL directa. Reemplaza <password> por una credencial de la página Acceso.",
+    "imageMissing": "No hay una imagen de pooler configurada en el plano de control. Define APP_PG_POOLER_IMAGE para activarlo.",
+    "toggleFailed": "No se pudo cambiar el pooler.",
+    "poolSize": "Tamaño del pool",
+    "maxClientConn": "Máx. de conexiones de cliente",
+    "default": "Por defecto",
+    "applySizing": "Aplicar dimensionamiento",
+    "status": {
+      "running": "Listo",
+      "failed": "Fallido",
+      "unknown": "Iniciando"
+    }
+  }
+}

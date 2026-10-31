@@ -1,15 +1,19 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -115,6 +119,105 @@ func (rt *Router) mintGitHubAppInstallationTokenForOwner(ctx context.Context, ow
 	}
 	secretmask.Add(tok.Token)
 	return instanceURL, tok.Token, nil
+}
+
+// cloneTokenPermissions is the least a clone needs; GitHub treats anything
+// outside this map as not granted to the narrowed token.
+var cloneTokenPermissions = map[string]string{"contents": "read", "metadata": "read"}
+
+type cloneTokenRequest struct {
+	Repositories []string          `json:"repositories"`
+	Permissions  map[string]string `json:"permissions"`
+}
+
+// githubAppInstallationFor resolves the installation covering ownerLogin,
+// else the legacy single installation, plus a signed App JWT to mint with.
+func (rt *Router) githubAppInstallationFor(ctx context.Context, ownerLogin string) (instanceURL, appJWT string, installationID int64, err error) {
+	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
+	if errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
+		return "", "", 0, errGitHubAppNotConnected
+	}
+	if err != nil {
+		return "", "", 0, fmt.Errorf("get github app connection: %w", err)
+	}
+	installations, err := rt.githubApp.ListGitHubAppInstallations(ctx)
+	if err != nil {
+		return "", "", 0, fmt.Errorf("list github app installations: %w", err)
+	}
+	found := false
+	for i := range installations {
+		if strings.EqualFold(installations[i].AccountLogin, ownerLogin) {
+			installationID, found = installations[i].InstallationID, true
+			break
+		}
+	}
+	if !found {
+		if conn.InstallationID == nil {
+			return "", "", 0, errGitHubAppNotInstalled
+		}
+		installationID = *conn.InstallationID
+	}
+	instanceURL = conn.InstanceURL
+	if instanceURL == "" {
+		instanceURL = "https://github.com"
+	}
+	privateKeyPEM, err := rt.githubAppSecrets.Resolve(ctx, store.GitHubAppSecretsKey(), "private_key")
+	if err != nil {
+		return "", "", 0, fmt.Errorf("resolve github app private key: %w", err)
+	}
+	appJWT, err = githubapp.SignAppJWT(conn.AppID, []byte(privateKeyPEM), time.Now())
+	if err != nil {
+		return "", "", 0, fmt.Errorf("sign github app jwt: %w", err)
+	}
+	return instanceURL, appJWT, installationID, nil
+}
+
+// mintGitHubAppCloneToken mints an installation token limited to the one
+// repository and to contents:read plus metadata:read, for cloning only.
+// Callers that list repos or manage the installation keep the broad token.
+func (rt *Router) mintGitHubAppCloneToken(ctx context.Context, owner, repo string) (string, error) {
+	instanceURL, appJWT, installationID, err := rt.githubAppInstallationFor(ctx, owner)
+	if err != nil {
+		return "", err
+	}
+	client, ok := rt.githubAppClient.(*githubapp.Client)
+	if !ok {
+		// Injected test doubles have no HTTP surface to narrow.
+		tok, mintErr := rt.githubAppClient.MintInstallationToken(ctx, instanceURL, appJWT, installationID)
+		if mintErr != nil {
+			return "", fmt.Errorf("mint github app installation token: %w", mintErr)
+		}
+		secretmask.Add(tok.Token)
+		return tok.Token, nil
+	}
+	body, err := json.Marshal(cloneTokenRequest{Repositories: []string{repo}, Permissions: cloneTokenPermissions})
+	if err != nil {
+		return "", fmt.Errorf("encode clone token request: %w", err)
+	}
+	path := "/app/installations/" + strconv.FormatInt(installationID, 10) + "/access_tokens"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, client.APIBaseURL(instanceURL)+path, bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("build clone token request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	req.Header.Set("Authorization", "Bearer "+appJWT)
+	hc := client.HTTP
+	if hc == nil {
+		return "", errors.New("mint github app clone token: github client has no http client")
+	}
+	var out struct {
+		Token string `json:"token"`
+	}
+	if err := gitprovider.Execute(hc, req, "api", "github", "POST "+path, &out); err != nil {
+		return "", rt.gitConnRecordFailure(ctx, gitProviderGitHub, gitProviderGitHub, fmt.Errorf("mint github app clone token: %w", err), true)
+	}
+	if out.Token == "" {
+		return "", errors.New("mint github app clone token: empty token in response")
+	}
+	secretmask.Add(out.Token)
+	return out.Token, nil
 }
 
 // writeGitHubAppTokenError maps mintGitHubAppInstallationToken's

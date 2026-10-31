@@ -13,7 +13,6 @@ import { demoQueryOptions } from '../queries/demo'
 import { DemoChrome } from '../components/demo/DemoChrome'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
-import { StageOverlay } from '../components/StageOverlay'
 import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { PreferencesApplier } from '../components/account/PreferencesApplier'
@@ -31,6 +30,12 @@ import { MaintenanceBanner } from '../components/maintenance/MaintenanceBanner'
 import { DomainMaintenanceBanner } from '../components/maintenance/DomainMaintenanceBanner'
 import { Toaster } from '../components/ui/toast'
 
+// The shortcuts overlay is only needed once someone opens it.
+const StageOverlay = React.lazy(() =>
+  import('../components/StageOverlay').then((m) => ({
+    default: m.StageOverlay,
+  })),
+)
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
 // Palette code is deferred until first use to keep it out of the first-load budget.
 const CommandPalette = React.lazy(() =>
@@ -146,10 +151,11 @@ function AppShell() {
     return () => window.removeEventListener('keydown', onKey)
   }, [paletteMounted, openPalette])
   const [stageOverlayOpen, setStageOverlayOpen] = React.useState(false)
-  const openStageOverlay = React.useCallback(
-    () => setStageOverlayOpen(true),
-    [],
-  )
+  const [stageOverlayMounted, setStageOverlayMounted] = React.useState(false)
+  const openStageOverlay = React.useCallback(() => {
+    setStageOverlayMounted(true)
+    setStageOverlayOpen(true)
+  }, [])
   useShortcuts({ onOpenStageOverlay: openStageOverlay })
 
   if (!username) {
@@ -170,10 +176,14 @@ function AppShell() {
           />
         </React.Suspense>
       )}
-      <StageOverlay
-        open={stageOverlayOpen}
-        onOpenChange={setStageOverlayOpen}
-      />
+      {stageOverlayMounted && (
+        <React.Suspense fallback={null}>
+          <StageOverlay
+            open={stageOverlayOpen}
+            onOpenChange={setStageOverlayOpen}
+          />
+        </React.Suspense>
+      )}
       <SidebarInset>
         <DemoChrome />
         <AppHeader onSearch={openPalette} />

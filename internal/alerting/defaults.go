@@ -22,6 +22,8 @@ var DefaultCertExpiryDays = []int{14, 7, 3, 1}
 // DefaultsConfig tunes which default rules are seeded.
 type DefaultsConfig struct {
 	CertExpiryDays []int
+	// MonitorsEnabled adds the monitor_down default; the monitor engine is off unless APP_MONITORS_ENABLED is true.
+	MonitorsEnabled bool
 }
 
 // DefaultsConfigFromEnv reads APP_DEFAULT_ALERT_CERT_DAYS (comma-separated days, e.g. "14,7,3,1"); bad or empty input keeps the defaults.
@@ -30,6 +32,7 @@ func DefaultsConfigFromEnv(lookup func(string) string) DefaultsConfig {
 	if days := parseDays(lookup("APP_DEFAULT_ALERT_CERT_DAYS")); len(days) > 0 {
 		cfg.CertExpiryDays = days
 	}
+	cfg.MonitorsEnabled = strings.EqualFold(strings.TrimSpace(lookup("APP_MONITORS_ENABLED")), "true")
 	return cfg
 }
 
@@ -97,6 +100,13 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"deploy-failed", "A deploy failed", KindDeployFailed, SeverityWarning},
 		{"database-down", "A database is down", KindDatabaseDown, SeverityCritical},
 		{"database-backup-stale", "A database backup is stale", KindDatabaseBackupStale, SeverityWarning},
+	}
+	if cfg.MonitorsEnabled {
+		platform = append(platform, struct {
+			key, name string
+			kind      Kind
+			severity  string
+		}{"monitor-down", "An uptime monitor is down", KindMonitorDown, SeverityCritical})
 	}
 	for _, p := range platform {
 		specs = append(specs, DefaultRuleSpec{Key: defaultRulePrefix + p.key, Rule: Rule{Name: p.name, Kind: p.kind, Severity: p.severity}})

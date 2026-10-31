@@ -14,6 +14,7 @@ import type { Tone } from '@/components/kit'
 import type { Deployment, DeploymentStatus } from '../types/deployment'
 import { formatRelative } from '@/components/kit/formatRelative'
 import { formatDurationMs } from './deployDuration'
+import { translateShared } from './activeLocale'
 
 export interface StatusView {
   label: string
@@ -24,28 +25,75 @@ export interface StatusView {
 
 export const STATUS_VIEW: Record<DeploymentStatus, StatusView> = {
   building: {
-    label: 'Building',
+    get label() {
+      return translateShared('deploys:deployList.status.building', 'Building')
+    },
     tone: 'info',
     icon: LoaderCircleGlassIcon,
     spin: true,
   },
-  queued: { label: 'Queued', tone: 'neutral', icon: ClockGlassIcon },
-  ready: { label: 'Ready', tone: 'success', icon: CircleCheckGlassIcon },
-  failed: { label: 'Failed', tone: 'danger', icon: CircleXGlassIcon },
-  canceled: { label: 'Canceled', tone: 'neutral', icon: BanGlassIcon },
-  held: { label: 'Held', tone: 'warning', icon: CirclePauseGlassIcon },
+  queued: {
+    get label() {
+      return translateShared('deploys:deployList.status.queued', 'Queued')
+    },
+    tone: 'neutral',
+    icon: ClockGlassIcon,
+  },
+  ready: {
+    get label() {
+      return translateShared('deploys:deployList.status.ready', 'Ready')
+    },
+    tone: 'success',
+    icon: CircleCheckGlassIcon,
+  },
+  failed: {
+    get label() {
+      return translateShared('deploys:deployList.status.failed', 'Failed')
+    },
+    tone: 'danger',
+    icon: CircleXGlassIcon,
+  },
+  canceled: {
+    get label() {
+      return translateShared('deploys:deployList.status.canceled', 'Canceled')
+    },
+    tone: 'neutral',
+    icon: BanGlassIcon,
+  },
+  held: {
+    get label() {
+      return translateShared('deploys:deployList.status.held', 'Held')
+    },
+    tone: 'warning',
+    icon: CirclePauseGlassIcon,
+  },
   awaiting_approval: {
-    label: 'Awaiting approval',
+    get label() {
+      return translateShared(
+        'deploys:deployList.status.awaiting_approval',
+        'Awaiting approval',
+      )
+    },
     tone: 'warning',
     icon: GavelGlassIcon,
   },
   rolled_back: {
-    label: 'Rolled back',
+    get label() {
+      return translateShared(
+        'deploys:deployList.status.rolled_back',
+        'Rolled back',
+      )
+    },
     tone: 'neutral',
     icon: UndoGlassIcon,
   },
   superseded: {
-    label: 'Superseded',
+    get label() {
+      return translateShared(
+        'deploys:deployList.status.superseded',
+        'Superseded',
+      )
+    },
     tone: 'neutral',
     icon: SkipForwardGlassIcon,
   },
@@ -72,7 +120,10 @@ export const TRIGGER_LABEL: Record<string, string> = {
 }
 
 export function triggerLabel(trigger: string): string {
-  return TRIGGER_LABEL[trigger] ?? trigger
+  return translateShared(
+    `deploys:deployList.trigger.${trigger}`,
+    TRIGGER_LABEL[trigger] ?? trigger,
+  )
 }
 
 export function isInProgress(d: Deployment): boolean {

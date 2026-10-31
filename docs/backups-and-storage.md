@@ -211,6 +211,20 @@ levelrail-cli backups protect-all --target ID --apply [--schedule "0 3 * * *"] [
 
 The default schedule and retention come from `APP_BACKUP_DEFAULT_SCHEDULE` (default `0 3 * * *`), `APP_BACKUP_DEFAULT_RETAIN` (default 7) and `APP_BACKUP_DEFAULT_RETAIN_DAYS` (default 30). They are suggestions: a database without a schedule shows them on its own Backups card once a destination exists, and applies them only when you click. The dashboard also shows a recommendation when resources are not backed up.
 
+### Local directory target
+
+For a single box, or to try backups before you have a bucket, add a `local` target. Backups, retention pruning, listing and restore verification work as with S3.
+
+```bash
+levelrail-cli backup-targets create --name nightly --provider local --path nightly
+```
+
+The directory lives under `APP_BACKUP_LOCAL_ROOT` (default `backups/` under `APP_DATA_DIR`, which must be an absolute path; otherwise local targets are refused until one is set). The path must be relative and cannot leave the root, symlinks included. Directories are created with mode `0700`. Each write checks free space against `APP_MIN_BACKUP_DISK_MB` (default `256`) and refuses with an error when the disk is below it.
+
+<Warning>
+A local target lives on the server it protects. It does not help if the server is lost, wiped or its disk fails. Use an off-server target (S3, R2, B2) for data you care about.
+</Warning>
+
 <Warning>
 The **Local disk** preset points at an S3 server on this machine. Backups stored on the machine they protect are lost with it. It is fine to try things out and wrong for anything you care about.
 </Warning>

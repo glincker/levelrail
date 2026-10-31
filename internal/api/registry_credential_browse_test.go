@@ -24,6 +24,7 @@ func newTestRouterWithRegistryCredentialBrowse(t *testing.T, catalog *fakeRegist
 	logger := discardLogger()
 	rt := NewRouter(logger, testBrand(), db, WithRegistryCredentialSecrets(secretsSetter))
 	rt.registryCatalog = catalog
+	rt.registryCatalogExternal = nil
 	return rt, db
 }
 
@@ -77,8 +78,8 @@ func TestHandleListRegistryCredentialRepositories_Success(t *testing.T) {
 	if len(got.Repositories) != 2 || got.Repositories[0] != "alpha" || got.Repositories[1] != "beta" {
 		t.Errorf("Repositories = %v, want [alpha beta]", got.Repositories)
 	}
-	if client.gotBase != "ghcr.io" || client.gotUser != "bot" || client.gotPass != "hunter2" {
-		t.Errorf("client saw base/user/pass = %q/%q/%q, want ghcr.io/bot/hunter2", client.gotBase, client.gotUser, client.gotPass)
+	if client.gotBase != "https://ghcr.io" || client.gotUser != "bot" || client.gotPass != "hunter2" {
+		t.Errorf("client saw base/user/pass = %q/%q/%q, want https://ghcr.io/bot/hunter2", client.gotBase, client.gotUser, client.gotPass)
 	}
 }
 

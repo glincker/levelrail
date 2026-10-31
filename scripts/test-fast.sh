@@ -15,6 +15,18 @@ set -uo pipefail
 root="$(git rev-parse --show-toplevel)" || exit 2
 cd "$root" || exit 2
 
+# Shared Go build cache across worktrees: trimpath keeps the package dir out of action IDs.
+case " ${GOFLAGS:-} " in *" -trimpath "*) ;; *) export GOFLAGS="${GOFLAGS:+$GOFLAGS }-trimpath" ;; esac
+# shellcheck source=scripts/lib/slot.sh
+. scripts/lib/slot.sh
+# The compile plus all shards are one heavy job: take one slot for the whole run
+# by re-running this script inside it (nested slot_run calls pass through).
+# shellcheck disable=SC2031 # the flag is set inside slot_run's subshell on purpose
+if [ -z "${LEVELRAIL_SLOT_HELD:-}" ]; then
+	slot_run test-fast "$0" "$@"
+	exit $?
+fi
+
 api_pkg="github.com/GLINCKER/levelrail/internal/api"
 ncpu="$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
 shards="${TEST_FAST_SHARDS:-$((ncpu - 2))}"

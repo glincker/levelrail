@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CirclePlusGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,7 @@ import {
 const IMPACTS: IncidentImpact[] = ['none', 'minor', 'major', 'critical']
 
 function CreateIncidentForm() {
+  const { t } = useTranslation('statusPage')
   const [kind, setKind] = useState<IncidentKind>('incident')
   const [title, setTitle] = useState('')
   const [impact, setImpact] = useState<IncidentImpact>('minor')
@@ -67,7 +69,7 @@ function CreateIncidentForm() {
           {
             onSuccess: () => {
               reset()
-              toast.add({ title: 'Announcement published.', type: 'success' })
+              toast.add({ title: t('incidents.published'), type: 'success' })
             },
           },
         )
@@ -75,7 +77,7 @@ function CreateIncidentForm() {
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <Field>
-          <FieldLabel htmlFor="si-kind">Type</FieldLabel>
+          <FieldLabel htmlFor="si-kind">{t('incidents.type')}</FieldLabel>
           <Select
             value={kind}
             onValueChange={(v) => {
@@ -86,14 +88,18 @@ function CreateIncidentForm() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="incident">Incident</SelectItem>
-              <SelectItem value="maintenance">Scheduled maintenance</SelectItem>
+              <SelectItem value="incident">
+                {t('incidents.typeIncident')}
+              </SelectItem>
+              <SelectItem value="maintenance">
+                {t('incidents.typeMaintenance')}
+              </SelectItem>
             </SelectContent>
           </Select>
         </Field>
         {kind === 'incident' ? (
           <Field>
-            <FieldLabel htmlFor="si-impact">Impact on components</FieldLabel>
+            <FieldLabel htmlFor="si-impact">{t('incidents.impact')}</FieldLabel>
             <Select
               value={impact}
               onValueChange={(v) => {
@@ -106,7 +112,7 @@ function CreateIncidentForm() {
               <SelectContent>
                 {IMPACTS.map((i) => (
                   <SelectItem key={i} value={i}>
-                    {i}
+                    {t(`incidents.impacts.${i}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -115,7 +121,9 @@ function CreateIncidentForm() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <Field>
-              <FieldLabel htmlFor="si-starts">Starts</FieldLabel>
+              <FieldLabel htmlFor="si-starts">
+                {t('incidents.starts')}
+              </FieldLabel>
               <Input
                 id="si-starts"
                 type="datetime-local"
@@ -126,7 +134,7 @@ function CreateIncidentForm() {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="si-ends">Ends</FieldLabel>
+              <FieldLabel htmlFor="si-ends">{t('incidents.ends')}</FieldLabel>
               <Input
                 id="si-ends"
                 type="datetime-local"
@@ -140,7 +148,7 @@ function CreateIncidentForm() {
         )}
       </div>
       <Field>
-        <FieldLabel htmlFor="si-title">Title</FieldLabel>
+        <FieldLabel htmlFor="si-title">{t('incidents.title')}</FieldLabel>
         <Input
           id="si-title"
           value={title}
@@ -150,7 +158,7 @@ function CreateIncidentForm() {
         />
       </Field>
       <Field>
-        <FieldLabel htmlFor="si-body">Message</FieldLabel>
+        <FieldLabel htmlFor="si-body">{t('incidents.message')}</FieldLabel>
         <Textarea
           id="si-body"
           rows={3}
@@ -159,15 +167,12 @@ function CreateIncidentForm() {
             setBody(e.target.value)
           }}
         />
-        <FieldDescription>
-          Supports **bold**, `code`, - lists and [links](https://example.com).
-          Everything else is shown as plain text.
-        </FieldDescription>
+        <FieldDescription>{t('incidents.messageHint')}</FieldDescription>
       </Field>
       {components && components.length > 0 ? (
         <fieldset className="flex flex-wrap gap-4">
           <legend className="mb-1 text-sm font-medium">
-            Affected components
+            {t('incidents.affected')}
           </legend>
           {components.map((c) => (
             <label key={c.id} className="flex items-center gap-2 text-sm">
@@ -193,13 +198,14 @@ function CreateIncidentForm() {
       ) : null}
       <Button type="submit" size="sm" disabled={create.isPending}>
         <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
-        Publish
+        {t('incidents.publish')}
       </Button>
     </form>
   )
 }
 
 function IncidentCard({ incident }: { incident: StatusIncident }) {
+  const { t } = useTranslation('statusPage')
   const [status, setStatus] = useState(
     INCIDENT_STATUSES[incident.kind][
       Math.min(1, INCIDENT_STATUSES[incident.kind].length - 1)
@@ -218,16 +224,24 @@ function IncidentCard({ incident }: { incident: StatusIncident }) {
           {incident.title}
         </h3>
         <div className="flex items-center gap-2">
-          <Badge variant="outline">{incident.kind}</Badge>
+          <Badge variant="outline">
+            {t(`incidents.kinds.${incident.kind}`)}
+          </Badge>
           <Badge variant={closed ? 'success' : 'warning'}>
-            {incident.status.replace('_', ' ')}
+            {t(`incidents.states.${incident.status}`, {
+              defaultValue: incident.status.replace('_', ' '),
+            })}
           </Badge>
         </div>
       </div>
       <ul className="space-y-1 text-xs text-muted-foreground">
         {(incident.updates ?? []).map((u, i) => (
           <li key={i}>
-            <span className="font-medium">{u.status.replace('_', ' ')}</span>
+            <span className="font-medium">
+              {t(`incidents.states.${u.status}`, {
+                defaultValue: u.status.replace('_', ' '),
+              })}
+            </span>
             {u.created_at
               ? ` (${new Date(u.created_at).toLocaleString()})`
               : ''}
@@ -245,7 +259,7 @@ function IncidentCard({ incident }: { incident: StatusIncident }) {
             {
               onSuccess: () => {
                 setBody('')
-                toast.add({ title: 'Update posted.', type: 'success' })
+                toast.add({ title: t('incidents.posted'), type: 'success' })
               },
             },
           )
@@ -257,21 +271,24 @@ function IncidentCard({ incident }: { incident: StatusIncident }) {
             if (v) setStatus(v)
           }}
         >
-          <SelectTrigger className="w-40" aria-label="Update status">
+          <SelectTrigger
+            className="w-40"
+            aria-label={t('incidents.updateStatus')}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {INCIDENT_STATUSES[incident.kind].map((s) => (
               <SelectItem key={s} value={s}>
-                {s.replace('_', ' ')}
+                {t(`incidents.states.${s}`, { defaultValue: s })}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Input
           className="min-w-48 flex-1"
-          aria-label="Update message"
-          placeholder="Post an update"
+          aria-label={t('incidents.updateMessage')}
+          placeholder={t('incidents.postPlaceholder')}
           value={body}
           onChange={(e) => {
             setBody(e.target.value)
@@ -282,7 +299,7 @@ function IncidentCard({ incident }: { incident: StatusIncident }) {
           size="sm"
           disabled={post.isPending || !body.trim()}
         >
-          Post update
+          {t('incidents.postUpdate')}
         </Button>
         <Button
           type="button"
@@ -293,7 +310,7 @@ function IncidentCard({ incident }: { incident: StatusIncident }) {
             if (incident.id) del.mutate(incident.id)
           }}
         >
-          Delete
+          {t('incidents.delete')}
         </Button>
       </form>
       {post.isError ? (
@@ -306,6 +323,7 @@ function IncidentCard({ incident }: { incident: StatusIncident }) {
 }
 
 export function StatusIncidentsPanel() {
+  const { t } = useTranslation('statusPage')
   const { data, isLoading, error } = useStatusIncidents()
   return (
     <div className="space-y-4">
@@ -315,7 +333,7 @@ export function StatusIncidentsPanel() {
       ) : error ? (
         <p className="text-sm text-destructive">{error.message}</p>
       ) : (data ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No announcements yet.</p>
+        <p className="text-sm text-muted-foreground">{t('incidents.empty')}</p>
       ) : (
         (data ?? []).map((i) => <IncidentCard key={i.id} incident={i} />)
       )}

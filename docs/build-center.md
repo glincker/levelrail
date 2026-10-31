@@ -1,4 +1,8 @@
-# Build center
+---
+title: "Build center"
+description: "One place to see and control builds: the queue, running builds, history with duration and cache hit ratio, and the BuildKit cache of each node."
+"og:url": "https://docs.levelrail.com/build-center"
+---
 
 One place to see and control builds: the queue, running builds, history with
 duration, cache hit ratio, image size change and the node that ran each build,

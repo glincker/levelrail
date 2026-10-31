@@ -34,7 +34,7 @@ export function TemplateCategoryRail({
   return (
     <nav
       aria-label={t('marketplace.categories.label')}
-      className="hidden md:block"
+      className="hidden lg:block"
     >
       <p className="px-2 pb-2 text-xs font-medium tracking-wide text-foreground/70 uppercase">
         {t('marketplace.categories.heading')}

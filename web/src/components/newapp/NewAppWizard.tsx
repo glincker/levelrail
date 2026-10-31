@@ -206,28 +206,26 @@ export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
         step === 'source' ? 'max-w-none' : 'max-w-3xl',
       )}
     >
-      {step !== 'source' ? (
-        <ol
-          className="flex flex-wrap gap-2 text-sm"
-          aria-label={t('steps.label')}
-        >
-          {STEPS.map((s, i) => (
-            <li
-              key={s}
-              aria-current={i === current ? 'step' : undefined}
-              className={cn(
-                'flex items-center gap-2 rounded-md border px-2.5 py-1',
-                i === current
-                  ? 'border-primary/50 bg-muted font-medium text-foreground'
-                  : 'border-border text-muted-foreground',
-              )}
-            >
-              <span className="font-mono text-xs">{i + 1}</span>
-              {t(`steps.${s}`)}
-            </li>
-          ))}
-        </ol>
-      ) : null}
+      <ol
+        className="flex flex-wrap gap-2 text-sm"
+        aria-label={t('steps.label')}
+      >
+        {STEPS.map((s, i) => (
+          <li
+            key={s}
+            aria-current={i === current ? 'step' : undefined}
+            className={cn(
+              'flex items-center gap-2 rounded-md border px-2.5 py-1',
+              i === current
+                ? 'border-primary/50 bg-muted font-medium text-foreground'
+                : 'border-border text-muted-foreground',
+            )}
+          >
+            <span className="font-mono text-xs">{i + 1}</span>
+            {t(`steps.${s}`)}
+          </li>
+        ))}
+      </ol>
 
       {step === 'source' ? (
         <>

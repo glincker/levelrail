@@ -51,6 +51,50 @@ export function StepCard({
   const open = isOpen(step)
   const blockedBy = step.blocked_by?.[0]
   const settled = !open
+  if (settled) {
+    // Finished steps collapse to one row so the open work stays above the fold.
+    return (
+      <li
+        data-step={step.id}
+        data-state={step.state}
+        className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-muted/30 px-4 py-2"
+      >
+        <span aria-hidden="true" className="shrink-0">
+          {STATE_ICON[step.state]}
+        </span>
+        <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+          {t(`steps.${step.id}.title`)}
+        </h3>
+        {step.reason ? (
+          <span className="text-xs text-muted-foreground">
+            {t(`reason.${step.reason}`)}
+          </span>
+        ) : null}
+        <Badge variant={step.state === 'done' ? 'success' : 'muted'}>
+          {t(`state.${step.state}`)}
+        </Badge>
+        {step.state !== 'not_applicable' ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            render={<Link to={step.href} />}
+            nativeButton={false}
+          >
+            {t(`steps.${step.id}.cta`)}
+          </Button>
+        ) : null}
+        {canEdit ? (
+          <StepOverrideActions
+            step={step}
+            busy={busy}
+            onSkip={onSkip}
+            onUndo={onUndo}
+            onMarkDone={onMarkDone}
+          />
+        ) : null}
+      </li>
+    )
+  }
   return (
     <li
       data-step={step.id}
@@ -58,7 +102,6 @@ export function StepCard({
       className={cn(
         'rounded-lg border bg-card p-4',
         highlighted ? 'border-brand/50 ring-1 ring-brand/30' : 'border-border',
-        settled && 'bg-muted/30',
       )}
     >
       <div className="flex gap-3">
@@ -88,35 +131,22 @@ export function StepCard({
           <p className="text-sm text-foreground">
             {t(`steps.${step.id}.what`)}
           </p>
-          {open ? (
-            <p className="text-sm text-muted-foreground">
-              {t(`steps.${step.id}.why`)}
-            </p>
-          ) : null}
+          <p className="text-sm text-muted-foreground">
+            {t(`steps.${step.id}.why`)}
+          </p>
           <StepMeta step={step} blockedBy={blockedBy} />
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            {open ? (
-              (primaryAction ?? (
-                <Button
-                  size="sm"
-                  variant={highlighted ? 'default' : 'outline'}
-                  render={<Link to={step.href} />}
-                  nativeButton={false}
-                >
-                  {t(`steps.${step.id}.cta`)}
-                  <ArrowRightGlassIcon size="1.4em" aria-hidden="true" />
-                </Button>
-              ))
-            ) : step.state !== 'not_applicable' ? (
+            {primaryAction ?? (
               <Button
                 size="sm"
-                variant="ghost"
+                variant={highlighted ? 'default' : 'outline'}
                 render={<Link to={step.href} />}
                 nativeButton={false}
               >
                 {t(`steps.${step.id}.cta`)}
+                <ArrowRightGlassIcon size="1.4em" aria-hidden="true" />
               </Button>
-            ) : null}
+            )}
             {canEdit ? (
               <StepOverrideActions
                 step={step}

@@ -23,6 +23,9 @@ const (
 	// then carries the target environment id.
 	DeployApprovalActionMoveApp      = "move_app_environment"
 	DeployApprovalActionMoveDatabase = "move_database_environment"
+	// DeployApprovalActionReplay releases a deploy attempt parked as
+	// awaiting_approval; HeldAttemptID names it.
+	DeployApprovalActionReplay = "replay"
 )
 
 // Deploy approval statuses, DeployApproval.Status's valid values.
@@ -100,6 +103,8 @@ type DeployApproval struct {
 	// ReleaseID is the release this approval applies when bindings are
 	// authoritative; empty for a tag based approval.
 	ReleaseID string
+	// HeldAttemptID is the awaiting_approval attempt a replay approval releases.
+	HeldAttemptID string
 }
 
 // deployApprovalIDPrefix mirrors auditEntryIDPrefix's own "short,
@@ -126,14 +131,14 @@ func (db *DB) SaveDeployApproval(ctx context.Context, a DeployApproval) error {
 			requested_by_type, requested_by, requested_by_name,
 			approved_by_type, approved_by, approved_by_name, reason,
 			created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env,
-			requester_user_id, release_id
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			requester_user_id, release_id, held_attempt_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, a.ID, a.ServiceName, a.SourceServiceName, a.EnvironmentID, a.Action, a.Image, a.Status,
 		a.RequestedByType, a.RequestedBy, a.RequestedByName,
 		a.ApprovedByType, a.ApprovedBy, a.ApprovedByName, a.Reason,
 		a.CreatedAt, a.ExpiresAt, a.DecidedAt, a.FreezeOverride, a.Pull, a.IncludeEnv, a.PromoteEnv,
 		sql.NullString{String: a.RequesterUserID, Valid: a.RequesterRecorded},
-		sql.NullString{String: a.ReleaseID, Valid: a.ReleaseID != ""})
+		sql.NullString{String: a.ReleaseID, Valid: a.ReleaseID != ""}, a.HeldAttemptID)
 	if err != nil {
 		return fmt.Errorf("store: save deploy approval %q: %w", a.ID, err)
 	}
@@ -254,7 +259,7 @@ const deployApprovalSelect = `
 		requested_by_type, requested_by, requested_by_name,
 		approved_by_type, approved_by, approved_by_name, reason,
 		created_at, expires_at, decided_at, freeze_override, pull, include_env, promote_env,
-		requester_user_id, release_id
+		requester_user_id, release_id, held_attempt_id
 	FROM deploy_approvals
 `
 
@@ -269,7 +274,7 @@ func scanDeployApproval(s rowScanner) (DeployApproval, error) {
 		&a.RequestedByType, &a.RequestedBy, &a.RequestedByName,
 		&a.ApprovedByType, &a.ApprovedBy, &a.ApprovedByName, &a.Reason,
 		&a.CreatedAt, &a.ExpiresAt, &a.DecidedAt, &a.FreezeOverride, &a.Pull, &a.IncludeEnv, &a.PromoteEnv,
-		&requester, &releaseID,
+		&requester, &releaseID, &a.HeldAttemptID,
 	)
 	a.ReleaseID = releaseID.String
 	a.RequesterUserID, a.RequesterRecorded = requester.String, requester.Valid

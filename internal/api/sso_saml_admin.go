@@ -139,6 +139,9 @@ func (rt *Router) applySAMLRequest(ctx context.Context, c *store.SSOConnection, 
 	if err != nil {
 		return store.SSODraft{}, http.StatusBadRequest, err
 	}
+	if len(domains) == 0 {
+		return store.SSODraft{}, http.StatusBadRequest, errors.New("allowed_domains: add at least one email domain so sign-in is limited to your organization")
+	}
 	b := store.SSODraft{IDPEntityID: strings.TrimSpace(req.IDPEntityID), IDPSSOURL: strings.TrimSpace(req.IDPSSOURL),
 		IDPCertificate: strings.TrimSpace(req.IDPCertificates), EmailAttribute: strings.TrimSpace(req.EmailAttribute),
 		NameAttribute: strings.TrimSpace(req.NameAttribute), GroupsAttribute: strings.TrimSpace(req.GroupsAttribute)}

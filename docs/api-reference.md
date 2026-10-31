@@ -307,6 +307,7 @@ Endpoints for:
 | GET | /api/v1/auth/session | Public | handleAuthSession |
 | GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
 | PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
+| GET | /api/v1/security/advisories | AbilityRead | handleSecurityAdvisories |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -671,6 +672,8 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/rollout | AbilityDeploy | handleDeleteRollout |
 | GET | /api/v1/apps/{name}/releases | AbilityRead | handleListAppReleases |
 | GET | /api/v1/apps/{name}/analysis/reports | AbilityRead | handleListAnalysisReports |
+| POST | /api/v1/apps/{name}/analysis/reports | AbilityWrite | handleRunAnalysisReport |
+| POST | /api/v1/apps/{name}/advisory-refresh | AbilityDeploy | handleAdvisoryRefresh |
 
 </Accordion>
 
@@ -1166,6 +1169,8 @@ Endpoints for:
 | PUT | /api/v1/backup-targets/{id}/encryption | AbilityRoot | handleSetBackupTargetEncryption |
 | POST | /api/v1/registry-credentials/presets/test | AbilityWriteSensitive | handleTestRegistryPreset |
 | POST | /api/v1/registry-credentials/{id}/refresh | AbilityWriteSensitive | handleRefreshRegistryCredential |
+| GET | /api/v1/domains/dns-provider | AbilityRead | handleDomainDNSProvider |
+| GET | /api/v1/domains/dns-status | AbilityRead | handleDomainDNSStatus |
 
 ## Built-in Container Registry
 
@@ -2049,6 +2054,80 @@ Routes that do not fit an existing group.
 | POST | /api/v1/monitors | AbilityWrite | handleCreateMonitor |
 | DELETE | /api/v1/monitors/{id} | AbilityWrite | handleDeleteMonitor |
 | GET | /api/v1/monitors/{id}/results | AbilityRead | handleMonitorResults |
+| POST | /api/v1/mail/dns/plan | AbilityRead | handleMailDNSPlan |
+| POST | /api/v1/mail/dns/apply | AbilityRoot | handleMailDNSApply |
+| GET | /api/v1/mail/dns/check | AbilityRead | handleMailDNSCheck |
+| GET | /api/v1/incidents | AbilityReadSensitive | handleListIncidents |
+| GET | /api/v1/incidents/{id} | AbilityReadSensitive | handleGetIncident |
+| POST | /api/v1/incidents | AbilityWrite | handlePromoteIncident |
+| POST | /api/v1/incidents/{id}/ack | AbilityWrite | handleAckIncident |
+| POST | /api/v1/incidents/{id}/resolve | AbilityWrite | handleResolveIncident |
+| POST | /api/v1/incidents/{id}/notes | AbilityWrite | handleAddIncidentNote |
+| PUT | /api/v1/incidents/{id}/draft | AbilityWrite | handleSaveIncidentDraft |
+| POST | /api/v1/incidents/{id}/publish | AbilityWrite | handlePublishIncident |
+| GET | /api/v1/mail/status | AbilityRead | handleMailStatus |
+| PATCH | /api/v1/monitors/{id} | AbilityWrite | handleUpdateMonitorLink |
+| GET | /api/v1/mail/ports | AbilityRead | handleMailPorts |
+| POST | /api/v1/mail/ports/open | AbilityWriteSensitive | handleMailPortsOpen |
+| GET | /api/v1/mail/domains | AbilityRead | handleListMailDomains |
+| POST | /api/v1/mail/domains | AbilityRoot | handleClaimMailDomain |
+| GET | /api/v1/mail/mailboxes | AbilityRead | handleListMailboxes |
+| POST | /api/v1/mail/mailboxes | AbilityWriteSensitive | handleCreateMailbox |
+| POST | /api/v1/mail/mailboxes/{address}/suspend | AbilityWriteSensitive | handleSuspendMailbox |
+| POST | /api/v1/mail/mailboxes/{address}/resume | AbilityWriteSensitive | handleSuspendMailbox |
+| POST | /api/v1/mail/mailboxes/{address}/password | AbilityWriteSensitive | handleMailboxPassword |
+| DELETE | /api/v1/mail/mailboxes/{address} | AbilityRoot | handleDeleteMailbox |
+| GET | /api/v1/mail/aliases | AbilityRead | handleListMailAliases |
+| POST | /api/v1/mail/aliases | AbilityWriteSensitive | handleAddMailAlias |
+| DELETE | /api/v1/mail/aliases/{address} | AbilityWriteSensitive | handleRemoveMailAlias |
+| GET | /api/v1/mail/queue | AbilityReadSensitive | handleMailQueue |
+| POST | /api/v1/mail/queue/hold | AbilityWriteSensitive | handleMailQueueHold |
+| POST | /api/v1/mail/queue/release | AbilityWriteSensitive | handleMailQueueHold |
+| POST | /api/v1/mail/demo/reset | AbilityRoot | handleMailDemoReset |
+| GET | /api/v1/mail/cert | AbilityRead | handleMailCertStatus |
+| PUT | /api/v1/mail/cert | AbilityWriteSensitive | handleMailCertUpload |
+| POST | /api/v1/mail/cert/obtain | AbilityWriteSensitive | handleMailCertObtain |
+| POST | /api/v1/monitors/{id}/rotate-token | AbilityWrite | handleRotateHeartbeat |
+| GET | /api/v1/heartbeat/{token} | Public | handleHeartbeatPing |
+| POST | /api/v1/heartbeat/{token} | Public | handleHeartbeatPing |
+| GET | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
+| POST | /api/v1/heartbeat/{token}/{signal} | Public | handleHeartbeatPing |
+| GET | /api/v1/mail/backups | AbilityRead | handleListMailBackups |
+| POST | /api/v1/mail/backups | AbilityRoot | handleRunMailBackup |
+| POST | /api/v1/mail/backups/{id}/restore | AbilityRoot | handleRestoreMailBackup |
+| GET | /api/v1/mail/storage | AbilityRead | handleGetMailStorage |
+| PUT | /api/v1/mail/storage | AbilityRoot | handlePutMailStorage |
+| POST | /api/v1/mail/storage/test | AbilityRoot | handleTestMailStorage |
+| GET | /api/v1/status-page/webhooks | AbilityRead | handleListStatusWebhooks |
+| POST | /api/v1/status-page/webhooks | AbilityWrite | handleCreateStatusWebhook |
+| DELETE | /api/v1/status-page/webhooks/{id} | AbilityWrite | handleDeleteStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/rotate | AbilityWrite | handleRotateStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/pause | AbilityWrite | handlePauseStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/resume | AbilityWrite | handleResumeStatusWebhook |
+| POST | /api/v1/status-page/webhooks/{id}/test | AbilityWrite | handleTestStatusWebhook |
+| GET | /api/v1/status-page/webhooks/{id}/deliveries | AbilityRead | handleListStatusWebhookDeliveries |
+| GET | /api/v1/mail/system-email | AbilityRoot | handleGetSystemEmail |
+| POST | /api/v1/mail/system-email/enable | AbilityRoot | handleEnableSystemEmail |
+| POST | /api/v1/mail/system-email/disable | AbilityRoot | handleDisableSystemEmail |
+| POST | /api/v1/mail/system-email/rotate | AbilityRoot | handleRotateSystemEmail |
+| POST | /api/v1/mail/system-email/test | AbilityRoot | handleTestSystemEmail |
+| GET | /api/v1/mail/dns/provider | AbilityRead | handleMailDNSProvider |
+| GET | /api/v1/mail/dns/domains | AbilityRead | handleMailDNSDomains |
+| GET | /api/v1/mail/dns/applied | AbilityRead | handleMailDNSApplied |
+| GET | /.well-known/oauth-protected-resource | Public | handleMCPProtectedResource |
+| GET | /.well-known/oauth-protected-resource/mcp | Public | handleMCPProtectedResource |
+| GET | /.well-known/oauth-authorization-server | Public | handleMCPAuthServerMetadata |
+| GET | /oauth/authorize | Public | handleMCPAuthorize |
+| POST | /oauth/token | Public | handleMCPToken |
+| GET | /api/v1/mcp/oauth/consent/{id} | Session | handleMCPConsentGet |
+| POST | /api/v1/mcp/oauth/consent/{id}/approve | Session | handleMCPConsentApprove |
+| POST | /api/v1/mcp/oauth/consent/{id}/deny | Session | handleMCPConsentDeny |
+| GET | /api/v1/mcp/oauth/clients | AbilityRoot | handleListMCPClients |
+| POST | /api/v1/mcp/oauth/clients | AbilityRoot | handleCreateMCPClient |
+| DELETE | /api/v1/mcp/oauth/clients/{id} | AbilityRoot | handleDeleteMCPClient |
+| GET | /api/v1/mail/dns/status | AbilityRead | handleMailDNSStatus |
+| GET | /api/v1/dns/zones/{provider}/{id} | AbilityRead | handleGetDNSZoneDetail |
+| POST | /mcp | Public |  |
 
 ## See also
 

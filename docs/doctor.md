@@ -28,10 +28,11 @@ levelrail-cli doctor --fix        # print a plan of safe auto fixes, ask, apply,
 levelrail-cli doctor --fix --yes  # apply without asking
 levelrail-cli doctor --output json
 levelrail-cli doctor disk         # only the disk checks, with the top consumers and a cleanup suggestion
+levelrail-cli doctor paths        # where the CLI, control plane binary, releases dir, data dir and systemd unit live, and whether each exists (offline)
 levelrail-cli doctor --local      # Docker, disk and ports only, no control plane needed
 ```
 
-With no control plane configured (no token, no `--api-url`), `doctor` runs the local checks only. `--fix` always needs a control plane, applies only fixes that are automatic and safe, and lists the rest as skipped with the command to apply them on purpose (`fixes apply ID`). Without `--yes` it asks on a terminal and refuses to run otherwise. The exit code is 1 when any check fails.
+`doctor paths` never contacts a control plane. It takes `--json`, `--output` and `--query` like the other commands, prints the `APP_HTTP_ADDR` value when that variable is set, and uses `LEVELRAIL_RELEASES_DIR` and `APP_DATA_DIR` for the releases and data dirs when they are set. With no control plane configured (no token, no `--api-url`), `doctor` runs the local checks only. `--fix` always needs a control plane, applies only fixes that are automatic and safe, and lists the rest as skipped with the command to apply them on purpose (`fixes apply ID`). Without `--yes` it asks on a terminal and refuses to run otherwise. The exit code is 1 when any check fails.
 
 Expected output:
 

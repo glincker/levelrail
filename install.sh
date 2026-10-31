@@ -1375,11 +1375,20 @@ discover_public_ip() {
 # start_temp_listener serves port $1 for at most 20s so the reachability
 # probe has something to connect to when nothing else listens there yet.
 TEMP_PID=""
+TEMP_DIR=""
 start_temp_listener() {
 	TEMP_PID=""
 	command -v python3 >/dev/null 2>&1 || return 1
 	command -v timeout >/dev/null 2>&1 || return 1
-	timeout 20 python3 -m http.server "$1" --bind 0.0.0.0 >/dev/null 2>&1 &
+	if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 7) else 1)' 2>/dev/null; then
+		log "  python3 is older than 3.7, so no temporary listener is started"
+		return 1
+	fi
+	# An empty directory keeps the probe listener from exposing the working directory.
+	TEMP_DIR="$(mktemp -d)" || return 1
+	mkdir -p "$TEMP_DIR/empty"
+	trap 'stop_temp_listener; rm -rf "${tmp_dir:-}"' EXIT
+	timeout 20 python3 -m http.server "$1" --bind 0.0.0.0 --directory "$TEMP_DIR/empty" >/dev/null 2>&1 &
 	TEMP_PID=$!
 	tries=0
 	while [ "$tries" -lt 10 ]; do
@@ -1387,14 +1396,20 @@ start_temp_listener() {
 		sleep 0.3 2>/dev/null || sleep 1
 		tries=$((tries + 1))
 	done
+	stop_temp_listener
 	return 1
 }
 
 stop_temp_listener() {
-	[ -n "$TEMP_PID" ] || return 0
-	kill "$TEMP_PID" 2>/dev/null || true
-	wait "$TEMP_PID" 2>/dev/null || true
-	TEMP_PID=""
+	if [ -n "$TEMP_PID" ]; then
+		kill "$TEMP_PID" 2>/dev/null || true
+		wait "$TEMP_PID" 2>/dev/null || true
+		TEMP_PID=""
+	fi
+	if [ -n "$TEMP_DIR" ]; then
+		rm -rf "$TEMP_DIR"
+		TEMP_DIR=""
+	fi
 }
 
 # reachability_test probes 80/443 on the public IP, the way a visitor or an
@@ -1669,7 +1684,72 @@ installed_version() {
 }
 
 CLI_PRESENT=0
-CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-https://levelrail.com/install-cli.sh}"
+CLI_SITE_URL="https://levelrail.com/install-cli.sh"
+CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-$CLI_SITE_URL}"
+
+# verify_cli_script checks the downloaded CLI installer against the release
+# checksums.txt (signature checked first). A missing entry blocks the run in
+# require mode and only warns in auto mode; a mismatch always blocks.
+verify_cli_script() {
+	script="$1"
+	[ "$VERIFY_MODE" != "off" ] || return 0
+	cli_base="${LEVELRAIL_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
+	cli_proto="$HTTPS_ONLY"
+	case "$cli_base" in
+	https://*) ;;
+	http://*)
+		[ "${LEVELRAIL_INSECURE_MIRROR:-}" = "1" ] || return 1
+		cli_proto="=http"
+		;;
+	*) return 1 ;;
+	esac
+	cli_sums="${script}.checksums"
+	cli_expected=""
+	if curl -fsSL --proto "$cli_proto" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$cli_sums" "${cli_base}/checksums.txt" 2>/dev/null; then
+		verify_signature "$cli_sums" "$cli_base" "$cli_proto"
+		cli_expected="$(grep " install-cli.sh\$" "$cli_sums" | awk '{ print $1 }')"
+	fi
+	rm -f "$cli_sums" "${cli_sums}.sigstore.json"
+	if [ -z "$cli_expected" ]; then
+		if [ "$VERIFY_MODE" = "require" ]; then
+			warn "APP_INSTALL_VERIFY=require and install-cli.sh has no checksum entry for ${VERSION}, not running it"
+			return 1
+		fi
+		warn "install-cli.sh has no checksum entry for ${VERSION}, running it unverified"
+		return 0
+	fi
+	if [ "$(sha256sum "$script" | awk '{ print $1 }')" != "$cli_expected" ]; then
+		warn "install-cli.sh does not match the release checksum, not running it"
+		return 1
+	fi
+	log "CLI installer checksum verified."
+}
+
+# fetch_cli_script downloads the CLI installer to $1. An explicit override URL is
+# used as is; otherwise the release asset is preferred so the script matches the
+# installed version. Without the asset, auto mode falls back to the site copy and
+# require mode refuses.
+fetch_cli_script() {
+	dest="$1"
+	if [ -n "${LEVELRAIL_CLI_INSTALLER_URL:-}" ]; then
+		curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$dest" "$CLI_INSTALLER_URL" 2>/dev/null
+		return
+	fi
+	asset_base="${LEVELRAIL_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
+	asset_proto="$HTTPS_ONLY"
+	case "$asset_base" in
+	http://*) [ "${LEVELRAIL_INSECURE_MIRROR:-}" != "1" ] || asset_proto="=http" ;;
+	esac
+	if curl -fsSL --proto "$asset_proto" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$dest" "${asset_base}/install-cli.sh" 2>/dev/null; then
+		return 0
+	fi
+	if [ "$VERIFY_MODE" = "require" ]; then
+		warn "APP_INSTALL_VERIFY=require and ${VERSION} publishes no install-cli.sh release asset, not falling back to ${CLI_SITE_URL}"
+		return 1
+	fi
+	warn "${VERSION} publishes no install-cli.sh release asset, falling back to ${CLI_SITE_URL} (not checksum-verified against this release)"
+	curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$dest" "$CLI_SITE_URL" 2>/dev/null
+}
 
 # install_cli reuses install-cli.sh so the CLI gets the same checksum and
 # signature checks as the server binary. Never fatal: the server is already up.
@@ -1687,7 +1767,13 @@ install_cli() {
 		return 0
 	fi
 	cli_script="$(mktemp)"
-	if curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$cli_script" "$CLI_INSTALLER_URL" 2>/dev/null &&
+	if ! fetch_cli_script "$cli_script"; then
+		rm -f "$cli_script"
+		warn "levelrail-cli was not installed"
+		log "levelrail-cli not installed: run ${cli_hint}"
+		return 0
+	fi
+	if verify_cli_script "$cli_script" &&
 		LEVELRAIL_VERSION="$VERSION" LEVELRAIL_CLI_INSTALL_DIR="${LEVELRAIL_CLI_INSTALL_DIR:-/usr/local/bin}" sh "$cli_script"; then
 		rm -f "$cli_script"
 		CLI_PRESENT=1

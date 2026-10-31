@@ -1,8 +1,40 @@
 # ADR 054: Uptime monitors, incidents from checks, and status page subscribers
 
-Status: Proposed
+Status: Accepted (slices 1 and 2 partly built, flag default off)
 
 Date: 2026-10-29
+
+## Implementation status
+
+Behind `APP_MONITORS_ENABLED` (default off, see `docs/monitors.md`).
+
+Built:
+
+- Monitor model with `http` and `tcp` kinds, the control plane
+  scheduler, batched result flush, hourly rollups and pruning
+  (`internal/monitor`, migration `3060_monitors.sql`).
+- `GET/POST /api/v1/monitors`, `DELETE /api/v1/monitors/{id}` and
+  `GET /api/v1/monitors/{id}/results`.
+- The confirmation state machine (`internal/monitor/state.go`: up,
+  suspect, down, recovering) with `APP_MONITOR_CONFIRM_FAILURES` and
+  `APP_MONITOR_RECOVERY_SUCCESSES`.
+- A `monitor` status page component kind that follows the confirmed
+  monitor state (`internal/statuspage/service.go`). One failed sample
+  stays operational.
+
+Not built yet:
+
+- The `monitor_down` alert rule.
+- Internal incidents with ack and publish, and the incidents and
+  monitors dashboard pages.
+- Alert and manual component sources, migration of `check` components,
+  tls_cert, dns and heartbeat kinds, subscribers, deploy maintenance
+  windows and node vantage points (phases 3 to 7).
+
+The status page itself (single sampler, `app`, `domain` and `check`
+components) is unchanged and stable; ADRs 055 (remote MCP) and 056
+(advisory feed) do not cover monitors or the status page and stay
+Proposed.
 
 ## Context
 

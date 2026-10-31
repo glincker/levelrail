@@ -6,6 +6,7 @@ import {
   CircleCheckGlassIcon,
   CirclePauseGlassIcon,
   CircleXGlassIcon,
+  HandGlassIcon,
   LoaderCircleGlassIcon,
   RocketGlassIcon,
 } from '@thesvg/ui-react'
@@ -46,6 +47,10 @@ const STATUS_VIEW: Record<
     ),
   },
   held: { tone: 'warning', icon: <CirclePauseGlassIcon size="1.4em" /> },
+  awaiting_approval: {
+    tone: 'warning',
+    icon: <HandGlassIcon size="1.4em" />,
+  },
   superseded: { tone: 'neutral', icon: <RocketGlassIcon size="1.4em" /> },
   queued: { tone: 'neutral', icon: <CirclePauseGlassIcon size="1.4em" /> },
   canceled: {

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,6 +10,7 @@ import commonEn from '../../locales/en/common.json'
 import { shouldPromptForBackupTarget, Route } from './index'
 import type { Brand } from '../../types/brand'
 import type { BackupCoverage, StorageOrphans } from '../../types/backupCoverage'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('../../hooks/useBrand', () => ({
   useBrand: (): Brand => ({
@@ -137,9 +138,7 @@ function stubFetch(cov: BackupCoverage, orphans: StorageOrphans = NO_ORPHANS) {
 }
 
 function renderPage() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   const Page = Route.options.component!
   return render(
     <I18nextProvider i18n={testI18n}>

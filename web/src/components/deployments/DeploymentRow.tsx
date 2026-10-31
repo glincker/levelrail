@@ -131,13 +131,13 @@ export function DeploymentRow({
         onOpen(d.id)
       }}
       className={cn(
-        'flex w-full cursor-pointer flex-col gap-1 border-b border-border px-3 py-2.5 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset md:flex-row md:items-center md:gap-3',
+        'flex w-full cursor-pointer flex-col gap-1 border-b border-border px-3 py-2.5 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset xl:flex-row xl:items-center xl:gap-3',
         open && 'bg-muted/60',
         focused && 'ring-2 ring-ring/60 ring-inset',
         muted && 'opacity-70',
       )}
     >
-      <span className="flex min-w-0 items-center gap-2 md:contents">
+      <span className="flex min-w-0 items-center gap-2 xl:contents">
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
             {Lead ? (
@@ -171,14 +171,14 @@ export function DeploymentRow({
         </span>
         <StatusCell d={d} now={now} />
       </span>
-      <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground md:contents">
-        <span className="md:w-24">
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground xl:contents">
+        <span className="xl:w-24">
           <EnvPill d={d} />
         </span>
-        <span className="max-w-40 truncate font-medium text-foreground md:w-32">
+        <span className="max-w-40 truncate font-medium text-foreground xl:w-32">
           {d.app}
         </span>
-        <span className="flex items-center gap-1 font-mono md:w-20">
+        <span className="flex items-center gap-1 font-mono xl:w-20">
           {!rollback && d.commit_sha && (
             <>
               <CommitGraphGlassIcon className="size-5" aria-hidden="true" />
@@ -186,7 +186,7 @@ export function DeploymentRow({
             </>
           )}
         </span>
-        <span className="flex max-w-32 items-center gap-1 truncate font-mono md:w-28">
+        <span className="flex max-w-32 items-center gap-1 truncate font-mono xl:w-28">
           {!rollback && d.branch && (
             <>
               <GitBranchGlassIcon
@@ -197,7 +197,7 @@ export function DeploymentRow({
             </>
           )}
         </span>
-        <span className="md:w-20 md:text-right">
+        <span className="xl:w-20 xl:text-right">
           <RelativeTime at={d.started_at} live />
         </span>
         <RowThumb url={d.preview_image_url} app={d.app} />

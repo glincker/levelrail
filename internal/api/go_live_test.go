@@ -280,6 +280,30 @@ func TestGoLivePlanIsADryRun(t *testing.T) {
 	}
 }
 
+func TestGoLivePlanHashPinsTheRun(t *testing.T) {
+	f := newGoLiveFixture(t, "203.0.113.5")
+	f.setPolicy(t, `{"auto_dns":true}`)
+	seedAppWithDomains(t, f.db)
+
+	rec := f.do(t, http.MethodPost, "/api/v1/apps/web/domains/go-live/plan", `{"domain":"example.com"}`)
+	var out goLivePlanResponse
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	if len(out.Plans) != 1 || out.Plans[0].PlanHash == "" {
+		t.Fatalf("plan has no hash: %s", rec.Body.String())
+	}
+	stale := f.do(t, http.MethodPost, "/api/v1/apps/web/domains/example.com/go-live", `{"plan_hash":"deadbeef"}`)
+	if stale.Code != http.StatusConflict {
+		t.Fatalf("stale hash status = %d body = %s", stale.Code, stale.Body.String())
+	}
+	if len(f.mgr.recs) != 0 {
+		t.Fatalf("a refused run must not write: %+v", f.mgr.recs)
+	}
+	ok := f.do(t, http.MethodPost, "/api/v1/apps/web/domains/example.com/go-live", `{"plan_hash":"`+out.Plans[0].PlanHash+`"}`)
+	if ok.Code != http.StatusOK {
+		t.Fatalf("matching hash status = %d body = %s", ok.Code, ok.Body.String())
+	}
+}
+
 func TestGoLiveWWWCounterpartAndRedirect(t *testing.T) {
 	f := newGoLiveFixture(t, "203.0.113.5")
 	f.setPolicy(t, `{"auto_dns":true,"www_policy":"redirect_to_apex"}`)

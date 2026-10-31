@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,6 +10,7 @@ import { GitRepoSourcePicker } from './GitRepoSourcePicker'
 import type { GitProviderStatus } from '../types/gitProviders'
 import commonEn from '../locales/en/common.json'
 import gitReposEn from '../locales/en/gitRepos.json'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // Same rationale as CreateAppFromGitFields.test.tsx's identical mock:
 // only Link's `to` prop matters here (the "Connect" deep links), no real
@@ -165,9 +166,7 @@ function reposUrl(provider: string, extra = ''): string {
 }
 
 function renderPicker() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   const onSelect = vi.fn()
   const result = render(
     <I18nextProvider i18n={testI18n}>

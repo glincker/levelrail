@@ -23,12 +23,38 @@ export interface DnsZone {
   name_servers: string[]
   private?: boolean
   modified_at?: string
+  account_id?: string
+  nameservers?: string[]
+  delegated?: DnsDelegated
+  delegation_reason?: DnsDelegationReason
+  current_nameservers?: string[]
+}
+
+export type DnsDelegated = 'yes' | 'no' | 'partial' | 'unknown'
+
+export type DnsDelegationReason =
+  | 'private_zone'
+  | 'lookup_failed'
+  | 'no_assigned_nameservers'
+  | 'no_public_nameservers'
+
+export interface DnsRegistrarHint {
+  name: string
+  url?: string
+}
+
+/** Detail route: the list view of a zone plus the registrar hint. */
+export interface DnsZoneDetail extends DnsZone {
+  registrar_hint?: DnsRegistrarHint
+  capabilities: DnsCapabilities
 }
 
 export interface DnsZonesResponse {
   provider: DnsProviderName | 'none'
   providers: DnsProviderName[]
   capabilities: DnsCapabilities
+  capabilities_by_provider?: Record<string, DnsCapabilities>
+  provider_errors?: Record<string, string>
   zones: DnsZone[]
 }
 
@@ -45,6 +71,8 @@ export interface DnsRecordSet {
   health_check_id?: string
   alias?: { dns_name: string; hosted_zone_id: string }
   managed?: boolean
+  read_only?: boolean
+  managed_by_levelrail?: boolean
 }
 
 export interface DnsRecordKey {
@@ -59,6 +87,8 @@ export interface DnsRecordsResponse {
   capabilities: DnsCapabilities
   records: DnsRecordSet[]
   total: number
+  matched?: number
+  next_cursor?: string
 }
 
 export interface DnsIssue {

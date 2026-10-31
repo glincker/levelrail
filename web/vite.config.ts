@@ -56,6 +56,7 @@ export default defineConfig({
             {
               name: 'ui-kit',
               test: /src[\\/]components[\\/]ui[\\/]/,
+              tags: ['$initial'],
               priority: 12,
             },
             {

@@ -1,13 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import commonEn from '../../locales/en/common.json'
 import secretRotationEn from '../../locales/en/secretRotation.json'
 import { useSecretKeys } from '../../queries/secrets'
 import { SecretBuildTimeToggle } from './SecretBuildTimeToggle'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const toastAdd = vi.fn()
 vi.mock('@/components/ui/toast', () => ({
@@ -89,9 +90,7 @@ function Row({ canEdit }: { canEdit: boolean }) {
 }
 
 function setup(canEdit = true) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   render(
     <QueryClientProvider client={client}>
       <I18nextProvider i18n={testI18n}>

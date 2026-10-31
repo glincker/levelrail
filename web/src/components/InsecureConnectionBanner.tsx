@@ -17,7 +17,7 @@ export function InsecureConnectionBanner() {
       <AlertDescription>
         Your password and session travel in plain text. Point a domain at this
         server and{' '}
-        <Link to="/domains" hash={DASHBOARD_URL_ANCHOR}>
+        <Link to="/settings/platform/addresses" hash={DASHBOARD_URL_ANCHOR}>
           set up an https dashboard URL
         </Link>
         .

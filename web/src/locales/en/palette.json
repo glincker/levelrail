@@ -130,6 +130,7 @@
       "nav-firewall": "Control which ports and sources can reach your nodes.",
       "nav-private-networks": "Private networks that link nodes and apps.",
       "nav-loadbalancers": "Spread traffic across replicas and nodes.",
+      "nav-mail": "Mailboxes, webmail, DNS and backups for your own mail server.",
       "nav-deployments": "Deploy history across all apps.",
       "nav-deploy-timeline": "A timeline of releases and what changed.",
       "nav-builds": "Build queue, logs and cache for container images.",
@@ -163,7 +164,11 @@
       "action-new-app": "Create a new app from a repo, an image or a template.",
       "action-templates": "Browse the template catalog.",
       "action-import": "Import apps from another platform.",
-      "action-toggle-theme": "Switch between light, dark and system themes."
+      "action-toggle-theme": "Switch between light, dark and system themes.",
+      "action-mail-add": "Opens the mailbox form on the Mail page.",
+      "action-mail-backup": "Starts a backup of your mail server now.",
+      "action-mail-webmail": "Opens webmail in a new tab.",
+      "action-mail-queue": "Opens the outgoing mail queue."
     }
   },
   "modes": {
@@ -216,5 +221,14 @@
     "nextUp": "Next up",
     "remove": "Remove {{name}}",
     "clear": "Clear history"
+  },
+  "mail": {
+    "addMailbox": "Mail: Add mailbox",
+    "backupNow": "Mail: Back up now",
+    "openWebmail": "Mail: Open webmail",
+    "openQueue": "Mail: Open queue",
+    "backupStarted": "Mail backup started",
+    "backupFailed": "Mail backup failed",
+    "keywords": "mail email mailbox"
   }
 }

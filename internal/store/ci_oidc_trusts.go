@@ -116,3 +116,19 @@ func ciTrustProvider(p string) string {
 	}
 	return p
 }
+
+// DeleteCIOIDCTrustsForApp removes every trust of an app and the IAM policies minted for them, so a recreated app of the same name starts without CI access.
+func (db *DB) DeleteCIOIDCTrustsForApp(ctx context.Context, serviceName string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete ci oidc trusts for app: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM iam_policies WHERE id IN (SELECT policy_id FROM ci_oidc_trusts WHERE service_name = ? AND policy_id != '')`, serviceName); err != nil {
+		return fmt.Errorf("store: delete ci oidc trust policies for app: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM ci_oidc_trusts WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete ci oidc trusts for app: %w", err)
+	}
+	return tx.Commit()
+}

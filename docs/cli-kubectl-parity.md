@@ -4,8 +4,6 @@ description: Generic get, describe, delete, edit, port-forward and cp verbs, and
 "og:url": "https://docs.levelrail.com/cli-kubectl-parity"
 ---
 
-# kubectl style CLI verbs
-
 If you already know kubectl, the same muscle memory works here. The generic verbs work on three kinds: `app`, `database` (alias `db`) and `node`. Plural forms are accepted.
 
 ## Verb mapping

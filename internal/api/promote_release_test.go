@@ -279,3 +279,29 @@ func TestRetargetFailsBeforeWritingWhenBindingReadFails(t *testing.T) {
 		t.Errorf("history = %+v, want no write", hist)
 	}
 }
+
+func TestBindingUndoSurvivesCancelledRequest(t *testing.T) {
+	t.Setenv(release.EnvBindings, "on")
+	rt, db := newTestRouter(t)
+	seedPromotionFixture(t, db)
+	bg := context.Background()
+	for _, id := range []string{"rel_a", "rel_b"} {
+		if _, err := db.InsertRelease(bg, store.Release{ID: id, SourceApp: "web-prod", SourceDeployAttemptID: "att_" + id, ImageRef: "levelrail/web@sha256:" + id, Config: "{}"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	target, _ := db.GetDesiredService(bg, "web-prod")
+	if _, err := db.RecordShadowBinding(bg, "web-prod", "env_prod", "rel_a", "image", "tester"); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(bg)
+	undo, err := rt.retargetBinding(ctx, *target, "rel_b", bindingReasonPromote, "alice", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cancel()
+	undo()
+	if b, _ := db.GetEnvironmentBinding(bg, "web-prod"); b == nil || b.ReleaseID != "rel_a" {
+		t.Fatalf("binding = %+v, want rel_a restored after a cancelled request", b)
+	}
+}

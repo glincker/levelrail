@@ -177,7 +177,7 @@ export function TemplateToolbar({
       <div
         role="group"
         aria-label={t('marketplace.categories.filterLabel')}
-        className="flex gap-2 overflow-x-auto pb-1 md:hidden"
+        className="flex gap-2 overflow-x-auto pb-1 lg:hidden"
       >
         <CategoryPill
           label={t('marketplace.categories.all')}

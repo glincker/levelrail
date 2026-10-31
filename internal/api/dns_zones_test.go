@@ -183,7 +183,7 @@ func TestDNSZones_RecordCRUDConflictsAndAudit(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("deleting apex NS = %d", rec.Code)
 	}
-	rec = serveDNS(t, rt, authedRequest(t, cookie, http.MethodDelete, base+"?name=api2&type=A", ""))
+	rec = serveDNS(t, rt, authedRequest(t, cookie, http.MethodDelete, base+"?name=api2&type=A&confirm=api2", ""))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("delete = %d %s", rec.Code, rec.Body)
 	}

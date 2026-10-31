@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
@@ -13,8 +13,6 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { appListQueryOptions } from '../../queries/apps'
 import { certificatesQueryOptions } from '../../queries/certificates'
-import { cloudflareDnsSettingsQueryOptions } from '../../queries/cloudflareDns'
-import { route53DnsSettingsQueryOptions } from '../../queries/route53Dns'
 import {
   domainsQueryOptions,
   ingressSettingsQueryOptions,
@@ -30,22 +28,32 @@ import { ServerAddressCard } from '../../components/domains/ServerAddressCard'
 import { serverAddressQueryOptions } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { proxyCertStatus } from '../../lib/certStatus'
-import { PlatformSettingsSection } from '../../components/PlatformSettingsSection'
+import { PlatformStatusStrip } from '../../components/platform/PlatformStatusStrip'
+import { DASHBOARD_URL_ANCHOR } from '../../components/DashboardUrlCard'
+import { HelpLink } from '../../components/HelpLink'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyDomainsDiagram } from '../../components/banners/LazyDiagrams'
 import { PageTemplate } from '../../components/shell/PageTemplate'
 import { SetupStepHint } from '../../components/getStarted/SetupStepHint'
 
-// The loader primes every query the page and its collapsed settings use,
-// so nothing fetches in a component body.
+// The loader primes every query the page uses, so nothing fetches in a
+// component body. Old /domains#dashboard-url links land on the new page.
 export const Route = createFileRoute('/domains/')({
+  beforeLoad: ({ location }) => {
+    if (location.hash === DASHBOARD_URL_ANCHOR) {
+      redirect({
+        to: '/settings/platform/addresses',
+        hash: DASHBOARD_URL_ANCHOR,
+        replace: true,
+        throw: true,
+      })
+    }
+  },
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(domainsQueryOptions()),
       queryClient.ensureQueryData(certificatesQueryOptions()),
       queryClient.ensureQueryData(ingressSettingsQueryOptions()),
-      queryClient.ensureQueryData(cloudflareDnsSettingsQueryOptions()),
-      queryClient.ensureQueryData(route53DnsSettingsQueryOptions()),
       queryClient.ensureQueryData(appListQueryOptions()),
       queryClient.ensureQueryData(dashboardUrlQueryOptions()),
       queryClient.prefetchQuery(serverAddressQueryOptions()),
@@ -59,13 +67,6 @@ function DomainsPage() {
   const { t } = useTranslation('domains')
   const { data: domains } = useSuspenseQuery(domainsQueryOptions())
   const { data: certificates } = useSuspenseQuery(certificatesQueryOptions())
-  const { data: settings } = useSuspenseQuery(ingressSettingsQueryOptions())
-  const { data: cloudflareDns } = useSuspenseQuery(
-    cloudflareDnsSettingsQueryOptions(),
-  )
-  const { data: route53Dns } = useSuspenseQuery(
-    route53DnsSettingsQueryOptions(),
-  )
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const [addOpen, setAddOpen] = useState(false)
 
@@ -125,6 +126,10 @@ function DomainsPage() {
           action={
             noDomains && apps.length === 0 ? (
               <>
+                <HelpLink
+                  path="/domains-and-ingress"
+                  label={t('page.helpLabel')}
+                />
                 <p className="w-full text-sm text-foreground">
                   {t('banner.noApps')}
                 </p>
@@ -139,18 +144,23 @@ function DomainsPage() {
                 {addButton}
               </>
             ) : (
-              addButton
+              <>
+                <HelpLink
+                  path="/domains-and-ingress"
+                  label={t('page.helpLabel')}
+                />
+                {addButton}
+              </>
             )
           }
           illustration={<LazyDomainsDiagram size={bannerSize} />}
           size={bannerSize}
         />
       }
-      helpPath="/domains-and-ingress"
-      helpLabel="Domains and ingress guide"
       banners={<SetupStepHint step="app_domain" />}
-      actions={addButton}
     >
+      <PlatformStatusStrip />
+
       <ProxySetupCard />
 
       <ServerAddressCard />
@@ -165,17 +175,6 @@ function DomainsPage() {
           }}
         />
       )}
-
-      <PlatformSettingsSection
-        settings={settings}
-        primaryCert={
-          settings.primary_domain
-            ? certByDomain.get(settings.primary_domain)
-            : undefined
-        }
-        cloudflareDns={cloudflareDns}
-        route53Dns={route53Dns}
-      />
 
       <AddDomainsDialog
         open={addOpen}

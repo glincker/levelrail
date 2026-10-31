@@ -1,4 +1,8 @@
-# API v2: uniform resource view
+---
+title: "API v2: uniform resource view"
+description: "The v2 API gives apps, nodes and databases one object shape, a resource version and list and watch, mapped from the v1 data on each request."
+"og:url": "https://docs.levelrail.com/api-v2"
+---
 
 The v2 routes give apps, nodes and databases one object shape, a resource version and list-and-watch. They are additive: every v1 route and table keeps working and stays the source of truth. v2 objects are mapped from the v1 data on each request, nothing is stored twice.
 

@@ -5296,8 +5296,11 @@ type VolumeFileOp struct {
 	Path   string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
 	// Upload cap for PUT, list cap for LIST; the agent applies the smaller of
 	// this and its own env limit, and 0 defers to the env limit alone.
-	MaxBytes      int64 `protobuf:"varint,4,opt,name=max_bytes,json=maxBytes,proto3" json:"max_bytes,omitempty"`
-	Limit         int32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
+	MaxBytes int64 `protobuf:"varint,4,opt,name=max_bytes,json=maxBytes,proto3" json:"max_bytes,omitempty"`
+	Limit    int32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
+	// Private makes PUT create the file 0600 (private keys); an agent that
+	// predates the field writes 0644, so callers check the mode afterwards.
+	Private       bool `protobuf:"varint,6,opt,name=private,proto3" json:"private,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5365,6 +5368,13 @@ func (x *VolumeFileOp) GetLimit() int32 {
 		return x.Limit
 	}
 	return 0
+}
+
+func (x *VolumeFileOp) GetPrivate() bool {
+	if x != nil {
+		return x.Private
+	}
+	return false
 }
 
 // FileOp is one object operation on a storage destination directory. The
@@ -7930,13 +7940,14 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\aarchive\x18\a \x01(\v2\x1d.levelrail.agent.v1.ArchiveOpR\aarchive\x12.\n" +
 	"\x04file\x18\b \x01(\v2\x1a.levelrail.agent.v1.FileOpR\x04file\x12A\n" +
 	"\vvolume_file\x18\t \x01(\v2 .levelrail.agent.v1.VolumeFileOpR\n" +
-	"volumeFile\"\x82\x02\n" +
+	"volumeFile\"\x9c\x02\n" +
 	"\fVolumeFileOp\x129\n" +
 	"\x04kind\x18\x01 \x01(\x0e2%.levelrail.agent.v1.VolumeFileOp.KindR\x04kind\x12\x16\n" +
 	"\x06volume\x18\x02 \x01(\tR\x06volume\x12\x12\n" +
 	"\x04path\x18\x03 \x01(\tR\x04path\x12\x1b\n" +
 	"\tmax_bytes\x18\x04 \x01(\x03R\bmaxBytes\x12\x14\n" +
-	"\x05limit\x18\x05 \x01(\x05R\x05limit\"X\n" +
+	"\x05limit\x18\x05 \x01(\x05R\x05limit\x12\x18\n" +
+	"\aprivate\x18\x06 \x01(\bR\aprivate\"X\n" +
 	"\x04Kind\x12\x14\n" +
 	"\x10KIND_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tKIND_LIST\x10\x01\x12\f\n" +

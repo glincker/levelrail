@@ -4,8 +4,6 @@ description: Output formats for every list and get command, and how jsonpath map
 "og:url": "https://docs.levelrail.com/cli-output"
 ---
 
-# CLI output formats
-
 Every command that returns data takes `--output` (or `-o`) and `--query`.
 
 | Value | What you get |

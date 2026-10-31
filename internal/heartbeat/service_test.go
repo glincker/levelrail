@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -170,5 +171,16 @@ func TestConfigFromEnvRejectsBadValues(t *testing.T) {
 	c, err := ConfigFromEnv(env(map[string]string{EnvURL: "https://hc-ping.com/k", EnvBody: "off"}))
 	if err != nil || !c.BodyOff || c.Interval != time.Minute {
 		t.Fatalf("cfg = %+v err=%v", c, err)
+	}
+}
+
+func TestBlockedAddrCoversTunnelRanges(t *testing.T) {
+	for _, s := range []string{"64:ff9b::7f00:1", "2002:c0a8:101::1", "192.0.0.8", "198.18.0.1", "100.64.0.1", "10.0.0.1"} {
+		if !blockedAddr(netip.MustParseAddr(s)) {
+			t.Errorf("%s should be blocked", s)
+		}
+	}
+	if blockedAddr(netip.MustParseAddr("93.184.216.34")) {
+		t.Error("public address must not be blocked")
 	}
 }

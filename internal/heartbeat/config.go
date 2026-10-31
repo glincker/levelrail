@@ -13,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // Environment variables that configure and lock the heartbeat settings.
@@ -129,13 +131,7 @@ func HostOf(raw string) string {
 }
 
 func blockedAddr(ip netip.Addr) bool {
-	ip = ip.Unmap()
-	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
-		ip.IsMulticast() || ip.IsUnspecified() || isCGNAT(ip)
-}
-
-func isCGNAT(ip netip.Addr) bool {
-	return netip.MustParsePrefix("100.64.0.0/10").Contains(ip)
+	return netguard.IsBlocked(ip)
 }
 
 // guardedDialer refuses private destinations at connect time so a DNS name cannot smuggle one in.

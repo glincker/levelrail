@@ -186,10 +186,14 @@ function NavLinkItem({
   )
 }
 
-function groupAttention(
-  group: { items: GlobalNavItem[] },
-  counts: Record<string, number>,
-) {
+function GroupAttention({
+  group,
+  counts,
+}: {
+  group: { items: GlobalNavItem[] }
+  counts: Record<string, number>
+}) {
+  const { t } = useTranslation()
   const total = group.items.reduce(
     (n, i) => n + (i.badge ? (counts[i.badge] ?? 0) : 0),
     0,
@@ -198,7 +202,7 @@ function groupAttention(
     <NavBadge
       count={total}
       tone="danger"
-      label={`${String(total)} need attention`}
+      label={t('shell.navAttention', { count: total })}
     />
   ) : null
 }
@@ -305,7 +309,7 @@ export function GlobalNav() {
               header={t(`shell.navGroup.${group.id}`, {
                 defaultValue: group.label,
               })}
-              hint={groupAttention(group, counts)}
+              hint={<GroupAttention group={group} counts={counts} />}
             >
               {menu}
             </CollapsibleSection>

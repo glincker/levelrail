@@ -262,8 +262,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "integrations":
 		return runAppsIntegrations(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
-		_, _ = fmt.Fprint(stderr, appsUsage(prog))
+		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n", prog, args[0]) //nolint:gosec // same guard as above
+		_, _ = fmt.Fprint(stderr, unknownVerbHint(prog, []string{"apps"}, args[0]))
 		return exitUsage
 	}
 }

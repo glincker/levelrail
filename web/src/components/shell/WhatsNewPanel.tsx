@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { SparklesGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +16,7 @@ import { setLastSeenVersion, unreadCount, useLastSeenVersion } from './whatsNew'
 // a distinct Sparkle glyph so the two popovers read as different
 // things at a glance (operational alerts vs. "what changed here").
 export function WhatsNewPanel() {
+  const { t } = useTranslation('common', { useSuspense: false })
   const { data } = useQuery(changelogQueryOptions())
   const lastSeen = useLastSeenVersion()
   const entries = data?.entries ?? []
@@ -38,10 +40,10 @@ export function WhatsNewPanel() {
             className="relative"
             aria-label={
               unread > 0
-                ? `What's new: ${String(unread)} unread`
-                : "What's new: all caught up"
+                ? t('shell.whatsNew.unread', { count: unread })
+                : t('shell.whatsNew.allCaughtUp')
             }
-            title="What's new"
+            title={t('shell.whatsNew.title')}
           />
         }
       >
@@ -57,11 +59,11 @@ export function WhatsNewPanel() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
         <PopoverHeader>
-          <PopoverTitle>What&apos;s new</PopoverTitle>
+          <PopoverTitle>{t('shell.whatsNew.title')}</PopoverTitle>
         </PopoverHeader>
         {entries.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-            No release notes available yet.
+            {t('shell.whatsNew.empty')}
           </p>
         ) : (
           <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">

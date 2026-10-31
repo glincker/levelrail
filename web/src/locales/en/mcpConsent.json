@@ -1,0 +1,62 @@
+{
+  "title": "{{client}} wants to read this control plane",
+  "signedInAs": "Approving as {{user}} on {{host}}",
+  "instanceOnly": "Approving on {{host}}",
+  "redirectsTo": "After you answer, your browser returns to",
+  "access": {
+    "none": "Your account holds none of the requested access, so nothing can be granted.",
+    "read": "Read-only access to your resources. Secrets and sensitive values stay hidden.",
+    "sensitive": "Read-only access, including sensitive values.",
+    "trimmed": "Part of what it asked for is left out because your account does not hold it."
+  },
+  "facts": {
+    "never": "It can never create, change, deploy or delete anything.",
+    "permissions": "It acts as you and never with more than your own permissions.",
+    "expiry": "Access lasts {{access}} and renews for up to {{refresh}} unless you revoke it.",
+    "revoke": "You can remove the client at any time from Settings, CLI access."
+  },
+  "approve": "Approve",
+  "deny": "Deny",
+  "working": "Working",
+  "duration": {
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days"
+  },
+  "errors": {
+    "missing": "This link has no authorization request. Start the connection again from your AI client.",
+    "featureOff": "Connecting AI clients is switched off. Turn on remote MCP in Settings, Beta features.",
+    "gone": "This request has expired or was already answered. Start the connection again from your AI client.",
+    "unavailable": "Remote MCP sign-in is not available on this control plane.",
+    "load": "Could not load this request. Check your connection and reload.",
+    "decide": "Could not record your answer."
+  },
+  "clients": {
+    "title": "Connected AI clients",
+    "body": "Pre-registered clients that may ask to connect over remote MCP.",
+    "add": "Add client",
+    "name": "Name",
+    "uris": "Redirect URIs",
+    "urisPlaceholder": "https://client.example/callback",
+    "create": "Create",
+    "cancel": "Cancel",
+    "created": "Client created",
+    "clientId": "Client ID:",
+    "empty": "No pre-registered clients.",
+    "loadError": "Could not load AI clients.",
+    "remove": "Remove {{name}}",
+    "confirmTitle": "Remove {{name}}?",
+    "confirmBody": "Its access tokens stop working right away. It can be added again later.",
+    "confirm": "Remove client",
+    "dismiss": "Dismiss"
+  },
+  "scopes": {
+    "heading": "Access being granted",
+    "read": "Read resources and their status",
+    "sensitive": "Read sensitive values, such as secret contents"
+  },
+  "approveSensitive": "Approve with sensitive access"
+}

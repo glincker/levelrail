@@ -1,6 +1,6 @@
 ---
 title: Use your Mac mini or MacBook as a private LLM server
-description: "Run Ollama, LM Studio or an MLX server natively on a Mac, register it as an inference endpoint, and serve it through Levelrail with scoped keys, usage tracking, limits and an optional cloud fallback."
+description: "Run Ollama, LM Studio or an MLX server on a Mac, register it as an inference endpoint and serve it through Levelrail with scoped keys and limits."
 "og:url": "https://docs.levelrail.com/guides/use-a-mac-as-a-private-llm-server"
 ---
 

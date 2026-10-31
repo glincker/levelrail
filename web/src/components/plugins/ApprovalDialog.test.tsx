@@ -67,6 +67,7 @@ describe('ApprovalDialog', () => {
   it('shows what is requested and approves nothing by default', () => {
     renderDialog(plugin({ outbound_hosts: ['hooks.example.com'] }))
     expect(screen.getByText(/hooks\.example\.com/)).toBeTruthy()
+    expect(screen.getByText(/general network access/)).toBeTruthy()
     const approve = screen.getByRole('button', { name: 'Approve selected' })
     expect((approve as HTMLButtonElement).disabled).toBe(true)
     for (const box of screen.getAllByRole('checkbox')) {

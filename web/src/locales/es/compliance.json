@@ -1,0 +1,57 @@
+{
+  "rootOnly": "Las revisiones de acceso y los paquetes de evidencia solo están disponibles para cuentas root.",
+  "kind": {
+    "user": "Cuenta de usuario",
+    "team_member": "Membresía de equipo",
+    "api_token": "Token de API",
+    "env_grant": "Concesión de entorno"
+  },
+  "review": {
+    "title": "Revisiones de acceso",
+    "description": "Una revisión lista cada usuario, membresía de equipo, token de API y concesión de entorno con su última actividad. Marca cada fila como conservar o revocar. Las revocaciones se aplican al completar la revisión y se registran en el registro de auditoría.",
+    "name": "Nombre (opcional)",
+    "dueDays": "Vence en días",
+    "repeatDays": "Repetir cada días (0 para bajo demanda)",
+    "start": "Iniciar revisión",
+    "empty": "Aún no hay revisiones de acceso. Inicia una para registrar quién sigue necesitando acceso.",
+    "due": "Vence",
+    "overdue": "Vencida",
+    "open": "Abierta",
+    "hide": "Ocultar",
+    "status": {
+      "open": "Abierta",
+      "completed": "Completada"
+    },
+    "lastActive": "Última actividad",
+    "never": "nunca",
+    "keep": "Conservar",
+    "revoke": "Revocar",
+    "revoked": "Revocado",
+    "progress": "{{decided}} de {{total}} decididos, {{revoke}} por revocar",
+    "complete": "Completar revisión",
+    "completing": "Aplicando",
+    "confirmTitle": "¿Completar esta revisión de acceso?",
+    "confirmDescription": "Se revocarán ahora {{count}} concesión(es) de acceso. No se puede deshacer desde aquí.",
+    "completed": "Revisión completada, {{count}} revocadas",
+    "partial": "Fallaron {{count}} revocación(es), la revisión sigue abierta"
+  },
+  "packs": {
+    "title": "Paquetes de evidencia",
+    "description": "Un archivo firmado para un rango de fechas: registro de auditoría, revisiones de acceso, historial de copias de seguridad y pruebas de restauración, aprobaciones de deploy, ajustes de seguridad e inventario de certificados, con un manifiesto de hashes SHA-256.",
+    "notCertification": "Un paquete de evidencia es un registro para que lo examine un auditor. No es una certificación ni una prueba de cumplimiento de ningún marco normativo.",
+    "from": "Desde",
+    "to": "Hasta",
+    "rangeTo": "a",
+    "generate": "Generar paquete",
+    "empty": "Aún no hay paquetes de evidencia.",
+    "status": {
+      "running": "Generando",
+      "complete": "Listo",
+      "failed": "Fallido"
+    },
+    "verify": "Verificar",
+    "download": "Descargar",
+    "verifyOk": "El paquete coincide con su manifiesto y su firma",
+    "verifyFailed": "El paquete no superó la verificación"
+  }
+}

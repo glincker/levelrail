@@ -73,8 +73,9 @@ type serviceTemplateDetail struct {
 // full catalog.Templates catalog, static and in-memory, no store
 // involved.
 func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Request) {
-	out := make([]serviceTemplateListItem, 0, len(catalog.Templates))
-	for _, tpl := range catalog.Templates {
+	tpls := availableTemplates()
+	out := make([]serviceTemplateListItem, 0, len(tpls))
+	for _, tpl := range tpls {
 		needsDB, hasVol := templateResourceHints(tpl.Compose)
 		out = append(out, serviceTemplateListItem{
 			ID:                     tpl.ID,
@@ -147,6 +148,9 @@ type templateView struct {
 // store lookup itself failed, not that id is merely unknown.
 func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView, bool, error) {
 	if tpl, ok := catalog.TemplateByID(id); ok {
+		if !templateAvailable(id) {
+			return templateView{}, false, nil
+		}
 		return templateView{
 			ID:                     tpl.ID,
 			Name:                   tpl.Name,

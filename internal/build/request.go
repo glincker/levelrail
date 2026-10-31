@@ -2,7 +2,10 @@ package build
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Request describes a single Dockerfile build. It is deliberately the
@@ -17,6 +20,10 @@ type Request struct {
 	// DockerfilePath is the path to the Dockerfile. It may live outside
 	// ContextDir. Defaults to "<ContextDir>/Dockerfile" when empty.
 	DockerfilePath string
+
+	// RootDir, when set, is the checkout the build must stay inside:
+	// ContextDir and the Dockerfile must resolve within it after symlinks.
+	RootDir string
 
 	// Tag is the image reference given to the built image, e.g.
 	// "levelrail-spike:latest". Required.
@@ -76,4 +83,44 @@ func (r Request) dockerfilePath() string {
 		return r.DockerfilePath
 	}
 	return filepath.Join(r.ContextDir, "Dockerfile")
+}
+
+// EnsureWithin returns an error when target, after resolving symlinks,
+// is not inside root. Paths that do not exist yet are checked through
+// their nearest existing parent, so a missing root is not an error.
+func EnsureWithin(root, target string) error {
+	realRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("resolve %q: %w", root, err)
+	}
+	realTarget, err := evalExisting(target)
+	if err != nil {
+		return fmt.Errorf("resolve %q: %w", target, err)
+	}
+	rel, err := filepath.Rel(realRoot, realTarget)
+	if err != nil || !filepath.IsLocal(rel) {
+		return fmt.Errorf("%q resolves outside the repository checkout", target)
+	}
+	return nil
+}
+
+func evalExisting(p string) (string, error) {
+	p = filepath.Clean(p)
+	var rest []string
+	for {
+		resolved, err := filepath.EvalSymlinks(p)
+		if err == nil {
+			parts := append([]string{resolved}, rest...)
+			return filepath.Join(parts...), nil
+		}
+		parent := filepath.Dir(p)
+		if !os.IsNotExist(err) || parent == p || strings.TrimSpace(p) == "" {
+			return "", err
+		}
+		rest = append([]string{filepath.Base(p)}, rest...)
+		p = parent
+	}
 }

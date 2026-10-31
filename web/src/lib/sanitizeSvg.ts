@@ -39,10 +39,16 @@ function cleanElement(el: Element): void {
     const name = attr.name.toLowerCase()
     const value = attr.value.replace(/\s+/g, '')
     const dangerousUrl = URL_ATTRS.has(name) && !SAFE_URL.test(value)
+    // A use element pulling an external document is a fetch primitive; only in-document refs stay.
+    const externalUse =
+      URL_ATTRS.has(name) &&
+      el.localName.toLowerCase() === 'use' &&
+      !value.startsWith('#')
     const urlRef = /url\(\s*['"]?\s*(?!#)/i.test(value)
     if (
       name.startsWith('on') ||
       dangerousUrl ||
+      externalUse ||
       urlRef ||
       (name === 'style' && /expression|javascript:|@import/i.test(value))
     ) {

@@ -56,6 +56,10 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := r.Context()
+	if !gitHubAppTokenAllowed(ctx) {
+		writeError(w, http.StatusForbidden, "the connected github app is available to instance admins only")
+		return
+	}
 	instanceURL, token, err := rt.mintGitHubAppInstallationTokenForOwner(ctx, owner)
 	if err != nil {
 		rt.writeGitHubAppTokenError(w, "api: mint github app installation token for use-as-source failed", err)

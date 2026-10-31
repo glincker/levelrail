@@ -14,10 +14,25 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
+
+// AllowPrivateEnv additionally lets operators use registries on loopback.
+// Private LAN ranges are allowed by default; link-local and metadata
+// addresses are always refused.
+const AllowPrivateEnv = "APP_REGISTRY_ALLOW_PRIVATE_NETWORKS"
+
+// AllowPrivate reports whether AllowPrivateEnv is set to a true value.
+func AllowPrivate() bool {
+	v, err := strconv.ParseBool(os.Getenv(AllowPrivateEnv))
+	return err == nil && v
+}
 
 const requestTimeout = 10 * time.Second
 
@@ -38,6 +53,19 @@ type Client struct {
 // same shape githubapp.NewClient establishes for its own client.
 func NewClient() *Client {
 	return &Client{HTTP: &http.Client{Timeout: requestTimeout}}
+}
+
+// NewExternalClient is NewClient for operator-supplied registry
+// addresses: dials are guarded against internal targets and redirects are
+// not followed, so the Basic credential never leaves the chosen host.
+func NewExternalClient() *Client {
+	hc := netguard.NewClientPrivateNetworks()
+	if AllowPrivate() {
+		hc = netguard.NewClientPrivateTarget()
+	}
+	hc.Timeout = requestTimeout
+	hc.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	return &Client{HTTP: hc}
 }
 
 type catalogResponse struct {

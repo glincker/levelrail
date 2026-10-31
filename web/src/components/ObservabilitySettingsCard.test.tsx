@@ -1,12 +1,12 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ObservabilitySettingsCard,
   RemoteReadConnectionCard,
 } from './ObservabilitySettingsCard'
 import type { ObservabilitySettings } from '../queries/observabilitySettings'
+import { renderWithQuery as renderWithClient } from '@/test/renderWithQuery'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -51,15 +51,6 @@ function mockFetch(routes: Record<string, () => Response>) {
   })
   vi.stubGlobal('fetch', fn)
   return fn
-}
-
-function renderWithClient(node: React.ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  return render(
-    <QueryClientProvider client={client}>{node}</QueryClientProvider>,
-  )
 }
 
 afterEach(() => {

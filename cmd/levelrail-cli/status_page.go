@@ -27,6 +27,8 @@ func runStatusPage(prog string, args []string, stdout, stderr io.Writer, lookupE
 			subs := map[string]apiCmd{"add": statusGroupAddCommand(), "list": statusGroupListCommand(), "rename": statusGroupRenameCommand(),
 				"move": statusGroupMoveCommand(), "delete": statusDeleteCommand("group", func(ctx context.Context, c *Client, id string) error { return c.DeleteStatusGroup(ctx, id) })}
 			return dispatchSub(prog, "status-page group", statusPageUsage, subs, args[1:], stdout, stderr, lookupEnv)
+		case "webhooks", "webhook":
+			return dispatchSub(prog, "status-page webhooks", statusPageUsage, statusWebhookSubs(), args[1:], stdout, stderr, lookupEnv)
 		case "incidents":
 			subs := map[string]apiCmd{"list": statusIncidentsListCommand(), "create": statusIncidentCreateCommand(), "update": statusIncidentUpdateCommand(),
 				"delete": statusDeleteCommand("incident", func(ctx context.Context, c *Client, id string) error { return c.DeleteStatusIncident(ctx, id) })}
@@ -55,6 +57,9 @@ func statusPageUsage(prog string) string {
   %[1]s status-page incidents create --title T [--kind incident|maintenance] [--impact none|minor|major|critical] [--body TEXT] [--component ID]... [--starts TIME --ends TIME]
   %[1]s status-page incidents update <id> --status S --body TEXT
   %[1]s status-page incidents delete <id>
+  %[1]s status-page webhooks list
+  %[1]s status-page webhooks add --url HTTPS_URL [--label NAME] [--event TYPE]...
+  %[1]s status-page webhooks rotate|pause|resume|delete|test <id>
 
 The public page is off until "set --enable". Only the public component
 names, statuses and operator-written announcements are ever published;

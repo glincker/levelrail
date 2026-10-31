@@ -1,7 +1,7 @@
 ---
 title: "Static site routing rules"
 sidebarTitle: "Static routing"
-description: Redirects, rewrites, response headers, single page app fallback, a custom 404 page and clean URLs for a static site, kept in your repository and published with each deploy.
+description: "Redirects, rewrites, response headers, single page app fallback, a custom 404 page and clean URLs for a static site, published with each deploy."
 "og:url": "https://docs.levelrail.com/static-routing"
 ---
 

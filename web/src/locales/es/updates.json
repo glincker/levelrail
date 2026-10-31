@@ -1,0 +1,626 @@
+{
+  "notes": {
+    "title": "Notas de la versión",
+    "alert": {
+      "note": "Nota",
+      "tip": "Consejo",
+      "important": "Importante",
+      "warning": "Advertencia",
+      "caution": "Precaución"
+    }
+  },
+  "copy": {
+    "copy": "Copiar",
+    "copied": "Copiado"
+  },
+  "preflight": {
+    "cardTitle": "Verificación previa a la actualización",
+    "cardDescription": "Comprobaciones de solo lectura antes de actualizar.",
+    "running": "Ejecutando comprobaciones previas...",
+    "unavailable": "Las comprobaciones previas no están disponibles por ahora.",
+    "checksLabel": "Comprobaciones previas a la actualización",
+    "blocked": "Actualización bloqueada: corrige primero las comprobaciones fallidas.",
+    "upgradeCommand": "Ejecuta esto en el servidor (nunca se ejecuta automáticamente)",
+    "rollbackCommand": "Para hacer rollback de la base de datos tras una mala actualización",
+    "status": {
+      "ok": "Correcto",
+      "warn": "Advertencia",
+      "fail": "Bloqueado",
+      "unknown": "Desconocido",
+      "pending": "En espera",
+      "skipped": "No aplica"
+    },
+    "waiting": "Esta versión aún se está publicando. No hay ningún problema con tu servidor: vuelve a comprobar en unos minutos.",
+    "recheckAll": "Volver a comprobar",
+    "protects": "Protege: {{what}}",
+    "fix": {
+      "backupNow": "Hacer backup ahora",
+      "backingUp": "Haciendo backup...",
+      "recheck": "Volver a comprobar",
+      "rechecking": "Comprobando de nuevo...",
+      "openRollback": "Ir a Rollback"
+    },
+    "retry": "Intentar de nuevo"
+  },
+  "history": {
+    "olderSummary": "Versiones anteriores ({{count}})",
+    "olderWhy": "Estas versiones admiten un formato de base de datos más antiguo que el tuyo, por eso no se ofrecen como actualización. Volver a una implica restaurar un backup, lo que pierde los datos escritos desde entonces.",
+    "title": "Historial de versiones y rollback",
+    "description": "Las últimas cinco versiones. Elige una para ver con exactitud qué haría volver a ella. Desde esta página no se aplica nada: el rollback se ejecuta en el servidor para que el plano de control nunca se reemplace a sí mismo.",
+    "viewLabel": "Mostrar",
+    "view": {
+      "stable": "Estable",
+      "beta": "Beta",
+      "all": "Estable y beta"
+    },
+    "loading": "Cargando versiones recientes...",
+    "loadError": "No se pudo cargar el historial de versiones: {{message}}",
+    "retry": "Intentar de nuevo",
+    "empty": "No se encontraron versiones para este canal.",
+    "emptyHint": "Cambia a otro canal arriba, o comprueba que este host pueda llegar a github.com.",
+    "githubUnreachable": "No se pudo conectar con GitHub. Se muestran las versiones en caché y los binarios guardados en este host.",
+    "currentSchema": "Versión del esquema de base de datos {{version}}",
+    "currentSchemaUnknown": "No se pudo leer la versión del esquema de base de datos",
+    "running": "En ejecución",
+    "retained": "Guardada en este host",
+    "retainedHelp": "Instantáneo y funciona sin conexión",
+    "notRetained": "Se descarga al hacer rollback",
+    "noBinary": "Sin binario para esta plataforma",
+    "binarySize": "{{size}} MB",
+    "unsigned": "Sin firma",
+    "channel": {
+      "stable": "Estable",
+      "beta": "Beta"
+    },
+    "schema": "Esquema {{version}}",
+    "schemaUnknown": "Esquema desconocido",
+    "verdict": {
+      "binary_only": "Seguro: solo el binario",
+      "forward": "Esquema más nuevo: migra hacia adelante",
+      "restore_required": "Requiere restaurar un backup",
+      "unknown": "Compatibilidad desconocida"
+    },
+    "preview": "Previsualizar rollback",
+    "previewRunning": "Esta es la versión en ejecución",
+    "previewFor": "Previsualizar rollback a {{version}}"
+  },
+  "plan": {
+    "title": "Rollback a {{version}}",
+    "description": "Una vista previa de solo lectura. No se ha cambiado nada.",
+    "loading": "Comprobando esta versión contra tu base de datos...",
+    "loadError": "No se pudo generar el plan de rollback: {{message}}",
+    "close": "Cerrar",
+    "summary": "Ejecutando {{from}}, esquema de base de datos {{schema}}.",
+    "target": "{{version}} admite el esquema {{schema}}.",
+    "targetUnknown": "{{version}} no publica una versión de esquema.",
+    "downtime": "Tiempo de inactividad estimado: unos {{seconds}} segundos mientras se reinicia el servicio.",
+    "blocked": "Bloqueado: corrige las comprobaciones fallidas de abajo antes de hacer rollback.",
+    "stepsTitle": "Qué va a pasar",
+    "checksTitle": "Comprobaciones previas",
+    "changesTitle": "Lo que pierdes entre {{target}} y {{current}}",
+    "noChanges": "No hay notas de versión disponibles para las versiones intermedias.",
+    "verdict": {
+      "binary_only": "Seguro: el esquema de la base de datos coincide, así que solo se reemplaza el programa. Tus datos no se tocan.",
+      "forward": "Esta versión es más nueva que tu base de datos y la migrará hacia adelante al iniciar. Eso es una actualización, no un rollback.",
+      "restore_required": "No es posible un rollback solo del binario. Esta versión es más antigua que el esquema de tu base de datos y se negaría a iniciar. La única forma de volver es restaurar un backup de la base de datos, lo que pierde de forma permanente todo lo escrito después.",
+      "unknown": "Esta versión no publica la versión de su esquema de base de datos, así que no se puede confirmar la compatibilidad. Un programa más antiguo se niega a iniciar sobre un esquema más nuevo sin tocar los datos, y la versión anterior se restaura automáticamente si eso ocurre."
+    },
+    "step": {
+      "backup": "Hacer un backup nuevo de la base de datos del plano de control",
+      "fetch": "Descargar la versión y verificar su checksum y su firma",
+      "verify": "Volver a comprobar el binario guardado contra su checksum registrado",
+      "stop": "Detener el plano de control (las aplicaciones siguen en ejecución)",
+      "restore_backup": "Reemplazar la base de datos con el backup que elijas",
+      "swap_binary": "Reemplazar el programa por {{version}}",
+      "start": "Iniciar el plano de control",
+      "verify_health": "Esperar a que pasen las comprobaciones de salud y disponibilidad",
+      "auto_recover": "Si no queda saludable, volver a poner la versión anterior automáticamente"
+    },
+    "warning": {
+      "data_loss": "Los datos escritos después del backup elegido se pierden para siempre.",
+      "unknown_schema": "La compatibilidad del esquema es desconocida.",
+      "forward_migration": "La base de datos se migrará hacia adelante.",
+      "no_compatible_backup": "Ningún backup local es lo bastante antiguo para esta versión, así que desde aquí no es posible hacer rollback a ella.",
+      "dev_build": "Esta es una compilación de desarrollo, por lo que el binario en ejecución no se puede conservar para un rollback."
+    },
+    "dataLoss": {
+      "title": "Esto pierde datos",
+      "body": "Restaurar reemplaza la base de datos con un backup. Todo lo escrito después del backup se pierde, incluidos despliegues, cambios de ajustes y entradas de auditoría. La base de datos actual se conserva al lado como copia, y antes se hace un backup nuevo.",
+      "since": "Se perdería todo lo posterior a {{time}}.",
+      "backupsTitle": "Backups en este host",
+      "backupRow": "{{name}} hecho {{time}}, esquema {{schema}}",
+      "compatible": "Compatible",
+      "incompatible": "Demasiado nuevo para esta versión",
+      "noneCompatible": "Ningún backup de este host es compatible con {{version}}."
+    },
+    "recheck": "Volver a comprobar",
+    "rechecking": "Comprobando...",
+    "commands": {
+      "fetch": "1. Preparar en el servidor la versión verificada",
+      "apply": "2. Hacer rollback en el servidor (se te pedirá escribir {{version}})",
+      "restore": "Hacer rollback y restaurar el backup en el servidor"
+    },
+    "backupHint": "Los backups de más de un día se marcan arriba. También se hace un backup nuevo automáticamente antes de cambiar nada.",
+    "oneClick": {
+      "button": "Hacer rollback ahora",
+      "unavailable": "Este rollback no se puede aplicar desde el panel: {{reason}}",
+      "confirmTitle": "¿Hacer rollback a {{version}}?",
+      "confirmBody": "El plano de control hace un backup, cambia el programa y se reinicia. Las aplicaciones siguen en ejecución. Si la versión anterior no queda saludable, se restaura la actual automáticamente.",
+      "confirm": "Hacer rollback",
+      "pending": "Iniciando...",
+      "started": "Rollback a {{version}} iniciado. El panel se reconecta cuando el plano de control vuelva."
+    }
+  },
+  "verify": {
+    "title": "Verificar tras una actualización o rollback",
+    "description": "Ejecuta las comprobaciones de salud propias del plano de control e informa un resultado claro. Ejecútalo cuando el servicio haya vuelto.",
+    "run": "Ejecutar verificación",
+    "running": "Verificando...",
+    "pass": "Saludable: todas las comprobaciones pasaron.",
+    "passWarn": "Saludable, con advertencias por revisar.",
+    "fail": "No saludable: {{count}} comprobación falló.",
+    "failPlural": "No saludable: {{count}} comprobaciones fallaron.",
+    "error": "No se pudo ejecutar la verificación: {{message}}",
+    "checkedAt": "Comprobado {{time}}"
+  },
+  "upgradeHistory": {
+    "title": "Historial de actualizaciones",
+    "description": "Cada versión que ha ejecutado este plano de control, registrada al iniciar, sin importar cómo se instaló. Nada se actualiza en silencio: confirma cada cambio una vez que lo hayas visto.",
+    "loading": "Cargando el historial de actualizaciones...",
+    "loadError": "No se pudo cargar el historial de actualizaciones: {{message}}",
+    "empty": "Aún no hay actualizaciones registradas: la primera aparecerá aquí.",
+    "emptyHint": "Se agrega una fila nueva cada vez que el plano de control inicia con una versión distinta.",
+    "pendingTitle_one": "{{count}} cambio por revisar",
+    "pendingTitle_other": "{{count}} cambios por revisar",
+    "pendingBody": "Nadie ha confirmado todavía estos cambios de versión. Revisa qué cambió y luego confirma cada uno.",
+    "unacknowledged": "Aún sin confirmar. Alguien debería verificar que este cambio era esperado.",
+    "acknowledge": "Confirmar",
+    "acknowledgedToast": "Actualización confirmada.",
+    "ackedBy": "Confirmado por {{who}} el {{when}}.",
+    "kind": {
+      "installed": "Instalada",
+      "adopted": "El historial empieza aquí",
+      "upgraded": "Actualizada",
+      "rolled_back": "Rollback hecho",
+      "rebuilt": "Recompilada",
+      "development": "Compilación de desarrollo",
+      "changed": "Versión cambiada"
+    },
+    "initiator": "Por {{who}} mediante {{method}}.",
+    "initiatorUnknown": "Iniciador desconocido: nada registró quién cambió la versión (no se dejó ninguna nota del instalador).",
+    "initiatorUnknownShort": "un operador",
+    "methodUnknown": "un método no registrado",
+    "schemaDelta": "Esquema de base de datos {{before}} a {{after}}",
+    "schemaUnknown": "Cambio de esquema de base de datos no registrado",
+    "schemaMoved": "El esquema de la base de datos cambió. Volver a la versión anterior requiere restaurar la base de datos, lo que pierde los datos escritos desde entonces.",
+    "backup": "Backup: {{name}}",
+    "noBackup": "Sin backup registrado",
+    "health": {
+      "booted": "Inició y migró sin problemas",
+      "unknown": "Salud no registrada"
+    },
+    "releasePage": "Página de la versión",
+    "noReleasePage": "Compilación de desarrollo: sin página de versión",
+    "compare": "Comparar cambios",
+    "rollbackTo": "Rollback a {{version}}",
+    "notes": "Notas de la versión en ese momento",
+    "notesPending": "Se están obteniendo las notas de la versión",
+    "notesUnavailable": "Las notas de la versión no estaban disponibles en ese momento",
+    "agents": {
+      "title": "Versiones de los agentes de nodo",
+      "first": "primer reporte"
+    }
+  },
+  "restorePoints": {
+    "title": "Puntos de restauración",
+    "description": "Antes de cada actualización se crea automáticamente un punto de restauración (copia de la base de datos, programa y archivo de servicio). Restaurar devuelve el programa, y la base de datos solo si la actual ya fue modificada por una versión más nueva.",
+    "empty": "Aún no hay puntos de restauración. Se creará uno automáticamente antes de la próxima actualización.",
+    "size": "{{mb}} MB",
+    "withData": "También restaura la base de datos",
+    "binaryOnly": "Solo el programa",
+    "restore": "Restaurar",
+    "pending": "Restaurando...",
+    "confirmTitle": "¿Restaurar {{version}}?",
+    "confirmWithData": "El programa y la base de datos vuelven a como estaban en {{time}}. Todo lo guardado desde entonces se descarta. La base de datos reemplazada se conserva en el host.",
+    "confirmBinaryOnly": "El programa vuelve a la versión anterior. La base de datos ya es compatible, así que no se pierde ningún cambio guardado.",
+    "started": "Restaurando {{version}} en el host. El resultado aparece en los intentos de actualización de arriba."
+  },
+  "selfUpgrade": {
+    "dbRestored": "La base de datos se restauró desde el snapshot. Se revirtieron {{minutes}} minutos de cambios hechos desde el snapshot.",
+    "dbKept": "La base de datos ya era compatible con la versión anterior, así que no se perdió ningún cambio.",
+    "title": "Actualizar este servidor",
+    "description": "Descarga la versión, comprueba su checksum y su firma, hace backup de la base de datos, prueba las migraciones en una copia, cambia el programa y reinicia. Si la nueva versión no queda saludable a tiempo, el programa y los datos anteriores vuelven automáticamente.",
+    "loading": "Preparando el plan de actualización...",
+    "noPlan": "No hay un plan de actualización disponible por ahora. No se pudo obtener la última versión.",
+    "target": "Actualizar de {{current}} a {{target}}",
+    "notesMissingTitle": "Cambios incompatibles desconocidos",
+    "notesMissing": "No se pudieron obtener las notas de la versión, así que desde aquí no se pueden revisar los cambios incompatibles. Ejecuta el comando del host que se muestra abajo cuando las hayas leído.",
+    "breakingTitle": "Cambios incompatibles entre estas versiones",
+    "noBreaking": "No se declaran cambios incompatibles entre estas versiones.",
+    "ackRequired": "Confirma para continuar",
+    "ackFirst": "Confirma cada cambio incompatible para habilitar la actualización.",
+    "safety": "Primero se guardan un snapshot de la base de datos y el programa actual. Una mala versión se revierte sin que hagas nada. Los datos escritos en el plano de control durante la ventana de salud de una actualización fallida no se conservan.",
+    "apply": "Actualizar a {{version}}",
+    "starting": "Iniciando...",
+    "started": "La actualización se está ejecutando en el host. Esta página se reconecta cuando el plano de control se reinicia.",
+    "hostOnly": "Este host no puede ejecutar la actualización desde el panel: {{reason}}.",
+    "hostCommand": "Ejecutar en el servidor como root",
+    "attemptsTitle": "Intentos de actualización",
+    "noAttempts": "Aún no se ha ejecutado ninguna actualización en este servidor.",
+    "by": "por {{who}}",
+    "rolledBackNote": "La versión anterior {{version}} está en ejecución de nuevo y se restauraron sus datos.",
+    "outcome": {
+      "running": "En ejecución",
+      "succeeded": "Exitosa",
+      "rolled_back": "Rollback hecho",
+      "refused": "Rechazada",
+      "failed": "Fallida"
+    },
+    "step": {
+      "guard": "Revisar la solicitud",
+      "download": "Descargar",
+      "verify_checksum": "Verificar checksum",
+      "verify_signature": "Verificar firma",
+      "probe_binary": "Probar el programa nuevo",
+      "backup": "Hacer backup",
+      "migration_check": "Simular migraciones",
+      "stop": "Detener",
+      "swap": "Cambiar programa",
+      "start": "Iniciar",
+      "health": "Comprobación de salud",
+      "rollback": "Rollback"
+    },
+    "notPinned": "Este servidor verifica las firmas de las versiones. La próxima actualización comprueba la firma, y luego esta instalación solo acepta versiones firmadas.",
+    "pinned": "Solo versiones firmadas, fijado desde {{version}}. Una versión sin firma se rechaza.",
+    "noAttemptsHint": "Cuando actualices desde esta página o de forma programada, cada intento aparecerá aquí con todos los pasos que dio.",
+    "to": "a",
+    "unknownActor": "desconocido",
+    "showOlder_one": "Mostrar {{count}} intento anterior",
+    "showOlder_other": "Mostrar {{count}} intentos anteriores",
+    "version": {
+      "dev_one": "compilación de desarrollo, {{commits}} commit después de {{base}} ({{sha}})",
+      "dev_other": "compilación de desarrollo, {{commits}} commits después de {{base}} ({{sha}})",
+      "unknown": "desconocida"
+    },
+    "summary": {
+      "current": "Versión actual",
+      "lastOk": "Última actualización exitosa",
+      "never": "Nunca",
+      "failed": "Fallidas en los últimos 30 días"
+    },
+    "failure": {
+      "title": "Qué salió mal",
+      "cause": {
+        "disk_full": "Al servidor se le acabó el espacio en disco.",
+        "network": "No se pudo descargar la versión.",
+        "checksum_mismatch": "El archivo descargado no coincidía con su checksum.",
+        "signature_invalid": "No se pudo verificar la firma de la versión, por lo que se rechazó.",
+        "binary_unusable": "El programa nuevo no pasó su prueba de arranque.",
+        "backup_failed": "No se pudo hacer el backup previo a la actualización.",
+        "migration_incompatible": "Falló la simulación de la migración de la base de datos.",
+        "service_control": "No se pudo detener o iniciar el servicio.",
+        "swap_failed": "No se pudo colocar el programa nuevo.",
+        "not_healthy": "La nueva versión no quedó saludable.",
+        "guard_refused": "La actualización se rechazó antes de empezar.",
+        "unknown": "El paso falló por un motivo que esta página no reconoce."
+      },
+      "fix": "Liberar espacio en disco",
+      "retry": "Reintentar",
+      "rollback": "Rollback",
+      "fixed": "Limpieza terminada. Ya puedes reintentar.",
+      "stillFailing": "La limpieza se ejecutó pero el problema sigue ahí.",
+      "started": "Iniciado en el host. Síguelo en la línea de tiempo.",
+      "cliSummary": "Corregir con la CLI",
+      "cliHint": "Ejecuta en una máquina con sesión iniciada en este servidor:"
+    }
+  },
+  "readiness": {
+    "title": "Preparación del servidor",
+    "description": "Quién usa los puertos 80 y 443, versión y aislamiento de Docker, API de Docker expuesta, disco, memoria, firewall y DNS, con el modo de instalación que necesita este servidor.",
+    "domainLabel": "Dominio que usarás (opcional)",
+    "recheck": "Comprobar de nuevo",
+    "checking": "Comprobando...",
+    "checksLabel": "Comprobaciones de preparación del servidor",
+    "failed": "No se pudo ejecutar la comprobación de preparación: {{message}}",
+    "nextStep": "Siguiente paso",
+    "status": {
+      "pass": "Listo",
+      "warn": "Revisar",
+      "fail": "Corregir",
+      "info": "Info"
+    },
+    "mode": {
+      "own_ports": "Recomendado: instalar con sus propios puertos 80 y 443",
+      "behind_proxy": "Recomendado: instalar detrás de tu proxy existente"
+    }
+  },
+  "channel": {
+    "description": "Con qué flujo de versiones comparar y, si está activado, comprobar en segundo plano. Comprobar nunca aplica una actualización por sí solo.",
+    "autoCheckHelp": "Esto solo controla si el plano de control comprueba periódicamente y muestra un aviso cuando hay una versión más nueva. Una versión solo se aplica cuando inicias o programas una actualización, o cuando las actualizaciones automáticas de abajo están activadas."
+  },
+  "upgradeNow": {
+    "button": "Actualizar a {{version}} ahora",
+    "fixFirst": "Corrige las comprobaciones bloqueadas de arriba para habilitar la actualización.",
+    "blockedTitle_one": "1 comprobación requiere atención antes de poder actualizar",
+    "blockedTitle_other": "{{count}} comprobaciones requieren atención antes de poder actualizar",
+    "waitingTitle": "Esperando a que termine de publicarse la versión",
+    "schemaBlockedTitle": "No se ofrece {{version}}: es más antigua que tu base de datos",
+    "hero": {
+      "aheadTitle": "Estás ejecutando una compilación de desarrollo",
+      "aheadBody": "Estás ejecutando una compilación de desarrollo (esquema {{schema}}). La última versión, {{latest}}, es más antigua que tus datos, así que no hay nada a lo que actualizar. La próxima versión que incluya tu formato de datos se ofrecerá automáticamente.",
+      "aheadBodyNoSchema": "Estás ejecutando una compilación de desarrollo. La última versión, {{latest}}, es más antigua que tus datos, así que no hay nada a lo que actualizar. La próxima versión que incluya tu formato de datos se ofrecerá automáticamente.",
+      "checkAgain": "Comprobar de nuevo",
+      "checking": "Comprobando...",
+      "notes": "Ver notas de la versión",
+      "rollback": "Rollback a {{version}}",
+      "rollbackNone": "Rollback",
+      "rollbackNoneWhy": "Aún no existe en este host un punto de restauración de una versión anterior.",
+      "planTitle": "Plan de actualización",
+      "planFromTo": "{{from}} a {{to}}",
+      "planMigrations_one": "1 migración de base de datos por aplicar",
+      "planMigrations_other": "{{count}} migraciones de base de datos por aplicar",
+      "planMigrationsUnknown": "Migraciones de base de datos: la versión no las informa",
+      "planRestorePoint": "Primero se crea un punto de restauración, para que la versión anterior y sus datos puedan volver.",
+      "planVerify": "La nueva versión tiene {{seconds}} segundos para demostrar que está saludable antes de conservarse."
+    },
+    "confirmTitle": "Actualizar a {{version}}",
+    "confirmDescription": "Este servidor pasará de {{current}} a {{target}}. Tus aplicaciones siguen en ejecución.",
+    "willBackup": "Se hace y se conserva un backup de la base de datos del plano de control antes de cambiar nada.",
+    "willRestart": "El plano de control se reinicia una vez. Esta página se reconecta sola.",
+    "willRollback": "Si la nueva versión no está saludable a tiempo, el programa anterior y sus datos vuelven automáticamente.",
+    "confirm": "Actualizar ahora",
+    "progressTitle": "Actualizando a {{version}}",
+    "reconnect": "El plano de control se reinicia durante la actualización. Esta página sigue comprobando y se recarga cuando la nueva versión responda.",
+    "done": "Actualizado a {{version}}"
+  },
+  "progress": {
+    "running": "Actualizando a {{version}}",
+    "elapsed": "Transcurrido {{time}}",
+    "waiting": "Iniciando la actualización en el host...",
+    "reconnecting": "El plano de control se está reiniciando. Reconectando, puede tardar hasta dos minutos.",
+    "log": "Registro en vivo",
+    "successBody": "Este servidor ahora ejecuta {{version}}.",
+    "releaseNotes": "Leer las notas de la versión",
+    "failedAt": "Se detuvo en: {{step}}",
+    "rolledBack": "La versión anterior {{version}} está en ejecución de nuevo y se restauraron sus datos.",
+    "untouched": "No se cambió nada: {{version}} sigue en ejecución.",
+    "nextAction": "Corrige la causa de arriba y luego actualiza de nuevo desde esta página, o ejecuta el comando que se muestra en el host.",
+    "dismiss": "Descartar",
+    "end": {
+      "succeeded": "Actualizado a {{version}}",
+      "rolled_back": "Se hizo rollback de la actualización a {{version}}",
+      "refused": "Se rechazó la actualización a {{version}}",
+      "failed": "Falló la actualización a {{version}}"
+    },
+    "retry": "Reintentar actualización",
+    "rollBack": "Rollback"
+  },
+  "schedule": {
+    "button": "Programar actualización",
+    "dialogTitle": "Programar la actualización a {{version}}",
+    "dialogDescription": "Las comprobaciones se ejecutan de nuevo a la hora programada. Si alguna falla, no se aplica nada, recibes una alerta y se reintenta hasta que termine el periodo de gracia.",
+    "whenLabel": "Cuándo",
+    "whenAt": "A una hora específica",
+    "whenWindow": "En la próxima ventana de mantenimiento",
+    "atLabel": "Fecha y hora (zona horaria del servidor: {{timezone}})",
+    "windowNext": "La próxima ventana abre {{time}} ({{timezone}}).",
+    "noWindow": "No hay una ventana de mantenimiento configurada. Define una en Actualizaciones automáticas, o elige una hora.",
+    "majorAck": "Entiendo que es un salto de versión mayor y que puede no ser reversible sin una restauración.",
+    "firesNote": "Solo una sesión o token root puede programar o cancelar. Cada cambio se escribe en el registro de auditoría.",
+    "cancel": "Cancelar",
+    "submit": "Programar actualización",
+    "reschedule": "Reprogramar",
+    "saving": "Guardando...",
+    "cancelSchedule": "Cancelar programación",
+    "bannerTitle": "Actualización a {{version}} programada para {{time}} ({{timezone}})",
+    "automatic": "Programada por actualizaciones automáticas",
+    "blockedReason": "Aún no se aplica: {{reason}}. Reintentando hasta {{until}}.",
+    "state": {
+      "pending": "Programada",
+      "blocked": "Retenida",
+      "running": "En ejecución",
+      "applied": "Aplicada",
+      "failed": "Fallida",
+      "cancelled": "Cancelada",
+      "missed": "Omitida"
+    }
+  },
+  "auto": {
+    "title": "Actualizaciones automáticas",
+    "description": "Desactivadas por defecto. Cuando están activadas, el plano de control programa las nuevas versiones en tu ventana de mantenimiento y las aplica con las mismas comprobaciones, backup y rollback que una actualización manual.",
+    "loading": "Cargando la política de actualización automática...",
+    "unavailable": "La política de actualización automática está disponible para sesiones y tokens root.",
+    "modeLabel": "Actualizaciones automáticas",
+    "modeHelp": "Las versiones con cambios incompatibles que requieren tu confirmación, y los saltos de versión mayor, nunca se aplican automáticamente.",
+    "mode": {
+      "off": "Desactivadas (actualizar solo cuando yo lo inicie o programe)",
+      "patch": "Solo versiones de parche (misma versión menor)",
+      "any": "Cualquier versión nueva del canal configurado"
+    },
+    "notice": {
+      "off": "Las actualizaciones automáticas están desactivadas. Este plano de control solo se actualiza cuando inicias o programas una actualización.",
+      "patch": "Las actualizaciones automáticas están activadas para versiones de parche. Las nuevas versiones de parche se aplican dentro de tu ventana de mantenimiento después de la antigüedad mínima.",
+      "any": "Las actualizaciones automáticas están activadas para cualquier versión nueva del canal. Las versiones se aplican dentro de tu ventana de mantenimiento después de la antigüedad mínima.",
+      "paused": "Las actualizaciones automáticas están en pausa. No se aplica nada automáticamente hasta que las reanudes."
+    },
+    "windowLabel": "Ventana de mantenimiento",
+    "preset": {
+      "nightly": "Todas las noches a las 03:00",
+      "weekly": "Domingos a las 03:00",
+      "weekdays": "Días laborables a las 02:00",
+      "custom": "Cron personalizado"
+    },
+    "cronLabel": "Cron (inicio de la ventana)",
+    "durationLabel": "Duración de la ventana (minutos)",
+    "timezoneLabel": "Zona horaria",
+    "minAgeLabel": "Antigüedad mínima de la versión (días)",
+    "minAgeHelp": "Espera estos días después de publicada una versión, para que otros detecten primero las regresiones tempranas.",
+    "notifyLabel": "Notificar",
+    "notifyNone": "Aún no hay canales de notificación. Las alertas seguirán llegando a todos los canales activados cuando agregues uno.",
+    "notifyHelp": "Adónde van los avisos de actualizaciones programadas, retenidas y fallidas. Si no eliges ninguno, se usan todos los canales activados.",
+    "pauseLabel": "Pausar las actualizaciones automáticas",
+    "nextWindow": "Próxima ventana: {{time}} ({{timezone}}).",
+    "decision": "Última decisión para {{version}}: {{decision}}",
+    "save": "Guardar",
+    "saved": "Política de actualización automática guardada.",
+    "edgeUnavailable": "Las actualizaciones automáticas no están disponibles en el canal edge: las compilaciones edge son imágenes de contenedor, no binarios de versión firmados. Cambia el canal a beta o estable para usarlas."
+  },
+  "channels": {
+    "label": "Canal",
+    "active": "Canal de versiones",
+    "stable": {
+      "label": "Estable (recomendado)",
+      "description": "Versiones firmadas listas para el uso diario."
+    },
+    "beta": {
+      "label": "Beta (preliminar)",
+      "description": "Versiones preliminares firmadas con funciones nuevas, un poco antes que la estable."
+    },
+    "edge": {
+      "label": "Edge (última de main, inestable)",
+      "description": "Una imagen de contenedor del commit más reciente de main. Sin firma, puede fallar, solo para instalaciones en contenedor."
+    }
+  },
+  "version": {
+    "running": "Versión en ejecución",
+    "latest": "Hay una versión nueva disponible: {{version}}",
+    "latestEdge": "Hay una compilación edge más nueva disponible: {{version}}",
+    "upToDate": "Tienes la última versión.",
+    "upToDateEdge": "Tienes la última compilación edge.",
+    "edgeHostBinary": "Edge es un canal de imágenes de contenedor. Este plano de control se ejecuta como binario del host, así que no puede seguir edge.",
+    "none": "Aún no hay versiones publicadas.",
+    "viewRelease": "Ver versión",
+    "viewCommit": "Ver commit",
+    "image": "Imagen: {{image}}",
+    "channelLine": "Canal: {{channel}}"
+  },
+  "edge": {
+    "title": "Edge es una imagen de contenedor",
+    "intro": "Las compilaciones edge son imágenes de contenedor, no binarios firmados, así que no hay versión ni checksum que verificar.",
+    "pull": "Descargar la imagen",
+    "recreate": "Recrear el contenedor",
+    "compose": "O fíjala en tu archivo compose",
+    "binaryTitle": "Edge no se puede instalar en este host",
+    "binaryBody": "Las compilaciones edge no se pueden instalar sobre un binario del host. Cambia a un canal que distribuya binarios firmados.",
+    "switchTo": "Cambiar a {{channel}}",
+    "switched": "Canal cambiado a {{channel}}.",
+    "commit": "Commit {{commit}}"
+  },
+  "page": {
+    "title": "Actualizaciones",
+    "description": "Versión actual, canal de versiones y versiones disponibles.",
+    "errorTitle": "No se pudo cargar la configuración de actualizaciones",
+    "errorBody": "No se pudo cargar la página de actualizaciones: {{message}}. Tu servidor sigue en ejecución. Inténtalo de nuevo en un momento.",
+    "retry": "Intentar de nuevo",
+    "sourceNote": "Comparado con las versiones publicadas en GitHub."
+  },
+  "status": {
+    "state": {
+      "upToDate": "Al día",
+      "available": "Actualización disponible",
+      "scheduled": "Actualización programada",
+      "inProgress": "Actualización en curso",
+      "checkFailed": "Falló la comprobación",
+      "noReleases": "Sin versiones",
+      "hostBinary": "No seguible"
+    },
+    "runningVersion": "Versión en ejecución",
+    "lastChecked": "Última comprobación {{time}}",
+    "neverChecked": "Aún sin comprobar",
+    "checkNow": "Comprobar ahora",
+    "checking": "Comprobando...",
+    "checked": "Actualizaciones comprobadas.",
+    "checkFailedTitle": "No se pudo comprobar si hay actualizaciones",
+    "checkFailedBody": "No se pudo acceder al origen de las versiones: {{message}}. Tu servidor no se ve afectado. Comprueba que este host pueda llegar a github.com y inténtalo de nuevo.",
+    "viewNotes": "Ver notas de la versión",
+    "delta": "{{from}} a {{to}}",
+    "inProgressBody": "La actualización se está ejecutando. Esta página se recarga cuando la nueva versión responda.",
+    "githubRepo": "Abrir el repositorio de GitHub",
+    "bannerAlt": "Banner de la marca"
+  },
+  "changes": {
+    "title": "Qué cambia si actualizas",
+    "versionLabel": "Versión",
+    "releasedLabel": "Publicada",
+    "releasedUnknown": "Fecha no publicada",
+    "notesToggle": "Notas de la versión",
+    "notesEmpty": "Las notas de la versión aún no están disponibles.",
+    "safetyTitle": "Qué ocurre"
+  },
+  "settings": {
+    "channelDescription": "Qué flujo de versiones sigue este servidor.",
+    "channelActive": "Canal guardado",
+    "backgroundTitle": "Comprobaciones en segundo plano",
+    "backgroundDescription": "Busca nuevas versiones de forma periódica y muestra un aviso.",
+    "backgroundLabel": "Buscar actualizaciones en segundo plano",
+    "save": "Guardar",
+    "saved": "Configuración de actualizaciones guardada.",
+    "unsaved": "Tienes cambios sin guardar."
+  },
+  "pipeline": {
+    "phase": {
+      "prepare": "Preparar",
+      "validate": "Validar",
+      "protect": "Proteger",
+      "switch": "Cambiar",
+      "confirm": "Confirmar",
+      "other": "Otros"
+    },
+    "state": {
+      "ok": "Hecho",
+      "running": "En ejecución",
+      "failed": "Fallido",
+      "skipped": "Omitido",
+      "pending": "En espera"
+    },
+    "reconnecting": "Reiniciando el plano de control, reconectando...",
+    "rolledBack": "Rollback a {{version}} hecho, tus datos están intactos.",
+    "to": "a",
+    "totalTime": "Total {{time}}",
+    "backupAt": "Backup: {{name}}",
+    "reload": "Recargar",
+    "bar": {
+      "title": "Actualizando a {{version}}",
+      "step": "Paso {{n}} de {{total}}",
+      "view": "Ver progreso",
+      "reconnecting": "Reiniciando el plano de control, reconectando..."
+    },
+    "sidebar": {
+      "running": "Actualizando"
+    }
+  },
+  "stepper": {
+    "label": "Pasos de la actualización",
+    "step": {
+      "check": "Comprobar",
+      "preflight": "Verificación previa",
+      "download": "Descargar",
+      "apply": "Aplicar",
+      "verify": "Verificar"
+    },
+    "status": {
+      "done": "hecho",
+      "current": "en curso",
+      "failed": "fallido",
+      "blocked": "bloqueado",
+      "upcoming": "sin iniciar"
+    }
+  },
+  "cli": {
+    "summary": "Corregir con la CLI"
+  },
+  "result": {
+    "succeeded": "Actualizado de {{from}} a {{to}} a las {{time}}, verificación exitosa",
+    "succeededUnverified": "Actualizado de {{from}} a {{to}} a las {{time}}, la verificación no se completó",
+    "failed": "La actualización a {{to}} no se completó: {{reason}}",
+    "rolledBack": "Se hizo rollback de la actualización a {{to}} hacia {{from}}, tus datos están intactos",
+    "details": "Ver detalles del intento",
+    "hideDetails": "Ocultar detalles del intento",
+    "notes": "Notas de la versión",
+    "dismiss": "Descartar",
+    "running": "Ya hay una actualización a {{to}} en ejecución (intento {{id}}).",
+    "runningLink": "Ver el intento en ejecución",
+    "disabledRunning": "Actualizando a {{to}}, paso {{n}} de {{total}}",
+    "toast": "La actualización a {{to}} fue exitosa"
+  }
+}

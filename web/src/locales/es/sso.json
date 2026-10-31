@@ -1,0 +1,297 @@
+{
+  "page": {
+    "eyebrow": "Seguridad",
+    "title": "Inicio de sesión único",
+    "description": "Permite que las personas inicien sesión con tu proveedor de identidad mediante SAML 2.0, asigna grupos del directorio a roles y decide si las contraseñas locales siguen funcionando.",
+    "connectedCount_one": "{{count}} conexión activa",
+    "connectedCount_other": "{{count}} conexiones activas",
+    "addConnection": "Añadir conexión SAML",
+    "setupBanner": {
+      "title": "Termina primero la configuración",
+      "masterKey": "SAML necesita la clave maestra del plano de control para conservar su clave de firma. Configura la clave maestra y vuelve.",
+      "baseUrl": "SAML necesita una URL https del panel, porque los proveedores de identidad envían a ella las respuestas de inicio de sesión. Defínela en Ajustes, General."
+    }
+  },
+  "list": {
+    "title": "Conexiones SAML",
+    "description": "Cada conexión confía en un proveedor de identidad. Las conexiones habilitadas muestran un botón en la página de inicio de sesión.",
+    "emptyTitle": "Aún no hay conexiones SAML",
+    "emptyBody": "Añade una para Okta, Entra ID, Keycloak o cualquier proveedor de identidad SAML 2.0.",
+    "configure": "Configurar",
+    "state": {
+      "enabled": "Habilitada",
+      "disabled": "Desactivada",
+      "incomplete": "Faltan datos del IdP"
+    },
+    "jit": "Crea cuentas",
+    "certExpires": "El certificado expira el {{date}}"
+  },
+  "form": {
+    "newTitle": "Nueva conexión SAML",
+    "editTitle": "Configurar {{name}}",
+    "sheetDescription": "Entrega estos valores del proveedor de servicio a tu proveedor de identidad y luego importa sus metadatos.",
+    "name": "Nombre para mostrar",
+    "nameHelp": "Se muestra en el botón de inicio de sesión, por ejemplo el nombre de la empresa o del IdP.",
+    "enabled": "Mostrar en la página de inicio de sesión",
+    "sp": {
+      "title": "Datos del proveedor de servicio",
+      "description": "Cópialos en la app SAML que crees en tu proveedor de identidad.",
+      "entityId": "ID de entidad (audiencia)",
+      "acsUrl": "URL del servicio de consumo de aserciones",
+      "metadataUrl": "URL de metadatos",
+      "saveFirst": "Guarda la conexión para obtener sus URL.",
+      "copy": "Copiar {{label}}"
+    },
+    "import": {
+      "title": "Importar metadatos del IdP",
+      "description": "Pega la URL de metadatos o el XML de tu proveedor de identidad. Esto rellena el ID de entidad, la URL de inicio de sesión y el certificado de firma, y usa el más reciente vigente hoy cuando los metadatos listan varios.",
+      "url": "URL de metadatos",
+      "xml": "XML de metadatos",
+      "button": "Importar metadatos",
+      "done": "Metadatos importados. Revisa y habilita la conexión."
+    },
+    "idp": {
+      "title": "Proveedor de identidad",
+      "description": "Se rellena con la importación, o escríbelos a mano. Las respuestas deben estar firmadas con este certificado.",
+      "entityId": "ID de entidad del IdP (emisor)",
+      "ssoUrl": "URL de inicio de sesión del IdP",
+      "certificates": "Certificado de firma (PEM)",
+      "certificatesHelp": "Un certificado. Cuando el proveedor de identidad rota su clave, pega o importa el certificado nuevo al hacer el cambio."
+    },
+    "access": {
+      "title": "Cuentas y roles",
+      "description": "Decide quién puede iniciar sesión y qué rol recibe.",
+      "jit": "Crear cuentas en el primer inicio de sesión",
+      "jitHelp": "Desactivado: solo pueden iniciar sesión quienes ya tienen una cuenta aquí.",
+      "syncRoles": "Aplicar el rol asignado en cada inicio de sesión",
+      "syncRolesHelp": "Los cambios de grupo en el proveedor de identidad surten efecto en el siguiente inicio de sesión. Quienes no están en ningún grupo asignado reciben el rol predeterminado, o se les rechaza si no hay uno.",
+      "defaultRole": "Rol predeterminado",
+      "defaultRoleNone": "Ninguno: rechazar a quienes no están en ningún grupo asignado",
+      "domains": "Dominios de correo permitidos",
+      "domainsHelp": "Separados por comas, por ejemplo example.com. Vacío permite cualquier dominio."
+    },
+    "attributes": {
+      "title": "Nombres de atributos",
+      "description": "Déjalos vacíos para usar los nombres comunes de Okta, Entra ID y Keycloak.",
+      "email": "Atributo de correo",
+      "name": "Atributo del nombre para mostrar",
+      "groups": "Atributo de grupos"
+    },
+    "save": "Guardar conexión",
+    "saved": "Conexión guardada",
+    "delete": "Eliminar conexión",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteBody": "Las personas vinculadas mediante esta conexión conservan sus cuentas pero ya no podrán iniciar sesión con ella.",
+    "deleted": "Conexión eliminada"
+  },
+  "mappings": {
+    "title": "Asignación de grupos a roles",
+    "description": "Cuando alguien inicia sesión, o cambia un grupo del directorio, el grupo coincidente de mayor prioridad decide su rol. Los nombres de grupo no distinguen mayúsculas de minúsculas.",
+    "group": "Nombre del grupo",
+    "role": "Rol",
+    "priority": "Prioridad",
+    "add": "Añadir asignación",
+    "remove": "Quitar la asignación de {{group}}",
+    "empty": "No hay asignaciones. Todos reciben el rol predeterminado de la conexión.",
+    "save": "Guardar asignaciones",
+    "saved": "Asignaciones guardadas"
+  },
+  "enforce": {
+    "title": "Exigir inicio de sesión único",
+    "description": "Rechaza el inicio de sesión con contraseña, passkey y código por correo para todos, excepto los usuarios root.",
+    "label": "Exigir SSO a los usuarios que no son root",
+    "breakGlass": "Los usuarios root conservan su contraseña como vía de emergencia, y recover-admin en el host todavía la restablece. Consulta la documentación de acceso de emergencia.",
+    "on": "Ahora se exige el inicio de sesión único",
+    "off": "Se vuelve a permitir el inicio de sesión local"
+  },
+  "spCert": {
+    "title": "Certificado del proveedor de servicio",
+    "description": "Se genera la primera vez que se usa. Algunos proveedores de identidad lo piden para verificar solicitudes firmadas o cifrar aserciones.",
+    "none": "No está disponible hasta que se configure la clave maestra del plano de control."
+  },
+  "scim": {
+    "title": "Sincronización del directorio (SCIM)",
+    "description": "Permite que tu proveedor de identidad cree, actualice y desactive cuentas y grupos. Desactivar a alguien allí cierra de inmediato sus sesiones aquí.",
+    "baseUrl": "URL base de SCIM",
+    "defaultRole": "Rol para los nuevos usuarios del directorio",
+    "defaultRoleHelp": "Se usa cuando ninguna asignación de grupo coincide. Con asignaciones de grupo, los cambios de grupo del directorio actualizan los roles al instante.",
+    "roleSaved": "Rol predeterminado del directorio guardado",
+    "tokens": "Tokens",
+    "tokenName": "Nombre del token",
+    "tokenNamePlaceholder": "okta-provisioning",
+    "create": "Crear token",
+    "empty": "Aún no hay tokens SCIM. Crea uno y pégalo en tu proveedor de identidad.",
+    "rotate": "Rotar",
+    "revoke": "Revocar",
+    "revoked": "Revocado",
+    "neverUsed": "Nunca usado",
+    "lastUsed": "Último uso {{date}}",
+    "revokeTitle": "¿Revocar {{name}}?",
+    "revokeBody": "El aprovisionamiento con este token se detiene de inmediato.",
+    "revokedToast": "Token revocado",
+    "shownOnceTitle": "Copia el token ahora",
+    "shownOnceBody": "Se muestra una sola vez y solo se guarda como hash. Pégalo en los ajustes SCIM de tu proveedor de identidad.",
+    "done": "Listo"
+  },
+  "policy": {
+    "eyebrow": "Seguridad",
+    "title": "Política de sesión",
+    "description": "Reglas por equipo con las que se verifica cada solicitud: tiempo de inactividad, antigüedad máxima de la sesión, redes permitidas e inicio de sesión con dos factores obligatorio. Quienes están en varios equipos reciben la combinación más estricta.",
+    "yourAddress": "Tu dirección: {{address}}",
+    "recoveryTitle": "¿Te quedaste sin acceso?",
+    "recoveryBody": "En el host, ejecuta levelrail access-policy-reset --yes para quitar todas las políticas de sesión y vuelve a iniciar sesión. Se rechaza guardar una política que bloquearía tu propia dirección.",
+    "noPolicy": "Sin política",
+    "edit": "Editar política",
+    "idle": "Tiempo de inactividad",
+    "idleHelp": "Cierra las sesiones sin uso durante este tiempo, por ejemplo 30m. Mínimo 5m. Vacío lo desactiva.",
+    "maxAge": "Antigüedad máxima de la sesión",
+    "maxAgeHelp": "Cierra las sesiones más antiguas que esto, por ejemplo 12h. Mínimo 15m. Vacío lo desactiva.",
+    "maxSessions": "Sesiones simultáneas por persona",
+    "maxSessionsHelp": "Máximo de sesiones completas que una persona puede tener a la vez, entre navegadores y dispositivos. 0 desactiva el límite.",
+    "onLimit": "Cuando se alcanza el límite",
+    "onLimitEvict": "Cerrar la sesión más antigua",
+    "onLimitReject": "Rechazar el nuevo inicio de sesión",
+    "onLimitHelp": "Se verifica en la primera solicitud tras iniciar sesión o tras el paso de dos factores, y luego cada 30 segundos. Las sesiones que superan el límite terminan con un mensaje claro.",
+    "allowlist": "Redes permitidas",
+    "allowlistHelp": "Una dirección IP o CIDR por línea. Se aplica a sesiones y tokens de API. Vacío permite cualquier dirección.",
+    "requireMfa": "Exigir inicio de sesión con dos factores",
+    "requireMfaHelp": "Quienes no tienen una app de autenticación o una passkey solo pueden registrar una hasta que lo hagan. Los inicios de sesión SAML cuentan, porque el proveedor de identidad gestiona la MFA.",
+    "save": "Guardar política",
+    "saved": "Política de sesión guardada",
+    "clear": "Quitar política",
+    "cleared": "Política de sesión eliminada",
+    "sheetTitle": "Política de sesión de {{team}}",
+    "summaryIdle": "inactividad {{value}}",
+    "summaryMaxAge": "máx. {{value}}",
+    "summaryMfa": "MFA obligatoria",
+    "summarySessionsEvict_one": "{{count}} sesión, termina la más antigua",
+    "summarySessionsEvict_other": "{{count}} sesiones, termina la más antigua",
+    "summarySessionsReject_one": "{{count}} sesión, luego se rechaza",
+    "summarySessionsReject_other": "{{count}} sesiones, luego se rechaza",
+    "summaryAllow_one": "{{count}} red",
+    "summaryAllow_other": "{{count}} redes"
+  },
+  "oidc": {
+    "title": "Inicio de sesión con OAuth y OIDC",
+    "description": "Los mismos controles que SAML para los proveedores que habilitaste en Ajustes, Inicio de sesión con OAuth: qué grupos obtienen qué rol, si el primer inicio de sesión crea una cuenta y qué dominios de correo pueden iniciar sesión.",
+    "emptyTitle": "Aún no hay proveedores OAuth u OIDC",
+    "emptyBody": "Habilita un proveedor en Ajustes, Inicio de sesión con OAuth. Aparecerá aquí con su política de inicio de sesión.",
+    "syncBadge": "Sincroniza roles",
+    "state": {
+      "enabled": "Habilitado",
+      "off": "Desactivado"
+    },
+    "form": {
+      "title": "Política de inicio de sesión de {{name}}",
+      "sheetDescription": "Las asignaciones de grupo a rol se comparten con SAML y la sincronización del directorio: edítalas en la tarjeta de asignaciones de esta página.",
+      "access": {
+        "title": "Acceso",
+        "description": "Mínimo privilegio por defecto: se rechaza a las personas desconocidas y nadie recibe más que el rol que elijas aquí."
+      },
+      "jit": "Crear una cuenta en el primer inicio de sesión",
+      "jitHelp": "Desactivado: se rechaza a quien no tiene cuenta aquí, salvo que lo hayas invitado antes. Activado: el primer inicio de sesión crea una cuenta con el rol asignado o el rol predeterminado.",
+      "syncRoles": "Volver a aplicar el rol asignado en cada inicio de sesión",
+      "syncRolesHelp": "Desactivado: el rol solo se define al crear la cuenta. Activado: sigue a los grupos en cada inicio de sesión y las rebajas se escriben en el registro de auditoría. Los usuarios root nunca cambian.",
+      "defaultRole": "Rol predeterminado",
+      "defaultRoleHelp": "Para quienes no coinciden con ninguna asignación. Nunca se ofrece un rol con permisos root: una declaración del inicio de sesión no puede otorgarlo.",
+      "domains": "Dominios de correo permitidos",
+      "domainsHelp": "Separados por comas, por ejemplo example.com. Solo estos dominios pueden iniciar sesión y la página de inicio de sesión los envía a este proveedor. Vacío permite cualquier dominio y desactiva el enrutamiento.",
+      "groups": {
+        "title": "Grupos",
+        "description": "Dónde indica este proveedor en qué grupos está una persona.",
+        "unsupported": "Este proveedor no envía un token de ID verificado del que leer los grupos, así que todos reciben el rol predeterminado. Usa el proveedor genérico de OpenID Connect con tu proveedor de identidad para asignar grupos."
+      },
+      "groupsClaim": "Declaración de grupos",
+      "groupsClaimHelp": "La declaración del token de ID que lista los nombres de grupo, por ejemplo groups, roles o realm_access.roles. Solo se lee el token de ID firmado.",
+      "save": "Guardar política",
+      "saved": "Política de inicio de sesión guardada"
+    },
+    "test": {
+      "button": "Probar inicio de sesión",
+      "hint": "Un inicio de sesión de prueba te autentica en el proveedor y muestra qué haría un inicio de sesión real. No crea cuentas, roles ni sesiones. Guarda tus cambios primero.",
+      "allowed": "Este inicio de sesión se permitiría",
+      "refused": "Este inicio de sesión se rechazaría",
+      "groups": "Grupos",
+      "noGroups": "ninguno",
+      "role": "Rol",
+      "source": {
+        "mapping": "de una asignación de grupo",
+        "default": "el rol predeterminado"
+      },
+      "account": "Cuenta",
+      "accountState": {
+        "linked": "ya vinculada",
+        "existing_by_email": "cuenta existente encontrada por correo",
+        "new_account": "se crearía una cuenta nueva",
+        "not_provisioned": "ninguna, y la creación de cuentas está desactivada"
+      },
+      "issue": {
+        "no_groups_claim": "El token de ID no tiene la declaración \"{{claim}}\", así que todos reciben el rol predeterminado. Añade una declaración de grupos al token de ID en tu proveedor de identidad.",
+        "wrong_claim_name": "El token de ID no tiene la declaración \"{{claim}}\", pero incluye una lista llamada \"{{value}}\".",
+        "email_unverified": "El proveedor no marcó este correo como verificado, así que se rechaza el inicio de sesión. Verifica la dirección en el proveedor.",
+        "domain_not_allowed": "Este dominio de correo no está en la lista de permitidos.",
+        "not_provisioned": "No existe una cuenta para esta persona y la creación de cuentas está desactivada.",
+        "role_grants_root": "El rol que recibiría este inicio de sesión tiene permisos root o ya no existe. Una declaración nunca puede otorgar root.",
+        "no_email": "El proveedor no envió una dirección de correo."
+      },
+      "fix": {
+        "set_groups_claim": "Usar {{value}} como declaración de grupos",
+        "add_domain": "Permitir {{value}}",
+        "enable_jit": "Activar la creación de cuentas"
+      },
+      "fixManual": "Corregir en el proveedor de identidad",
+      "fixed": "Política actualizada. Ejecuta la prueba de nuevo.",
+      "failedTitle": "El inicio de sesión de prueba no terminó",
+      "failedBody": "Falló el proveedor o la redirección (código {{code}}). Revisa el ID de cliente, el secreto de cliente y la URL de redirección, e inténtalo de nuevo.",
+      "nothingCreated": "No se creó nada: ninguna cuenta, rol ni sesión."
+    }
+  },
+  "saml": {
+    "test": {
+      "button": "Probar inicio de sesión",
+      "hint": "Abre el inicio de sesión real en tu proveedor de identidad y muestra lo que envió y lo que haría un inicio de sesión. No crea cuentas, roles ni sesiones. Guarda tus cambios primero.",
+      "allowed": "Este inicio de sesión se permitiría",
+      "refused": "Este inicio de sesión se rechazaría",
+      "email": "Correo",
+      "none": "ninguno",
+      "fixed": "Conexión actualizada. Ejecuta la prueba de nuevo.",
+      "fixManual": "Corregir en el proveedor de identidad",
+      "failureCode": "Código: {{code}}",
+      "issue": {
+        "no_groups_claim": "La respuesta no incluye el atributo \"{{attribute}}\", así que todos reciben el rol predeterminado. Añade una declaración de atributo de grupos en tu proveedor de identidad y define su nombre como atributo de grupos.",
+        "domain_not_allowed": "Este dominio de correo no está reclamado por la conexión.",
+        "not_provisioned": "No existe una cuenta para esta persona y la creación de cuentas está desactivada.",
+        "role_grants_root": "El rol que recibiría este inicio de sesión tiene permisos root o ya no existe. Una declaración nunca puede otorgar root.",
+        "no_email": "La respuesta no incluía una dirección de correo. Revisa el nombre del atributo de correo y el formato del NameID.",
+        "wrong_claim_name": "La respuesta no incluye el atributo \"{{attribute}}\". Compara el nombre del atributo de grupos con lo que envía el proveedor de identidad.",
+        "email_unverified": "El proveedor de identidad no garantizó esta dirección de correo."
+      },
+      "failure": {
+        "clock_skew": {
+          "title": "Desfase de reloj",
+          "step": "La aserción estaba fuera de su ventana de validez. Comprueba que los relojes de este servidor y del proveedor de identidad coincidan con una diferencia de tres minutos como máximo (NTP) e inténtalo de nuevo."
+        },
+        "audience_mismatch": {
+          "title": "La audiencia no coincide",
+          "step": "El proveedor de identidad se dirigió a otro proveedor de servicio. Define su audiencia (ID de entidad) como {{entityId}} y su URL de ACS como {{acs}}."
+        },
+        "signature_invalid": {
+          "title": "Firma no válida",
+          "step": "La aserción no está firmada con el certificado registrado. Vuelve a importar los metadatos del proveedor de identidad y asegúrate de que firme la aserción, no solo la respuesta."
+        },
+        "request_mismatch": {
+          "title": "La respuesta no coincide con la solicitud",
+          "step": "La respuesta correspondía a otra solicitud o destino. Inicia la prueba de nuevo desde esta página y revisa la URL de ACS {{acs}} en el proveedor de identidad."
+        },
+        "response_invalid": {
+          "title": "Respuesta rechazada",
+          "step": "No se pudo verificar la respuesta. Revisa los registros del proveedor de identidad y vuelve a importar sus metadatos."
+        },
+        "saml_unavailable": {
+          "title": "El inicio de sesión no está disponible",
+          "step": "SAML necesita una URL https del panel y la clave maestra del plano de control. Corrige ambas en Ajustes, General e inténtalo de nuevo."
+        }
+      }
+    }
+  }
+}

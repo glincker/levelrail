@@ -1,13 +1,26 @@
 import type { DeploymentFilters, FilterKey } from './deploymentFilters'
+import { translateShared } from './activeLocale'
 import { statusView, triggerLabel } from './deploymentPresentation'
 
 export const FILTER_LABEL: Record<FilterKey, string> = {
-  author: 'Author',
-  environment: 'Environment',
-  status: 'Status',
-  app: 'App',
-  branch: 'Branch',
-  trigger: 'Trigger',
+  get author() {
+    return translateShared('deploys:deployList.keys.author', 'Author')
+  },
+  get environment() {
+    return translateShared('deploys:deployList.keys.environment', 'Environment')
+  },
+  get status() {
+    return translateShared('deploys:deployList.keys.status', 'Status')
+  },
+  get app() {
+    return translateShared('deploys:deployList.keys.app', 'App')
+  },
+  get branch() {
+    return translateShared('deploys:deployList.keys.branch', 'Branch')
+  },
+  get trigger() {
+    return translateShared('deploys:deployList.keys.trigger', 'Trigger')
+  },
 }
 
 export function optionLabel(key: FilterKey, value: string): string {

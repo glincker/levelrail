@@ -179,7 +179,9 @@ func (s *bootState) startAlerting() {
 	go runAutoscaler(ctx, apiRouter, autoscale.IntervalFromEnv(autoscale.OSEnv))
 	alertingEngine.SetChanges(withLogSignatures(changes.New(db, db, db, logger), alertingFederator), alertDashboardLink())
 	noiseControl := alerting.NewNoiseControl(alertNoiseConfig(logger, apiRouter.RuntimeSettings()), alertingDB, db, logger)
-	wireAnalysisHook(noiseControl, db, alertingFederator, alertingDB, logger)
+	if runner := wireAnalysisHook(noiseControl, db, alertingFederator, alertingDB, logger); runner != nil {
+		apiRouter.SetAnalysisRunner(runner)
+	}
 	alertingEngine.SetNoiseControl(noiseControl)
 	go func() {
 		if err := apiRouter.RunStatusPageSampler(ctx); err != nil && !errors.Is(err, context.Canceled) {

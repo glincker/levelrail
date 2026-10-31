@@ -1,8 +1,9 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EnvActivityPanel } from './EnvActivityPanel'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -38,9 +39,7 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderPanel() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <EnvActivityPanel appName="demo-app" />
@@ -108,11 +107,7 @@ describe('EnvActivityPanel', () => {
       ),
     )
     const { container } = render(
-      <QueryClientProvider
-        client={
-          new QueryClient({ defaultOptions: { queries: { retry: false } } })
-        }
-      >
+      <QueryClientProvider client={createTestQueryClient()}>
         <EnvActivityPanel appName="demo-app" />
       </QueryClientProvider>,
     )

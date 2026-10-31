@@ -29,6 +29,12 @@ type doctorSkippedFix struct {
 
 // runDoctor runs the control plane's health checks, or local-only ones with no server configured.
 func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 {
+		switch args[0] {
+		case "paths":
+			return runDoctorPaths(prog, args[1:], stdout, stderr, lookupEnv)
+		}
+	}
 	diskOnly := len(args) > 0 && args[0] == "disk"
 	if diskOnly {
 		args = args[1:]
@@ -172,6 +178,7 @@ func doctorUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s doctor [flags]
   %[1]s doctor disk [flags]
+  %[1]s doctor paths [flags]
 
 Runs the control plane's health checks: Docker, disk and inodes, ports,
 firewall, clock, DNS, certificates, backups and restore drills, node agents,
@@ -184,6 +191,9 @@ With no control plane configured, only local checks run (Docker, disk, ports).
 data dir and Docker root, Docker image, build cache, volume and container
 sizes, the top consumers) and a suggested cleanup command it never runs.
 The warning level comes from APP_DOCTOR_DISK_WARN_FREE_PCT (percent free).
+
+"doctor paths" is offline: it prints the binary, releases dir, data dir and
+systemd unit locations on this host and the APP_HTTP_ADDR the unit binds.
 
 Exit code is 0 if every check is ok or warn, 1 if any check fails.
 

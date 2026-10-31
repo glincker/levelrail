@@ -21,6 +21,7 @@
     "label": {
       "queued": "En cola",
       "held": "Retenido",
+      "awaitingApproval": "Esperando aprobación",
       "canceled": "Cancelado",
       "superseded": "Superado",
       "failed": "Compilación fallida",
@@ -35,6 +36,7 @@
       "queued": "Este despliegue está en cola detrás de otro despliegue.",
       "queuedWhy": "Este despliegue está en cola: {{reason}}.",
       "held": "Este despliegue está retenido. {{reason}}",
+      "awaitingApproval": "Este despliegue está esperando aprobación. Apruébalo en el panel para ejecutarlo.",
       "canceled": "Este despliegue se canceló antes de cambiar nada.",
       "superseded": "Un despliegue más nuevo reemplazó a este antes de aplicarse.",
       "failed": "La compilación falló, así que no se desplegó nada.",

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +8,7 @@ import nodesEn from '../locales/en/nodes.json'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import type { NodeResource } from '../types/nodeDetail'
 import type { NodeMove } from '../types/nodeMoves'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 void i18next.use(initReactI18next).init({
   lng: 'en',
@@ -83,9 +84,7 @@ function baseMove(over: Partial<NodeMove>): NodeMove {
 }
 
 function renderDialog(props: { volumeNames?: string[] } = {}) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <MoveToNodeDialog kind="app" name="web" {...props} />

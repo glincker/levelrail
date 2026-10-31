@@ -83,8 +83,12 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 45 {
-		t.Fatalf("len(Checks) = %d, want 45", len(got.Checks))
+	seenCodes := map[string]bool{}
+	for _, c := range got.Checks {
+		if c.Code == "" || seenCodes[c.Code] {
+			t.Fatalf("doctor check code %q is empty or duplicated", c.Code)
+		}
+		seenCodes[c.Code] = true
 	}
 	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "secret_binding", "stale_secrets", "notification_channel_secrets", "control_plane_backup", "control_plane_dr", "signature_pin", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew", "agent_advertise_reachability"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {

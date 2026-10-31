@@ -6,8 +6,12 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 )
+
+// briefFromSQL skips the display-only joins; preview rows are unique per app.
+const briefFromSQL = `FROM deploy_attempts d JOIN desired_services s ON s.name = d.service_name`
 
 // DeploymentBrief is the slim row deployment summaries are computed from.
 type DeploymentBrief struct {
@@ -42,36 +46,50 @@ const DeploymentSummaryDays = 14
 
 // ListDeploymentBriefs returns status and timing for every deployment of the
 // visible apps started at or after since.
+//
+// The rolled-back and live flags are derived in one pass over each app's
+// succeeded attempts instead of a correlated subquery per row.
 func (db *DB) ListDeploymentBriefs(ctx context.Context, since time.Time, visibleApps []string) ([]DeploymentBrief, error) {
 	where, args, err := deploymentWhere(DeploymentFilter{VisibleApps: visibleApps}, false)
 	if err != nil {
 		return nil, err
 	}
 	// Held and mismatched-live deploys need attention however old they are.
-	old := "(d.started_at >= ? OR d.status = 'held' OR (d.rollout_state = 'mismatch' AND " + isLiveSQL + "))"
+	old := "(d.started_at >= ? OR d.status = 'held' OR (d.rollout_state = 'mismatch' AND d.status = 'succeeded'))"
 	if where == "" {
 		where = " WHERE " + old
 	} else {
 		where += " AND " + old
 	}
 	args = append(args, since.UTC().Format(time.RFC3339Nano))
-	rows, err := db.QueryContext(ctx, `SELECT `+deploymentStatusSQL+`, d.rollout_state, `+isLiveSQL+`, d.started_at, d.finished_at `+deploymentFromSQL+where, args...)
+	rows, err := db.QueryContext(ctx, `SELECT d.status, COALESCE(d.error, ''), d.rollout_state, d.started_at, d.finished_at, d.service_name, d.image, d.source, d.reason `+briefFromSQL+where, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list deployment briefs: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var out []DeploymentBrief
+	type rawBrief struct {
+		brief   DeploymentBrief
+		stored  string
+		errText string
+		service string
+		image   string
+	}
+	var raw []rawBrief
+	sinceKey := since.UTC().Format(time.RFC3339Nano)
+	mem := succeededByService{}
+	var minSucceeded string
 	for rows.Next() {
 		var (
-			b        DeploymentBrief
+			r        rawBrief
 			started  string
 			finished sql.NullString
+			src, rsn sql.NullString
 		)
-		if err := rows.Scan(&b.Status, &b.RolloutState, &b.IsLive, &started, &finished); err != nil {
+		if err := rows.Scan(&r.stored, &r.errText, &r.brief.RolloutState, &started, &finished, &r.service, &r.image, &src, &rsn); err != nil {
 			return nil, fmt.Errorf("store: scan deployment brief: %w", err)
 		}
-		if b.StartedAt, err = time.Parse(time.RFC3339Nano, started); err != nil {
+		if r.brief.StartedAt, err = time.Parse(time.RFC3339Nano, started); err != nil {
 			return nil, fmt.Errorf("store: parse deployment started_at %q: %w", started, err)
 		}
 		if finished.Valid {
@@ -79,12 +97,121 @@ func (db *DB) ListDeploymentBriefs(ctx context.Context, since time.Time, visible
 			if err != nil {
 				return nil, fmt.Errorf("store: parse deployment finished_at %q: %w", finished.String, err)
 			}
-			b.FinishedAt = &t
+			r.brief.FinishedAt = &t
 		}
-		out = append(out, b)
+		if r.stored == "succeeded" {
+			if minSucceeded == "" || started < minSucceeded {
+				minSucceeded = started
+			}
+			mem[r.service] = append(mem[r.service], newSucceededAttempt(started, r.image, src.String, rsn.String))
+		}
+		raw = append(raw, r)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate deployment briefs: %w", err)
+	}
+	_ = rows.Close()
+
+	chains := mem
+	// Only a mismatched succeeded deploy older than the window needs attempts
+	// the main read did not return.
+	if minSucceeded != "" && minSucceeded < sinceKey {
+		if chains, err = db.succeededChains(ctx, minSucceeded, visibleApps); err != nil {
+			return nil, err
+		}
+	} else {
+		for _, list := range chains {
+			sort.Slice(list, func(i, j int) bool { return list[i].startedAt < list[j].startedAt })
+		}
+	}
+	out := make([]DeploymentBrief, 0, len(raw))
+	for _, r := range raw {
+		b := r.brief
+		switch r.stored {
+		case "running":
+			b.Status = DeploymentBuilding
+		case "held", "superseded":
+			b.Status = r.stored
+		case "failed":
+			b.Status = DeploymentFailed
+			if strings.Contains(strings.ToLower(r.errText), "context canceled") {
+				b.Status = DeploymentCanceled
+			}
+		case "succeeded":
+			b.Status = DeploymentReady
+			next := chains.nextAfter(r.service, b.StartedAt)
+			if next == nil {
+				b.IsLive = b.RolloutState != RolloutStateMismatch
+			} else if next.image != r.image && next.isRollback {
+				b.Status = DeploymentRolledBack
+			}
+		default:
+			b.Status = r.stored
+		}
+		out = append(out, b)
+	}
+	return out, nil
+}
+
+type succeededAttempt struct {
+	startedAt  string
+	image      string
+	isRollback bool
+}
+
+func newSucceededAttempt(started, image, source, reason string) succeededAttempt {
+	return succeededAttempt{
+		startedAt:  started,
+		image:      image,
+		isRollback: source == "auto_rollback" || strings.Contains(strings.ToLower(reason), "rollbackto:"),
+	}
+}
+
+// succeededByService holds each app's succeeded attempts in start order.
+type succeededByService map[string][]succeededAttempt
+
+// nextAfter returns the earliest succeeded attempt strictly after t.
+func (m succeededByService) nextAfter(service string, t time.Time) *succeededAttempt {
+	list := m[service]
+	key := t.UTC().Format(time.RFC3339Nano)
+	i := sort.Search(len(list), func(i int) bool { return list[i].startedAt > key })
+	if i == len(list) {
+		return nil
+	}
+	return &list[i]
+}
+
+func (db *DB) succeededChains(ctx context.Context, from string, visibleApps []string) (succeededByService, error) {
+	out := succeededByService{}
+	if from == "" {
+		return out, nil
+	}
+	where, args, err := deploymentWhere(DeploymentFilter{VisibleApps: visibleApps}, false)
+	if err != nil {
+		return nil, err
+	}
+	cond := "d.status = 'succeeded' AND d.started_at >= ?"
+	if where == "" {
+		where = " WHERE " + cond
+	} else {
+		where += " AND " + cond
+	}
+	args = append(args, from)
+	rows, err := db.QueryContext(ctx, `SELECT d.service_name, d.started_at, d.image, d.source, d.reason `+briefFromSQL+where+` ORDER BY d.service_name, d.started_at`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("store: list succeeded deployments: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var svc, started, image string
+		var src, rsn sql.NullString
+		if err := rows.Scan(&svc, &started, &image, &src, &rsn); err != nil {
+			return nil, fmt.Errorf("store: scan succeeded deployment: %w", err)
+		}
+		out[svc] = append(out[svc], newSucceededAttempt(started, image, src.String, rsn.String))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate succeeded deployments: %w", err)
 	}
 	return out, nil
 }

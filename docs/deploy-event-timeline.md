@@ -1,6 +1,6 @@
 ---
 title: "Deploy event timeline"
-description: "One screen per deploy that tells the whole story in order: trigger, build, push, hooks, readiness, cutover, post-deploy watch, rollback, and traffic before and after cutover, live while it runs and replayable after."
+description: "One screen per deploy that shows the whole story in order, from trigger and build to cutover, post-deploy watch and rollback, live and replayable."
 "og:url": "https://docs.levelrail.com/deploy-event-timeline"
 ---
 

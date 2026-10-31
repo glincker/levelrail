@@ -134,6 +134,7 @@ func joinOrNone(l []string) string {
 func printPlugin(out io.Writer, p apiclient.Plugin) {
 	_, _ = fmt.Fprintf(out, "Name:       %s %s (%s)\nPublisher:  %s\nImage:      %s\nState:      %s (running: %t)\n", p.Name, p.Version, p.Kind, p.Publisher, p.Image, p.State, p.Running)
 	_, _ = fmt.Fprintf(out, "Requested:  %s\nApproved:   %s\nNetwork:    %s\nSigned by:  %s\nHealth:     %s (verification: %s)\n", joinOrNone(p.RequestedAbilities), joinOrNone(p.ApprovedAbilities), outboundSummary(p.OutboundHosts), joinOrNone([]string{p.KeyID}), p.Health, p.Verification)
+	printNetworkNote(out, p.OutboundHosts)
 	for _, panel := range p.Panels {
 		_, _ = fmt.Fprintf(out, "Panel:      %s\n", panel.Title)
 	}
@@ -146,7 +147,16 @@ func outboundSummary(hosts []string) string {
 	if len(hosts) == 0 {
 		return "none (no network)"
 	}
-	return strings.Join(hosts, ", ") + " (declared, not yet enforced)"
+	return strings.Join(hosts, ", ") + " (declared by the plugin, not restricted)"
+}
+
+// networkNote is printed under any plan that lists hosts, so the list is not read as a limit.
+const networkNote = "Note: a plugin with any declared host currently has general network access."
+
+func printNetworkNote(out io.Writer, hosts []string) {
+	if len(hosts) > 0 {
+		_, _ = fmt.Fprintln(out, networkNote)
+	}
 }
 
 func runPluginsNamed(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), call func(context.Context, *apiclient.Client, string) (apiclient.Plugin, error)) int {

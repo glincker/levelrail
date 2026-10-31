@@ -1,10 +1,11 @@
 import { Suspense } from 'react'
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useDeployProgress } from './useDeployProgress'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const APP_NAME = 'web'
 
@@ -15,7 +16,11 @@ function requestUrlOf(input: RequestInfo | URL): string {
 }
 
 function fakeJsonResponse(body: unknown): Response {
-  return { ok: true, status: 200, json: () => Promise.resolve(body) } as unknown as Response
+  return {
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve(body),
+  } as unknown as Response
 }
 
 function makeAttempt(overrides: Partial<DeployAttempt> = {}): DeployAttempt {
@@ -31,7 +36,9 @@ function makeAttempt(overrides: Partial<DeployAttempt> = {}): DeployAttempt {
   }
 }
 
-function makeCondition(overrides: Partial<ReconcileCondition> = {}): ReconcileCondition {
+function makeCondition(
+  overrides: Partial<ReconcileCondition> = {},
+): ReconcileCondition {
   return {
     Type: 'Ready',
     Status: 'True',
@@ -53,7 +60,7 @@ function ProbeComponent() {
 }
 
 function renderProbe() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const queryClient = createTestQueryClient()
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<div>loading</div>}>
@@ -99,7 +106,10 @@ describe('useDeployProgress', () => {
     // The reconciler catches up: the next poll sees a fresh, terminal
     // condition (AlreadyRunning, one of ROLLOUT_DONE_REASONS).
     conditions = [
-      makeCondition({ Reason: 'AlreadyRunning', LastTransitionTime: '2026-01-01T00:00:02Z' }),
+      makeCondition({
+        Reason: 'AlreadyRunning',
+        LastTransitionTime: '2026-01-01T00:00:02Z',
+      }),
     ]
     await vi.advanceTimersByTimeAsync(3_000)
 
@@ -120,7 +130,12 @@ describe('useDeployProgress', () => {
         return Promise.resolve(fakeJsonResponse([makeAttempt()]))
       }
       return Promise.resolve(
-        fakeJsonResponse([makeCondition({ Reason: 'AlreadyRunning', LastTransitionTime: '2026-01-01T00:00:02Z' })]),
+        fakeJsonResponse([
+          makeCondition({
+            Reason: 'AlreadyRunning',
+            LastTransitionTime: '2026-01-01T00:00:02Z',
+          }),
+        ]),
       )
     })
     vi.stubGlobal('fetch', fetchMock)

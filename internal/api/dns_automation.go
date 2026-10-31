@@ -149,9 +149,18 @@ func (rt *Router) desiredDNSRecord(ctx context.Context, s store.IngressSettings,
 		}
 	}
 	d := dnsrecords.Desired{Name: dnsrecords.RelativeName(domain, t.Zone), TTL: ttl}
+	typ, val, err := rt.serverDNSTarget(ctx, s)
+	if err != nil {
+		return dnsrecords.Desired{}, err
+	}
+	d.Type, d.Value = typ, val
+	return d, dnsrecords.ValidateTarget(d, t.Provider)
+}
+
+// serverDNSTarget is the record type and value that point a name at this server.
+func (rt *Router) serverDNSTarget(ctx context.Context, s store.IngressSettings) (string, string, error) {
 	if s.DNSCNAMETarget != "" {
-		d.Type, d.Value = "CNAME", s.DNSCNAMETarget
-		return d, dnsrecords.ValidateTarget(d, t.Provider)
+		return "CNAME", s.DNSCNAMETarget, nil
 	}
 	var ips []string
 	if ip := net.ParseIP(rt.publicHost); ip != nil && ingress.IsPubliclyRoutable(ip) {
@@ -165,13 +174,11 @@ func (rt *Router) desiredDNSRecord(ctx context.Context, s store.IngressSettings,
 	typ, val, err := dnsrecords.TargetFor(ips)
 	switch {
 	case err == nil:
-		d.Type, d.Value = typ, val
+		return typ, val, nil
 	case rt.publicHost != "" && net.ParseIP(rt.publicHost) == nil:
-		d.Type, d.Value = "CNAME", rt.publicHost
-	default:
-		return dnsrecords.Desired{}, err
+		return "CNAME", rt.publicHost, nil
 	}
-	return d, dnsrecords.ValidateTarget(d, t.Provider)
+	return "", "", err
 }
 
 func recordResource(d dnsrecords.Desired) *dnsRecordResource {

@@ -7,6 +7,7 @@ import (
 
 	"filippo.io/age"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -43,6 +44,8 @@ type VolumeCloneRestoreRunner struct {
 	Downloader     Downloader
 	VolumeRestorer VolumeRestorer
 	Volumes        VolumeCreator
+	// OwnerApp is the app the new volume is labeled for.
+	OwnerApp string
 	// Identities decrypt sealed backups; empty is valid for raw ones.
 	Identities []age.Identity
 	// Now returns the current time, the same "field, not time.Now called
@@ -98,7 +101,7 @@ func (r *VolumeCloneRestoreRunner) RunVolumeCloneRestore(ctx context.Context, hi
 // "keep RunX's own body a flat start/run/finish sequence" split
 // CloneRestoreRunner.waitAndRestore's own doc comment describes.
 func (r *VolumeCloneRestoreRunner) createAndRestore(ctx context.Context, newVolumeName, backupHistoryID string) error {
-	if err := r.Volumes.EnsureVolume(ctx, newVolumeName); err != nil {
+	if err := docker.EnsureVolumeFor(ctx, r.Volumes, newVolumeName, docker.VolumeOwner{App: r.OwnerApp, Name: newVolumeName}); err != nil {
 		return fmt.Errorf("create volume %q: %w", newVolumeName, err)
 	}
 	return downloadAndRestoreVolume(ctx, r.Store, r.Secrets, r.Downloader, r.VolumeRestorer, r.Identities, newVolumeName, backupHistoryID)

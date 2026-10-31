@@ -1,7 +1,7 @@
 ---
 title: "Autoscaling"
 tag: "Beta"
-description: Scale an app's replicas up and down on CPU, memory or request load, between a minimum and a maximum you set, with cooldowns that stop it from flapping and a recorded reason for every decision.
+description: "Scale an app between a minimum and a maximum replica count on CPU, memory or request load, with cooldowns and a recorded reason for each decision."
 "og:url": "https://docs.levelrail.com/autoscaling"
 ---
 

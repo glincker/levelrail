@@ -1,6 +1,6 @@
 ---
 title: "Traffic export"
-description: Stream one record per finished edge request to PostHog, an OpenTelemetry collector or your own webhook, without visitor identity by default and without ever slowing a request.
+description: "Stream one record per finished edge request to PostHog, an OpenTelemetry collector or your own webhook, without visitor identity by default."
 "og:url": "https://docs.levelrail.com/traffic-export"
 ---
 

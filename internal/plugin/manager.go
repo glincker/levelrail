@@ -81,11 +81,15 @@ func (m *Manager) Install(ctx context.Context, req InstallRequest, actor string)
 	if err != nil {
 		return Record{}, err
 	}
+	effective, err := EffectiveOutboundHosts(man, cfgJSON)
+	if err != nil {
+		return Record{}, err
+	}
 	now := stamp(m.now())
 	rec := Record{
 		Name: man.Name, Version: man.Version, Kind: man.Kind, Publisher: man.Publisher, Description: man.Description,
 		Image: man.Image, Digest: man.Digest(), Manifest: string(req.Manifest), Signature: req.Signature, KeyID: keyID,
-		RequestedAbilities: man.Abilities, ApprovedAbilities: []string{}, OutboundHosts: man.OutboundHosts, ConfigJSON: cfgJSON,
+		RequestedAbilities: man.Abilities, ApprovedAbilities: []string{}, OutboundHosts: effective, ConfigJSON: cfgJSON,
 		State: StateInstalled, InstalledAt: now, InstalledBy: actor, UpdatedAt: now,
 	}
 	if approved != nil {

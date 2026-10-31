@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { NodeCapacityHint } from './NodeCapacityHint'
 import type { NodeResource } from '../types/nodeDetail'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -37,9 +38,7 @@ function renderHint(
   fetchMock: ReturnType<typeof vi.fn>,
 ) {
   vi.stubGlobal('fetch', fetchMock)
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <NodeCapacityHint {...props} />

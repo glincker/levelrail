@@ -1,6 +1,6 @@
 ---
 title: Guides
-description: "Task-focused Levelrail guides: compare it with Coolify, self-host Postgres with verified backups, ship zero-downtime deploys on plain Docker, and let an OpenClaw agent operate Levelrail safely."
+description: "Task-focused Levelrail guides: compare it with Coolify, self-host Postgres with verified backups, ship zero-downtime deploys and run OpenClaw agents safely."
 "og:url": "https://docs.levelrail.com/guides/index"
 ---
 

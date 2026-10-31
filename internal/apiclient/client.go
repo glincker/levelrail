@@ -63,6 +63,12 @@ func WithUserAgent(userAgent string) Option {
 	return func(c *Client) { c.userAgent = userAgent }
 }
 
+// WithTransport sends every request through rt instead of the network, for an
+// in-process caller. It skips server pinning and the process-wide scope headers.
+func WithTransport(rt http.RoundTripper) Option {
+	return func(c *Client) { c.hc.Transport = rt }
+}
+
 // WithNoCredentialsFix replaces the message of a 401 answered to a request
 // that carried no token, so the caller can name the exact command that fixes it.
 func WithNoCredentialsFix(msg string) Option {

@@ -184,6 +184,13 @@ func registrySaysMissing(err error) bool {
 	if strings.Contains(m, "not supported") || strings.Contains(m, "page not found") || bareNotFound(m) {
 		return false
 	}
+	// A private registry answers a credential-less lookup with 401 or a masked
+	// "not found"; that says nothing about the manifest.
+	for _, w := range []string{"unauthorized", "denied", "authentication required", "authorization", "forbidden"} {
+		if strings.Contains(m, w) {
+			return false
+		}
+	}
 	if cerrdefs.IsNotFound(err) {
 		return true
 	}

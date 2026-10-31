@@ -323,6 +323,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// secret): same secretsManager, same nil-interface hazard.
 			api.WithNetworkShareSecrets(secretsManager),
 			api.WithBackupRunner(backupRunner),
+			mailBackupOption(backupRunner, secretsManager),
 			// Volume backups reuse the database runner: one implementation serves both resource kinds.
 			api.WithServiceVolumeBackupRunner(backupRunner),
 			// Needs ExecWithInput on the local runtime, the same way ContainerDumper needs Exec.
@@ -419,6 +420,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		}))
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
+	rt.RecoverMailHolds(context.Background())
 	if builder != nil {
 		// Spec file deploys (webhook, git push, builds) admit host ports like POST /apps.
 		builder.SetPortAdmitter(rt)

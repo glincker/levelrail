@@ -23,7 +23,7 @@ md.use({
       const inner = this.parser.parseInline(token.tokens)
       if (
         !/^(https?:|mailto:)/i.test(token.href) &&
-        !token.href.startsWith('/')
+        !/^\/(?![/\\])/.test(token.href)
       ) {
         return inner
       }

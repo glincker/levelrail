@@ -58,7 +58,7 @@ func computeDeployOutcome(a store.DeployAttempt, newest bool, conds []reconcile.
 		return OutcomeCanceled
 	case store.DeployAttemptStatusSuperseded:
 		return OutcomeSuperseded
-	case store.DeployAttemptStatusHeld:
+	case store.DeployAttemptStatusHeld, store.DeployAttemptStatusAwaitingApproval:
 		return OutcomeBlocked
 	case store.DeployAttemptStatusSucceeded:
 	default:

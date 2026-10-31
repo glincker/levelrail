@@ -39,6 +39,8 @@ func NewServerCredentials(ca *CA, hosts []string, validFor time.Duration, opts .
 	}
 	base := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		// Every agent dial site is Go and negotiates 1.3 already; this stops a downgrade.
+		MinVersion: tls.VersionTLS13,
 		// Client certs are requested, not required, and verified in verifyClientChain so a rejection can name the node.
 		ClientAuth: tls.RequestClientCert,
 		// grpc-go >= 1.67 enforces ALPN negotiation; without this, every

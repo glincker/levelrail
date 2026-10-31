@@ -24,6 +24,16 @@ func main() {
 
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	cliProg = prog
+	hw := &hintWriter{dst: stderr}
+	code := runDispatch(prog, args, stdout, hw, lookupEnv)
+	if code != exitOK {
+		_, _ = fmt.Fprint(stderr, hw.flagHint(prog, args))
+	}
+	return code
+}
+
+func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	rawLookupEnv = lookupEnv
 	lookupEnv = currentContextLookup(prog, envAliasLookup(lookupEnv))
 	ciMode = forceCI || ciEnv(rawLookupEnv)
@@ -76,6 +86,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBackupAlias(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runRestoreAlias(prog, args[1:], stdout, stderr, lookupEnv)
+	case "incidents":
+		return runIncidents(prog, args[1:], stdout, stderr, lookupEnv)
 	case "analysis":
 		return runAnalysis(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
@@ -110,6 +122,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runMobile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "plugins":
 		return runPlugins(prog, args[1:], stdout, stderr, lookupEnv)
+	case "mail":
+		return runMail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns":
 		return runDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
@@ -140,6 +154,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status-page":
 		return runStatusPage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "mcp-clients":
+		return runMCPClients(prog, args[1:], stdout, stderr, lookupEnv)
 	case "monitors":
 		return runMonitors(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env":
@@ -373,8 +389,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 	case "environments":
 		return runEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
-		_, _ = fmt.Fprint(stderr, rootUsage(prog))
+		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, unknownVerbHint(prog, nil, args[0]))
 		return exitUsage
 	}
 }
@@ -427,6 +443,7 @@ Usage:
   %[1]s push-subscriptions list|revoke [flags]             list or revoke registered browser push subscriptions
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
+  %[1]s mcp-clients create|list|delete                      pre-register OAuth clients for remote MCP (experimental, root only)
   %[1]s monitors create|list|results|delete                 experimental uptime monitors (http, tcp), needs APP_MONITORS_ENABLED
   %[1]s env pull|push <app> [--file .env] [flags]   sync an app's env vars with a local .env file
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret

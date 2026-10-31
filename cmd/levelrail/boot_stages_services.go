@@ -19,11 +19,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/functions"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/mailcert"
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
@@ -49,6 +51,7 @@ func (s *bootState) buildRunners() error {
 			Dumper:  &backup.ContainerDumper{Runtime: client},
 			// Shared by database and service volume backups, so both use one upload, history, and scheduling pipeline.
 			VolumeArchiver:    &backup.ContainerVolumeArchiver{Runtime: client},
+			ArchiveExcludes:   mailKeyBackupExcludes(db),
 			SqliteSnapshotter: &backup.ContainerSqliteSnapshotter{Runtime: client},
 			Uploader:          routedStorage(agentRegistry),
 		}
@@ -405,4 +408,16 @@ func (s *bootState) startReconciler() {
 		go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
 	}
 	s.gate = gate
+}
+
+// mailKeyBackupExcludes keeps the managed mail key out of generic volume
+// backups, which an API caller can download or copy files out of.
+func mailKeyBackupExcludes(db *store.DB) func(context.Context, string, string) ([]string, error) {
+	return func(ctx context.Context, serviceName, volumeName string) ([]string, error) {
+		svc, err := db.GetDesiredService(ctx, serviceName)
+		if err != nil {
+			return nil, err
+		}
+		return mailcert.BackupExcludes(svc.TemplateID, volumeName), nil
+	}
 }

@@ -94,3 +94,21 @@ func TestReadProc(t *testing.T) {
 		t.Fatalf("bad proc %+v", p)
 	}
 }
+
+func TestTrimOnceAfterBootDisabledReturnsAtOnce(t *testing.T) {
+	done := make(chan struct{})
+	go func() {
+		trimOnceAfterBoot(context.Background(), func(k string) string {
+			if k == EnvTrimBootDelay {
+				return "0"
+			}
+			return ""
+		})
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("disabled boot trim should return immediately")
+	}
+}

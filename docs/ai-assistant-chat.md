@@ -1,7 +1,7 @@
 ---
 title: "In-app AI assistant chat"
 tag: "Experimental"
-description: The in-app AI assistant chat with your own key for Anthropic, OpenAI compatible, Gemini or self-hosted models, how to enable it behind the ai-chat experimental flag, and the confirmation gate that bounds what it can do.
+description: "The in-app AI assistant with your own key for Anthropic, OpenAI compatible, Gemini or self-hosted models, behind the ai-chat experimental flag."
 "og:url": "https://docs.levelrail.com/ai-assistant-chat"
 ---
 

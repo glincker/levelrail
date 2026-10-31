@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { createInstance } from 'i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import templates from '../../locales/en/templates.json'
 import type { AppDetail } from '../../types/appDetail'
 import { TemplateAccessCard } from './TemplateAccessCard'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -73,9 +74,7 @@ async function renderCard(secretEnv: string[]) {
   await i18n
     .use(initReactI18next)
     .init({ lng: 'en', resources: { en: { templates } } })
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <QueryClientProvider client={client}>
       <I18nextProvider i18n={i18n}>

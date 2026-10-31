@@ -127,7 +127,7 @@ func (r *Runner) runSealedVolume(ctx context.Context, serviceName, volumeName, d
 	}
 	var lastErr error
 	for i := 1; i <= attempts; i++ {
-		size, sum, res, err := r.sealedAttempt(ctx, serviceName, dockerVolumeName, sqlitePath, dest, objectKey, policy)
+		size, sum, res, err := r.sealedAttempt(ctx, serviceName, volumeName, dockerVolumeName, sqlitePath, dest, objectKey, policy)
 		if err == nil {
 			return size, sum, res, nil
 		}
@@ -144,7 +144,7 @@ func (r *Runner) runSealedVolume(ctx context.Context, serviceName, volumeName, d
 	return 0, "", sealedResult{}, lastErr
 }
 
-func (r *Runner) sealedAttempt(ctx context.Context, serviceName, dockerVolumeName, sqlitePath string, dest Destination, objectKey string, policy store.VolumeBackupPolicy) (size int64, checksum string, res sealedResult, err error) {
+func (r *Runner) sealedAttempt(ctx context.Context, serviceName, volumeName, dockerVolumeName, sqlitePath string, dest Destination, objectKey string, policy store.VolumeBackupPolicy) (size int64, checksum string, res sealedResult, err error) {
 	opts := r.Volume
 	res.codec = opts.Sealer.Codec()
 
@@ -166,7 +166,7 @@ func (r *Runner) sealedAttempt(ctx context.Context, serviceName, dockerVolumeNam
 		if r.VolumeArchiver == nil {
 			return 0, "", res, errors.New("volume archiving is not configured")
 		}
-		src, err = r.VolumeArchiver.Archive(ctx, dockerVolumeName)
+		src, err = r.archiveVolume(ctx, serviceName, volumeName, dockerVolumeName)
 	} else {
 		if r.SqliteSnapshotter == nil {
 			return 0, "", res, errors.New("sqlite snapshots are not configured")

@@ -11,7 +11,8 @@ func TestPublishedPortsDecode(t *testing.T) {
 		body string
 		want []PublishedPort
 	}{
-		{"app udp", `{"name":"dns","published_ports":[{"container_port":53,"host_port":53,"protocol":"udp"}]}`, []PublishedPort{{53, 53, "udp"}}},
+		{"app udp", `{"name":"dns","published_ports":[{"container_port":53,"host_port":53,"protocol":"udp"}]}`, []PublishedPort{{ContainerPort: 53, HostPort: 53, Protocol: "udp"}}},
+		{"per-port bind", `{"name":"mail","published_ports":[{"container_port":25,"host_port":25,"protocol":"tcp","bind":"public"}]}`, []PublishedPort{{ContainerPort: 25, HostPort: 25, Protocol: "tcp", Bind: "public"}}},
 		{"absent", `{"name":"web"}`, nil},
 	}
 	for _, tc := range tests {

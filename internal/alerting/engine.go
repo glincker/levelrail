@@ -55,6 +55,7 @@ type Engine struct {
 	backups        BackupSource
 	databaseHealth DatabaseHealthSource
 	deployFailures DeployFailureSource
+	monitorDowns   MonitorDownSource
 	traffic        trafficKinds
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
@@ -222,6 +223,9 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 
 // SetEmailDelivery enables kind=email_delivery_failing rules.
 func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = src }
+
+// SetMonitorDowns wires the source the monitor_down rule reads; unset keeps the rule inert.
+func (e *Engine) SetMonitorDowns(src MonitorDownSource) { e.monitorDowns = src }
 
 // SetDeployFailures wires the source the deploy_failed rule reads.
 func (e *Engine) SetDeployFailures(src DeployFailureSource) { e.deployFailures = src }
@@ -480,6 +484,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, backupMissingNoticeText, err = EvaluateDeployFailed(ctx, e.deployFailures, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindMonitorDown:
+			if e.monitorDowns == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateMonitorDown(ctx, e.monitorDowns, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -743,7 +756,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

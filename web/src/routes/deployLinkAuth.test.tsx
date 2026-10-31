@@ -1,4 +1,3 @@
-import { QueryClient } from '@tanstack/react-query'
 import {
   createMemoryHistory,
   createRoute,
@@ -9,6 +8,7 @@ import { clearStoredUsername, setStoredUsername } from '../lib/authStore'
 import { goAfterLogin } from '../queries/auth'
 import { Route as loginRoute } from './login'
 import { Route as rootRoute } from './__root'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // routeTree.gen.ts is gitignored and CI never generates it, so build a small tree.
 const routeTree = rootRoute.addChildren([
@@ -28,9 +28,7 @@ const routeTree = rootRoute.addChildren([
 const DEPLOY_PATH = '/templates?deploy=uptime-kuma'
 
 function makeRouter(entry: string) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   const router = createRouter({
     routeTree,
     context: { queryClient },

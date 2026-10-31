@@ -59,7 +59,7 @@ export function PageBanner({
     <header
       data-testid={compact ? 'page-banner-compact' : 'page-banner-full'}
       className={cn(
-        'banner-edge relative isolate flex items-stretch overflow-hidden rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))] [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
+        'banner-edge relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))] [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
         className,
       )}
     >
@@ -98,20 +98,20 @@ export function PageBanner({
               {title}
             </h1>
             {compact ? (
-              <p className="truncate text-sm text-muted-foreground">
+              <p className="line-clamp-3 text-sm text-muted-foreground md:line-clamp-1">
                 {description}
               </p>
             ) : null}
           </div>
         </div>
         {compact ? null : (
-          <p className="line-clamp-2 max-w-prose text-sm text-muted-foreground">
+          <p className="line-clamp-3 max-w-prose text-sm text-muted-foreground">
             {description}
           </p>
         )}
       </div>
       {action ? (
-        <div className="z-10 ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2 self-center px-5 py-4">
+        <div className="z-10 flex shrink-0 flex-wrap items-center gap-2 self-start px-4 pb-4 sm:ml-auto sm:justify-end sm:self-center sm:px-5 sm:py-4">
           {action}
         </div>
       ) : null}

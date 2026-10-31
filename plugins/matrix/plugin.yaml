@@ -6,8 +6,7 @@ publisher: GLINCKER
 description: Posts alerts to a Matrix room with a bot access token.
 image: ghcr.io/glincker/levelrail-plugin-matrix@sha256:0000000000000000000000000000000000000000000000000000000000000000
 abilities: [read]
-outbound_hosts:
-  - matrix.example.com
+outbound_hosts_from_config: [homeserver]
 contributes:
   panels:
     - id: delivery

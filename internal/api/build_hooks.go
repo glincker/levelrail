@@ -19,6 +19,7 @@ type BuildHookStore interface {
 	GetBuildHook(ctx context.Context, id string) (store.BuildHook, error)
 	SetBuildHookTokenHash(ctx context.Context, serviceName, id, hash string) error
 	DeleteBuildHook(ctx context.Context, serviceName, id string) error
+	DeleteBuildHooksForService(ctx context.Context, serviceName string) error
 	RecordBuildHookTrigger(ctx context.Context, id, result string, at time.Time) error
 	RecordBuildHookResult(ctx context.Context, id, result string) error
 }

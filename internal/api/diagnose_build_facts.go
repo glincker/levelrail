@@ -33,7 +33,7 @@ func (rt *Router) addBuildSourceFacts(ctx context.Context, name string, f *diagn
 	}
 	pctx, cancel := context.WithTimeout(ctx, envDurationOr(envDiagnoseProbeBudget, defaultProbeBudget))
 	defer cancel()
-	src, err := open(pctx, gs.RepoURL, gs.Branch, rt.tokenForRepo(pctx, name, gs.RepoURL, true), rt.repoLayoutHosts(pctx))
+	src, err := open(pctx, gs.RepoURL, gs.Branch, rt.tokenForRepo(pctx, name, gs.RepoURL, gitHubAppTokenAllowed(ctx)), rt.repoLayoutHosts(pctx))
 	if err != nil {
 		rt.logger.Warn("api: diagnose facts: open repo failed", slog.String("error", err.Error()), slog.String("name", name))
 		return

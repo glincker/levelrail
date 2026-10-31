@@ -8,6 +8,7 @@ import { GoLivePanel } from './GoLivePanel'
 import { NoProviderEmptyState, ZoneHint } from './AppsBaseDomainCard'
 import domainsEn from '../locales/en/domains.json'
 import type { GoLiveResult } from '../queries/goLive'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -47,9 +48,7 @@ function res(body: unknown, status = 200): Response {
 }
 
 function renderWith(ui: ReactNode) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>

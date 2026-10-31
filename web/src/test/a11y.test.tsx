@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { PlatformImportCard } from '../components/PlatformImportCard'
@@ -9,6 +9,7 @@ import type { ModelResource } from '../types/models'
 import type { ImportPlan } from '../queries/imports'
 import { AllI18n } from './allI18n'
 import { a11yViolations } from './a11y'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a href="/x">{children}</a>,
@@ -16,9 +17,7 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 function wrap(ui: ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return (
     <AllI18n>
       <QueryClientProvider client={client}>{ui}</QueryClientProvider>

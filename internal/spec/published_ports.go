@@ -20,6 +20,23 @@ type PublishedPort struct {
 	ContainerPort int    `yaml:"container_port" json:"container_port"`
 	HostPort      int    `yaml:"host_port" json:"host_port"`
 	Protocol      string `yaml:"protocol,omitempty" json:"protocol"`
+	// Bind is private or public for this port alone. Empty follows the
+	// service bind address, so ports saved before this field keep their bind.
+	Bind string `yaml:"bind,omitempty" json:"bind,omitempty"`
+}
+
+// Per-port bind values for PublishedPort.Bind.
+const (
+	PortBindPrivate = "private"
+	PortBindPublic  = "public"
+)
+
+// EffectiveBind is Bind, or serviceBind when the port has none of its own.
+func (p PublishedPort) EffectiveBind(serviceBind string) string {
+	if p.Bind != "" {
+		return p.Bind
+	}
+	return serviceBind
 }
 
 // EffectiveProtocol is Protocol with an empty value read as tcp.
@@ -53,6 +70,9 @@ func validatePublishedPorts(ports []PublishedPort) error {
 		}
 		if p.ContainerPort < 1 || p.ContainerPort > 65535 {
 			return fmt.Errorf("published port %s: container port %d must be between 1 and 65535", p, p.ContainerPort)
+		}
+		if p.Bind != "" && p.Bind != PortBindPrivate && p.Bind != PortBindPublic {
+			return fmt.Errorf("published port %s: bind %q is not supported, use %s or %s", p, p.Bind, PortBindPrivate, PortBindPublic)
 		}
 		if p.HostPort < 1 || p.HostPort > 65535 {
 			return fmt.Errorf("published port %d/%s: a host port between 1 and 65535 is required, for example \"%d:%d/%s\"", p.ContainerPort, proto, p.ContainerPort, p.ContainerPort, proto)

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { NewAppWizard } from './NewAppWizard'
 import { jsonResponse, nextAnalysis } from '../../test/newAppFixtures'
@@ -8,6 +8,7 @@ import { NewAppI18n } from '../../test/newAppI18n'
 import type { ImportAnalysis } from '../../queries/importAnalyze'
 import type { RepoPreview } from '../../queries/repoPreview'
 import type { Brand } from '../../types/brand'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 vi.mock('../../hooks/useBrand', () => ({
   useBrand: (): Brand => ({
@@ -169,9 +170,7 @@ function mockApi(opts: ApiOptions = {}) {
 }
 
 function renderWizard() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const client = createTestQueryClient()
   return render(
     <NewAppI18n>
       <QueryClientProvider client={client}>

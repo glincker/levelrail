@@ -446,7 +446,7 @@ func verdictOf(in Inputs) Verdict {
 		}
 	}
 	switch {
-	case a.Status == store.DeployAttemptStatusQueued || a.Status == store.DeployAttemptStatusHeld:
+	case a.Status == store.DeployAttemptStatusQueued || a.Status == store.DeployAttemptStatusHeld || a.Status == store.DeployAttemptStatusAwaitingApproval:
 		return VerdictQueued
 	case a.Status == store.DeployAttemptStatusCanceled || a.Status == store.DeployAttemptStatusSuperseded:
 		return VerdictCanceled

@@ -52,6 +52,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)
 	rt.registerMonitorRoutes(mux)
+	rt.registerIncidentRoutes(mux)
 	rt.registerResourceAdvisorRoutes(mux)
 	rt.registerSilenceRoutes(mux)
 	rt.registerUsageCostRoutes(mux)
@@ -76,6 +77,11 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerProxyIntegrationRoutes(mux)
 	rt.registerSetupGuideRoutes(mux)
 	rt.registerDNSZoneRoutes(mux)
+	rt.registerMailDNSRoutes(mux)
+	rt.registerMailPortRoutes(mux)
+	rt.registerMailboxRoutes(mux)
+	rt.registerMailCertRoutes(mux)
+	rt.registerMailBackupRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
 	rt.registerTeamRoutes(mux)
@@ -84,6 +90,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStandaloneDomainRoutes(mux)
 	rt.registerLogExplorerRoutes(mux)
 	rt.registerMobileRoutes(mux)
+	mcpHTTP := rt.registerMCPHTTPRoutes(mux)
 	rt.registerAccountSelfRoutes(mux)
 
 	h := rt.stackLockMiddleware(mux)
@@ -104,6 +111,7 @@ func (rt *Router) Handler() http.Handler {
 	if rt.demo != nil {
 		h = rt.demoGate(h)
 	}
+	mcpHTTP.inner = h
 	return h
 }
 

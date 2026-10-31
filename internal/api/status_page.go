@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/statuspage"
+	"github.com/GLINCKER/levelrail/internal/statuswebhook"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
@@ -39,9 +40,12 @@ type StatusPageStore interface {
 	SaveStatusIncident(ctx context.Context, i store.StatusIncident) error
 	GetStatusIncident(ctx context.Context, id string) (store.StatusIncident, error)
 	ListStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
+	ListPublicStatusIncidents(ctx context.Context, limit int) ([]store.StatusIncident, error)
 	DeleteStatusIncident(ctx context.Context, id string) error
 	AddStatusIncidentUpdate(ctx context.Context, u store.StatusIncidentUpdate) error
 	ListStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
+	ListPublicStatusIncidentUpdates(ctx context.Context) ([]store.StatusIncidentUpdate, error)
+	GetPublicStatusIncident(ctx context.Context, id string) (store.StatusIncident, error)
 }
 
 // StatusPageViewer builds the public view. *statuspage.Service satisfies it.
@@ -68,8 +72,13 @@ func WithStatusPage(db StatusPageDB, cfg statuspage.Config, perMinute int) Optio
 		if ws, ok := any(db).(statuspage.WindowSource); ok {
 			svc.SetWindows(ws)
 		}
+		svc.SetMonitors(statusMonitorSource{rt})
 		rt.statusPage, rt.statusView, rt.statusSampler = db, svc, svc
 		rt.statusLimiter = newAPIRateLimiter(perMinute)
+		if ws, ok := any(db).(statuswebhook.Store); ok {
+			rt.statusHooksStore = ws
+			rt.statusHooks = statuswebhook.New(ws, rt.statusWebhookSealer, statuswebhook.ConfigFromEnv(), rt.logger)
+		}
 	}
 }
 
@@ -87,7 +96,28 @@ func (rt *Router) RunStatusPageSampler(ctx context.Context) error {
 	if rt.statusSampler == nil {
 		return nil
 	}
-	return rt.statusSampler.Run(ctx)
+	if rt.statusHooks == nil {
+		return rt.statusSampler.Run(ctx)
+	}
+	// One delivery goroutine, joined before return so it cannot outlive the sampler.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = rt.statusHooks.Run(ctx)
+	}()
+	err := rt.statusSampler.Run(ctx)
+	<-done
+	return err
+}
+
+// statusMonitorSource reads rt.monitors lazily because the engine is wired after the status page.
+type statusMonitorSource struct{ rt *Router }
+
+func (s statusMonitorSource) MonitorState(_ context.Context, id string) string {
+	if s.rt.monitors == nil {
+		return ""
+	}
+	return s.rt.monitors.State(id)
 }
 
 type statusAppSource struct{ rt *Router }
@@ -289,8 +319,15 @@ func (rt *Router) validateStatusComponent(ctx context.Context, req *statusCompon
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil {
 			return "target must be an http or https URL without credentials"
 		}
+	case statuspage.KindMonitor:
+		if rt.monitors == nil {
+			return "monitors are not enabled (APP_MONITORS_ENABLED)"
+		}
+		if _, err := rt.monitors.Get(ctx, req.Target); err != nil {
+			return "unknown monitor"
+		}
 	default:
-		return "kind must be app, domain or check"
+		return "kind must be app, domain, check or monitor"
 	}
 	return ""
 }
@@ -328,6 +365,11 @@ func (rt *Router) saveStatusComponent(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 	rt.statusView.Invalidate()
+	change := "updated"
+	if status == http.StatusCreated {
+		change = "created"
+	}
+	rt.emitStatusComponentEvent(r.Context(), c, change)
 	writeJSON(w, status, toStatusComponentResource(c))
 }
 
@@ -371,11 +413,15 @@ func (rt *Router) handleDeleteStatusComponent(w http.ResponseWriter, r *http.Req
 	if !rt.statusPageReady(w) {
 		return
 	}
+	gone, getErr := rt.statusPage.GetStatusComponent(r.Context(), r.PathValue("id"))
 	if err := rt.statusPage.DeleteStatusComponent(r.Context(), r.PathValue("id")); err != nil {
 		rt.internalError(w, "api: delete status component failed", err)
 		return
 	}
 	rt.statusView.Invalidate()
+	if getErr == nil {
+		rt.emitStatusComponentEvent(r.Context(), gone, "deleted")
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -419,12 +465,13 @@ func (rt *Router) handleListStatusIncidents(w http.ResponseWriter, r *http.Reque
 	if !rt.statusPageReady(w) {
 		return
 	}
-	list, err := rt.statusPage.ListStatusIncidents(r.Context(), 100)
+	// Internal incidents are served only by /api/v1/incidents behind read:sensitive, never here.
+	list, err := rt.statusPage.ListPublicStatusIncidents(r.Context(), 100)
 	if err != nil {
 		rt.internalError(w, "api: list status incidents failed", err)
 		return
 	}
-	updates, err := rt.statusPage.ListStatusIncidentUpdates(r.Context())
+	updates, err := rt.statusPage.ListPublicStatusIncidentUpdates(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list status incident updates failed", err)
 		return
@@ -526,6 +573,7 @@ func (rt *Router) handleCreateStatusIncident(w http.ResponseWriter, r *http.Requ
 		}
 	}
 	rt.statusView.Invalidate()
+	rt.emitStatusIncidentEvent(r.Context(), inc.ID, true)
 	writeJSON(w, http.StatusCreated, toStatusIncidentResource(inc))
 }
 
@@ -542,7 +590,8 @@ func (rt *Router) handlePostStatusIncidentUpdate(w http.ResponseWriter, r *http.
 	if !rt.statusPageReady(w) {
 		return
 	}
-	inc, err := rt.statusPage.GetStatusIncident(r.Context(), r.PathValue("id"))
+	// Unpublished incidents are not addressable here; publishing is a separate step.
+	inc, err := rt.statusPage.GetPublicStatusIncident(r.Context(), r.PathValue("id"))
 	if errors.Is(err, store.ErrStatusIncidentNotFound) {
 		writeError(w, http.StatusNotFound, "incident not found")
 		return
@@ -580,6 +629,7 @@ func (rt *Router) handlePostStatusIncidentUpdate(w http.ResponseWriter, r *http.
 		return
 	}
 	rt.statusView.Invalidate()
+	rt.emitStatusIncidentEvent(r.Context(), inc.ID, false)
 	writeJSON(w, http.StatusOK, toStatusIncidentResource(inc))
 }
 

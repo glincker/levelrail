@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -64,6 +63,9 @@ func dnsCheckServers() []string {
 func (rt *Router) zoneProviders(ctx context.Context) (map[string]dnszones.Provider, error) {
 	if rt.dnsZoneProviders != nil {
 		return rt.dnsZoneProviders(ctx)
+	}
+	if d := rt.demoDNSZones(); d != nil {
+		return map[string]dnszones.Provider{d.Name(): d}, nil
 	}
 	return rt.resolveDNSZoneProviders(ctx)
 }
@@ -171,6 +173,13 @@ func (rt *Router) requireZone(w http.ResponseWriter, r *http.Request) (dnszones.
 		writeError(w, http.StatusNotFound, fmt.Sprintf("zone %q not found at %s", r.PathValue("zone"), p.Name()))
 		return nil, dnszones.Zone{}, false
 	}
+	if seen, err := rt.callerSeesZone(r, z.Name); err != nil {
+		rt.internalError(w, "api: dns zone: resolve caller visibility", err)
+		return nil, dnszones.Zone{}, false
+	} else if !seen {
+		writeError(w, http.StatusNotFound, fmt.Sprintf("zone %q not found at %s", r.PathValue("zone"), p.Name()))
+		return nil, dnszones.Zone{}, false
+	}
 	return p, z, true
 }
 
@@ -205,31 +214,53 @@ func (rt *Router) auditDNS(r *http.Request, action string, zone dnszones.Zone, s
 }
 
 type dnsZonesResponse struct {
-	Provider     string                `json:"provider"`
-	Providers    []string              `json:"providers"`
-	Capabilities dnszones.Capabilities `json:"capabilities"`
-	Zones        []dnszones.Zone       `json:"zones"`
+	Provider               string                           `json:"provider"`
+	Providers              []string                         `json:"providers"`
+	Capabilities           dnszones.Capabilities            `json:"capabilities"`
+	CapabilitiesByProvider map[string]dnszones.Capabilities `json:"capabilities_by_provider"`
+	ProviderErrors         map[string]string                `json:"provider_errors,omitempty"`
+	Zones                  []dnsZoneView                    `json:"zones"`
 }
 
-// handleListDNSZones handles GET /api/v1/dns/zones. No provider is a 200 with
-// an empty list, so the dashboard can render its connect empty state.
+// handleListDNSZones handles GET /api/v1/dns/zones: every connected provider's
+// zones (or ?provider='s only) with delegation. No provider is a 200 with an
+// empty list, so the dashboard can render its connect empty state.
 func (rt *Router) handleListDNSZones(w http.ResponseWriter, r *http.Request) {
 	p, names, ok := rt.pickProvider(w, r)
 	if !ok {
 		return
 	}
-	resp := dnsZonesResponse{Provider: "none", Providers: names, Zones: []dnszones.Zone{}}
+	resp := dnsZonesResponse{Provider: "none", Providers: names, Zones: []dnsZoneView{}, CapabilitiesByProvider: map[string]dnszones.Capabilities{}}
 	if p == nil {
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
-	zones, err := p.ListZones(r.Context())
+	targets := []dnszones.Provider{p}
+	if r.URL.Query().Get("provider") == "" && len(names) > 1 {
+		all, err := rt.zoneProviders(r.Context())
+		if err != nil {
+			rt.internalError(w, "api: resolve dns zone providers failed", err)
+			return
+		}
+		targets = targets[:0]
+		for _, n := range names {
+			targets = append(targets, all[n])
+		}
+	}
+	zones, caps, errs, err := rt.listAllZones(r.Context(), targets)
 	if err != nil {
 		rt.dnsProviderError(w, "list zones", err)
 		return
 	}
-	slices.SortFunc(zones, func(a, b dnszones.Zone) int { return strings.Compare(a.Name, b.Name) })
-	resp.Provider, resp.Capabilities, resp.Zones = p.Name(), p.Capabilities(), zones
+	if zones, err = rt.visibleZones(r, zones); err != nil {
+		rt.internalError(w, "api: dns zones: resolve caller visibility", err)
+		return
+	}
+	resp.Provider, resp.Capabilities, resp.CapabilitiesByProvider = p.Name(), p.Capabilities(), caps
+	if len(errs) > 0 {
+		resp.ProviderErrors = errs
+	}
+	resp.Zones = rt.zoneViews(r.Context(), zones)
 	writeJSON(w, http.StatusOK, resp)
 }
 

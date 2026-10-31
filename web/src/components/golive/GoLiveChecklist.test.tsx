@@ -37,6 +37,7 @@ vi.mock('../../queries/goLiveChecklist', async (orig) => {
 })
 
 import { GoLiveChecklist } from './GoLiveChecklist'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
@@ -80,7 +81,7 @@ function checklist(
 }
 
 function renderChecklist() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qc = createTestQueryClient()
   return render(
     <QueryClientProvider client={qc}>
       <I18nextProvider i18n={i18n}>

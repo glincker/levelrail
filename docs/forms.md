@@ -1,7 +1,7 @@
 ---
 title: "Forms"
 tag: "Beta"
-description: Collect submissions from the HTML forms on a static site with a public endpoint, a spam trap, per-address rate limits, an inbox with CSV export and notifications through your existing alert channels.
+description: "Collect submissions from HTML forms on a static site with a public endpoint, a spam trap, per-address rate limits, a CSV export and alert channel notifications."
 "og:url": "https://docs.levelrail.com/forms"
 ---
 

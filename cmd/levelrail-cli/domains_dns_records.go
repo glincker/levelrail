@@ -31,6 +31,12 @@ func runDomainsDNS(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runDomainsDNSAdd(prog, args[1:], stdout, stderr, lookupEnv)
 	case "remove":
 		return runDomainsDNSRemove(prog, args[1:], stdout, stderr, lookupEnv)
+	case "zones":
+		return runDomainsDNSZones(prog, args[1:], stdout, stderr, lookupEnv)
+	case "zone":
+		return runDomainsDNSZone(prog, args[1:], stdout, stderr, lookupEnv)
+	case "records":
+		return runDomainsDNSZoneRecords(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains dns subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsDNSUsage(prog))
@@ -43,6 +49,9 @@ func domainsDNSUsage(prog string) string {
   %[1]s domains dns list <app> <domain> [flags]                             list every record in the domain's zone
   %[1]s domains dns add <app> <domain> --type T --name N --value V [flags]    append a new record
   %[1]s domains dns remove <app> <domain> --type T --name N --value V [flags] delete one exact record
+  %[1]s domains dns zones [--provider P]                                    every connected zone with nameservers and delegation
+  %[1]s domains dns zone <id> [--provider P]                               one zone: nameservers, delegation, registrar hint
+  %[1]s domains dns records <zone> [--type T] [--search S] [--provider P]  every record in a zone
 
 Reads and writes the real A/AAAA/CNAME/TXT/MX/SRV/CAA records in one of
 <app>'s domains' best-effort DNS zone, via whichever ACME DNS-01

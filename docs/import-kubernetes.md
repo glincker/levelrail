@@ -1,4 +1,8 @@
-# Import Kubernetes manifests
+---
+title: "Import Kubernetes manifests"
+description: "Convert existing Kubernetes YAML into Levelrail apps with levelrail-cli import k8s. The conversion is text only: no fetch, no execution, no cluster contact."
+"og:url": "https://docs.levelrail.com/import-kubernetes"
+---
 
 `levelrail-cli import k8s` reads existing Kubernetes YAML and creates the matching Levelrail apps, so a manifest you already have runs here without a rewrite. The conversion is text only: nothing is fetched from a URL, nothing is executed, and the cluster is never contacted.
 

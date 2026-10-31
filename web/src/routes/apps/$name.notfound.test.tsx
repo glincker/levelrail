@@ -1,5 +1,5 @@
 import { act, render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import {
   RouterProvider,
   createMemoryHistory,
@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RouteErrorFallback } from '../../components/RouteErrorFallback'
 import { setStoredUsername } from '../../lib/authStore'
 import { AllI18n } from '../../test/allI18n'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 const BRAND = {
   Name: 'Brand',
@@ -82,9 +83,7 @@ describe.skipIf(!routeTree)('/apps/$name for a missing app', () => {
         return json([])
       }),
     )
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
+    const queryClient = createTestQueryClient()
     const router = createRouter({
       routeTree: routeTree as AnyRoute,
       context: { queryClient },

@@ -90,7 +90,7 @@ func TestProxyIntegrationCLIRejectsUnknownFlag(t *testing.T) {
 	if got := run("levelrail-cli-test", []string{"proxy", "status", "--confirm"}, &stdout, &stderr, envMap()); got == exitOK {
 		t.Fatalf("status --confirm exited OK")
 	}
-	if !strings.Contains(stderr.String(), "proxy setup [--confirm]") {
-		t.Errorf("usage missing: %s", stderr.String())
+	if !strings.Contains(stderr.String(), "flag provided but not defined: -confirm") || !strings.Contains(stderr.String(), "proxy status --help") {
+		t.Errorf("error line or help pointer missing: %s", stderr.String())
 	}
 }

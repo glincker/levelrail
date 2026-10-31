@@ -10,6 +10,7 @@ import {
 import { setDockCorner, setDockView, useDockState } from './dockStore'
 import { useBottomAvoid, useViewport } from './useDockViewport'
 import { useDragMove } from './useDragMove'
+import { cn } from '@/lib/utils'
 
 function place(el: HTMLElement | null, x: number, y: number) {
   if (el) el.style.transform = `translate3d(${String(x)}px,${String(y)}px,0)`
@@ -78,7 +79,12 @@ export function DockLauncher() {
         setDockView('open')
       }}
       {...drag}
-      className="fixed top-0 left-0 z-40 flex max-md:in-[body:has([role=menu])]:invisible size-14 touch-none animate-in items-center justify-center rounded-full bg-primary text-primary-foreground shadow-floating transition-[transform,opacity] duration-200 outline-none fade-in-0 hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[dragging=true]:transition-none motion-reduce:animate-none motion-reduce:transition-none"
+      className={cn(
+        // The top bar already has a chat toggle, so on phones the bubble only shows for unread replies and never covers page actions.
+        'fixed top-0 left-0 z-40 flex max-md:in-[body:has([role=menu])]:invisible size-14',
+        !unread && 'max-md:hidden',
+        'touch-none animate-in items-center justify-center rounded-full bg-primary text-primary-foreground shadow-floating transition-[transform,opacity] duration-200 outline-none fade-in-0 hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[dragging=true]:transition-none motion-reduce:animate-none motion-reduce:transition-none',
+      )}
     >
       <MessageCircleGlassIcon className="size-8" />
       {unread ? (

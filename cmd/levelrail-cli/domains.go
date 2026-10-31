@@ -60,6 +60,10 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsSearchVisibility(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns":
 		return runDomainsDNS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "dns-provider":
+		return runDNSProvider(prog, "domains dns-provider", args[1:], false, stdout, stderr, lookupEnv)
+	case "dns-status":
+		return runDomainDNSStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "go-live":
 		return runDomainsGoLive(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backfill-base-domain":
@@ -113,6 +117,8 @@ func domainsUsage(prog string) string {
   %[1]s domains error-pages <verb> [flags]      configure a domain's custom error pages (404, 500, 502, 503)
   %[1]s domains search-visibility <app> <domain> [--hide|--show]  hide a domain from search engines
   %[1]s domains dns <verb> [flags]              list/add/remove the real DNS records in a domain's zone
+  %[1]s domains dns-provider <domain> [flags]  where the domain's DNS lives and whether it is connected
+  %[1]s domains dns-status <domain> [--app NAME]  each required record: live, waiting, different, conflict or unknown
   %[1]s domains go-live <app> <domain> [flags]  create the DNS record and watch the domain go live
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>

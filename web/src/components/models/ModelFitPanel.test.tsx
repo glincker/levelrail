@@ -5,6 +5,7 @@ import { INITIAL_DEPLOY_FORM } from '../../lib/modelDeployForm'
 import { buildFitRequest } from '../../lib/modelFit'
 import type { FitReport, NodeFit } from '../../types/modelFit'
 import { ModelFitPanel } from './ModelFitPanel'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function node(over: Partial<NodeFit>): NodeFit {
   return {
@@ -84,9 +85,7 @@ describe('ModelFitPanel', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify(report), { status: 200 }),
     )
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
+    const client = createTestQueryClient()
     render(
       <QueryClientProvider client={client}>
         <ModelFitPanel

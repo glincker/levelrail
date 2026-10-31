@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -442,6 +443,9 @@ func validateAppResourceWith(a appResource, storedPortless bool) error {
 	if a.Name == standalone.Scope {
 		return errors.New("name " + standalone.Scope + " is reserved for standalone domains")
 	}
+	if reservedSecretNamespace(a.Name) {
+		return errors.New("name " + a.Name + " is reserved for control plane settings")
+	}
 	if a.Image == "" {
 		return errors.New("image is required")
 	}
@@ -654,6 +658,8 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// internal/store's service_secret_values table has no foreign key to
 	// desired_services, so this ordering is safe even though the service
 	// row below doesn't exist yet.
+	unlockName := lockAppName(req.Name)
+	defer unlockName()
 	for key, value := range req.Secrets {
 		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
 			if errors.Is(err, secrets.ErrSecretLocked) {
@@ -674,6 +680,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app failed", err, slog.String("name", req.Name))
 		return
 	}
+	unlockName()
 
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
@@ -1313,6 +1320,42 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// appNameLocks serializes a delete's row removal and credential erase with a
+// create's secret writes for the same name. Entries are dropped when unused.
+var appNameLocks = struct {
+	mu sync.Mutex
+	m  map[string]*appNameLock
+}{m: map[string]*appNameLock{}}
+
+type appNameLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+// lockAppName blocks until name is free and returns the release func.
+func lockAppName(name string) func() {
+	appNameLocks.mu.Lock()
+	l := appNameLocks.m[name]
+	if l == nil {
+		l = &appNameLock{}
+		appNameLocks.m[name] = l
+	}
+	l.refs++
+	appNameLocks.mu.Unlock()
+	l.mu.Lock()
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			l.mu.Unlock()
+			appNameLocks.mu.Lock()
+			if l.refs--; l.refs == 0 {
+				delete(appNameLocks.m, name)
+			}
+			appNameLocks.mu.Unlock()
+		})
+	}
+}
+
 // deleteApp removes name's desired state, tears its containers down and
 // drops its App row if it was the last member. A tombstone is written first
 // so a failed teardown (second return) is retried by the reconciler. Callers
@@ -1328,9 +1371,19 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			return nil, err
 		}
 	}
+	// Integration rows cascade with the service, so list them first.
+	integrationNS := rt.appIntegrationSecretNamespaces(ctx, name)
+	// Erase right after the row is gone, under the name lock: the row is
+	// already deleted so a failure loses nothing, and a same-name create
+	// cannot write secrets that this cleanup then removes.
+	unlock := lockAppName(name)
+	defer unlock()
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
+	rt.removeAppCredentials(ctx, name, integrationNS)
+	unlock()
+	rt.dropMailCertSecret(ctx, *existing)
 	if err := rt.removeStaticSite(ctx, name); err != nil {
 		rt.logger.Warn("api: delete app: remove static site failed", slog.String("error", err.Error()), slog.String("name", name))
 	}
@@ -1371,6 +1424,21 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Warn("api: delete app: remove secret scan data failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	if rt.ciTrusts != nil {
+		if err := rt.ciTrusts.DeleteCIOIDCTrustsForApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove ci trusts failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if rt.buildHooks != nil {
+		if err := rt.buildHooks.DeleteBuildHooksForService(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove build hooks failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if rt.imageAutoUpdates != nil {
+		if err := rt.imageAutoUpdates.DeleteImageAutoUpdatesForApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove image auto update failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if existing.AppID != "" {
 		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
@@ -1381,6 +1449,67 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	return teardownErr, nil
+}
+
+// removeAppCredentials erases the app's stored secrets, git source with its
+// deploy token and webhook secret, and other access grants, so a later app
+// of the same name inherits none of them. Failures are logged only.
+// extraNamespaces are secrets namespaces the caller collected earlier.
+func (rt *Router) removeAppCredentials(ctx context.Context, name string, extraNamespaces []string) {
+	namespaces := append([]string(nil), extraNamespaces...)
+	if g, ok := rt.apps.(interface {
+		DeleteAppAccessGrants(ctx context.Context, name string) ([]string, error)
+	}); ok {
+		ns, err := g.DeleteAppAccessGrants(ctx, name)
+		if err != nil {
+			rt.logger.Warn("api: delete app: remove access grants failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+		namespaces = append(namespaces, ns...)
+	}
+	if rt.gitSources != nil {
+		if err := rt.gitSources.DeleteGitSource(ctx, name); err != nil && !errors.Is(err, store.ErrGitSourceNotFound) {
+			rt.logger.Warn("api: delete app: remove git source failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if rt.secrets == nil {
+		return
+	}
+	namespaces = append(namespaces, name)
+	for _, ns := range namespaces {
+		if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
+			rt.logger.Warn("api: delete app: remove secrets failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	rt.eraseGitSourceSecrets(ctx, name)
+}
+
+// eraseGitSourceSecrets drops a git source's deploy token and webhook
+// secret. Failures are logged only.
+func (rt *Router) eraseGitSourceSecrets(ctx context.Context, name string) {
+	if rt.secrets == nil {
+		return
+	}
+	if err := rt.secrets.DeleteAll(ctx, store.GitSourceSecretsKey(name)); err != nil {
+		rt.logger.Warn("api: remove git source secrets failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+}
+
+// appIntegrationSecretNamespaces lists the secrets namespaces of name's
+// attached integrations, empty when none or on a read failure.
+func (rt *Router) appIntegrationSecretNamespaces(ctx context.Context, name string) []string {
+	if rt.appIntegrations == nil {
+		return nil
+	}
+	rows, err := rt.appIntegrations.ListAppIntegrationsForService(ctx, name)
+	if err != nil {
+		rt.logger.Warn("api: delete app: list integrations failed", slog.String("error", err.Error()), slog.String("name", name))
+		return nil
+	}
+	out := make([]string, 0, len(rows))
+	for _, ai := range rows {
+		out = append(out, store.AppIntegrationSecretsKey(ai.ServiceName, ai.IntegrationKey))
+	}
+	return out
 }
 
 // deleteFinalizer is nil when no runtime resolver or tombstone-capable
@@ -1449,4 +1578,16 @@ func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
 		return false
 	}
 	return true
+}
+
+// reservedSecretNamespace reports names the control plane seals its own settings under; an app with
+// one would share that secret namespace.
+func reservedSecretNamespace(name string) bool {
+	switch name {
+	case store.EmailSettingsSecretsKey(), sysEmailSecretsNS, store.VaultSecretsKey(), store.AIAssistantSecretsKey(),
+		store.CloudflareTunnelSecretsKey(), store.CloudflareDNSSecretsKey(), store.GoogleCloudDNSSecretsKey(),
+		store.RegistrySettingsSecretsKey(), store.Route53DNSSecretsKey():
+		return true
+	}
+	return false
 }

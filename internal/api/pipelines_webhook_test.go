@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -307,5 +308,23 @@ func TestPipelineArtifactRoutes(t *testing.T) {
 	}
 	if rec := e.do(httptest.NewRequest(http.MethodGet, "/api/v1/apps/web/pipeline-runs/r1/artifacts/a1/download", bytes.NewReader(nil))); rec.Code != http.StatusUnauthorized {
 		t.Errorf("anonymous download = %d, want 401", rec.Code)
+	}
+}
+
+func TestPipelineRefAndCommitInputChecks(t *testing.T) {
+	good := [][2]string{{"", ""}, {"main", "abc1234"}, {"refs/heads/feat/x-1", strings.Repeat("a", 64)}}
+	for _, g := range good {
+		if err := validatePipelineRefSHA(g[0], g[1]); err != nil {
+			t.Errorf("%q %q rejected: %v", g[0], g[1], err)
+		}
+	}
+	bad := [][2]string{
+		{"-x", ""}, {"a..b", ""}, {"a b", ""}, {"a~1", ""}, {"a:b", ""}, {"a\\nb", ""}, {"a/", ""}, {"x.lock", ""},
+		{strings.Repeat("a", 300), ""}, {"main", "abc12"}, {"main", "zzzzzzz"}, {"main", strings.Repeat("a", 65)},
+	}
+	for _, b := range bad {
+		if err := validatePipelineRefSHA(b[0], b[1]); !errors.Is(err, pipeline.ErrInvalidInput) {
+			t.Errorf("%q %q accepted", b[0], b[1])
+		}
 	}
 }

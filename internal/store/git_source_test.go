@@ -248,3 +248,41 @@ func TestGetGitSource_NoAdditionalServices_ReturnsEmptyNotNilError(t *testing.T)
 		t.Errorf("GetGitSource().AdditionalServices = %+v, want empty", got.AdditionalServices)
 	}
 }
+
+func TestSaveGitSourceWithAppAuthWritesBothTogether(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	src := GitSource{ServiceName: "web", RepoURL: "https://example.test/a.git", Branch: "main", BuildType: "dockerfile", BuildPath: "Dockerfile"}
+
+	if err := db.SaveGitSourceWithAppAuth(ctx, src, false); err != nil {
+		t.Fatalf("save new: %v", err)
+	}
+	got, err := db.GetGitSource(ctx, "web")
+	if err != nil || got.AppAuth {
+		t.Fatalf("new source app_auth = %v, err = %v, want false", got != nil && got.AppAuth, err)
+	}
+
+	// Plain SaveGitSource keeps the stored flag on update.
+	src.Branch = "dev"
+	if err := db.SaveGitSource(ctx, src); err != nil {
+		t.Fatalf("plain save: %v", err)
+	}
+	if got, _ := db.GetGitSource(ctx, "web"); got == nil || got.AppAuth || got.Branch != "dev" {
+		t.Fatalf("after plain save = %+v", got)
+	}
+
+	if err := db.SaveGitSourceWithAppAuth(ctx, src, true); err != nil {
+		t.Fatalf("save update: %v", err)
+	}
+	if got, _ := db.GetGitSource(ctx, "web"); got == nil || !got.AppAuth {
+		t.Fatalf("after update app_auth not true: %+v", got)
+	}
+
+	other := GitSource{ServiceName: "api", RepoURL: "https://example.test/b.git", Branch: "main", BuildType: "dockerfile", BuildPath: "Dockerfile"}
+	if err := db.SaveGitSource(ctx, other); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := db.GetGitSource(ctx, "api"); got == nil || !got.AppAuth {
+		t.Fatalf("plain new source app_auth default = %+v, want true", got)
+	}
+}

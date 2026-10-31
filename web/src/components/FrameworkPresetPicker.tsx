@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  CircleCheckGlassIcon,
   CopyGlassIcon,
   SparklesGlassIcon,
   TriangleAlertGlassIcon,
@@ -63,7 +64,7 @@ export function FrameworkPresetPicker({
     <div className="space-y-3">
       <FieldSectionLabel>{t('title')}</FieldSectionLabel>
       <p className="text-sm text-muted-foreground">{t('description')}</p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
         {(presets.data ?? []).map((p) => (
           <button
             key={p.id}
@@ -75,16 +76,21 @@ export function FrameworkPresetPicker({
               onApply(p)
             }}
             className={cn(
-              'flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 disabled:opacity-50',
+              'flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50',
               p.id === activeId && 'border-primary bg-muted',
             )}
           >
             <BrandIcon name={p.icon} className="size-4 shrink-0" />
             <span className="min-w-0 flex-1 truncate">{p.name}</span>
             {p.id === detectedId ? (
-              <SparklesGlassIcon
-                className="size-5 shrink-0 text-muted-foreground"
-                aria-label={t('detected')}
+              <Badge variant="info" className="shrink-0 gap-1 text-xs">
+                <SparklesGlassIcon className="size-4" aria-hidden="true" />
+                {t('detectedShort')}
+              </Badge>
+            ) : p.id === activeId ? (
+              <CircleCheckGlassIcon
+                className="size-5 shrink-0 text-primary"
+                aria-hidden="true"
               />
             ) : null}
           </button>
@@ -114,36 +120,38 @@ export function FrameworkPresetPicker({
           {active.build_type === 'static' ? (
             <p className="text-muted-foreground">{t('static')}</p>
           ) : null}
-          {active.env_hints.length > 0 ? (
-            <div className="space-y-1">
-              <p className="font-medium">{t('envHints')}</p>
-              <ul className="space-y-1 text-muted-foreground">
-                {active.env_hints.map((e) => (
-                  <li key={e.key}>
-                    <code className="font-mono text-xs text-foreground">
-                      {e.key}
-                    </code>
-                    {e.required ? ` (${t('required')})` : ''}: {e.description}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {active.volumes.length > 0 ? (
-            <div className="space-y-1">
-              <p className="font-medium">{t('volumes')}</p>
-              <ul className="space-y-1 text-muted-foreground">
-                {active.volumes.map((v) => (
-                  <li key={v.path}>
-                    <code className="font-mono text-xs text-foreground">
-                      {v.path}
-                    </code>
-                    : {v.purpose}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          <div className="grid gap-3 md:grid-cols-2">
+            {active.env_hints.length > 0 ? (
+              <div className="space-y-1">
+                <p className="font-medium">{t('envHints')}</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  {active.env_hints.map((e) => (
+                    <li key={e.key}>
+                      <code className="font-mono text-xs text-foreground">
+                        {e.key}
+                      </code>
+                      {e.required ? ` (${t('required')})` : ''}: {e.description}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {active.volumes.length > 0 ? (
+              <div className="space-y-1">
+                <p className="font-medium">{t('volumes')}</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  {active.volumes.map((v) => (
+                    <li key={v.path}>
+                      <code className="font-mono text-xs text-foreground">
+                        {v.path}
+                      </code>
+                      : {v.purpose}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
           {active.dockerfile_template ? (
             <Button
               type="button"

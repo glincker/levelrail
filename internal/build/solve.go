@@ -33,6 +33,14 @@ func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.
 
 	dockerfilePath := req.dockerfilePath()
 
+	if req.RootDir != "" {
+		for _, p := range []string{req.ContextDir, dockerfilePath} {
+			if err := EnsureWithin(req.RootDir, p); err != nil {
+				return nil, fmt.Errorf("build: %w", err)
+			}
+		}
+	}
+
 	contextFS, err := fsutil.NewFS(req.ContextDir)
 	if err != nil {
 		return nil, fmt.Errorf("build: invalid context dir %q: %w", req.ContextDir, err)

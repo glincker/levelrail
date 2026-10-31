@@ -315,6 +315,7 @@ func (rt *Router) resetLibPassword(w http.ResponseWriter, r *http.Request, req r
 		rt.internalError(w, "api: reset password: save failed", err)
 		return
 	}
+	rt.sessions.revokeAll(owner)
 	rt.resetSignInTrust(r.Context(), r, owner, "password_reset")
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -43,6 +43,10 @@ const (
 	GitPush Feature = "git-push"
 	// Canvas is the beta visual editor that composes a project as a reviewable plan.
 	Canvas Feature = "canvas"
+	// Mail is the DNS helper for email: plan, apply and check the records a domain needs.
+	Mail Feature = "mail"
+	// MCPHTTP is the read-only remote MCP endpoint (POST /mcp) authenticated with a normal API token.
+	MCPHTTP Feature = "mcp-http"
 )
 
 // EnvVar names the env var holding the comma separated enabled features.
@@ -50,7 +54,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins, GitPush, Canvas}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins, GitPush, Canvas, Mail, MCPHTTP}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }

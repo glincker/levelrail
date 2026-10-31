@@ -419,6 +419,7 @@ export function EditNotificationChannelDialog({
                   Interactive approval buttons
                 </FieldLabel>
               </Field>
+              <FieldHint>{t('channel.interactiveApprovalsWarning')}</FieldHint>
               {interactiveApprovals ? (
                 <Field>
                   <FieldLabel htmlFor="edit-channel-interactive-secret">

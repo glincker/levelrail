@@ -448,6 +448,21 @@ runs files serially (`fileParallelism: false`, to avoid jsdom contention
 flakes) and one job would be the suite's whole wall time. A skipped shard job
 passes `CI required` the same way a skipped area does.
 
+## Release branch pushes
+
+`ci.yml` also runs on `push` to `release/**`, so each push to the release line
+gets the same impact-scoped run a PR gets. Concurrency groups a release branch by
+ref and cancels the older run, so a burst of pushes keeps only the newest.
+Because a cancelled run never reports its commit, `changes` diffs a release push
+against its merge-base with `main` (the cumulative release diff), not against
+`github.event.before`. Other pushes use `before` and fall back to the same
+merge-base when it is the zero SHA or no longer reachable (a force push).
+Public repository minutes are free, but a push burst still queues runners and
+delays the PR checks, so batch pushes. `paths-ignore` for Markdown and `adr/**`
+stays: required checks only matter on PRs, which have no path filter.
+`coverage-gate` and the cache saves also run for these pushes. The draft logic
+is unchanged because it reads the pull request payload.
+
 ## Concurrency and merge queue
 
 A new push to a PR cancels that PR's previous CI run (`ci.yml`, `secret-scan.yml`,
@@ -521,11 +536,10 @@ runner-minutes per tag, mostly the four image builds. Flaky lanes are
 `Test (e2e-reconcile-2)` (4 of 5 runs failed) and the `api` shards (8 of 40).
 
 The first job starts 2 to 57 s after the run is created. Go build and
-module caches hit on PR runs. The tsc build-info cache never hits, because
-`tsc -b` re-checks the whole project on every run (about 31 s) and
-`web/tsconfig.app.json` sets no `incremental`. Enabling it is a tsconfig change
-that needs maintainer approval; the cache save step would then need to allow
-PR runs as well.
+module caches hit on PR runs. The tsc build-info cache could not hit while
+`tsc -b` re-checked the whole project on every run (about 31 s). Both web
+tsconfigs now set `incremental`, so a warm local run takes seconds; the cache
+save step still needs to allow PR runs for CI to benefit.
 
 Local hooks, one small sample diff each on a warm cache (seconds):
 
@@ -665,6 +679,25 @@ comparison should use the fastest of several runs, not the median.
   all worktrees (`LEVELRAIL_LINT_CACHE` overrides the path). If a binary still
   reports the single-run lock, the hook retries for `APP_LINT_LOCK_WAIT_SECONDS`
   (default 300), then fails with a message. Lint is never skipped silently.
+- `tsc -b` runs in pre-push (when the push touches `web/`), not pre-commit;
+  pre-commit keeps eslint and prettier on staged web files. golangci-lint
+  already compiles and vets, so plain `go vet` and `go build` run at commit
+  only when golangci-lint is not installed.
+- Heavy hook jobs (`tsc -b`, vitest, golangci-lint, `go build ./...`, the
+  fast-lane `go test`, and the `internal/api`
+  compile plus shards in `scripts/test-fast.sh`) queue through machine-wide
+  slots in `scripts/lib/slot.sh`. `LEVELRAIL_HEAVY_SLOTS` sets how many run at
+  once (default 3); slots live under `${TMPDIR:-/tmp}/levelrail-slots`
+  (`LEVELRAIL_SLOT_DIR`). A waiting job prints `waiting for a build slot (n busy)`
+  at most every 30 s. A slot whose owner died is reclaimed, and after
+  `LEVELRAIL_SLOT_MAX_WAIT` seconds (default 1800) the job runs anyway with a
+  warning. `scripts/test-slot.sh` is the self test.
+- `scripts/dev-bootstrap.sh` (run by `scripts/install-hooks.sh`) clones
+  `web/node_modules` into a worktree from one golden copy per lockfile hash under
+  `${XDG_CACHE_HOME:-$HOME/.cache}/levelrail/node_modules` (`LEVELRAIL_GOLDEN_DIR`).
+  `--prune` drops other copies older than `LEVELRAIL_GOLDEN_PRUNE_DAYS` (14).
+- Hooks, `scripts/test-fast.sh` and `scripts/pre-integrate.sh` add `-trimpath`
+  to `GOFLAGS`, so worktrees at different paths share compiled Go packages.
 - Pre-push clears the `GIT_*` variables git exports to hooks, so tests that
   create their own repositories behave the same in the foreground as in the
   background.
@@ -677,3 +710,31 @@ comparison should use the fastest of several runs, not the median.
   removes, linked worktrees that are clean and fully contained in a remote
   branch. It never touches the primary worktree, the current one, or any
   dirty or unpushed tree.
+
+## Pre-integrate gate
+
+`scripts/pre-integrate.sh [--web] [--base REF]` is the one local gate to run before
+a branch is squash-merged into the release branch or the release PR is opened. It
+stops at the first failure and always prints a summary with each step's time. The
+base defaults to the closest `origin/release/*` merge-base, like the pre-push hook.
+Typical times on a warm laptop (no `--web`) are in the last column.
+
+| Step | Runs when | Time |
+| --- | --- | --- |
+| gofmt on changed Go files | Go files changed | 1s |
+| `scripts/code-gen-check.sh` | always | 4s |
+| `scripts/check-migration-versions.sh` plus `--against-remotes` | always; fetches origin and reads every `origin/*` branch | about 1 min |
+| `scripts/check-fanin.sh` | always | 3s |
+| `scripts/check-dashes.sh` | always | 1s |
+| i18n parity (`localeParity.test.ts`) | `web/src/locales/` changed | 10s |
+| API guards (`./internal/api`) | `internal/api`, route or openapi files changed | 30s to 2 min |
+| CLI guards (`TestCommandTree`, `TestHelpTextCoversEveryFlag`) | same as above | 20s |
+| `go vet` on changed packages | Go files changed | 10s to 1 min |
+| `tsc -b` | `--web` | 1 to 3 min |
+| bundle size and report | `--web`; fails on any FAIL line | 1 to 2 min |
+
+Knobs: `PRE_INTEGRATE_NODE_PATH`, `PRE_INTEGRATE_NODE_HEAP`, `PRE_INTEGRATE_TAIL`,
+`PRE_INTEGRATE_MIGRATION_STRICT=1` (fail instead of warn when another remote branch
+uses the same migration number under a different file name), `LEVELRAIL_PUSH_BASE`.
+`scripts/next-migration.sh` prints the next free number across the working tree and
+all `origin/*` branches; `scripts/test-next-migration.sh` checks it on a temp repo.

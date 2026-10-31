@@ -8,7 +8,8 @@
       "policy": "Policy",
       "rotations": "Secret rotations",
       "compliance": "Compliance",
-      "exposure": "Exposure"
+      "exposure": "Exposure",
+      "advisories": "Advisories"
     },
     "loadError": "Could not load the security center.",
     "retry": "Try again"
@@ -219,6 +220,11 @@
       "pass": "Every routed domain has a shield",
       "why": "A shield caps requests per visitor and turns away abusive bots, so one noisy client cannot starve the rest."
     },
+    "saml_open_domains": {
+      "title": "SAML connections that accept any email domain",
+      "pass": "Every enabled SAML connection limits sign-in to your domains",
+      "why": "Without an allowed domain list, any address your identity provider asserts can match an account here. Add your domains in the connection settings."
+    },
     "agents_outdated": {
       "title": "Node agents older than the minimum version",
       "pass": "Every node agent is current",
@@ -340,5 +346,19 @@
     "signIn": "Go to sign in",
     "missing": "This link is missing its token. Open the link from the email again.",
     "error": "This link is invalid, already used or expired."
+  },
+  "advisories": {
+    "title": "Known advisories",
+    "off": "No advisory feed is configured. Set APP_ADVISORY_FEED on the server to turn this on.",
+    "unsigned": "unsigned",
+    "verified": "signed, verified",
+    "invalid": "signature invalid",
+    "feed": "{{count}} advisories, {{signature}}",
+    "none": "No running image matches a known advisory.",
+    "summary_one": "{{count}} running image matches a known advisory",
+    "summary_other": "{{count}} running images match a known advisory",
+    "fixedIn": "Fixed in {{version}}",
+    "reference": "Reference",
+    "loadError": "Could not load advisories."
   }
 }

@@ -204,7 +204,7 @@ export function SignInFlow({
         </Field>
         <Button
           type="button"
-          className="w-full"
+          className="w-full disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
           disabled={begin.isPending || username.trim() === ''}
           onClick={handleContinue}
         >

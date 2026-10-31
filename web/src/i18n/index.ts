@@ -2,6 +2,7 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { lazyBackend } from './lazyBackend'
+import { setActiveLocale, setTranslator } from '../lib/activeLocale'
 import './resources'
 
 // New namespace: add here only. lazyBackend loads it on first useTranslation(ns) call.
@@ -31,8 +32,13 @@ export const NAMESPACES = [
   'domains',
   'attention',
   'updates',
+  'upgradeSafety',
   'infraCanvas',
   'canvas',
+  'mailServer',
+  'dnsSetup',
+  'dnsProviders',
+  'platformSettings',
   'exposure',
   'appExposure',
   'appAccess',
@@ -42,6 +48,7 @@ export const NAMESPACES = [
   'iam',
   'signIn',
   'security',
+  'advisories',
   'traffic',
   'dns',
   'domainPolicies',
@@ -59,6 +66,7 @@ export const NAMESPACES = [
   'smartDeploy',
   'dataExport',
   'eventWebhooks',
+  'mcpConsent',
   'trafficExport',
   'compliance',
   'deploySafety',
@@ -88,6 +96,7 @@ export const NAMESPACES = [
   'images',
   'buildCenter',
   'functions',
+  'monitors',
   'secretRotation',
   'encryptionKeys',
   'aiAssistant',
@@ -144,5 +153,11 @@ void i18n
       useSuspense: true,
     },
   })
+
+// Mirror the active language into the dependency-free holder shared code reads.
+i18n.on('initialized', () => setActiveLocale(i18n.language))
+i18n.on('languageChanged', setActiveLocale)
+setActiveLocale(i18n.language)
+setTranslator((key, defaultValue) => i18n.t(key, { defaultValue }))
 
 export default i18n

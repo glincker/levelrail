@@ -144,6 +144,8 @@
     "helpLabel": "Backups and storage guide",
     "description": "What is protected, what is not, and one place to fix it.",
     "loadFailed": "Could not load backup coverage: {{error}}",
+    "loadFailedHint": "Check that the server is reachable, then try again.",
+    "retry": "Retry",
     "noResourcesTitle": "Nothing to back up yet",
     "noResourcesDescription": "Databases and app volumes show up here as soon as you create them."
   },

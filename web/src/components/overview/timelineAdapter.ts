@@ -13,6 +13,7 @@ const ATTEMPT_STATUS: Record<DeployAttemptStatus, TimelineStatus> = {
   succeeded: 'succeeded',
   failed: 'failed',
   held: 'pending',
+  awaiting_approval: 'pending',
   superseded: 'info',
   queued: 'pending',
   canceled: 'info',

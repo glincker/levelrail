@@ -1,6 +1,6 @@
 ---
 title: "Cloud integrations"
-description: What works today with AWS, Google Cloud, Azure, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
+description: "What works today with AWS, Google Cloud, Azure, Cloudflare, DigitalOcean and Hetzner for nodes, DNS, backups, registries and events, and what is not built."
 "og:url": "https://docs.levelrail.com/cloud-integrations"
 ---
 

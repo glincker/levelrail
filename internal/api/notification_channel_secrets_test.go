@@ -31,19 +31,20 @@ func TestNotificationChannels_SealedSecretsNeverLeaveTheServer(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	body := `{"name":"ops","kind":"slack","notify_url":"` + srv.URL + `/hook/` + token + `","interactive_approvals":true,"interactive_secret":"signing-sealed"}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels", body))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("create status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-	if strings.Contains(rec.Body.String(), token) {
-		t.Fatalf("create response leaked the credential: %s", rec.Body.String())
-	}
-	var created notificationChannelResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+	// Seeded directly: the save-time shape check only accepts vendor webhook hosts, never a local receiver.
+	if err := adb.SaveNotificationChannel(context.Background(), alerting.NotificationChannel{
+		ID: "chn_sealed", Name: "ops", Kind: alerting.NotifySlack, NotifyURL: srv.URL + "/hook/" + token,
+		Enabled: true, InteractiveApprovals: true, InteractiveSecret: "signing-sealed",
+	}); err != nil {
 		t.Fatal(err)
 	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/notification-channels", ""))
+	var listed []notificationChannelResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &listed); err != nil || len(listed) != 1 {
+		t.Fatalf("list: %v %s", err, rec.Body.String())
+	}
+	created := listed[0]
 	if !created.HasInteractiveSecret || !strings.HasSuffix(created.NotifyURL, "/(hidden)") {
 		t.Errorf("created = %+v, want a masked target and has_interactive_secret", created)
 	}

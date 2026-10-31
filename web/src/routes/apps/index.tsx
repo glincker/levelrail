@@ -33,6 +33,7 @@ import {
   AppsStatusChips,
   ViewToggle,
 } from '../../components/apps/AppsStatusChips'
+import { AppsFirstRun } from '../../components/apps/AppsFirstRun'
 import { AppsEmptyActions } from '../../components/apps/AppsEmptyActions'
 import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
 import {
@@ -50,7 +51,7 @@ import {
 import { Button } from '../../components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { routeErrorMessage } from '../../lib/apiError'
-import { LabelFilterInput } from '../../components/LabelFilterInput'
+import { LabelFilterField } from '../../components/LabelFilterInput'
 import { useLabelMatches } from '../../queries/resourceLabels'
 
 // The loader primes the Query cache; the component only reads it. The
@@ -185,7 +186,7 @@ function AppListPage() {
         </Button>
       ) : null}
       {totalApps > 0 ? (
-        <span className="hidden sm:block">
+        <span>
           <ViewToggle mode={mode} onChange={changeMode} />
         </span>
       ) : null}
@@ -193,7 +194,6 @@ function AppListPage() {
       <Button
         size="sm"
         variant="outline"
-        className="max-sm:hidden"
         render={<Link to="/databases" />}
         nativeButton={false}
       >
@@ -235,19 +235,25 @@ function AppListPage() {
             active={status}
             onChange={setStatus}
           />
-          <AppsFilterBar
-            filters={filters}
-            environments={environments}
-            onChange={setFilters}
-          />
-          <LabelFilterInput
-            value={labelSelector}
-            onChange={setLabelSelector}
-            invalid={labelMatches.isError}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-0 flex-1 basis-56">
+              <AppsFilterBar
+                filters={filters}
+                environments={environments}
+                onChange={setFilters}
+              />
+            </div>
+            <LabelFilterField
+              value={labelSelector}
+              onChange={setLabelSelector}
+              invalid={labelMatches.isError}
+            />
+          </div>
         </div>
       ) : null}
-      {noApps ? null : pages.isPending ? (
+      {noApps ? (
+        <AppsFirstRun />
+      ) : pages.isPending ? (
         <AppListRowsPending />
       ) : filteredApps.length === 0 ? (
         <EmptyState

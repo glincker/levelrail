@@ -20,4 +20,13 @@ describe('renderChatMarkdown', () => {
       renderChatMarkdown('[docs](https://example.com/a?b=1&c=2)'),
     ).toContain('href="https://example.com/a?b=1&amp;c=2"')
   })
+
+  it('renders protocol-relative and backslash links as plain text', () => {
+    expect(renderChatMarkdown('[x](//example.com/a)')).not.toContain('<a')
+    expect(renderChatMarkdown('[x](/\\example.com)')).not.toContain('<a')
+  })
+
+  it('keeps same-origin path links', () => {
+    expect(renderChatMarkdown('[x](/stacks/1)')).toContain('href="/stacks/1"')
+  })
 })

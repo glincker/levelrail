@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploycontext"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -145,14 +146,14 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	rt.notifyPreviewPending(ctx, appName, gs, ev.HeadSHA)
 	rt.upsertPreviewComment(ctx, gs, preview, previewCommentBuilding, "")
 
-	token, err := rt.resolveGitSourceDeployToken(ctx, appName)
+	token, scope, err := rt.resolveGitSourceDeployCredential(ctx, appName)
 	if err != nil {
 		rt.logger.Error("api: pull request webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 		rt.finishPreviewFailed(ctx, gs, preview, "resolve deploy token: "+err.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 
-	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, ev.HeadSHA, token)
+	sourceDir, cleanup, err := rt.gitSourceFetch(sourcecache.WithScope(ctx, scope), gs.RepoURL, ev.HeadSHA, token)
 	if err != nil {
 		rt.logger.Error("api: pull request webhook: fetch source failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
 		rt.finishPreviewFailed(ctx, gs, preview, "fetch source: "+err.Error())

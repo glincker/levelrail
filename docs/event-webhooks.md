@@ -46,7 +46,7 @@ The URL must be a public http(s) address. Internal addresses are refused unless 
 
 ## Deploy notifications with release notes
 
-A generic notification channel attached to an app (see [Notification channels](/alerting)) receives its own deploy outcome JSON, separate from the signed events above. For a successful deploy into a production environment, or a completed promotion, it carries an optional `release_notes` field: the markdown generated for the commits since the previous successful deploy that recorded a commit.
+A generic notification channel attached to an app (see [Notification channels](/observability#notification-channels)) receives its own deploy outcome JSON, separate from the signed events above. For a successful deploy into a production environment, or a completed promotion, it carries an optional `release_notes` field: the markdown generated for the commits since the previous successful deploy that recorded a commit.
 
 ```json
 { "app_name": "web", "image": "web:8b7d0e4", "succeeded": true, "attempt_id": "dep_9f2", "release_notes": "## web: 3f2a9c1 to 8b7d0e4\n\n### Features\n\n- add promotion preview (8b7d0e4)\n" }

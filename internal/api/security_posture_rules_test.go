@@ -44,6 +44,7 @@ func healthyPosture() postureInput {
 		HSTS:              true,
 		ShieldKnown:       true,
 		AgentsKnown:       true,
+		SAMLKnown:         true,
 	}
 }
 
@@ -98,6 +99,8 @@ func TestEvaluatePosture_EachRuleFails(t *testing.T) {
 		{"hsts_off", postureStatusFail, func(in *postureInput) { in.HSTS = false }},
 		{"domains_unshielded", postureStatusFail, func(in *postureInput) { in.UnshieldedDomains = []string{"app.example.com"} }},
 		{"domains_unshielded", postureStatusUnknown, func(in *postureInput) { in.ShieldKnown = false }},
+		{"saml_open_domains", postureStatusFail, func(in *postureInput) { in.OpenSAML = []string{"Okta"} }},
+		{"saml_open_domains", postureStatusUnknown, func(in *postureInput) { in.SAMLKnown = false }},
 		{"agents_outdated", postureStatusFail, func(in *postureInput) { in.OutdatedAgents = []string{"node-2"} }},
 		{"login_anomalies", postureStatusFail, func(in *postureInput) {
 			in.Anomalies = []loginAnomaly{{Kind: anomalyKindIP, Subject: "203.0.113.9", Count: 20, At: postureNow}}

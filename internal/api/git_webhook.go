@@ -283,6 +283,18 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label); held {
 		return http.StatusAccepted, msg
 	}
+	tagReq := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}
+	if _, protected, _ := rt.protectedEnvironmentOf(ctx, name); protected {
+		sha, err := rt.pinTagSHA(ctx, name, gs.RepoURL, rel.TagName)
+		if err != nil {
+			rt.logger.Warn("api: git push webhook: resolve release tag failed", slog.String("name", name), slog.String("error", err.Error()))
+			return http.StatusServiceUnavailable, "deferred: the release tag could not be resolved, retry later\n"
+		}
+		tagReq.CheckoutRef = sha
+	}
+	if handled, status, hmsg := rt.holdIfProtected(ctx, name, tagReq, name+":"+label, store.DeployAttemptSourceWebhook, SystemApprovalActor); handled {
+		return status, hmsg
+	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label)
 	defer release()
 	if queued {
@@ -325,12 +337,12 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		return http.StatusInternalServerError, "internal error"
 	}
 
-	token, err := rt.resolveGitSourceDeployToken(ctx, name)
+	token, scope, err := rt.resolveGitSourceDeployCredential(ctx, name)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusInternalServerError, "internal error"
 	}
-	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, checkoutRef, token)
+	sourceDir, cleanup, err := rt.gitSourceFetch(sourcecache.WithScope(ctx, scope), gs.RepoURL, checkoutRef, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("checkout_ref", checkoutRef))
 		if _, adopted := adoptedAttemptID(ctx); errors.Is(err, errGitCommitNotFound) && !adopted {
@@ -515,24 +527,31 @@ func webhookDeliveryNote(message string) string {
 // Returns the connected source's deploy token, or empty for public repos.
 // Shared with preview deploys, so private-repo credentials resolve identically.
 func (rt *Router) resolveGitSourceDeployToken(ctx context.Context, name string) (string, error) {
+	token, _, err := rt.resolveGitSourceDeployCredential(ctx, name)
+	return token, err
+}
+
+// resolveGitSourceDeployCredential also returns the mirror scope of the credential.
+func (rt *Router) resolveGitSourceDeployCredential(ctx context.Context, name string) (string, string, error) {
 	secretsKey := store.GitSourceSecretsKey(name)
 	hasToken, err := rt.gitSourceSecrets.Exists(ctx, secretsKey, gitSourceTokenKey)
 	if err != nil {
-		return "", fmt.Errorf("check deploy token: %w", err)
+		return "", "", fmt.Errorf("check deploy token: %w", err)
 	}
 	if hasToken {
 		token, err := rt.gitSourceSecrets.Resolve(ctx, secretsKey, gitSourceTokenKey)
 		if err != nil {
-			return "", fmt.Errorf("resolve deploy token: %w", err)
+			return "", "", fmt.Errorf("resolve deploy token: %w", err)
 		}
-		return token, nil
+		return token, "app:" + name, nil
 	}
 	// No deploy token: fall back to the connected GitHub App's installation token, so private repos work without a stored PAT.
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
 	if err != nil || gs == nil {
-		return "", nil
+		return "", "", nil
 	}
-	return rt.tokenForRepo(ctx, name, gs.RepoURL, true), nil
+	token, scope := rt.cloneCredential(ctx, name, gs.RepoURL, true)
+	return token, scope, nil
 }
 
 // Redeploys each sibling from the same checkout. One sibling's failure does not block the others; returns the failure count.

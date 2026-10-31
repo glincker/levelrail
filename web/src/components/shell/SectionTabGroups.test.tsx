@@ -2,7 +2,11 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CommonI18n } from '@/test/commonI18n'
-import { CostSectionTabs, DeploymentsSectionTabs } from './SectionTabGroups'
+import {
+  CostSectionTabs,
+  DeploymentsSectionTabs,
+  PlatformSectionTabs,
+} from './SectionTabGroups'
 
 const router = vi.hoisted(() => ({ pathname: '/' }))
 
@@ -56,6 +60,21 @@ describe('section tab groups', () => {
     render(
       <CommonI18n>
         <CostSectionTabs />
+      </CommonI18n>,
+    )
+    expect(current()).toEqual([label])
+  })
+
+  it.each([
+    ['/settings/platform', 'Overview'],
+    ['/settings/platform/', 'Overview'],
+    ['/settings/platform/https', 'HTTPS'],
+    ['/settings/platform/dns-providers', 'DNS providers'],
+  ])('platform strip marks the right tab on %s', (path, label) => {
+    router.pathname = path
+    render(
+      <CommonI18n>
+        <PlatformSectionTabs />
       </CommonI18n>,
     )
     expect(current()).toEqual([label])

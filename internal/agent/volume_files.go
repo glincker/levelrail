@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -65,7 +66,11 @@ func runVolumeFile(ctx context.Context, rt docker.Runtime, op *agentpb.VolumeFil
 		pr, pw := io.Pipe()
 		go func() {
 			defer func() { _ = st.Close() }()
-			_, err := st.Write(op.GetPath(), stdin, volumefiles.EffectiveMax(op.GetMaxBytes()))
+			var mode fs.FileMode
+			if op.GetPrivate() {
+				mode = 0o600
+			}
+			_, err := st.WriteMode(op.GetPath(), stdin, volumefiles.EffectiveMax(op.GetMaxBytes()), mode)
 			_ = pw.CloseWithError(err)
 		}()
 		return pr, nil
@@ -157,10 +162,16 @@ func (t *GRPCTransport) VolumeRead(ctx context.Context, volume, path string) (io
 
 // VolumeWrite implements VolumeFileOps.
 func (t *GRPCTransport) VolumeWrite(ctx context.Context, volume, path string, content io.Reader, maxBytes int64) error {
-	rc, _, err := t.startExecAck(ctx, "", nil, content, execAttach{
-		stdin:      true,
-		volumeFile: &agentpb.VolumeFileOp{Kind: agentpb.VolumeFileOp_KIND_PUT, Volume: volume, Path: path, MaxBytes: maxBytes},
-	})
+	return t.volumePut(ctx, &agentpb.VolumeFileOp{Kind: agentpb.VolumeFileOp_KIND_PUT, Volume: volume, Path: path, MaxBytes: maxBytes}, content)
+}
+
+// VolumeWritePrivate is VolumeWrite for a file created 0600, such as a private key.
+func (t *GRPCTransport) VolumeWritePrivate(ctx context.Context, volume, path string, content io.Reader, maxBytes int64) error {
+	return t.volumePut(ctx, &agentpb.VolumeFileOp{Kind: agentpb.VolumeFileOp_KIND_PUT, Volume: volume, Path: path, MaxBytes: maxBytes, Private: true}, content)
+}
+
+func (t *GRPCTransport) volumePut(ctx context.Context, op *agentpb.VolumeFileOp, content io.Reader) error {
+	rc, _, err := t.startExecAck(ctx, "", nil, content, execAttach{stdin: true, volumeFile: op})
 	if err != nil {
 		return err
 	}
@@ -194,7 +205,16 @@ func (l Local) VolumeRead(ctx context.Context, volume, path string) (io.ReadClos
 
 // VolumeWrite implements VolumeFileOps for the control plane's own node.
 func (l Local) VolumeWrite(ctx context.Context, volume, path string, content io.Reader, maxBytes int64) error {
-	rc, err := runVolumeFile(ctx, l.Runtime, &agentpb.VolumeFileOp{Kind: agentpb.VolumeFileOp_KIND_PUT, Volume: volume, Path: path, MaxBytes: maxBytes}, content)
+	return l.volumePut(ctx, &agentpb.VolumeFileOp{Kind: agentpb.VolumeFileOp_KIND_PUT, Volume: volume, Path: path, MaxBytes: maxBytes}, content)
+}
+
+// VolumeWritePrivate is VolumeWrite for a file created 0600 on the control plane's own node.
+func (l Local) VolumeWritePrivate(ctx context.Context, volume, path string, content io.Reader, maxBytes int64) error {
+	return l.volumePut(ctx, &agentpb.VolumeFileOp{Kind: agentpb.VolumeFileOp_KIND_PUT, Volume: volume, Path: path, MaxBytes: maxBytes, Private: true}, content)
+}
+
+func (l Local) volumePut(ctx context.Context, op *agentpb.VolumeFileOp, content io.Reader) error {
+	rc, err := runVolumeFile(ctx, l.Runtime, op, content)
 	if err != nil {
 		return err
 	}

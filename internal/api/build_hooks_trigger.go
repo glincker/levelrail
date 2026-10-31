@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -174,6 +175,20 @@ func (rt *Router) executeBuildHook(ctx context.Context, h store.BuildHook, p bui
 	}
 	if p.Body != "" {
 		args[buildHookArgBody] = p.Body
+	}
+	if rt.deploySafety != nil {
+		hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: branch, CommitLabel: branch, Branch: branch, BuildArgs: args}
+		if _, protected, _ := rt.protectedEnvironmentOf(ctx, h.ServiceName); protected {
+			sha, err := rt.pinBranchSHA(ctx, h.ServiceName, branch)
+			if err != nil {
+				return "failed: " + err.Error()
+			}
+			hr.CheckoutRef, hr.CommitLabel, hr.CommitSHA = sha, sha, sha
+		}
+		actor := ApprovalActor{Type: "build_hook", ID: h.ID, Name: h.ServiceName + "/" + h.Name}
+		if handled, _, hmsg := rt.holdIfProtected(ctx, h.ServiceName, hr, h.ServiceName+":"+branch, store.DeployAttemptSourceWebhook, actor); handled {
+			return "held: " + strings.TrimSpace(hmsg)
+		}
 	}
 	msg, err := rt.triggerGitDeploy(withExtraBuildArgs(ctx, args), h.ServiceName, branch, store.DeployAttemptSourceWebhook)
 	if err != nil {

@@ -658,6 +658,10 @@
         "title": "Cleanup",
         "description": "Retention, previews and run history for stored data, plus disk and Docker cleanup."
       },
+      "platform": {
+        "title": "Platform",
+        "description": "Status of HTTPS, ingress, addresses and DNS providers, with search across every platform setting."
+      },
       "domains": {
         "title": "Domains",
         "description": "Platform ingress: dashboard domain and ACME certificates."
@@ -1566,7 +1570,7 @@
   "backupTargetLocal": {
     "path": "Directory",
     "placeholder": "nightly",
-    "hint": "Relative to the allowed root (APP_BACKUP_LOCAL_ROOT on the control plane). The server rejects paths outside it."
+    "hint": "Relative to the allowed root (APP_BACKUP_LOCAL_ROOT on the control plane, default APP_DATA_DIR/backups). The server rejects paths outside it. Backups stay on this server, so they do not protect you if it is lost. Use an off-server target for real data."
   },
   "backupTargetsPage": {
     "rail": {
@@ -3320,6 +3324,10 @@
         "bestFor": "Any mail server or relay that speaks SMTP.",
         "credentialHint": "Use the password your mail server gives you."
       }
+    },
+    "ownMailServer": {
+      "name": "Use my mail server",
+      "bestFor": "Send as noreply from your own domain through the Mail page."
     }
   },
   "heartbeat": {

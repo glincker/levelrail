@@ -38,6 +38,7 @@ type CIOIDCTrustStore interface {
 	ListCIOIDCTrusts(ctx context.Context, serviceName string) ([]store.CIOIDCTrust, error)
 	ListCIOIDCTrustsForRepo(ctx context.Context, repository, serviceName string) ([]store.CIOIDCTrust, error)
 	DeleteCIOIDCTrust(ctx context.Context, serviceName, id string) (store.CIOIDCTrust, error)
+	DeleteCIOIDCTrustsForApp(ctx context.Context, serviceName string) error
 }
 
 // CIClaims are the verified claims of a CI provider identity token.

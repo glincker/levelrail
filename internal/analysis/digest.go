@@ -140,7 +140,7 @@ func sizing(app string, end time.Time, cfg Config, mem, cpu []telemetry.Sample, 
 	res := rightsizing.Recommend(rightsizing.Input{
 		ServiceName: app, Now: end, LookbackWindow: cfg.Window + cfg.Baseline,
 		MemorySamples: conv(mem), CPUPercentSamples: conv(cpu),
-		CurrentMemoryBytes: memLimit, CurrentNanoCPUs: nanoCPU,
+		CurrentMemoryBytes: memLimit, CurrentNanoCPUs: nanoCPU, Tuning: cfg.Sizing,
 	})
 	out := []Sizing{
 		{Dimension: "memory", Action: res.Memory.Action, Confidence: res.Memory.Confidence, DataSufficient: res.Memory.DataSufficient, CurrentLimit: res.Memory.CurrentLimit, P95Usage: round(res.Memory.P95Usage), SuggestedLimit: res.Memory.SuggestedLimit, SuggestedText: rightsizing.FormatMemory(res.Memory.SuggestedLimit)},

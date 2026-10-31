@@ -1,4 +1,8 @@
-# Wait for CI before deploying
+---
+title: "Wait for CI before deploying"
+description: "Hold a deploy until the commit's CI checks conclude. Without the gate, a push deploys as soon as the webhook arrives, even if tests are still running or failed."
+"og:url": "https://docs.levelrail.com/ci-gate"
+---
 
 A push to a connected repository normally deploys as soon as the webhook
 arrives, even if the commit's tests are still running or have failed. Turn on

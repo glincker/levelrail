@@ -1,0 +1,428 @@
+{
+  "health": {
+    "title": "Salud de los respaldos",
+    "description": "Cada base de datos y volumen de aplicación con respaldo, agrupados por aplicación. Un respaldo solo cuenta cuando se ha comprobado que su restauración funciona.",
+    "loadFailed": "No se pudo cargar la salud de los respaldos: {{error}}",
+    "empty": "Aún no hay recursos con respaldo. Programa o lanza un respaldo desde la página de una base de datos o de un volumen de aplicación.",
+    "databasesGroup": "Bases de datos",
+    "appGroup": "Aplicación {{name}}",
+    "columns": {
+      "resource": "Recurso",
+      "state": "Estado",
+      "lastBackup": "Último respaldo",
+      "lastRestore": "Última restauración verificada",
+      "size": "Tamaño",
+      "nextRun": "Próxima ejecución",
+      "actions": "Acciones"
+    },
+    "state": {
+      "healthy": "Sano",
+      "warning": "Requiere atención",
+      "failing": "Con fallos",
+      "unverified": "Sin verificar",
+      "unprotected": "Sin respaldo"
+    },
+    "never": "Nunca verificado",
+    "none": "Aún ninguno",
+    "notScheduled": "Sin programar",
+    "encrypted": "Cifrado",
+    "notEncrypted": "Sin cifrar",
+    "backups": "{{count}} respaldos",
+    "restoreProven": "Restauración comprobada {{when}}",
+    "drillFailed": "El último simulacro falló",
+    "runDrill": "Comprobar restauración",
+    "drillStarted": "Simulacro de restauración iniciado",
+    "drillStartedDescription": "Restaura en un recurso temporal, lo valida y lo destruye. Los resultados aparecen en el historial de simulacros.",
+    "drillFailedToast": "No se pudo iniciar el simulacro de restauración",
+    "restore": "Restaurar",
+    "restoreDatabase": "Opciones de restauración",
+    "policy": "Política"
+  },
+  "encryption": {
+    "on": "Los nuevos respaldos de volúmenes se comprimen y cifran en este servidor antes de subirse. Clave pública: {{key}}",
+    "off": "Los nuevos respaldos de volúmenes se comprimen pero no se cifran. Cualquiera con acceso al bucket puede leerlos.",
+    "keyHint": "Guarda una copia del archivo de clave (APP_BACKUP_ENCRYPTION_KEY_FILE, por defecto backup-encryption.key en el directorio de datos) fuera de este servidor, o los respaldos cifrados no podrán restaurarse después de un desastre.",
+    "column": "Cifrado",
+    "badge": "Cifrado"
+  },
+  "protection": {
+    "title": "Protección del bucket",
+    "check": "Revisar buckets",
+    "checking": "Revisando...",
+    "checkFailed": "No se pudieron sondear los buckets de respaldo",
+    "locked": "El bloqueo de objetos está activado",
+    "versioned": "El control de versiones está activado",
+    "open": "Cualquiera con la clave puede eliminar respaldos",
+    "probeError": "No se pudo inspeccionar este bucket: {{error}}",
+    "target": "Destino {{id}}"
+  },
+  "restoreWizard": {
+    "title": "Restaurar {{app}}/{{volume}}",
+    "description": "Las restauraciones siempre van a un volumen nuevo. El volumen existente nunca se sobrescribe.",
+    "stepBackup": "Elige un respaldo",
+    "stepDestination": "Elige dónde",
+    "stepConfirm": "Confirmar",
+    "backup": "Respaldo",
+    "noBackups": "No hay ningún respaldo exitoso de este volumen para restaurar.",
+    "destination": "Destino",
+    "sameApp": "Un volumen nuevo junto al original",
+    "otherApp": "Un volumen nuevo para otra aplicación",
+    "targetApp": "Nombre de la aplicación",
+    "targetAppHint": "El volumen se nombra de modo que al desplegar esta aplicación se monten los datos restaurados.",
+    "node": "Nodo",
+    "sameNode": "El mismo nodo de la aplicación",
+    "newName": "Nombre del volumen",
+    "newNameHint": "Déjalo vacío para generar uno.",
+    "summary": "Restaurar el respaldo {{backup}} en un nuevo volumen {{name}} en {{node}}.",
+    "generatedName": "un nombre generado",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "start": "Iniciar restauración",
+    "cancel": "Cancelar",
+    "started": "Restaurando en {{name}}",
+    "startedDescription": "Sigue el progreso en el historial de restauraciones de este volumen.",
+    "failed": "No se pudo iniciar la restauración"
+  },
+  "policy": {
+    "title": "Política de respaldo de {{app}}/{{volume}}",
+    "description": "Las cantidades de retención conservan el respaldo más reciente de cada uno de los últimos N días, semanas y meses. Los hooks se ejecutan dentro del contenedor de la aplicación.",
+    "daily": "Conservar diarios",
+    "weekly": "Conservar semanales",
+    "monthly": "Conservar mensuales",
+    "retentionHint": "0 desactiva un grupo. Las cantidades se combinan con los límites de últimos respaldos y antigüedad de la propia programación.",
+    "preHook": "Comando antes del respaldo",
+    "preHookHint": "Una salida distinta de cero hace fallar el respaldo, así nunca se archiva un volumen inconsistente.",
+    "postHook": "Comando después del respaldo",
+    "pause": "Pausar la aplicación mientras se transmite el archivo",
+    "pauseHint": "Congela todos los procesos del contenedor para que los archivos no cambien durante el archivado. La aplicación no estará disponible hasta que termine la subida.",
+    "save": "Guardar política",
+    "saved": "Política de respaldo guardada",
+    "failed": "No se pudo guardar la política de respaldo",
+    "loadFailed": "No se pudo cargar la política de respaldo: {{error}}"
+  },
+  "drills": {
+    "title": "Simulacros de restauración",
+    "description": "Restauraciones programadas y manuales en recursos temporales. Un simulacro fallido activa la alerta restore_drill_failed.",
+    "empty": "Aún no se ha ejecutado ningún simulacro. Por defecto se ejecutan automáticamente una vez por semana.",
+    "loadFailed": "No se pudieron cargar los simulacros: {{error}}",
+    "columns": {
+      "resource": "Recurso",
+      "trigger": "Disparador",
+      "result": "Resultado",
+      "checks": "Comprobaciones",
+      "took": "Duración",
+      "started": "Inicio"
+    },
+    "status": {
+      "running": "En ejecución",
+      "passed": "Aprobado",
+      "failed": "Fallido"
+    },
+    "trigger": {
+      "manual": "Manual",
+      "scheduled": "Programado"
+    },
+    "check": {
+      "object": "Objeto presente",
+      "checksum": "Suma de verificación",
+      "restore": "Restaurado",
+      "content": "Contenido"
+    },
+    "stage": "Falló en {{stage}}",
+    "files": "{{count}} archivos",
+    "tables": "{{count}} tablas",
+    "shortDescription": "Las restauraciones en recursos temporales comprueban que un respaldo funciona.",
+    "showAll": "Mostrar los {{count}}",
+    "showLess": "Mostrar menos"
+  },
+  "history": {
+    "title": "Todos los intentos de respaldo",
+    "description": "Cada intento en todas las bases de datos y volúmenes de aplicación, del más reciente al más antiguo."
+  },
+  "page": {
+    "title": "Respaldos",
+    "helpLabel": "Guía de respaldos y almacenamiento",
+    "description": "Qué está protegido, qué no, y un solo lugar para corregirlo.",
+    "loadFailed": "No se pudo cargar la cobertura de respaldos: {{error}}",
+    "loadFailedHint": "Verifica que el servidor sea accesible y vuelve a intentarlo.",
+    "retry": "Reintentar",
+    "noResourcesTitle": "Aún no hay nada que respaldar",
+    "noResourcesDescription": "Las bases de datos y los volúmenes de aplicación aparecen aquí en cuanto los creas."
+  },
+  "summary": {
+    "protected": "{{protected}} de {{total}} recursos protegidos",
+    "headline": {
+      "empty": "Aún no hay bases de datos ni volúmenes de aplicación.",
+      "allVerified": "Todos los recursos tienen respaldo y se ha comprobado una restauración.",
+      "someUnprotected_one": "{{count}} recurso no tiene programación de respaldo.",
+      "someUnprotected_other": "{{count}} recursos no tienen programación de respaldo.",
+      "failing": "Los respaldos están fallando en {{failing}} de ellos. Corrígelos primero.",
+      "unverified": "Tienen respaldo, pero aún no se ha comprobado una restauración para todos los recursos."
+    },
+    "protectEverything": "Proteger todo",
+    "lastVerified": "Última restauración verificada",
+    "nextRun": "Próxima ejecución",
+    "storage": "Almacenamiento usado"
+  },
+  "coverage": {
+    "state": {
+      "verified": "Protegido y verificado",
+      "unverified": "Protegido, sin verificar",
+      "never_ran": "Programado, nunca se ejecutó",
+      "failing": "Respaldos con fallos",
+      "unprotected": "Sin protección"
+    },
+    "lastBackup": "Último respaldo",
+    "lastRestore": "Restauración verificada",
+    "nextRun": "Próxima ejecución",
+    "size": "Tamaño"
+  },
+  "row": {
+    "kind": {
+      "database": "Base de datos",
+      "volume": "Volumen"
+    },
+    "scratch": "Temporal",
+    "protect": "Proteger",
+    "protected": "{{name}} ahora está programado",
+    "protectFailed": "No se pudo proteger {{name}}",
+    "backupNow": "Respaldar ahora",
+    "backupStarted": "Respaldo de {{name}} iniciado",
+    "backupFailed": "No se pudo iniciar un respaldo de {{name}}"
+  },
+  "target": {
+    "formLabel": "Conectar un destino de respaldo",
+    "providerLabel": "Proveedor",
+    "connected": "Destino \"{{name}}\" conectado",
+    "connect": "Conectar destino",
+    "connecting": "Conectando...",
+    "preset": {
+      "r2": {
+        "name": "Cloudflare R2",
+        "hint": "Sin costos de salida"
+      },
+      "b2": {
+        "name": "Backblaze B2",
+        "hint": "Almacenamiento frío económico"
+      },
+      "wasabi": {
+        "name": "Wasabi",
+        "hint": "Precio fijo por TB"
+      },
+      "aws": {
+        "name": "AWS S3",
+        "hint": "Región y claves"
+      },
+      "gcs": {
+        "name": "Google Cloud Storage",
+        "hint": "Interoperabilidad S3, claves HMAC"
+      },
+      "spaces": {
+        "name": "DigitalOcean Spaces",
+        "hint": "S3 simple con CDN"
+      },
+      "hetzner": {
+        "name": "Hetzner Object Storage",
+        "hint": "Alojado en la UE, bajo costo"
+      },
+      "scaleway": {
+        "name": "Scaleway",
+        "hint": "Almacenamiento de objetos en la UE"
+      },
+      "ovh": {
+        "name": "OVHcloud",
+        "hint": "Compatible con S3, regiones de la UE"
+      },
+      "vultr": {
+        "name": "Vultr Object Storage",
+        "hint": "Regiones globales"
+      },
+      "minio": {
+        "name": "MinIO",
+        "hint": "Tu propio servidor S3"
+      },
+      "local": {
+        "name": "Disco local",
+        "hint": "Misma máquina, no es seguro"
+      }
+    },
+    "localRootHint": "Se guarda en {{root}}. Escribe una carpeta dentro de ella.",
+    "localWarning": "Los respaldos guardados en el disco de esta misma máquina se pierden junto con ella. Protegen frente a un mal despliegue o una tabla eliminada, no frente a un disco dañado, un ataque de ransomware o un servidor eliminado. Úsalo para probar y luego añade un destino externo.",
+    "field": {
+      "name": "Nombre",
+      "bucket": "Bucket",
+      "region": "Región",
+      "endpoint": "Endpoint",
+      "accessKeyId": "ID de clave de acceso",
+      "secretAccessKey": "Clave de acceso secreta"
+    },
+    "placeholder": {
+      "name": "p. ej. respaldos-externos"
+    },
+    "missing": "{{field}} es obligatorio."
+  },
+  "protectAll": {
+    "title": "Proteger todo",
+    "description": "Programa un respaldo para cada recurso que no tenga ninguno. Nada cambia hasta que lo apliques.",
+    "destination": "Destino",
+    "addDestination": "Añadir otro destino",
+    "schedule": "Programación y retención",
+    "choice": {
+      "daily": "Diario a las 03:00",
+      "sixHours": "Cada 6 horas",
+      "weekly": "Semanal, domingo a las 03:00"
+    },
+    "cron": "Programación cron",
+    "retain": "Respaldos a conservar",
+    "includeScratch_one": "Proteger también {{count}} recurso temporal (previews y canaries)",
+    "includeScratch_other": "Proteger también {{count}} recursos temporales (previews y canaries)",
+    "plan": "Qué cambiará",
+    "planning": "Calculando el plan...",
+    "nothingToDo": "Todos los recursos ya tienen programación.",
+    "kind": {
+      "database": "Base de datos",
+      "volume": "Volumen"
+    },
+    "cancel": "Cancelar",
+    "applying": "Aplicando...",
+    "apply_one": "Proteger {{count}} recurso",
+    "apply_other": "Proteger {{count}} recursos",
+    "done_one": "{{count}} recurso programado",
+    "done_other": "{{count}} recursos programados",
+    "someFailed_one": "{{count}} no se pudo programar.",
+    "someFailed_other": "{{count}} no se pudieron programar."
+  },
+  "safety": {
+    "title": "Cifrado y seguridad del bucket",
+    "encrypted": "Cifrado",
+    "notEncrypted": "Sin cifrar",
+    "copied": "Clave pública copiada",
+    "copyFailed": "No se pudo copiar la clave pública",
+    "keyDetails": "Detalles de la clave y almacenamiento externo",
+    "keyHint": "Guarda la clave privada (APP_BACKUP_ENCRYPTION_KEY_FILE, por defecto backup-encryption.key en el directorio de datos) en un gestor de contraseñas o en otra máquina. Sin ella, los respaldos cifrados no pueden restaurarse después de un desastre.",
+    "copyKey": "Copiar clave pública",
+    "keyNotStored": "No has confirmado que la clave privada esté guardada fuera de este servidor. Si este servidor se pierde, también se pierden estos respaldos.",
+    "ack": "La guardé fuera de este servidor",
+    "ackFailed": "No se pudo guardar la confirmación",
+    "later": "Recordármelo después"
+  },
+  "orphans": {
+    "title": "Datos huérfanos",
+    "description": "Datos que se conservan tras eliminar su base de datos o aplicación. Eliminar una base de datos nunca borra sus datos por sí solo, así que nada aquí se elimina hasta que lo recuperes.",
+    "empty": "No hay datos huérfanos. Cada volumen pertenece a una base de datos o aplicación que aún existe.",
+    "loadFailed": "No se pudieron listar los datos huérfanos: {{error}}",
+    "large": "Los datos huérfanos usan {{size}}. Revísalos y recupera lo que ya no necesites.",
+    "role": {
+      "data": "Volumen de datos",
+      "certificates": "Certificados",
+      "wal archive": "Archivo WAL",
+      "volume": "Volumen"
+    },
+    "kind": {
+      "database": "Base de datos",
+      "volume": "Volumen de aplicación",
+      "app": "Aplicación"
+    },
+    "sizeUnknown": "tamaño desconocido",
+    "age_one": "{{count}} día de antigüedad",
+    "age_other": "{{count}} días de antigüedad",
+    "noBackup": "Sin respaldo",
+    "hasBackup_one": "{{count}} respaldo",
+    "hasBackup_other": "{{count}} respaldos",
+    "inspect": "Inspeccionar",
+    "reclaim": "Recuperar",
+    "volume": "Volumen",
+    "belongedTo": "Pertenecía a",
+    "created": "Creado",
+    "lastBackup": "Último respaldo",
+    "noBackupDetail": "No existe ningún respaldo de estos datos",
+    "confirmTitle": "¿Recuperar los datos de \"{{name}}\"?",
+    "confirmDescription": "El volumen se elimina de este servidor. Esto no se puede deshacer.",
+    "confirmNoBackup": "No existe ningún respaldo de estos datos. Se perderán para siempre.",
+    "confirmHasBackup_one": "{{count}} respaldo suyo permanece en tu destino.",
+    "confirmHasBackup_other": "{{count}} respaldos suyos permanecen en tu destino.",
+    "confirmAction": "Eliminar estos datos",
+    "reclaiming": "Eliminando...",
+    "reclaimed": "Se recuperaron {{size}}"
+  },
+  "deleteData": {
+    "label": "Eliminar también los datos",
+    "databaseHint": "Elimina el volumen de datos junto con la base de datos. Sin esto, el volumen se conserva y aparece en Datos huérfanos en la página de Respaldos.",
+    "appHint": "Elimina los volúmenes de la aplicación junto con ella. Sin esto, se conservan y aparecen en Datos huérfanos en la página de Respaldos.",
+    "warning": "Los datos se destruyen y no se pueden recuperar a menos que exista un respaldo."
+  },
+  "firstRun": {
+    "title": "Configura los respaldos",
+    "description": "Conecta un lugar seguro donde guardar los respaldos y podrás proteger desde ahí cada base de datos y volumen de aplicación.",
+    "descriptionWithResources_one": "{{count}} recurso no tiene respaldo. Conecta un lugar seguro donde guardarlo y luego protégelo en un solo paso.",
+    "descriptionWithResources_other": "{{count}} recursos no tienen respaldo. Conecta un lugar seguro donde guardarlos y luego protégelos todos en un solo paso.",
+    "step": {
+      "destination": {
+        "title": "Añade un destino",
+        "hint": "Un bucket compatible con S3"
+      },
+      "schedule": {
+        "title": "Elige una programación",
+        "hint": "Diario es una buena opción por defecto"
+      },
+      "verify": {
+        "title": "Comprueba una restauración",
+        "hint": "Un respaldo cuenta cuando se restaura"
+      }
+    }
+  },
+  "activity": {
+    "title": "Actividad reciente",
+    "subtitle": "Cada intento, del más reciente al más antiguo",
+    "empty": "Aún no se ha ejecutado ningún respaldo.",
+    "loadFailed": "No se pudieron cargar respaldos anteriores",
+    "deletedTarget": "Destino eliminado",
+    "kind": "Tipo",
+    "resource": "Recurso",
+    "status": "Estado",
+    "target": "Destino",
+    "size": "Tamaño",
+    "started": "Inicio",
+    "verification": "Verificación",
+    "actions": "Acciones",
+    "loading": "Cargando...",
+    "loadOlder": "Cargar entradas anteriores"
+  },
+  "tables": {
+    "restores": "Restauraciones",
+    "cloneDatabases": "Bases de datos restauradas como nuevas",
+    "cloneVolumes": "Volúmenes restaurados como nuevos",
+    "pipelineRuns": "Ejecuciones de pipeline",
+    "activity": "Actividad de respaldos",
+    "snapshots": "Respaldos",
+    "pitrBackups": "Respaldos base",
+    "pitrRestores": "Restauraciones a un punto en el tiempo"
+  },
+  "suggestion": {
+    "title": "Respalda esta base de datos",
+    "description": "Hay un destino conectado, pero esta base de datos no tiene programación. Sugerencia: {{schedule}}, conservando los últimos {{retain}}.",
+    "apply": "Usar la sugerencia",
+    "applied": "Respaldos programados",
+    "failed": "No se pudieron programar los respaldos"
+  },
+  "banner": {
+    "description": "Protege bases de datos y volúmenes con respaldos programados en un almacenamiento que controlas, y luego comprueba que se restauran.",
+    "diagram": {
+      "database": "base de datos",
+      "storage": "almacenamiento",
+      "schedule": "programación"
+    }
+  },
+  "volumeFiles": {
+    "title": "Archivos",
+    "volume": "Volumen",
+    "up": "Subir",
+    "upload": "Subir archivo",
+    "loading": "Cargando archivos",
+    "empty": "Este directorio está vacío.",
+    "truncated": "Lista truncada. Abre un subdirectorio para ver el resto.",
+    "download": "Descargar {{name}}",
+    "delete": "Eliminar {{name}}",
+    "confirm": "Confirmar"
+  }
+}

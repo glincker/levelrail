@@ -555,3 +555,39 @@ func TestHandleCreateRegistryCredential_NoExpiresAt(t *testing.T) {
 		t.Errorf("ExpiryStatus = %q, want empty when no expiry was set", created.ExpiryStatus)
 	}
 }
+
+func TestValidateRegistryHost_Shapes(t *testing.T) {
+	tests := []struct {
+		name    string
+		host    string
+		exempt  string
+		allow   bool
+		wantErr bool
+	}{
+		{name: "plain host", host: "ghcr.io"},
+		{name: "host with port", host: "8.8.8.8:5000"},
+		{name: "scheme host", host: "https://8.8.8.8:5000"},
+		{name: "userinfo", host: "https://name@8.8.8.8", wantErr: true},
+		{name: "path", host: "8.8.8.8/v2", wantErr: true},
+		{name: "query", host: "8.8.8.8?x=1", wantErr: true},
+		{name: "fragment", host: "8.8.8.8#x", wantErr: true},
+		{name: "bad scheme", host: "ftp://8.8.8.8", wantErr: true},
+		{name: "loopback refused", host: "127.0.0.1:5000", wantErr: true},
+		{name: "localhost refused", host: "localhost", wantErr: true},
+		{name: "private allowed by default", host: "10.0.0.5"},
+		{name: "unique local allowed by default", host: "[fd12:3456::1]:5000"},
+		{name: "loopback allowed by opt-out", host: "127.0.0.1:5000", allow: true},
+		{name: "localhost allowed by opt-out", host: "localhost", allow: true},
+		{name: "metadata refused", host: "169.254.169.254", wantErr: true},
+		{name: "metadata refused despite opt-out", host: "169.254.169.254", allow: true, wantErr: true},
+		{name: "built-in host exempt", host: "127.0.0.1:5540", exempt: "127.0.0.1:5540"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateRegistryHost(context.Background(), tt.host, tt.exempt, tt.allow)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateRegistryHost(%q) error = %v, wantErr %v", tt.host, err, tt.wantErr)
+			}
+		})
+	}
+}

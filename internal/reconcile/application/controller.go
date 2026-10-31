@@ -580,6 +580,9 @@ func IsServiceControllerName(name string) bool {
 	return ok && svc != "" && svc != "delete-finalizer" && svc != "network-cleanup" && !strings.Contains(svc, "/")
 }
 
+// ReasonMaintenanceHold is the result reason while DesiredService.MaintenanceHold is set.
+const ReasonMaintenanceHold = "MaintenanceHold"
+
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	started, err := c.store.GetDesiredService(ctx, c.serviceName)
@@ -606,6 +609,12 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	}
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("application/%s: get desired service: %w", c.serviceName, err)
+	}
+
+	// A maintenance hold wins over everything else: the holder (a mail
+	// restore swapping the data volume) owns the containers until it clears it.
+	if desired.MaintenanceHold != "" {
+		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
@@ -1312,7 +1321,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 
 	for _, v := range desired.Volumes {
 		if err := traceStep(ctx, tr, deploytrace.StepEnsureVolume, deploytrace.StepEnsureVolume+"."+v.Name, "ensuring volume "+v.Name,
-			func() error { return c.runtime.EnsureVolume(ctx, v.Name) }, "EnsureVolumeFailed", v.Name+" mounted at "+v.ContainerPath); err != nil {
+			func() error { return docker.EnsureVolumeFor(ctx, c.runtime, v.Name, volumeOwner(desired, v.Name)) }, "EnsureVolumeFailed", v.Name+" mounted at "+v.ContainerPath); err != nil {
 			return fmt.Errorf("ensure volume %q: %w", v.Name, err)
 		}
 	}
@@ -1337,6 +1346,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
+	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
 		if err != nil {
@@ -2306,7 +2316,7 @@ func (c *Controller) desiredSuperseded(ctx context.Context, began *store.Desired
 }
 
 func desiredChanged(a, b *store.DesiredService) bool {
-	return a.Image != b.Image || a.RestartNonce != b.RestartNonce || a.Replicas != b.Replicas || a.Suspended != b.Suspended
+	return a.Image != b.Image || a.RestartNonce != b.RestartNonce || a.Replicas != b.Replicas || a.Suspended != b.Suspended || a.MaintenanceHold != b.MaintenanceHold
 }
 
 // abortSuperseded stops the candidate without recording a failure or arming
@@ -2721,12 +2731,12 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		spec.Ports = []docker.PortBinding{binding}
 	}
 	if len(desired.PublishedPorts) > 0 {
-		// Same bind address rule as the routed port, so a UDP port is private unless the service is public.
-		hostIP, err := bindaddr.Resolve(desired.BindAddress)
-		if err != nil {
-			return docker.ContainerSpec{}, fmt.Errorf("bind address: %w", err)
-		}
+		// A port without its own bind follows the routed port's, so it is private unless the service is public.
 		for _, p := range desired.PublishedPorts {
+			hostIP, err := bindaddr.Resolve(p.EffectiveBind(desired.BindAddress))
+			if err != nil {
+				return docker.ContainerSpec{}, fmt.Errorf("bind address of published port %s: %w", p, err)
+			}
 			spec.Ports = append(spec.Ports, docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: hostIP, Protocol: p.EffectiveProtocol()})
 		}
 	}

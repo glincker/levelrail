@@ -126,6 +126,10 @@ type Service struct {
 	StrategyReason string
 	// PlatformProbe is x-levelrail-healthcheck, see resolveServiceHealth.
 	PlatformProbe *spec.PlatformProbe
+	// PublishedTCP is x-levelrail-published-ports: tcp container ports from
+	// ports: published on their own host port with a private bind, instead
+	// of being dropped. The routed web port is the first tcp port not listed.
+	PublishedTCP []int
 	// DependsOnHealthy lists the DependsOn entries declared with
 	// condition: service_healthy, which wait for readiness, not just start.
 	DependsOnHealthy []string

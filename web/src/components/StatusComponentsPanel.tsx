@@ -29,12 +29,6 @@ import {
   type StatusComponentKind,
 } from '../queries/statusPage'
 
-const TARGET_HINT: Record<StatusComponentKind, string> = {
-  app: 'App name, e.g. web',
-  domain: 'Hostname, e.g. example.com (DNS check)',
-  check: 'https://example.com/health (probed every minute)',
-}
-
 const NO_GROUP = '__none__'
 
 function ComponentGroupSelect({ c }: { c: StatusComponent }) {
@@ -99,10 +93,16 @@ function ComponentDescriptionInput({ c }: { c: StatusComponent }) {
 }
 
 function AddComponentForm() {
+  const { t } = useTranslation('statusPage')
   const [kind, setKind] = useState<StatusComponentKind>('app')
   const [target, setTarget] = useState('')
   const [name, setName] = useState('')
   const create = useCreateStatusComponent()
+  const hints: Record<StatusComponentKind, string> = {
+    app: t('components.hintApp'),
+    domain: t('components.hintDomain'),
+    check: t('components.hintCheck'),
+  }
 
   return (
     <form
@@ -120,7 +120,7 @@ function AddComponentForm() {
             onSuccess: () => {
               setTarget('')
               setName('')
-              toast.add({ title: 'Component added.', type: 'success' })
+              toast.add({ title: t('components.added'), type: 'success' })
             },
           },
         )
@@ -128,7 +128,7 @@ function AddComponentForm() {
     >
       <div className="grid gap-3 sm:grid-cols-3">
         <Field>
-          <FieldLabel htmlFor="sc-kind">Kind</FieldLabel>
+          <FieldLabel htmlFor="sc-kind">{t('components.kind')}</FieldLabel>
           <Select
             value={kind}
             onValueChange={(v) => {
@@ -139,38 +139,40 @@ function AddComponentForm() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="app">App</SelectItem>
-              <SelectItem value="domain">Domain</SelectItem>
-              <SelectItem value="check">HTTP check</SelectItem>
+              <SelectItem value="app">{t('components.kindApp')}</SelectItem>
+              <SelectItem value="domain">
+                {t('components.kindDomain')}
+              </SelectItem>
+              <SelectItem value="check">{t('components.kindCheck')}</SelectItem>
             </SelectContent>
           </Select>
         </Field>
         <Field>
-          <FieldLabel htmlFor="sc-target">Target (private)</FieldLabel>
+          <FieldLabel htmlFor="sc-target">{t('components.target')}</FieldLabel>
           <Input
             id="sc-target"
             value={target}
-            placeholder={TARGET_HINT[kind]}
+            placeholder={hints[kind]}
             onChange={(e) => {
               setTarget(e.target.value)
             }}
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="sc-name">Public name</FieldLabel>
+          <FieldLabel htmlFor="sc-name">
+            {t('components.publicName')}
+          </FieldLabel>
           <Input
             id="sc-name"
             value={name}
-            placeholder="Website"
+            placeholder={t('components.publicNamePlaceholder')}
             onChange={(e) => {
               setName(e.target.value)
             }}
           />
         </Field>
       </div>
-      <FieldDescription>
-        Only the public name is ever shown. The target stays private.
-      </FieldDescription>
+      <FieldDescription>{t('components.privateNote')}</FieldDescription>
       {create.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {create.error.message}
@@ -178,7 +180,7 @@ function AddComponentForm() {
       ) : null}
       <Button type="submit" size="sm" disabled={create.isPending}>
         <CirclePlusGlassIcon className="size-5" aria-hidden="true" />
-        Add component
+        {t('components.add')}
       </Button>
     </form>
   )
@@ -186,6 +188,7 @@ function AddComponentForm() {
 
 export function StatusComponentsPanel() {
   const { t } = useTranslation('common')
+  const { t: tp } = useTranslation('statusPage')
   const { data, isLoading, error } = useStatusComponents()
   const del = useDeleteStatusComponent()
   const components = data ?? []
@@ -193,13 +196,18 @@ export function StatusComponentsPanel() {
     () => [
       {
         id: 'name',
-        header: 'Public name',
+        header: tp('components.publicName'),
         primary: true,
         cell: (c) => (
           <span className="font-medium text-foreground">{c.display_name}</span>
         ),
       },
-      { id: 'kind', header: 'Kind', priority: 2, cell: (c) => c.kind },
+      {
+        id: 'kind',
+        header: tp('components.kind'),
+        priority: 2,
+        cell: (c) => c.kind,
+      },
       {
         id: 'group',
         header: t('component.group', { ns: 'statusPage' }),
@@ -212,7 +220,7 @@ export function StatusComponentsPanel() {
       },
       {
         id: 'target',
-        header: 'Target (private)',
+        header: tp('components.target'),
         cell: (c) => (
           <span className="block truncate font-mono text-xs text-muted-foreground">
             {c.target}
@@ -220,7 +228,7 @@ export function StatusComponentsPanel() {
         ),
       },
     ],
-    [t],
+    [t, tp],
   )
 
   return (
@@ -233,8 +241,7 @@ export function StatusComponentsPanel() {
         <p className="text-sm text-destructive">{error.message}</p>
       ) : components.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No components yet. Add the apps, domains or health checks you want on
-          the page.
+          {tp('components.empty')}
         </p>
       ) : (
         <ResponsiveTable
@@ -248,13 +255,15 @@ export function StatusComponentsPanel() {
               variant="destructive"
               size="sm"
               disabled={del.isPending}
-              aria-label={`Remove ${c.display_name}`}
+              aria-label={tp('components.removeLabel', {
+                name: c.display_name,
+              })}
               onClick={() => {
                 if (c.id) del.mutate(c.id)
               }}
             >
               <TrashGlassIcon className="size-5" aria-hidden="true" />
-              Remove
+              {tp('components.remove')}
             </Button>
           )}
         />

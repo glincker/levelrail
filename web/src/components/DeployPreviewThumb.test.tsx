@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DeployPreviewThumb } from './DeployPreviewThumb'
 import type { PreviewRecord, PreviewStatus } from '../types/preview'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -53,9 +54,7 @@ function record(overrides: Partial<PreviewRecord>): PreviewRecord {
 function renderThumb(
   props: Partial<Parameters<typeof DeployPreviewThumb>[0]> = {},
 ) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <DeployPreviewThumb appName="web" deploymentId="dep_1" {...props} />

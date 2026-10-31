@@ -22,7 +22,6 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/api/types/volume"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
@@ -956,13 +955,7 @@ func updateMemorySwap(memoryBytes, swapMemoryBytes int64) int64 {
 // existing volume, not an error), so this is a thin wrapper, not a
 // check-then-create with its own race window.
 func (c *Client) EnsureVolume(ctx context.Context, name string) error {
-	if _, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{
-		Name:   name,
-		Labels: c.withInstanceLabel(nil),
-	}); err != nil {
-		return fmt.Errorf("docker: ensure volume %q: %w", name, err)
-	}
-	return nil
+	return c.EnsureOwnedVolume(ctx, name, VolumeOwner{})
 }
 
 // execStderrCap bounds how much of a failed exec's stderr Exec captures

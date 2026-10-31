@@ -19764,6 +19764,155 @@
   }
  },
  {
+  "id": "mail-mox",
+  "name": "Mail server (mox, experimental)",
+  "slogan": "Experimental. Needs APP_EXPERIMENTAL=mail on the control plane: without it this template is hidden and cannot be installed.\nInstall with the MAIL_FIRST_DOMAIN setting (templates install mail-mox --env MAIL_FIRST_DOMAIN=example.com). MAIL_HOSTNAME (the FQDN other servers connect to) defaults to mail. that domain and MAIL_ADMIN_EMAIL to postmaster@ that domain.\nPorts 25, 465, 587 and 993 are published on the host with a private bind by default. After install, open them with the CLI command mail ports open --confirm (or Open mail ports on the Mail page): that makes only those four ports public and allows them in the host firewall, then set up DNS. Webmail and the account UI are on port 8025 (private, no admin pages). The admin API and metrics are never published; never make them public.\nTLS: the first start makes a self-signed certificate (valid for localhost only, made by mox itself) so the server comes up with no manual steps. Replace it before sending real mail: put your certificate and key in the config volume and set MAIL_TLS_CERT_FILE and MAIL_TLS_KEY_FILE (paths under /mox/config, for example certs/cur.pem and certs/cur.key). Existing files at those paths are never overwritten. A changed certificate needs a container restart.\nRelay mode: set MAIL_SMARTHOST_HOST (and port, user, password) to send through a provider. Changing it needs a restart.\nThe admin password is the generated secret SERVICE_PASSWORD_MAILADMIN. Back up the config and data volumes together.\nDeliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail template guide. Licence: MIT.",
+  "category": "Communication",
+  "docUrl": "https://www.xmox.nl/",
+  "memoryMiB": 256,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "mox",
+    "image": "r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e",
+    "ports": [
+     8081,
+     25,
+     465,
+     587,
+     993
+    ],
+    "volumes": [
+     "mail_config -> /mox/config",
+     "mail_data -> /mox/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mox",
+    "name": "MAIL_ADMIN_EMAIL",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_FIRST_DOMAIN",
+    "kind": "required"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_HOSTNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_PASSWORD",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_SMARTHOST_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_TLS_CERT_FILE",
+    "kind": "preset"
+   },
+   {
+    "service": "mox",
+    "name": "MAIL_TLS_KEY_FILE",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "published_ports",
+     "severity": "info",
+     "services": [
+      "mox"
+     ],
+     "detail": "25:25, 465:465, 587:587, 8025:8081, 993:993",
+     "message": "Publishes ports directly on the host"
+    },
+    {
+     "code": "required_secrets",
+     "severity": "info",
+     "services": [
+      "mox"
+     ],
+     "detail": "MAIL_FIRST_DOMAIN",
+     "message": "You must provide one or more secrets before it can deploy"
+    },
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "mox"
+     ],
+     "detail": "MAIL_ADMIN_PASSWORD",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "mox"
+     ],
+     "detail": "mail_config, mail_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "mailhog",
   "name": "MailHog",
   "slogan": "An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox.",

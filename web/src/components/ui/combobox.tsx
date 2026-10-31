@@ -104,7 +104,7 @@ export function Combobox({
         role="combobox"
         aria-expanded={open}
         className={cn(
-          'flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none transition-colors focus-visible:border-foreground/60 focus-visible:ring-1 focus-visible:ring-foreground/15 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
           triggerClassName,
         )}
       >

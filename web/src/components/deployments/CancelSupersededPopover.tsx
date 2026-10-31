@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { SkipForwardGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
@@ -18,21 +19,24 @@ import {
 } from '../../queries/deployControl'
 
 function AppSetting({ app }: { app: string }) {
+  const { t } = useTranslation('deploys')
   const setting = useCancelSuperseded(app)
   const setSetting = useSetCancelSuperseded(app)
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm">Auto-cancel superseded</span>
+        <span className="text-sm">
+          {t('supersededPopover.autoCancelLabel')}
+        </span>
         <Switch
           checked={setting.data?.enabled ?? false}
           disabled={setting.isPending || setSetting.isPending}
-          aria-label={`Auto-cancel superseded deploys for ${app}`}
+          aria-label={t('supersededPopover.switchLabel', { app })}
           onCheckedChange={(next) => {
             setSetting.mutate(next, {
               onError: (error) => {
                 toast.add({
-                  title: 'Could not update the setting.',
+                  title: t('supersededPopover.updateFailed'),
                   description: error.message,
                   type: 'error',
                 })
@@ -49,7 +53,7 @@ function AppSetting({ app }: { app: string }) {
         params={{ name: app }}
         className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
       >
-        Open deploy settings
+        {t('supersededPopover.openSettings')}
       </Link>
     </div>
   )
@@ -64,6 +68,7 @@ export function CancelSupersededPopover({
   apps,
   selected,
 }: CancelSupersededPopoverProps) {
+  const { t } = useTranslation('deploys')
   const [picked, setPicked] = useState('')
   const options =
     selected && !apps.includes(selected) ? [selected, ...apps] : apps
@@ -74,23 +79,24 @@ export function CancelSupersededPopover({
         render={<Button type="button" size="sm" variant="outline" />}
       >
         <SkipForwardGlassIcon size="1.4em" aria-hidden="true" />
-        Queue
+        {t('supersededPopover.queue')}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
         <PopoverHeader>
-          <PopoverTitle>Auto-cancel superseded deploys</PopoverTitle>
+          <PopoverTitle>{t('supersededPopover.title')}</PopoverTitle>
           <PopoverDescription>
-            A newer queued deploy of a branch replaces older queued ones. Builds
-            already running are never canceled. Set per app.
+            {t('supersededPopover.description')}
           </PopoverDescription>
         </PopoverHeader>
         {app === '' ? (
-          <p className="text-xs text-muted-foreground">No apps loaded yet.</p>
+          <p className="text-xs text-muted-foreground">
+            {t('supersededPopover.noApps')}
+          </p>
         ) : (
           <>
             {!selected && options.length > 1 && (
               <select
-                aria-label="App"
+                aria-label={t('supersededPopover.appLabel')}
                 value={app}
                 onChange={(e) => {
                   setPicked(e.target.value)

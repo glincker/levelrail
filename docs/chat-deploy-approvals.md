@@ -81,7 +81,11 @@ Discord sends a verification ping when you save and refuses the URL if the ping 
 
 Levelrail has no link between a Slack or Discord user and a Levelrail account. A verified click is authorized at the channel level: anyone who can click the button in that Slack channel or Discord server can decide the approval. The clicking user's name is recorded on the decision for visibility, but it does not authorize it. Treat the channel or server you point this at as the trust boundary.
 
-Because a chat click decides as the channel, not as a person, the requester's own self-approval check cannot match it: a requester who can see the channel can approve their own request there. This is channel-level trust by design today. For approvals that need true separation of duties, approve only from the dashboard or the CLI, and leave **Interactive approval buttons** off on every channel (it is off by default; there is no global switch).
+<Warning>
+Anyone in the Slack or Discord channel, including the person who requested the deploy, can approve a protected deploy from chat. A chat click decides as the channel, not as a person, so the requester's self-approval check cannot match it. For approvals that need true separation of duties, approve only from the dashboard or the CLI, and leave **Interactive approval buttons** off on every channel (it is off by default; there is no global switch).
+</Warning>
+
+Because of that, only a caller with the `root` ability can turn interactive approvals on, change the interactive secret, or change the webhook URL of a channel that has them on. Other channel edits keep their usual `write` ability. Anyone else gets a 403. Channels that already have interactive approvals on keep working until a root user turns them off.
 </Warning>
 
 ## Endpoints

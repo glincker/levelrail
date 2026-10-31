@@ -12,7 +12,10 @@ import (
 
 type dnsRecordView struct {
 	dnszones.RecordSet
-	Managed bool `json:"managed,omitempty"`
+	// Managed is kept for older clients; it means the same as ReadOnly.
+	Managed            bool `json:"managed,omitempty"`
+	ReadOnly           bool `json:"read_only"`
+	ManagedByLevelrail bool `json:"managed_by_levelrail"`
 }
 
 type dnsRecordsListResponse struct {
@@ -21,6 +24,8 @@ type dnsRecordsListResponse struct {
 	Capabilities dnszones.Capabilities `json:"capabilities"`
 	Records      []dnsRecordView       `json:"records"`
 	Total        int                   `json:"total"`
+	Matched      int                   `json:"matched"`
+	NextCursor   string                `json:"next_cursor,omitempty"`
 }
 
 func filterSets(sets []dnszones.RecordSet, typ, q string) []dnszones.RecordSet {
@@ -37,7 +42,7 @@ func filterSets(sets []dnszones.RecordSet, typ, q string) []dnszones.RecordSet {
 	})
 }
 
-// handleListDNSZoneRecords handles GET /api/v1/dns/zones/{zone}/records?type=&q=.
+// handleListDNSZoneRecords handles GET /api/v1/dns/zones/{zone}/records?type=&search=&limit=&cursor=.
 func (rt *Router) handleListDNSZoneRecords(w http.ResponseWriter, r *http.Request) {
 	p, z, ok := rt.requireZone(w, r)
 	if !ok {
@@ -48,13 +53,25 @@ func (rt *Router) handleListDNSZoneRecords(w http.ResponseWriter, r *http.Reques
 		rt.dnsProviderError(w, "list records", err)
 		return
 	}
-	total := len(sets)
-	sets = filterSets(sets, r.URL.Query().Get("type"), r.URL.Query().Get("q"))
-	views := make([]dnsRecordView, 0, len(sets))
-	for _, s := range sets {
-		views = append(views, dnsRecordView{RecordSet: s, Managed: dnszones.IsManagedApexType(s) || s.Alias != nil})
+	q := r.URL.Query()
+	search := q.Get("search")
+	if search == "" {
+		search = q.Get("q")
 	}
-	writeJSON(w, http.StatusOK, dnsRecordsListResponse{Zone: z, Provider: p.Name(), Capabilities: p.Capabilities(), Records: views, Total: total})
+	total := len(sets)
+	sets = filterSets(sets, q.Get("type"), search)
+	page, next, err := pageRecords(sets, q.Get("limit"), q.Get("cursor"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	ledger := rt.mailLedgerKeys(r.Context(), z)
+	views := make([]dnsRecordView, 0, len(page))
+	for _, s := range page {
+		ro := dnszones.IsManagedApexType(s) || s.Alias != nil
+		views = append(views, dnsRecordView{RecordSet: s, Managed: ro, ReadOnly: ro, ManagedByLevelrail: ledger[ledgerKey(s.Name, s.Type)]})
+	}
+	writeJSON(w, http.StatusOK, dnsRecordsListResponse{Zone: z, Provider: p.Name(), Capabilities: p.Capabilities(), Records: views, Total: total, Matched: len(sets), NextCursor: next})
 }
 
 type dnsRecordWriteResponse struct {
@@ -175,6 +192,14 @@ func (rt *Router) handleDeleteDNSZoneRecord(w http.ResponseWriter, r *http.Reque
 	k := dnszones.Key{Name: dnszones.RelativeName(q.Get("name"), z.Name), Type: strings.ToUpper(q.Get("type")), SetIdentifier: q.Get("set_identifier")}
 	if dnszones.IsManagedApexType(dnszones.RecordSet{Name: k.Name, Type: k.Type}) {
 		writeError(w, http.StatusBadRequest, "apex NS and SOA are managed by the provider")
+		return
+	}
+	if c := q.Get("confirm"); c == "" || dnszones.RelativeName(c, z.Name) != k.Name {
+		writeError(w, http.StatusBadRequest, "confirm must repeat the record name")
+		return
+	}
+	if q.Get("force") != "true" && rt.mailLedgerKeys(r.Context(), z)[ledgerKey(k.Name, k.Type)] {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": "this record was added by mail DNS setup; pass force=true to delete it anyway", "managed_by_levelrail": true})
 		return
 	}
 	if err := p.DeleteRecordSet(r.Context(), z, k); err != nil {

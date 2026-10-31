@@ -244,3 +244,106 @@ export function useUpdateStatusComponent() {
     ),
   )
 }
+
+export const WEBHOOK_EVENTS = [
+  'incident_opened',
+  'incident_updated',
+  'incident_resolved',
+  'component_changed',
+  'maintenance_scheduled',
+  'maintenance_updated',
+  'maintenance_completed',
+] as const
+
+export interface StatusWebhook {
+  id: string
+  url: string
+  label: string
+  events: string[]
+  paused: boolean
+  paused_reason?: string
+  consecutive_failures: number
+  created_at: string
+  // Present only on the create and rotate responses.
+  signing_secret?: string
+}
+
+export interface StatusWebhookDelivery {
+  id: string
+  event_id: string
+  event_type: string
+  state: string
+  attempts: number
+  status_code: number
+  last_error?: string
+  created_at: string
+}
+
+export interface StatusWebhookTestResult {
+  delivered: boolean
+  status_code: number
+  error?: string
+}
+
+export const webhookKeys = {
+  list: () => [...statusPageKeys.all, 'webhooks'] as const,
+  deliveries: (id: string) =>
+    [...statusPageKeys.all, 'webhooks', id, 'deliveries'] as const,
+}
+
+export function useStatusWebhooks() {
+  return useQuery({
+    queryKey: webhookKeys.list(),
+    queryFn: () => request<StatusWebhook[]>('/webhooks', 'list webhooks'),
+  })
+}
+
+export function useStatusWebhookDeliveries(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: webhookKeys.deliveries(id),
+    enabled,
+    queryFn: () =>
+      request<StatusWebhookDelivery[]>(
+        `/webhooks/${encodeURIComponent(id)}/deliveries`,
+        'load delivery log',
+      ),
+  })
+}
+
+export function useCreateStatusWebhook() {
+  return useStatusMutation(
+    (w: { url: string; label: string; events: string[] }) =>
+      request<StatusWebhook>('/webhooks', 'add webhook', send('POST', w)),
+  )
+}
+
+export function useStatusWebhookAction() {
+  return useStatusMutation(
+    ({ id, action }: { id: string; action: 'rotate' | 'pause' | 'resume' }) =>
+      request<StatusWebhook>(
+        `/webhooks/${encodeURIComponent(id)}/${action}`,
+        `${action} webhook`,
+        send('POST'),
+      ),
+  )
+}
+
+export function useTestStatusWebhook() {
+  return useStatusMutation((id: string) =>
+    request<StatusWebhookTestResult>(
+      `/webhooks/${encodeURIComponent(id)}/test`,
+      'send test ping',
+      send('POST'),
+    ),
+  )
+}
+
+export function useDeleteStatusWebhook() {
+  return useStatusMutation((id: string) =>
+    request<void>(
+      `/webhooks/${encodeURIComponent(id)}`,
+      'delete webhook',
+      send('DELETE'),
+    ),
+  )
+}

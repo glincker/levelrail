@@ -38,3 +38,10 @@ func (c *Client) GetAnalysisReport(ctx context.Context, id string) (AnalysisRepo
 	err := c.do(ctx, http.MethodGet, "/api/v1/analysis/reports/"+PathEscape(id), nil, &out)
 	return out, err
 }
+
+// RunAnalysis calls POST /api/v1/apps/{name}/analysis/reports and returns the new report.
+func (c *Client) RunAnalysis(ctx context.Context, app string) (AnalysisReport, error) {
+	var out AnalysisReport
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(app)+"/analysis/reports", nil, &out)
+	return out, err
+}

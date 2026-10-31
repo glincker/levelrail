@@ -1,12 +1,13 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { createInstance } from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import templatesEn from '../locales/en/templates.json'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
+import { createTestQueryClient } from '@/test/testQueryClient'
 
 // ServiceTemplateGrid's card links each template's name/logo to
 // /templates/$id (outside any dialog), the same reason ModelRow.test.tsx
@@ -51,9 +52,7 @@ void testI18n.use(initReactI18next).init({
 })
 
 function renderFields() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
+  const queryClient = createTestQueryClient()
   render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>

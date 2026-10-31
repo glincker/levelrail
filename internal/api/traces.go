@@ -106,7 +106,7 @@ func splitTraceToken(tok string) (app string, ok bool) {
 }
 
 // authTraceIngest resolves the app a bearer token belongs to, or "".
-func (rt *Router) authTraceIngest(ctx context.Context, header string) string {
+func (rt *Router) authTraceIngest(r *http.Request, header string) string {
 	tok := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
 	if tok == "" || rt.secrets == nil {
 		return ""
@@ -118,7 +118,10 @@ func (rt *Router) authTraceIngest(ctx context.Context, header string) string {
 	now := time.Now()
 	want, cached := rt.traceKeys.get(app, now)
 	if !cached {
-		v, err := rt.secrets.Resolve(ctx, traceIngestSecretsKey(app), traceIngestKeyName)
+		if !rt.ingestLookupAllowed(r) {
+			return ""
+		}
+		v, err := rt.secrets.Resolve(r.Context(), traceIngestSecretsKey(app), traceIngestKeyName)
 		if err != nil || v == "" {
 			return ""
 		}
@@ -139,7 +142,7 @@ func (rt *Router) handleOTLPTraces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "trace ingest is not configured on this control plane")
 		return
 	}
-	app := rt.authTraceIngest(r.Context(), r.Header.Get("Authorization"))
+	app := rt.authTraceIngest(r, r.Header.Get("Authorization"))
 	if app == "" {
 		writeError(w, http.StatusUnauthorized, "missing or invalid ingest key")
 		return

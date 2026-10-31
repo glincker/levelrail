@@ -56,6 +56,8 @@ type rawService struct {
 	StrategyReason string `yaml:"x-levelrail-strategy-reason"`
 	// PlatformProbe replaces healthcheck: with a probe run from outside the container.
 	PlatformProbe *spec.PlatformProbe `yaml:"x-levelrail-healthcheck"`
+	// PublishedTCP lists tcp container ports published straight on the host.
+	PublishedTCP []int `yaml:"x-levelrail-published-ports"`
 	// DependsOnHealthy is filled by Parse from depends_on's long form.
 	DependsOnHealthy []string `yaml:"-"`
 	// DependsOnCompleted is filled by Parse from depends_on's long form.

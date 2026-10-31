@@ -4,7 +4,7 @@ description: Publish a UDP port from a compose service directly on the host, wit
 "og:url": "https://docs.levelrail.com/udp-ports"
 ---
 
-A compose service can publish a UDP port on the host with `HOST:CONTAINER/udp`. This covers services such as a DNS server or a STUN endpoint. It is the first slice of [ADR 049](https://github.com/glincker/levelrail/blob/release/v0.8.9/adr/049-udp-ports-capabilities-sysctls.md): UDP publishing only.
+A compose service can publish a UDP port on the host with `HOST:CONTAINER/udp`. This covers services such as a DNS server or a STUN endpoint. It is the first slice of [ADR 049](https://github.com/glincker/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md): UDP publishing only.
 
 ## What it does
 
@@ -102,4 +102,4 @@ These are not built, so compose files that use them are still rejected:
 - `sysctls`
 - `network_mode: host`
 
-That means a WireGuard server cannot run as an app yet. See [ADR 049](https://github.com/glincker/levelrail/blob/release/v0.8.9/adr/049-udp-ports-capabilities-sysctls.md) for the plan.
+That means a WireGuard server cannot run as an app yet. See [ADR 049](https://github.com/glincker/levelrail/blob/main/adr/049-udp-ports-capabilities-sysctls.md) for the plan.
