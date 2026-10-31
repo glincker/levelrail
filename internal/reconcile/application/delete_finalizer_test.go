@@ -246,3 +246,45 @@ func TestDeleteFinalizer_RemoveAppNetwork(t *testing.T) {
 		})
 	}
 }
+
+// Failed teardown of app A, then a new app with the same name and image but another env.
+func TestDeleteFinalizer_RecreatedAppSameImageAdoptsOldContainer(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	rt := newFakeRuntime(0)
+	oldApp := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Env: map[string]string{"TOKEN": "old"}}
+	if _, err := New("web", &fakeStore{svc: oldApp}, rt).Reconcile(ctx); err != nil {
+		t.Fatalf("first life Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 1 || rt.lastCreateEnv["TOKEN"] != "old" {
+		t.Fatalf("first life: createCalls=%d env=%v, want one container with the old env", rt.createCalls, rt.lastCreateEnv)
+	}
+
+	rt.removeErr = errors.New("busy")
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return rt, nil }, nil)
+	if err := f.Begin(ctx, "web", ""); err != nil {
+		t.Fatalf("Begin() error = %v", err)
+	}
+	if err := f.Finalize(ctx, "web", ""); err == nil {
+		t.Fatal("Finalize() error = nil, want the remove failure")
+	}
+
+	newApp := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Env: map[string]string{"TOKEN": "new"}}
+	if err := db.SaveDesiredService(ctx, newApp); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatalf("finalizer Reconcile() error = %v", err)
+	}
+	if _, err := New("web", &fakeStore{svc: &newApp}, rt).Reconcile(ctx); err != nil {
+		t.Fatalf("second life Reconcile() error = %v", err)
+	}
+
+	// Documents the unsafe behaviour: the old container is adopted and the tombstone is gone.
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1 (old container adopted)", rt.createCalls)
+	}
+	if got := pendingNames(t, db); len(got) != 0 {
+		t.Errorf("tombstones = %v, want the tombstone dropped", got)
+	}
+}
