@@ -97,6 +97,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 			return rt.doctorCheckIngressSurvives(time.Now())
 		}),
 		many("exposure", doctorGroupNetwork, rt.doctorCheckExposure),
+		many("cloud", doctorGroupNetwork, rt.doctorCheckCloud),
 		one("certificates", doctorGroupNetwork, rt.doctorCheckCertExpiry),
 
 		one("master_key_rotation", doctorGroupSecurity, rt.doctorCheckMasterKeyRotation),

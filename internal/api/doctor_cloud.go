@@ -1,0 +1,424 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// Cloud preflight checks are read-only, optional and informational. They
+// print commands for the operator; nothing here changes firewall state.
+const (
+	envDoctorCloudChecks          = "APP_DOCTOR_CLOUD_CHECKS"
+	envDoctorCloudMetadata        = "APP_DOCTOR_CLOUD_METADATA"
+	envDoctorCloudMetadataTimeout = "APP_DOCTOR_CLOUD_METADATA_TIMEOUT"
+	envDoctorOracleIdlePercent    = "APP_DOCTOR_ORACLE_IDLE_PERCENT"
+	envDoctorOracleIdleDays       = "APP_DOCTOR_ORACLE_IDLE_DAYS"
+
+	// Defaults mirror the figures Oracle currently documents; both are env-tunable because the policy can change.
+	defaultOracleIdlePercent = 20
+	defaultOracleIdleDays    = 7
+
+	oracleMetadataURL   = "http://169.254.169.254/opc/v2/instance/"
+	oracleFreeTierDocs  = "https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm"
+	doctorCloudDocsPath = "/host-firewall#iptables-based-hosts"
+)
+
+type cloudProviderInfo struct {
+	ID, Name, Layer string
+}
+
+var cloudProviders = map[string]cloudProviderInfo{
+	"oracle":       {"oracle", "Oracle Cloud Infrastructure", "a VCN security list or network security group"},
+	"aws":          {"aws", "Amazon Web Services", "an EC2 security group and any network ACL"},
+	"gcp":          {"gcp", "Google Cloud", "a VPC firewall rule"},
+	"azure":        {"azure", "Microsoft Azure", "a network security group"},
+	"hetzner":      {"hetzner", "Hetzner Cloud", "a Cloud Firewall"},
+	"digitalocean": {"digitalocean", "DigitalOcean", "a Cloud Firewall"},
+}
+
+type cloudPort struct {
+	Port      int
+	Proto     string
+	Container string
+	Image     string
+}
+
+// cloudDeps holds every outside-world seam so tests run without files, commands or network.
+type cloudDeps struct {
+	getenv    func(string) string
+	readFile  func(string) ([]byte, error)
+	lookPath  func(string) (string, error)
+	run       firewallCommandRunner
+	metadata  func(ctx context.Context, url string) ([]byte, error)
+	ports     func(ctx context.Context) ([]cloudPort, error)
+	imageArch func(ctx context.Context, image string) (string, error)
+	hostArch  string
+}
+
+func realCloudDeps() cloudDeps {
+	return cloudDeps{
+		getenv:   os.Getenv,
+		readFile: os.ReadFile,
+		lookPath: exec.LookPath,
+		run:      runRealFirewallCommand,
+		metadata: realCloudMetadata,
+		hostArch: runtime.GOARCH,
+		imageArch: func(ctx context.Context, image string) (string, error) {
+			out, err := exec.CommandContext(ctx, "docker", "image", "inspect", "--format", "{{.Architecture}}", image).Output() //nolint:gosec // image is validated by cloudSafeImage, args are not shell-interpreted
+			return strings.TrimSpace(string(out)), err
+		},
+	}
+}
+
+func realCloudMetadata(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer Oracle")
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("metadata status %d", resp.StatusCode)
+	}
+	return io.ReadAll(io.LimitReader(resp.Body, 1<<16))
+}
+
+// doctorCheckCloud is the registered entry point. Ports come from the
+// existing exposure audit so there is one source of truth for published ports.
+func (rt *Router) doctorCheckCloud(ctx context.Context) []doctorCheckResource {
+	d := realCloudDeps()
+	d.ports = func(ctx context.Context) ([]cloudPort, error) {
+		if rt.exposure == nil || rt.apps == nil || rt.databases == nil {
+			return nil, nil
+		}
+		rep, err := rt.exposureReport(ctx, "", false)
+		if err != nil {
+			return nil, err
+		}
+		var out []cloudPort
+		for _, n := range rep.Nodes {
+			if !n.Local || n.Status != exposureNodeOK {
+				continue
+			}
+			for _, f := range n.Findings {
+				out = append(out, cloudPort{Port: f.HostPort, Proto: f.Protocol, Container: f.Container, Image: f.Image})
+			}
+		}
+		return out, nil
+	}
+	return runCloudChecks(ctx, d)
+}
+
+func runCloudChecks(ctx context.Context, d cloudDeps) []doctorCheckResource {
+	if strings.EqualFold(strings.TrimSpace(d.getenv(envDoctorCloudChecks)), "off") {
+		return nil
+	}
+	prov, shape := detectCloudProvider(ctx, d)
+	var ports []cloudPort
+	if d.ports != nil {
+		pctx, cancel := context.WithTimeout(ctx, doctorPingTimeout*2)
+		ports, _ = d.ports(pctx)
+		cancel()
+	}
+	ports = cloudDedupPorts(ports)
+
+	var out []doctorCheckResource
+	if prov != nil {
+		out = append(out, cloudProviderResult(*prov, shape), cloudLayersResult(*prov))
+	}
+	if r, ok := hostFirewallResult(ctx, d, ports, prov != nil); ok {
+		out = append(out, r)
+	}
+	if r, ok := publishedPortsResult(ports, prov); ok {
+		out = append(out, r)
+	}
+	if r, ok := imageArchResult(ctx, d, ports); ok {
+		out = append(out, r)
+	}
+	if r, ok := idleReclaimResult(d, prov, shape); ok {
+		out = append(out, r)
+	}
+	return out
+}
+
+// detectCloudProvider reads local DMI files first. The link-local metadata
+// call is opt-in and short, and only ever used to learn the Oracle shape.
+func detectCloudProvider(ctx context.Context, d cloudDeps) (*cloudProviderInfo, string) {
+	var sb strings.Builder
+	for _, f := range []string{"sys_vendor", "product_name", "chassis_asset_tag", "bios_vendor"} {
+		if b, err := d.readFile("/sys/class/dmi/id/" + f); err == nil {
+			sb.WriteString(strings.ToLower(strings.TrimSpace(string(b))))
+			sb.WriteByte('\n')
+		}
+	}
+	dmi := sb.String()
+	id := ""
+	switch {
+	case strings.Contains(dmi, "oraclecloud.com"):
+		id = "oracle"
+	case strings.Contains(dmi, "amazon ec2"), strings.Contains(dmi, "amazon\n"):
+		id = "aws"
+	case strings.Contains(dmi, "google compute engine"):
+		id = "gcp"
+	case strings.Contains(dmi, "7783-7084-3265-9085-8269-3286-77"):
+		id = "azure"
+	case strings.Contains(dmi, "hetzner"):
+		id = "hetzner"
+	case strings.Contains(dmi, "digitalocean"):
+		id = "digitalocean"
+	}
+	metaOn := strings.EqualFold(strings.TrimSpace(d.getenv(envDoctorCloudMetadata)), "on")
+	if (id == "" || id == "oracle") && metaOn && d.metadata != nil {
+		to := envDurationOr(envDoctorCloudMetadataTimeout, 300*time.Millisecond)
+		mctx, cancel := context.WithTimeout(ctx, to)
+		defer cancel()
+		if b, err := d.metadata(mctx, oracleMetadataURL); err == nil {
+			var m struct {
+				Shape string `json:"shape"`
+			}
+			if json.Unmarshal(b, &m) == nil && m.Shape != "" {
+				p := cloudProviders["oracle"]
+				return &p, m.Shape
+			}
+		}
+	}
+	if id == "" {
+		return nil, ""
+	}
+	p := cloudProviders[id]
+	return &p, ""
+}
+
+func cloudProviderResult(p cloudProviderInfo, shape string) doctorCheckResource {
+	msg := "Detected " + p.Name + " from local hardware identifiers. This is informational and never required."
+	if shape != "" {
+		msg = "Detected " + p.Name + ", shape " + shape + ". This is informational and never required."
+	}
+	return doctorCheckResource{Code: "cloud_provider", Name: "Cloud provider", Status: doctorStatusOK, Message: msg}
+}
+
+func cloudLayersResult(p cloudProviderInfo) doctorCheckResource {
+	return doctorCheckResource{
+		Code: "cloud_firewall_layers", Name: "Firewall layers", Status: doctorStatusOK,
+		Message: "A port must be open on two separate layers: " + p.Layer + " on the " + p.Name +
+			" side, and the firewall on this host. Levelrail cannot see or change the provider side, and opening one layer does not open the other.",
+		DocsPath: doctorCloudDocsPath,
+	}
+}
+
+// hostFirewallResult reports the iptables backend only when it is the one in use,
+// so hosts on ufw or firewalld, or with no readable iptables, see no change.
+func hostFirewallResult(ctx context.Context, d cloudDeps, ports []cloudPort, cloud bool) (doctorCheckResource, bool) {
+	const code, name = "host_firewall_iptables", "Host firewall (iptables)"
+	fctx, cancel := context.WithTimeout(ctx, doctorPingTimeout)
+	defer cancel()
+
+	if _, err := d.lookPath("iptables"); err != nil {
+		return doctorCheckResource{}, false
+	}
+	if _, err := d.lookPath("ufw"); err == nil {
+		if out, err := d.run(fctx, "ufw", "status"); err == nil && strings.Contains(string(out), "Status: active") {
+			return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "ufw is the active host firewall; see the ufw rules managed by Levelrail"}, true
+		}
+	}
+	if _, err := d.lookPath("firewall-cmd"); err == nil {
+		if out, err := d.run(fctx, "firewall-cmd", "--state"); err == nil && strings.TrimSpace(string(out)) == "running" {
+			return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "firewalld is the active host firewall"}, true
+		}
+	}
+	out, err := d.run(fctx, "iptables", "-S", "INPUT")
+	if err != nil {
+		if !cloud {
+			return doctorCheckResource{}, false
+		}
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "iptables -S INPUT failed, may need elevated privileges"}, true
+	}
+	pos, accepts := cloudAnalyzeInput(string(out))
+	if pos == 0 {
+		return doctorCheckResource{}, false
+	}
+	persist := cloudPersistCommand(d)
+	cmds := cloudOpenCommands(ports, pos, persist)
+	if accepts {
+		return doctorCheckResource{
+			Code: code, Name: name, Status: doctorStatusWarn,
+			Message: fmt.Sprintf("INPUT has a catch-all REJECT/DROP at position %d and ACCEPT rules after it. Rules appended with -A land after it and are never reached; insert before it with -I", pos),
+			Fix:     cmds, DocsPath: doctorCloudDocsPath,
+		}, true
+	}
+	return doctorCheckResource{
+		Code: code, Name: name, Status: doctorStatusOK,
+		Message: fmt.Sprintf("iptables INPUT ends in a catch-all REJECT/DROP at position %d. To open a host port, insert before it (never append). Commands are printed only, nothing was applied", pos),
+		Fix:     cmds, DocsPath: doctorCloudDocsPath,
+	}, true
+}
+
+// cloudAnalyzeInput finds the 1-based position of the first unconditional
+// REJECT/DROP in INPUT and whether any ACCEPT rule follows it.
+func cloudAnalyzeInput(s string) (pos int, acceptAfter bool) {
+	n := 0
+	for _, line := range strings.Split(s, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "-A INPUT") {
+			continue
+		}
+		n++
+		f := strings.Fields(line)
+		target := ""
+		for i, w := range f {
+			if w == "-j" && i+1 < len(f) {
+				target = f[i+1]
+			}
+		}
+		if pos == 0 && (target == "REJECT" || target == "DROP") && cloudUnconditional(f) {
+			pos = n
+			continue
+		}
+		if pos != 0 && target == "ACCEPT" {
+			acceptAfter = true
+		}
+	}
+	return pos, acceptAfter
+}
+
+// cloudUnconditional is true when the rule has no match options, only the target and its arguments.
+func cloudUnconditional(f []string) bool { return len(f) > 3 && f[2] == "-j" }
+
+func cloudPersistCommand(d cloudDeps) string {
+	if _, err := d.lookPath("netfilter-persistent"); err == nil {
+		return "sudo netfilter-persistent save"
+	}
+	return "sudo sh -c 'iptables-save > /etc/iptables/rules.v4'"
+}
+
+func cloudSafeProto(p string) bool { return p == "tcp" || p == "udp" }
+
+func cloudOpenCommands(ports []cloudPort, pos int, persist string) string {
+	var lines []string
+	for _, p := range ports {
+		if p.Port < 1 || p.Port > 65535 || !cloudSafeProto(p.Proto) {
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("sudo iptables -I INPUT %d -p %s --dport %d -j ACCEPT", pos, p.Proto, p.Port))
+	}
+	if len(lines) == 0 {
+		lines = []string{fmt.Sprintf("sudo iptables -I INPUT %d -p <tcp|udp> --dport <PORT> -j ACCEPT", pos)}
+	}
+	return strings.Join(append(lines, persist), "\n")
+}
+
+func cloudDedupPorts(in []cloudPort) []cloudPort {
+	seen := map[string]bool{}
+	var out []cloudPort
+	for _, p := range in {
+		if p.Port < 1 || p.Port > 65535 || !cloudSafeProto(p.Proto) {
+			continue
+		}
+		k := p.Proto + ":" + strconv.Itoa(p.Port)
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		out = append(out, p)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Port != out[j].Port {
+			return out[i].Port < out[j].Port
+		}
+		return out[i].Proto < out[j].Proto
+	})
+	return out
+}
+
+func publishedPortsResult(ports []cloudPort, prov *cloudProviderInfo) (doctorCheckResource, bool) {
+	if len(ports) == 0 {
+		return doctorCheckResource{}, false
+	}
+	list := make([]string, len(ports))
+	for i, p := range ports {
+		list[i] = fmt.Sprintf("%d/%s", p.Port, p.Proto)
+	}
+	where := "your network edge (router or cloud firewall) and this host's firewall"
+	if prov != nil {
+		where = prov.Layer + " on " + prov.Name + ", and this host's firewall"
+	}
+	return doctorCheckResource{
+		Code: "published_port_reachability", Name: "Published port reachability", Status: doctorStatusOK,
+		Message: "Published ports: " + strings.Join(list, ", ") + ". Each must be open on " + where +
+			". This check does not probe from outside, so it cannot confirm they are reachable.",
+		DocsPath: doctorCloudDocsPath,
+	}, true
+}
+
+func cloudSafeImage(s string) bool {
+	return s != "" && !strings.HasPrefix(s, "-") && !strings.ContainsAny(s, " \t\r\n")
+}
+
+func imageArchResult(ctx context.Context, d cloudDeps, ports []cloudPort) (doctorCheckResource, bool) {
+	if d.imageArch == nil || d.hostArch == "" {
+		return doctorCheckResource{}, false
+	}
+	seen := map[string]bool{}
+	var bad []string
+	for _, p := range ports {
+		if seen[p.Image] || !cloudSafeImage(p.Image) {
+			continue
+		}
+		seen[p.Image] = true
+		ictx, cancel := context.WithTimeout(ctx, doctorPingTimeout)
+		arch, err := d.imageArch(ictx, p.Image)
+		cancel()
+		if err != nil || arch == "" || arch == d.hostArch {
+			continue
+		}
+		bad = append(bad, fmt.Sprintf("%s is %s", p.Image, arch))
+	}
+	if len(bad) == 0 {
+		return doctorCheckResource{}, false
+	}
+	sort.Strings(bad)
+	return doctorCheckResource{
+		Code: "image_arch", Name: "Image architecture", Status: doctorStatusWarn,
+		Message: "Local images do not match this node (" + d.hostArch + "): " + strings.Join(bad, "; ") +
+			". A pull for a missing architecture fails with PlatformMismatch in the deploy trace.",
+		Fix: "docker buildx imagetools inspect <image>  # look for a linux/" + d.hostArch + " manifest, or pick another tag",
+	}, true
+}
+
+func idleReclaimResult(d cloudDeps, prov *cloudProviderInfo, shape string) (doctorCheckResource, bool) {
+	if prov == nil || prov.ID != "oracle" {
+		return doctorCheckResource{}, false
+	}
+	if shape != "" && shape != "VM.Standard.E2.1.Micro" && shape != "VM.Standard.A1.Flex" {
+		return doctorCheckResource{}, false
+	}
+	pct := envInt64FromGetenv(d.getenv, envDoctorOracleIdlePercent, defaultOracleIdlePercent)
+	days := envInt64FromGetenv(d.getenv, envDoctorOracleIdleDays, defaultOracleIdleDays)
+	return doctorCheckResource{
+		Code: "idle_reclaim_risk", Name: "Idle reclaim risk", Status: doctorStatusOK,
+		Message: fmt.Sprintf("If this is an Always Free instance, Oracle has stated it may reclaim instances that stay idle (CPU, network and memory use all below about %d percent over %d days). "+
+			"Oracle's policy can change; read the current terms at %s. Do not use sleep-when-idle on such a host, it makes the instance look more idle. Levelrail does not generate artificial load.",
+			pct, days, oracleFreeTierDocs),
+	}, true
+}
+
+func envInt64FromGetenv(get func(string) string, key string, def int64) int64 {
+	if n, err := strconv.ParseInt(strings.TrimSpace(get(key)), 10, 64); err == nil && n > 0 {
+		return n
+	}
+	return def
+}
