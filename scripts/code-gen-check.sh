@@ -19,6 +19,7 @@ run go run ./scripts/gen-api-reference
 if [ "${CODEGEN_SKIP_TEMPLATES:-off}" != on ]; then
 	run go run ./scripts/gen-template-catalog-docs
 	run go run ./scripts/gen-template-gallery
+	run go run ./scripts/gen-template-platforms
 	run node scripts/gen-docs-pages.mjs
 fi
 # The route tree is gitignored, so this only proves it still generates.

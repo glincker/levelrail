@@ -27,6 +27,9 @@ type Template struct {
 	// RequiresGPU marks entries that reserve an NVIDIA GPU through
 	// deploy.resources.reservations.devices in their Compose body.
 	RequiresGPU bool
+	// Platforms lists os/arch pairs verified in the registry manifest of every
+	// image (platforms.json). Empty means not checked, never a claim.
+	Platforms []string
 	// Manifest is set for entries loaded from manifests/ (env prompts, domains, healthcheck).
 	Manifest *Manifest
 }

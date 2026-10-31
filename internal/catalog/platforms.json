@@ -1,0 +1,5781 @@
+{
+  "scanned_at": "2026-10-31T23:54:42Z",
+  "images": [
+    {
+      "image": "1dev/server",
+      "tag": "16.9.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "2fauth/2fauth",
+      "tag": "8.0.2",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "actualbudget/actual-server",
+      "tag": "26.9.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "actualbudget/actual-server",
+      "tag": "edge",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "adamzammit/limesurvey",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "adguard/adguardhome",
+      "tag": "v0.107.55",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "adminer",
+      "tag": "5",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "alextselegidis/easyappointments",
+      "tag": "1.6.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "apache/answer",
+      "tag": "1.4.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "apache/superset",
+      "tag": "4.1.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "appflowyinc/admin_frontend",
+      "tag": "0.9.149",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "appflowyinc/appflowy_cloud",
+      "tag": "0.9.149",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "appflowyinc/gotrue",
+      "tag": "0.9.149",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "appsmith/appsmith-ce",
+      "tag": "v2.4.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "appwrite/appwrite",
+      "tag": "1.7.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "appwrite/console",
+      "tag": "6.1.28",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "archivebox/archivebox",
+      "tag": "0.9.76",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "arp242/goatcounter",
+      "tag": "2.7",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "authelia/authelia",
+      "tag": "4.39.28",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "axllent/mailpit",
+      "tag": "v1.21.8",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "b3log/siyuan",
+      "tag": "v3.8.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "b4bz/homer",
+      "tag": "v24.05.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "baserow/baserow",
+      "tag": "2.3.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "bellamy/wallos",
+      "tag": "5.8.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "benbusby/whoogle-search",
+      "tag": "0.9.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "binwiederhier/ntfy",
+      "tag": "v2.11.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "budibase.docker.scarf.sh/budibase/apps",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "budibase.docker.scarf.sh/budibase/worker",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "budibase/couchdb",
+      "tag": "latest",
+      "platforms": [
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "budibase/proxy",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "bugsink/bugsink",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "bytebase/bytebase",
+      "tag": "3.9.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "calciumion/new-api",
+      "tag": "v0.9.2.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "calcom/cal.com",
+      "tag": "v5.0.9",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "caronc/apprise",
+      "tag": "1.5.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "castopod/castopod",
+      "tag": "1.15.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "chatwoot/chatwoot",
+      "tag": "v4.6.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "chibisafe/chibisafe-server",
+      "tag": "v6.5.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "chibisafe/chibisafe",
+      "tag": "v6.5.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "chrislusf/seaweedfs",
+      "tag": "3.99",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "clickhouse/clickhouse-server",
+      "tag": "24.12-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "clickhouse/clickhouse-server",
+      "tag": "26.3-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "cloudreve/cloudreve",
+      "tag": "4.10.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "cockpithq/cockpit",
+      "tag": "core-latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "codeberg.org/forgejo/forgejo",
+      "tag": "9.0.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "codeberg.org/readeck/readeck",
+      "tag": "0.23.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "codercom/code-server",
+      "tag": "4.93.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "codewithcj/sparkyfitness",
+      "tag": "v1.6.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "codewithcj/sparkyfitness_server",
+      "tag": "v1.6.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "copyparty/ac",
+      "tag": "1.20.24",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "corentinth/it-tools",
+      "tag": "2024.10.22-7ca5933",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "couchdb",
+      "tag": "3.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "couchdb",
+      "tag": "3.5.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "crazymax/diun",
+      "tag": "4.29.0",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "cschranz/gpu-jupyter",
+      "tag": "v1.11_cuda-13.0_ubuntu-24.04_python-only",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "cupcakearmy/cryptgeon",
+      "tag": "2.9.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "databasus/databasus",
+      "tag": "v3.16.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "dbeaver/cloudbeaver",
+      "tag": "24.1.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "deluan/navidrome",
+      "tag": "0.54.1",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "directus/directus",
+      "tag": "11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "diygod/rsshub",
+      "tag": "2026-10-26",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "docker.elastic.co/elasticsearch/elasticsearch",
+      "tag": "8.19.22",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "docker.flipt.io/flipt/flipt",
+      "tag": "v1.60.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "docker.io/bitnamilegacy/moodle",
+      "tag": "4.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "docmost/docmost",
+      "tag": "0.96.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "documenso/documenso",
+      "tag": "v1.12.10",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "docuseal/docuseal",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "dolibarr/dolibarr",
+      "tag": "23.0.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "downloads.unstructured.io/unstructured-io/unstructured-api",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "dpage/pgadmin4",
+      "tag": "8.14",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "drakkan/sftpgo",
+      "tag": "v2.6.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "driaug/plunk",
+      "tag": "1.3.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "drupal",
+      "tag": "11-apache",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "dullage/flatnotes",
+      "tag": "v5.5.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "eclipse-mosquitto",
+      "tag": "2.0.20",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "eduardolat/pgbackweb",
+      "tag": "0.5.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "elasticsearch",
+      "tag": "9.1.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "elestio/strapi-production",
+      "tag": "v5.33.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "espocrm/espocrm",
+      "tag": "10",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "etherpad/etherpad",
+      "tag": "2.2.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "excalidraw/excalidraw",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "factoriotools/factorio",
+      "tag": "2.1.24",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "fallenbagel/jellyseerr",
+      "tag": "2.7.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "favonia/cloudflare-ddns",
+      "tag": "1.15.1",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "filebrowser/filebrowser",
+      "tag": "v2.31.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "fireflyiii/core",
+      "tag": "version-6.2.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "flowiseai/flowise",
+      "tag": "3.1.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "freshrss/freshrss",
+      "tag": "1.25.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "garethgeorge/backrest",
+      "tag": "v1.14.1",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "getfider/fider",
+      "tag": "stable",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "getmeili/meilisearch",
+      "tag": "v1.11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "getmeili/meilisearch",
+      "tag": "v1.15.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "getmeili/meilisearch",
+      "tag": "v1.54.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/activepieces/activepieces",
+      "tag": "0.75.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/advplyr/audiobookshelf",
+      "tag": "2.34.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/ai-dock/comfyui",
+      "tag": "latest-cuda",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/ai-dock/stable-diffusion-webui",
+      "tag": "latest-cuda",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/ajnart/homarr",
+      "tag": "0.15.10",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/alam00000/bentopdf",
+      "tag": "v1.16.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/alexta69/metube",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/autobrr/autobrr",
+      "tag": "v1.87.0",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x",
+        "windows/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/basecamp/once-campfire",
+      "tag": "main",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/berriai/litellm",
+      "tag": "main-stable",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/bluewave-labs/checkmate-backend-mono-multiarch",
+      "tag": "v3.2.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/browserless/chromium",
+      "tag": "v2.8.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/c4illin/convertx",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/chroma-core/chroma",
+      "tag": "1.0.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/coollabsio/minio",
+      "tag": "RELEASE.2025-10-15T17-29-55Z",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/danny-avila/librechat",
+      "tag": "v0.8.7",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/dgtlmoon/changedetection.io",
+      "tag": "0.49.12",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/diced/zipline",
+      "tag": "3.7.9",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/flaresolverr/flaresolverr",
+      "tag": "v3.5.0",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/formbricks/formbricks",
+      "tag": "4.5.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/fuzzygrim/yamtrack",
+      "tag": "0.26.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/gchq/cyberchef",
+      "tag": "10.19.4",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/gethomepage/homepage",
+      "tag": "v0.10.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/ggml-org/llama.cpp",
+      "tag": "server",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/gitroomhq/postiz-app",
+      "tag": "v2.23.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/go-shiori/shiori",
+      "tag": "v1.7.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/goauthentik/server",
+      "tag": "2026.8.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/gramps-project/grampsweb",
+      "tag": "25.9.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/haveagitgat/tdarr",
+      "tag": "2.86.01",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/home-assistant/home-assistant",
+      "tag": "2025.10.2",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/huggingface/text-embeddings-inference",
+      "tag": "cpu-1.8",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/huggingface/text-generation-inference",
+      "tag": "3.3.6",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/immich-app/immich-machine-learning",
+      "tag": "v1.126.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/immich-app/immich-server",
+      "tag": "v1.126.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/immich-app/postgres",
+      "tag": "14-vectorchord0.3.0-pgvectors0.2.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/jordan-dalby/bytestash",
+      "tag": "1.5.13",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/karakeep-app/karakeep",
+      "tag": "0.33.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/kieraneglin/pinchflat",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/librespeed/speedtest",
+      "tag": "6.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/linkwarden/linkwarden",
+      "tag": "v2.9.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/lukegus/termix",
+      "tag": "2.6.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/marimo-team/marimo",
+      "tag": "latest-sql",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/mealie-recipes/mealie",
+      "tag": "v3.28.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/metatool-ai/metamcp",
+      "tag": "2.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/miniflux/miniflux",
+      "tag": "2.2.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/mlflow/mlflow",
+      "tag": "v3.16.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/muchobien/pocketbase",
+      "tag": "0.22.27",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/muety/wakapi",
+      "tag": "2.13.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/nfrastack/container-freescout",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/nodebb/nodebb",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/open-webui/open-webui",
+      "tag": "0.11.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/open-webui/open-webui",
+      "tag": "main",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/openclaw/openclaw",
+      "tag": "2026.10.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/paymenter/paymenter",
+      "tag": "v1.4.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/plankanban/planka",
+      "tag": "2.2.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/plausible/community-edition",
+      "tag": "v3.0.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/pocket-id/pocket-id",
+      "tag": "v1.13",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/requarks/wiki",
+      "tag": "2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/silverbulletmd/silverbullet",
+      "tag": "2.11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/speaches-ai/speaches",
+      "tag": "0.8.3-cpu",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/sysadminsmedia/homebox",
+      "tag": "0.11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/teableio/teable-db-migrate",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/teableio/teable",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/toeverything/affine",
+      "tag": "stable",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/triliumnext/trilium",
+      "tag": "stable",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/umami-software/umami",
+      "tag": "postgresql-v2.19.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/vert-sh/vert",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/we-promise/sure",
+      "tag": "0.6.7",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/windmill-labs/windmill",
+      "tag": "1.365.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghost",
+      "tag": "5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghostfolio/ghostfolio",
+      "tag": "3.72.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gitea/gitea",
+      "tag": "1.23.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gitlab/gitlab-ce",
+      "tag": "17.5.2-ce.0",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gitlab/gitlab-ce",
+      "tag": "19.3.1-ce.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "glanceapp/glance",
+      "tag": "v0.8.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "glitchtip/glitchtip",
+      "tag": "6.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "glpi/glpi",
+      "tag": "11.0.11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gogs/gogs",
+      "tag": "0.13.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "goksan/statusnook",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gotenberg/gotenberg",
+      "tag": "8.15",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gotify/server",
+      "tag": "2.6.1",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/riscv64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gotson/komga",
+      "tag": "1.26.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "grafana/grafana",
+      "tag": "11.2.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "grafana/loki",
+      "tag": "3.7.8",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "grimmory/grimmory",
+      "tag": "nightly-20260403-3a371f7",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "gristlabs/grist",
+      "tag": "1.3.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "guacamole/guacd",
+      "tag": "1.6.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "hashicorp/consul",
+      "tag": "1.20",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "hashicorp/vault",
+      "tag": "1.18",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "hasura/graphql-engine",
+      "tag": "v2.51.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "headscale/headscale",
+      "tag": "v0.29.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "healthchecks/healthchecks",
+      "tag": "v4.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "heartexlabs/label-studio",
+      "tag": "1.21.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "henrygd/beszel",
+      "tag": "0.19.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "heyform/community-edition",
+      "tag": "v3.0.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "hoppscotch/hoppscotch",
+      "tag": "2026.2.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "hoppscotch/proxyscotch",
+      "tag": "v0.1.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ignisda/ryot",
+      "tag": "v10.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "infisical/infisical",
+      "tag": "v0.154.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "influxdb",
+      "tag": "2.7-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "inngest/inngest",
+      "tag": "v1.27.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "invoiceninja/invoiceninja",
+      "tag": "5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "itzg/minecraft-bedrock-server",
+      "tag": "2026.10.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "itzg/minecraft-server",
+      "tag": "2026.10.1-java21",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "jaegertracing/all-in-one",
+      "tag": "1.64.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "jc21/nginx-proxy-manager",
+      "tag": "2.12.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "jenkins/jenkins",
+      "tag": "2.583",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "jgraph/drawio",
+      "tag": "29.0.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "jlesage/firefox",
+      "tag": "latest",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "joomla",
+      "tag": "5-apache",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "joplin/server",
+      "tag": "3.7.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "joplin/server",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "jvmilazz0/kavita",
+      "tag": "0.9.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "kanboard/kanboard",
+      "tag": "v1.2.54",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "karimz1/imgcompress",
+      "tag": "0.9.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "kibana",
+      "tag": "9.1.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "kimai/kimai2",
+      "tag": "apache",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "kopia/kopia",
+      "tag": "0.19.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "kozea/radicale",
+      "tag": "3.9.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "kutt/kutt",
+      "tag": "v3.2.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "langflowai/langflow",
+      "tag": "1.12.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "langfuse/langfuse-worker",
+      "tag": "3.225.11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "langfuse/langfuse",
+      "tag": "3.225.11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "leantime/leantime",
+      "tag": "3.5.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lfnovo/open_notebook",
+      "tag": "1.15.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "libretranslate/libretranslate",
+      "tag": "v1.9.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lissy93/dashy",
+      "tag": "4.7.8",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lissy93/web-check",
+      "tag": "2.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "listmonk/listmonk",
+      "tag": "v6.0.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lldap/lldap",
+      "tag": "v0.6.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lobehub/lobe-chat",
+      "tag": "1.135.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "localai/localai",
+      "tag": "v3.7.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "louislam/uptime-kuma",
+      "tag": "1.23.13",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "louislam/uptime-kuma",
+      "tag": "2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lowcoderorg/lowcoder-ce",
+      "tag": "2.7.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/babybuddy",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/bazarr",
+      "tag": "1.5.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/bookstack",
+      "tag": "24.05.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/budge",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/calibre-web",
+      "tag": "0.6.24",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/dokuwiki",
+      "tag": "2026-07-14c-ls325",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/duplicati",
+      "tag": "2.4.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/emby",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/embystat",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/grocy",
+      "tag": "4.6.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/heimdall",
+      "tag": "2.6.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/jackett",
+      "tag": "0.24.2663",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/jellyfin",
+      "tag": "10.11.8",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/libreoffice",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/lidarr",
+      "tag": "2.9.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/pairdrop",
+      "tag": "1.11.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/plex",
+      "tag": "1.43.4.10903-e5521bd8c-ls327",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/prowlarr",
+      "tag": "2.6.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/qbittorrent",
+      "tag": "5.0.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/radarr",
+      "tag": "6.4.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/snapdrop",
+      "tag": "latest",
+      "platforms": null,
+      "checked_at": "2026-10-31T23:54:42Z",
+      "error": "no platform in manifest"
+    },
+    {
+      "image": "lscr.io/linuxserver/sonarr",
+      "tag": "4.0.12",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/speedtest-tracker",
+      "tag": "v1.15.0-ls174",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/syncthing",
+      "tag": "1.29.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/tautulli",
+      "tag": "2.15.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/transmission",
+      "tag": "4.0.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lukevella/rallly",
+      "tag": "4.15.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mageai/mageai",
+      "tag": "0.9.78",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mailhog/mailhog",
+      "tag": "v1.0.1",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "makeplane/plane-backend",
+      "tag": "v1.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "makeplane/plane-frontend",
+      "tag": "v1.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "makeplane/plane-proxy",
+      "tag": "v1.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mariadb",
+      "tag": "10.11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mariadb",
+      "tag": "11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mariadb",
+      "tag": "11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mariadb",
+      "tag": "11.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mariadb",
+      "tag": "11.8",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mariadb",
+      "tag": "12.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "matomo",
+      "tag": "5.13.0-apache",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "matrixdotorg/synapse",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "matrixdotorg/synapse",
+      "tag": "v1.145.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mattermost/focalboard",
+      "tag": "7.11.4",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mattermost/mattermost-team-edition",
+      "tag": "release-10",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mediawiki",
+      "tag": "1.43",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "memcached",
+      "tag": "1.6-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "memcached",
+      "tag": "latest",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "metabase/metabase",
+      "tag": "v0.50.8",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "milvusdb/milvus",
+      "tag": "v3.0.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mintplexlabs/anythingllm",
+      "tag": "1.16.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mongo-express",
+      "tag": "1.0.2-20-alpine3.19",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mongo",
+      "tag": "7",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "windows/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "monica",
+      "tag": "4.1.2-apache",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "moonrailgun/tianji",
+      "tag": "1.33.9",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mysql",
+      "tag": "8",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mysql",
+      "tag": "8.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "n8nio/n8n",
+      "tag": "1.62.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "n8nio/n8n",
+      "tag": "2.10.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "nats",
+      "tag": "2.10-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "neo4j",
+      "tag": "5.26-community",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "neosmemo/memos",
+      "tag": "stable",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "netboxcommunity/netbox",
+      "tag": "v4.6-5.0.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "netdata/netdata",
+      "tag": "v2.11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "nextcloud",
+      "tag": "29.0.4-apache",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/mips64le",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "nginx",
+      "tag": "1.27-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "nicolargo/glances",
+      "tag": "3.4.0-full",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "nocobase/nocobase",
+      "tag": "1.9.33",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "nocodb/nocodb",
+      "tag": "2026.09.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "node",
+      "tag": "22-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "nodered/node-red",
+      "tag": "4.1.15-22",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "odoo",
+      "tag": "18",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ollama/ollama",
+      "tag": "0.33.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ollama/ollama",
+      "tag": "0.34.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ollama/ollama",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "onetimesecret/onetimesecret",
+      "tag": "v0.26.14",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "orangehrm/orangehrm",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "organizr/organizr",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "outlinewiki/outline",
+      "tag": "0.79.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "owncast/owncast",
+      "tag": "0.3.0",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "owncloud/server",
+      "tag": "10.15",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "paperlessngx/paperless-ngx",
+      "tag": "2.14.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "passbolt/passbolt",
+      "tag": "5.16.0-1-ce",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "pawelmalak/flame",
+      "tag": "2.3.1",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "penpotapp/backend",
+      "tag": "2.11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "penpotapp/exporter",
+      "tag": "2.11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "penpotapp/frontend",
+      "tag": "2.11.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "pgvector/pgvector",
+      "tag": "0.8.6-pg17-trixie",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "pgvector/pgvector",
+      "tag": "pg16",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "photoprism/photoprism",
+      "tag": "260728",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "photoview/photoview",
+      "tag": "2.4.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "phpmyadmin",
+      "tag": "5.2.2",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "pihole/pihole",
+      "tag": "2024.07.0",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "portainer/portainer-ce",
+      "tag": "2.21.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "windows/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "12",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/mips64le",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "15-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "15.4",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/mips64le",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "15.7-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "16",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "16-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "17",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "postgres",
+      "tag": "17-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "prefecthq/prefect",
+      "tag": "3-latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "privatebin/nginx-fpm-alpine",
+      "tag": "1.7.4",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "prom/alertmanager",
+      "tag": "v0.27.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "prom/prometheus",
+      "tag": "v2.54.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "public.ecr.aws/zinclabs/openobserve",
+      "tag": "v0.90.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "python",
+      "tag": "3.12-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "qdrant/qdrant",
+      "tag": "v1.12.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "qdrant/qdrant",
+      "tag": "v1.19.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/coreos/etcd",
+      "tag": "v3.5.17",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/hedgedoc/hedgedoc",
+      "tag": "1.9.9",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/jupyter/base-notebook",
+      "tag": "2026-09-29",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/jupyter/base-notebook",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/keycloak/keycloak",
+      "tag": "26.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/minio/aistor/minio",
+      "tag": "RELEASE.2026-09-19T17-05-25Z.hotfix.4ef74f03d6f2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/redlib/redlib",
+      "tag": "sha-a4d36e9",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "quay.io/soketi/soketi",
+      "tag": "1.6-16-debian",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "r.xmox.nl/mox:v0.0.17@sha256:8889e7b48fdd5b0b07b51dd11a6d06536334ec442652f2ffb1e1df3a9d45074e",
+      "tag": "",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "rabbitmq",
+      "tag": "3.13-management-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "rabbitmq",
+      "tag": "3.13.6-management-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redis/redisinsight",
+      "tag": "2.70",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redis",
+      "tag": "7-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redis",
+      "tag": "7.2-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redis",
+      "tag": "7.2.4",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/mips64le",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redis",
+      "tag": "7.2.4-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redis",
+      "tag": "7.4",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redis",
+      "tag": "7.4-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "redmine",
+      "tag": "6-alpine",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "registry.supertokens.io/supertokens/supertokens-postgresql",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "registry",
+      "tag": "2.8.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "registry",
+      "tag": "3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "rocketchat/rocket.chat",
+      "tag": "8.0.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "roundcube/roundcubemail",
+      "tag": "1.7.4-apache",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "rustdesk/rustdesk-server-s6",
+      "tag": "1.1.16",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ryshe/terraria",
+      "tag": "vanilla-1.4.5.8",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "sctx/overseerr",
+      "tag": "1.34.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "seafileltd/seafile-mc",
+      "tag": "13.0.28",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "searxng/searxng",
+      "tag": "2026.9.23-3cd69d30e",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "semaphoreui/semaphore",
+      "tag": "v2.19.14",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "semitechnologies/weaviate",
+      "tag": "1.39.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "shlinkio/shlink",
+      "tag": "stable",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "sissbruecker/linkding",
+      "tag": "1.31.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "sissbruecker/linkding",
+      "tag": "1.47.0-plus",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "snipe/snipe-it",
+      "tag": "v7.1.16",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "sonarqube",
+      "tag": "community",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "sonatype/nexus3",
+      "tag": "3.96.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "stalwartlabs/stalwart",
+      "tag": "v0.16.23",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "stirlingtools/stirling-pdf",
+      "tag": "0.36.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "stonith404/pingvin-share",
+      "tag": "v1.13.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "surrealdb/surrealdb",
+      "tag": "v2.6.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "svhd/logto",
+      "tag": "1.43.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "technitium/dns-server",
+      "tag": "15.5.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "temporalio/auto-setup",
+      "tag": "1.29.7",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "temporalio/ui",
+      "tag": "2.54.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "thijsvanloef/palworld-server-docker",
+      "tag": "v2.8.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "tiago2/cap",
+      "tag": "3.0.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "tiredofit/osticket",
+      "tag": "1.18.2",
+      "platforms": null,
+      "checked_at": "2026-10-31T23:54:42Z",
+      "error": "ERROR: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed"
+    },
+    {
+      "image": "tolgee/tolgee",
+      "tag": "v3.224.7",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "traccar/traccar",
+      "tag": "6.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "trailbase/trailbase",
+      "tag": "0.22.6",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "twentycrm/twenty",
+      "tag": "v1.15",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "twinproduction/gatus",
+      "tag": "v5.12.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "typesense/typesense",
+      "tag": "30.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "unclecode/crawl4ai",
+      "tag": "0.9.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "unleashorg/unleash-server",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "vabene1111/recipes",
+      "tag": "2.6.15",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "valkey/valkey",
+      "tag": "7.2.11-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "valkey/valkey",
+      "tag": "8-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "valkey/valkey",
+      "tag": "8.0-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "valkey/valkey",
+      "tag": "8.1-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "valkey/valkey",
+      "tag": "9-alpine",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "vaultwarden/server",
+      "tag": "1.32.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "verdaccio/verdaccio",
+      "tag": "5.31.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "victoriametrics/victoria-metrics",
+      "tag": "v1.152.0",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "vikunja/vikunja",
+      "tag": "0.24.1",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "vllm/vllm-openai",
+      "tag": "v0.30.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "vvveb/vvvebcms",
+      "tag": "latest",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "wallabag/wallabag",
+      "tag": "2.6.14",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "weblate/weblate",
+      "tag": "5.15",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "wekanteam/wekan",
+      "tag": "v12.45",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "woodpeckerci/woodpecker-agent",
+      "tag": "v3.18.1",
+      "platforms": [
+        "freebsd/amd64",
+        "freebsd/arm64",
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "woodpeckerci/woodpecker-server",
+      "tag": "v3.18.1",
+      "platforms": [
+        "freebsd/amd64",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "wordpress",
+      "tag": "6.6-apache",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/mips64le",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "yourselfhosted/slash",
+      "tag": "0.5.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "zabbix/zabbix-server-pgsql",
+      "tag": "alpine-7.4-latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "zabbix/zabbix-web-nginx-pgsql",
+      "tag": "alpine-7.4-latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    }
+  ],
+  "templates": {
+    "2fauth": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "activepieces": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "actual-budget": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "actualbudget": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "adguard-home": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "adminer": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "affine": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "alertmanager": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "answer": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "anythingllm": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "appflowy": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "apprise-api": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "appsmith": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "appwrite": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "archivebox": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "audiobookshelf": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "authelia": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "authentik": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "autobrr": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x",
+      "windows/amd64"
+    ],
+    "babybuddy": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "backrest": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "baserow": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "bazarr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "bentopdf": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "beszel": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "bookstack": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "browserless": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "budge": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "budibase": [
+      "linux/arm64"
+    ],
+    "bugsink": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "bytebase": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "bytestash": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "calcom": [
+      "linux/amd64"
+    ],
+    "calibre-web": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "campfire": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cap-captcha": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "castopod": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "changedetection": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "chatwoot": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "checkmate": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "chibisafe": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "chroma": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "clickhouse": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cloudbeaver": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cloudflare-ddns": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "cloudreve": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cockpit-cms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "code-server": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "comfyui": [
+      "linux/amd64"
+    ],
+    "consul": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "convertx": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "convertx-app": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "copyparty": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "couchdb": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "crawl4ai": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cryptgeon": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cyberchef": [
+      "linux/amd64"
+    ],
+    "dashy": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "databasus": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "directus": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "diun": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "docker-registry": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "docker-registry-auth": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "docmost": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "documenso": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "docuseal": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "dokuwiki": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "dolibarr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "drawio": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "drupal": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "duplicati": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "easyappointments": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "elasticsearch": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "elasticsearch-kibana": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "emby": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "embystat": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "espocrm": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "etcd": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "etherpad": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "excalidraw": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "factorio": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "fastapi-postgres-starter": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "fider": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "filebrowser": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "firefly-iii": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "firefox-browser": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "flame": [
+      "linux/amd64"
+    ],
+    "flaresolverr": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "flatnotes": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "flipt": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "flowise": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "flowise-postgres": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "focalboard": [
+      "linux/amd64"
+    ],
+    "forgejo": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "forgejo-postgres": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "formbricks": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "freescout": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "freshrss": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "gatus": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "ghost": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ghostfolio": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "gitea": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "gitea-postgres": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "gitlab": [
+      "linux/amd64"
+    ],
+    "gitlab-ce": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "glance": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "glances": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "glitchtip": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "glpi": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "goatcounter": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "gogs": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "gotenberg": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "gotify": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/riscv64"
+    ],
+    "grafana": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "grafana-postgres": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "gramps-web": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "grimmory": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "grist": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "grocy": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "hasura": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "headscale": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "healthchecks": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "hedgedoc": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "heimdall": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "heyform": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "homarr": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "home-assistant": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "homebox": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "homepage": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "homer": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "hoppscotch": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "imgcompress": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "immich": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "infisical": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "influxdb": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "inngest": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "invoice-ninja": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "it-tools": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "jackett": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "jaeger": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "jellyfin": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "jellyseerr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "jenkins": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "joomla": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "joplin": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "joplin-server": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "jupyter-gpu": [
+      "linux/amd64"
+    ],
+    "jupyter-notebook": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "jupyter-notebook-python": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "kanboard": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "karakeep": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "kavita": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "keycloak": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "keycloak-postgres": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "kimai": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "komga": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "kopia": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "kutt": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "label-studio": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "langflow": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "langfuse": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "leantime": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "librechat": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "libreoffice": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "librespeed": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "libretranslate": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "lidarr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "limesurvey": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "linkding": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "linkding-plus": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "linkwarden": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "listmonk": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "litellm": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "llama-cpp": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "lldap": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "lobe-chat": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "localai": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "logto": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "loki": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "lowcoder": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "mage-ai": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "mail-mox": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "mailhog": [
+      "linux/amd64"
+    ],
+    "mailpit": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "marimo": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "matomo": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "matrix-synapse": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "matrix-synapse-postgres": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "mattermost": [
+      "linux/amd64"
+    ],
+    "mealie": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "mediawiki": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "meilisearch": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "memcached": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "memos": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "metabase": [
+      "linux/amd64"
+    ],
+    "metamcp": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "metube": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "milvus": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "minecraft": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "minecraft-bedrock": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "miniflux": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "minio": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "mlflow": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "mongo-express": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "monica": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "moodle": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "mosquitto": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "n8n": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "n8n-ai-starter": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "n8n-postgres": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "nats": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "navidrome": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "neo4j": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "netbox": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "netdata": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "new-api": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "nextcloud": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/mips64le",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "nextjs-postgres-starter": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "nexus": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "nginx-multi-backend-starter": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "nginx-proxy-manager": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "nocobase": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "nocodb": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "node-postgres-starter": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "node-red": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "nodebb": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ntfy": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "obsidian-livesync": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "odoo": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "ollama": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ollama-deepseek": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ollama-llama3": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ollama-mistral": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ollama-open-webui": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ollama-phi": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "ollama-qwen": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "once-campfire": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "onedev": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "onetimesecret": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "open-notebook": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "open-webui": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "openclaw": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "openobserve": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "orangehrm": [
+      "linux/amd64"
+    ],
+    "organizr": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "outline": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "overseerr": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "owncast": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "owncloud": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "pairdrop": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "palworld": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "paperless-ngx": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "passbolt": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "paymenter": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "penpot": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "pgadmin": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "pgbackweb": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "pgvector": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "photoprism": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "photoview": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "phpmyadmin": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "pi-hole": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "pinchflat": [
+      "linux/amd64"
+    ],
+    "pingvin-share": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "plane": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "planka": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "plausible": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "plex": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "plunk": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "pocket-id": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "pocketbase": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "portainer": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "windows/amd64"
+    ],
+    "postiz": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "prefect": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "privatebin": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "prometheus": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "prowlarr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "proxyscotch": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "qbittorrent": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "qdrant": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "rabbitmq": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "radarr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "radicale": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "rallly": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "readeck": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "redis-cache-starter": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "redis-insight": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "redisinsight": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "redlib": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "redmine": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "registry": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+    ],
+    "rocketchat": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "roundcube": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "rsshub": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "rustdesk-server": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "ryot": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "seafile": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "searxng": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "seaweedfs": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "semaphore": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "sftpgo": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "shiori": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "shlink": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "silverbullet": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "siyuan": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "slash": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "snipe-it": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "soketi": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "sonarqube": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "sonarr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "sparkyfitness": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "speaches": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "speedtest-tracker": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "stable-diffusion-webui": [
+      "linux/amd64"
+    ],
+    "stalwart": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "static-site-api-starter": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "statusnook": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "stirling-pdf": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "strapi": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "superset": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "supertokens": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "sure": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "syncthing": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "tandoor-recipes": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "tautulli": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "tdarr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "teable": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "technitium-dns": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "temporal": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "termix": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "terraria": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "text-embeddings-inference": [
+      "linux/amd64"
+    ],
+    "text-generation-inference": [
+      "linux/amd64"
+    ],
+    "tianji": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "tolgee": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "traccar": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "trailbase": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "transmission": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "trilium": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "triliumnext": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "twenty": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "typesense": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "umami": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "unleash-postgres": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "unstructured": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "uptime-kuma": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "uptime-kuma-mariadb": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "valkey": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "vault": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "vaultwarden": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "verdaccio": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "vert": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "victoriametrics": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le"
+    ],
+    "vikunja": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "vllm": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "vvveb": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "wakapi": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "wallabag": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "wallos": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "weaviate": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "web-check": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "weblate": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "wekan": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "whoogle": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "wikijs": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "windmill": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "woodpecker": [
+      "freebsd/amd64",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64"
+    ],
+    "wordpress": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "worker-redis-queue-starter": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/s390x"
+    ],
+    "yamtrack": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "zabbix": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+    ],
+    "zipline": [
+      "linux/amd64",
+      "linux/arm64"
+    ]
+  }
+}
