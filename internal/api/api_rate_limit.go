@@ -64,6 +64,27 @@ func (l *apiRateLimiter) allow(key string) (ok bool, retryAfter time.Duration) {
 	return true, 0
 }
 
+// peek reports whether key has a token left without spending it.
+func (l *apiRateLimiter) peek(key string) bool {
+	if l.ratePerMinute <= 0 {
+		return true
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	ok, _ := l.hasLocked(key, 1)
+	return ok
+}
+
+// spend takes one token from key unconditionally, for callers that count only failures.
+func (l *apiRateLimiter) spend(key string) {
+	if l.ratePerMinute <= 0 {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.spendLocked(key)
+}
+
 // hasLocked reports whether key holds n tokens, and if not how long until it
 // will. Callers hold l.mu.
 func (l *apiRateLimiter) hasLocked(key string, n float64) (ok bool, retryAfter time.Duration) {
