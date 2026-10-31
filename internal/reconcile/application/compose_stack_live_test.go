@@ -280,6 +280,11 @@ func TestComposeTemplates_Live(t *testing.T) {
 			}
 			s := deployLiveStack(t, rt, "lrtpl-"+m.ID, body)
 			s.converge(t, 6*time.Minute)
+			// Templates without a healthcheck are judged by convergence alone.
+			if m.Healthcheck == nil {
+				t.Log("no healthcheck declared, convergence is the whole check")
+				return
+			}
 			hc := s.container(t, m.Healthcheck.Service)
 			addr, err := PrimaryAddr(hc, 0)
 			if err != nil {
