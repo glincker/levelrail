@@ -1841,14 +1841,19 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	}
 
 	// The pooler shares the database's namespace: same host, other port.
-	// Cross-node apps keep the direct route, the mesh only maps 5432.
-	pooled := database.PoolerActive(desiredDB) && !crossNode
+	// Cross-node apps use the pooler's own mesh port.
+	pooled := database.PoolerActive(desiredDB)
+	poolerPort := database.PoolerPort
+	if crossNode {
+		poolerPort = ep.poolerPort
+		pooled = pooled && poolerPort != 0
+	}
 	switch field {
 	case "host":
 		return host, nil
 	case "port":
 		if pooled {
-			return strconv.Itoa(database.PoolerPort), nil
+			return strconv.Itoa(poolerPort), nil
 		}
 		return strconv.Itoa(port), nil
 	case "direct_url":
@@ -1862,7 +1867,7 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	case "url":
 		if pooled {
 			// Client to pooler stays inside the namespace bridge, no TLS there.
-			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, database.PoolerPort, false)
+			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, poolerPort, false)
 		}
 		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	default:

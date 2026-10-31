@@ -73,7 +73,7 @@ func TestPooler_LifecycleFollowsDesiredState(t *testing.T) {
 	}
 }
 
-func TestPooler_ImageUnsetKeepsDatabaseReady(t *testing.T) {
+func TestPooler_ImageUnsetUsesPinnedDefault(t *testing.T) {
 	t.Setenv(EnvPoolerImage, "")
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", PoolerEnabled: true}
@@ -86,8 +86,11 @@ func TestPooler_ImageUnsetKeepsDatabaseReady(t *testing.T) {
 	if conditionOf(t, res).Status != reconcile.ConditionTrue {
 		t.Errorf("database Ready = %+v, want True", conditionOf(t, res))
 	}
-	if cond, _ := poolerCond(t, res); cond.Reason != "PoolerImageNotConfigured" {
-		t.Errorf("pooler reason = %q, want PoolerImageNotConfigured", cond.Reason)
+	if cond, _ := poolerCond(t, res); cond.Reason != "PoolerRunning" {
+		t.Errorf("pooler reason = %q, want PoolerRunning", cond.Reason)
+	}
+	if got := PoolerImage(); got != DefaultPoolerImage || strings.HasSuffix(got, ":latest") || !strings.Contains(got, ":v") {
+		t.Errorf("PoolerImage() = %q, want pinned default", got)
 	}
 }
 

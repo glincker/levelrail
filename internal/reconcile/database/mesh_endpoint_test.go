@@ -21,6 +21,10 @@ func (f fakeMeshPorts) GetDatabaseMeshPort(_ context.Context, name string) (int,
 	return f[name], nil
 }
 
+func (f fakeMeshPorts) GetDatabasePoolerMeshPort(_ context.Context, name string) (int, error) {
+	return f[name+"-pooler"], nil
+}
+
 func TestMeshBinding(t *testing.T) {
 	up := fakeEndpoints{"n2": {Usable: true, Address: "10.181.0.2"}}
 	down := fakeEndpoints{"n2": {Reason: "no handshake"}}
@@ -52,5 +56,19 @@ func TestMeshBinding(t *testing.T) {
 				t.Fatalf("binding = %+v, want %+v", got, *tt.want)
 			}
 		})
+	}
+}
+
+func TestPoolerMeshBinding(t *testing.T) {
+	up := fakeEndpoints{"n2": {Usable: true, Address: "10.181.0.2"}}
+	c := &Controller{dbName: "main", meshEndpoints: up, meshPorts: fakeMeshPorts{"main-pooler": 21005}}
+	on := &store.DesiredDatabase{Engine: store.EnginePostgres, NodeID: "n2", PoolerEnabled: true}
+	b, ok := c.poolerMeshBinding(context.Background(), on, nil)
+	if !ok || b.ContainerPort != PoolerPort || b.HostPort != 21005 || b.HostIP != "10.181.0.2" {
+		t.Fatalf("binding = %+v, %v", b, ok)
+	}
+	off := &store.DesiredDatabase{Engine: store.EnginePostgres, NodeID: "n2"}
+	if _, ok := c.poolerMeshBinding(context.Background(), off, nil); ok {
+		t.Fatal("binding published without an enabled pooler")
 	}
 }

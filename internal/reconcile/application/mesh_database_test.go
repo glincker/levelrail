@@ -22,6 +22,10 @@ func (f *fakeDBPorts) EnsureDatabaseMeshPort(context.Context, string, int, int) 
 	return 21007, nil
 }
 
+func (f *fakeDBPorts) EnsureDatabasePoolerMeshPort(context.Context, string, int, int) (int, error) {
+	return 21008, nil
+}
+
 func TestSameNode(t *testing.T) {
 	tests := []struct {
 		a, b, local string

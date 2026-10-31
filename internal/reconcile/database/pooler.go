@@ -15,13 +15,17 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// Env knobs for the managed Postgres pooler. The image has no default on
-// purpose: operators pin a tag or digest they have vetted.
+// Env knobs for the managed Postgres pooler. The image falls back to a pinned
+// default; operators override it with a tag or digest they have vetted.
 const (
 	EnvPoolerImage           = "APP_PG_POOLER_IMAGE"
 	EnvPoolerDefaultPoolSize = "APP_PG_POOLER_DEFAULT_POOL_SIZE"
 	EnvPoolerMaxClientConn   = "APP_PG_POOLER_MAX_CLIENT_CONN"
 )
+
+// DefaultPoolerImage is used when EnvPoolerImage is unset. It is pinned to an
+// exact version and speaks the env contract poolerEnv writes.
+const DefaultPoolerImage = "edoburu/pgbouncer:v1.26.1-p0"
 
 // PoolerPort is where the pooler listens. It shares the database's network
 // namespace, so it must not collide with Postgres' own 5432.
@@ -40,8 +44,13 @@ const (
 // PoolerContainerName is the pooler child container for dbName.
 func PoolerContainerName(dbName string) string { return containerName(dbName) + "-pooler" }
 
-// PoolerImage is the configured pooler image, "" when unset.
-func PoolerImage() string { return strings.TrimSpace(os.Getenv(EnvPoolerImage)) }
+// PoolerImage is the env override, else the pinned default.
+func PoolerImage() string {
+	if v := strings.TrimSpace(os.Getenv(EnvPoolerImage)); v != "" {
+		return v
+	}
+	return DefaultPoolerImage
+}
 
 // PoolerActive reports whether apps should be handed the pooled address.
 func PoolerActive(d *store.DesiredDatabase) bool {

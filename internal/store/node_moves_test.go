@@ -124,3 +124,20 @@ func TestEnsureDatabaseMeshPort(t *testing.T) {
 		t.Fatal("invalid range accepted")
 	}
 }
+
+func TestEnsureDatabasePoolerMeshPort(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	p1, _ := db.EnsureDatabaseMeshPort(ctx, "main", 22000, 22002)
+	pp, err := db.EnsureDatabasePoolerMeshPort(ctx, "main", 22000, 22002)
+	if err != nil || pp == p1 {
+		t.Fatalf("pooler port = %d (db %d), %v", pp, p1, err)
+	}
+	if again, _ := db.EnsureDatabasePoolerMeshPort(ctx, "main", 22000, 22002); again != pp {
+		t.Fatalf("not idempotent: %d != %d", again, pp)
+	}
+	other, _ := db.EnsureDatabaseMeshPort(ctx, "cache", 22000, 22002)
+	if other == p1 || other == pp {
+		t.Fatalf("db port %d collides with %d or %d", other, p1, pp)
+	}
+}
