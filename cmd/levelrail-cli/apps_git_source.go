@@ -113,7 +113,7 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&token, "token-secret", "", "personal access token for a private repo; empty on an update leaves the stored token unchanged")
 	fs.StringVar(&triggerMode, "trigger-mode", "", "push or release (default: push); release deploys only on a tag push or a published github release")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source set <name> --repo-url URL [flags]\n\nConnects a repo for auto-deploy-on-push, or edits an existing\nconnection. Multi-service fan-out (an app.yaml services: map) is\ndashboard-only; use \"apps deploy-spec\" from the CLI for that case.\n\nStatic sites can build before serving: --build-command and --publish-dir,\nor --infer-build to detect the framework and fill either one you omit.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source set <name> --repo-url URL [flags]\n\nConnects a repo for auto-deploy-on-push, or edits an existing\nconnection. Multi-service fan-out (an app.yaml services: map) is\ndashboard-only; use \"apps deploy-spec\" from the CLI for that case.\n\nStatic sites can build before serving: --build-command and --publish-dir,\nor --infer-build to detect the framework and fill either one you omit.\nAdd --spa to serve index.html for unknown paths (--spa=false turns it off).\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 

@@ -50,6 +50,16 @@ In `on` mode a failed apply puts the binding back where it was, and only while n
 
 Digest checks run on approval. If the registry needs credentials the server does not hold, or answers 401, 403 or a masked "not found", the check is inconclusive and the approval goes ahead. Only a definite "manifest unknown" blocks it. `APP_APPROVE_DIGEST_CHECK_TIMEOUT` bounds the lookup. Moving back from `on` to `shadow` or `off` is safe: stored releases stay, and pending approvals that carry a release id still apply that exact image.
 
+### What is proven
+
+Covered by tests in `internal/api` and `internal/release`, run against a real store:
+
+- `shadow`: releases and bindings are recorded, but promote ships the tag, an approval carries no release id, rollback leaves the binding where it was, and `--release` is refused with 400.
+- `on`: promote retargets the binding and ships the digest ref, a protected promote stores the release id so a moved tag changes nothing, rollback retargets to the earlier release, and a failed apply restores the previous binding only while no newer move happened.
+- Private registry: a 401 from the digest check is inconclusive and promote and approve proceed. A definite missing digest returns 410 on both paths and leaves the binding untouched.
+
+Not proven yet: `on` across several nodes. The default stays `off` until that run and an owner decision on `shadow`.
+
 ## Generate release notes
 
 Release notes group the commits between two deploys by conventional-commit type: breaking changes first, then features, fixes, performance, refactors, docs, tests and other changes.
