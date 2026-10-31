@@ -57,6 +57,7 @@ type Preview struct {
 	RemovedAbilities   []string     `json:"removed_abilities"`
 	AddedHosts         []string     `json:"added_hosts"`
 	RemovedHosts       []string     `json:"removed_hosts"`
+	ConfigHosts        []string     `json:"config_hosts"`
 	ReapprovalRequired bool         `json:"reapproval_required"`
 }
 
@@ -134,20 +135,31 @@ func (m *Manager) Inspect(ctx context.Context, req InstallRequest) (Preview, err
 	if verr != nil && ver.Status == "" {
 		return Preview{}, verr
 	}
-	p := Preview{
-		Manifest: man, Verification: ver, Action: "install", ApprovedAbilities: []string{},
-		AddedAbilities: man.Abilities, RemovedAbilities: []string{}, AddedHosts: man.OutboundHosts, RemovedHosts: []string{},
-	}
 	existing, err := m.store.GetPlugin(ctx, man.Name)
-	if errors.Is(err, ErrNotFound) {
-		return p, nil
+	found := err == nil
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return Preview{}, err
 	}
+	cfg := req.ConfigJSON
+	if strings.TrimSpace(cfg) == "" && found {
+		cfg = existing.ConfigJSON
+	}
+	cfgHosts, err := ConfigHosts(man, cfg)
 	if err != nil {
 		return Preview{}, err
 	}
+	effective, _ := EffectiveOutboundHosts(man, cfg)
+	p := Preview{
+		Manifest: man, Verification: ver, Action: "install", ApprovedAbilities: []string{},
+		AddedAbilities: man.Abilities, RemovedAbilities: []string{}, AddedHosts: effective, RemovedHosts: []string{},
+		ConfigHosts: cfgHosts,
+	}
+	if !found {
+		return p, nil
+	}
 	p.Action, p.InstalledVersion, p.ApprovedAbilities = "upgrade", existing.Version, existing.ApprovedAbilities
 	p.AddedAbilities, p.RemovedAbilities = diff(existing.RequestedAbilities, man.Abilities)
-	p.AddedHosts, p.RemovedHosts = diff(existing.OutboundHosts, man.OutboundHosts)
+	p.AddedHosts, p.RemovedHosts = diff(existing.OutboundHosts, effective)
 	p.ReapprovalRequired = len(p.AddedAbilities) > 0 || len(p.AddedHosts) > 0
 	return p, nil
 }
@@ -212,14 +224,18 @@ func (m *Manager) Upgrade(ctx context.Context, req InstallRequest, actor string)
 			return Record{}, err
 		}
 	}
+	effective, err := EffectiveOutboundHosts(man, rec.ConfigJSON)
+	if err != nil {
+		return Record{}, err
+	}
 	addedA, _ := diff(rec.RequestedAbilities, man.Abilities)
-	addedH, _ := diff(rec.OutboundHosts, man.OutboundHosts)
+	addedH, _ := diff(rec.OutboundHosts, effective)
 	widened := len(addedA) > 0 || len(addedH) > 0
 	from, now := rec.Version, stamp(m.now())
 
 	rec.Version, rec.Publisher, rec.Description, rec.Image, rec.Digest = man.Version, man.Publisher, man.Description, man.Image, man.Digest()
 	rec.Manifest, rec.Signature, rec.KeyID = string(req.Manifest), req.Signature, keyID
-	rec.RequestedAbilities, rec.OutboundHosts, rec.LastError, rec.UpdatedAt = man.Abilities, man.OutboundHosts, "", now
+	rec.RequestedAbilities, rec.OutboundHosts, rec.LastError, rec.UpdatedAt = man.Abilities, effective, "", now
 	switch {
 	case approved != nil:
 		rec.ApprovedAbilities, rec.ApprovedAt, rec.ApprovedBy = approved, now, actor

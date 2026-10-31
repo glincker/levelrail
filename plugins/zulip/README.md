@@ -2,7 +2,7 @@
 
 Posts each alert to a Zulip stream topic as a bot.
 
-Kind `notification_channel`, ability `read`, outbound hosts: `zulip.example.com` placeholder, see the self-hosted note in docs/plugins-first-party.md.
+Kind `notification_channel`, ability `read`, outbound host: taken from the `base_url` config value.
 
 ## Config
 

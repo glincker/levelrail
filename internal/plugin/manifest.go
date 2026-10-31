@@ -33,10 +33,12 @@ const (
 )
 
 var (
-	namePattern   = regexp.MustCompile(`^[a-z][a-z0-9-]{1,39}$`)
-	imagePattern  = regexp.MustCompile(`^[a-z0-9][A-Za-z0-9._/:-]{0,200}@(sha256:[0-9a-f]{64})$`)
-	hostPattern   = regexp.MustCompile(`^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$`)
-	versionRegexp = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._+-]{0,39}$`)
+	namePattern  = regexp.MustCompile(`^[a-z][a-z0-9-]{1,39}$`)
+	imagePattern = regexp.MustCompile(`^[a-z0-9][A-Za-z0-9._/:-]{0,200}@(sha256:[0-9a-f]{64})$`)
+	// Manifests declare no config schema, so names are checked by shape here and by value at install.
+	configFieldPattern = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
+	hostPattern        = regexp.MustCompile(`^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$`)
+	versionRegexp      = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._+-]{0,39}$`)
 )
 
 // Manifest is the plugin.yaml a publisher signs together with the image digest.
@@ -50,7 +52,9 @@ type Manifest struct {
 	Image         string   `yaml:"image" json:"image"`
 	Abilities     []string `yaml:"abilities" json:"abilities"`
 	OutboundHosts []string `yaml:"outbound_hosts" json:"outbound_hosts"`
-	Contributes   Contrib  `yaml:"contributes" json:"contributes"`
+	// OutboundHostsFromConfig names config fields whose values are hosts or URLs the plugin may reach.
+	OutboundHostsFromConfig []string `yaml:"outbound_hosts_from_config" json:"outbound_hosts_from_config"`
+	Contributes             Contrib  `yaml:"contributes" json:"contributes"`
 }
 
 // Contrib lists the UI a plugin adds. It is data the core renders with its own
@@ -153,6 +157,19 @@ func (m *Manifest) validate() error {
 	}
 	sort.Strings(hosts)
 	m.OutboundHosts = dedupe(hosts)
+	if len(m.OutboundHostsFromConfig) > maxConfigHostFields {
+		return invalid("at most %d outbound_hosts_from_config names", maxConfigHostFields)
+	}
+	fields := make([]string, 0, len(m.OutboundHostsFromConfig))
+	for _, f := range m.OutboundHostsFromConfig {
+		f = strings.TrimSpace(f)
+		if !configFieldPattern.MatchString(f) {
+			return invalid("outbound_hosts_from_config name %q is not a valid config field name", f)
+		}
+		fields = append(fields, f)
+	}
+	sort.Strings(fields)
+	m.OutboundHostsFromConfig = dedupe(fields)
 	if m.Contributes.Panels == nil {
 		m.Contributes.Panels = []Panel{}
 	}

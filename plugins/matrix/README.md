@@ -2,7 +2,7 @@
 
 Posts each alert to a Matrix room with a bot access token. A retried send reuses its transaction id, so a room never gets a duplicate.
 
-Kind `notification_channel`, ability `read`, outbound hosts: `matrix.example.com` placeholder, see the self-hosted note in docs/plugins-first-party.md.
+Kind `notification_channel`, ability `read`, outbound host: taken from the `homeserver` config value.
 
 ## Config
 
