@@ -24,6 +24,7 @@ const KNOWN = new Set<string>([
   'tls_not_public',
   'hsts_off',
   'domains_unshielded',
+  'saml_open_domains',
   'agents_outdated',
   'login_anomalies',
   'own_mfa',

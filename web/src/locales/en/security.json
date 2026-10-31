@@ -220,6 +220,11 @@
       "pass": "Every routed domain has a shield",
       "why": "A shield caps requests per visitor and turns away abusive bots, so one noisy client cannot starve the rest."
     },
+    "saml_open_domains": {
+      "title": "SAML connections that accept any email domain",
+      "pass": "Every enabled SAML connection limits sign-in to your domains",
+      "why": "Without an allowed domain list, any address your identity provider asserts can match an account here. Add your domains in the connection settings."
+    },
     "agents_outdated": {
       "title": "Node agents older than the minimum version",
       "pass": "Every node agent is current",

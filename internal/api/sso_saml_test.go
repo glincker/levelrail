@@ -42,6 +42,7 @@ func newSAMLHarness(t *testing.T, conn map[string]any) *samlHarness {
 		"name": "Okta", "enabled": true, "idp_entity_id": samlTestIDP, "idp_sso_url": samlTestIDPSSO,
 		"idp_certificates": h.idp.CertPEM(), "jit_provisioning": true, "default_role_id": "role_viewer",
 		"email_attribute": "email", "name_attribute": "displayName", "groups_attribute": "groups",
+		"allowed_domains": []string{"example.com"},
 	}
 	for k, v := range conn {
 		body[k] = v
@@ -198,7 +199,8 @@ func TestSAMLSignInProvisionsWithMappedRole(t *testing.T) {
 
 	update := map[string]any{"name": "Okta", "enabled": true, "idp_entity_id": samlTestIDP, "idp_sso_url": samlTestIDPSSO,
 		"idp_certificates": h.idp.CertPEM(), "jit_provisioning": true, "sync_roles": true,
-		"email_attribute": "email", "name_attribute": "displayName", "groups_attribute": "groups"}
+		"email_attribute": "email", "name_attribute": "displayName", "groups_attribute": "groups",
+		"allowed_domains": []string{"example.com"}}
 	if rec := h.admin2(http.MethodPut, "/api/v1/sso/saml/connections/"+h.connID, update); rec.Code != http.StatusOK {
 		t.Fatalf("update: %d %s", rec.Code, rec.Body)
 	}
@@ -244,6 +246,8 @@ func TestSAMLConnectionValidation(t *testing.T) {
 		"two certificates":   {"name": "G", "idp_certificates": h.idp.CertPEM() + newTestIDP(t, "x").CertPEM()},
 		"unknown role":       {"name": "E", "default_role_id": "role_nope"},
 		"bad domain":         {"name": "F", "allowed_domains": []string{"not a domain"}},
+		"empty domain list":  {"name": "H", "allowed_domains": []string{}},
+		"missing domains":    {"name": "I"},
 	}
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -252,7 +256,7 @@ func TestSAMLConnectionValidation(t *testing.T) {
 			}
 		})
 	}
-	rec := h.admin2(http.MethodPost, "/api/v1/sso/saml/connections", map[string]any{"name": "Draft"})
+	rec := h.admin2(http.MethodPost, "/api/v1/sso/saml/connections", map[string]any{"name": "Draft", "allowed_domains": []string{"draft.example.org"}})
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("draft: %d %s", rec.Code, rec.Body)
 	}
@@ -275,7 +279,7 @@ func TestSAMLConnectionValidation(t *testing.T) {
 	if md.Code != http.StatusOK || !strings.Contains(md.Body.String(), imported.SPACSURL) {
 		t.Fatalf("metadata: %d %s", md.Code, md.Body)
 	}
-	cleared := map[string]any{"name": "Draft", "idp_entity_id": ""}
+	cleared := map[string]any{"name": "Draft", "idp_entity_id": "", "allowed_domains": []string{"draft.example.org"}}
 	if rec := h.admin2(http.MethodPut, "/api/v1/sso/saml/connections/"+draft.ID, cleared); rec.Code != http.StatusBadRequest {
 		t.Fatalf("clearing a configured connection: %d %s", rec.Code, rec.Body)
 	}
@@ -307,4 +311,30 @@ func TestSSOEnforcementKeepsRootPassword(t *testing.T) {
 		t.Fatal("enforcement blocked the root break-glass sign-in")
 	}
 	_ = loginTestSession(t, h.rt, h.db)
+}
+
+func TestSAMLNeverLinksRootByEmail(t *testing.T) {
+	h := newSAMLHarness(t, map[string]any{"jit_provisioning": false})
+	u := storeUserWithAbilitiesForTest(t, h.db, "owner@example.com", []string{AbilityRoot})
+	id, flow := h.start()
+	wantSAMLError(t, h.post(flow, h.respond(id, "nid-owner", "owner@example.com")), samlErrRootLink)
+	lib, err := h.rt.authEngine.SAMLIdentityUser(context.Background(), h.libID(), "nid-owner")
+	if err != nil || lib != "" {
+		t.Fatalf("identity for %s was linked: %q %v", u.ID, lib, err)
+	}
+}
+
+func TestSAMLConnectionWithoutDomainsStillSignsInNonRoot(t *testing.T) {
+	h := newSAMLHarness(t, map[string]any{"jit_provisioning": false})
+	c, err := h.db.GetSSOConnection(context.Background(), h.connID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.AllowedDomains = nil
+	if err := h.db.SaveSSOConnection(context.Background(), c, false, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	storeUserForTest(t, h.db, "plain@example.com")
+	id, flow := h.start()
+	wantSAMLSession(t, h, h.post(flow, h.respond(id, "nid-plain", "plain@example.com")))
 }

@@ -437,7 +437,8 @@
         "sso_not_provisioned": "Tu cuenta aún no está configurada aquí. Pide a un administrador que te invite o que active la creación automática de cuentas.",
         "sso_no_role": "Los grupos de tu proveedor de identidad no dan acceso aquí. Pide a un administrador que asigne uno de tus grupos a un rol.",
         "sso_no_email": "Tu proveedor de identidad no envió una dirección de correo, por lo que no se pudo asociar ninguna cuenta.",
-        "account_disabled": "Esta cuenta está desactivada. Pide a un administrador que restablezca el acceso."
+        "account_disabled": "Esta cuenta está desactivada. Pide a un administrador que restablezca el acceso.",
+        "sso_root_not_linkable": "Este correo pertenece a una cuenta de administrador que no se puede vincular mediante inicio de sesión único. Inicia sesión con tu contraseña."
       }
     },
     "banner": {

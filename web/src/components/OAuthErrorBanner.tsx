@@ -20,6 +20,7 @@ const KNOWN_CODES = [
   'sso_no_role',
   'sso_no_email',
   'account_disabled',
+  'sso_root_not_linkable',
 ] as const
 
 type KnownCode = (typeof KNOWN_CODES)[number]

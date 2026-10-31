@@ -692,7 +692,8 @@
         "sso_not_provisioned": "Your account has not been set up here yet. Ask an administrator to invite you or turn on automatic account creation.",
         "sso_no_role": "Your identity provider groups do not grant access here. Ask an administrator to map one of your groups to a role.",
         "sso_no_email": "Your identity provider did not send an email address, so no account could be matched.",
-        "account_disabled": "This account is disabled. Ask an administrator to restore access."
+        "account_disabled": "This account is disabled. Ask an administrator to restore access.",
+        "sso_root_not_linkable": "This email belongs to an administrator account that cannot be linked through single sign-on. Sign in with your password."
       },
       "ssoEmail": "Work email",
       "ssoContinue": "Continue with SSO",

@@ -149,6 +149,7 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 	rt.collectPostureSecrets(ctx, &in, now)
 	rt.collectPostureTLS(ctx, &in, now)
 	rt.collectPostureShield(ctx, &in)
+	rt.collectPostureSAML(ctx, &in)
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
 		in.AgentsKnown = true
 		for _, n := range nodes {
@@ -433,4 +434,21 @@ func (rt *Router) collectPostureShield(ctx context.Context, in *postureInput) {
 		}
 	}
 	in.ShieldKnown = true
+}
+
+// collectPostureSAML names enabled connections that accept any email domain.
+func (rt *Router) collectPostureSAML(ctx context.Context, in *postureInput) {
+	if rt.sso == nil {
+		return
+	}
+	conns, err := rt.sso.ListSSOConnections(ctx)
+	if err != nil {
+		return
+	}
+	for _, c := range conns {
+		if c.Enabled && len(c.AllowedDomains) == 0 {
+			in.OpenSAML = append(in.OpenSAML, c.Name)
+		}
+	}
+	in.SAMLKnown = true
 }

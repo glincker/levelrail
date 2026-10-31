@@ -105,6 +105,8 @@ type postureInput struct {
 	SecretRevealAllow bool
 	AppsLive          bool
 	Strict            bool
+	OpenSAML          []string
+	SAMLKnown         bool
 }
 
 func pass(id, sev string) postureItem {
@@ -216,6 +218,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		tlsRule(in),
 		hstsRule(in),
 		shieldRule(in),
+		samlDomainsRule(in),
 		agentsRule(in),
 		anomalyRule(in),
 	}
@@ -364,6 +367,17 @@ func hstsRule(in postureInput) postureItem {
 		return pass(id, postureMedium)
 	}
 	return failing(id, postureMedium, nil, actionFix("enable_hsts", nil, "/domains"))
+}
+
+func samlDomainsRule(in postureInput) postureItem {
+	const id = "saml_open_domains"
+	switch {
+	case !in.SAMLKnown:
+		return unknown(id, postureMedium, "SAML connections could not be read")
+	case len(in.OpenSAML) == 0:
+		return pass(id, postureMedium)
+	}
+	return failing(id, postureMedium, in.OpenSAML, linkFix("/settings/sso"))
 }
 
 func shieldRule(in postureInput) postureItem {
