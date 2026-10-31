@@ -1375,11 +1375,20 @@ discover_public_ip() {
 # start_temp_listener serves port $1 for at most 20s so the reachability
 # probe has something to connect to when nothing else listens there yet.
 TEMP_PID=""
+TEMP_DIR=""
 start_temp_listener() {
 	TEMP_PID=""
 	command -v python3 >/dev/null 2>&1 || return 1
 	command -v timeout >/dev/null 2>&1 || return 1
-	timeout 20 python3 -m http.server "$1" --bind 0.0.0.0 >/dev/null 2>&1 &
+	if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 7) else 1)' 2>/dev/null; then
+		log "  python3 is older than 3.7, so no temporary listener is started"
+		return 1
+	fi
+	# An empty directory keeps the probe listener from exposing the working directory.
+	TEMP_DIR="$(mktemp -d)" || return 1
+	mkdir -p "$TEMP_DIR/empty"
+	trap 'stop_temp_listener; rm -rf "${tmp_dir:-}"' EXIT
+	timeout 20 python3 -m http.server "$1" --bind 0.0.0.0 --directory "$TEMP_DIR/empty" >/dev/null 2>&1 &
 	TEMP_PID=$!
 	tries=0
 	while [ "$tries" -lt 10 ]; do
@@ -1387,14 +1396,20 @@ start_temp_listener() {
 		sleep 0.3 2>/dev/null || sleep 1
 		tries=$((tries + 1))
 	done
+	stop_temp_listener
 	return 1
 }
 
 stop_temp_listener() {
-	[ -n "$TEMP_PID" ] || return 0
-	kill "$TEMP_PID" 2>/dev/null || true
-	wait "$TEMP_PID" 2>/dev/null || true
-	TEMP_PID=""
+	if [ -n "$TEMP_PID" ]; then
+		kill "$TEMP_PID" 2>/dev/null || true
+		wait "$TEMP_PID" 2>/dev/null || true
+		TEMP_PID=""
+	fi
+	if [ -n "$TEMP_DIR" ]; then
+		rm -rf "$TEMP_DIR"
+		TEMP_DIR=""
+	fi
 }
 
 # reachability_test probes 80/443 on the public IP, the way a visitor or an
