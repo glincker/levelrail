@@ -1390,6 +1390,7 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Warn("api: delete app: remove image auto update failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	rt.removeAppCredentials(ctx, name)
 	if existing.AppID != "" {
 		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
@@ -1400,6 +1401,36 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	return teardownErr, nil
+}
+
+// removeAppCredentials erases the app's stored secrets, git source with its
+// deploy token and webhook secret, and other access grants, so a later app
+// of the same name inherits none of them. Failures are logged only.
+func (rt *Router) removeAppCredentials(ctx context.Context, name string) {
+	var namespaces []string
+	if g, ok := rt.apps.(interface {
+		DeleteAppAccessGrants(ctx context.Context, name string) ([]string, error)
+	}); ok {
+		ns, err := g.DeleteAppAccessGrants(ctx, name)
+		if err != nil {
+			rt.logger.Warn("api: delete app: remove access grants failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+		namespaces = ns
+	}
+	if rt.gitSources != nil {
+		if err := rt.gitSources.DeleteGitSource(ctx, name); err != nil && !errors.Is(err, store.ErrGitSourceNotFound) {
+			rt.logger.Warn("api: delete app: remove git source failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if rt.secrets == nil {
+		return
+	}
+	namespaces = append(namespaces, name, store.GitSourceSecretsKey(name))
+	for _, ns := range namespaces {
+		if err := rt.secrets.DeleteAll(ctx, ns); err != nil {
+			rt.logger.Warn("api: delete app: remove secrets failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 }
 
 // deleteFinalizer is nil when no runtime resolver or tombstone-capable
