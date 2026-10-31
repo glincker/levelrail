@@ -536,11 +536,10 @@ runner-minutes per tag, mostly the four image builds. Flaky lanes are
 `Test (e2e-reconcile-2)` (4 of 5 runs failed) and the `api` shards (8 of 40).
 
 The first job starts 2 to 57 s after the run is created. Go build and
-module caches hit on PR runs. The tsc build-info cache never hits, because
-`tsc -b` re-checks the whole project on every run (about 31 s) and
-`web/tsconfig.app.json` sets no `incremental`. Enabling it is a tsconfig change
-that needs maintainer approval; the cache save step would then need to allow
-PR runs as well.
+module caches hit on PR runs. The tsc build-info cache could not hit while
+`tsc -b` re-checked the whole project on every run (about 31 s). Both web
+tsconfigs now set `incremental`, so a warm local run takes seconds; the cache
+save step still needs to allow PR runs for CI to benefit.
 
 Local hooks, one small sample diff each on a warm cache (seconds):
 
