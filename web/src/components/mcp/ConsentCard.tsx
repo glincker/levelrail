@@ -9,6 +9,7 @@ import {
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { ApiError } from '../../lib/apiError'
 import { devModeQueryOptions } from '../../queries/devMode'
 import {
@@ -46,6 +47,36 @@ function useDuration() {
   }
 }
 
+const CARD_CLASS =
+  'space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm'
+
+// Mirrors the loaded card's rows so the page does not jump when data lands.
+function ConsentSkeleton() {
+  return (
+    <div className={CARD_CLASS} aria-hidden="true">
+      <div className="flex items-start gap-3">
+        <Skeleton className="size-8 shrink-0" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-5 w-1/2" />
+        </div>
+      </div>
+      <Skeleton className="h-4 w-2/3" />
+      <Skeleton className="h-20 w-full" />
+      <div className="space-y-1">
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-5 w-full" />
+      </div>
+      <div className="flex justify-end gap-2">
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-24" />
+      </div>
+    </div>
+  )
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-3 py-8">
@@ -76,7 +107,7 @@ export function ConsentCard({ requestId }: { requestId: string | undefined }) {
   if (consent.isPending) {
     return (
       <Shell>
-        <Skeleton className="h-64 w-full" aria-hidden="true" />
+        <ConsentSkeleton />
       </Shell>
     )
   }
@@ -109,6 +140,8 @@ function ConsentBody({
   const duration = useDuration()
   const decide = useDecideMcpConsent(requestId)
   const [done, setDone] = useState(false)
+  const username = useAuthUsername()
+  const host = window.location.host
   const grantable = consent.grantable_scopes
   const sensitive = grantable.includes(SENSITIVE_SCOPE)
   const trimmed = consent.requested_scopes.length > grantable.length
@@ -132,10 +165,7 @@ function ConsentBody({
 
   return (
     <Shell>
-      <section
-        aria-labelledby="mcp-consent-title"
-        className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm"
-      >
+      <section aria-labelledby="mcp-consent-title" className={CARD_CLASS}>
         <header className="flex items-start gap-3">
           <BotGlassIcon className="mt-0.5 size-8 shrink-0" aria-hidden="true" />
           <div className="min-w-0">
@@ -150,6 +180,15 @@ function ConsentBody({
             </p>
           </div>
         </header>
+
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="consent-account"
+        >
+          {username
+            ? t('signedInAs', { user: username, host })
+            : t('instanceOnly', { host })}
+        </p>
 
         <div
           className={

@@ -1,5 +1,7 @@
 {
   "title": "{{client}} quiere leer este plano de control",
+  "signedInAs": "Aprobando como {{user}} en {{host}}",
+  "instanceOnly": "Aprobando en {{host}}",
   "redirectsTo": "Cuando respondas, tu navegador vuelve a",
   "access": {
     "none": "Tu cuenta no tiene ninguno de los accesos pedidos, asi que no se puede conceder nada.",

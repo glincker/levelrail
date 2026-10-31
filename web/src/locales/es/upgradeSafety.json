@@ -11,6 +11,7 @@
     "migrations_other": "{{count}} migraciones de base de datos",
     "noMigrations": "Sin migraciones de base de datos",
     "schema": "esquema {{from}} a {{to}}",
+    "schemaNote": "({{schema}})",
     "breaking_one": "1 cambio incompatible",
     "breaking_other": "{{count}} cambios incompatibles",
     "noBreaking": "Sin cambios incompatibles"

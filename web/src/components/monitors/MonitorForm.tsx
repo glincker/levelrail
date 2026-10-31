@@ -1,3 +1,4 @@
+import { NativeSelect } from '@/components/ui/native-select'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CopyGlassIcon } from '@thesvg/ui-react'
@@ -138,7 +139,7 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
     >
       <div className="space-y-1">
         <Label htmlFor="monitor-kind">{t('form.kind')}</Label>
-        <select
+        <NativeSelect
           id="monitor-kind"
           value={kind}
           onChange={(e) => {
@@ -147,13 +148,12 @@ export function MonitorForm({ onDone }: { onDone: () => void }) {
             setIntervalValue(String(DEFAULT_INTERVAL_BY_KIND[next]))
             if (next === 'tls' && !port) setPort(DEFAULT_TLS_PORT)
           }}
-          className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring dark:bg-input/30"
         >
           <option value="http">{t('form.http')}</option>
           <option value="tcp">{t('form.tcp')}</option>
           <option value="heartbeat">{t('form.heartbeat')}</option>
           <option value="tls">{t('form.tls')}</option>
-        </select>
+        </NativeSelect>
       </div>
       {kind === 'http' ? (
         <div className="min-w-48 flex-1 space-y-1">

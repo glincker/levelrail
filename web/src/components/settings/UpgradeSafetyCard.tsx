@@ -9,6 +9,11 @@ import {
   TriangleAlertGlassIcon,
 } from '@thesvg/ui-react'
 import { Checkbox } from '../ui/checkbox'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '../ui/collapsible'
 import { CommandBlock } from '../ui/code-block'
 import { Skeleton } from '../ui/skeleton'
 import { Button } from '../ui/button'
@@ -100,12 +105,12 @@ export function UpgradeSafetyCard({
   return (
     <section
       aria-label={t('title')}
-      className="space-y-3 rounded-lg border border-border bg-card p-3"
+      className="divide-y divide-border rounded-lg border border-border bg-card [&>*]:px-3 [&>*]:py-2.5"
     >
       {backupFailed ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-md border border-tone-danger-border bg-tone-danger-soft p-2 text-sm"
+          className="flex items-start gap-2 bg-tone-danger-soft text-sm"
         >
           <CircleAlertGlassIcon
             aria-hidden
@@ -136,10 +141,12 @@ export function UpgradeSafetyCard({
             {plan.db_schema_version !== undefined &&
             plan.target_schema_version !== undefined &&
             migrations
-              ? ` (${t('change.schema', {
-                  from: plan.db_schema_version,
-                  to: plan.target_schema_version,
-                })})`
+              ? ` ${t('change.schemaNote', {
+                  schema: t('change.schema', {
+                    from: plan.db_schema_version,
+                    to: plan.target_schema_version,
+                  }),
+                })}`
               : null}
           </p>
           {breaking > 0 ? (
@@ -215,43 +222,35 @@ export function UpgradeSafetyCard({
         </div>
       ) : null}
       {backup?.will_take ? (
-        <div>
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls="skip-backup-panel"
-            onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center gap-1 rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-          >
+        <Collapsible open={expanded} onOpenChange={setOpen}>
+          <CollapsibleTrigger className="inline-flex w-auto items-center gap-1 rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring pointer-coarse:min-h-11">
             {expanded ? (
               <ChevronDownGlassIcon aria-hidden className="size-4" />
             ) : (
               <ChevronRightGlassIcon aria-hidden className="size-4" />
             )}
             {t('skip.toggle')}
-          </button>
-          {expanded ? (
-            <div id="skip-backup-panel" className="mt-2 space-y-1">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="skip-backup"
-                  checked={skipBackup}
-                  onCheckedChange={(v) => onSkipBackupChange(v === true)}
-                />
-                <label htmlFor="skip-backup" className="text-sm">
-                  {t('skip.label')}
-                </label>
-              </div>
-              <p className="flex items-start gap-1.5 text-sm font-medium text-tone-warning">
-                <TriangleAlertGlassIcon
-                  aria-hidden
-                  className="mt-0.5 size-4 shrink-0"
-                />
-                {backupFailed ? t('skip.hint') : t('skip.warning')}
-              </p>
+          </CollapsibleTrigger>
+          <CollapsiblePanel className="m-0 mt-2 space-y-1 p-0">
+            <div className="flex items-center gap-2 pointer-coarse:min-h-11">
+              <Checkbox
+                id="skip-backup"
+                checked={skipBackup}
+                onCheckedChange={(v) => onSkipBackupChange(v === true)}
+              />
+              <label htmlFor="skip-backup" className="text-sm">
+                {t('skip.label')}
+              </label>
             </div>
-          ) : null}
-        </div>
+            <p className="flex items-start gap-1.5 text-sm font-medium text-tone-warning">
+              <TriangleAlertGlassIcon
+                aria-hidden
+                className="mt-0.5 size-4 shrink-0"
+              />
+              {backupFailed ? t('skip.hint') : t('skip.warning')}
+            </p>
+          </CollapsiblePanel>
+        </Collapsible>
       ) : null}
     </section>
   )
@@ -261,7 +260,7 @@ export function UpgradeSafetyCard({
 export function RestoreAfterUpgrade({ command }: { command: string }) {
   const { t } = useTranslation('upgradeSafety')
   return (
-    <div className="space-y-1 rounded-lg border border-border p-3">
+    <div className="space-y-1 rounded-lg bg-muted/40 p-3">
       <p className="text-xs font-medium text-muted-foreground">
         {t('restore.label')}
       </p>

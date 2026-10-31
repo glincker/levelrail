@@ -1,3 +1,4 @@
+import { NativeSelect } from '@/components/ui/native-select'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
@@ -209,7 +210,7 @@ function DraftForm({
           <Label htmlFor="incident-draft-status">
             {t('incidents.draft.status')}
           </Label>
-          <select
+          <NativeSelect
             id="incident-draft-status"
             value={status}
             onChange={(e) => {
@@ -217,14 +218,13 @@ function DraftForm({
                 STATUSES.find((s) => s === e.target.value) ?? 'investigating',
               )
             }}
-            className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring dark:bg-input/30"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {t(`incidents.status.${s}`)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       </div>
       <div className="space-y-1">

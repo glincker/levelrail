@@ -1,5 +1,7 @@
 {
   "title": "{{client}} wants to read this control plane",
+  "signedInAs": "Approving as {{user}} on {{host}}",
+  "instanceOnly": "Approving on {{host}}",
   "redirectsTo": "After you answer, your browser returns to",
   "access": {
     "none": "Your account holds none of the requested access, so nothing can be granted.",
