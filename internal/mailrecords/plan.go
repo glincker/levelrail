@@ -285,6 +285,10 @@ func (r PlanResult) AuditSubject(applied int) string {
 func mailHostNames(desired []Record, zone string) map[string]bool {
 	out := map[string]bool{}
 	for _, d := range desired {
+		// MTA-STS and autoconfig names only serve HTTPS, which a proxy carries fine.
+		if d.Kind == KindMTASTS || d.Kind == KindAutoconfig {
+			continue
+		}
 		switch d.Set.Type {
 		case "A", "AAAA", "CNAME":
 			out[dnszones.FQDN(d.Set.Name, zone)] = true
@@ -294,9 +298,6 @@ func mailHostNames(desired []Record, zone string) map[string]bool {
 					out[dnszones.NormalizeDomain(f[len(f)-1])] = true
 				}
 			}
-		}
-		if d.Kind == KindMTASTS {
-			out["mta-sts."+zone] = true
 		}
 	}
 	return out
