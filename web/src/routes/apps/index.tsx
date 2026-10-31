@@ -51,7 +51,7 @@ import {
 import { Button } from '../../components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { routeErrorMessage } from '../../lib/apiError'
-import { LabelFilterInput } from '../../components/LabelFilterInput'
+import { LabelFilterField } from '../../components/LabelFilterInput'
 import { useLabelMatches } from '../../queries/resourceLabels'
 
 // The loader primes the Query cache; the component only reads it. The
@@ -236,20 +236,18 @@ function AppListPage() {
             onChange={setStatus}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <div className="min-w-0 flex-1 basis-64">
+            <div className="min-w-0 flex-1 basis-56">
               <AppsFilterBar
                 filters={filters}
                 environments={environments}
                 onChange={setFilters}
               />
             </div>
-            <div className="w-full sm:w-72">
-              <LabelFilterInput
-                value={labelSelector}
-                onChange={setLabelSelector}
-                invalid={labelMatches.isError}
-              />
-            </div>
+            <LabelFilterField
+              value={labelSelector}
+              onChange={setLabelSelector}
+              invalid={labelMatches.isError}
+            />
           </div>
         </div>
       ) : null}

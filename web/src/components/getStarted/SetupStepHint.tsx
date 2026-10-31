@@ -21,7 +21,7 @@ export function SetupStepHint({ step }: { step: SetupGuideStepId }) {
       {t('hint.line', { step: t(`steps.${step}.title`) })}
       <Link
         to="/get-started"
-        className="font-medium text-foreground hover:underline"
+        className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
       >
         {t('hint.cta')}
       </Link>
