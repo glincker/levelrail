@@ -16,6 +16,48 @@
 * GitHub Action for stacks in `integrations/github-action/stack`: plan comments on pull requests, apply on merge, and exit code 2 for an apply that awaits approval
 * stack App documents reference a database with `{ from: { database, field } }` (resolved by the control plane at container start, so plans and revisions hold only the reference) and declare `service.jobs`; `import --emit stack` now writes both instead of `SECRETS.md` placeholders and migration notes
 
+## [0.8.12](https://github.com/glincker/levelrail/compare/v0.8.8...v0.8.12) (2026-10-31)
+
+
+### Features
+
+* analysis reports on demand with digest evidence, right-sizing thresholds read from env, and a per-app report list ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* CLI suggests the closest command or flag on a typo, explains empty lists and adds doctor paths and cleaner flag errors ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* DNS host detection wizard with live record status, zone and delegation checks, and Platform settings split into searchable pages with a DNS providers page ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* edit an app's rolling update budget from deploy settings ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* experimental managed mail server with guided setup, DNS records, mailboxes, aliases, queue, certificates, backup and restore, and system email through your own server ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* experimental remote MCP endpoint with an OAuth 2.1 authorization server, a consent page, a connected clients section in CLI access and mcp-clients CLI verbs ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* first-run polish with a compact Get started, one-click starts on the empty Apps page, visible template Deploy buttons and a clearer framework picker ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* internal incidents opened from confirmed monitor outages, with draft then explicit publish, an operator incidents view, API and CLI, and signed webhooks to status page subscribers ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* local backup targets default to a private folder under the data directory and refuse writes on a full disk ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* match running images against a verified advisory feed and refresh affected apps onto the newest digest, with a Security Advisories tab and an advisories CLI ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* plugin egress proxy core and APP_ prefixed plugin and pipeline settings ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* plugins can take their allowed host from operator config, and the approval screens say what network access a plugin gets ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* upgrade --dry-run and a visual upgrade preview with disk and backup checks, and an upgrade is refused when its pre-upgrade backup fails unless skipped ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* uptime monitors with confirmed failures, cron heartbeat and TLS expiry checks, a monitor_down alert rule and live monitors on the status page ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+
+
+### Bug Fixes
+
+* clip the Apps table node column and show realistic image digests in demo data ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* dashboard polish across incidents, consent, advisories, rollout, monitors, security tabs, upgrade card, backups, domains, login, deployments, templates and the Apps header, with clearer errors, retry actions, readable contrast, a single-row top bar and layouts that hold on phones ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* security and reliability hardening across sign-in, deploys, builds, storage and installs ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* show only published incidents and public updates on public status surfaces and open incidents past the global threshold ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* translate the app overview, deployments page and shell panels and show a real deployments empty state ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* translate the navigation, status page admin, security center, access, audit, SSO, teams, firewall, platform settings, databases, nodes, updates, backups, templates, attention and cleanup pages to Spanish ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* verify image digests on the direct promote path and treat private registry auth failures as inconclusive ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+
+
+### Performance
+
+* lower boot peak memory from 229 MB to 157 MB and index the busiest read paths, with failed deploys lists up to 75 times faster ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+* split the dashboard first load, 1794 kB down to 1642 kB, and keep i18next on 26.5.3 so the vendor chunk stays 43 kB smaller ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+
+
+### Miscellaneous
+
+* release v0.8.12 ([8fa3a0b](https://github.com/glincker/levelrail/commit/8fa3a0b6c3000679443feb2cb8b6bbcad4f3f33e))
+
 ## [0.8.8](https://github.com/glincker/levelrail/compare/v0.8.7...v0.8.8) (2026-10-30)
 
 
