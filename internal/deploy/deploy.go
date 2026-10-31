@@ -198,6 +198,7 @@ type Pipeline struct {
 	// staticRouteLimits caps _redirects, _headers and spec routing rules.
 	staticRouteLimits spec.StaticLimits
 	staticRecorder    StaticPublishRecorder
+	staticPublished   StaticPublishHook
 
 	staticExtractor  StaticExtractor // nil is valid: build.command then fails its deploy loudly
 	staticBuildImage string

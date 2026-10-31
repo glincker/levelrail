@@ -57,12 +57,13 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 		if _, ok := rt.freezeGate(w, r, target.ServiceName, req.freezeOverride); !ok {
 			return
 		}
-		if status, msg := rt.rollbackStatic(r.Context(), *target); status != 0 {
+		status, msg, cdnWarning := rt.rollbackStatic(r.Context(), *target)
+		if status != 0 {
 			writeError(w, status, msg)
 			return
 		}
 		res := toAppResource(*existing)
-		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
+		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res, CDNWarning: cdnWarning})
 		return
 	}
 	pin := rt.rollbackPin(r.Context(), *target)

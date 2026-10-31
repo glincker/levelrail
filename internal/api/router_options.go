@@ -9,6 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/changelog"
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -1039,7 +1040,15 @@ func WithPublicHostSource(source string) Option {
 // webhook receiver uses, when a BuildKit connection was successfully
 // established at startup.
 func WithBuilder(b Builder) Option {
-	return func(rt *Router) { rt.builder = b }
+	return func(rt *Router) {
+		rt.builder = b
+		// The closure reads rt lazily, so option order does not matter.
+		if h, ok := b.(interface {
+			SetStaticPublishHook(deploy.StaticPublishHook)
+		}); ok {
+			h.SetStaticPublishHook(rt.purgeAppCache)
+		}
+	}
 }
 
 // WithDeployLogQuerier enables a finished deploy attempt's full log replay

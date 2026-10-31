@@ -55,6 +55,7 @@ func (p *Pipeline) finishStaticPublish(ctx context.Context, req Request, progres
 	if !held {
 		emitStatic(progress, stepStaticPublish, fmt.Sprintf("%d files, %d bytes, digest %s", st.Files, st.Bytes, st.Digest), true)
 		p.recordStaticPublished(ctx, req, st, took)
+		p.runStaticPublishHook(ctx, req, progress)
 		return
 	}
 	emitStatic(progress, stepStaticPublish, fmt.Sprintf("held by publish lock, not live: %d files, digest %s", st.Files, st.Digest), true)

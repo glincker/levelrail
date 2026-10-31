@@ -67,6 +67,6 @@ func (rt *Router) publishHeldStatic(w http.ResponseWriter, r *http.Request, svc 
 	}
 	rt.recordAppEvent(r, store.AppEvent{AppName: svc.Name, Kind: store.AppEventPublishHeld, Title: "Published a held build", Detail: deployID})
 	res := toAppResource(svc)
-	writeJSON(w, http.StatusOK, deployTriggerResult{appResource: &res})
+	writeJSON(w, http.StatusOK, deployTriggerResult{appResource: &res, CDNWarning: rt.purgeWarning(r.Context(), svc.Name)})
 	return true
 }

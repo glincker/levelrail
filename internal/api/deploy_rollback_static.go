@@ -39,13 +39,13 @@ func isStaticAttempt(a store.DeployAttempt) bool {
 // rollbackStatic re-points the app's static site at the tree target
 // published, after checking the tree still hashes to the recorded digest. It
 // records a new succeeded attempt so history shows the rollback.
-func (rt *Router) rollbackStatic(ctx context.Context, target store.DeployAttempt) (int, string) {
+func (rt *Router) rollbackStatic(ctx context.Context, target store.DeployAttempt) (status int, msg, cdnWarning string) {
 	st, ok := rt.deployAttempts.(staticRollbackStore)
 	if !ok || rt.staticRootDir == "" {
-		return http.StatusNotImplemented, "static site rollback is not configured on this control plane"
+		return http.StatusNotImplemented, "static site rollback is not configured on this control plane", ""
 	}
 	if target.Status != store.DeployAttemptStatusSucceeded || target.ImageDigest == "" {
-		return http.StatusConflict, "only a succeeded static deploy with a recorded content digest can be rolled back to"
+		return http.StatusConflict, "only a succeeded static deploy with a recorded content digest can be rolled back to", ""
 	}
 	rel := target.ServiceName
 	if target.CommitSHA != "" && filepath.IsLocal(target.CommitSHA) {
@@ -53,32 +53,32 @@ func (rt *Router) rollbackStatic(ctx context.Context, target store.DeployAttempt
 	}
 	dir := filepath.Join(rt.staticRootDir, rel)
 	if _, err := os.Stat(dir); err != nil {
-		return http.StatusGone, "the published files of this deploy are no longer on disk; redeploy from source instead"
+		return http.StatusGone, "the published files of this deploy are no longer on disk; redeploy from source instead", ""
 	}
 	stats, err := deploy.HashStaticTree(dir)
 	if err != nil {
 		rt.logger.Error("api: static rollback: hash failed", slog.String("error", err.Error()), slog.String("deploy_id", target.ID))
-		return http.StatusInternalServerError, "internal error"
+		return http.StatusInternalServerError, "internal error", ""
 	}
 	if stats.Digest != target.ImageDigest {
-		return http.StatusConflict, "the files on disk no longer match the content this deploy recorded; redeploy from source instead"
+		return http.StatusConflict, "the files on disk no longer match the content this deploy recorded; redeploy from source instead", ""
 	}
 	site := store.StaticSite{Name: target.ServiceName, RootDir: dir}
 	if cur, err := st.GetStaticSite(ctx, target.ServiceName); err == nil {
 		site.Domains = cur.Domains
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
 		rt.logger.Error("api: static rollback: load site failed", slog.String("error", err.Error()), slog.String("name", target.ServiceName))
-		return http.StatusInternalServerError, "internal error"
+		return http.StatusInternalServerError, "internal error", ""
 	}
 	if err := st.SaveStaticSite(ctx, site); err != nil {
 		rt.logger.Error("api: static rollback: save site failed", slog.String("error", err.Error()), slog.String("name", target.ServiceName))
-		return http.StatusInternalServerError, "internal error"
+		return http.StatusInternalServerError, "internal error", ""
 	}
 	if err := rt.recordStaticRollback(ctx, st, target, stats); err != nil {
 		rt.logger.Warn("api: static rollback: record attempt failed", slog.String("error", err.Error()), slog.String("name", target.ServiceName))
 	}
 	rt.nudgeReconciler()
-	return 0, ""
+	return 0, "", rt.purgeWarning(ctx, target.ServiceName)
 }
 
 func (rt *Router) recordStaticRollback(ctx context.Context, st staticRollbackStore, target store.DeployAttempt, stats deploy.StaticTreeStats) error {

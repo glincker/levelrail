@@ -81,6 +81,9 @@ type deployTriggerResult struct {
 	// DeployID is the attempt this trigger created, so a waiter follows it
 	// rather than whichever deploy is newest.
 	DeployID string `json:"deploy_id,omitempty"`
+	// CDNWarning is set when a static publish or rollback could not purge the
+	// CDN cache. The publish itself succeeded.
+	CDNWarning string `json:"cdn_warning,omitempty"`
 }
 
 // handleTriggerDeploy handles POST /api/v1/apps/{name}/deploys. It

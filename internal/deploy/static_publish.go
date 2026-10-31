@@ -32,6 +32,25 @@ func WithStaticPublishRecorder(r StaticPublishRecorder) Option {
 	return func(p *Pipeline) { p.staticRecorder = r }
 }
 
+// StaticPublishHook runs after a static site goes live, for example to purge
+// a CDN. Its error is logged and shown in the build log, never returned.
+type StaticPublishHook func(ctx context.Context, app string) error
+
+// SetStaticPublishHook installs the hook. The API router calls it at boot,
+// after the pipeline exists, because the hook needs the router's credentials.
+func (p *Pipeline) SetStaticPublishHook(h StaticPublishHook) { p.staticPublished = h }
+
+// runStaticPublishHook is best effort so a CDN outage cannot fail a deploy.
+func (p *Pipeline) runStaticPublishHook(ctx context.Context, req Request, progress func(build.ProgressEvent)) {
+	if p.staticPublished == nil {
+		return
+	}
+	if err := p.staticPublished(ctx, req.ServiceName); err != nil {
+		p.logger.Warn("deploy: static publish hook failed", slog.String("service", req.ServiceName), slog.String("error", err.Error()))
+		emitStatic(progress, stepStaticPublish, "warning: "+err.Error(), false)
+	}
+}
+
 // StaticTreeStats is what hashing a published tree found.
 type StaticTreeStats struct {
 	Digest string

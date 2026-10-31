@@ -26,6 +26,10 @@ type appCDNResource struct {
 	GlobalProxied bool `json:"global_proxied"`
 	// Effective is what new DNS records for this app's domains use.
 	Effective bool `json:"effective"`
+	// SSLMode and SSLWarning come from the DNS provider and are only set when
+	// the app's records are proxied and the provider could be read.
+	SSLMode    string `json:"ssl_mode,omitempty"`
+	SSLWarning string `json:"ssl_warning,omitempty"`
 }
 
 type appCDNRequest struct {
@@ -78,6 +82,9 @@ func (rt *Router) handleGetAppCDN(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.internalError(w, "api: app cdn: read failed", err, slog.String("name", name))
 		return
+	}
+	if res.Effective {
+		res.SSLMode, res.SSLWarning = rt.cdnSSLCheck(r.Context(), name)
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, res)

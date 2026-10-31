@@ -332,6 +332,15 @@ func (rt *Router) writeDomainDNS(ctx context.Context, r *http.Request, app, doma
 			res.Message = "record created, but Cloudflare's proxy could not be enabled"
 		} else {
 			res.Message = "record created and proxied; set the Cloudflare SSL/TLS mode to Full (strict) or visitors may see redirect loops"
+			if c, ok := t.Proxy.(cdnZoneClient); ok {
+				if mode, err := c.SSLMode(ctx, t.Zone); err != nil {
+					res.Message = "record created and proxied; could not read the Cloudflare SSL/TLS mode (the token needs Zone Settings read), so check it is Full (strict)"
+				} else if w := sslModeWarning(mode); w != "" {
+					res.Message = "record created and proxied; " + w
+				} else if mode != "" {
+					res.Message = "record created and proxied; Cloudflare SSL/TLS mode is " + mode
+				}
+			}
 		}
 	}
 	return res, undo
