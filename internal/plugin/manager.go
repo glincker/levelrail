@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/plugin/egress"
 )
 
 // Containers is the slice of the Docker wrapper the runtime uses.
@@ -22,6 +23,8 @@ type Containers interface {
 	Stop(ctx context.Context, id string, timeout time.Duration) error
 	Remove(ctx context.Context, id string, force bool) error
 	EnsureNetwork(ctx context.Context, name string) (string, error)
+	EnsureIsolatedNetwork(ctx context.Context, name string, opts docker.IsolatedNetworkOptions) (string, bool, error)
+	NetworkConnect(ctx context.Context, name, containerID string) error
 }
 
 // Manager owns plugin installation, approval and supervision.
@@ -36,6 +39,13 @@ type Manager struct {
 
 	mu        sync.Mutex
 	instances map[string]*instance
+
+	// egMu guards the proxy credentials and the pending policy flag.
+	egMu      sync.Mutex
+	egPolicy  map[string]egressEntry
+	egVersion int64
+	egDirty   bool
+	pushFn    func(ctx context.Context, socket string, p egress.Policy) error
 }
 
 // NewManager builds a Manager. audit and docker must be non-nil.
@@ -45,7 +55,7 @@ func NewManager(store Store, dk Containers, audit Auditor, cfg Config, log *slog
 	}
 	return &Manager{
 		store: store, docker: dk, audit: audit, cfg: cfg.withDefaults(), log: log,
-		now: time.Now, dial: dialUnix, instances: map[string]*instance{},
+		now: time.Now, dial: dialUnix, instances: map[string]*instance{}, pushFn: egress.PushPolicy,
 	}
 }
 

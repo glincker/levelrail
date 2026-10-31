@@ -242,6 +242,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
+| `APP_PLUGIN_EGRESS_MODE` | `open` | `open` keeps the shared plugin network and shows a dashboard warning that declared hosts are not enforced. `proxy` runs the allowlisting sidecar and gives plugins a network with no gateway. Control plane. |
+| `APP_PLUGIN_EGRESS_IMAGE` | matching release image | Image that runs the `plugin-egress` sidecar in proxy mode. Required for development builds. Control plane. |
 | `APP_PLUGIN_EGRESS_CONNECT_TIMEOUT` | `10s` | Time limit for opening an outbound connection for a plugin. Control plane. |
 | `APP_PLUGIN_EGRESS_IDLE_TIMEOUT` | `60s` | How long a plugin tunnel may sit idle before it is closed. Control plane. |
 | `APP_PLUGIN_EGRESS_MAX_TUNNELS` | `16` | Simultaneous tunnels allowed per plugin. Positive integer. Control plane. |

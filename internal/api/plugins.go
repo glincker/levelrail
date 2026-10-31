@@ -26,6 +26,8 @@ type pluginResource struct {
 	Fix          string           `json:"fix"`
 	Panels       []plugin.Panel   `json:"panels"`
 	Commands     []plugin.Command `json:"commands"`
+	// EgressMode is "proxy" when declared hosts are enforced, "open" when they are not.
+	EgressMode string `json:"egress_mode"`
 }
 
 type installPluginRequest struct {
@@ -95,7 +97,7 @@ func (rt *Router) toPluginResource(ctx context.Context, m *plugin.Manager, rec p
 	if man, err := plugin.ParseManifest([]byte(rec.Manifest)); err == nil {
 		panels, commands = man.Contributes.Panels, man.Contributes.Commands
 	}
-	return pluginResource{Record: rec, Running: m.Running(rec.Name), Health: st.Health, Verification: st.Verification, Fix: st.Fix, Panels: panels, Commands: commands}
+	return pluginResource{Record: rec, Running: m.Running(rec.Name), Health: st.Health, Verification: st.Verification, Fix: st.Fix, Panels: panels, Commands: commands, EgressMode: m.EgressMode()}
 }
 
 func (rt *Router) writePluginError(w http.ResponseWriter, what string, err error) {

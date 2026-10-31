@@ -86,6 +86,7 @@ export interface Plugin {
   installed_at: string
   installed_by: string
   last_error: string
+  egress_mode: 'open' | 'proxy'
 }
 
 // Matches internal/plugin's TrustedKey.

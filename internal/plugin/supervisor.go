@@ -119,6 +119,7 @@ func (m *Manager) Reconcile(ctx context.Context) {
 		m.log.Error("plugin reconcile: list failed", "error", err)
 		return
 	}
+	m.syncEgress(ctx)
 	known := map[string]bool{}
 	for _, rec := range recs {
 		known[rec.Name] = true
@@ -164,6 +165,7 @@ func (m *Manager) stopPlugin(ctx context.Context, name string) {
 }
 
 func (m *Manager) removeContainer(ctx context.Context, name string) error {
+	m.forgetEgress(name)
 	st, err := m.docker.InspectByName(ctx, m.containerName(name))
 	if err != nil {
 		return fmt.Errorf("inspect: %w", err)
@@ -302,7 +304,16 @@ func (m *Manager) start(ctx context.Context, rec Record, in *instance) error {
 	}
 	spec := m.containerSpec(rec)
 	if spec.Network != nil {
-		if _, err := m.docker.EnsureNetwork(ctx, spec.Network.Name); err != nil {
+		if m.proxyMode() {
+			// Fail closed: no proxy env means no start, never an open fallback.
+			env, err := m.egressEnvFor(ctx, rec)
+			if err != nil {
+				return err
+			}
+			for k, v := range env {
+				spec.Env[k] = v
+			}
+		} else if err := m.ensurePluginNetwork(ctx); err != nil {
 			return fmt.Errorf("ensure plugin network: %w", err)
 		}
 	}

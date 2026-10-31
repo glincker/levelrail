@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
@@ -26,6 +27,10 @@ func setupPlugins(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *
 	}
 	cfg := plugin.ConfigFromEnv(b.ShortName, dataDir, os.LookupEnv)
 	cfg.UID, cfg.GID = os.Getuid(), os.Getgid()
+	if cfg.EgressImage == "" && strings.HasPrefix(version.Version, "v") {
+		// A release build can run its own sidecar; a dev build must name an image.
+		cfg.EgressImage = "ghcr.io/glincker/levelrail:" + version.Version
+	}
 	mgr := plugin.NewManager(plugin.NewSQLStore(db), client, api.PluginAuditor{DB: db}, cfg, logger)
 	go mgr.Run(ctx)
 	return mgr

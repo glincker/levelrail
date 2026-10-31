@@ -26,11 +26,18 @@ const maxPolicyBytes = 1 << 20
 type PolicyServer struct {
 	store     *PolicyStore
 	cachePath string
+	counters  *Counters
 }
 
 // NewPolicyServer returns a server. An empty cachePath disables the cache.
 func NewPolicyServer(store *PolicyStore, cachePath string) *PolicyServer {
 	return &PolicyServer{store: store, cachePath: cachePath}
+}
+
+// WithCounters serves the denial tally at GET /denials.
+func (s *PolicyServer) WithCounters(c *Counters) *PolicyServer {
+	s.counters = c
+	return s
 }
 
 // LoadCache installs the cached policy when the store has none yet. A missing
@@ -91,6 +98,9 @@ func (s *PolicyServer) Handler() http.Handler {
 		}
 		_, _ = io.WriteString(w, "ok")
 	})
+	if s.counters != nil {
+		mux.Handle("GET /denials", s.counters.Handler())
+	}
 	mux.HandleFunc("PUT /policy", func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxPolicyBytes))
 		if err != nil {

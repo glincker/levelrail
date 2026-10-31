@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/plugin/egress"
 )
 
 // Environment variables that tune the plugin runtime.
@@ -29,6 +31,12 @@ type Config struct {
 	UID, GID  int
 
 	AllowUnsigned bool
+
+	// EgressMode is open (shared bridge) or proxy (allowlisting sidecar).
+	EgressMode string
+	// EgressImage runs the sidecar; EgressEnv carries its limits through.
+	EgressImage string
+	EgressEnv   map[string]string
 
 	MemoryBytes int64
 	NanoCPUs    int64
@@ -126,6 +134,16 @@ func ConfigFromEnv(namespace, dataDir string, lookup func(string) (string, bool)
 		c.MaxConcurrent = n
 	}
 	c.AllowUnsigned = get(EnvAllowUnsigned) == "true"
+	if strings.EqualFold(get(EnvEgressMode), EgressProxy) {
+		c.EgressMode = EgressProxy
+	}
+	c.EgressImage = get(EnvEgressImage)
+	c.EgressEnv = map[string]string{}
+	for _, k := range []string{egress.EnvConnectTimeout, egress.EnvIdleTimeout, egress.EnvMaxTunnels, egress.EnvBytesPerMinute, egress.EnvAllowPrivate} {
+		if v := get(k); v != "" {
+			c.EgressEnv[k] = v
+		}
+	}
 	if n, err := strconv.Atoi(get(envBreakerFailures)); err == nil && n > 0 {
 		c.BreakerFailures = n
 	}

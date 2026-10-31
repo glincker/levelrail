@@ -40,6 +40,10 @@ func (idleContainers) Start(context.Context, string) error                   { r
 func (idleContainers) Stop(context.Context, string, time.Duration) error     { return nil }
 func (idleContainers) Remove(context.Context, string, bool) error            { return nil }
 func (idleContainers) EnsureNetwork(context.Context, string) (string, error) { return "n", nil }
+func (idleContainers) EnsureIsolatedNetwork(context.Context, string, docker.IsolatedNetworkOptions) (string, bool, error) {
+	return "n", false, nil
+}
+func (idleContainers) NetworkConnect(context.Context, string, string) error { return nil }
 
 func pluginRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {
 	t.Helper()
