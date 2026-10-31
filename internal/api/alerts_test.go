@@ -51,6 +51,7 @@ func seedApp(t *testing.T, db *store.DB, name string) {
 }
 
 func TestAlertRoutes_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithAlertRules
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -75,6 +76,7 @@ func TestAlertRoutes_NotConfigured(t *testing.T) {
 }
 
 func TestHandleCreateAlertRule_ThresholdSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -105,6 +107,7 @@ func TestHandleCreateAlertRule_ThresholdSuccess(t *testing.T) {
 }
 
 func TestHandleCreateAlertRule_WarnsWithoutDestination(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		extra    string
@@ -136,6 +139,7 @@ func TestHandleCreateAlertRule_WarnsWithoutDestination(t *testing.T) {
 }
 
 func TestHandleCreateAlertRule_CrashloopSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -158,6 +162,7 @@ func TestHandleCreateAlertRule_CrashloopSuccess(t *testing.T) {
 
 // Platform-wide kinds like cert_expiry need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_CertExpirySuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -180,6 +185,7 @@ func TestHandleCreateAlertRule_CertExpirySuccess(t *testing.T) {
 
 // Platform-wide kinds like patch_status need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_PatchStatusSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -202,6 +208,7 @@ func TestHandleCreateAlertRule_PatchStatusSuccess(t *testing.T) {
 
 // Platform-wide kinds like node_disk_space need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_NodeDiskSpaceSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -224,6 +231,7 @@ func TestHandleCreateAlertRule_NodeDiskSpaceSuccess(t *testing.T) {
 
 // Platform-wide kinds like node_resource_usage need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_NodeResourceUsageSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -245,6 +253,7 @@ func TestHandleCreateAlertRule_NodeResourceUsageSuccess(t *testing.T) {
 }
 
 func TestHandleCreateAlertRule_NodeOfflineSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -259,6 +268,7 @@ func TestHandleCreateAlertRule_NodeOfflineSuccess(t *testing.T) {
 
 // scheduled_task_failure reuses restart_count_threshold as its consecutive-failure threshold.
 func TestHandleCreateAlertRule_ScheduledTaskFailureSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -284,6 +294,7 @@ func TestHandleCreateAlertRule_ScheduledTaskFailureSuccess(t *testing.T) {
 }
 
 func TestHandleCreateAlertRule_ScheduledTaskFailure_MissingTaskID(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -298,6 +309,7 @@ func TestHandleCreateAlertRule_ScheduledTaskFailure_MissingTaskID(t *testing.T) 
 
 // A scheduled_task_id from another app must be rejected, so ownership cannot leak.
 func TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -317,6 +329,7 @@ func TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp(t *tes
 
 // backup_missing reuses for_duration as its overdue grace period.
 func TestHandleCreateAlertRule_BackupMissingDatabaseSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -344,6 +357,7 @@ func TestHandleCreateAlertRule_BackupMissingDatabaseSuccess(t *testing.T) {
 // volume variant: backup_service_name/backup_volume_name must resolve to
 // a real, already-configured service_volume_backups row.
 func TestHandleCreateAlertRule_BackupMissingVolumeSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -374,6 +388,7 @@ func TestHandleCreateAlertRule_BackupMissingVolumeSuccess(t *testing.T) {
 // validateAlertRuleReferences' own existence check: a backup_database_name
 // naming a database that doesn't exist must be rejected.
 func TestHandleCreateAlertRule_BackupMissing_UnknownDatabase(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -388,6 +403,7 @@ func TestHandleCreateAlertRule_BackupMissing_UnknownDatabase(t *testing.T) {
 
 // An unconfigured volume backup target must be rejected, as the database branch does.
 func TestHandleCreateAlertRule_BackupMissing_UnconfiguredVolume(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -404,6 +420,7 @@ func TestHandleCreateAlertRule_BackupMissing_UnconfiguredVolume(t *testing.T) {
 // toRule's own validation: an empty/unknown backup_resource_kind is
 // rejected rather than silently defaulting to database.
 func TestHandleCreateAlertRule_BackupMissing_MissingResourceKind(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -418,6 +435,7 @@ func TestHandleCreateAlertRule_BackupMissing_MissingResourceKind(t *testing.T) {
 
 // A caller-supplied resource_id is ignored in favor of resourceIDForApp(name).
 func TestHandleCreateAlertRule_ResourceIDNotCallerSuppliable(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -440,6 +458,7 @@ func TestHandleCreateAlertRule_ResourceIDNotCallerSuppliable(t *testing.T) {
 // TestHandleCreateAlertRule_IDNotCallerSuppliable checks that a
 // caller-supplied id is ignored: NewRuleID always mints a fresh one.
 func TestHandleCreateAlertRule_IDNotCallerSuppliable(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -461,6 +480,7 @@ func TestHandleCreateAlertRule_IDNotCallerSuppliable(t *testing.T) {
 
 // channel_id resolves notify_url and notify_kind from the saved channel.
 func TestHandleCreateAlertRule_ChannelIDSuccess(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -493,6 +513,7 @@ func TestHandleCreateAlertRule_ChannelIDSuccess(t *testing.T) {
 // TestHandleCreateDeployNotifyTarget_ValidationFailures' "unknown
 // channel_id" case.
 func TestHandleCreateAlertRule_UnknownChannelID(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -506,6 +527,7 @@ func TestHandleCreateAlertRule_UnknownChannelID(t *testing.T) {
 }
 
 func TestHandleCreateAlertRule_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -518,6 +540,7 @@ func TestHandleCreateAlertRule_AppNotFound(t *testing.T) {
 }
 
 func TestHandleCreateAlertRule_ValidationFailures(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -547,6 +570,7 @@ func TestHandleCreateAlertRule_ValidationFailures(t *testing.T) {
 }
 
 func TestHandleListAlertRules(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -584,6 +608,7 @@ func TestHandleListAlertRules(t *testing.T) {
 }
 
 func TestHandleListAlertRules_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -595,6 +620,7 @@ func TestHandleListAlertRules_AppNotFound(t *testing.T) {
 }
 
 func TestHandleUpdateAlertRule_Success(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -625,6 +651,7 @@ func TestHandleUpdateAlertRule_Success(t *testing.T) {
 
 // Editing a rule's config must not reset its firing state; only the evaluator changes that.
 func TestHandleUpdateAlertRule_PreservesEvaluationState(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -655,6 +682,7 @@ func TestHandleUpdateAlertRule_PreservesEvaluationState(t *testing.T) {
 }
 
 func TestHandleUpdateAlertRule_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -669,6 +697,7 @@ func TestHandleUpdateAlertRule_NotFound(t *testing.T) {
 
 // A rule of service:worker cannot be edited through service:web's URL.
 func TestHandleUpdateAlertRule_OwnershipMismatch(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -696,6 +725,7 @@ func TestHandleUpdateAlertRule_OwnershipMismatch(t *testing.T) {
 }
 
 func TestHandleUpdateAlertRule_ValidationFailures(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -728,6 +758,7 @@ func TestHandleUpdateAlertRule_ValidationFailures(t *testing.T) {
 
 // Read-only tokens are rejected, since the route is gated by AbilityWrite.
 func TestHandleUpdateAlertRule_RequiresWriteAbility(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	seedApp(t, db, "web")
 	ctx := context.Background()
@@ -752,6 +783,7 @@ func TestHandleUpdateAlertRule_RequiresWriteAbility(t *testing.T) {
 }
 
 func TestHandleDeleteAlertRule_Success(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -773,6 +805,7 @@ func TestHandleDeleteAlertRule_Success(t *testing.T) {
 }
 
 func TestHandleDeleteAlertRule_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -786,6 +819,7 @@ func TestHandleDeleteAlertRule_NotFound(t *testing.T) {
 
 // A rule of service:worker cannot be deleted through service:web's URL, even with write access.
 func TestHandleDeleteAlertRule_OwnershipMismatch(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -808,6 +842,7 @@ func TestHandleDeleteAlertRule_OwnershipMismatch(t *testing.T) {
 }
 
 func TestAlertRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithAlerting(t)
 	seedApp(t, db, "web")
 

@@ -12,6 +12,7 @@ import (
 )
 
 func TestHandleCompareDeploys_TwoAttempts(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -80,6 +81,7 @@ func TestHandleCompareDeploys_TwoAttempts(t *testing.T) {
 }
 
 func TestHandleCompareDeploys_AgainstCurrent(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -133,6 +135,7 @@ func TestHandleCompareDeploys_AgainstCurrent(t *testing.T) {
 }
 
 func TestHandleCompareDeploys_MissingFrom(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -149,6 +152,7 @@ func TestHandleCompareDeploys_MissingFrom(t *testing.T) {
 }
 
 func TestHandleCompareDeploys_AttemptNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -165,6 +169,7 @@ func TestHandleCompareDeploys_AttemptNotFound(t *testing.T) {
 }
 
 func TestHandleCompareDeploys_AttemptFromDifferentApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -191,6 +196,7 @@ func TestHandleCompareDeploys_AttemptFromDifferentApp(t *testing.T) {
 }
 
 func TestHandleCompareDeploys_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -202,6 +208,7 @@ func TestHandleCompareDeploys_AppNotFound(t *testing.T) {
 }
 
 func TestDiffDeployCompareSidesIgnoresMissingCommitOnCurrent(t *testing.T) {
+	t.Parallel()
 	from := deployCompareSide{Image: "web:1", CommitSHA: "abc"}
 	current := deployCompareSide{Image: "web:1", IsCurrent: true}
 	for _, c := range diffDeployCompareSides(from, current) {

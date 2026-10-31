@@ -15,6 +15,7 @@ import (
 )
 
 func TestDockerLintEndpoint(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	do := func(body string) *httptest.ResponseRecorder {
@@ -40,6 +41,7 @@ func TestDockerLintEndpoint(t *testing.T) {
 }
 
 func TestDockerHealthWithoutClient(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()
@@ -65,6 +67,7 @@ func (h *hungDockerPinger) Ping(context.Context) error {
 func (h *hungDockerPinger) UnresponsiveSince() time.Time { return h.since }
 
 func TestDockerHealthReportsUnresponsive(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	WithDockerPinger(&hungDockerPinger{since: time.Now().Add(-time.Minute)})(rt)
 	cookie := loginTestSession(t, rt, db)
@@ -83,6 +86,7 @@ func TestDockerHealthReportsUnresponsive(t *testing.T) {
 }
 
 func TestImageStatusUnknownApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()

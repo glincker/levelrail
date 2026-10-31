@@ -11,6 +11,7 @@ import (
 )
 
 func TestCheckVersionChange(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		engine       string
@@ -51,6 +52,7 @@ func TestCheckVersionChange(t *testing.T) {
 }
 
 func TestHandleSetDatabaseVersion(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {

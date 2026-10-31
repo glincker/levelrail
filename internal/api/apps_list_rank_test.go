@@ -34,6 +34,7 @@ func listAppNames(t *testing.T, rt *Router, tok, query string) ([]string, string
 }
 
 func TestAppsList_QueryIsRankedTypoTolerantAndAuthorized(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedSearchApps(t, db, "billing-api", "api", "api-gateway", "rapid-worker", "web", "secret-api")
 	root := seedMatrixToken(t, db, "root", []string{AbilityRoot})

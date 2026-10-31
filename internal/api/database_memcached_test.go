@@ -19,6 +19,7 @@ func seedMemcached(t *testing.T, db *store.DB) {
 }
 
 func TestMemcached_BackupsAreRefusedNotFaked(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedMemcached(t, db)
@@ -32,6 +33,7 @@ func TestMemcached_BackupsAreRefusedNotFaked(t *testing.T) {
 }
 
 func TestMemcached_PublicBindIsRefused(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedMemcached(t, db)
@@ -49,6 +51,7 @@ func TestMemcached_PublicBindIsRefused(t *testing.T) {
 }
 
 func TestListDatabaseEngines_ReportsBackupSupport(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()

@@ -49,6 +49,7 @@ func putFullApp(t *testing.T, rt *Router, cookie *http.Cookie, body string) {
 }
 
 func TestAppsPutEnvOnlyKeepsEveryOtherField(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	before := seedFullApp(t, db)
@@ -69,6 +70,7 @@ func TestAppsPutEnvOnlyKeepsEveryOtherField(t *testing.T) {
 }
 
 func TestAppsPutExplicitEmptyClears(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedFullApp(t, db)
@@ -88,6 +90,7 @@ func TestAppsPutExplicitEmptyClears(t *testing.T) {
 }
 
 func TestAppsPutRoundTripIsNoOp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	before := seedFullApp(t, db)
@@ -112,6 +115,7 @@ func TestAppsPutRoundTripIsNoOp(t *testing.T) {
 }
 
 func TestAppsPutUnicodeFoldedKeysCountAsSent(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedFullApp(t, db)

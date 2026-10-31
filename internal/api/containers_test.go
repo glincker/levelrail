@@ -43,6 +43,7 @@ func listContainers(t *testing.T, rt *Router, cookie *http.Cookie) *httptest.Res
 }
 
 func TestHandleListContainers_Configured(t *testing.T) {
+	t.Parallel()
 	lister := &fakeContainerLister{
 		containers: []docker.ContainerState{
 			{Name: "levelrail-app-web", Image: "levelrail/web:1", Running: true, Ports: []docker.PortBinding{{ContainerPort: 3000, HostPort: 33001, Protocol: "tcp"}}},
@@ -76,6 +77,7 @@ func TestHandleListContainers_Configured(t *testing.T) {
 }
 
 func TestHandleListContainers_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -86,6 +88,7 @@ func TestHandleListContainers_NotConfigured(t *testing.T) {
 }
 
 func TestHandleListContainers_ListerError(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithContainerLister(t, &fakeContainerLister{err: context.DeadlineExceeded})
 	cookie := loginTestSession(t, rt, db)
 
@@ -96,6 +99,7 @@ func TestHandleListContainers_ListerError(t *testing.T) {
 }
 
 func TestHandleListContainers_Empty(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithContainerLister(t, &fakeContainerLister{})
 	cookie := loginTestSession(t, rt, db)
 
@@ -113,6 +117,7 @@ func TestHandleListContainers_Empty(t *testing.T) {
 }
 
 func TestHandleListContainers_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouterWithContainerLister(t, &fakeContainerLister{})
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/system/containers", nil))

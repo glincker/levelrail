@@ -49,6 +49,7 @@ func newTestRouterWithDockerHub(t *testing.T, client *fakeDockerHubClient) (*Rou
 }
 
 func TestHandleDockerHubSearch_MissingQuery(t *testing.T) {
+	t.Parallel()
 	client := &fakeDockerHubClient{}
 	rt, db := newTestRouterWithDockerHub(t, client)
 	cookie := loginTestSession(t, rt, db)
@@ -61,6 +62,7 @@ func TestHandleDockerHubSearch_MissingQuery(t *testing.T) {
 }
 
 func TestHandleDockerHubSearch_Success(t *testing.T) {
+	t.Parallel()
 	client := &fakeDockerHubClient{repos: []dockerhub.Repository{
 		{Name: "postgres", ShortDescription: "The PostgreSQL database", StarCount: 12000, IsOfficial: true},
 		{Name: "bitnami/postgresql", ShortDescription: "Bitnami postgres", StarCount: 300},
@@ -87,6 +89,7 @@ func TestHandleDockerHubSearch_Success(t *testing.T) {
 }
 
 func TestHandleDockerHubSearch_UpstreamError(t *testing.T) {
+	t.Parallel()
 	client := &fakeDockerHubClient{searchErr: errors.New("rate limited")}
 	rt, db := newTestRouterWithDockerHub(t, client)
 	cookie := loginTestSession(t, rt, db)
@@ -99,6 +102,7 @@ func TestHandleDockerHubSearch_UpstreamError(t *testing.T) {
 }
 
 func TestHandleDockerHubTags_Success(t *testing.T) {
+	t.Parallel()
 	client := &fakeDockerHubClient{tags: map[string][]dockerhub.Tag{
 		"library/postgres": {{Name: "16"}, {Name: "latest"}},
 	}}
@@ -124,6 +128,7 @@ func TestHandleDockerHubTags_Success(t *testing.T) {
 }
 
 func TestHandleDockerHubTags_NotFound(t *testing.T) {
+	t.Parallel()
 	client := &fakeDockerHubClient{tagsErr: dockerhub.ErrNotFound}
 	rt, db := newTestRouterWithDockerHub(t, client)
 	cookie := loginTestSession(t, rt, db)
@@ -136,6 +141,7 @@ func TestHandleDockerHubTags_NotFound(t *testing.T) {
 }
 
 func TestHandleDockerHubTags_GenericUpstreamError(t *testing.T) {
+	t.Parallel()
 	client := &fakeDockerHubClient{tagsErr: errors.New("connection reset")}
 	rt, db := newTestRouterWithDockerHub(t, client)
 	cookie := loginTestSession(t, rt, db)
@@ -148,6 +154,7 @@ func TestHandleDockerHubTags_GenericUpstreamError(t *testing.T) {
 }
 
 func TestDockerHubRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	routes := []string{

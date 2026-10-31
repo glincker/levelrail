@@ -35,6 +35,7 @@ func listAuditLog(t *testing.T, rt *Router, cookie *http.Cookie) []auditLogEntry
 // AbilityWrite request (app creation) must produce a matching audit
 // entry with the right actor and status.
 func TestAudit_WriteRequestRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -72,6 +73,7 @@ func TestAudit_WriteRequestRecorded(t *testing.T) {
 // TestAudit_ReadRequestNotRecorded covers (b) from the task spec: an
 // AbilityRead request must never produce an audit entry.
 func TestAudit_ReadRequestNotRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -93,6 +95,7 @@ func TestAudit_ReadRequestNotRecorded(t *testing.T) {
 // success log: a real non-2xx response from a real handler (malformed
 // create-app body) still gets recorded with its real status code.
 func TestAudit_FailedRequestRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -122,6 +125,7 @@ func TestAudit_FailedRequestRecorded(t *testing.T) {
 // must be "token" and ActorName must be the token's own stored Name,
 // not a placeholder.
 func TestAudit_TokenActorRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -164,6 +168,7 @@ func TestAudit_TokenActorRecorded(t *testing.T) {
 // at AbilityRoot, not merely AbilityRead: a token scoped to read (or any
 // non-root ability) must be forbidden.
 func TestAuditLogRoute_RequiresRoot(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 
@@ -186,6 +191,7 @@ func TestAuditLogRoute_RequiresRoot(t *testing.T) {
 // TestAuditLogRoute_Pagination exercises ?limit and ?before against a
 // real store, through the real handler.
 func TestAuditLogRoute_Pagination(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -259,6 +265,7 @@ func TestAuditLogRoute_Pagination(t *testing.T) {
 // path, filtered by that exact path and method, must exclude a POST to
 // the collection endpoint and a PUT to a different app's path.
 func TestAuditLogRoute_FilterByPathAndMethod(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -307,6 +314,7 @@ func TestAuditLogRoute_FilterByPathAndMethod(t *testing.T) {
 // as the JSON view, as a CSV attachment, respecting the same ?path/
 // ?method filters.
 func TestAuditLogRoute_CSVExport(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -352,6 +360,7 @@ func TestAuditLogRoute_CSVExport(t *testing.T) {
 // User-Agent (cmd/levelrail-cli/client.go's apiclient.WithUserAgent) is
 // recorded with client_kind "cli".
 func TestAudit_ClientKind_CLI(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -393,6 +402,7 @@ func TestAudit_ClientKind_CLI(t *testing.T) {
 // since browsers block JS from overriding it) is recorded with
 // client_kind "dashboard".
 func TestAudit_ClientKind_Dashboard(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -423,6 +433,7 @@ func TestAudit_ClientKind_Dashboard(t *testing.T) {
 // TestHandlePurgeAuditLog_RequiresRoot proves POST /api/v1/audit-log/purge
 // shares the read route's own AbilityRoot gate.
 func TestHandlePurgeAuditLog_RequiresRoot(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 
@@ -447,6 +458,7 @@ func TestHandlePurgeAuditLog_RequiresRoot(t *testing.T) {
 // leaving recent ones (including the purge request's own audit entry)
 // intact.
 func TestHandlePurgeAuditLog_DeletesOldEntriesOnly(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -507,6 +519,7 @@ func TestHandlePurgeAuditLog_DeletesOldEntriesOnly(t *testing.T) {
 // TestAuditLogRoute_CSVExport_RequiresRoot proves the CSV export shares
 // the JSON endpoint's own AbilityRoot gate rather than a looser one.
 func TestAuditLogRoute_CSVExport_RequiresRoot(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 
@@ -527,6 +540,7 @@ func TestAuditLogRoute_CSVExport_RequiresRoot(t *testing.T) {
 }
 
 func TestHandleListAuditLog_InvalidLimit(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -538,6 +552,7 @@ func TestHandleListAuditLog_InvalidLimit(t *testing.T) {
 }
 
 func TestHandleListAuditLog_InvalidBefore(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -549,6 +564,7 @@ func TestHandleListAuditLog_InvalidBefore(t *testing.T) {
 }
 
 func TestHandlePurgeAuditLog_Error(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -563,6 +579,7 @@ func TestHandlePurgeAuditLog_Error(t *testing.T) {
 }
 
 func TestCSVSafe(t *testing.T) {
+	t.Parallel()
 	tests := []struct{ in, want string }{
 		{"", ""},
 		{"root", "root"},

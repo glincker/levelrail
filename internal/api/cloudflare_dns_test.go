@@ -56,6 +56,7 @@ func newTestRouterWithCloudflareDNSSecrets(t *testing.T, s CloudflareDNSSecrets)
 }
 
 func TestHandleGetCloudflareDNSSettings_SeededDefault(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -78,6 +79,7 @@ func TestHandleGetCloudflareDNSSettings_SeededDefault(t *testing.T) {
 }
 
 func TestHandleGetCloudflareDNSSettings_NeverReturnsTokenValue(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareDNSSecrets()
 	rt, db := newTestRouterWithCloudflareDNSSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -108,6 +110,7 @@ func TestHandleGetCloudflareDNSSettings_NeverReturnsTokenValue(t *testing.T) {
 }
 
 func TestHandleUpdateCloudflareDNSSettings_NoSecretsConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithCloudflareDNSSecrets
 	cookie := loginTestSession(t, rt, db)
 
@@ -120,6 +123,7 @@ func TestHandleUpdateCloudflareDNSSettings_NoSecretsConfigured(t *testing.T) {
 }
 
 func TestHandleUpdateCloudflareDNSSettings_EnableWithoutTokenRejected(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareDNSSecrets()
 	rt, db := newTestRouterWithCloudflareDNSSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -133,6 +137,7 @@ func TestHandleUpdateCloudflareDNSSettings_EnableWithoutTokenRejected(t *testing
 }
 
 func TestHandleUpdateCloudflareDNSSettings_Success(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareDNSSecrets()
 	rt, db := newTestRouterWithCloudflareDNSSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -157,6 +162,7 @@ func TestHandleUpdateCloudflareDNSSettings_Success(t *testing.T) {
 }
 
 func TestHandleUpdateCloudflareDNSSettings_OmittedTokenLeavesExistingIntact(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareDNSSecrets()
 	rt, db := newTestRouterWithCloudflareDNSSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -176,6 +182,7 @@ func TestHandleUpdateCloudflareDNSSettings_OmittedTokenLeavesExistingIntact(t *t
 }
 
 func TestHandleDisconnectCloudflareDNS_ClearsTokenAndDisables(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareDNSSecrets()
 	rt, db := newTestRouterWithCloudflareDNSSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -201,6 +208,7 @@ func TestHandleDisconnectCloudflareDNS_ClearsTokenAndDisables(t *testing.T) {
 }
 
 func TestHandleDisconnectCloudflareDNS_Idempotent(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareDNSSecrets()
 	rt, db := newTestRouterWithCloudflareDNSSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -216,6 +224,7 @@ func TestHandleDisconnectCloudflareDNS_Idempotent(t *testing.T) {
 // mirrors the same whole-chain proof for the Tunnel token, against the
 // distinct CloudflareDNSSecretsKey() namespace.
 func TestHandleUpdateCloudflareDNSSettings_RealSecretsManager_RoundTripsThroughEncryption(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	mk, err := secrets.GenerateMasterKey()
 	if err != nil {
@@ -255,6 +264,7 @@ func TestHandleUpdateCloudflareDNSSettings_RealSecretsManager_RoundTripsThroughE
 }
 
 func TestCloudflareDNSRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{

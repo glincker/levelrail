@@ -33,6 +33,7 @@ func policyCode(rec *httptest.ResponseRecorder) string {
 }
 
 func TestSessionPolicyIPAllowlistAndLockoutGuard(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	admin := loginTestSession(t, rt, db)
 	const inside, outside = "203.0.113.10:5000", "198.51.100.7:5000"
@@ -78,6 +79,7 @@ func TestSessionPolicyIPAllowlistAndLockoutGuard(t *testing.T) {
 }
 
 func TestSessionPolicyLifetimeAndIdle(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	admin := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -115,6 +117,7 @@ func TestSessionPolicyLifetimeAndIdle(t *testing.T) {
 }
 
 func TestSessionPolicyRequiresMFA(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	admin := loginTestSession(t, rt, db)
 	rec := servePolicy(rt, authedRequest(t, admin, http.MethodPut, "/api/v1/security/session-policies/"+store.DefaultTeamID, `{"require_mfa":true}`))
@@ -137,6 +140,7 @@ func TestSessionPolicyRequiresMFA(t *testing.T) {
 }
 
 func TestSessionPolicyConcurrentSessionCap(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	t.Run("evict_oldest", func(t *testing.T) {
 		rt, db := newTestRouter(t)
@@ -171,6 +175,7 @@ func TestSessionPolicyConcurrentSessionCap(t *testing.T) {
 }
 
 func TestSessionPolicyCapValidation(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	admin := loginTestSession(t, rt, db)
 	path := "/api/v1/security/session-policies/" + store.DefaultTeamID

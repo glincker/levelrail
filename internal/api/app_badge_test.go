@@ -14,6 +14,7 @@ import (
 
 // Pins the one deliberate difference from exec-access: badge defaults to off, so an untouched app stays unexposed.
 func TestHandleBadgeSettings_GetDefaultOffAndSetToggles(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -70,6 +71,7 @@ func TestHandleBadgeSettings_GetDefaultOffAndSetToggles(t *testing.T) {
 // .../badge sits behind AbilityRoot: a token scoped to nothing but
 // AbilityWrite cannot opt an app into public exposure.
 func TestHandleSetBadgeSettings_PlainWriteToken_Forbidden(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
@@ -97,6 +99,7 @@ func TestHandleSetBadgeSettings_PlainWriteToken_Forbidden(t *testing.T) {
 // badge.svg route cannot be used to distinguish "no such app" from
 // "app exists, badge off": both answer with a plain 404, unauthenticated.
 func TestHandlePublicAppBadge_404sWhenDisabledOrMissing(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
@@ -114,6 +117,7 @@ func TestHandlePublicAppBadge_404sWhenDisabledOrMissing(t *testing.T) {
 
 // Success renders green, failure red, and an app with no deploys yet still gets a valid badge.
 func TestHandlePublicAppBadge_RendersStatusAndColor(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 

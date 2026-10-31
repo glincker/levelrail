@@ -10,6 +10,7 @@ import (
 )
 
 func TestHandleBrand_PublicNoAuthRequired(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/brand", nil)

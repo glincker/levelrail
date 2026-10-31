@@ -13,6 +13,7 @@ import (
 )
 
 func TestHandleQueryDatabaseMetrics_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithTelemetryQuerier
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
@@ -27,6 +28,7 @@ func TestHandleQueryDatabaseMetrics_NotConfigured(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseMetrics_DatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -38,6 +40,7 @@ func TestHandleQueryDatabaseMetrics_DatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseMetrics_MissingMetricParam(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
@@ -52,6 +55,7 @@ func TestHandleQueryDatabaseMetrics_MissingMetricParam(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseMetrics_RawAndAggregated(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
@@ -102,6 +106,7 @@ func TestHandleQueryDatabaseMetrics_RawAndAggregated(t *testing.T) {
 }
 
 func TestHandleQueryDatabaseMetrics_InvalidTimeRange(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {

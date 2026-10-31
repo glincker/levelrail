@@ -58,6 +58,7 @@ func seedCert(t *testing.T, db *store.DB, domain string, notBefore, notAfter tim
 }
 
 func TestHandleListCertificates_Empty(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -77,6 +78,7 @@ func TestHandleListCertificates_Empty(t *testing.T) {
 }
 
 func TestHandleListCertificates_StatusBuckets(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	now := time.Now()
@@ -138,6 +140,7 @@ func TestHandleListCertificates_StatusBuckets(t *testing.T) {
 }
 
 func TestHandleListCertificates_IgnoresNonLeafKeys(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	now := time.Now()
@@ -169,6 +172,7 @@ func TestHandleListCertificates_IgnoresNonLeafKeys(t *testing.T) {
 }
 
 func TestCertificatesRoute_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/certificates", nil)
@@ -184,6 +188,7 @@ func TestCertificatesRoute_RequireAuth(t *testing.T) {
 // ("custom" once a BYO certificate is on file for that domain, "acme"
 // otherwise).
 func TestHandleListCertificates_AppsAndSource(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	now := time.Now()
@@ -239,6 +244,7 @@ func TestHandleListCertificates_AppsAndSource(t *testing.T) {
 // regression there fails a test in this package too, not just
 // internal/alerting's own.
 func TestStatusForExpiry(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	const window = 14 * 24 * time.Hour
 
@@ -263,6 +269,7 @@ func TestStatusForExpiry(t *testing.T) {
 }
 
 func TestHandleListCertificates_InternalOwnerNeverRaisesExpiryClass(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	now := time.Now()

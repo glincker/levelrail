@@ -23,6 +23,7 @@ import (
 func intPtr(v int) *int { return &v }
 
 func TestValidateAppResource(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		app     appResource
@@ -90,6 +91,7 @@ func authedRequest(t *testing.T, cookie *http.Cookie, method, target, body strin
 }
 
 func TestAppsRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -104,6 +106,7 @@ func TestAppsRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleListApps(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -138,6 +141,7 @@ func TestHandleListApps(t *testing.T) {
 
 // TestHandleListApps_Status checks each row gets its own status, not the first controller's.
 func TestHandleListApps_Status(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -184,6 +188,7 @@ func TestHandleListApps_Status(t *testing.T) {
 
 // Both list endpoints downgrade a domain-bearing app placed off this node from Healthy, since its domain is unreachable.
 func TestHandleListAppsAndSummary_CrossNodeDomainApp_NotHealthy(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -234,6 +239,7 @@ func TestHandleListAppsAndSummary_CrossNodeDomainApp_NotHealthy(t *testing.T) {
 }
 
 func TestHandleCreateApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -283,6 +289,7 @@ func TestHandleCreateApp(t *testing.T) {
 // Command) actually reaches the saved desired state through this
 // endpoint, not silently dropped by appResource.toDesiredService.
 func TestHandleCreateApp_Command(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -306,6 +313,7 @@ func TestHandleCreateApp_Command(t *testing.T) {
 
 // TestHandleCreateApp_WithSecrets_Success checks inline secret values are stored and never echoed back.
 func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -355,6 +363,7 @@ func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
 
 // TestHandleCreateApp_WithVaultEnv_Success checks a vault-backed env var round-trips as a reference, with no secret write.
 func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -389,6 +398,7 @@ func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
 
 // TestHandleCreateApp_SecretEnvNoValue_StillCreates checks a declared secret name with no value still creates the app.
 func TestHandleCreateApp_SecretEnvNoValue_StillCreates(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -416,6 +426,7 @@ func TestHandleCreateApp_SecretEnvNoValue_StillCreates(t *testing.T) {
 // plane with no master key configured: the request must fail fast (no
 // app row created) rather than silently dropping the secret values.
 func TestHandleCreateApp_Secrets_NotConfigured_Returns501(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithSecretSetter
 	cookie := loginTestSession(t, rt, db)
 
@@ -433,6 +444,7 @@ func TestHandleCreateApp_Secrets_NotConfigured_Returns501(t *testing.T) {
 // TestHandleCreateApp_Secrets_EmptyValueRejected covers validateAppResource's
 // own guard: an empty secret value is a 400 before anything is stored.
 func TestHandleCreateApp_Secrets_EmptyValueRejected(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -457,6 +469,7 @@ func TestHandleCreateApp_Secrets_EmptyValueRejected(t *testing.T) {
 // first SetValueGuarded call (only meaningful if a same-named app existed
 // before and was deleted without its secrets being cleared).
 func TestHandleCreateApp_Secrets_Locked_Returns409(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{locked: true}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -478,6 +491,7 @@ func TestHandleCreateApp_Secrets_Locked_Returns409(t *testing.T) {
 // override and never auto-placed, and a single-node install (no other
 // nodes registered) keeps today's local-node behavior unchanged.
 func TestHandleCreateApp_AutoPlacement(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	t.Run("no other nodes registered: stays local, not auto-placed", func(t *testing.T) {
@@ -615,6 +629,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 // node_id key (nodeIDKeyPresent) before decoding it: a request whose body
 // can't even be read must be a 400, not a panic or a 500.
 func TestHandleCreateApp_UnreadableBody_Returns400(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	assertUnreadableBodyRejected(t, rt, cookie, "/api/v1/apps")
@@ -624,6 +639,7 @@ func TestHandleCreateApp_UnreadableBody_Returns400(t *testing.T) {
 // cordon check on an explicit node_id, the create-time counterpart to
 // TestHandleSetAppNode_CordonedNode_Rejected.
 func TestHandleCreateApp_CordonedNode_Rejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -647,6 +663,7 @@ func TestHandleCreateApp_CordonedNode_Rejected(t *testing.T) {
 // store.ErrNodeNotFound nor errNodeCordoned, which a real *store.DB has
 // no way to produce on demand, so this uses erroringNodeStore instead.
 func TestHandleCreateApp_ValidateNodeGenericError_Returns500(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rt.nodes = &erroringNodeStore{NodeStore: rt.nodes, getNodeErr: errors.New("node lookup exploded")}
@@ -665,6 +682,7 @@ func TestHandleCreateApp_ValidateNodeGenericError_Returns500(t *testing.T) {
 // itself failing (its own ListNodes call errored), distinct from a
 // rejected explicit node_id.
 func TestHandleCreateApp_AutoPlaceNodeError_Returns500(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rt.nodes = &erroringNodeStore{NodeStore: rt.nodes, listNodesErr: errors.New("list nodes exploded")}
@@ -686,6 +704,7 @@ func TestHandleCreateApp_AutoPlaceNodeError_Returns500(t *testing.T) {
 // report 500, using erroringAppStore since a real *store.DB has no way to
 // fail this call on demand for a service it just successfully created.
 func TestHandleCreateApp_AssignNodeFails_Returns500(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedOnlineNode(t, db, "node_1", "worker-1", true)
@@ -704,6 +723,7 @@ func TestHandleCreateApp_AssignNodeFails_Returns500(t *testing.T) {
 // gets this via recordPlainDeployAttempt); before this, an app's very
 // first deploy was invisible in its own deploy history forever.
 func TestHandleCreateApp_RecordsDeployAttempt(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -736,6 +756,7 @@ func TestHandleCreateApp_RecordsDeployAttempt(t *testing.T) {
 // beginBuildDeployAttempt records the real history entry. Recording
 // here too would add a second, misleading "succeeded" row.
 func TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -761,6 +782,7 @@ func TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded(t *testing.T
 // always has (store.SaveDesiredService's own defense, not something this
 // handler re-implements).
 func TestHandleCreateApp_StrategyAndReplicas(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -803,6 +825,7 @@ func TestHandleCreateApp_StrategyAndReplicas(t *testing.T) {
 }
 
 func TestHandleCreateApp_Labels(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -834,6 +857,7 @@ func TestHandleCreateApp_Labels(t *testing.T) {
 // spec.ReservedLabelPrefix must never be accepted, since it's this
 // platform's own reserved namespace.
 func TestHandleCreateApp_ReservedLabelPrefix_Rejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -851,6 +875,7 @@ func TestHandleCreateApp_ReservedLabelPrefix_Rejected(t *testing.T) {
 // TestHandleCreateApp_InvalidStrategy_Rejected: a typo'd strategy value
 // must be a 400, not silently coerced to a default or saved verbatim.
 func TestHandleCreateApp_InvalidStrategy_Rejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -866,6 +891,7 @@ func TestHandleCreateApp_InvalidStrategy_Rejected(t *testing.T) {
 }
 
 func TestHandleUpdateApp_StrategyAndReplicas(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -889,6 +915,7 @@ func TestHandleUpdateApp_StrategyAndReplicas(t *testing.T) {
 }
 
 func TestHandleGetApp_StrategyAndReplicasRoundTrip(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -932,6 +959,7 @@ func TestHandleGetApp_StrategyAndReplicasRoundTrip(t *testing.T) {
 // no HostPort (nil, the ordinary case) comes back with no host_port key
 // at all (json:"host_port,omitempty" on a nil *int), not a literal 0.
 func TestHandleGetApp_HostPortRoundTrip(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -968,6 +996,7 @@ func TestHandleGetApp_HostPortRoundTrip(t *testing.T) {
 // TestHandleUpdateApp_HostPort proves an update through the general PUT
 // endpoint sets a pinned host_port and clears it on an explicit null.
 func TestHandleUpdateApp_HostPort(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1011,6 +1040,7 @@ func TestHandleUpdateApp_HostPort(t *testing.T) {
 // empty string: appResource.BindAddress has no omitempty, the same
 // always-resolved contract Strategy/Replicas already have.
 func TestHandleGetApp_BindAddressDefaultsToPrivate(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1033,6 +1063,7 @@ func TestHandleGetApp_BindAddressDefaultsToPrivate(t *testing.T) {
 // PUT endpoint sets an explicit bind_address, and that sending it empty falls
 // back to the default while omitting it keeps the stored value.
 func TestHandleUpdateApp_BindAddress(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1072,6 +1103,7 @@ func TestHandleUpdateApp_BindAddress(t *testing.T) {
 }
 
 func TestHandleCreateApp_DomainAlreadyTaken(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1098,6 +1130,7 @@ func TestHandleCreateApp_DomainAlreadyTaken(t *testing.T) {
 }
 
 func TestHandleUpdateApp_DomainAlreadyTaken(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1133,6 +1166,7 @@ func TestHandleUpdateApp_DomainAlreadyTaken(t *testing.T) {
 }
 
 func TestHandleGetApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1161,6 +1195,7 @@ func TestHandleGetApp(t *testing.T) {
 }
 
 func TestHandleGetApp_DomainsRoundTrip(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1183,6 +1218,7 @@ func TestHandleGetApp_DomainsRoundTrip(t *testing.T) {
 }
 
 func TestHandleUpdateApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1228,6 +1264,7 @@ func TestHandleUpdateApp(t *testing.T) {
 // PUT /api/v1/apps/{name}/egress-policy endpoint or app.yaml's own
 // egress: block.
 func TestHandleUpdateApp_DoesNotClearEgressPolicy(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1261,6 +1298,7 @@ func TestHandleUpdateApp_DoesNotClearEgressPolicy(t *testing.T) {
 // app.yaml's dependsOn: or a compose import), so an ordinary PUT must
 // not silently wipe it.
 func TestHandleUpdateApp_DoesNotClearDependsOn(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1290,6 +1328,7 @@ func TestHandleUpdateApp_DoesNotClearDependsOn(t *testing.T) {
 // display-only/set-elsewhere split
 // TestHandleUpdateApp_DoesNotClearDependsOn proves for writes.
 func TestHandleGetApp_SurfacesDependsOn(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1319,6 +1358,7 @@ func TestHandleGetApp_SurfacesDependsOn(t *testing.T) {
 // display-only/dedicated-write-endpoint split
 // TestHandleUpdateApp_DoesNotClearEgressPolicy proves for writes.
 func TestHandleGetApp_SurfacesEgressPolicy(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1350,6 +1390,7 @@ func TestHandleGetApp_SurfacesEgressPolicy(t *testing.T) {
 // and must show up in deploy history the same way handleTriggerDeploy's
 // own image-tag redeploy already does.
 func TestHandleUpdateApp_ImageChange_RecordsDeployAttempt(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1387,6 +1428,7 @@ func TestHandleUpdateApp_ImageChange_RecordsDeployAttempt(t *testing.T) {
 // update that leaves Image unchanged (e.g. editing only Port or Labels)
 // is not a redeploy and must not add a misleading history row.
 func TestHandleUpdateApp_SameImage_NoDeployAttemptRecorded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1418,6 +1460,7 @@ func TestHandleUpdateApp_SameImage_NoDeployAttemptRecorded(t *testing.T) {
 // saving successfully) when there's no running container to push onto,
 // docs/roadmap.md's own "In progress" wording for that fallback case.
 func TestHandleUpdateApp_ResourcesAppliedLive(t *testing.T) {
+	t.Parallel()
 	const update = `{"name":"web","image":"levelrail/web:1","port":3000,"resources":{"memory_bytes":268435456}}`
 
 	newRunningRouter := func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime) {
@@ -1484,6 +1527,7 @@ func TestHandleUpdateApp_ResourcesAppliedLive(t *testing.T) {
 // immutable after creation), so the save must at least make the pending
 // state honest and persistent instead of silently doing nothing.
 func TestHandleUpdateApp_EnvDirty(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1540,6 +1584,7 @@ func TestHandleUpdateApp_EnvDirty(t *testing.T) {
 // whatever Env is being saved right now, and env_dirty must not be left
 // set.
 func TestHandleUpdateApp_EnvDirty_ImageChangeClears(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1574,6 +1619,7 @@ func TestHandleUpdateApp_EnvDirty_ImageChangeClears(t *testing.T) {
 // about a brand-new app's env_dirty: toDesiredService never carries it
 // into the INSERT, so the response must never echo anything but false.
 func TestHandleCreateApp_EnvDirty_AlwaysFalse(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1629,6 +1675,7 @@ func assertAppEnvDirty(t *testing.T, db *store.DB, want bool) {
 }
 
 func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newEnvDirtyAppTestRouter(t)
 
 	rec := httptest.NewRecorder()
@@ -1645,6 +1692,7 @@ func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
 // its own doc comment), and both a forward redeploy and a rollback
 // create a fresh container that picks up whatever Env is currently saved.
 func TestHandleTriggerDeploy_ClearsEnvDirty(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newEnvDirtyAppTestRouter(t)
 
 	rec := httptest.NewRecorder()
@@ -1662,6 +1710,7 @@ func TestHandleTriggerDeploy_ClearsEnvDirty(t *testing.T) {
 // suspended), the same fresh-container moment restart/redeploy clear it
 // on.
 func TestHandleStartApp_ClearsEnvDirty(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newEnvDirtyAppTestRouter(t)
 	if err := db.UpdateServiceSuspended(context.Background(), "web", true); err != nil {
 		t.Fatalf("seed suspended: %v", err)
@@ -1679,6 +1728,7 @@ func TestHandleStartApp_ClearsEnvDirty(t *testing.T) {
 // TestHandleStopApp_DoesNotClearEnvDirty: unlike start, stopping an app
 // does not recreate anything, so a pending env edit must stay flagged.
 func TestHandleStopApp_DoesNotClearEnvDirty(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newEnvDirtyAppTestRouter(t)
 
 	rec := httptest.NewRecorder()
@@ -1707,6 +1757,7 @@ func seedAndDeleteApp(t *testing.T, rt *Router, db *store.DB, cookie *http.Cooki
 }
 
 func TestHandleDeleteApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedAndDeleteApp(t, rt, db, cookie)
@@ -1727,6 +1778,7 @@ func TestHandleDeleteApp(t *testing.T) {
 // resolved node runtime in the background goroutine, not just that the
 // desired-state row is gone (TestHandleDeleteApp already covers that).
 func TestHandleDeleteApp_TeardownDispatchesContainerRemoval(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -1744,6 +1796,7 @@ func TestHandleDeleteApp_TeardownDispatchesContainerRemoval(t *testing.T) {
 // deletes desired state but is not reported as a clean success: the
 // response is 202 and a tombstone keeps the teardown retryable.
 func TestHandleDeleteApp_TeardownResolveFailure_ReturnsPendingAndTombstones(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	resolver := func(string) (docker.Runtime, error) { return nil, errors.New("node offline") }
 	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver))
@@ -1772,6 +1825,7 @@ func TestHandleDeleteApp_TeardownResolveFailure_ReturnsPendingAndTombstones(t *t
 // TestHandleDeleteApp_TeardownSuccess_ClearsTombstone is the happy path: 204
 // and no tombstone left behind.
 func TestHandleDeleteApp_TeardownSuccess_ClearsTombstone(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -1804,6 +1858,7 @@ func seedAppAndMoveToNode(t *testing.T, rt *Router, db *store.DB, cookie *http.C
 }
 
 func TestHandleSetAppNode_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1828,6 +1883,7 @@ func TestHandleSetAppNode_Success(t *testing.T) {
 }
 
 func TestHandleSetAppNode_EmptyMovesToLocal(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1860,6 +1916,7 @@ func TestHandleSetAppNode_EmptyMovesToLocal(t *testing.T) {
 // TestHandleDeleteApp_TeardownDispatchesContainerRemoval already proves
 // for delete.
 func TestHandleSetAppNode_TeardownDispatchesOnOldNode(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -1877,6 +1934,7 @@ func TestHandleSetAppNode_TeardownDispatchesOnOldNode(t *testing.T) {
 // node_id an app already has does not dispatch a teardown: there is no
 // "old node" to clean up when nothing actually moved.
 func TestHandleSetAppNode_SameNode_NoTeardown(t *testing.T) {
+	t.Parallel()
 	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -1900,6 +1958,7 @@ func TestHandleSetAppNode_SameNode_NoTeardown(t *testing.T) {
 }
 
 func TestHandleSetAppNode_UnknownNode_Rejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1924,6 +1983,7 @@ func TestHandleSetAppNode_UnknownNode_Rejected(t *testing.T) {
 }
 
 func TestHandleSetAppNode_UnknownApp_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1939,6 +1999,7 @@ func TestHandleSetAppNode_UnknownApp_NotFound(t *testing.T) {
 // call, using erroringAppStore since a real *store.DB has no way to fail
 // this lookup on demand for a service that genuinely exists.
 func TestHandleSetAppNode_LoadExistingGenericError_Returns500(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -1960,6 +2021,7 @@ func TestHandleSetAppNode_LoadExistingGenericError_Returns500(t *testing.T) {
 // leaving whatever's already running there untouched (store.Node.
 // Schedulable's own doc comment).
 func TestHandleSetAppNode_CordonedNode_Rejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -2017,12 +2079,14 @@ func assertPlainWriteTokenForbidden(t *testing.T, method, target, body, tokenID,
 }
 
 func TestHandleSetAppNode_PlainWriteToken_Forbidden(t *testing.T) {
+	t.Parallel()
 	assertPlainWriteTokenForbidden(t, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`,
 		"tok_write", "write-scoped-token", //nolint:gosec // fake fixture, not a real credential
 		"placement is fleet-level, a plain write token must not reach it")
 }
 
 func TestHandleRestartApp_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -2056,6 +2120,7 @@ func TestHandleRestartApp_Success(t *testing.T) {
 // A restart gets its own attempt row so a failed rollout flips that row,
 // never the original deploy it re-runs.
 func TestHandleRestartApp_RecordsOwnAttemptAndSparesOriginalDeploy(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -2107,6 +2172,7 @@ func TestHandleRestartApp_RecordsOwnAttemptAndSparesOriginalDeploy(t *testing.T)
 }
 
 func TestHandleRestartApp_StoppedApp_Conflict(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -2134,6 +2200,7 @@ func TestHandleRestartApp_StoppedApp_Conflict(t *testing.T) {
 }
 
 func TestHandleRestartApp_UnknownApp_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -2150,12 +2217,14 @@ func TestHandleRestartApp_UnknownApp_NotFound(t *testing.T) {
 // draw (AbilityDeploy, not AbilityWrite): see router.go's registration
 // of this route for why.
 func TestHandleRestartApp_PlainWriteToken_Forbidden(t *testing.T) {
+	t.Parallel()
 	assertPlainWriteTokenForbidden(t, http.MethodPost, "/api/v1/apps/web/restart", "",
 		"tok_write", "write-scoped-token", //nolint:gosec // fake fixture, not a real credential
 		"a plain write token must not be able to force a container recreation")
 }
 
 func TestHandleStopApp_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -2180,6 +2249,7 @@ func TestHandleStopApp_Success(t *testing.T) {
 }
 
 func TestHandleStopApp_UnknownApp_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -2191,6 +2261,7 @@ func TestHandleStopApp_UnknownApp_NotFound(t *testing.T) {
 }
 
 func TestHandleStartApp_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -2220,6 +2291,7 @@ func TestHandleStartApp_Success(t *testing.T) {
 // A start gets its own attempt so "deploys wait" has something real to follow:
 // the previous serving attempt must not read as the start's result.
 func TestHandleStartApp_RecordsAttemptWaitCanFollow(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		suspended   bool
@@ -2295,6 +2367,7 @@ func TestHandleStartApp_RecordsAttemptWaitCanFollow(t *testing.T) {
 // AbilityDeploy boundary as restart (see router.go's registration of
 // this route).
 func TestHandleStopApp_PlainWriteToken_Forbidden(t *testing.T) {
+	t.Parallel()
 	assertPlainWriteTokenForbidden(t, http.MethodPost, "/api/v1/apps/web/stop", "",
 		"tok_write_stop", "write-scoped-token-stop", //nolint:gosec // fake fixture, not a real credential
 		"a plain write token must not be able to stop an app")
@@ -2303,6 +2376,7 @@ func TestHandleStopApp_PlainWriteToken_Forbidden(t *testing.T) {
 // While a restart rolls out, the stored Ready=AlreadyRunning is from the old
 // container, so status must not claim it; once serving, the stored one shows.
 func TestHandleDeployHistory_RestartInFlightIsNotReady(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -2351,6 +2425,7 @@ func TestHandleDeployHistory_RestartInFlightIsNotReady(t *testing.T) {
 // latest attempt, a crashlooping condition or changed env. A healthy,
 // unchanged app keeps today's behavior.
 func TestHandleTriggerDeploy_RestartNonce(t *testing.T) {
+	t.Parallel()
 	failedAttempt := func(t *testing.T, db *store.DB) {
 		if err := db.SaveDeployAttempt(context.Background(), store.DeployAttempt{ID: "dep_failed", ServiceName: "web", Image: "levelrail/web:1", Status: store.DeployAttemptStatusFailed, StartedAt: time.Now()}); err != nil {
 			t.Fatal(err)
@@ -2403,6 +2478,7 @@ func TestHandleTriggerDeploy_RestartNonce(t *testing.T) {
 }
 
 func TestRecreateSignals(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		sig  recreateSignals
@@ -2426,6 +2502,7 @@ func TestRecreateSignals(t *testing.T) {
 }
 
 func TestHandleCreateApp_RejectsNonDNSLabelName(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"Bad_Name", "-x", "has space", strings.Repeat("a", 64)} {
 		if err := spec.ValidateServiceName(name); err == nil {
 			t.Fatalf("%q must be rejected", name)

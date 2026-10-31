@@ -31,6 +31,7 @@ func sample(metric string, at time.Time, v float64) telemetry.Sample {
 }
 
 func TestAutoscaleSignalsMetric(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	fresh, old := now.Add(-10*time.Second), now.Add(-30*time.Minute)
 	gib := int64(1 << 30)
@@ -85,6 +86,7 @@ func TestAutoscaleSignalsMetric(t *testing.T) {
 }
 
 func TestAutoscaleSignalsWithoutTelemetryIsUnknown(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	rt.telemetry = nil
 	got, err := autoscaleSignals{rt: rt}.Metric(context.Background(), autoscale.Policy{App: "web", Metric: autoscale.MetricCPUPercent}, 1, time.Now())
@@ -94,6 +96,7 @@ func TestAutoscaleSignalsWithoutTelemetryIsUnknown(t *testing.T) {
 }
 
 func TestAutoscaleSignalsHeadroomIsUnknownWithoutMultiNode(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	if n, err := (autoscaleSignals{rt: rt}).Headroom(context.Background(), "web", 3); err != nil || n >= 0 {
 		t.Fatalf("headroom = %d err = %v, want unknown", n, err)

@@ -69,6 +69,7 @@ func seedServiceWithVolume(t *testing.T, db *store.DB) {
 }
 
 func TestVolumeBackupRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -81,6 +82,7 @@ func TestVolumeBackupRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleTriggerVolumeBackup_NoRunnerConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithServiceVolumeBackupRunner
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -93,6 +95,7 @@ func TestHandleTriggerVolumeBackup_NoRunnerConfigured(t *testing.T) {
 }
 
 func TestHandleTriggerVolumeBackup_ServiceNotFound(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -106,6 +109,7 @@ func TestHandleTriggerVolumeBackup_ServiceNotFound(t *testing.T) {
 }
 
 func TestHandleTriggerVolumeBackup_VolumeNotFound(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -120,6 +124,7 @@ func TestHandleTriggerVolumeBackup_VolumeNotFound(t *testing.T) {
 }
 
 func TestHandleTriggerVolumeBackup_Success(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -150,6 +155,7 @@ func TestHandleTriggerVolumeBackup_Success(t *testing.T) {
 }
 
 func TestHandleVolumeBackupSchedule_SetGetClear(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -196,6 +202,7 @@ func TestHandleVolumeBackupSchedule_SetGetClear(t *testing.T) {
 }
 
 func TestHandleSetVolumeBackupSchedule_SqlitePath_RoundTripsAndFlowsToTrigger(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -237,6 +244,7 @@ func TestHandleSetVolumeBackupSchedule_SqlitePath_RoundTripsAndFlowsToTrigger(t 
 }
 
 func TestHandleSetVolumeBackupSchedule_InvalidSqlitePath_Returns400(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -251,6 +259,7 @@ func TestHandleSetVolumeBackupSchedule_InvalidSqlitePath_Returns400(t *testing.T
 }
 
 func TestHandleListVolumeBackupHistory_Success(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)

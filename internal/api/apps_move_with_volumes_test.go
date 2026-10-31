@@ -126,6 +126,7 @@ func awaitAppVolumeMoveDone(t *testing.T, db *store.DB, moveID string) store.App
 }
 
 func TestHandleMoveAppWithVolumes_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithExecRuntime
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -139,6 +140,7 @@ func TestHandleMoveAppWithVolumes_NotConfigured(t *testing.T) {
 }
 
 func TestHandleMoveAppWithVolumes_UnknownNode_Rejected(t *testing.T) {
+	t.Parallel()
 	fake := &fakeMoveVolumeRuntime{volumeContent: "tar-bytes"}
 	rt, db := newTestRouterWithMoveRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -164,6 +166,7 @@ func TestHandleMoveAppWithVolumes_UnknownNode_Rejected(t *testing.T) {
 // already-succeeded move record, not a 202 kicking off a background job
 // with nothing for it to actually do.
 func TestHandleMoveAppWithVolumes_NoVolumes_PlainMove(t *testing.T) {
+	t.Parallel()
 	fake := &fakeMoveVolumeRuntime{}
 	rt, db := newTestRouterWithMoveRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -211,6 +214,7 @@ func TestHandleMoveAppWithVolumes_NoVolumes_PlainMove(t *testing.T) {
 // (there is no "old node" to clean up), same synchronous 200 shape as the
 // no-volumes case.
 func TestHandleMoveAppWithVolumes_SameNode_NoOp(t *testing.T) {
+	t.Parallel()
 	fake := &fakeMoveVolumeRuntime{volumeContent: "tar-bytes"}
 	rt, db := newTestRouterWithMoveRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -237,6 +241,7 @@ func TestHandleMoveAppWithVolumes_SameNode_NoOp(t *testing.T) {
 // destination's helper container was restored with the exact bytes the
 // source's helper container archived.
 func TestHandleMoveAppWithVolumes_WithVolumes_Success(t *testing.T) {
+	t.Parallel()
 	fake := &fakeMoveVolumeRuntime{volumeContent: "tar-bytes"}
 	rt, db := newTestRouterWithMoveRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -293,6 +298,7 @@ func TestHandleMoveAppWithVolumes_WithVolumes_Success(t *testing.T) {
 // attempted), and the app stays suspended rather than being guessed back
 // into a running state on a node whose volume was never actually copied.
 func TestHandleMoveAppWithVolumes_ArchiveFailure_RecordsPartialFailure(t *testing.T) {
+	t.Parallel()
 	archiveErr := errors.New("docker daemon unreachable")
 	fake := &fakeMoveVolumeRuntime{archiveErr: archiveErr}
 	rt, db := newTestRouterWithMoveRuntime(t, fake)
@@ -340,6 +346,7 @@ func TestHandleMoveAppWithVolumes_ArchiveFailure_RecordsPartialFailure(t *testin
 }
 
 func TestHandleListAppVolumeMoves_Success(t *testing.T) {
+	t.Parallel()
 	fake := &fakeMoveVolumeRuntime{volumeContent: "tar-bytes"}
 	rt, db := newTestRouterWithMoveRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
@@ -375,6 +382,7 @@ func TestHandleListAppVolumeMoves_Success(t *testing.T) {
 }
 
 func TestHandleGetAppVolumeMove_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -387,6 +395,7 @@ func TestHandleGetAppVolumeMove_NotFound(t *testing.T) {
 }
 
 func TestHandleGetAppVolumeMove_WrongApp(t *testing.T) {
+	t.Parallel()
 	fake := &fakeMoveVolumeRuntime{volumeContent: "tar-bytes"}
 	rt, db := newTestRouterWithMoveRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)

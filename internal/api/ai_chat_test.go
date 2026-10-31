@@ -131,6 +131,7 @@ func sseEventTypes(t *testing.T, body string) []string {
 }
 
 func TestHandleCreateAIChatSession(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -154,6 +155,7 @@ func TestHandleCreateAIChatSession(t *testing.T) {
 }
 
 func TestHandleGetAIChatSession_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -165,6 +167,7 @@ func TestHandleGetAIChatSession_NotFound(t *testing.T) {
 }
 
 func TestHandleGetAIChatSession_ReturnsHistory(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -192,6 +195,7 @@ func TestHandleGetAIChatSession_ReturnsHistory(t *testing.T) {
 }
 
 func TestHandleListAIChatSessions_MostRecentFirst(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -214,6 +218,7 @@ func TestHandleListAIChatSessions_MostRecentFirst(t *testing.T) {
 }
 
 func TestHandleDeleteAIChatSession_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -225,6 +230,7 @@ func TestHandleDeleteAIChatSession_NotFound(t *testing.T) {
 }
 
 func TestHandleDeleteAIChatSession_RemovesSessionAndHistory(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx, sessionID := newAIChatSession(t, db)
@@ -254,6 +260,7 @@ func TestHandleDeleteAIChatSession_RemovesSessionAndHistory(t *testing.T) {
 }
 
 func TestHandleCreateAIChatMessage_NoEngineConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithAIEngine
 	cookie := loginTestSession(t, rt, db)
 	_, sessionID := newAIChatSession(t, db)
@@ -267,6 +274,7 @@ func TestHandleCreateAIChatMessage_NoEngineConfigured(t *testing.T) {
 }
 
 func TestHandleCreateAIChatMessage_SessionNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
 
@@ -279,6 +287,7 @@ func TestHandleCreateAIChatMessage_SessionNotFound(t *testing.T) {
 }
 
 func TestHandleCreateAIChatMessage_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: false})
 	cookie := loginTestSession(t, rt, db)
 	_, sessionID := newAIChatSession(t, db)
@@ -292,6 +301,7 @@ func TestHandleCreateAIChatMessage_NotConfigured(t *testing.T) {
 }
 
 func TestHandleCreateAIChatMessage_RequiresContent(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
 	_, sessionID := newAIChatSession(t, db)
@@ -304,6 +314,7 @@ func TestHandleCreateAIChatMessage_RequiresContent(t *testing.T) {
 }
 
 func TestHandleCreateAIChatMessage_StreamsTextThenDone(t *testing.T) {
+	t.Parallel()
 	engine := &fakeAIEngine{
 		configured: true,
 		runTurn: func(_ context.Context, _, userContent string, sink ai.Sink) error {
@@ -341,6 +352,7 @@ func TestHandleCreateAIChatMessage_StreamsTextThenDone(t *testing.T) {
 }
 
 func TestHandleCreateAIChatMessage_StreamsToolCallProposed(t *testing.T) {
+	t.Parallel()
 	engine := &fakeAIEngine{
 		configured: true,
 		runTurn: func(_ context.Context, _, _ string, sink ai.Sink) error {
@@ -378,6 +390,7 @@ func TestHandleCreateAIChatMessage_StreamsToolCallProposed(t *testing.T) {
 }
 
 func TestHandleCreateAIChatMessage_EngineErrorStillSendsDone(t *testing.T) {
+	t.Parallel()
 	engine := &fakeAIEngine{
 		configured: true,
 		runTurn: func(context.Context, string, string, ai.Sink) error {
@@ -400,6 +413,7 @@ func TestHandleCreateAIChatMessage_EngineErrorStillSendsDone(t *testing.T) {
 }
 
 func TestHandleResolveAIChatConfirmation_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
 	_, sessionID := newAIChatSession(t, db)
@@ -413,6 +427,7 @@ func TestHandleResolveAIChatConfirmation_NotFound(t *testing.T) {
 }
 
 func TestHandleResolveAIChatConfirmation_WrongSession(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -429,6 +444,7 @@ func TestHandleResolveAIChatConfirmation_WrongSession(t *testing.T) {
 }
 
 func TestHandleResolveAIChatConfirmation_AlreadyResolved(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
 	ctx, sessionID := newAIChatSession(t, db)
@@ -443,6 +459,7 @@ func TestHandleResolveAIChatConfirmation_AlreadyResolved(t *testing.T) {
 }
 
 func TestHandleResolveAIChatConfirmation_Success(t *testing.T) {
+	t.Parallel()
 	var gotApprove bool
 	engine := &fakeAIEngine{
 		configured: true,
@@ -475,6 +492,7 @@ func TestHandleResolveAIChatConfirmation_Success(t *testing.T) {
 }
 
 func TestAIChatSessionRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	routes := []routeCase{
@@ -498,6 +516,7 @@ func TestAIChatSessionRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestAIChatSessionRoutes_PlainWriteToken_Forbidden(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	ctx := context.Background()
 

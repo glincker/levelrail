@@ -73,6 +73,7 @@ func createTestBackupTarget(t *testing.T, rt *Router, cookie *http.Cookie) backu
 }
 
 func TestValidateCreateBackupTargetRequest(t *testing.T) {
+	t.Parallel()
 	valid := createBackupTargetRequest{
 		Name: "primary", Provider: store.BackupProviderR2, Endpoint: "https://x.r2.cloudflarestorage.com",
 		Bucket: "backups", AccessKeyID: "AKID", SecretAccessKey: "shh",
@@ -109,6 +110,7 @@ func withField(base createBackupTargetRequest, mutate func(*createBackupTargetRe
 }
 
 func TestValidateUpdateBackupTargetRequest(t *testing.T) {
+	t.Parallel()
 	valid := updateBackupTargetRequest{Name: "primary", Provider: store.BackupProviderR2, Endpoint: "https://x.r2.cloudflarestorage.com", Bucket: "backups"}
 	tests := []struct {
 		name    string
@@ -139,6 +141,7 @@ func withUpdateField(base updateBackupTargetRequest, mutate func(*updateBackupTa
 }
 
 func TestBackupTargetRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -152,6 +155,7 @@ func TestBackupTargetRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_NoSetterConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithBackupSecrets
 	cookie := loginTestSession(t, rt, db)
 
@@ -164,6 +168,7 @@ func TestHandleCreateBackupTarget_NoSetterConfigured(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -215,6 +220,7 @@ func TestHandleCreateBackupTarget_Success(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_InvalidRequest(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
 	cookie := loginTestSession(t, rt, db)
 
@@ -226,6 +232,7 @@ func TestHandleCreateBackupTarget_InvalidRequest(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_SecretSetFails(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{err: errors.New("master key not configured")}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -247,6 +254,7 @@ func TestHandleCreateBackupTarget_SecretSetFails(t *testing.T) {
 }
 
 func TestHandleListAndGetBackupTarget(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -283,6 +291,7 @@ func TestHandleListAndGetBackupTarget(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -324,6 +333,7 @@ func TestHandleUpdateBackupTarget_Success(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_RotatesCredentials(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, dbForLogin := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, dbForLogin)
@@ -360,6 +370,7 @@ func TestHandleUpdateBackupTarget_RotatesCredentials(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_NotFound(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -373,6 +384,7 @@ func TestHandleUpdateBackupTarget_NotFound(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_InvalidRequest(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -393,6 +405,7 @@ func TestHandleUpdateBackupTarget_InvalidRequest(t *testing.T) {
 }
 
 func TestHandleDeleteBackupTarget(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -425,6 +438,7 @@ func TestHandleDeleteBackupTarget(t *testing.T) {
 }
 
 func TestHandleDeleteBackupTarget_BlockedByHistory(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -452,6 +466,7 @@ func TestHandleDeleteBackupTarget_BlockedByHistory(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_NotConfigured(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter) // no WithBackupTargetTester
 	cookie := loginTestSession(t, rt, db)
@@ -466,6 +481,7 @@ func TestHandleTestBackupTarget_NotConfigured(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_NotFound(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	tester := &fakeBackupTargetTester{}
 	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
@@ -479,6 +495,7 @@ func TestHandleTestBackupTarget_NotFound(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	tester := &fakeBackupTargetTester{}
 	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
@@ -522,6 +539,7 @@ func assertTestBackupTargetBadGateway(t *testing.T, testerErr error, wantSubstr 
 }
 
 func TestHandleTestBackupTarget_AuthRejected(t *testing.T) {
+	t.Parallel()
 	rec := assertTestBackupTargetBadGateway(t, &smithyhttp.ResponseError{
 		Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusForbidden}},
 		Err:      errors.New("403 Forbidden"),
@@ -532,6 +550,7 @@ func TestHandleTestBackupTarget_AuthRejected(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_BucketNotFound(t *testing.T) {
+	t.Parallel()
 	assertTestBackupTargetBadGateway(t, &smithyhttp.ResponseError{
 		Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusNotFound}},
 		Err:      errors.New("404 Not Found"),
@@ -539,5 +558,6 @@ func TestHandleTestBackupTarget_BucketNotFound(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_Unreachable(t *testing.T) {
+	t.Parallel()
 	assertTestBackupTargetBadGateway(t, errors.New("dial tcp: connection refused"), "could not reach backup target")
 }

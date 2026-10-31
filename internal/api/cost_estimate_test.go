@@ -13,6 +13,7 @@ import (
 )
 
 func TestHandleAppCostEstimate_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -26,6 +27,7 @@ func TestHandleAppCostEstimate_AppNotFound(t *testing.T) {
 // Unlike resource-recommendation, cost-estimate works with no telemetry
 // configured at all: a declared resources: block in app.yaml is enough.
 func TestHandleAppCostEstimate_NoTelemetryDeclaredResources(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -66,6 +68,7 @@ func TestHandleAppCostEstimate_NoTelemetryDeclaredResources(t *testing.T) {
 }
 
 func TestHandleAppCostEstimate_NoDataAtAll(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -85,6 +88,7 @@ func TestHandleAppCostEstimate_NoDataAtAll(t *testing.T) {
 }
 
 func TestHandleAppCostEstimate_FallsBackToObservedUsage(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

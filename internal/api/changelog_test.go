@@ -23,6 +23,7 @@ func getChangelog(t *testing.T, rt *Router, cookie *http.Cookie, target string) 
 }
 
 func TestHandleGetChangelog_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	assertRoutesRequireAuth(t, rt, []routeCase{
 		{method: http.MethodGet, target: "/api/v1/changelog"},
@@ -30,6 +31,7 @@ func TestHandleGetChangelog_RequiresAuth(t *testing.T) {
 }
 
 func TestHandleGetChangelog_NoneConfiguredAnswersEmpty(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -43,6 +45,7 @@ func TestHandleGetChangelog_NoneConfiguredAnswersEmpty(t *testing.T) {
 }
 
 func TestHandleGetChangelog_ReturnsEntriesNewestFirst(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	rt.changelogEntries = []changelog.Entry{
 		{Version: "0.3.0", Date: "2026-10-01", Bullets: []string{"c"}},
@@ -64,6 +67,7 @@ func TestHandleGetChangelog_ReturnsEntriesNewestFirst(t *testing.T) {
 }
 
 func TestHandleGetChangelog_LimitIsCapped(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	entries := make([]changelog.Entry, maxChangelogLimit+10)
 	for i := range entries {

@@ -11,6 +11,7 @@ import (
 const dashDoc = `{"name":"Web","widgets":[{"id":"cpu","type":"metric_chart","size":"M","metric":"cpu_percent","target":{"kind":"app","name":"web"}}]}`
 
 func TestDashboardsCRUD(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	do := func(method, path, body string) *httptest.ResponseRecorder {
@@ -72,6 +73,7 @@ func TestDashboardsCRUD(t *testing.T) {
 }
 
 func TestDashboardsImportAndTemplates(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	do := func(method, path, body string) *httptest.ResponseRecorder {

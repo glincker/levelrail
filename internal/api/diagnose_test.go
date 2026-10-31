@@ -17,6 +17,7 @@ import (
 )
 
 func TestHandleDiagnoseApp_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -28,6 +29,7 @@ func TestHandleDiagnoseApp_AppNotFound(t *testing.T) {
 }
 
 func TestHandleDiagnoseApp_NothingFailedYet(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -54,6 +56,7 @@ func TestHandleDiagnoseApp_NothingFailedYet(t *testing.T) {
 }
 
 func TestHandleDiagnoseApp_LatestFailedAttempt(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -95,6 +98,7 @@ func TestHandleDiagnoseApp_LatestFailedAttempt(t *testing.T) {
 }
 
 func TestHandleDiagnoseApp_PinnedDeployID(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -139,6 +143,7 @@ func TestHandleDiagnoseApp_PinnedDeployID(t *testing.T) {
 }
 
 func TestHandleDiagnoseApp_PinnedDeployID_WrongApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -164,6 +169,7 @@ func TestHandleDiagnoseApp_PinnedDeployID_WrongApp(t *testing.T) {
 }
 
 func TestHandleDiagnoseApp_FailingCondition(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -195,6 +201,7 @@ func TestHandleDiagnoseApp_FailingCondition(t *testing.T) {
 }
 
 func TestHandleDiagnoseApp_CrashloopFiring(t *testing.T) {
+	t.Parallel()
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -236,6 +243,7 @@ func TestHandleDiagnoseApp_CrashloopFiring(t *testing.T) {
 // internal/diagnose's build_dependency_failure signature real text to
 // match against.
 func TestHandleDiagnoseApp_BuildPhaseFailure_UsesPersistedBuildLog(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	tdb := newTestTelemetryDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
@@ -291,6 +299,7 @@ func TestHandleDiagnoseApp_BuildPhaseFailure_UsesPersistedBuildLog(t *testing.T)
 // the runtime telemetry log path, not the persisted build log, even when
 // a build log happens to exist for some other attempt.
 func TestHandleDiagnoseApp_RuntimeFailure_IgnoresBuildLog(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	tdb := newTestTelemetryDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
@@ -338,6 +347,7 @@ func TestHandleDiagnoseApp_RuntimeFailure_IgnoresBuildLog(t *testing.T) {
 }
 
 func TestHandleDiagnoseApp_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedApp(t, db, "web")
 

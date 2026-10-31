@@ -69,6 +69,7 @@ func seedSucceededVolumeBackupForCloneRestore(t *testing.T, db *store.DB, volume
 }
 
 func TestVolumeCloneRestoreRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -78,6 +79,7 @@ func TestVolumeCloneRestoreRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleVolumeCloneRestore_NoRunnerConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithVolumeCloneRestoreRunner
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -90,6 +92,7 @@ func TestHandleVolumeCloneRestore_NoRunnerConfigured(t *testing.T) {
 }
 
 func TestHandleVolumeCloneRestore_ServiceNotFound(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -102,6 +105,7 @@ func TestHandleVolumeCloneRestore_ServiceNotFound(t *testing.T) {
 }
 
 func TestHandleVolumeCloneRestore_MissingBackupID(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -115,6 +119,7 @@ func TestHandleVolumeCloneRestore_MissingBackupID(t *testing.T) {
 }
 
 func TestHandleVolumeCloneRestore_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -128,6 +133,7 @@ func TestHandleVolumeCloneRestore_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleVolumeCloneRestore_BackupFromDifferentVolume(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -151,6 +157,7 @@ func TestHandleVolumeCloneRestore_BackupFromDifferentVolume(t *testing.T) {
 }
 
 func TestHandleVolumeCloneRestore_BackupNotSucceeded(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -172,6 +179,7 @@ func TestHandleVolumeCloneRestore_BackupNotSucceeded(t *testing.T) {
 
 // Covers the server-minted default name; the source volume is never written to.
 func TestHandleVolumeCloneRestore_Success_DefaultsNewVolumeName(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -219,6 +227,7 @@ func TestHandleVolumeCloneRestore_Success_DefaultsNewVolumeName(t *testing.T) {
 // TestHandleVolumeCloneRestore_Success_ExplicitNewVolumeName proves an
 // operator-supplied new_volume_name passes straight through, unmodified.
 func TestHandleVolumeCloneRestore_Success_ExplicitNewVolumeName(t *testing.T) {
+	t.Parallel()
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -246,6 +255,7 @@ func TestHandleVolumeCloneRestore_Success_ExplicitNewVolumeName(t *testing.T) {
 }
 
 func TestHandleListVolumeCloneRestores_ServiceNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -257,6 +267,7 @@ func TestHandleListVolumeCloneRestores_ServiceNotFound(t *testing.T) {
 }
 
 func TestHandleListVolumeCloneRestores_NoRunnerConfigured_StillWorks(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithVolumeCloneRestoreRunner
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)

@@ -15,6 +15,7 @@ import (
 )
 
 func TestAttachPreviewURLs(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	fp := newFakePreview(t)
 	fp.addOK(t, "web", "dep_ok")
@@ -50,6 +51,7 @@ func TestAttachPreviewURLs(t *testing.T) {
 }
 
 func TestParseDeploymentQuery(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)
 	tests := []struct {
 		name    string
@@ -117,6 +119,7 @@ func TestParseDeploymentQuery(t *testing.T) {
 }
 
 func TestDeploymentImageRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct{ name, image, digest, reason, want string }{
 		{"resolved digest pins", "reg.io/a/web:1", "sha256:abc", store.DigestReasonResolved, "reg.io/a/web@sha256:abc"},
 		{"registry port kept", "reg.io:5000/web:1", "sha256:abc", store.DigestReasonPinned, "reg.io:5000/web@sha256:abc"},
@@ -133,6 +136,7 @@ func TestDeploymentImageRef(t *testing.T) {
 }
 
 func TestDeploymentsScopedTokenSeesOnlyItsApps(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
