@@ -47,9 +47,15 @@ func TestController_Reconcile_StaticSite_RouteAppears(t *testing.T) {
 	if len(routes[0].Match) != 1 || len(routes[0].Match[0].Host) != 1 || routes[0].Match[0].Host[0] != "docs.example.com" {
 		t.Errorf("route match = %+v, want host docs.example.com", routes[0].Match)
 	}
-	handler, ok := routes[0].Handle[0].(ingress.FileServerHandler)
-	if !ok {
-		t.Fatalf("route handler is %T, want ingress.FileServerHandler", routes[0].Handle[0])
+	var handler ingress.FileServerHandler
+	var found bool
+	for _, h := range routes[0].Handle {
+		if fs, ok := h.(ingress.FileServerHandler); ok {
+			handler, found = fs, true
+		}
+	}
+	if !found {
+		t.Fatalf("route handlers = %+v, want an ingress.FileServerHandler", routes[0].Handle)
 	}
 	if handler.Root != "/data/static/docs/abc1234" {
 		t.Errorf("handler.Root = %q, want /data/static/docs/abc1234", handler.Root)
@@ -111,11 +117,13 @@ func TestController_Reconcile_ContainerAndStaticSite_BothRouted(t *testing.T) {
 	}
 	var sawProxy, sawFile bool
 	for _, r := range routes {
-		switch r.Handle[0].(type) {
-		case ingress.ReverseProxyHandler:
-			sawProxy = true
-		case ingress.FileServerHandler:
-			sawFile = true
+		for _, h := range r.Handle {
+			switch h.(type) {
+			case ingress.ReverseProxyHandler:
+				sawProxy = true
+			case ingress.FileServerHandler:
+				sawFile = true
+			}
 		}
 	}
 	if !sawProxy || !sawFile {
