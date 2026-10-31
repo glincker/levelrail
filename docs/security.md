@@ -102,6 +102,8 @@ Passkeys only work on the exact https address set as the dashboard URL.
 - **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
 - **Two-factor codes are single-use.** A TOTP code that was already accepted is refused if presented again inside its validity window, and recovery codes are consumed on use.
 - **Read-tier callers cannot enumerate people or credentials.** `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](/observability#notification-channels).
+- **GitHub App tokens are scoped.** Callers limited to a team never receive the connected GitHub App's credentials and use a per-app deploy token instead. Clone tokens minted from the App name the one repository and carry only read access to contents and metadata. A git source saved by a team-scoped caller is never cloned with the App.
+- **SAML sign-in cannot take over a root account.** Saving a SAML connection needs at least one allowed email domain, and a first sign-in never links to an existing root account by email address. Connections saved earlier with an empty domain list keep working and show a Security Center warning.
 
 Full detail on all three: [Identity and access](/identity-and-access#principals-a-session-or-a-token).
 
