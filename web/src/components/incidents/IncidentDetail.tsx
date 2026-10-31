@@ -362,7 +362,7 @@ export function IncidentDetail({
       <Timeline incident={inc} />
       <NoteForm id={inc.id} />
       <DraftForm
-        key={inc.updated_at}
+        key={inc.id}
         incident={inc}
         monitorName={monitorName}
         onRefresh={() => void query.refetch()}
