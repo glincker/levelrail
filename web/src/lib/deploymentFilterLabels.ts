@@ -1,29 +1,25 @@
 import type { DeploymentFilters, FilterKey } from './deploymentFilters'
-import i18n from '../i18n'
+import { translateShared } from './activeLocale'
 import { statusView, triggerLabel } from './deploymentPresentation'
 
 export const FILTER_LABEL: Record<FilterKey, string> = {
   get author() {
-    return i18n.t('deploys:deployList.keys.author', { defaultValue: 'Author' })
+    return translateShared('deploys:deployList.keys.author', 'Author')
   },
   get environment() {
-    return i18n.t('deploys:deployList.keys.environment', {
-      defaultValue: 'Environment',
-    })
+    return translateShared('deploys:deployList.keys.environment', 'Environment')
   },
   get status() {
-    return i18n.t('deploys:deployList.keys.status', { defaultValue: 'Status' })
+    return translateShared('deploys:deployList.keys.status', 'Status')
   },
   get app() {
-    return i18n.t('deploys:deployList.keys.app', { defaultValue: 'App' })
+    return translateShared('deploys:deployList.keys.app', 'App')
   },
   get branch() {
-    return i18n.t('deploys:deployList.keys.branch', { defaultValue: 'Branch' })
+    return translateShared('deploys:deployList.keys.branch', 'Branch')
   },
   get trigger() {
-    return i18n.t('deploys:deployList.keys.trigger', {
-      defaultValue: 'Trigger',
-    })
+    return translateShared('deploys:deployList.keys.trigger', 'Trigger')
   },
 }
 

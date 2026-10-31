@@ -14,7 +14,7 @@ import type { Tone } from '@/components/kit'
 import type { Deployment, DeploymentStatus } from '../types/deployment'
 import { formatRelative } from '@/components/kit/formatRelative'
 import { formatDurationMs } from './deployDuration'
-import i18n from '../i18n'
+import { translateShared } from './activeLocale'
 
 export interface StatusView {
   label: string
@@ -26,9 +26,7 @@ export interface StatusView {
 export const STATUS_VIEW: Record<DeploymentStatus, StatusView> = {
   building: {
     get label() {
-      return i18n.t('deploys:deployList.status.building', {
-        defaultValue: 'Building',
-      })
+      return translateShared('deploys:deployList.status.building', 'Building')
     },
     tone: 'info',
     icon: LoaderCircleGlassIcon,
@@ -36,70 +34,65 @@ export const STATUS_VIEW: Record<DeploymentStatus, StatusView> = {
   },
   queued: {
     get label() {
-      return i18n.t('deploys:deployList.status.queued', {
-        defaultValue: 'Queued',
-      })
+      return translateShared('deploys:deployList.status.queued', 'Queued')
     },
     tone: 'neutral',
     icon: ClockGlassIcon,
   },
   ready: {
     get label() {
-      return i18n.t('deploys:deployList.status.ready', {
-        defaultValue: 'Ready',
-      })
+      return translateShared('deploys:deployList.status.ready', 'Ready')
     },
     tone: 'success',
     icon: CircleCheckGlassIcon,
   },
   failed: {
     get label() {
-      return i18n.t('deploys:deployList.status.failed', {
-        defaultValue: 'Failed',
-      })
+      return translateShared('deploys:deployList.status.failed', 'Failed')
     },
     tone: 'danger',
     icon: CircleXGlassIcon,
   },
   canceled: {
     get label() {
-      return i18n.t('deploys:deployList.status.canceled', {
-        defaultValue: 'Canceled',
-      })
+      return translateShared('deploys:deployList.status.canceled', 'Canceled')
     },
     tone: 'neutral',
     icon: BanGlassIcon,
   },
   held: {
     get label() {
-      return i18n.t('deploys:deployList.status.held', { defaultValue: 'Held' })
+      return translateShared('deploys:deployList.status.held', 'Held')
     },
     tone: 'warning',
     icon: CirclePauseGlassIcon,
   },
   awaiting_approval: {
     get label() {
-      return i18n.t('deploys:deployList.status.awaiting_approval', {
-        defaultValue: 'Awaiting approval',
-      })
+      return translateShared(
+        'deploys:deployList.status.awaiting_approval',
+        'Awaiting approval',
+      )
     },
     tone: 'warning',
     icon: GavelGlassIcon,
   },
   rolled_back: {
     get label() {
-      return i18n.t('deploys:deployList.status.rolled_back', {
-        defaultValue: 'Rolled back',
-      })
+      return translateShared(
+        'deploys:deployList.status.rolled_back',
+        'Rolled back',
+      )
     },
     tone: 'neutral',
     icon: UndoGlassIcon,
   },
   superseded: {
     get label() {
-      return i18n.t('deploys:deployList.status.superseded', {
-        defaultValue: 'Superseded',
-      })
+      return translateShared(
+        'deploys:deployList.status.superseded',
+        'Superseded',
+      )
     },
     tone: 'neutral',
     icon: SkipForwardGlassIcon,
@@ -127,9 +120,10 @@ export const TRIGGER_LABEL: Record<string, string> = {
 }
 
 export function triggerLabel(trigger: string): string {
-  return i18n.t(`deploys:deployList.trigger.${trigger}`, {
-    defaultValue: TRIGGER_LABEL[trigger] ?? trigger,
-  })
+  return translateShared(
+    `deploys:deployList.trigger.${trigger}`,
+    TRIGGER_LABEL[trigger] ?? trigger,
+  )
 }
 
 export function isInProgress(d: Deployment): boolean {

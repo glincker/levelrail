@@ -1,0 +1,192 @@
+{
+  "title": "Limpieza",
+  "description": "Controla cuánto tiempo se conserva cada tipo de dato, mira qué eliminaría una limpieza antes de ejecutarla y revisa cada ejecución.",
+  "tabs": {
+    "label": "Secciones de limpieza",
+    "overview": "Resumen",
+    "disk": "Disco y Docker",
+    "history": "Historial"
+  },
+  "loadError": "No se pudieron cargar los objetivos de limpieza: {{message}}",
+  "retry": "Reintentar",
+  "readOnly": "Puedes ver la configuración de limpieza. Cambiar la retención, cambiar de modo y ejecutar una limpieza requieren una cuenta root.",
+  "empty": {
+    "title": "Aún no hay objetivos de limpieza",
+    "body": "Este plano de control no informó ningún tipo de dato para limpiar. Vuelve a revisar después de la próxima actualización."
+  },
+  "categories": {
+    "auth": "Inicio de sesión y tokens",
+    "audit": "Auditoría",
+    "deploys": "Despliegues",
+    "docker": "Docker",
+    "data": "Datos",
+    "observability": "Observabilidad",
+    "messaging": "Mensajería",
+    "other": "Otros"
+  },
+  "hero": {
+    "stored": "Datos almacenados",
+    "reclaimable": "Recuperable",
+    "storedHint": "Almacenado por los tipos de datos que administra la limpieza",
+    "usageLabel": "Dónde viven los datos administrados por la limpieza",
+    "segmentLabel": "{{category}}: {{size}}, {{percent}}% del total",
+    "legendFilter": "Mostrar solo {{category}}",
+    "clearFilter": "Mostrar todas las categorías",
+    "lastRun": "Última ejecución",
+    "neverRun": "Aún no se ha ejecutado ninguna limpieza",
+    "scheduler": "Programador",
+    "schedulerOn": "Cada {{interval}}",
+    "schedulerOff": "El programador está apagado",
+    "previewCount_one": "{{count}} tipo de dato está en modo de vista previa",
+    "previewCount_other": "{{count}} tipos de datos están en modo de vista previa",
+    "previewNone": "Nada espera en modo de vista previa",
+    "reviewAction": "Revisar y activar",
+    "reclaimableHint": "Filas y tamaño que eliminarían los tipos de datos activados con su retención actual",
+    "calculate": "Calcular lo recuperable",
+    "calculating": "Revisando {{done}} de {{total}}",
+    "calculateFailed": "No se pudo revisar {{title}}: {{message}}",
+    "reclaimableNone": "Nada ha superado su ventana de retención"
+  },
+  "group": {
+    "count_one": "{{count}} tipo de dato",
+    "count_other": "{{count}} tipos de datos"
+  },
+  "target": {
+    "usage_one": "{{rows}} fila, {{size}}",
+    "usage_other": "{{rows}} filas, {{size}}",
+    "usageEmpty": "Nada almacenado",
+    "oldest": "más antiguo {{when}}",
+    "shareLabel": "{{title}} ocupa el {{percent}}% de los datos de {{category}}",
+    "retention": "Conservar durante",
+    "floor": "Mínimo {{days}} días",
+    "floorTip": "La política de seguridad conserva al menos {{days}} días. Elige un periodo más largo, o Nunca para conservar todo.",
+    "mode": "Modo",
+    "modes": {
+      "off": "Apagado",
+      "preview": "Vista previa",
+      "on": "Activado"
+    },
+    "status": {
+      "off": "Apagado",
+      "preview": "Vista previa",
+      "on": "Activado",
+      "running": "En ejecución"
+    },
+    "previewBadge": "Modo de vista previa, aún no se elimina nada",
+    "lastRun": "Última ejecución {{when}}",
+    "lastRunDry": "Última ejecución {{when}} (simulación)",
+    "lastRunFailed": "Falló la última ejecución {{when}}",
+    "neverRun": "Nunca ejecutado",
+    "nextRun": "Próxima {{when}}",
+    "noNextRun": "Sin programar",
+    "preview": "Vista previa",
+    "previewing": "Revisando...",
+    "cleanNow": "Limpiar ahora",
+    "readThrough": "Se administra en Disco y Docker",
+    "readThroughAction": "Abrir Disco y Docker",
+    "keepForever": "La retención está en Nunca, así que no se elimina nada.",
+    "destructive": "Elimina datos de forma permanente",
+    "unknown": "-",
+    "lockedOption": "Por debajo del mínimo de {{days}} días. Elige un periodo más largo."
+  },
+  "impact": {
+    "title": "Qué se eliminaría",
+    "summary_one": "Se eliminará {{rows}} fila, unos {{size}}, con más de {{days}} días.",
+    "summary_other": "Se eliminarán {{rows}} filas, unos {{size}}, con más de {{days}} días.",
+    "nothing": "Nada tiene más de {{days}} días. No se eliminaría nada.",
+    "close": "Cerrar",
+    "error": "No se pudo previsualizar: {{message}}"
+  },
+  "run": {
+    "running": "Eliminando datos antiguos...",
+    "done_one": "Se eliminó {{rows}} fila, {{size}}. La eliminación es permanente.",
+    "done_other": "Se eliminaron {{rows}} filas, {{size}}. La eliminación es permanente.",
+    "nothing": "Nada que eliminar. Ninguna fila superó la ventana de retención.",
+    "more": "Quedan más filas antiguas, ejecuta de nuevo para continuar.",
+    "failed": "Falló la limpieza: {{message}}",
+    "dismiss": "Descartar"
+  },
+  "confirmRun": {
+    "title": "¿Limpiar {{title}}?",
+    "body_one": "Esto elimina de forma permanente {{rows}} fila, unos {{size}}, con más de {{days}} días.",
+    "body_other": "Esto elimina de forma permanente {{rows}} filas, unos {{size}}, con más de {{days}} días.",
+    "consequence": "Las filas eliminadas no se pueden restaurar. No se elimina nada más.",
+    "action": "Limpiar ahora",
+    "cancel": "Cancelar"
+  },
+  "confirmMode": {
+    "title": "¿Activar {{title}}?",
+    "body": "Desde la próxima ejecución programada, las filas con más de {{days}} días se eliminan de verdad. Hasta ahora solo se registraba lo que se eliminaría.",
+    "consequence": "Las filas eliminadas no se pueden restaurar.",
+    "action": "Activar",
+    "cancel": "Cancelar"
+  },
+  "confirmShorten": {
+    "title": "¿Conservar {{title}} por menos tiempo?",
+    "body": "Las filas más antiguas que el nuevo periodo se eliminarán en la próxima ejecución.",
+    "consequence": "Este es un cambio destructivo sobre cuánto tiempo se conservan los datos.",
+    "action": "Acortar la retención",
+    "cancel": "Cancelar"
+  },
+  "toast": {
+    "retentionSaved": "Se guardó la retención de {{title}}.",
+    "retentionError": "No se pudo guardar la retención de {{title}}: {{message}}",
+    "modeSaved": "{{title}} ahora está en {{mode}}.",
+    "modeError": "No se pudo cambiar {{title}}: {{message}}"
+  },
+  "history": {
+    "title": "Historial de ejecuciones",
+    "filters": {
+      "target": "Tipo de dato",
+      "allTargets": "Todos los tipos de datos",
+      "since": "Desde",
+      "until": "Hasta",
+      "kind": "Tipo",
+      "status": "Estado",
+      "allKinds": "Simuladas y reales",
+      "dry": "Simulaciones",
+      "real": "Ejecuciones reales",
+      "allStatuses": "Cualquier estado",
+      "ok": "Correctas",
+      "failed": "Fallidas",
+      "reset": "Restablecer filtros"
+    },
+    "exportCsv": "Exportar CSV",
+    "exportJson": "Exportar JSON",
+    "exportLabel": "Exportar el historial filtrado",
+    "loadError": "No se pudo cargar el historial de ejecuciones: {{message}}",
+    "empty": {
+      "title": "Ninguna ejecución coincide",
+      "body": "Las ejecuciones de limpieza aparecen aquí, programadas y manuales, simuladas y reales."
+    },
+    "emptyFiltered": "Ninguna ejecución coincide con estos filtros. Restablécelos para ver todas.",
+    "dryRun": "Simulación",
+    "realRun": "Eliminado",
+    "failed": "Fallida",
+    "outcomeDry_one": "Eliminaría {{rows}} fila, {{size}}",
+    "outcomeDry_other": "Eliminaría {{rows}} filas, {{size}}",
+    "outcomeDryNone": "No se eliminaría nada",
+    "outcomeReal_one": "Se eliminó {{rows}} fila, {{size}}",
+    "outcomeReal_other": "Se eliminaron {{rows}} filas, {{size}}",
+    "outcomeRealNone": "Nada que eliminar",
+    "meta": "{{trigger}}, conservando {{days}} días",
+    "byActor": "por {{actor}}",
+    "trigger": {
+      "scheduled": "Programada",
+      "manual": "Manual",
+      "cli": "CLI",
+      "api": "API"
+    },
+    "columns": {
+      "when": "Cuándo",
+      "target": "Tipo de dato",
+      "kind": "Tipo",
+      "result": "Resultado",
+      "trigger": "Origen",
+      "days": "Conservar"
+    },
+    "timeline": "Cronología de ejecuciones",
+    "loadMore": "Cargar más",
+    "loadingMore": "Cargando..."
+  }
+}

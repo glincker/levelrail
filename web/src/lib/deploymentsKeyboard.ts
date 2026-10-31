@@ -1,4 +1,4 @@
-import i18n from '../i18n'
+import { translateShared } from './activeLocale'
 export type DeploymentKeyAction =
   | { type: 'move'; delta: 1 | -1 }
   | { type: 'open' }
@@ -57,7 +57,10 @@ export function nextFocusId(
 }
 
 function shortcutLabel(id: string, defaultValue: string): string {
-  return i18n.t(`deploys:deployList.shortcutLabels.${id}`, { defaultValue })
+  return translateShared(
+    `deploys:deployList.shortcutLabels.${id}`,
+    defaultValue,
+  )
 }
 
 export const DEPLOYMENT_SHORTCUTS: { keys: string[]; label: string }[] = [
