@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -57,6 +58,28 @@ func New() *Registry {
 // Add registers a secret value; short values are ignored. The cap counts primary
 // values only, encoded forms ride along, and a primary is never evicted.
 func (r *Registry) Add(v string) {
+	for _, x := range lineForms(v) {
+		r.add(x)
+	}
+}
+
+// lineForms adds the shapes a multi-line value takes once log lines are split and rejoined:
+// no trailing newline, and LF in place of CRLF (scanners strip the \r).
+func lineForms(v string) []string {
+	out := []string{v}
+	for _, c := range []string{
+		strings.TrimRight(v, "\r\n"),
+		strings.ReplaceAll(v, "\r\n", "\n"),
+		strings.TrimRight(strings.ReplaceAll(v, "\r\n", "\n"), "\r\n"),
+	} {
+		if len(c) >= MinLength && !slices.Contains(out, c) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func (r *Registry) add(v string) {
 	if len(v) < MinLength {
 		return
 	}

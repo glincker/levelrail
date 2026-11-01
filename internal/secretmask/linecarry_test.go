@@ -55,3 +55,39 @@ func TestLineCarryNoSecretsPassesThrough(t *testing.T) {
 		t.Fatalf("got %v", out)
 	}
 }
+
+func TestLineCarryMasksPEMWithTrailingNewline(t *testing.T) {
+	r := secretmask.New()
+	r.Add("-----BEGIN KEY-----\nAAAABBBBCCCC\n-----END KEY-----\n")
+	c := secretmask.NewLineCarryFor(r)
+	var got []secretmask.Line
+	for _, l := range []string{"before", "-----BEGIN KEY-----", "AAAABBBBCCCC", "-----END KEY-----", "after"} {
+		got = append(got, c.Push("stdout", l)...)
+	}
+	got = append(got, c.Flush()...)
+	out := joinText(got)
+	if strings.Contains(out, "AAAABBBB") || strings.Contains(out, "BEGIN KEY") {
+		t.Fatalf("leak: %q", out)
+	}
+	if !strings.Contains(out, "before|") || !strings.Contains(out, "after|") {
+		t.Fatalf("surrounding text lost: %q", out)
+	}
+}
+
+func TestLineCarryMasksCRLFSecretAfterScannerStripsCR(t *testing.T) {
+	r := secretmask.New()
+	r.Add("FIRST-LINE-SECRET\r\nSECOND-LINE-SECRET")
+	c := secretmask.NewLineCarryFor(r)
+	var got []secretmask.Line
+	for _, l := range []string{"head", "FIRST-LINE-SECRET", "SECOND-LINE-SECRET", "tail"} {
+		got = append(got, c.Push("stdout", l)...)
+	}
+	got = append(got, c.Flush()...)
+	out := joinText(got)
+	if strings.Contains(out, "FIRST-LINE") || strings.Contains(out, "SECOND-LINE") {
+		t.Fatalf("leak: %q", out)
+	}
+	if !strings.Contains(out, "head|") || !strings.Contains(out, "tail|") {
+		t.Fatalf("surrounding text lost: %q", out)
+	}
+}
