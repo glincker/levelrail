@@ -32,6 +32,10 @@ levelrail-cli apps create --name api --repo https://github.com/you/api.git \
 | Next.js (static export) | none | `/` | static | static files |
 | React / Vite | none | `/` | static | static files |
 | Astro | none | `/` | static | static files |
+| Astro (SSR) | 4321 | `/` | Railpack | Node standalone server |
+| Hugo | none | `/` | static | static files |
+| Jekyll | none | `/` | static | static files |
+| Eleventy | none | `/` | static | static files |
 | Nuxt | 3000 | `/` | Railpack | Nitro server |
 | Remix | 3000 | `/` | Railpack | remix-serve |
 | SvelteKit | 3000 | `/` | Railpack | adapter-node server |
@@ -42,6 +46,9 @@ levelrail-cli apps create --name api --repo https://github.com/you/api.git \
 | FastAPI | 8000 | `/docs` | Railpack | uvicorn |
 | Ruby on Rails | 3000 | `/up` | Railpack | puma |
 | Laravel | 80 | `/up` | Railpack | FrankenPHP |
+| NestJS | 3000 | `/` | Railpack | `node dist/main` |
+| Flask | 5000 | `/` | Railpack | gunicorn |
+| Rust (axum, Actix Web) | 8080 | `/` | Railpack | release binary |
 
 Static presets have no port: the built-in web server serves the files directly and no container runs. With the CLI, declare `build.type: static` in `app.yaml` and use `--file`.
 
@@ -61,7 +68,23 @@ The `dist` directory is served as a static site. Variables prefixed `VITE_` are 
 
 ### Astro
 
-Static output is the default and is served directly. For `output: 'server'` pick Node.js and set the port to 4321.
+Static output is the default and is served directly. With `output: 'server'` and the `@astrojs/node` adapter in standalone mode, the detector chooses **Astro (SSR)**: port 4321, started with `node ./dist/server/entry.mjs`. Set `HOST=0.0.0.0`, otherwise the server only listens on localhost.
+
+### Hugo, Jekyll and Eleventy
+
+These generators build on the control plane as a static site: set `build.command` and `build.publish` as described in [Pages](/pages). The presets fill `hugo --minify` with `public`, `bundle exec jekyll build` with `_site`, and `npx @11ty/eleventy` with `_site`. The build image needs the generator installed (Hugo binary, Ruby with the Gemfile gems, or the npm dependencies).
+
+### NestJS
+
+Build with `nest build` and start with `node dist/main`. NestJS listens on 3000 unless `app.listen` is given another port, so read `PORT` there.
+
+### Flask
+
+Served by gunicorn on port 5000, which is the Flask development default. Point the start command at your `module:app`. `SECRET_KEY` is required for sessions.
+
+### Rust
+
+Rust has no standard port, so the preset uses 8080 and expects the server to bind `0.0.0.0` on `PORT`. Release builds are memory hungry: on a 1 GB host add swap or build the image elsewhere.
 
 ### Nuxt
 
