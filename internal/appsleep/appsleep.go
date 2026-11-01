@@ -198,7 +198,17 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 			errs = append(errs, fmt.Errorf("app %q: %w", a.ServiceName, err))
 			continue
 		}
+		retained := s.retained(ctx, a.ServiceName)
 		if a.Sleeping {
+			if !svc.Suspended && retained {
+				// A project or bulk start must not boot a sleeping deploy copy; only Wake may.
+				if err := s.Apps.UpdateServiceSuspended(ctx, a.ServiceName, true); err != nil {
+					errs = append(errs, fmt.Errorf("app %q: %w", a.ServiceName, err))
+				} else if s.Nudger != nil {
+					s.Nudger.Nudge()
+				}
+				continue
+			}
 			if !svc.Suspended {
 				if err := s.Sleep.SetAppSleeping(ctx, a.ServiceName, false, now); err != nil {
 					errs = append(errs, err)
@@ -211,6 +221,12 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 			continue
 		}
 		if svc.Suspended {
+			if retained {
+				// A Wake that died between its two writes leaves suspended without the mark.
+				if err := s.Sleep.SetAppSleeping(ctx, a.ServiceName, true, a.Since); err != nil {
+					errs = append(errs, fmt.Errorf("app %q: %w", a.ServiceName, err))
+				}
+			}
 			continue
 		}
 		facts := Facts{App: a.ServiceName, PinnedPorts: PinnedPorts(svc), PortWakeEnabled: a.PortWake}
@@ -236,6 +252,19 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		s.PortSync.Sync(ctx)
 	}
 	return errors.Join(errs...)
+}
+
+// retained reports whether name is a deploy-URL copy, the same predicate the
+// reconciler guard uses to keep a sleeping copy down.
+func (s *Scheduler) retained(ctx context.Context, name string) bool {
+	r, ok := s.Apps.(interface {
+		DeployURLApp(ctx context.Context, serviceName string) (string, bool, error)
+	})
+	if !ok {
+		return false
+	}
+	_, is, err := r.DeployURLApp(ctx, name)
+	return err == nil && is
 }
 
 func (s *Scheduler) record(name string, sig Signals, d Decision) {
@@ -416,7 +445,9 @@ func Wake(ctx context.Context, sleep interface {
 		return false, err
 	}
 	if err := apps.UpdateServiceSuspended(ctx, name, false); err != nil {
-		_ = sleep.SetAppSleeping(ctx, name, true, now)
+		if rerr := sleep.SetAppSleeping(ctx, name, true, now); rerr != nil {
+			slog.Warn("appsleep: wake rollback failed", slog.String("app", name), slog.String("error", rerr.Error()))
+		}
 		return false, fmt.Errorf("start sleeping app: %w", err)
 	}
 	if nudger != nil {
