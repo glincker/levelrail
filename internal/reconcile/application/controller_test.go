@@ -699,6 +699,33 @@ func TestController_Reconcile_AppStreams_ReachesContainerSpec(t *testing.T) {
 	}
 }
 
+// A stream on the routed port must not add a second ephemeral loopback
+// binding for it: Docker could assign both the same host port.
+func TestController_Reconcile_AppStreams_SamePortAsMain_NoDuplicateBinding(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "mc", Image: "img:v1", Port: 25565}
+	c := New("mc", &fakeStore{svc: desired, streams: []store.AppStream{
+		{ID: "stream_a", ServiceName: "mc", ContainerPort: 25565, HostPort: 25565, Protocol: store.AppStreamProtocolTCP},
+	}}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 25565, HostIP: "127.0.0.1"}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("Ports = %+v, want %+v", got, want)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("settled pass created containers: createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
 // TestController_Reconcile_NoAppStreams_PortsUnchanged confirms a
 // service with no streams at all gets byte-identical Ports to before
 // this feature existed: just its own main port, no empty stream

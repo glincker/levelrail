@@ -1356,7 +1356,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("app streams: %w", err)
 	}
-	spec.Ports = append(spec.Ports, streamPorts...)
+	spec.Ports = appendStreamPorts(spec.Ports, streamPorts)
 	spec.Env = env
 	if spec.Files, err = c.resolveFiles(ctx, desired, env); err != nil {
 		return fmt.Errorf("resolve files: %w", err)
@@ -1427,6 +1427,32 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return err
 	}
 	return nil
+}
+
+// appendStreamPorts adds stream bindings, skipping one that an existing
+// ephemeral loopback binding of the same port already provides. Two such
+// bindings made Docker hand out the same host port twice and the start
+// failed with "address already in use".
+func appendStreamPorts(ports, streams []docker.PortBinding) []docker.PortBinding {
+	norm := func(p string) string {
+		if p == "" {
+			return store.PortProtocolTCP
+		}
+		return p
+	}
+	for _, s := range streams {
+		dup := false
+		for _, p := range ports {
+			if p.ContainerPort == s.ContainerPort && norm(p.Protocol) == norm(s.Protocol) && p.HostIP == s.HostIP && p.HostPort == 0 {
+				dup = true
+				break
+			}
+		}
+		if !dup {
+			ports = append(ports, s)
+		}
+	}
+	return ports
 }
 
 // streamPortBindings returns one extra docker.PortBinding per raw TCP
