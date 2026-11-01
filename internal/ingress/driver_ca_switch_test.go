@@ -145,3 +145,22 @@ func TestDriverApply_CASigKeptAcrossACMEDisabled(t *testing.T) {
 		t.Fatalf("re-enabling with another CA must reset, loads=%d", len(*loads))
 	}
 }
+
+func TestDriverApply_CASwitchRetriesAfterBackoff(t *testing.T) {
+	t.Setenv("APP_INGRESS_CA_RETRY_BACKOFF", "0s")
+	loads := stubLoads(t, func(n int, _ []byte) error {
+		if n == 3 {
+			return errors.New("transient")
+		}
+		return nil
+	})
+	d := New(nil)
+	ctx := context.Background()
+	_ = d.Apply(ctx, acmeTLSConfig(stagingCA))
+	if err := d.Apply(ctx, acmeTLSConfig("")); err == nil {
+		t.Fatal("want error")
+	}
+	if err := d.Apply(ctx, acmeTLSConfig("")); err != nil || len(*loads) < 6 {
+		t.Fatalf("identical payload must retry after backoff: err=%v loads=%d", err, len(*loads))
+	}
+}

@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/caddyserver/caddy/v2"
 
@@ -67,6 +69,15 @@ var validateConfig = func(payload []byte) error {
 	return caddy.Validate(&c)
 }
 
+// caRetryBackoff bounds how long an identical failed CA switch is skipped, so
+// a transient failure heals without a settings change.
+func caRetryBackoff() time.Duration {
+	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv("APP_INGRESS_CA_RETRY_BACKOFF"))); err == nil && d >= 0 {
+		return d
+	}
+	return time.Minute
+}
+
 // restorePrevious reloads the last working config after a failed CA switch
 // left Caddy on the empty one.
 func (d *Driver) restorePrevious(ctx context.Context, prev []byte) {
@@ -97,6 +108,7 @@ type Driver struct {
 	lastApplied []byte
 	lastCASig   string
 	failedReset []byte
+	failedAt    time.Time
 
 	snapshot            *SnapshotStore
 	snapshotFingerprint string
@@ -141,12 +153,12 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	d.mu.Lock()
 	switchedCA := d.lastCASig != "" && sig != "" && sig != d.lastCASig
 	prev := d.lastApplied
-	failedReset := d.failedReset
+	failedReset, failedAt := d.failedReset, d.failedAt
 	d.mu.Unlock()
 	if switchedCA {
 		// One reset attempt per changed payload, so a failing switch is not
 		// retried on every reconcile tick.
-		if failedReset != nil && bytes.Equal(failedReset, payload) {
+		if failedReset != nil && bytes.Equal(failedReset, payload) && time.Since(failedAt) < caRetryBackoff() {
 			return fmt.Errorf("ingress: apply: CA switch previously failed for this config")
 		}
 		// Validate first: the reset drops every server, so a bad payload must
@@ -167,6 +179,7 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 			d.restorePrevious(ctx, prev)
 			d.mu.Lock()
 			d.failedReset = append([]byte(nil), payload...)
+			d.failedAt = time.Now()
 			d.mu.Unlock()
 			return fmt.Errorf("ingress: apply: load config: %w", err)
 		}
