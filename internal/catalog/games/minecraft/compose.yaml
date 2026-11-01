@@ -1,7 +1,8 @@
 services:
   minecraft:
-    image: itzg/minecraft-server:2026.10.1-java21
+    image: itzg/minecraft-server:2026.10.1-${JAVA_VARIANT}
     ports: ["25565:25565"]
+    x-levelrail-published-ports: [25565]
     mem_limit: ${MEMORY_LIMIT}
     environment:
       EULA: ${EULA}

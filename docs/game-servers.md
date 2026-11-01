@@ -10,7 +10,11 @@ This page covers running one Minecraft Java server from the Levelrail template o
 
 The template uses the community `itzg/minecraft-server` image. Its own documentation covers every server setting: [docker-minecraft-server](https://github.com/itzg/docker-minecraft-server). See the generated [Minecraft Server template page](/self-host/minecraft) for the template's current ports, volumes and variables.
 
-The template pins an image tag. You must enter `TRUE` for the EULA yourself, it is never accepted for you. The server type is one of VANILLA, PAPER, FABRIC or FORGE. The RCON password is generated and RCON is not published, so run `rcon-cli` from the app's exec shell.
+The template pins the image tag `2026.10.1` and offers two Java runtimes in the Java runtime field: `java21` (the default) and `java25`. You must enter `TRUE` for the EULA yourself, it is never accepted for you and the deploy form refuses an empty value. The server type is one of VANILLA, PAPER, FABRIC or FORGE.
+
+The Minecraft version defaults to `1.21.11`, which boots on the Java 21 image (tested). `LATEST` stays selectable, but it can resolve to a release that needs a newer Java: the 26.x releases need Java 25, so on the Java 21 image the server exits with `UnsupportedClassVersionError`. Set the Java runtime to `java25` when you pick `LATEST` or a 26.x version. Both tags publish amd64 and arm64.
+
+RCON is on with a generated password (kept as a secret) and its port is not published, so run `rcon-cli` from the app's exec shell.
 
 ## Sizing
 
@@ -22,13 +26,13 @@ The numbers below are rough guidance from how Java servers behave in general. Th
 | 5 to 10 | 3 to 4 GB | 6 GB |
 | 10 to 20 | 4 to 6 GB | 8 GB |
 
-The template sets a recommended memory figure. The Java heap is only part of the process: leave room for the JVM itself, the operating system and the Levelrail control plane. Lowering the view distance and simulation distance in the server settings reduces both memory and CPU. Raise the heap only if you see out-of-memory errors or long pauses.
+The template's JVM heap defaults to 2G and the container memory limit to 2560M, which is 25 percent above the heap. If you raise the heap, raise the container limit field with it to keep that headroom; a limit left at the template default is not scaled for you. The template also sets a recommended memory figure. The Java heap is only part of the process: leave room for the JVM itself, the operating system and the Levelrail control plane. Lowering the view distance and simulation distance in the server settings reduces both memory and CPU. Raise the heap only if you see out-of-memory errors or long pauses.
 
 ## Ports
 
 A Minecraft Java server listens on TCP 25565. Some other games use UDP. Check the game's documentation, then publish the right protocol for the game. A UDP service is published as `HOST:CONTAINER/udp`, see [UDP published ports](/udp-ports).
 
-Direct game ports do not go through the HTTP reverse proxy. A published port follows the exposure rules in [App ports and exposure](/app-exposure): it is bound privately by default, and you choose to make it public.
+Direct game ports do not go through the HTTP reverse proxy, and the Minecraft and Terraria templates declare their TCP port as a published port, so no web address is generated for them. A published port follows the exposure rules in [App ports and exposure](/app-exposure): it is bound privately (127.0.0.1) by default, and you choose to make it public in the app's Network settings. The templates do not make a game port public for you, because a template cannot declare a public bind and private by default is the platform's stance. After making it public, open the port in both firewall layers below.
 
 ## Two firewall layers
 

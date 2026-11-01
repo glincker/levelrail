@@ -1,10 +1,10 @@
 id: minecraft
 name: Minecraft Server
-description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
+description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot (default 1.21.11, tested on the Java 21 image). You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565 (no web address is created for it): the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field and the container limit defaults to 2560M, 25 percent above the 2G heap. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
 icon: cube
 category: Games
 documentation_url: https://docker-minecraft-server.readthedocs.io/
-recommended_memory_bytes: 3221225472
+recommended_memory_bytes: 2684354560
 env:
   - key: EULA
     label: Accept the Minecraft EULA
@@ -16,16 +16,20 @@ env:
     default: VANILLA
   - key: SERVER_VERSION
     label: Minecraft version
-    description: A version such as 1.21.4, or LATEST.
-    default: LATEST
+    description: A version such as 1.21.11. The default boots on the Java 21 image. LATEST can resolve to a release that needs a newer Java and then crash on start; use it only together with the java25 runtime below.
+    default: 1.21.11
+  - key: JAVA_VARIANT
+    label: Java runtime
+    description: java21 runs Minecraft up to 1.21.11. Choose java25 for LATEST or any 26.x release. Both are multi-arch (amd64 and arm64).
+    default: java21
   - key: MEMORY
     label: JVM heap
-    description: Heap size, for example 2G. Keep it at least 1G below the container limit.
+    description: Heap size, for example 2G. Keep the container limit about 25 percent above it.
     default: 2G
   - key: MEMORY_LIMIT
     label: Container memory limit
-    description: Hard cap for the container, about 25 percent above the heap, for example 3G.
-    default: 3G
+    description: Hard cap for the container, about 25 percent above the heap, for example 2560M for a 2G heap.
+    default: 2560M
   - key: VIEW_DISTANCE
     label: View distance
     description: Chunks sent to each player. Lower is lighter on a small host.

@@ -1,15 +1,15 @@
 ---
 title: "Self-host Minecraft Server with Docker"
 sidebarTitle: "Minecraft Server"
-description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
+description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot (default 1.21.11, tested on the Java 21 image). You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565 (no web address is created for it): the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field and the container limit defaults to 2560M, 25 percent above the 2G heap. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
 "og:url": "https://docs.levelrail.com/self-host/minecraft"
 ---
 
-A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64).
+A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot (default 1.21.11, tested on the Java 21 image). You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565 (no web address is created for it): the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field and the container limit defaults to 2560M, 25 percent above the 2G heap. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64).
 
 This page describes the Levelrail template for Minecraft Server (Games). It deploys the services below as one Docker Compose app on your own server. Project site: https://docker-minecraft-server.readthedocs.io/.
 
-Recommended memory: about 3072 MiB.
+Recommended memory: about 2560 MiB.
 
 ## Services, ports and volumes
 

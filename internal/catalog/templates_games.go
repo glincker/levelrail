@@ -58,7 +58,7 @@ var catalogGamesPlain = []Template{
 		ID:     "terraria",
 		Name:   "Terraria Server",
 		Slogan: "A vanilla Terraria dedicated server that creates a world on first start.",
-		Description: "Players connect on TCP 7777: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 7777 in the host and cloud firewall.\n" +
+		Description: "Players connect on TCP 7777 (no web address is created for it): the port binds privately by default, so set a public bind in the app's Network settings and open TCP 7777 in the host and cloud firewall.\n" +
 			"The world is created on first start and kept in the data volume. The image has no password by default: add one by overriding the start command with -password.\n" +
 			"Image is multi-arch (amd64 and arm64).",
 		Category:               "Games",
@@ -69,6 +69,7 @@ var catalogGamesPlain = []Template{
     image: ryshe/terraria:vanilla-1.4.5.8
     ports:
       - "7777:7777"
+    x-levelrail-published-ports: [7777]
     command: ["-world", "/root/.local/share/Terraria/Worlds/world.wld", "-autocreate", "2", "-worldname", "world", "-maxplayers", "8"]
     volumes:
       - terraria_data:/root/.local/share/Terraria/Worlds
