@@ -34,6 +34,7 @@ func (s *bootState) startHeartbeat() {
 		s.agentServer.SetSilenceSource(svc.AgentSilenceURL)
 	}
 	go svc.Run(s.ctx)
+	s.startDDNS()
 	s.startJobHeartbeat()
 }
 

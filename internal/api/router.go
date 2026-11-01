@@ -113,6 +113,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/datamigrate"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/dbrotate"
+	"github.com/GLINCKER/levelrail/internal/ddns"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
@@ -757,6 +758,7 @@ type Router struct {
 	doctorHTTPPort               int                      // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
 	doctorHTTPSPort              int                      // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookBodies                webhookBodySeen          // recent signed webhook bodies, replay guard
+	ddnsMgr                      *ddns.Manager            // nil serves 501 on /settings/ddns
 	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
 	jobPings                     *heartbeat.JobPinger     // nil rejects per-job heartbeat URLs
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)

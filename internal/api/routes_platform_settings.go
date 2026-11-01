@@ -45,6 +45,11 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/email/deliveries", rt.requireAbility(AbilityRoot, rt.handleListEmailDeliveries))
 	mux.HandleFunc("GET /api/v1/settings/email/deliveries/{id}", rt.requireAbility(AbilityRoot, rt.handleGetEmailDelivery))
 
+	// Dynamic DNS updater: the stored setting wins, env is only the default. Root for both, the target URL or token is write-only.
+	mux.HandleFunc("GET /api/v1/settings/ddns", rt.requireAbility(AbilityRoot, rt.handleGetDDNS))
+	mux.HandleFunc("PUT /api/v1/settings/ddns", rt.requireAbility(AbilityRoot, rt.handlePutDDNS))
+	mux.HandleFunc("GET /api/v1/settings/ddns/status", rt.requireAbility(AbilityRoot, rt.handleDDNSStatus))
+
 	// Observability settings: the external Grafana/dashboard link,
 	// same precedent as email settings just above. GET is AbilityRead;
 	// PUT is AbilityRoot, matching every other instance-level config row.

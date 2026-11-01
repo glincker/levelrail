@@ -321,6 +321,9 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/settings/ddns | AbilityRoot | handleGetDDNS |
+| PUT | /api/v1/settings/ddns | AbilityRoot | handlePutDDNS |
+| GET | /api/v1/settings/ddns/status | AbilityRoot | handleDDNSStatus |
 
 </Accordion>
 
