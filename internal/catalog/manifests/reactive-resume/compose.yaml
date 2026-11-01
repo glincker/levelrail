@@ -1,0 +1,33 @@
+services:
+  reactive-resume:
+    image: amruthpillai/reactive-resume:v6.0.9
+    ports: ["3000"]
+    environment:
+      PORT: "3000"
+      APP_URL: ${APP_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      DATABASE_URL: postgresql://resume:${DB_PASSWORD}@db:5432/resume
+    volumes:
+      - data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1));"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: resume
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: resume
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resume -d resume"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

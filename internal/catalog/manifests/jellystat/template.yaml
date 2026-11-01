@@ -1,0 +1,32 @@
+id: jellystat
+name: Jellystat
+description: A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key.
+icon: chart-bar
+category: Monitoring
+documentation_url: https://github.com/CyferShepard/Jellystat
+recommended_memory_bytes: 402653184
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database.
+    generate: password
+    length: 32
+    secret: true
+  - key: JWT_SECRET
+    label: JWT secret
+    description: Signs login tokens. Changing it signs every user out.
+    generate: hex
+    length: 64
+    secret: true
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for statistics and schedules.
+    default: Etc/UTC
+domains:
+  - service: jellystat
+    port: 3000
+    description: Public address of Jellystat.
+healthcheck:
+  service: jellystat
+  port: 3000
+  path: /auth/isConfigured

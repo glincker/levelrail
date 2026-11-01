@@ -11420,6 +11420,79 @@
   }
  },
  {
+  "id": "gitness",
+  "name": "Gitness",
+  "slogan": "Harness Open Source, a Git host with code review, pipelines and an artifact registry in one binary. Apache-2.0 licensed. Uses an embedded SQLite database on the data volume. The first user to register becomes the admin, then turn off sign-ups. Pipelines that run containers need Docker access, which this template does not grant.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.harness.io/open-source",
+  "memoryMiB": 384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "gitness",
+    "image": "harness/harness:3.3.0",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "gitness",
+    "name": "GITNESS_URL_BASE",
+    "kind": "preset"
+   },
+   {
+    "service": "gitness",
+    "name": "GITNESS_USER_SIGNUP_ENABLED",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "gitness"
+     ],
+     "detail": "data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "glance",
   "name": "Glance",
   "slogan": "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.",
@@ -15219,6 +15292,142 @@
     {
      "code": "https_ingress",
      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "jellystat",
+  "name": "Jellystat",
+  "slogan": "A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key.",
+  "category": "Monitoring",
+  "docUrl": "https://github.com/CyferShepard/Jellystat",
+  "memoryMiB": 384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "jellystat",
+    "image": "cyfershepard/jellystat:1.1.12",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "backup -> /app/backend/backup-data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "name": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "name": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "name": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "jellystat",
+    "name": "JWT_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "jellystat",
+    "name": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "jellystat",
+    "name": "POSTGRES_IP",
+    "kind": "preset"
+   },
+   {
+    "service": "jellystat",
+    "name": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "jellystat",
+    "name": "POSTGRES_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "jellystat",
+    "name": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "jellystat",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "db",
+      "jellystat"
+     ],
+     "detail": "JWT_SECRET, POSTGRES_PASSWORD, POSTGRES_PASSWORD",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "db",
+      "jellystat"
+     ],
+     "detail": "backup, pgdata",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
     },
     {
      "code": "volume_backups",
@@ -31184,6 +31393,127 @@
   }
  },
  {
+  "id": "reactive-resume",
+  "name": "Reactive Resume",
+  "slogan": "A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume.",
+  "category": "Productivity",
+  "docUrl": "https://docs.rxresu.me/",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "reactive-resume",
+    "image": "amruthpillai/reactive-resume:v6.0.9",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "data -> /app/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "name": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "name": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "name": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "reactive-resume",
+    "name": "APP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "reactive-resume",
+    "name": "AUTH_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "reactive-resume",
+    "name": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "reactive-resume",
+    "name": "PORT",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "db",
+      "reactive-resume"
+     ],
+     "detail": "AUTH_SECRET, DATABASE_URL, POSTGRES_PASSWORD",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "db",
+      "reactive-resume"
+     ],
+     "detail": "data, pgdata",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "readeck",
   "name": "Readeck",
   "slogan": "Save the readable content of web pages you want to keep, free of ads and clutter.",
@@ -34332,6 +34662,114 @@
       "speedtest-tracker"
      ],
      "detail": "speedtest_config",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "spliit",
+  "name": "Spliit",
+  "slogan": "A free way to split expenses with friends and groups, no accounts needed. Share a group link and everyone adds expenses. MIT licensed, backed by Postgres.",
+  "category": "Finance",
+  "docUrl": "https://github.com/spliit-app/spliit",
+  "memoryMiB": 384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "spliit",
+    "image": "ghcr.io/spliit-app/spliit:1.30.0",
+    "ports": [
+     3000
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "name": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "name": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "name": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "spliit",
+    "name": "POSTGRES_PRISMA_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "spliit",
+    "name": "POSTGRES_URL_NON_POOLING",
+    "kind": "generated"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "db",
+      "spliit"
+     ],
+     "detail": "POSTGRES_PASSWORD, POSTGRES_PRISMA_URL, POSTGRES_URL_NON_POOLING",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "db"
+     ],
+     "detail": "pgdata",
      "message": "Stores data in named volumes"
     }
    ],

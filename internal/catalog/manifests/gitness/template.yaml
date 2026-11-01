@@ -1,0 +1,20 @@
+id: gitness
+name: Gitness
+description: Harness Open Source, a Git host with code review, pipelines and an artifact registry in one binary. Apache-2.0 licensed. Uses an embedded SQLite database on the data volume. The first user to register becomes the admin, then turn off sign-ups. Pipelines that run containers need Docker access, which this template does not grant.
+icon: git-branch
+category: Developer Tools
+documentation_url: https://docs.harness.io/open-source
+recommended_memory_bytes: 402653184
+env:
+  - key: URL_BASE
+    label: Public URL
+    description: Full URL where Gitness is served, used for clone links and callbacks.
+    default: http://localhost:3000
+domains:
+  - service: gitness
+    port: 3000
+    description: Public address of Gitness.
+healthcheck:
+  service: gitness
+  port: 3000
+  path: /healthz

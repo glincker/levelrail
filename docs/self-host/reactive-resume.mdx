@@ -1,0 +1,74 @@
+---
+title: "Self-host Reactive Resume with Docker"
+sidebarTitle: "Reactive Resume"
+description: "A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume."
+"og:url": "https://docs.levelrail.com/self-host/reactive-resume"
+---
+
+A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume.
+
+This page describes the Levelrail template for Reactive Resume (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.rxresu.me/.
+
+Recommended memory: about 768 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `reactive-resume` | `amruthpillai/reactive-resume:v6.0.9` | 3000 | `data -&#62; /app/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `reactive-resume` | `APP_URL` | Preset in the template |
+| `reactive-resume` | `AUTH_SECRET` | Generated at deploy |
+| `reactive-resume` | `DATABASE_URL` | Generated at deploy |
+| `reactive-resume` | `PORT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `reactive-resume`): AUTH_SECRET, DATABASE_URL, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `reactive-resume`): data, pgdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Reactive Resume with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Reactive Resume. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy reactive-resume --name my-reactive-resume
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+
+All templates are listed in the [self-host gallery](/self-host).

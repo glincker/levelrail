@@ -141,7 +141,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-01T04:09:06Z. **365 yes, 15 amd64 only, 2 not checked** of 382 templates.
+Last scan: 2026-11-01T04:36:49Z. **369 yes, 15 amd64 only, 2 not checked** of 386 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -251,6 +251,7 @@ Last scan: 2026-11-01T04:09:06Z. **365 yes, 15 amd64 only, 2 not checked** of 38
 | `gitea-postgres` | yes | linux/amd64, linux/arm64 |
 | `gitlab` | amd64 only | linux/amd64 |
 | `gitlab-ce` | yes | linux/amd64, linux/arm64 |
+| `gitness` | yes | linux/amd64, linux/arm64 |
 | `glance` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `glances` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `glitchtip` | yes | linux/amd64, linux/arm64 |
@@ -288,6 +289,7 @@ Last scan: 2026-11-01T04:09:06Z. **365 yes, 15 amd64 only, 2 not checked** of 38
 | `jaeger` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `jellyfin` | yes | linux/amd64, linux/arm64 |
 | `jellyseerr` | yes | linux/amd64, linux/arm64 |
+| `jellystat` | yes | linux/amd64, linux/arm64 |
 | `jenkins` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `joomla` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `joplin` | yes | linux/amd64, linux/arm64 |
@@ -433,6 +435,7 @@ Last scan: 2026-11-01T04:09:06Z. **365 yes, 15 amd64 only, 2 not checked** of 38
 | `radarr` | yes | linux/amd64, linux/arm64 |
 | `radicale` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `rallly` | yes | linux/amd64, linux/arm64 |
+| `reactive-resume` | yes | linux/amd64, linux/arm64 |
 | `readeck` | yes | linux/amd64, linux/arm64 |
 | `redis-cache-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `redis-insight` | yes | linux/amd64, linux/arm64 |
@@ -466,6 +469,7 @@ Last scan: 2026-11-01T04:09:06Z. **365 yes, 15 amd64 only, 2 not checked** of 38
 | `sparkyfitness` | yes | linux/amd64, linux/arm64 |
 | `speaches` | yes | linux/amd64, linux/arm64 |
 | `speedtest-tracker` | yes | linux/amd64, linux/arm64 |
+| `spliit` | yes | linux/amd64, linux/arm64 |
 | `spoolman` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `stable-diffusion-webui` | amd64 only | linux/amd64 |
 | `stalwart` | yes | linux/amd64, linux/arm, linux/arm64 |

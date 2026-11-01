@@ -706,6 +706,7 @@
               "self-host/gitea-postgres",
               "self-host/gitlab",
               "self-host/gitlab-ce",
+              "self-host/gitness",
               "self-host/gogs",
               "self-host/gotenberg",
               "self-host/hasura",
@@ -755,6 +756,7 @@
               "self-host/ghostfolio",
               "self-host/invoice-ninja",
               "self-host/paymenter",
+              "self-host/spliit",
               "self-host/sure",
               "self-host/wallos"
             ]
@@ -847,6 +849,7 @@
               "self-host/loki",
               "self-host/healthchecks",
               "self-host/jaeger",
+              "self-host/jellystat",
               "self-host/librespeed",
               "self-host/netdata",
               "self-host/openobserve",
@@ -916,6 +919,7 @@
               "self-host/planka",
               "self-host/radicale",
               "self-host/rallly",
+              "self-host/reactive-resume",
               "self-host/readeck",
               "self-host/redmine",
               "self-host/rsshub",

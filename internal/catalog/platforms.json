@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-01T04:09:06Z",
+  "scanned_at": "2026-11-01T04:36:49Z",
   "images": [
     {
       "image": "1dev/server",
@@ -83,6 +83,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "amruthpillai/reactive-resume",
+      "tag": "v6.0.9",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:36:49Z"
     },
     {
       "image": "apache/answer",
@@ -529,6 +538,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "cyfershepard/jellystat",
+      "tag": "1.1.12",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:36:49Z"
     },
     {
       "image": "databasus/databasus",
@@ -1492,6 +1510,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/spliit-app/spliit",
+      "tag": "1.30.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:36:49Z"
+    },
+    {
       "image": "ghcr.io/sysadminsmedia/homebox",
       "tag": "0.11.1",
       "platforms": [
@@ -1757,6 +1784,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "harness/harness",
+      "tag": "3.3.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:36:49Z"
     },
     {
       "image": "hashicorp/consul",
@@ -3204,7 +3240,7 @@
         "linux/riscv64",
         "linux/s390x"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T04:36:49Z"
     },
     {
       "image": "postgres",
@@ -4624,6 +4660,10 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "gitness": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "glance": [
       "linux/amd64",
       "linux/arm",
@@ -4790,6 +4830,10 @@
       "linux/arm64"
     ],
     "jellyseerr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "jellystat": [
       "linux/amd64",
       "linux/arm64"
     ],
@@ -5455,6 +5499,10 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "reactive-resume": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "readeck": [
       "linux/amd64",
       "linux/arm64"
@@ -5605,6 +5653,10 @@
       "linux/arm64"
     ],
     "speedtest-tracker": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "spliit": [
       "linux/amd64",
       "linux/arm64"
     ],
