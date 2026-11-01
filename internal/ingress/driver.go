@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/caddyserver/caddy/v2"
@@ -69,6 +70,7 @@ type Driver struct {
 	mu          sync.Mutex
 	listenPorts map[int]bool
 	lastApplied []byte
+	lastCASig   string
 
 	snapshot            *SnapshotStore
 	snapshotFingerprint string
@@ -109,6 +111,22 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 		return nil
 	}
 
+	sig := acmeCASignature(cfg)
+	d.mu.Lock()
+	switchedCA := d.lastCASig != "" && sig != "" && sig != d.lastCASig
+	d.mu.Unlock()
+	if switchedCA {
+		// Caddy treats any ACME CA as the same issuer and keeps the old CA's
+		// cached certificate, so the new CA never gets an order. Loading a
+		// config without apps drops its in-memory cache; storage is untouched.
+		if err := loadConfig(emptyAppsPayload(cfg), true); err != nil {
+			return fmt.Errorf("ingress: apply: reset certificate cache: %w", err)
+		}
+		d.mu.Lock()
+		d.lastApplied = nil
+		d.mu.Unlock()
+	}
+
 	if err := loadConfig(payload, true); err != nil {
 		d.mu.Lock()
 		d.lastApplied = nil
@@ -117,6 +135,7 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	}
 
 	d.mu.Lock()
+	d.lastCASig = sig
 	d.listenPorts = listenPortsOf(cfg)
 	d.lastApplied = payload
 	d.mu.Unlock()
@@ -207,4 +226,38 @@ func listenAddrPort(addr string) (int, bool) {
 		return 0, false
 	}
 	return port, true
+}
+
+// acmeCASignature lists the ACME issuer CAs of every automation policy, or ""
+// when no ACME issuer is configured.
+func acmeCASignature(cfg *Config) string {
+	if cfg == nil || cfg.Apps.TLS == nil || cfg.Apps.TLS.Automation == nil {
+		return ""
+	}
+	var parts []string
+	for _, p := range cfg.Apps.TLS.Automation.Policies {
+		for _, iss := range p.Issuers {
+			raw, err := json.Marshal(iss)
+			if err != nil {
+				continue
+			}
+			var v struct {
+				Module string `json:"module"`
+				CA     string `json:"ca"`
+			}
+			if json.Unmarshal(raw, &v) == nil && v.Module == "acme" {
+				parts = append(parts, v.CA)
+			}
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return "acme|" + strings.Join(parts, "|")
+}
+
+// emptyAppsPayload keeps the admin endpoint and drops every app.
+func emptyAppsPayload(cfg *Config) []byte {
+	b, _ := json.Marshal(&Config{Admin: cfg.Admin, Apps: Apps{}})
+	return b
 }

@@ -59,7 +59,7 @@ func TestComputeHTTPSStatus(t *testing.T) {
 		{"staging cert counts when staging", stagingOn, []alerting.CertInfo{stagingCert}, nil, now, httpsStateIssued, ""},
 		{"internal cert only is pending", on, []alerting.CertInfo{internal}, nil, now, httpsStatePending, ""},
 		{"ca error", on, nil, fail, now, httpsStateFailed, httpsHintUnreachable},
-		{"pending too long", on, nil, nil, now.Add(-time.Hour), httpsStateFailed, httpsHintUnreachable},
+		{"pending too long", on, nil, nil, now.Add(-time.Hour), httpsStateFailed, httpsHintUnknown},
 		{"pending fresh", on, nil, nil, now.Add(-time.Second), httpsStatePending, ""},
 	}
 	for _, tc := range tests {

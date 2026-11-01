@@ -209,8 +209,9 @@ func computeHTTPSStatus(s store.IngressSettings, certs []alerting.CertInfo, fail
 		return out
 	}
 	if !startedAt.IsZero() && now.Sub(startedAt) > pendingAfter {
-		out.State, out.Hint = httpsStateFailed, httpsHintUnreachable
-		out.Error = "no certificate was issued and the certificate authority reported no error; port 80 is most likely not reachable from the internet"
+		// No CA error means the cause is unknown; blaming port 80 misled when no order was placed.
+		out.State, out.Hint = httpsStateFailed, httpsHintUnknown
+		out.Error = "no certificate was issued yet and the certificate authority reported no error; check the control plane log, and that port 80 is open to the internet"
 	}
 	return out
 }
