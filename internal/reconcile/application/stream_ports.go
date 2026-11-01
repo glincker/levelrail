@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -30,11 +31,29 @@ func effectiveDesired(desired *store.DesiredService, streamHostPorts map[int]boo
 			}
 			if streamHostPorts[p.HostPort] {
 				p.HostPort = 0
+				// Two ephemeral binds of one port on one address made Docker hand out the same host port twice.
+				if sameEphemeralBind(desired, p) {
+					continue
+				}
 			}
 		}
 		out.PublishedPorts = append(out.PublishedPorts, p)
 	}
 	return &out
+}
+
+// sameEphemeralBind reports a published port that the main port's own
+// unpinned binding already covers: same container port, same interface.
+func sameEphemeralBind(desired *store.DesiredService, p store.PublishedPort) bool {
+	if desired.HostPort != nil || desired.Port != p.ContainerPort {
+		return false
+	}
+	main, err := bindaddr.Resolve(desired.BindAddress)
+	if err != nil {
+		return false
+	}
+	pub, err := bindaddr.Resolve(p.EffectiveBind(desired.BindAddress))
+	return err == nil && main == pub
 }
 
 // streamHostPorts lists the host ports this service's streams listen on.

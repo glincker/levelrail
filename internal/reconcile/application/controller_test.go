@@ -74,7 +74,9 @@ type fakeRuntime struct {
 	// holds the same host port. specPorts remembers each created container's
 	// requested bindings by ID.
 	trackPorts bool
-	specPorts  map[string][]docker.PortBinding
+	// overlapStarts counts Starts that found another container running.
+	overlapStarts int
+	specPorts     map[string][]docker.PortBinding
 	// startNoPortsOnce makes the next Start succeed without publishing
 	// any port, the Docker quirk after a failed first start.
 	startNoPortsOnce bool
@@ -313,6 +315,12 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.startCalls++
+	for _, other := range f.containers {
+		if other.ID != id && other.Running {
+			f.overlapStarts++
+			break
+		}
+	}
 	if f.startErr != nil {
 		return f.startErr
 	}

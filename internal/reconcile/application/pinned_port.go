@@ -24,6 +24,10 @@ type pinnedPortBackoffError struct {
 }
 
 func (e *pinnedPortBackoffError) Error() string {
+	if e.port == 0 {
+		return fmt.Sprintf("the last deploy failed while taking over from the running release, which was restored and keeps serving; next attempt after %s",
+			e.until.UTC().Format(time.RFC3339))
+	}
 	return fmt.Sprintf("the last deploy failed while taking over pinned host port %d, the previous release was restored and keeps serving; next attempt after %s",
 		e.port, e.until.UTC().Format(time.RFC3339))
 }
@@ -63,28 +67,66 @@ func pinnedPortUnbound(state *docker.ContainerState, desired *store.DesiredServi
 // removed) so a failed deploy can restore it.
 func (c *Controller) releasePinnedPort(ctx context.Context, target string, desired *store.DesiredService) ([]docker.ContainerState, error) {
 	pinned := pinnedHostPorts(desired)
-	if len(pinned) == 0 {
+	// A stream listener binds its host port in ingress, so a previous
+	// release still publishing it must stop first.
+	streamPorts, _ := c.streamHostPorts(ctx, desired.Name)
+	exclusive := holdsExclusiveData(desired)
+	if len(pinned) == 0 && len(streamPorts) == 0 && !exclusive {
 		return nil, nil
 	}
 	if until, ok := c.handoffFailed[target]; ok && time.Now().Before(until) {
-		return nil, &pinnedPortBackoffError{port: pinned[0].HostPort, until: until}
+		port := 0
+		if len(pinned) > 0 {
+			port = pinned[0].HostPort
+		}
+		return nil, &pinnedPortBackoffError{port: port, until: until}
 	}
 	all, err := c.listPrefix(ctx, c.serviceName+"-")
 	if err != nil {
-		return nil, fmt.Errorf("list containers holding pinned host port %s: %w", pinned[0], err)
+		return nil, fmt.Errorf("list containers holding the host ports or data of %s: %w", c.serviceName, err)
 	}
 	var released []docker.ContainerState
 	for _, cs := range all {
-		if cs.Name == target || !cs.Running || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) || !holdsAnyHostPort(cs, pinned) {
+		if cs.Name == target || !cs.Running || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) {
 			continue
+		}
+		if !exclusive && !holdsAnyHostPort(cs, pinned) && !holdsStreamHostPort(cs, streamPorts) {
+			continue
+		}
+		if exclusive && len(released) == 0 {
+			// Fail on a broken volume before the serving release is stopped, not after.
+			for _, v := range desired.Volumes {
+				if err := docker.EnsureVolumeFor(ctx, c.runtime, v.Name, volumeOwner(desired, v.Name)); err != nil {
+					return nil, fmt.Errorf("ensure volume %q: %w", v.Name, err)
+				}
+			}
 		}
 		if err := c.stopContainer(ctx, cs.ID); err != nil {
 			_ = c.restoreReleased(ctx, released)
-			return nil, fmt.Errorf("stop %q to free its pinned host ports: %w", cs.Name, err)
+			return nil, fmt.Errorf("stop %q to free its host ports or data volume: %w", cs.Name, err)
 		}
 		released = append(released, cs)
 	}
 	return released, nil
+}
+
+// holdsExclusiveData reports a single-instance service with persistent
+// storage: two copies on one volume corrupt it or fail on its lock, so the
+// previous release must stop before the next one starts.
+func holdsExclusiveData(desired *store.DesiredService) bool {
+	if desired.Replicas > 1 {
+		return false
+	}
+	return len(desired.Volumes) > 0 || len(desired.BindMounts) > 0
+}
+
+func holdsStreamHostPort(cs docker.ContainerState, ports map[int]bool) bool {
+	for _, p := range cs.Ports {
+		if ports[p.HostPort] && bindingProtocol(p) == store.PortProtocolTCP {
+			return true
+		}
+	}
+	return false
 }
 
 // pinnedHostPorts lists every fixed host port desired binds: the pinned

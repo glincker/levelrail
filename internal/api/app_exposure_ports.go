@@ -39,7 +39,7 @@ type portHolder struct {
 
 func (h portHolder) describe() string {
 	if h.Kind == holderKindListener {
-		return "another process on this server"
+		return "another process on this server (a stream or app deleted a moment ago may still be releasing it, retry in a few seconds)"
 	}
 	return h.Kind + " " + h.Holder
 }
