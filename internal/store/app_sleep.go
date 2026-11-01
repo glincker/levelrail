@@ -133,6 +133,14 @@ func (db *DB) SetAppSleeping(ctx context.Context, serviceName string, sleeping b
 	return nil
 }
 
+// DeleteAppSleep drops serviceName's sleep setting; a missing row is not an error.
+func (db *DB) DeleteAppSleep(ctx context.Context, serviceName string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM app_sleep WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete app sleep for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
 // GetAppSleep returns serviceName's row, or a disabled zero value when none exists.
 func (db *DB) GetAppSleep(ctx context.Context, serviceName string) (AppSleep, error) {
 	a := AppSleep{ServiceName: serviceName, PortWake: true}

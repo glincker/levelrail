@@ -19,6 +19,7 @@ type fakeStore struct {
 	sleep    map[string]int
 	hold     map[string]bool
 	asleep   map[string]bool
+	saves    []string
 }
 
 func newFake() *fakeStore {
@@ -50,14 +51,34 @@ func (f *fakeStore) SaveDesiredService(_ context.Context, svc store.DesiredServi
 	return nil
 }
 
-func (f *fakeStore) UpdateServiceSuspended(_ context.Context, name string, suspended bool) error {
+// SaveSuspended mirrors the real store: the row exists suspended from its first write.
+func (f *fakeStore) SaveSuspendedDesiredService(ctx context.Context, svc store.DesiredService) error {
+	_ = f.SaveDesiredService(ctx, svc)
 	for i := range f.services {
-		if f.services[i].Name == name {
-			f.services[i].Suspended = suspended
-			return nil
+		if f.services[i].Name == svc.Name {
+			f.services[i].Suspended = true
 		}
 	}
-	return store.ErrServiceNotFound
+	f.saves = append(f.saves, svc.Name)
+	return nil
+}
+
+// ListAppSleep mirrors the real store: only rows with sleeping enabled.
+func (f *fakeStore) ListAppSleep(context.Context) ([]store.AppSleep, error) {
+	var out []store.AppSleep
+	for name, m := range f.sleep {
+		if m > 0 {
+			out = append(out, store.AppSleep{ServiceName: name, IdleMinutes: m})
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) DeleteAppSleep(_ context.Context, name string) error {
+	delete(f.sleep, name)
+	delete(f.hold, name)
+	delete(f.asleep, name)
+	return nil
 }
 
 func (f *fakeStore) ListDeployAttempts(_ context.Context, name string) ([]store.DeployAttempt, error) {
@@ -110,6 +131,8 @@ func (f *fakeStore) remove(_ context.Context, name string) error {
 			break
 		}
 	}
+	// Mirrors the real delete, which clears the sleep setting with the service.
+	_ = f.DeleteAppSleep(context.Background(), name)
 	return nil
 }
 
@@ -396,6 +419,60 @@ func TestSync_MemoryGuard(t *testing.T) {
 		s.HostMemory = func() (int64, int64, error) { return 8 << 30, avail, nil }
 		if err := s.Sync(context.Background()); err != nil || copyCount(f) != tc.want {
 			t.Errorf("%s: err=%v copies=%d, want %d", tc.name, err, copyCount(f), tc.want)
+		}
+	}
+}
+
+// Sleep rows left by older deletes (service gone) are cleared, live ones kept.
+func TestSync_PrunesOrphanSleepRows(t *testing.T) {
+	f := newFake()
+	f.services = []store.DesiredService{{Name: "web", Image: "web:ddddddd", Port: 80}}
+	f.sleep["web"] = 5
+	f.sleep["ngx-dep1234567"] = 5
+	f.sleep["minecraft-abc-dep1"] = 5
+	if err := newSyncer(f, dflt).Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := f.sleep["web"]; !ok {
+		t.Error("sleep row of an existing service was pruned")
+	}
+	for _, name := range []string{"ngx-dep1234567", "minecraft-abc-dep1"} {
+		if _, ok := f.sleep[name]; ok {
+			t.Errorf("orphan sleep row %s survived", name)
+		}
+	}
+}
+
+// Deleting the app removes its copies and their sleep rows, nothing is listed as awake.
+func TestSync_DeletedAppLeavesNoSleepRows(t *testing.T) {
+	f := newFake()
+	fourDeploys(f, store.DesiredService{Name: "web", Image: "web:ddddddd", Port: 80})
+	s := newSyncer(f, dflt)
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	f.services = nil
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.rows) != 0 || len(f.sleep) != 0 {
+		t.Errorf("rows=%d sleep=%d, want none", len(f.rows), len(f.sleep))
+	}
+}
+
+// A copy is written suspended in one call and never passes through a running state.
+func TestSync_CopyBornSuspendedInOneWrite(t *testing.T) {
+	f := newFake()
+	fourDeploys(f, store.DesiredService{Name: "web", Image: "web:ddddddd", Port: 80})
+	if err := newSyncer(f, dflt).Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.saves) != 1 {
+		t.Fatalf("suspended saves = %v, want one", f.saves)
+	}
+	for _, svc := range f.services {
+		if svc.Name == f.saves[0] && !svc.Suspended {
+			t.Error("copy not suspended after its only write")
 		}
 	}
 }

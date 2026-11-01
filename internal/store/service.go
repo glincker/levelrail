@@ -663,12 +663,18 @@ func (e *ErrDomainTaken) Error() string {
 // entire desired-state write is rejected in that case, not partially
 // applied with some domains silently dropped.
 func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error {
-	return db.saveDesiredService(ctx, svc, nil)
+	return db.saveDesiredService(ctx, svc, nil, false)
+}
+
+// SaveSuspendedDesiredService is SaveDesiredService that also marks the row
+// suspended in the same transaction, so no reconcile pass can see it running.
+func (db *DB) SaveSuspendedDesiredService(ctx context.Context, svc DesiredService) error {
+	return db.saveDesiredService(ctx, svc, nil, true)
 }
 
 // saveDesiredService is SaveDesiredService with an optional hook run inside
 // the same transaction before the write; a hook error aborts the save.
-func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx func(*sql.Tx) error) error {
+func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx func(*sql.Tx) error, suspended bool) error {
 	domainsJSON, err := json.Marshal(nonNilSlice(svc.Domains))
 	if err != nil {
 		return fmt.Errorf("store: marshal domains for service %q: %w", svc.Name, err)
@@ -843,6 +849,11 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
 
+	if suspended {
+		if _, err := tx.ExecContext(ctx, `UPDATE desired_services SET suspended = 1 WHERE name = ?`, svc.Name); err != nil {
+			return fmt.Errorf("store: save desired service %q: suspend: %w", svc.Name, err)
+		}
+	}
 	if err := recordAppChange(ctx, tx, svc.Name); err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -1651,6 +1662,9 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
 	if err := db.DeleteDeployExits(ctx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
+	if err := db.DeleteAppSleep(ctx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
 	if err := db.DeleteRolloutProgress(ctx, name); err != nil {

@@ -97,7 +97,7 @@ func (db *DB) SaveDesiredServiceOrdered(ctx context.Context, svc DesiredService,
 			}
 		}
 		return advanceDeployCursor(ctx, tx, svc.Name, cursor, order)
-	})
+	}, false)
 }
 
 func advanceDeployCursor(ctx context.Context, tx *sql.Tx, serviceName string, cursor DeployCursor, order DeployOrder) error {

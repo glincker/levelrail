@@ -179,7 +179,9 @@ func Clone(app store.DesiredService, w Wanted, host string) store.DesiredService
 type Store interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
-	UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error
+	SaveSuspendedDesiredService(ctx context.Context, svc store.DesiredService) error
+	ListAppSleep(ctx context.Context) ([]store.AppSleep, error)
+	DeleteAppSleep(ctx context.Context, serviceName string) error
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
 	SetAppSleepIdle(ctx context.Context, serviceName string, minutes int, now time.Time) error
@@ -217,6 +219,12 @@ func (s *Syncer) now() time.Time {
 
 // Sync runs one pass. A failure on one app is logged and does not stop the rest.
 func (s *Syncer) Sync(ctx context.Context) error {
+	// Sleep rows are read before services: a service created in between
+	// then still counts as existing and its fresh row is never pruned.
+	sleeps, err := s.Store.ListAppSleep(ctx)
+	if err != nil {
+		return fmt.Errorf("deployurls: list sleep rows: %w", err)
+	}
 	services, err := s.Store.ListDesiredServices(ctx)
 	if err != nil {
 		return fmt.Errorf("deployurls: list services: %w", err)
@@ -240,6 +248,7 @@ func (s *Syncer) Sync(ctx context.Context) error {
 		existing[svc.Name] = true
 	}
 	s.existing = existing
+	s.pruneOrphanSleep(ctx, sleeps, existing)
 	changed := false
 	for _, svc := range services {
 		if retained[svc.Name] || store.IsCanaryService(svc.Name) || previewName.MatchString(svc.Name) {
@@ -261,6 +270,19 @@ func (s *Syncer) Sync(ctx context.Context) error {
 		s.Nudge()
 	}
 	return nil
+}
+
+// pruneOrphanSleep clears sleep settings whose service is gone, which older
+// app deletes left behind and `apps sleep list` showed as awake.
+func (s *Syncer) pruneOrphanSleep(ctx context.Context, sleeps []store.AppSleep, existing map[string]bool) {
+	for _, a := range sleeps {
+		if existing[a.ServiceName] {
+			continue
+		}
+		if err := s.Store.DeleteAppSleep(ctx, a.ServiceName); err != nil {
+			s.Logger.WarnContext(ctx, "deploy urls: prune orphan sleep row failed", slog.String("service", a.ServiceName), slog.String("error", err.Error()))
+		}
+	}
 }
 
 func (s *Syncer) removeRow(ctx context.Context, r store.DeployURL) bool {
@@ -337,12 +359,9 @@ func wantedLive(wanted []Wanted, name string) bool {
 func (s *Syncer) create(ctx context.Context, app store.DesiredService, w Wanted, host string) error {
 	// Born asleep: an old deploy costs nothing until someone opens its URL.
 	svc := Clone(app, w, host)
-	if err := s.Store.SaveDesiredService(ctx, svc); err != nil {
+	// One write, so a reconcile landing before the stop cannot start a container.
+	if err := s.Store.SaveSuspendedDesiredService(ctx, svc); err != nil {
 		return fmt.Errorf("save service: %w", err)
-	}
-	// SaveDesiredService never writes suspended, so the stop must be explicit.
-	if err := s.Store.UpdateServiceSuspended(ctx, w.ServiceName, true); err != nil {
-		return fmt.Errorf("suspend copy: %w", err)
 	}
 	now := s.now()
 	if err := s.Store.SetAppSleepIdle(ctx, w.ServiceName, s.Config.IdleMinutes, now); err != nil {
