@@ -323,6 +323,10 @@ func printJob(out io.Writer, j scheduledTaskResource) {
 	if j.NextRunAt != nil {
 		_, _ = fmt.Fprintf(out, "next run:    %s\n", j.NextRunAt.Format(time.RFC3339))
 	}
+	// Host only: the API never returns the heartbeat URL, and the CLI must not guess at it.
+	if j.HeartbeatConfigured || j.HeartbeatHost != "" {
+		_, _ = fmt.Fprintf(out, "heartbeat:   %s\n", orStr(j.HeartbeatHost, "configured"))
+	}
 }
 
 func orStr(v, def string) string {

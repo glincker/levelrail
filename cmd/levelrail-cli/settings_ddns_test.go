@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -43,5 +44,27 @@ func TestBuildDDNSUpdateRejectsBadInput(t *testing.T) {
 		if _, err := buildDDNSUpdate(f); err == nil {
 			t.Errorf("%+v: want error", f)
 		}
+	}
+}
+
+func TestRun_SettingsDDNS_ClearTarget(t *testing.T) {
+	var raw string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b := new(strings.Builder)
+		_, _ = io.Copy(b, r.Body)
+		raw = b.String()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.DDNSResource{Provider: "generic", Source: "stored"})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"settings", "ddns", "set", "--clear-target", "--api-url", srv.URL})
+	if !strings.Contains(raw, `"target":""`) {
+		t.Errorf("clear body = %s", raw)
+	}
+	raw = ""
+	stderr := runCLIExpectValidationError(t, []string{"settings", "ddns", "set", "--target", "", "--api-url", srv.URL})
+	if raw != "" || !strings.Contains(stderr, "--clear-target") {
+		t.Errorf("empty --target sent=%q stderr=%q", raw, stderr)
 	}
 }

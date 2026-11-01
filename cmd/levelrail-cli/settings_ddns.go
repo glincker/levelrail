@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -37,7 +38,7 @@ func runSettingsDDNS(prog string, args []string, stdout, stderr io.Writer, looku
 func settingsDDNSUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings ddns show [flags]
-  %[1]s settings ddns set [--provider generic|duckdns] [--domains LIST] [--target URL|TOKEN] [tuning flags] [flags]
+  %[1]s settings ddns set [--provider generic|duckdns] [--domains LIST] [--target URL|TOKEN | --clear-target] [tuning flags] [flags]
   %[1]s settings ddns enable|disable [flags]
   %[1]s settings ddns status [flags]
 
@@ -47,7 +48,8 @@ defaults used until something is stored.
 
 The target (generic: an update URL containing {ip}; duckdns: the token) is
 stored encrypted and only its host is shown. Pass --target - to read it from
-stdin, or set %[5]s, to keep it out of shell history.
+stdin, or set %[5]s, to keep it out of shell history. --clear-target removes
+the stored target; an empty --target is refused so a clear is never silent.
 
 Tuning flags: --interval, --timeout, --min-update-gap, --reassert (durations
 like 5m), --probe-urls (comma list), --probe-quorum, --fail-alert-after,
@@ -66,6 +68,7 @@ type ddnsFlags struct {
 	provider, domains, target, probeURLs                string
 	interval, timeout, gap, reassert, quorum, failAfter string
 	allowPrivate, allowInsecure                         string
+	clearTarget                                         bool
 }
 
 func runSettingsDDNSVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -75,6 +78,7 @@ func runSettingsDDNSVerb(prog, verb string, args []string, stdout, stderr io.Wri
 		fs.StringVar(&f.provider, "provider", "", "generic or duckdns")
 		fs.StringVar(&f.domains, "domains", "", "DuckDNS domains, comma separated")
 		fs.StringVar(&f.target, "target", "", "update URL (generic) or token (duckdns), - reads stdin")
+		fs.BoolVar(&f.clearTarget, "clear-target", false, "remove the stored update target")
 		fs.StringVar(&f.probeURLs, "probe-urls", "", "comma separated public IP probe URLs")
 		fs.StringVar(&f.interval, "interval", "", "check interval, e.g. 5m")
 		fs.StringVar(&f.timeout, "timeout", "", "request timeout, e.g. 10s")
@@ -110,11 +114,17 @@ func runSettingsDDNSVerb(prog, verb string, args []string, stdout, stderr io.Wri
 			on := verb == "enable"
 			upd.Enabled = &on
 		default:
-			switch f.target {
-			case "-":
+			targetSet := false
+			fs.Visit(func(fl *flag.Flag) { targetSet = targetSet || fl.Name == "target" })
+			switch {
+			case targetSet && strings.TrimSpace(f.target) == "":
+				return reportError(stdout, stderr, jsonOut, newValidationError("--target is empty; use --clear-target to remove the stored target"))
+			case f.clearTarget && targetSet:
+				return reportError(stdout, stderr, jsonOut, newValidationError("--clear-target cannot be combined with --target"))
+			case f.target == "-":
 				line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 				f.target = strings.TrimSpace(line)
-			case "":
+			case f.target == "" && !f.clearTarget:
 				f.target, _ = lookupEnv(envDDNSTarget)
 			}
 			if upd, err = buildDDNSUpdate(f); err != nil {
@@ -137,7 +147,10 @@ func buildDDNSUpdate(f ddnsFlags) (apiclient.DDNSUpdate, error) {
 	if f.domains != "" {
 		u.Domains = &f.domains
 	}
-	if f.target != "" {
+	if f.clearTarget {
+		empty := ""
+		u.Target = &empty
+	} else if f.target != "" {
 		u.Target = &f.target
 	}
 	if f.probeURLs != "" {

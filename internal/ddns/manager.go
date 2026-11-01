@@ -158,6 +158,9 @@ type Manager struct {
 	cancel context.CancelFunc
 	up     *Updater
 	sig    [32]byte
+	// carry survives a loop restart in memory only; tsig ties it to the provider and target.
+	carry Carry
+	tsig  [32]byte
 }
 
 // NewManager wires the manager; secrets may be nil, then only env defaults apply and nothing can be stored.
@@ -355,6 +358,14 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 	m.stopLocked()
 	cfg := s.Config()
 	up := New(cfg, NewDetector(cfg), p, m.log, m.hooks)
+	// A changed provider or target must write at once; any other change keeps the gap.
+	tsig := sha256.Sum256([]byte(s.Provider + "\x00" + s.Domains + "\x00" + t))
+	if tsig == m.tsig {
+		up.Seed(m.carry)
+	} else {
+		m.carry = Carry{}
+	}
+	m.tsig = tsig
 	runCtx, cancel := context.WithCancel(m.parent)
 	m.up, m.cancel, m.sig = up, cancel, sig
 	go up.Run(runCtx)
@@ -370,6 +381,11 @@ func (m *Manager) stop() {
 func (m *Manager) stopLocked() {
 	if m.cancel != nil {
 		m.cancel()
+	}
+	if m.up != nil {
+		if c := m.up.Carry(); c.LastIP != "" {
+			m.carry = c
+		}
 	}
 	m.up, m.cancel = nil, nil
 }

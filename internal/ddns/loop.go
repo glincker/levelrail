@@ -45,6 +45,27 @@ func New(cfg Config, d *Detector, p Provider, log *slog.Logger, hooks Hooks) *Up
 	return &Updater{cfg: cfg, detector: d, provider: p, log: log, hooks: hooks, now: time.Now}
 }
 
+// Carry is the write history a replacement loop inherits so the minimum gap and reassert timer keep applying.
+type Carry struct {
+	LastIP     string
+	LastChange time.Time
+	LastWrite  time.Time
+}
+
+// Carry snapshots the write history; it is zero until a write succeeded.
+func (u *Updater) Carry() Carry {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return Carry{LastIP: u.st.LastIP, LastChange: u.st.LastChange, LastWrite: u.lastWrite}
+}
+
+// Seed restores write history from an earlier loop before Run starts.
+func (u *Updater) Seed(c Carry) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.st.LastIP, u.st.LastChange, u.lastWrite = c.LastIP, c.LastChange, c.LastWrite
+}
+
 // StartFromEnv launches the loop only when enabled; it returns false when off.
 func StartFromEnv(ctx context.Context, getenv func(string) string, log *slog.Logger, hooks Hooks) (bool, error) {
 	if !Enabled(getenv) {

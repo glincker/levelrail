@@ -90,3 +90,16 @@ func TestRun_Jobs(t *testing.T) {
 		t.Error("create without a command succeeded, want a usage error")
 	}
 }
+
+func TestPrintJobShowsHeartbeatHostOnly(t *testing.T) {
+	var b strings.Builder
+	printJob(&b, scheduledTaskResource{Name: "n", HeartbeatHost: "hc.example.com", HeartbeatConfigured: true})
+	if !strings.Contains(b.String(), "heartbeat:   hc.example.com\n") {
+		t.Errorf("out = %q", b.String())
+	}
+	b.Reset()
+	printJob(&b, scheduledTaskResource{Name: "n"})
+	if strings.Contains(b.String(), "heartbeat") {
+		t.Errorf("unexpected heartbeat line: %q", b.String())
+	}
+}
