@@ -717,6 +717,11 @@ func VerifySignature(secret, body []byte, header string) bool {
 	if !ok {
 		return false
 	}
+	// Senders emit lowercase hex; rejecting other spellings keeps exactly
+	// one accepted header per body, so logs and dedup keys stay canonical.
+	if len(sigHex) != 2*sha256.Size || !isLowerHex(sigHex) {
+		return false
+	}
 	sig, err := hex.DecodeString(sigHex)
 	if err != nil {
 		return false
@@ -725,6 +730,16 @@ func VerifySignature(secret, body []byte, header string) bool {
 	mac.Write(body) // hash.Hash.Write never returns an error.
 	expected := mac.Sum(nil)
 	return hmac.Equal(sig, expected)
+}
+
+func isLowerHex(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 // UseSourceCache routes this handler's fetches through the shared source

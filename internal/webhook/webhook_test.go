@@ -1035,3 +1035,44 @@ func TestServeHTTP_AttemptTrackingDisabled_NeverDispatches(t *testing.T) {
 		t.Errorf("Dispatch called %d times, want 0 when attempt tracking is disabled", len(calls))
 	}
 }
+
+// Only canonical lowercase hex verifies: every supported sender emits it,
+// and accepting other spellings would let one body have many valid headers.
+func TestVerifySignature_CanonicalHexOnly(t *testing.T) {
+	secret := []byte("shared-secret")
+	body := []byte(`{"ref":"refs/heads/main"}`)
+	good := sign(secret, body)
+	hexPart := strings.TrimPrefix(good, "sha256=")
+	mixed := []byte(hexPart)
+	for i := range mixed {
+		if i%2 == 0 {
+			mixed[i] = []byte(strings.ToUpper(string(mixed[i])))[0]
+		}
+	}
+	tests := []struct {
+		name   string
+		header string
+		want   bool
+	}{
+		{"lowercase valid", good, true},
+		{"uppercase hex", "sha256=" + strings.ToUpper(hexPart), false},
+		{"mixed case", "sha256=" + string(mixed), false},
+		{"too short", good[:len(good)-2], false},
+		{"too long", good + "00", false},
+		{"missing prefix", hexPart, false},
+		{"non-hex", "sha256=" + strings.Repeat("z", 64), false},
+		{"empty", "", false},
+		{"prefix only", "sha256=", false},
+		{"trailing space", good + " ", false},
+		{"leading space", " " + good, false},
+		{"double prefix", "sha256=" + good, false},
+		{"wrong algorithm", "sha1=" + hexPart, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := VerifySignature(secret, body, tt.header); got != tt.want {
+				t.Errorf("VerifySignature(%q) = %v, want %v", tt.header, got, tt.want)
+			}
+		})
+	}
+}
