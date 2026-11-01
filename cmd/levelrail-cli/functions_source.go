@@ -99,12 +99,12 @@ func runFunctionsInit(prog string, args []string, stdout, stderr io.Writer) int 
 		dir = args[1]
 	}
 	for _, f := range rtm.Files {
-		if _, err := os.Stat(filepath.Join(dir, f.Path)); err == nil {
+		if _, err := os.Stat(filepath.Join(dir, f.Path)); err == nil { //nolint:gosec // G703: dir is the positional argument the user passed on their own machine
 			_, _ = fmt.Fprintf(stderr, "%s: %s already exists, refusing to overwrite\n", prog, filepath.Join(dir, f.Path))
 			return exitUsage
 		}
 	}
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil { //nolint:gosec // G703: dir is the positional argument the user passed on their own machine
 		_, _ = fmt.Fprintf(stderr, "%s: create %s: %v\n", prog, dir, err)
 		return exitAPIError
 	}

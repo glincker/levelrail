@@ -152,11 +152,11 @@ func runBench(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 }
 
 func postNoBody(ctx context.Context, c *http.Client, url string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil) //nolint:gosec // G704: URL is the --kill flag the user passed, no credentials are attached
 	if err != nil {
 		return err
 	}
-	resp, err := c.Do(req)
+	resp, err := c.Do(req) //nolint:gosec // G704: URL is the --kill flag the user passed, no credentials are attached
 	if err != nil {
 		return err
 	}
