@@ -191,3 +191,15 @@ These run a slow suite in the shape CI uses, so a local result predicts CI.
 - `scripts/gate-store.sh [-r regex] [-R]` runs `internal/store` with `-short`, optionally with `-race`, and prints failures and the slowest tests. `GATE_STORE_TIMEOUT` defaults to 25m.
 
 Both take minutes on a full run. Use `-r` with a test name to stay under a minute while iterating.
+
+## Scheduled and advisory workflows
+
+These run outside the required PR checks. A red run never blocks a merge unless the table says so. Read the job log first; each failure names the package, input or licence.
+
+| Workflow | Checks | Reading a failure | Gate |
+| --- | --- | --- | --- |
+| `nightly-fuzz.yml` | Every native Go fuzz target for `FUZZ_TIME` (default 60s) | Download the `fuzz-failures` artifact, copy the files into the package's `testdata/fuzz/`, fix the bug, commit them as seeds | Advisory (schedule only) |
+| `nightly-supplychain.yml` | OSV scan of Go and npm dependencies, and linked licences against `scripts/license-denylist.txt` | A listed advisory or `denied licence:` line names the dependency | Advisory (`continue-on-error`) |
+| `scorecard.yml` | OpenSSF Scorecard, uploaded to code scanning | Open the Security tab alerts; each check explains its fix | Advisory, results not published |
+| `govulncheck-pr.yml` | Fixable Go vulnerabilities, only when `go.mod` or `go.sum` change | The `fixable:` line lists advisories, bump the module it names | Blocking on those PRs |
+| `ci.yml` job `OpenAPI breaking changes` | `docs/public/openapi.json` against the base branch with oasdiff | The log lists each breaking change; keep it or version the endpoint | Advisory (not in `CI required`) |
