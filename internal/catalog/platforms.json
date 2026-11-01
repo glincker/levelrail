@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-01T23:23:03Z",
+  "scanned_at": "2026-11-01T23:30:55Z",
   "images": [
     {
       "image": "1dev/server",
@@ -1038,6 +1038,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/cleanuparr/cleanuparr",
+      "tag": "2.10.12",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:30:55Z"
+    },
+    {
       "image": "ghcr.io/coollabsio/minio",
       "tag": "RELEASE.2025-10-15T17-29-55Z",
       "platforms": [
@@ -1112,6 +1121,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/foxxmd/multi-scrobbler",
+      "tag": "0.20.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:30:55Z"
     },
     {
       "image": "ghcr.io/fuzzygrim/yamtrack",
@@ -2518,10 +2536,19 @@
       "checked_at": "2026-11-01T04:09:06Z"
     },
     {
+      "image": "lscr.io/linuxserver/smokeping",
+      "tag": "2.9.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:30:55Z"
+    },
+    {
       "image": "lscr.io/linuxserver/snapdrop",
       "tag": "latest",
       "platforms": null,
-      "checked_at": "2026-11-01T23:23:03Z",
+      "checked_at": "2026-11-01T23:30:55Z",
       "error": "unsupported manifest format"
     },
     {
@@ -3928,7 +3955,7 @@
       "image": "tiredofit/osticket",
       "tag": "1.18.2",
       "platforms": null,
-      "checked_at": "2026-11-01T23:23:03Z",
+      "checked_at": "2026-11-01T23:30:55Z",
       "error": "access denied (HTTP 401), image is private or missing"
     },
     {
@@ -4437,6 +4464,10 @@
       "linux/arm64"
     ],
     "chroma": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cleanuparr": [
       "linux/amd64",
       "linux/arm64"
     ],
@@ -5240,6 +5271,10 @@
       "linux/ppc64le",
       "linux/s390x"
     ],
+    "multi-scrobbler": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "mylar3": [
       "linux/amd64",
       "linux/arm64"
@@ -5732,6 +5767,10 @@
       "linux/arm64"
     ],
     "slash": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "smokeping": [
       "linux/amd64",
       "linux/arm64"
     ],

@@ -1,0 +1,20 @@
+id: smokeping
+name: SmokePing
+description: A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.
+icon: chart-line
+category: Monitoring
+documentation_url: https://oss.oetiker.ch/smokeping/doc/index.en.html
+recommended_memory_bytes: 201326592
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for graphs and logs.
+    default: Etc/UTC
+domains:
+  - service: smokeping
+    port: 80
+    description: Public address of SmokePing.
+healthcheck:
+  service: smokeping
+  port: 80
+  path: /

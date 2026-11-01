@@ -143,7 +143,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-01T23:23:03Z. **377 yes, 15 amd64 only, 2 not checked** of 394 templates.
+Last scan: 2026-11-01T23:30:55Z. **380 yes, 15 amd64 only, 2 not checked** of 397 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -189,6 +189,7 @@ Last scan: 2026-11-01T23:23:03Z. **377 yes, 15 amd64 only, 2 not checked** of 39
 | `checkmate` | yes | linux/amd64, linux/arm64 |
 | `chibisafe` | yes | linux/amd64, linux/arm64 |
 | `chroma` | yes | linux/amd64, linux/arm64 |
+| `cleanuparr` | yes | linux/amd64, linux/arm64 |
 | `clickhouse` | yes | linux/amd64, linux/arm64 |
 | `cloudbeaver` | yes | linux/amd64, linux/arm64 |
 | `cloudflare-ddns` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
@@ -365,6 +366,7 @@ Last scan: 2026-11-01T23:23:03Z. **377 yes, 15 amd64 only, 2 not checked** of 39
 | `monica` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `moodle` | yes | linux/amd64, linux/arm64 |
 | `mosquitto` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `multi-scrobbler` | yes | linux/amd64, linux/arm64 |
 | `mylar3` | yes | linux/amd64, linux/arm64 |
 | `n8n` | yes | linux/amd64, linux/arm64 |
 | `n8n-ai-starter` | yes | linux/amd64, linux/arm64 |
@@ -471,6 +473,7 @@ Last scan: 2026-11-01T23:23:03Z. **377 yes, 15 amd64 only, 2 not checked** of 39
 | `silverbullet` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `siyuan` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `slash` | yes | linux/amd64, linux/arm64 |
+| `smokeping` | yes | linux/amd64, linux/arm64 |
 | `snapdrop` | not checked | - |
 | `snipe-it` | yes | linux/amd64, linux/arm64 |
 | `soketi` | yes | linux/amd64, linux/arm, linux/arm64 |

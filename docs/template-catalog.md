@@ -25,13 +25,13 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (394 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (397 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 36 |
 | [Analytics](#analytics) | 8 |
-| [Applications](#applications) | 28 |
+| [Applications](#applications) | 30 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 20 |
 | [Dashboard](#dashboard) | 8 |
@@ -42,7 +42,7 @@ Generated from `internal/catalog.Templates` (394 entries as of this build). Run 
 | [Infrastructure](#infrastructure) | 16 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 28 |
-| [Monitoring](#monitoring) | 26 |
+| [Monitoring](#monitoring) | 27 |
 | [Productivity](#productivity) | 77 |
 | [Security](#security) | 18 |
 | [Starter Kits](#starter-kits) | 7 |
@@ -108,6 +108,7 @@ Generated from `internal/catalog.Templates` (394 entries as of this build). Run 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [Budibase](https://docs.budibase.com/docs/docker-compose) | An open-source low-code platform for building internal tools, forms, and admin panels. | `budibase` |  |
+| [Cleanuparr](https://cleanuparr.github.io/Cleanuparr/) | A companion for Sonarr, Radarr and your download client that removes stalled, failed and malicious downloads and cleans up leftovers. GPL-3.0 licensed. Open the web UI and add your arr apps and download client under Settings. | `cleanuparr` |  |
 | [Cockpit CMS](https://getcockpit.com/documentation/) | A headless content platform for managing structured content behind a clean API, without a big CMS footprint. | `cockpit-cms` |  |
 | [Deluge](https://deluge.readthedocs.io/) | A lightweight BitTorrent client with a web interface and plugins. GPL-3.0 licensed. The web UI starts with the default password deluge, so change it on first sign in (Preferences, Interface). Only the web UI is published, so incoming peer connections are limited. | `deluge` |  |
 | [Drupal](https://www.drupal.org/docs) | A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. | `drupal` |  |
@@ -122,6 +123,7 @@ Generated from `internal/catalog.Templates` (394 entries as of this build). Run 
 | [Maintainerr](https://docs.maintainerr.info/) | Rule-based media library cleanup for Plex and Jellyfin that works with Sonarr, Radarr and Seerr. MIT licensed. On first open, add your media server and arr apps in settings, then build rules. | `maintainerr` |  |
 | [MediaWiki](https://www.mediawiki.org/wiki/Manual:Contents) | The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history. | `mediawiki` |  |
 | [Moodle](https://moodle.org) | A widely used, highly customizable learning management system for online courses. | `moodle` |  |
+| [Multi-Scrobbler](https://foxxmd.github.io/multi-scrobbler/) | Scrobbles your listening history from sources like Spotify, Jellyfin, Plex and Navidrome to destinations like Last.fm, ListenBrainz and Maloja. MIT licensed. Add sources and clients through the web UI or the config files under the data volume. | `multi-scrobbler` |  |
 | [Mylar3](https://github.com/mylar3/mylar3/wiki) | An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration. | `mylar3` |  |
 | [Nextcloud](https://docs.nextcloud.com) | Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives. | `nextcloud` |  |
 | [Odoo](https://www.odoo.com/documentation) | An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder. | `odoo` |  |
@@ -394,6 +396,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Netdata](https://learn.netdata.cloud) | Per-second infrastructure metrics with zero configuration and a live dashboard out of the box. | `netdata` |  |
 | [OpenObserve](https://openobserve.ai/docs) | A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI. | `openobserve` |  |
 | [Prometheus](https://prometheus.io/docs/introduction/overview/) | A metrics time-series database and alerting engine built for pull-based scraping. | `prometheus` |  |
+| [SmokePing](https://oss.oetiker.ch/smokeping/doc/index.en.html) | A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy. | `smokeping` |  |
 | [Speedtest Tracker](https://docs.speedtest-tracker.dev) | Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time. | `speedtest-tracker` |  |
 | [Statusnook](https://statusnook.com) | Deploy a status page and start monitoring endpoints in minutes. | `statusnook` |  |
 | [Tautulli](https://docs.tautulli.com) | Monitors your Plex server and shows who watched what, with history, stats, and notifications. | `tautulli` |  |

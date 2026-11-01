@@ -4720,6 +4720,89 @@
   }
  },
  {
+  "id": "cleanuparr",
+  "name": "Cleanuparr",
+  "slogan": "A companion for Sonarr, Radarr and your download client that removes stalled, failed and malicious downloads and cleans up leftovers. GPL-3.0 licensed. Open the web UI and add your arr apps and download client under Settings.",
+  "category": "Applications",
+  "docUrl": "https://cleanuparr.github.io/Cleanuparr/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "cleanuparr",
+    "image": "ghcr.io/cleanuparr/cleanuparr:2.10.12",
+    "ports": [
+     11011
+    ],
+    "volumes": [
+     "config -> /config"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "cleanuparr",
+    "name": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "cleanuparr",
+    "name": "PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "cleanuparr",
+    "name": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "cleanuparr",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "cleanuparr"
+     ],
+     "detail": "config",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "clickhouse",
   "name": "ClickHouse",
   "slogan": "A columnar database built for fast analytical queries over large datasets.",
@@ -23531,6 +23614,89 @@
   }
  },
  {
+  "id": "multi-scrobbler",
+  "name": "Multi-Scrobbler",
+  "slogan": "Scrobbles your listening history from sources like Spotify, Jellyfin, Plex and Navidrome to destinations like Last.fm, ListenBrainz and Maloja. MIT licensed. Add sources and clients through the web UI or the config files under the data volume.",
+  "category": "Applications",
+  "docUrl": "https://foxxmd.github.io/multi-scrobbler/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "multi-scrobbler",
+    "image": "ghcr.io/foxxmd/multi-scrobbler:0.20.3",
+    "ports": [
+     9078
+    ],
+    "volumes": [
+     "config -> /config"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "multi-scrobbler",
+    "name": "BASE_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "multi-scrobbler",
+    "name": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "multi-scrobbler",
+    "name": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "multi-scrobbler",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "multi-scrobbler"
+     ],
+     "detail": "config",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "mylar3",
   "name": "Mylar3",
   "slogan": "An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration.",
@@ -34419,6 +34585,85 @@
       "slash"
      ],
      "detail": "slash_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "smokeping",
+  "name": "SmokePing",
+  "slogan": "A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.",
+  "category": "Monitoring",
+  "docUrl": "https://oss.oetiker.ch/smokeping/doc/index.en.html",
+  "memoryMiB": 192,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "smokeping",
+    "image": "lscr.io/linuxserver/smokeping:2.9.0",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "config -> /config",
+     "data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "smokeping",
+    "name": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "smokeping",
+    "name": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "smokeping",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "smokeping"
+     ],
+     "detail": "config, data",
      "message": "Stores data in named volumes"
     }
    ],

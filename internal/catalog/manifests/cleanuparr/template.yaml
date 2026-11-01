@@ -1,0 +1,20 @@
+id: cleanuparr
+name: Cleanuparr
+description: A companion for Sonarr, Radarr and your download client that removes stalled, failed and malicious downloads and cleans up leftovers. GPL-3.0 licensed. Open the web UI and add your arr apps and download client under Settings.
+icon: broom
+category: Applications
+documentation_url: https://cleanuparr.github.io/Cleanuparr/
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: cleanuparr
+    port: 11011
+    description: Public address of Cleanuparr.
+healthcheck:
+  service: cleanuparr
+  port: 11011
+  path: /health

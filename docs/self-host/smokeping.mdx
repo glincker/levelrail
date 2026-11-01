@@ -1,0 +1,67 @@
+---
+title: "Self-host SmokePing with Docker"
+sidebarTitle: "SmokePing"
+description: "A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy."
+"og:url": "https://docs.levelrail.com/self-host/smokeping"
+---
+
+A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.
+
+This page describes the Levelrail template for SmokePing (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://oss.oetiker.ch/smokeping/doc/index.en.html.
+
+Recommended memory: about 192 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `smokeping` | `lscr.io/linuxserver/smokeping:2.9.0` | 80 | `config -&#62; /config`<br />`data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `smokeping` | `PGID` | Preset in the template |
+| `smokeping` | `PUID` | Preset in the template |
+| `smokeping` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`smokeping`): config, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy SmokePing with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select SmokePing. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy smokeping --name my-smokeping
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+
+All templates are listed in the [self-host gallery](/self-host).

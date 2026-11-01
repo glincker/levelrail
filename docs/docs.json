@@ -578,6 +578,7 @@
             "group": "Applications",
             "pages": [
               "self-host/budibase",
+              "self-host/cleanuparr",
               "self-host/cockpit-cms",
               "self-host/deluge",
               "self-host/drupal",
@@ -592,6 +593,7 @@
               "self-host/maintainerr",
               "self-host/mediawiki",
               "self-host/moodle",
+              "self-host/multi-scrobbler",
               "self-host/mylar3",
               "self-host/nextcloud",
               "self-host/odoo",
@@ -864,6 +866,7 @@
               "self-host/netdata",
               "self-host/openobserve",
               "self-host/prometheus",
+              "self-host/smokeping",
               "self-host/speedtest-tracker",
               "self-host/statusnook",
               "self-host/tautulli",
