@@ -179,6 +179,7 @@ func Clone(app store.DesiredService, w Wanted, host string) store.DesiredService
 type Store interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
+	UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
 	SetAppSleepIdle(ctx context.Context, serviceName string, minutes int, now time.Time) error
@@ -336,9 +337,12 @@ func wantedLive(wanted []Wanted, name string) bool {
 func (s *Syncer) create(ctx context.Context, app store.DesiredService, w Wanted, host string) error {
 	// Born asleep: an old deploy costs nothing until someone opens its URL.
 	svc := Clone(app, w, host)
-	svc.Suspended = true
 	if err := s.Store.SaveDesiredService(ctx, svc); err != nil {
 		return fmt.Errorf("save service: %w", err)
+	}
+	// SaveDesiredService never writes suspended, so the stop must be explicit.
+	if err := s.Store.UpdateServiceSuspended(ctx, w.ServiceName, true); err != nil {
+		return fmt.Errorf("suspend copy: %w", err)
 	}
 	now := s.now()
 	if err := s.Store.SetAppSleepIdle(ctx, w.ServiceName, s.Config.IdleMinutes, now); err != nil {

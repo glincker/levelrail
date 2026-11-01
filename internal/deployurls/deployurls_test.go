@@ -36,15 +36,28 @@ func (f *fakeStore) ListDesiredServices(context.Context) ([]store.DesiredService
 	return append([]store.DesiredService(nil), f.services...), nil
 }
 
+// Save mirrors the real store: it never writes the suspended flag.
 func (f *fakeStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
 	for i := range f.services {
 		if f.services[i].Name == svc.Name {
+			svc.Suspended = f.services[i].Suspended
 			f.services[i] = svc
 			return nil
 		}
 	}
+	svc.Suspended = false
 	f.services = append(f.services, svc)
 	return nil
+}
+
+func (f *fakeStore) UpdateServiceSuspended(_ context.Context, name string, suspended bool) error {
+	for i := range f.services {
+		if f.services[i].Name == name {
+			f.services[i].Suspended = suspended
+			return nil
+		}
+	}
+	return store.ErrServiceNotFound
 }
 
 func (f *fakeStore) ListDeployAttempts(_ context.Context, name string) ([]store.DeployAttempt, error) {
