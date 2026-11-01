@@ -268,7 +268,7 @@ func TestReconcile_EnabledWithToken_CreatesAndStartsContainer(t *testing.T) {
 
 func TestReconcile_AlreadyRunning_Idempotent_NoRecreate(t *testing.T) {
 	rt := newFakeRuntime()
-	rt.seed(image, true)
+	rt.seed(defaultImage, true)
 	tokens := &fakeTokens{value: "tok", set: true}
 	c := New(&fakeStore{settings: store.CloudflareTunnelSettings{Enabled: true}}, tokens, rt, WithContainerPrefix("acme"))
 
@@ -290,7 +290,7 @@ func TestReconcile_AlreadyRunning_Idempotent_NoRecreate(t *testing.T) {
 
 func TestReconcile_Stopped_Restarts(t *testing.T) {
 	rt := newFakeRuntime()
-	rt.seed(image, false)
+	rt.seed(defaultImage, false)
 	tokens := &fakeTokens{value: "tok", set: true}
 	c := New(&fakeStore{settings: store.CloudflareTunnelSettings{Enabled: true}}, tokens, rt, WithContainerPrefix("acme"))
 
@@ -313,7 +313,7 @@ func TestReconcile_Stopped_Restarts(t *testing.T) {
 
 func TestReconcile_DisabledWhileRunning_RemovesContainer(t *testing.T) {
 	rt := newFakeRuntime()
-	rt.seed(image, true)
+	rt.seed(defaultImage, true)
 	c := New(&fakeStore{settings: store.CloudflareTunnelSettings{Enabled: false}}, &fakeTokens{}, rt, WithContainerPrefix("acme"))
 
 	result, err := c.Reconcile(context.Background())
@@ -377,8 +377,8 @@ func TestReconcile_ImageChanged_ReplacesContainer(t *testing.T) {
 		t.Errorf("createCalls = %d, want 1", rt.createCalls)
 	}
 	state, _ := rt.InspectByName(context.Background(), "acme-cloudflared")
-	if state == nil || state.Image != image {
-		t.Fatalf("container %+v, want image = %q", state, image)
+	if state == nil || state.Image != defaultImage {
+		t.Fatalf("container %+v, want image = %q", state, defaultImage)
 	}
 	cond := conditionOf(t, result)
 	if cond.Status != reconcile.ConditionTrue {
@@ -432,5 +432,15 @@ func TestContainerName_DefaultsWhenPrefixEmpty(t *testing.T) {
 	}
 	if got, want := ContainerName("Levelrail"), "Levelrail-cloudflared"; got != want {
 		t.Errorf("ContainerName(%q) = %q, want %q", "Levelrail", got, want)
+	}
+}
+
+func TestImageRef_EnvOverridesPinnedDefault(t *testing.T) {
+	if got := imageRef(); got != defaultImage {
+		t.Errorf("imageRef() = %q, want pinned default %q", got, defaultImage)
+	}
+	t.Setenv(imageEnv, "registry.example.com/cloudflared:custom")
+	if got := imageRef(); got != "registry.example.com/cloudflared:custom" {
+		t.Errorf("imageRef() = %q, want env override", got)
 	}
 }

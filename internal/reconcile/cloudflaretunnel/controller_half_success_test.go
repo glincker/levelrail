@@ -52,7 +52,7 @@ func TestReconcile_HalfSuccess_RecoversOnRetry(t *testing.T) {
 		},
 		{
 			name:       "restart of stopped container fails",
-			seedImage:  image,
+			seedImage:  defaultImage,
 			inject:     func(rt *fakeRuntime) { rt.startErr = errors.New("cannot start") },
 			clear:      func(rt *fakeRuntime) { rt.startErr = nil },
 			wantReason: "StartFailed",
@@ -60,7 +60,7 @@ func TestReconcile_HalfSuccess_RecoversOnRetry(t *testing.T) {
 		},
 		{
 			name:        "disabled: remove fails, container stays and is removed on retry",
-			seedImage:   image,
+			seedImage:   defaultImage,
 			seedRunning: true,
 			disabled:    true,
 			inject:      func(rt *fakeRuntime) { rt.removeErr = errors.New("busy") },
@@ -111,7 +111,7 @@ func TestReconcile_HalfSuccess_RecoversOnRetry(t *testing.T) {
 				return
 			}
 			st, _ := rt.InspectByName(context.Background(), "acme-cloudflared")
-			if st == nil || !st.Running || st.Image != image || cond.Status != reconcile.ConditionTrue {
+			if st == nil || !st.Running || st.Image != defaultImage || cond.Status != reconcile.ConditionTrue {
 				t.Fatalf("retry: state=%+v cond=%+v, want running current image, Ready", st, cond)
 			}
 		})

@@ -237,6 +237,7 @@
               "multi-node",
               "multi-node-quickstart",
               "add-node-anywhere",
+              "home-hardware",
               "resource-aware-placement",
               "autoscaling",
               "node-provisioning",

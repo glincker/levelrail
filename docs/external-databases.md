@@ -110,6 +110,42 @@ already running.
 - The MCP server exposes `list_external_databases` (read-only). No MCP tool can
   create, change or probe one.
 
+## Hosted database cookbook
+
+Levelrail takes the host, port, user, database and TLS mode as separate fields. It does not parse a connection string, so split the vendor's URL into those fields. It does build a URL for your app from them: Postgres gets `?sslmode=<mode>`, MongoDB gets `?tls=true` and Redis gets the `rediss://` scheme when TLS mode is `require`. A `mongodb+srv://` URL is not accepted as input (see Atlas below).
+
+None of the recipes below has been run against the real vendor service. They are derived from reading `internal/extdb` and the vendors' own pricing pages. Free-tier figures were read on 2026-11-01 and change, so recheck them.
+
+One effect applies to every scale-to-zero service. The health probe runs every five minutes by default and opens a real connection, which can keep an idle database awake and use up free compute or command allowances. Set `APP_EXTERNAL_DB_PROBE_INTERVAL` to a longer interval, or `0` to turn it off, for these.
+
+### Neon (Postgres)
+
+- Fields: host `ep-<name>.<region>.aws.neon.tech`, port 5432, the role and database from the Neon console, TLS mode `require`. Neon refuses plain connections.
+- Free plan: 1 GB of storage per project. Compute suspends after 5 minutes idle on the Free plan and cannot be turned off, so the first connection after a pause is slower and a probe can report `slow` while it wakes.
+- Use the host without `-pooler` for a first test. The pooled host (`-pooler`) is for many short connections.
+
+### Supabase (Postgres)
+
+- Fields: the host, port, user and database from the project's **Connect** page, TLS mode `require`. The pooler user has the form `postgres.<project-ref>`, which the user field accepts.
+- Free plan: 500 MB database size, 2 active projects, and projects are paused after 1 week of inactivity. Whether a probe counts as activity is not verified.
+- Whether your network can reach the direct host over IPv4 depends on the plan. Use the pooler host if the test says `unreachable`.
+
+### Upstash (Redis)
+
+- Fields: engine `redis`, host `<name>.upstash.io`, port 6379 (use the port shown in the console), user `default`, the password from the console, TLS mode `require`. Your app then receives a `rediss://` URL.
+- Free tier: 250 MB of data and 500K commands per month. A probe every five minutes is a small share of that, but turn it down if you are close.
+- The probe passes `--tls --insecure` to `redis-cli`, so it does not verify the server certificate. Your own app should.
+
+### MongoDB Atlas
+
+- `mongodb+srv://` URLs are not supported. The SRV form needs a DNS lookup of the cluster's seed list, and Levelrail stores one plain hostname and port and probes with `mongosh --host --port`. A replica set seed list is not supported either.
+- A single shard hostname (`<cluster>-shard-00-00.<id>.mongodb.net:27017`) passes the host checks, but it may point at a secondary and not the primary. Whether it works end to end has not been verified. Prefer to keep Atlas outside Levelrail and put its URL straight into the app's environment (see [Environment and secrets](/environment-and-secrets)).
+- Atlas also needs your server's IP on its network access list. Free tier: M0, 512 MB of storage.
+
+### Turso (libSQL)
+
+- Not supported. Turso speaks libSQL over HTTP and WebSocket, not one of the five engines (Postgres, MySQL, MariaDB, MongoDB, Redis), so it cannot be added as an external database. Put its URL and token in the app's environment instead.
+
 ## Not covered yet
 
 - Scheduled backups of an external database. The backup pipeline dumps by

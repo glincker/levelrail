@@ -160,7 +160,7 @@ The **Guided setup** button on an app's Domains tab walks one domain through fou
 1. **Domain.** Pick the environment it belongs to, and optionally route the `www` or apex twin with a redirect to the one you typed.
 2. **DNS record.** The exact A, AAAA or CNAME record to add, re-checked live.
 3. **Container port.** Whether the running container really listens on the app's port. This reads the container's socket table, so it needs exec access enabled for the app; without it the step says it could not verify.
-4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server. If this server sits on a private (LAN, NAT, NAS) address, or the domain is a wildcard, only DNS-01 can work, and the step says which provider is connected (Cloudflare, Route53 or none) and where to connect one.
+4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server, and every non-wildcard host uses it. DNS-01 is used only for wildcard hosts, and needs a connected DNS provider (Cloudflare, Route53 or Google Cloud DNS). If this server sits on a private (LAN, NAT, NAS) address, a non-wildcard host cannot get a trusted certificate from ACME. The step says which provider is connected, or none, and where to connect one. Use a wildcard host, a tunnel, or an uploaded certificate instead.
 
 When a certificate request fails, the dashboard shows the certificate authority's own error next to the one step that usually fixes it: open ports 80 and 443, fix the DNS record, wait out a rate limit, or correct a CAA record. The same reason appears on the Domains list and in `domains check`.
 
