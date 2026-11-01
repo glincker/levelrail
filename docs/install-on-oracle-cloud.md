@@ -10,6 +10,10 @@ This page covers running Levelrail on an Oracle Cloud Always Free Arm VM. The in
 
 Oracle changes its free tier limits and rules. Treat every number here as a pointer to Oracle's page, not as a promise. The source for the limits and the idle rule is [Always Free Resources](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm). Check it and your own console before you plan around a figure.
 
+<Note>
+The doctor cloud checks (`cloud_provider`, `cloud_firewall_layers`, `host_firewall_iptables`, `published_port_reachability`, `image_arch`, `idle_reclaim_risk`) and the `PlatformMismatch` refusal described below are available from the release that includes them. A release published before that does not have them: on the latest published release at the time of the 2026-11-01 test run, `levelrail-cli doctor` showed none of the cloud checks. Check `levelrail-cli version` and the [changelog](/changelog) before you rely on them.
+</Note>
+
 ## What the free Arm shape gives you
 
 Oracle's page says an Always Free tenancy gets the equivalent of 2 OCPUs and 12 GB of memory on the `VM.Standard.A1.Flex` shape, which you can split across instances. It also says boot volumes and block volumes share a 200 GB total, and that outbound data is 10 TB per month (all per the page linked above). Older guides quote 4 OCPUs and 24 GB. Do not assume that: the console shows what your tenancy actually has.
@@ -44,6 +48,8 @@ Traffic reaches the VM only if the VCN allows it. In the console open the instan
 | `0.0.0.0/0` | UDP | 443 | HTTP/3 (optional) |
 | `0.0.0.0/0` | TCP | 22 | SSH (usually present by default) |
 
+Port 8080 (the dashboard) is not in this table on purpose. The safe default is to leave it closed in the VCN and reach the dashboard through an SSH tunnel, see [First access to the dashboard](#first-access-to-the-dashboard). If you open TCP 8080, restrict the source CIDR to your own IP (`203.0.113.7/32` style), and remove the rule when you are done.
+
 Add rules for any app port you publish directly, for example TCP 25565 for a Minecraft Java server, see [Game servers](/game-servers). Add `::/0` rules only if your VCN has IPv6.
 
 ## 3. Open the host firewall (layer two)
@@ -56,30 +62,43 @@ Opening the VCN is not enough. The images also carry a host firewall, and it is 
 Look before you change anything:
 
 ```bash
-# check with sudo iptables -S INPUT first
-sudo iptables -S INPUT
-which ufw firewalld
+sudo iptables -L INPUT -v -n --line-numbers
+which ufw firewalld netfilter-persistent
 ```
 
-The installer warns when it finds an active firewalld. For `iptables`, the commands below insert allow rules ahead of the final reject. Check the rule order in the output of the command above before you run them, because the right position depends on your ruleset:
+On the stock Ubuntu image used in a test run (Ubuntu 24.04, `aarch64`, `iptables` v1.8.10 on the nf_tables backend, no `ufw` or `firewalld`), `INPUT` held these rules: 1 accept established, 2 accept ICMP, 3 accept loopback, 4 accept new TCP 22, 5 `REJECT --reject-with icmp-host-prohibited`. Yours may differ, so read your own listing first.
+
+The installer warns when it finds an active firewalld or ufw. For `iptables`, insert allow rules ahead of the final reject. The position must sit before the `REJECT` line in your listing. On the image above, positions 5 and 6 worked:
 
 ```bash
-# check with sudo iptables -S INPUT first
-sudo iptables -L INPUT --line-numbers
 sudo iptables -I INPUT 5 -p tcp --dport 80 -j ACCEPT
 sudo iptables -I INPUT 6 -p tcp --dport 443 -j ACCEPT
 sudo iptables -I INPUT 7 -p udp --dport 443 -j ACCEPT
-```
-
-The rule position (`5`, `6`, `7`) is an example. Use a position that sits before the `REJECT` line in your own listing. These rules are lost on reboot unless you save them. On Ubuntu, if the `netfilter-persistent` package is installed:
-
-```bash
 sudo netfilter-persistent save
 ```
 
+`netfilter-persistent save` writes `/etc/iptables/rules.v4`. On the test image the package was already installed, and the rules were still present after a reboot. Without the save, the rules are lost on reboot.
+
+The installer's port 443 warning only mentions ufw and firewalld. On this image the commands above are the fix.
+
+If you use firewalld (Oracle Linux), use `sudo firewall-cmd --permanent --add-port=80/tcp` (and 443) followed by `sudo firewall-cmd --reload`. That path was not part of the test run.
+
 The go-live checklist in the dashboard can read the host firewall and open ports 80 and 443 for you when the control plane runs as root, and it shows Oracle Cloud steps for the VCN layer. It never edits existing rules. See [Go live](/go-live) and [Host firewall](/host-firewall).
 
-Ports that Docker publishes for an app normally do not pass through the `INPUT` chain, so they may be reachable with only the VCN rule. Test from outside the network rather than assuming, and test UDP separately, see [UDP published ports](/udp-ports).
+### Which layer is blocking you
+
+From outside the VM, the failure looks different per layer:
+
+| What you see | Layer |
+| --- | --- |
+| Timeout | The VCN security list or network security group dropped the packet |
+| Connection refused | The host answered. Either nothing listens on the port, or the host `REJECT` rule answered for it |
+
+A host `REJECT` is not a silent drop, so it shows as refused, and some clients (macOS `nc` for one) report `host-prohibited` as refused too. Refused alone cannot tell "nothing is listening" from "host firewall reject". The counters can: run `sudo iptables -L INPUT -v -n --line-numbers` before and after a connection attempt. If the packet count on the `REJECT` rule grows, the host firewall is the blocker. Use `ss -tlnp` to check that something listens.
+
+### Docker published ports and host services
+
+On the test image, a container published with `docker run -p 25565:80 nginx:alpine` was reachable from outside with only the VCN rule open. There was no host `INPUT` rule for it and the `REJECT` counter did not move. Docker forwards published ports, so they skip `INPUT` on this image. Services that listen on the host itself (the dashboard on 8080, ingress on 80 and 443) do need an `INPUT` accept. This was tested for TCP only. UDP was not tested, because the test VCN had no UDP rule, so check UDP ports separately from outside, see [UDP published ports](/udp-ports).
 
 ## 4. Install Levelrail
 
@@ -89,7 +108,37 @@ SSH in and run the installer:
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-Then follow [Installing Levelrail](/installing) and [Go live](/go-live). Run the readiness check from the dashboard or with `levelrail-cli readiness` to see which ports answer from outside. If 80 or 443 show as blocked while the host firewall looks right, recheck the VCN rules from step 2.
+The installer installs Docker if it is missing. Measured once on a 1 OCPU / 6 GB Arm VM, 2026-11-01: the install took 67 seconds, the control plane used about 160 to 176 MB of resident memory, and used RAM on the machine was 549 MB at 3 minutes and 646 MB at about 17 minutes, idle, with Docker installed and no apps. This is one measurement, not a guarantee.
+
+## First access to the dashboard
+
+The installer prints `http://<public-ip>:8080`. With the VCN rules from step 2 that address times out, because TCP 8080 is not open. Port 80 does not help either: it answers with a 308 redirect to HTTPS, and HTTPS has no certificate until a certificate request succeeds. A browser or `openssl` fails at the TLS handshake in that state, there is no warning page to click through. The installer's note about a self-signed certificate warning on the `sslip.io` address did not match what the test run saw.
+
+Use an SSH tunnel as the default:
+
+```bash
+ssh -L 8080:localhost:8080 ubuntu@<public-ip>
+```
+
+Leave it running and open `http://localhost:8080` in your browser, using the setup link from the installer summary (replace the host with `localhost`). Nothing extra is exposed to the internet.
+
+The alternative is to open TCP 8080 in the VCN for a short time with the source set to your own IP, then delete the rule.
+
+HTTPS needs a domain whose DNS points at the VM's public IP, with TCP 80 and 443 open in both layers, so the certificate request can succeed. Set the domain in the dashboard, see [Go live](/go-live) and [Domains and ingress](/domains-and-ingress). Until then, use the tunnel.
+
+### First login from the CLI on the server
+
+`levelrail-cli readiness` and the other commands return `401 not signed in` until you log in, and the dashboard is the usual place to start. For a headless server, the password login from the CLI over plain HTTP needs new-device approval, even for the first admin. The hint it prints mentions `levelrail-cli auth approve`, which needs a token you do not have yet. What worked on the host:
+
+```bash
+levelrail-cli auth login --api-url http://localhost:8080 --username <name> --password <password>
+# it prints a sign-in id and a line "Type this number"
+sudo levelrail approve-signin <id> --match <number>
+```
+
+Run the approve command in a second SSH session while the login waits, with `<number>` taken from the "Type this number" line. After that, `levelrail-cli readiness` shows which ports answer from outside. If 80 or 443 show as blocked while the host firewall looks right, recheck the VCN rules from step 2. The single-use **Connect your CLI** code in the dashboard avoids this approval, see [Installing Levelrail](/installing).
+
+Then follow [Installing Levelrail](/installing) and [Go live](/go-live).
 
 ## Arm and app images
 

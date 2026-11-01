@@ -231,7 +231,7 @@ levelrail-cli readiness [--domain D]
 </Tab>
 </Tabs>
 
-It reports who holds ports 80 and 443 (Traefik, nginx, Caddy, Apache, HAProxy, a container or a host process), the Docker version and whether the daemon is rootless, whether the Docker API is exposed on the network, free disk, memory, the [host firewall](/host-firewall), and whether the domain you give resolves to this server. It ends with the recommended mode, own ports or behind your existing proxy, and the exact command to run next. It exits non-zero when a check fails.
+It reports who holds ports 80 and 443 (Traefik, nginx, Caddy, Apache, HAProxy, a container or a host process), the Docker version and whether the daemon is rootless, whether the Docker API is exposed on the network, free disk, memory, the [host firewall](/host-firewall) (on a host with only iptables rules and no ufw or firewalld, a test run of an older release printed no firewall line, so check `sudo iptables -L INPUT -v -n --line-numbers` yourself, see [Host firewall](/host-firewall)), and whether the domain you give resolves to this server. It ends with the recommended mode, own ports or behind your existing proxy, and the exact command to run next. It exits non-zero when a check fails.
 
 ### Server already runs a proxy
 

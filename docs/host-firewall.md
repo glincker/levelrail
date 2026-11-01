@@ -121,7 +121,13 @@ sudo iptables -I INPUT 5 -p udp --dport 19132 -j ACCEPT
 sudo netfilter-persistent save
 ```
 
-Without `netfilter-persistent`, use `sudo sh -c 'iptables-save > /etc/iptables/rules.v4'`. Docker-published ports are forwarded rather than passed through INPUT, so the host rule matters mainly for services listening on the host itself. Confirm on your own host with an outside connection test.
+On a stock Oracle Ubuntu image this was checked: rule 5 was `REJECT --reject-with icmp-host-prohibited`, inserting at positions 5 and 6 worked, `netfilter-persistent save` wrote `/etc/iptables/rules.v4`, and the rules survived a reboot. See [Install on Oracle Cloud Always Free](/install-on-oracle-cloud).
+
+Without `netfilter-persistent`, use `sudo sh -c 'iptables-save > /etc/iptables/rules.v4'`. Docker-published ports are forwarded rather than passed through INPUT. On that image an nginx container published on TCP 25565 was reachable from outside with only the cloud rule, and the `REJECT` packet counter did not move. Services listening on the host itself (the dashboard, ingress on 80 and 443) need the INPUT accept. This was tested for TCP only, not UDP. Confirm on your own host with an outside connection test.
+
+To tell which layer blocks a port, look at how the connection fails. A timeout means the cloud firewall dropped it. "Connection refused" means the host answered, either because nothing listens or because the host `REJECT` rule did. Watch the counters with `sudo iptables -L INPUT -v -n --line-numbers` while you retry. If the `REJECT` count grows, the host firewall is the blocker.
+
+The `host_firewall_iptables` and other cloud checks are available from the release that includes them. A release published before them does not show them in `levelrail-cli doctor`.
 
 The cloud checks are optional. Set `APP_DOCTOR_CLOUD_CHECKS=off` to skip them, `APP_DOCTOR_CLOUD_METADATA=on` to allow one short link-local metadata call (timeout `APP_DOCTOR_CLOUD_METADATA_TIMEOUT`, default 300ms), and `APP_DOCTOR_ORACLE_IDLE_PERCENT` and `APP_DOCTOR_ORACLE_IDLE_DAYS` to change the figures quoted in the informational `idle_reclaim_risk` note (defaults 20 and 7). Oracle's policy can change; read the [current terms](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm).
 
