@@ -105,3 +105,26 @@ func TestWriterShortSecretInsideLongerAcrossWrites(t *testing.T) {
 		}
 	}
 }
+
+func TestWriterEmptyRegistryStreamsImmediately(t *testing.T) {
+	r := secretmask.New()
+	var out bytes.Buffer
+	w := secretmask.NewWriterFor(&out, r)
+	chunk := bytes.Repeat([]byte("x"), 32<<10)
+	total := 0
+	for i := 0; i < 2048; i++ {
+		_, _ = w.Write(chunk)
+		total += len(chunk)
+		if out.Len() != total {
+			t.Fatalf("held %d bytes after chunk %d", total-out.Len(), i)
+		}
+		out.Reset()
+		total = 0
+	}
+	r.Add("sk-live-abcdef123456")
+	_, _ = w.Write([]byte("a sk-live-abcdef123456 b"))
+	_ = w.Close()
+	if got := out.String(); got != "a "+secretmask.Marker+" b" {
+		t.Fatalf("late secret not masked cleanly: %q", got)
+	}
+}

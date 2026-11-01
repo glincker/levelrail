@@ -20,8 +20,9 @@ func NewWriterFor(dst io.Writer, reg *Registry) *Writer { return &Writer{dst: ds
 // The carry stays raw: masking it early would hide a longer secret that a shorter one sits inside.
 func (w *Writer) Write(p []byte) (int, error) {
 	buf := w.carry + string(p)
-	hold := w.reg.maxLen() - 1
-	if hold < 0 || hold > len(buf) {
+	// An empty registry has maxLen 0: hold nothing so output streams through.
+	hold := max(0, w.reg.maxLen()-1)
+	if hold > len(buf) {
 		hold = len(buf)
 	}
 	cut := len(buf) - hold
