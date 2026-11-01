@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // MaxWebhookDeliveryPayloadBytes bounds how much of a webhook delivery's
@@ -98,6 +100,7 @@ func (db *DB) SaveWebhookDelivery(ctx context.Context, d WebhookDelivery) error 
 		truncated = true
 	}
 
+	d.Error, d.Note = secretmask.Mask(d.Error), secretmask.Mask(d.Note)
 	headerFieldsJSON, err := json.Marshal(d.HeaderFields)
 	if err != nil {
 		return fmt.Errorf("store: marshal webhook delivery header fields %q: %w", d.ID, err)
@@ -286,6 +289,7 @@ func (db *DB) UpdateWebhookDeliveryOutcomeByAttempt(ctx context.Context, attempt
 	if attemptID == "" {
 		return nil
 	}
+	note, errMsg = secretmask.Mask(note), secretmask.Mask(errMsg)
 	if _, err := db.ExecContext(ctx, `UPDATE webhook_deliveries SET note = ?, error = ? WHERE attempt_id = ?`, note, errMsg, attemptID); err != nil {
 		return fmt.Errorf("store: update webhook delivery outcome for attempt %q: %w", attemptID, err)
 	}

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Errors returned by the pipeline webhook queries.
@@ -119,6 +121,7 @@ func (db *DB) AddPipelineWebhookDelivery(ctx context.Context, d PipelineWebhookD
 	if d.Body == nil {
 		d.Body = []byte{}
 	}
+	d.Reason = secretmask.Mask(d.Reason)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO pipeline_webhook_deliveries (id, pipeline_id, received_at, status_code, outcome, reason, run_id, idempotency_key, content_type, query, body)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -138,6 +141,7 @@ func (db *DB) AddPipelineWebhookDelivery(ctx context.Context, d PipelineWebhookD
 
 // FinishPipelineWebhookDelivery records how a received delivery ended.
 func (db *DB) FinishPipelineWebhookDelivery(ctx context.Context, id, outcome, reason, runID string, status int) error {
+	reason = secretmask.Mask(reason)
 	if _, err := db.ExecContext(ctx, `UPDATE pipeline_webhook_deliveries SET outcome = ?, reason = ?, run_id = ?, status_code = ? WHERE id = ?`,
 		outcome, reason, runID, status, id); err != nil {
 		return fmt.Errorf("store: finish pipeline webhook delivery: %w", err)

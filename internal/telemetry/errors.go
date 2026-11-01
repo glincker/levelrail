@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Error issue statuses.
@@ -104,10 +106,11 @@ func (db *DB) WriteErrorEvent(ctx context.Context, ev ErrorEvent, keep int) (reg
 	if err != nil {
 		return false, fmt.Errorf("telemetry: write error issue: %w", err)
 	}
+	raw := secretmask.Mask(ev.Raw)
 	if _, err = tx.ExecContext(ctx, `INSERT INTO error_events
 		(resource_id, fingerprint, event_id, ts_ns, release, environment, deploy_id, raw)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		ev.ResourceID, ev.Fingerprint, ev.EventID, ev.TimestampNs, ev.Release, ev.Environment, deploy, ev.Raw); err != nil {
+		ev.ResourceID, ev.Fingerprint, ev.EventID, ev.TimestampNs, ev.Release, ev.Environment, deploy, raw); err != nil {
 		return false, fmt.Errorf("telemetry: write error event: %w", err)
 	}
 	if _, err = tx.ExecContext(ctx, `DELETE FROM error_events WHERE resource_id = ? AND fingerprint = ? AND id NOT IN (
