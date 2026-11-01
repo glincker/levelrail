@@ -85,11 +85,6 @@ func TestMaskLongestFirst(t *testing.T) {
 	}
 }
 
-func TestMaskSecretSplitAcrossChunksIsAKnownGap(t *testing.T) {
-	t.Skip("TODO: masking is per entry; a secret split across two log lines or stream chunks is not caught. " +
-		"A rolling-window writer in the log readers would close it. Tracked as a proof-lane finding.")
-}
-
 // A store write path that stores free text must mask it. Every file that inserts into one of these
 // tables either calls secretmask or is listed in unreviewedSinks with the reason it has not been proven.
 var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries|deploy_logs|audit_log|pipeline_logs|app_events|deploy_trace_steps|error_events|notification_deliveries|webhook_deliveries|event_webhook_deliveries|status_webhook_deliveries|pipeline_webhook_deliveries|ai_chat_messages|email_deliveries|alert_history|service_hook_runs|scheduled_task_runs|oneshot_jobs|build_runs|pipeline_jobs|gate_events|deploy_gate_events|team_events|node_security_events|database_query_history)\b`)

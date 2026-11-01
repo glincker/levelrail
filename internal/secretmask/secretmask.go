@@ -3,8 +3,11 @@
 package secretmask
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -109,6 +112,7 @@ func encodedForms(v string) []string {
 		url.QueryEscape(v),
 		url.PathEscape(v),
 	}
+	forms = append(forms, jsonForms(v)...)
 	out := forms[:0]
 	for _, f := range forms {
 		if f != v && len(f) >= MinLength {
@@ -118,18 +122,87 @@ func encodedForms(v string) []string {
 	return out
 }
 
-// Mask replaces every registered value in s, longest first.
+// jsonForms covers a secret embedded in a JSON string: quotes, backslashes,
+// control characters, HTML-safe \u003c style escapes and ASCII-only \uXXXX.
+func jsonForms(v string) []string {
+	plain := func(escapeHTML bool) string {
+		var buf bytes.Buffer
+		enc := json.NewEncoder(&buf)
+		enc.SetEscapeHTML(escapeHTML)
+		if enc.Encode(v) != nil {
+			return ""
+		}
+		out := strings.TrimSuffix(buf.String(), "\n")
+		return out[1 : len(out)-1]
+	}
+	forms := []string{plain(false), plain(true)}
+	var ascii strings.Builder
+	for _, r := range plain(false) {
+		switch {
+		case r < 0x80:
+			ascii.WriteRune(r)
+		case r >= 0x10000:
+			r -= 0x10000
+			fmt.Fprintf(&ascii, "\\u%04x\\u%04x", 0xd800+(r>>10), 0xdc00+(r&0x3ff))
+		default:
+			fmt.Fprintf(&ascii, "\\u%04x", r)
+		}
+	}
+	return append(forms, ascii.String())
+}
+
+// Mask replaces every registered value in s. Overlapping and prefix matches are
+// merged into one span so no tail of a longer secret survives a shorter hit.
 func (r *Registry) Mask(s string) string {
 	list := r.snapshot()
 	if len(list) == 0 || s == "" {
 		return s
 	}
+	var spans [][2]int
 	for _, v := range list {
-		if strings.Contains(s, v) {
-			s = strings.ReplaceAll(s, v, Marker)
+		for from := 0; ; {
+			i := strings.Index(s[from:], v)
+			if i < 0 {
+				break
+			}
+			spans = append(spans, [2]int{from + i, from + i + len(v)})
+			from += i + 1
 		}
 	}
-	return s
+	if len(spans) == 0 {
+		return s
+	}
+	sort.Slice(spans, func(i, j int) bool { return spans[i][0] < spans[j][0] })
+	var b strings.Builder
+	pos := 0
+	cur := spans[0]
+	flush := func() {
+		b.WriteString(s[pos:cur[0]])
+		b.WriteString(Marker)
+		pos = cur[1]
+	}
+	for _, sp := range spans[1:] {
+		if sp[0] < cur[1] {
+			if sp[1] > cur[1] {
+				cur[1] = sp[1]
+			}
+			continue
+		}
+		flush()
+		cur = sp
+	}
+	flush()
+	b.WriteString(s[pos:])
+	return b.String()
+}
+
+// maxLen is the longest registered value or form, the basis of the stream carry window.
+func (r *Registry) maxLen() int {
+	list := r.snapshot()
+	if len(list) == 0 {
+		return 0
+	}
+	return len(list[0])
 }
 
 // Len reports how many values are registered.

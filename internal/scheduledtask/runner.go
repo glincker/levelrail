@@ -650,13 +650,23 @@ type tailCappedWriter struct {
 	limit int
 	buf   []byte
 	total int64
+	mask  *secretmask.Writer
 }
 
 func newTailCappedWriter(limit int) *tailCappedWriter {
-	return &tailCappedWriter{limit: limit, buf: make([]byte, 0, limit)}
+	w := &tailCappedWriter{limit: limit, buf: make([]byte, 0, limit)}
+	w.mask = secretmask.NewWriter(rawTail{w})
+	return w
 }
 
-func (w *tailCappedWriter) Write(p []byte) (int, error) {
+// rawTail is the post-mask stage, so the cap only ever cuts already masked text.
+type rawTail struct{ w *tailCappedWriter }
+
+func (r rawTail) Write(p []byte) (int, error) { return r.w.append(p) }
+
+func (w *tailCappedWriter) Write(p []byte) (int, error) { return w.mask.Write(p) }
+
+func (w *tailCappedWriter) append(p []byte) (int, error) {
 	w.total += int64(len(p))
 	w.buf = append(w.buf, p...)
 	if len(w.buf) > w.limit {
@@ -667,9 +677,13 @@ func (w *tailCappedWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (w *tailCappedWriter) truncated() bool { return w.total > int64(w.limit) }
+func (w *tailCappedWriter) truncated() bool {
+	_ = w.mask.Flush()
+	return w.total > int64(w.limit)
+}
 
 func (w *tailCappedWriter) String() string {
+	_ = w.mask.Flush()
 	if w.total > int64(w.limit) {
 		return "[output truncated, showing the last " + strconv.Itoa(w.limit) + " bytes]\n" + string(w.buf)
 	}
