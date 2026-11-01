@@ -1,4 +1,4 @@
-<!-- translated-from: README.md blob:9c194248e518399035b29933ea71854d30fc19ec lang:es -->
+<!-- translated-from: README.md blob:ce94937d3ed19f5133e5579976d74dcdff199567 lang:es -->
 <div align="center">
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Logo de Levelrail" width="56" height="56">
 <h1>Levelrail</h1>
@@ -154,6 +154,10 @@ irm https://levelrail.com/install-cli.ps1 | iex
 
 Los dos primeros funcionan en cualquier plataforma compatible, el tercero es para macOS y Linux, y el último para Windows PowerShell.
 
+### Ejecútalo en una VM Arm gratuita
+
+Los binarios y las imágenes de Levelrail están compilados para `arm64`, así que funciona en una VM Arm Always Free de Oracle Cloud. Abres dos firewalls (las reglas de red de la nube y el firewall del host) y luego ejecutas el mismo instalador. Oracle fija los límites gratuitos y su regla de instancias inactivas, y ambos pueden cambiar. Lee antes la [guía de Oracle Cloud](../../docs/install-on-oracle-cloud.md) y la [página Always Free](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm) de Oracle. Las imágenes de apps varían en Arm, así que revisa las plataformas de una imagen antes de instalar una plantilla.
+
 ## Cómo funciona
 
 ```mermaid
@@ -174,10 +178,10 @@ El plano de control guarda el estado deseado en SQLite embebido y un reconciliad
 
 ## Verifica lo que instalas
 
-Las versiones publican una firma de Sigstore para `checksums.txt` y una attestation de procedencia del build. Reemplaza `v0.1.0` por la etiqueta de la versión.
+Las versiones publican una firma de Sigstore para `checksums.txt` y una attestation de procedencia del build. La primera línea de abajo obtiene la etiqueta de la última versión; define `V` con una etiqueta para verificar una versión anterior.
 
 ```bash
-V=v0.1.0
+V=$(gh release view --repo glincker/levelrail --json tagName -q .tagName)
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 cosign verify-blob --bundle checksums.txt.sigstore.json \
@@ -221,7 +225,7 @@ La mayoría de las plataformas autoalojadas de esta categoría gestionan los ser
 | Orquestación | Reconciliador level-triggered | Compose | Swarm | Swarm | Scheduler en Bash |
 | Métricas y logs integrados | Sí | Complemento opcional | Binario aparte | No | No |
 | Rollback | Imágenes fijadas, con compuerta de readiness | Health check desactivado por defecto | Rollback de Swarm | Manual | Scheduler por defecto: ninguno |
-| Verificación de backups | Automática, los 8 motores | Comprobación de no vacío | Ninguna | Ninguna | Sin backups |
+| Verificación de backups | Automática; Postgres estable, MySQL y MongoDB en beta ([estado](../../docs/feature-status.md)) | Comprobación de no vacío | Ninguna | Ninguna | Sin backups |
 | SSO y aprovisionamiento | OAuth (20 proveedores) y OIDC genérico; SAML y SCIM (beta, desactivados por defecto) | Consulta su documentación | Consulta su documentación | Consulta su documentación | Consulta su documentación |
 | Log de auditoría | Encadenado por hash, verificable, exportación a CSV, reenvío a syslog, webhook o bucket | Consulta su documentación | Consulta su documentación | Consulta su documentación | Consulta su documentación |
 | IAM | Políticas Allow y Deny por app o base de datos, tokens con alcance limitado | Consulta su documentación | Consulta su documentación | Consulta su documentación | Consulta su documentación |
@@ -235,7 +239,7 @@ Esto es posicionamiento, no un ranking, y todos los proyectos aquí valen la pen
 - **Bases de datos:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly y ClickHouse con backups programados, recuperación a un punto en el tiempo para Postgres, restauración y rotación de contraseñas. [Bases de datos](../../docs/managing-databases.md)
 - **Una sola búsqueda para todo:** Cmd+K en apps, bases de datos, nodos, plantillas y acciones, filtrado según lo que tengas permitido hacer. [Búsqueda](../../docs/search.md)
 - **Servidores:** Añade nodos con un token de un solo uso, malla WireGuard, zonas y distribución por dominios de falla, simulación (what-if) de ubicación. [Multinodo](../../docs/multi-node.md)
-- **Plantillas:** unos 360 servicios con un clic, con una prueba de humo que levanta los 50 principales (hoy pasan 48, [estado](../../docs/templates-status.md)). [Catálogo](../../docs/template-catalog.md)
+- **Plantillas:** unos 360 servicios con un clic, con una prueba de humo sobre el catálogo (101 de 108 probadas pasaron en las ejecuciones del 2026-10-25 y 2026-10-27, [estado](../../docs/templates-status.md)). [Catálogo](../../docs/template-catalog.md)
 - **Identidad y acceso:** Contraseña, passkeys, TOTP, OAuth con 20 proveedores más OIDC genérico, políticas IAM, equipos, un log de auditoría encadenado por hash con exportación a CSV. El inicio de sesión único con SAML y el aprovisionamiento con SCIM están en beta y desactivados por defecto. [Identidad y acceso](../../docs/identity-and-access.md), [SAML y SCIM](../../docs/sso-saml.md)
 - **Plugins:** Un marketplace de plugins firmados con instalación en un clic, paneles en el dashboard y canales de alerta propios. [Plugins](../../docs/plugins.md)
 - **Automatización:** Una sola API HTTP detrás del dashboard, una CLI y un servidor MCP. La IA nunca forma parte de la ruta de reconciliación. [CLI](../../docs/cli-reference.md), [Control con IA](../../docs/ai-control.md)

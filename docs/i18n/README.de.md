@@ -1,4 +1,4 @@
-<!-- translated-from: README.md blob:9c194248e518399035b29933ea71854d30fc19ec lang:de -->
+<!-- translated-from: README.md blob:ce94937d3ed19f5133e5579976d74dcdff199567 lang:de -->
 <div align="center">
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail-Logo" width="56" height="56">
 <h1>Levelrail</h1>
@@ -152,6 +152,10 @@ irm https://levelrail.com/install-cli.ps1 | iex
 
 Die ersten beiden funktionieren auf jeder unterstützten Plattform, der dritte ist für macOS und Linux, der letzte für Windows PowerShell.
 
+### Auf einer kostenlosen Arm-VM betreiben
+
+Die Release-Binaries und -Images von Levelrail sind für `arm64` gebaut, daher läuft es auf einer Oracle Cloud Always Free Arm-VM. Du öffnest zwei Firewalls (die Netzwerkregeln der Cloud und die Host-Firewall) und führst dann denselben Installer aus. Oracle legt die kostenlosen Limits und seine Regel für ungenutzte Instanzen fest, beides kann sich ändern. Lies zuerst die [Oracle-Cloud-Anleitung](../../docs/install-on-oracle-cloud.md) und Oracles [Always-Free-Seite](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm). App-Images variieren auf Arm, prüfe also die Plattformen eines Images, bevor du ein Template installierst.
+
 ## So funktioniert es
 
 ```mermaid
@@ -172,10 +176,10 @@ Die Control Plane hält den Soll-Zustand in eingebettetem SQLite, und ein Reconc
 
 ## Installation überprüfen
 
-Releases veröffentlichen eine Sigstore-Signatur für `checksums.txt` sowie eine Build-Provenance-Attestierung. `v0.1.0` durch den Release-Tag ersetzen.
+Releases veröffentlichen eine Sigstore-Signatur für `checksums.txt` sowie eine Build-Provenance-Attestierung. Die erste Zeile unten ermittelt den neuesten Release-Tag; `V` selbst auf einen Tag setzen, um ein älteres Release zu prüfen.
 
 ```bash
-V=v0.1.0
+V=$(gh release view --repo glincker/levelrail --json tagName -q .tagName)
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 cosign verify-blob --bundle checksums.txt.sigstore.json \
@@ -219,7 +223,7 @@ Die meisten selbst gehosteten Plattformen dieser Kategorie verwalten Server, ind
 | Orchestrierung | Level-Triggered-Reconciler | Compose | Swarm | Swarm | Bash-Scheduler |
 | Eingebaute Metriken und Logs | Ja | Optionales Add-on | Separates Binary | Nein | Nein |
 | Rollback | Fixierte Images, mit Readiness-Gate | Health-Check standardmäßig aus | Swarm-Rollback | Manuell | Standard-Scheduler: keins |
-| Backup-Verifizierung | Automatisch, alle 8 Engines | Prüfung auf nicht leer | Keine | Keine | Keine Backups |
+| Backup-Verifizierung | Automatisch; Postgres stabil, MySQL und MongoDB Beta ([Status](../../docs/feature-status.md)) | Prüfung auf nicht leer | Keine | Keine | Keine Backups |
 | SSO und Provisioning | OAuth (20 Anbieter) und generisches OIDC; SAML und SCIM (Beta, standardmäßig aus) | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku |
 | Audit-Log | Hash-verkettet, verifizierbar, CSV-Export, Weiterleitung an Syslog, Webhook oder Bucket | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku |
 | IAM | Allow- und Deny-Richtlinien pro App oder Datenbank, Tokens mit begrenztem Geltungsbereich | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku | Siehe deren Doku |
@@ -233,7 +237,7 @@ Das ist eine Positionierung, kein Ranking, und jedes Projekt hier ist einen Eins
 - **Datenbanken:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly und ClickHouse mit geplanten Backups, Postgres-Point-in-Time-Recovery, Wiederherstellung und Passwortrotation. [Datenbanken](../../docs/managing-databases.md)
 - **Eine Suche für alles:** Cmd+K über Apps, Datenbanken, Knoten, Templates und Aktionen, gefiltert nach den eigenen Berechtigungen. [Suche](../../docs/search.md)
 - **Server:** Knoten mit einem einmaligen Token hinzufügen, WireGuard-Mesh, Zonen und Verteilung über Fehlerdomänen, Platzierungs-Was-wäre-wenn. [Multi-Node](../../docs/multi-node.md)
-- **Templates:** etwa 360 Ein-Klick-Dienste, mit einem Smoke-Test, der die Top 50 hochfährt (heute bestehen 48, [Status](../../docs/templates-status.md)). [Katalog](../../docs/template-catalog.md)
+- **Templates:** etwa 360 Ein-Klick-Dienste, mit einem Smoke-Test über den Katalog (101 von 108 getesteten bestanden in den Läufen vom 2026-10-25 und 2026-10-27, [Status](../../docs/templates-status.md)). [Katalog](../../docs/template-catalog.md)
 - **Identität und Zugriff:** Passwort, Passkeys, TOTP, OAuth mit 20 Anbietern plus generisches OIDC, IAM-Richtlinien, Teams, ein hash-verketteter Audit-Log mit CSV-Export. SAML-Single-Sign-On und SCIM-Provisioning sind Beta und standardmäßig aus. [Identität und Zugriff](../../docs/identity-and-access.md), [SAML und SCIM](../../docs/sso-saml.md)
 - **Plugins:** Ein signierter Plugin-Marktplatz mit Ein-Klick-Installation, Dashboard-Panels und Alarmkanälen des Herstellers. [Plugins](../../docs/plugins.md)
 - **Automatisierung:** Eine HTTP-API hinter dem Dashboard, einer CLI und einem MCP-Server. KI sitzt nie im Reconciliation-Pfad. [CLI](../../docs/cli-reference.md), [KI-Steuerung](../../docs/ai-control.md)

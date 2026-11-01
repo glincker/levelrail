@@ -1,4 +1,4 @@
-<!-- translated-from: README.md blob:9c194248e518399035b29933ea71854d30fc19ec lang:ja -->
+<!-- translated-from: README.md blob:ce94937d3ed19f5133e5579976d74dcdff199567 lang:ja -->
 <div align="center">
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail ロゴ" width="56" height="56">
 <h1>Levelrail</h1>
@@ -151,6 +151,10 @@ irm https://levelrail.com/install-cli.ps1 | iex
 
 最初の 2 つは対応しているすべてのプラットフォームで使えます。3 つ目は macOS と Linux 用、最後は Windows PowerShell 用です。
 
+### 無料の Arm VM で動かす
+
+Levelrail のリリースバイナリとイメージは `arm64` 向けにビルドされているため、Oracle Cloud Always Free の Arm VM で動作します。2 つのファイアウォール（クラウドのネットワークルールとホストのファイアウォール）を開けてから、同じインストーラーを実行します。無料枠の上限とアイドルインスタンスのルールは Oracle が定めており、どちらも変更される可能性があります。先に [Oracle Cloud ガイド](../../docs/install-on-oracle-cloud.md)と Oracle の [Always Free ページ](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm)をお読みください。アプリのイメージは Arm では対応状況が異なるため、テンプレートをインストールする前にイメージの対応プラットフォームを確認してください。
+
 ## 仕組み
 
 ```mermaid
@@ -171,10 +175,10 @@ flowchart LR
 
 ## インストールするものを検証する
 
-リリースでは、`checksums.txt` の Sigstore 署名とビルド来歴の証明（attestation）を公開しています。`v0.1.0` はリリースタグに置き換えてください。
+リリースでは、`checksums.txt` の Sigstore 署名とビルド来歴の証明（attestation）を公開しています。以下の最初の行で最新のリリースタグを取得します。古いリリースを検証するには `V` にタグを自分で設定してください。
 
 ```bash
-V=v0.1.0
+V=$(gh release view --repo glincker/levelrail --json tagName -q .tagName)
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 cosign verify-blob --bundle checksums.txt.sigstore.json \
@@ -218,7 +222,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 | オーケストレーション | レベルトリガー式リコンサイラー | Compose | Swarm | Swarm | Bash スケジューラー |
 | メトリクスとログの内蔵 | あり | オプトインのアドオン | 別バイナリ | なし | なし |
 | ロールバック | 固定イメージ、準備完了ゲート付き | ヘルスチェックはデフォルトで無効 | Swarm のロールバック | 手動 | デフォルトのスケジューラー：なし |
-| バックアップの検証 | 自動、全 8 エンジン | 空でないことの確認 | なし | なし | バックアップなし |
+| バックアップの検証 | 自動。Postgres は stable、MySQL と MongoDB は beta（[ステータス](../../docs/feature-status.md)） | 空でないことの確認 | なし | なし | バックアップなし |
 | SSO とプロビジョニング | OAuth（20 プロバイダー）と汎用 OIDC。SAML と SCIM（ベータ、デフォルトで無効） | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 |
 | 監査ログ | ハッシュチェーン式、検証可能、CSV エクスポート、syslog、Webhook、バケットへの転送 | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 |
 | IAM | アプリまたはデータベースごとの Allow と Deny のポリシー、スコープ付きトークン | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 | 各ドキュメントを参照 |
@@ -232,7 +236,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - **データベース：** Postgres、MySQL、MariaDB、MongoDB、Redis、KeyDB、Dragonfly、ClickHouse。定期バックアップ、Postgres のポイントインタイムリカバリ、リストア、パスワードのローテーションに対応します。[データベース](../../docs/managing-databases.md)
 - **すべてを 1 つの検索で：** アプリ、データベース、ノード、テンプレート、アクションを Cmd+K で横断検索し、実行できる操作で絞り込みます。[検索](../../docs/search.md)
 - **サーバー：** 1 回限りのトークンでノードを追加。WireGuard メッシュ、ゾーン、障害ドメインへの分散、配置のシミュレーション。[マルチノード](../../docs/multi-node.md)
-- **テンプレート：** 約 360 のワンクリックサービス。上位 50 を起動するスモークテストがあります（現在 48 が合格、[ステータス](../../docs/templates-status.md)）。[カタログ](../../docs/template-catalog.md)
+- **テンプレート：** 約 360 のワンクリックサービス。カタログ全体を対象にしたスモークテストがあります（2026-10-25 と 2026-10-27 の実行でテスト済み 108 件中 101 件が合格、[ステータス](../../docs/templates-status.md)）。[カタログ](../../docs/template-catalog.md)
 - **ID とアクセス：** パスワード、パスキー、TOTP、20 プロバイダーの OAuth と汎用 OIDC、IAM ポリシー、チーム、CSV エクスポート付きのハッシュチェーン式監査ログ。SAML シングルサインオンと SCIM プロビジョニングはベータで、デフォルトでは無効です。[ID とアクセス](../../docs/identity-and-access.md)、[SAML と SCIM](../../docs/sso-saml.md)
 - **プラグイン：** 署名付きのプラグインマーケットプレイス。ワンクリックでのインストール、ダッシュボードのパネル、公式のアラートチャンネルを備えます。[プラグイン](../../docs/plugins.md)
 - **自動化：** ダッシュボード、CLI、MCP サーバーの背後に 1 つの HTTP API があります。AI がリコンサイルの経路に入ることはありません。[CLI](../../docs/cli-reference.md)、[AI 制御](../../docs/ai-control.md)

@@ -300,7 +300,7 @@ Every registration and login challenge is single-use and expires in 5 minutes. T
 
 ### OAuth sign-in
 
-Eighteen providers are supported. Group to role mapping, account creation policy, allowed domains and sign-in by email domain are covered in [OAuth and OIDC single sign-on](/sso-oidc) (beta). Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
+Twenty providers plus generic OIDC (`oidc`) are supported. Group to role mapping, account creation policy, allowed domains and sign-in by email domain are covered in [OAuth and OIDC single sign-on](/sso-oidc) (beta). Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
 
 | Provider | Where to create the OAuth app | Scopes requested |
 | --- | --- | --- |
