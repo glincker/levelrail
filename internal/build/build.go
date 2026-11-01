@@ -115,6 +115,10 @@ func (c *Client) solveDockerfile(ctx context.Context, req Request, cache CacheCo
 	if req.S3Cache != nil {
 		cache.S3 = req.S3Cache
 	}
+	var nerr error
+	if req.Network, nerr = resolveNetwork(ctx); nerr != nil {
+		return nil, nerr
+	}
 	return solveFailOpen(ctx, cache, out, progress, func(cache CacheConfig, out io.Writer) (*Result, error) {
 		return c.runSolve(ctx, req, cache, out, progress)
 	})

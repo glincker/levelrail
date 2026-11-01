@@ -57,6 +57,41 @@ free. Records an in-flight build holds are never removed. Pruning needs a root
 token. Only the control plane's own node reports its cache today, other nodes
 show "not available" until the agent exposes it.
 
+## Build network
+
+What a build's `RUN` steps can reach, from the code in `internal/build`:
+
+- Builds run on the BuildKit that is embedded in the node's Docker Engine,
+  reached through the engine's own API. Levelrail does not set a network for
+  `RUN` steps and does not grant the `network.host` entitlement, so a
+  `RUN --network=host` step is refused by BuildKit.
+- With the default policy (`open`) Levelrail applies no restriction. A `RUN`
+  step gets the engine's default build network, so it can reach whatever that
+  network can route to, which may include the cloud metadata address, the
+  Docker gateway and private LAN ranges. This has not been probed on a real
+  host yet; treat those ranges as reachable until a probe says otherwise.
+- Base image pulls and `ADD <url>` are performed by BuildKit outside `RUN`
+  steps and are not affected by any setting below.
+- The managed buildkitd supervisor (`internal/build/buildkitd`) starts its
+  container with no network, but it is not used by the build path yet.
+
+The policy is the runtime setting `security.build_network`. Change it in the
+dashboard settings card, with `levelrail settings runtime set
+security.build_network none`, or through the settings API. A saved value wins,
+is read on every build and needs no restart; `settings runtime get` shows the
+effective value and whether it is saved, from the environment or the default.
+`APP_BUILD_NETWORK` only seeds the default when nothing is saved. Agents have
+no settings store and read the variable on every build.
+
+| Value | Effect |
+| --- | --- |
+| `open` (default, also when unset) | No restriction, as described above. |
+| `none` | Every `RUN` step runs without a network interface. Dockerfile builds set `force-network-mode=none`; Railpack builds get no network on every exec step. Steps that download packages (`npm install`, `pip install`) fail, so it suits builds with vendored dependencies. |
+| `block-private` | Reserved for blocking metadata and private ranges while keeping the internet. No build path can enforce it yet, so builds fail with an explanation instead of running unprotected. |
+
+A value outside this list is refused when saved. The default stays `open`;
+whether to change it is an owner decision made after the host probe.
+
 ## Platforms
 
 Builds target the platform of the node that runs them, shown on every row.

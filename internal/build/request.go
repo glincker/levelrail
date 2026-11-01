@@ -53,6 +53,9 @@ type Request struct {
 	// CgroupParent places the build's processes in a pre-sized cgroup so
 	// CPU and memory limits hold. Set by the Limiter; local builds only.
 	CgroupParent string
+
+	// Network is the RUN step policy; the Client fills it from APP_BUILD_NETWORK.
+	Network NetworkMode
 }
 
 // ErrContextDirRequired and ErrTagRequired are returned by Validate for

@@ -59,6 +59,8 @@ type RailpackRequest struct {
 
 	// CgroupParent places every build step in a pre-sized cgroup. Set by the Limiter; local builds only.
 	CgroupParent string
+	// Network is the RUN step policy; the Client fills it from APP_BUILD_NETWORK.
+	Network NetworkMode
 }
 
 // ErrRailpackSourceDirRequired and ErrRailpackTagRequired are returned by
@@ -241,6 +243,10 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 		}
 	}
 
+	if def, err = req.Network.applyRailpack(def); err != nil {
+		return nil, nil, err
+	}
+
 	opt := &bkclient.SolveOpt{
 		LocalMounts: map[string]fsutil.FS{
 			"context": contextFS,
@@ -373,6 +379,10 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 // onto the wire instead (SolveRemote, remote.go).
 func (c *Client) solveRailpack(ctx context.Context, req RailpackRequest, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
 	start := time.Now()
+	var err error
+	if req.Network, err = resolveNetwork(ctx); err != nil {
+		return nil, err
+	}
 
 	result, err := generateRailpackPlan(req)
 	if err != nil {

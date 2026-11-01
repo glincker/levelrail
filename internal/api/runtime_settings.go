@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -37,6 +38,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 		rt.logger.Warn("api: capture runtime settings at boot failed", slog.String("error", err.Error()))
 	}
 	rt.runtimeSettings = svc
+	build.SetNetworkResolver(func(ctx context.Context) string { return svc.String(ctx, build.KeyBuildNetwork) })
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 
