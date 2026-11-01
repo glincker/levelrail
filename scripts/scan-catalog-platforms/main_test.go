@@ -76,3 +76,35 @@ func TestTemplatePlatformsIntersectsAndSkipsUnknown(t *testing.T) {
 		t.Fatalf("got %v", got)
 	}
 }
+
+func TestScanOnlyFetchesRequestedAndKeepsRest(t *testing.T) {
+	now := time.Now()
+	old := now.Add(-1000 * time.Hour).Format(time.RFC3339)
+	prev := []catalog.ImagePlatforms{{Image: "a", Tag: "1", Platforms: []string{"linux/amd64"}, CheckedAt: old}}
+	var fetched []string
+	fetch := func(_ context.Context, ref string) ([]string, error) {
+		fetched = append(fetched, ref)
+		return []string{"linux/amd64", "linux/arm64"}, nil
+	}
+	cfg := fakeCfg()
+	cfg.Only = map[string]bool{"b:1": true}
+	out, _ := scan(context.Background(), cfg, prev, []string{"a:1", "b:1", "c:1"}, fetch, now)
+	if len(fetched) != 1 || fetched[0] != "b:1" {
+		t.Fatalf("fetched %v, want only b:1", fetched)
+	}
+	if len(out) != 2 || out[0].Ref() != "a:1" || out[1].Ref() != "b:1" {
+		t.Fatalf("out %v", out)
+	}
+}
+
+func TestAddTemplateRefsScopesByTemplateID(t *testing.T) {
+	templates := []catalog.Template{
+		{ID: "x", Compose: "services:\n  a:\n    image: img/x:1\n"},
+		{ID: "y", Compose: "services:\n  a:\n    image: img/y:1\n"},
+	}
+	only := map[string]bool{}
+	addTemplateRefs(only, " x ,", templates)
+	if len(only) != 1 || !only["img/x:1"] {
+		t.Fatalf("only %v", only)
+	}
+}

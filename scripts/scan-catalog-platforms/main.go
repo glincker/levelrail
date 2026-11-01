@@ -3,7 +3,9 @@
 // Run it by hand or on a schedule; it never runs at build or deploy time.
 //
 // Env: PLATFORM_SCAN_CONCURRENCY, PLATFORM_SCAN_TIMEOUT_SEC, PLATFORM_SCAN_RATE_PER_SEC,
-// PLATFORM_SCAN_TTL_HOURS (skip fresh entries), PLATFORM_SCAN_MAX (0 = all), PLATFORM_SCAN_OUT.
+// PLATFORM_SCAN_TTL_HOURS (skip fresh entries), PLATFORM_SCAN_MAX (0 = all), PLATFORM_SCAN_OUT,
+// PLATFORM_SCAN_ONLY (comma-separated image refs) and PLATFORM_SCAN_TEMPLATES (comma-separated
+// template ids): when either is set, only those images are fetched and the rest are kept as is.
 package main
 
 import (
@@ -101,6 +103,26 @@ func sortedKeys(set map[string]bool) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// addTemplateRefs adds the images of the listed template ids to only, so a scan
+// can be scoped by template as well as by image ref.
+func addTemplateRefs(only map[string]bool, ids string, templates []catalog.Template) {
+	want := map[string]bool{}
+	for _, id := range strings.Split(ids, ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			want[id] = true
+		}
+	}
+	for _, t := range templates {
+		if !want[t.ID] {
+			continue
+		}
+		imgs, _ := catalog.ComposeImages(t.Compose)
+		for _, i := range imgs {
+			only[i] = true
+		}
+	}
 }
 
 // wantedRefs is every distinct literal image in the catalog, sorted.
@@ -254,6 +276,7 @@ func main() {
 	if b, err := os.ReadFile(cfg.Out); err == nil {
 		_ = json.Unmarshal(b, &prev)
 	}
+	addTemplateRefs(cfg.Only, os.Getenv("PLATFORM_SCAN_TEMPLATES"), catalog.Templates)
 	refs := wantedRefs(catalog.Templates)
 	now := time.Now()
 	images, limited := scan(context.Background(), cfg, prev.Images, refs, registryFetcher(&http.Client{Timeout: cfg.Timeout}), now)
@@ -277,6 +300,9 @@ func main() {
 		default:
 			amdOnly++
 		}
+	}
+	if len(cfg.Only) > 0 {
+		fmt.Printf("scan scoped to %d requested images\n", len(cfg.Only))
 	}
 	fmt.Printf("images wanted %d, checked %d: arm64 %d, no arm64 %d, failed %d, templates with data %d\n",
 		len(refs), len(images), arm, amdOnly, unknown, len(file.Templates))
