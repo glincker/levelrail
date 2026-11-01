@@ -415,6 +415,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	f.Restart, _ = spec.ParseRestartPolicy(svc.Restart)
 	var err error
 	f.Resources = resourcesFromSpec(svc.Resources)
+	f.Security = securityFromSpec(svc.Security)
 	if f.Health, err = healthFromSpec(svc.Health); err != nil {
 		s.at("spec.service.health", "%v", err)
 	}

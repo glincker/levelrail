@@ -76,6 +76,27 @@ type resourceFields struct {
 	CPUSet     string  `json:"cpuSet,omitempty" yaml:"cpuSet,omitempty"`
 }
 
+// securityFields is the declared per-app hardening; nil pointer fields inherit.
+type securityFields struct {
+	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty" yaml:"read_only_rootfs,omitempty"`
+}
+
+func securityFromSpec(s *spec.Security) *securityFields {
+	if s == nil || s.ReadOnlyRootfs == nil {
+		return nil
+	}
+	on := *s.ReadOnlyRootfs
+	return &securityFields{ReadOnlyRootfs: &on}
+}
+
+func securityFromStore(r *store.ServiceResources) *securityFields {
+	if r == nil || r.ReadOnlyRootfs == nil {
+		return nil
+	}
+	on := *r.ReadOnlyRootfs
+	return &securityFields{ReadOnlyRootfs: &on}
+}
+
 type hookFields struct {
 	PreDeploy  string `json:"preDeploy,omitempty" yaml:"preDeploy,omitempty"`
 	PostDeploy string `json:"postDeploy,omitempty" yaml:"postDeploy,omitempty"`
@@ -94,6 +115,7 @@ type appFields struct {
 	Env         map[string]string `json:"env,omitempty"`
 	SecretEnv   []string          `json:"secretEnv,omitempty"`
 	Resources   *resourceFields   `json:"resources,omitempty"`
+	Security    *securityFields   `json:"security,omitempty"`
 	Health      *healthFields     `json:"health,omitempty"`
 	Hooks       *hookFields       `json:"hooks,omitempty"`
 	Rollout     *rolloutFields    `json:"rollout,omitempty"`
@@ -279,7 +301,7 @@ func appFromWire(a wireApp, names idNames) appFields {
 	f := appFields{
 		Image: a.Image, Port: a.Port, BindAddress: a.BindAddress, Replicas: a.Replicas, Strategy: a.Strategy,
 		Domains: sortedUnique(a.Domains), Env: nonEmptyMap(a.Env), SecretEnv: sortedUnique(a.SecretEnv),
-		Resources: resourcesFromStore(a.Resources), Health: healthFromStore(a.Health), Labels: nonEmptyMap(a.Labels),
+		Resources: resourcesFromStore(a.Resources), Security: securityFromStore(a.Resources), Health: healthFromStore(a.Health), Labels: nonEmptyMap(a.Labels),
 		Command: a.Command, Project: names.project(a.ProjectID), Environment: names.environment(a.EnvironmentID), Tags: sortedUnique(a.Tags),
 	}
 	if a.HostPort != nil {

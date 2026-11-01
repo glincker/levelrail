@@ -383,7 +383,17 @@ func diffDeployCompareResources(from, to *store.ServiceResources) []deployCompar
 	if f.CPUSetCPUs != t.CPUSetCPUs {
 		changes = append(changes, deployCompareField{Field: "resources.cpuset_cpus", From: f.CPUSetCPUs, To: t.CPUSetCPUs})
 	}
+	if fr, tr := readOnlyRootfsText(f.ReadOnlyRootfs), readOnlyRootfsText(t.ReadOnlyRootfs); fr != tr {
+		changes = append(changes, deployCompareField{Field: "security.read_only_rootfs", From: fr, To: tr})
+	}
 	return changes
+}
+
+func readOnlyRootfsText(p *bool) string {
+	if p == nil {
+		return "inherit"
+	}
+	return strconv.FormatBool(*p)
 }
 
 func resourcesOrZero(r *store.ServiceResources) store.ServiceResources {

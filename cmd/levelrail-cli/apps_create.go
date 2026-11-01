@@ -271,6 +271,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 	if err != nil {
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
+	resources = withSecurity(resources, svc.Security)
 	health, err := toServiceHealth(svc.Health)
 	if err == nil {
 		health, err = withRestart(health, svc.Restart)
@@ -342,6 +343,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 	if err != nil {
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
+	resources = withSecurity(resources, svc.Security)
 	health, err := toServiceHealth(svc.Health)
 	if err == nil {
 		health, err = withRestart(health, svc.Restart)
@@ -521,6 +523,19 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 		return nil
 	}
 	return out
+}
+
+// withSecurity carries security.read_only_rootfs, which the API stores beside the resource limits.
+func withSecurity(r *serviceResources, sec *spec.Security) *serviceResources {
+	if sec == nil || sec.ReadOnlyRootfs == nil {
+		return r
+	}
+	if r == nil {
+		r = &serviceResources{}
+	}
+	on := *sec.ReadOnlyRootfs
+	r.ReadOnlyRootfs = &on
+	return r
 }
 
 func toServiceResources(r *spec.Resources) (*serviceResources, error) {

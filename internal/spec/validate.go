@@ -109,6 +109,9 @@ func (svc *Service) validate(name string) error {
 	if err := ValidateLabels(svc.Labels); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
+	if err := svc.validateSecurity(name); err != nil {
+		return err
+	}
 	if err := svc.validateHooks(name); err != nil {
 		return err
 	}

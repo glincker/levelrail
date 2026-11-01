@@ -18,6 +18,8 @@ type ServiceResources struct {
 	NanoCPUs        int64  `json:"nano_cpus,omitempty"`
 	SwapMemoryBytes int64  `json:"swap_memory_bytes,omitempty"`
 	CPUSetCPUs      string `json:"cpuset_cpus,omitempty"`
+	// ReadOnlyRootfs is the per-app read-only root choice; nil inherits.
+	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty"`
 }
 
 // ServiceProbe mirrors one of AppResource.Health's two probes (readiness

@@ -209,6 +209,14 @@ A Compose file's `healthcheck:` is translated into a readiness probe: a `curl`/`
 | `cpuSet` | string | no | none | Docker's `cpuset-cpus` format, for example `0-3` or `0,2`. Pins the container to specific host CPUs. |
 | `gpu` | `all`, integer, or object | no | none | Requests NVIDIA GPUs. `all`, a count such as `2`, or `{count: 2}` / `{devices: ["0", "GPU-uuid"]}` (device indexes or UUIDs win over count). The app is refused on a node without a GPU and the nvidia container runtime, and moving it to such a node is rejected. See [AI models](/ai-models#gpu-nodes). |
 
+### `Security`
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `read_only_rootfs` | boolean | no | inherit | `true` mounts the container root filesystem read-only. Levelrail adds a tmpfs on `/tmp` and `/run` (size from `APP_CONTAINER_READONLY_TMPFS_MB`, default 64, mounted `nosuid,nodev`, not `noexec`) unless a volume or bind mount already uses that path. Declared volumes and bind mounts stay writable. Omit it to follow `APP_CONTAINER_READONLY_ROOTFS` (off by default); `false` opts this app out of a fleet-wide `true`. Changing it recreates the container once. Not allowed together with `files` (they are copied into the root before start) or on a static build. |
+
+An app that writes elsewhere (an nginx cache under `/var/cache/nginx`, a database data directory, an upload folder) needs a volume at that path, or it fails with `Read-only file system` in its logs. Fleet-wide `true` skips services that declare `files`.
+
 ### `LoadBalancer`
 
 All fields are optional. Durations are Go duration strings such as `500ms`, `5s` or `2m`. See [Load balancing](/load-balancing) for behavior.

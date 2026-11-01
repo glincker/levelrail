@@ -68,6 +68,13 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		}
 		d.Resources = &resources
 	}
+	if svc.Security != nil && svc.Security.ReadOnlyRootfs != nil {
+		if d.Resources == nil {
+			d.Resources = &store.ServiceResources{}
+		}
+		on := *svc.Security.ReadOnlyRootfs
+		d.Resources.ReadOnlyRootfs = &on
+	}
 
 	if svc.Health != nil {
 		health, err := toServiceHealth(*svc.Health)

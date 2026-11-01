@@ -523,6 +523,10 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 	if svc.Resources != nil {
 		out.Resources = specResourcesFromStore(*svc.Resources)
 	}
+	if svc.Resources != nil && svc.Resources.ReadOnlyRootfs != nil {
+		on := *svc.Resources.ReadOnlyRootfs
+		out.Security = &spec.Security{ReadOnlyRootfs: &on}
+	}
 	if svc.Health != nil {
 		out.Health = specHealthFromStore(*svc.Health)
 		out.Restart = svc.Health.Restart

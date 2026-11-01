@@ -46,10 +46,12 @@ type Service struct {
 	// rules; EffectiveBindAddress applies the default.
 	BindAddress string `yaml:"bind_address,omitempty"`
 	// PublishedPorts bind straight on the host, bypassing the proxy (UDP).
-	PublishedPorts []PublishedPort   `yaml:"published_ports,omitempty"`
-	Health         *Health           `yaml:"health,omitempty"`
-	Resources      *Resources        `yaml:"resources,omitempty"`
-	Env            map[string]EnvVar `yaml:"env,omitempty"`
+	PublishedPorts []PublishedPort `yaml:"published_ports,omitempty"`
+	Health         *Health         `yaml:"health,omitempty"`
+	Resources      *Resources      `yaml:"resources,omitempty"`
+	// Security tightens this service's container beyond the fleet defaults.
+	Security *Security         `yaml:"security,omitempty"`
+	Env      map[string]EnvVar `yaml:"env,omitempty"`
 	// Files are inline text files written into the container before it starts.
 	Files    []File `yaml:"files,omitempty"`
 	Replicas int    `yaml:"replicas,omitempty"`
@@ -321,6 +323,14 @@ type Probe struct {
 	Interval        string      `yaml:"interval,omitempty"`
 	Timeout         string      `yaml:"timeout,omitempty"`
 	Failures        int         `yaml:"failures,omitempty"`
+}
+
+// Security holds per-service container hardening overrides.
+type Security struct {
+	// ReadOnlyRootfs mounts the root filesystem read-only, with tmpfs on /tmp
+	// and /run. nil inherits the fleet default (off unless the operator set
+	// APP_CONTAINER_READONLY_ROOTFS), false opts out of a fleet-wide true.
+	ReadOnlyRootfs *bool `yaml:"read_only_rootfs,omitempty" json:"read_only_rootfs,omitempty"`
 }
 
 // Resources holds a service's resource limits.

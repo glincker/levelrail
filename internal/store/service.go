@@ -34,6 +34,9 @@ type ServiceResources struct {
 	GPU *ServiceGPU `json:"gpu,omitempty"`
 	// ShmSizeBytes sizes /dev/shm; 0 keeps Docker's default (64 MB).
 	ShmSizeBytes int64 `json:"shm_size_bytes,omitempty"`
+	// ReadOnlyRootfs is the per-app read-only root choice; nil inherits the
+	// fleet default. Kept here so it needs no new column.
+	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty"`
 }
 
 // ServiceGPU is a service's GPU request: Count -1 means every GPU,

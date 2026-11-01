@@ -197,7 +197,9 @@ What `enforce` sets:
 - `SecurityOpt: no-new-privileges`, so a process cannot gain privileges through setuid binaries.
 - `PidsLimit` from `APP_CONTAINER_PIDS_LIMIT` (default `4096`, `0` disables), which stops a fork bomb from exhausting the host.
 
-`APP_CONTAINER_HARDENING_CAP_ADD` (comma separated, for example `SYS_CHROOT,NET_RAW`) adds capabilities for every container on that host, for images that need more than the minimal set (SSH or FTP servers, tools using `ping`). It applies host-wide because a per-app override would need a new field carried to remote agents; a per-app `security` block in `app.yaml` is future work. Read-only root filesystems and privileged containers are never set by these defaults. The setting is read by the process that creates the container, so it applies to remote nodes when set on the agent, and the doctor reports the control plane's own value.
+`APP_CONTAINER_HARDENING_CAP_ADD` (comma separated, for example `SYS_CHROOT,NET_RAW`) adds capabilities for every container on that host, for images that need more than the minimal set (SSH or FTP servers, tools using `ping`). It applies host-wide; per-app capability overrides are future work. Privileged containers are never set by these defaults.
+
+Read-only root filesystems are opt-in. `security.read_only_rootfs` in `app.yaml` sets it for one app, and `APP_CONTAINER_READONLY_ROOTFS=true` makes it the default for apps that do not set it (`false` per app opts out). The root is mounted read-only with a tmpfs on `/tmp` and `/run` (`APP_CONTAINER_READONLY_TMPFS_MB`, default 64); declared volumes stay writable. See [app.yaml](/app-spec-reference#security) for the limits. The setting is read by the process that creates the container, so it applies to remote nodes when set on the agent, and the doctor reports the control plane's own value.
 
 ## Docker API guard
 
@@ -317,7 +319,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
-- Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.
+- Container hardening is on by default. A read-only root filesystem is opt-in, per app with `security.read_only_rootfs` in [app.yaml](/app-spec-reference#security) or fleet-wide with `APP_CONTAINER_READONLY_ROOTFS`. Capabilities, `no-new-privileges` and the PID limit have no per-app override yet.
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 
 ## Next steps

@@ -1293,6 +1293,16 @@
       ],
       "type": "object"
     },
+    "security": {
+      "additionalProperties": false,
+      "properties": {
+        "read_only_rootfs": {
+          "description": "Mount the root filesystem read-only with tmpfs on /tmp and /run. Omit to inherit the fleet default; false opts out of a fleet-wide true. Not allowed with files.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "service": {
       "additionalProperties": false,
       "anyOf": [
@@ -1487,6 +1497,10 @@
             "$ref": "#/$defs/route"
           },
           "type": "array"
+        },
+        "security": {
+          "$ref": "#/$defs/security",
+          "description": "Per-service container hardening overrides."
         },
         "static": {
           "$ref": "#/$defs/staticOptions",

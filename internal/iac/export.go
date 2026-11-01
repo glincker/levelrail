@@ -64,6 +64,7 @@ type outService struct {
 	BindAddress    string               `yaml:"bind_address,omitempty"`
 	Health         *healthFields        `yaml:"health,omitempty"`
 	Resources      *resourceFields      `yaml:"resources,omitempty"`
+	Security       *securityFields      `yaml:"security,omitempty"`
 	Env            map[string]any       `yaml:"env,omitempty"`
 	Replicas       int                  `yaml:"replicas,omitempty"`
 	Strategy       string               `yaml:"strategy,omitempty"`
@@ -227,7 +228,7 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 	}
 	f := appFromWire(a, idNames{e.st})
 	svc := outService{Build: outBuild{Type: spec.BuildImage, Image: f.Image}, Domains: f.Domains, Port: f.Port, HostPort: f.HostPort,
-		Health: f.Health, Resources: f.Resources, Labels: f.Labels, Hooks: f.Hooks, Command: f.Command, Restart: f.Restart}
+		Health: f.Health, Resources: f.Resources, Security: f.Security, Labels: f.Labels, Hooks: f.Hooks, Command: f.Command, Restart: f.Restart}
 	if f.PublishedPorts != nil {
 		svc.PublishedPorts = *f.PublishedPorts
 	}
