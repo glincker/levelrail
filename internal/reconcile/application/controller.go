@@ -1400,7 +1400,11 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		stopWatch()
 		return fmt.Errorf("create %q: %w", name, err)
 	}
-	c.traceImageInspect(ctx, tr, desired.Image)
+	if err := c.traceImageInspect(ctx, tr, desired.Image); err != nil {
+		stopWatch()
+		_ = c.removeContainer(ctx, id)
+		return fmt.Errorf("create %q: %w", name, err)
+	}
 	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
 	startSpan := tr.Begin(ctx, deploytrace.StepContainerStart, "starting "+name)
 	if err := c.startContainer(ctx, id); err != nil {

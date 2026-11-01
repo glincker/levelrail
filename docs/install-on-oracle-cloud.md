@@ -95,6 +95,8 @@ Then follow [Installing Levelrail](/installing) and [Go live](/go-live). Run the
 
 An app runs on this VM only if its container image has a `linux/arm64` build. Many do, some do not. The template catalog does not guarantee every template works on Arm. Before you install a template, check the image's published platforms (for example with `docker buildx imagetools inspect <image:tag>`), and see [Template catalog](/template-catalog) and [Templates status](/templates-status), which lists templates known to fail on Arm. If an image has no arm64 build you will see a pull error or an `exec format error`.
 
+A deploy of an image with no arm64 build now fails up front with a `PlatformMismatch` reason in the deploy trace, naming the image architecture and the node, unless the VM has qemu binfmt emulation registered for it (then the deploy goes ahead with a warning that it runs under emulation and may be slow). To allow x86 images, install emulation, for example `docker run --privileged --rm tonistiigi/binfmt --install amd64`. `APP_PLATFORM_MISMATCH` (`refuse-when-no-emulation`, `warn` or `refuse`) changes the policy; see [Environment variables](/environment-variables).
+
 ## Idle reclamation
 
 Oracle's page says idle Always Free compute instances may be reclaimed. It defines idle as a 7-day period in which the 95th percentile CPU use is under 20 percent, network use is under 20 percent, and memory use is under 20 percent (the memory test applies to A1 shapes only). That is Oracle's rule as published at the link above. It can change, and the page does not describe in detail what reclaiming means for your instance.
