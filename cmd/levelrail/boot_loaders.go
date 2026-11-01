@@ -97,7 +97,9 @@ func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOpt
 		if err != nil {
 			return nil, "", fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
 		}
-		return secrets.NewManager(db, mk, opts...), "", nil
+		mgr = secrets.NewManager(db, mk, opts...)
+		mgr.Preload(context.Background())
+		return mgr, "", nil
 	}
 
 	mk, keyPath, err := loadOrGenerateMasterKey(dataDir)
@@ -114,6 +116,7 @@ func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOpt
 	if promoted {
 		slog.Info("master key rotation was interrupted; completed it from the staged key file")
 	}
+	mgr.Preload(context.Background())
 	return mgr, keyPath, nil
 }
 
