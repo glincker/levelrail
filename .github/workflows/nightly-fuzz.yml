@@ -1,0 +1,64 @@
+name: Nightly fuzz
+
+# Runs every native Go fuzz target for a fixed time. Schedule and manual runs
+# only, so it can never fail a PR. A crash is saved as a new file under
+# testdata/fuzz and uploaded as an artifact: commit it as a regression seed.
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: nightly-fuzz
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz targets
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      # One target per go test call, because -fuzz must match a single target.
+      # Every target runs even when an earlier one crashed.
+      - name: Fuzz
+        env:
+          FUZZ_TIME: ${{ vars.FUZZ_TIME || '60s' }}
+        run: |
+          status=0
+          while IFS= read -r file; do
+            dir="$(dirname "$file")"
+            while IFS= read -r target; do
+              echo "::group::$dir $target"
+              go test "./$dir" -run '^$' -fuzz "^${target}\$" -fuzztime "$FUZZ_TIME" </dev/null || status=1
+              echo "::endgroup::"
+            done < <(grep -ho '^func Fuzz[A-Za-z0-9_]*' "$file" | awk '{print $2}')
+          done < <(git grep -l '^func Fuzz' -- '*_test.go')
+          exit "$status"
+
+      - name: Collect new corpus files
+        if: failure()
+        run: |
+          mkdir -p fuzz-failures
+          git ls-files --others --exclude-standard -- '*/testdata/fuzz/*' | while IFS= read -r f; do
+            cp --parents "$f" fuzz-failures/
+          done
+
+      - name: Upload failing corpus
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: fuzz-failures
+          path: fuzz-failures
+          if-no-files-found: ignore
+          retention-days: 30

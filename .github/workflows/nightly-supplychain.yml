@@ -1,0 +1,66 @@
+name: Nightly supply chain
+
+# Advisory scans of the dependency graph. Both jobs are report only for now
+# (continue-on-error): read the job log, nothing here blocks a merge.
+on:
+  schedule:
+    - cron: '45 3 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: nightly-supplychain
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  osv-scan:
+    name: OSV scan
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    # Report only: OSV overlaps Dependabot alerts, so the first weeks show
+    # how noisy it is. Remove this line to make a finding fail the job.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      # Pinned module version from the Go proxy, verified by the checksum
+      # database, covers go.mod and the npm lockfile.
+      - name: osv-scanner
+        run: go run github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.0 scan source --recursive .
+
+  licenses:
+    name: Dependency licenses
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    # Report only until the deny list has been run once against the real
+    # dependency set. Remove this line to make a denied licence fail the job.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      # go-licenses check only knows licence classes, so report the SPDX id of
+      # every linked package and match it against the checked-in deny list.
+      - name: go-licenses
+        run: |
+          go run github.com/google/go-licenses/v2@v2.0.1 report ./cmd/... > licenses.csv 2> licenses.err || true
+          grep -v '^#' scripts/license-denylist.txt | grep -v '^$' > denied.txt
+          awk -F, '{print $NF}' licenses.csv | sort | uniq -c | sort -rn
+          if awk -F, 'NR==FNR {d[$0]=1; next} ($NF in d) {print "denied licence: " $0; bad=1} END {exit bad}' denied.txt licenses.csv; then
+            echo "no denied licences"
+          else
+            exit 1
+          fi

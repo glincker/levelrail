@@ -1,0 +1,7 @@
+# Licence ids that must not be linked into the shipped binaries, one per line.
+# Read by .github/workflows/nightly-supplychain.yml. LGPL is allowed on purpose.
+GPL-2.0
+GPL-3.0
+AGPL-3.0
+SSPL-1.0
+BUSL-1.1
