@@ -99,6 +99,10 @@ func printAppExposure(out io.Writer, p apiclient.AppExposurePlan, inUse []apicli
 		_, _ = fmt.Fprintf(out, "host port:       %d (bind %s)\n", p.HostPort, p.BindAddress)
 	}
 	for _, u := range p.URLs {
+		// A direct raw port bypasses the proxy, so the https fallback URL does not reach it.
+		if u.Kind == "fallback" && p.Mode == "direct" {
+			continue
+		}
 		_, _ = fmt.Fprintf(out, "url (%s):%s%s\n", u.Kind, strings.Repeat(" ", max(1, 9-len(u.Kind))), u.URL)
 	}
 	for _, c := range p.Changes {

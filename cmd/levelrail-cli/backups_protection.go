@@ -315,11 +315,12 @@ func backupsVolumesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s backups volumes list <app> <volume> [flags]       backup history of one app volume
   %[1]s backups volumes policy get <app> <volume>         show retention counts and hooks
-  %[1]s backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --pause]
-  %[1]s backups volumes restore <app> <volume> --backup ID [--new-volume NAME] [--target-app APP] [--node NODE]
+  %[1]s backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --clear-pre-hook --clear-post-hook --pause|--no-pause]
+  %[1]s backups volumes restore <app> <volume> --backup ID [--new-volume|--new-volume-name NAME] [--target-app APP] [--node NODE]
                                                          restore into a NEW volume (never overwrites), optionally for another app or on another node
 To run one volume backup now: %[1]s app-volume-backups trigger <app> <volume> --target ID
-`, prog)
+To check that a backup restores: %[1]s app-volume-backups verify <app> <volume> (see "%[1]s app-volume-backups --help")
+`+"Policy set merges: flags you omit keep the stored value. Clear a hook with --clear-pre-hook or --clear-post-hook.\n"+``, prog)
 }
 
 func runBackupsVolumesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -345,7 +346,7 @@ func runBackupsVolumesPolicy(prog string, args []string, stdout, stderr io.Write
 	verb := args[0]
 	c := newProtectionCmd(prog, "backups volumes policy "+verb, backupsVolumesUsage(prog), stdout, stderr, lookupEnv)
 	var p apiclient.VolumeBackupPolicyResource
-	var pause bool
+	var pause, noPause, clearPre, clearPost bool
 	if verb == "set" {
 		c.fs.IntVar(&p.RetainDaily, "retain-daily", 0, "keep the newest backup of each of the last N days")
 		c.fs.IntVar(&p.RetainWeekly, "retain-weekly", 0, "keep the newest backup of each of the last N weeks")
@@ -353,6 +354,9 @@ func runBackupsVolumesPolicy(prog string, args []string, stdout, stderr io.Write
 		c.fs.StringVar(&p.PreHook, "pre-hook", "", "shell command run inside the app container before the archive")
 		c.fs.StringVar(&p.PostHook, "post-hook", "", "shell command run inside the app container after the archive")
 		c.fs.BoolVar(&pause, "pause", false, "pause the app container while the archive streams")
+		c.fs.BoolVar(&noPause, "no-pause", false, "stop pausing the app container")
+		c.fs.BoolVar(&clearPre, "clear-pre-hook", false, "remove the stored pre-hook")
+		c.fs.BoolVar(&clearPost, "clear-post-hook", false, "remove the stored post-hook (never leave a save-off pre-hook without its post-hook)")
 	}
 	rest, exit, ok := c.parse(args[1:], 2)
 	if !ok {
@@ -364,9 +368,17 @@ func runBackupsVolumesPolicy(prog string, args []string, stdout, stderr io.Write
 	if verb == "get" {
 		out, err = c.client.GetVolumeBackupPolicy(ctx, rest[0], rest[1])
 	} else {
-		if pause {
-			p.Quiesce = "pause"
+		if (p.PreHook != "" && clearPre) || (p.PostHook != "" && clearPost) || (pause && noPause) {
+			return c.fail(newValidationError("conflicting flags: a hook flag with its --clear flag, or --pause with --no-pause"))
 		}
+		set := map[string]bool{}
+		c.fs.Visit(func(f *flag.Flag) { set[f.Name] = true })
+		// The API replaces the whole policy, so merge here: omitted flags keep their stored value.
+		cur, getErr := c.client.GetVolumeBackupPolicy(ctx, rest[0], rest[1])
+		if getErr != nil {
+			return c.fail(fmt.Errorf("backup policy of %s/%s: read current policy: %w", rest[0], rest[1], getErr))
+		}
+		p = mergeVolumePolicy(cur, p, set, clearPre, clearPost, pause, noPause)
 		out, err = c.client.SetVolumeBackupPolicy(ctx, rest[0], rest[1], p)
 	}
 	if err != nil {
@@ -378,11 +390,44 @@ func runBackupsVolumesPolicy(prog string, args []string, stdout, stderr io.Write
 	})
 }
 
+// mergeVolumePolicy overlays the flags that were given onto the stored policy.
+func mergeVolumePolicy(cur, in apiclient.VolumeBackupPolicyResource, set map[string]bool, clearPre, clearPost, pause, noPause bool) apiclient.VolumeBackupPolicyResource {
+	if set["retain-daily"] {
+		cur.RetainDaily = in.RetainDaily
+	}
+	if set["retain-weekly"] {
+		cur.RetainWeekly = in.RetainWeekly
+	}
+	if set["retain-monthly"] {
+		cur.RetainMonthly = in.RetainMonthly
+	}
+	if set["pre-hook"] {
+		cur.PreHook = in.PreHook
+	}
+	if set["post-hook"] {
+		cur.PostHook = in.PostHook
+	}
+	if clearPre {
+		cur.PreHook = ""
+	}
+	if clearPost {
+		cur.PostHook = ""
+	}
+	if pause {
+		cur.Quiesce = "pause"
+	}
+	if noPause {
+		cur.Quiesce = ""
+	}
+	return cur
+}
+
 func runBackupsVolumesRestore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	c := newProtectionCmd(prog, "backups volumes restore", backupsVolumesUsage(prog), stdout, stderr, lookupEnv)
 	var req apiclient.VolumeRestoreToRequest
 	c.fs.StringVar(&req.BackupID, "backup", "", "id of the volume backup to restore (required)")
 	c.fs.StringVar(&req.NewVolumeName, "new-volume", "", "name of the new volume (default: generated)")
+	c.fs.StringVar(&req.NewVolumeName, "new-volume-name", "", "alias of --new-volume")
 	c.fs.StringVar(&req.TargetApp, "target-app", "", "name the new volume for this app so deploying it picks the data up")
 	c.fs.StringVar(&req.NodeID, "node", "", "restore onto this node instead of the source app's node")
 	rest, exit, ok := c.parse(args, 2)

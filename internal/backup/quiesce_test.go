@@ -103,7 +103,7 @@ func TestHooks_PreFailureStillBacksUpAndFlags(t *testing.T) {
 		t.Fatalf("events = %v", ev)
 	}
 	row := e.hist.rows["bkh_1"]
-	if row.Status != store.BackupStatusSucceeded || !strings.HasPrefix(row.Error, "inconsistent") {
+	if row.Status != store.BackupStatusSucceeded || !strings.HasPrefix(row.Error, "inconsistent") || strings.Contains(row.Error, "inconsistent: inconsistent") {
 		t.Fatalf("row = %+v", row)
 	}
 	if strings.Contains(row.Error, testRconSecret) || strings.Contains(logs, testRconSecret) {

@@ -61,7 +61,7 @@ services:
     volumes:
       - name: data              # named Docker volume
         path: /var/lib/data
-      - hostPath: /srv/web/uploads  # bind mount of a real host directory
+      - hostPath: /srv/web/uploads  # bind mount, honoured by "deploy", not by "apps create --file"
         path: /uploads
         readOnly: true
     hooks:
@@ -156,6 +156,8 @@ Exactly one of `name` or `hostPath` must be set:
 | `hostPath` | string | conditional | none | An absolute path on the host to bind-mount. Rejected if relative or under a protected system path (see Validation below). |
 | `path` | string | yes | none | The container-side mount path. |
 | `readOnly` | boolean | no | `false` | Mounts read-only inside the container. Only meaningful with `hostPath`; rejected on a named volume. |
+
+`apps create --file` attaches named volumes only. A `hostPath` entry is refused before the app is created, with a message naming the alternative. For a host bind mount on a new app, use a compose file with `apps deploy-compose <name> --file`, for example `- /srv/cfg:/usr/share/nginx/html:ro` (the `:ro` suffix mounts it read-only).
 
 **Constraint**: Two volumes on the same service can never share a `path`.
 

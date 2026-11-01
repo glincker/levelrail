@@ -756,6 +756,11 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsCreateStatic(ctx, client, plan.DeploySpec, of, stdout, stderr, f.jsonOut)
 	}
 
+	// Checked before create so a rejected bind mount does not leave a half-created app.
+	if err := validatePlanVolumes(plan.Volumes); err != nil {
+		return reportError(stdout, stderr, f.jsonOut, err)
+	}
+
 	created, err := client.CreateApp(ctx, plan.CreateBody)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("create app %q: %w", plan.CreateBody.Name, err))
@@ -793,13 +798,23 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
 }
 
-// attachPlanVolumes wires app.yaml's volumes on with a follow-up PUT. Bind mounts (hostPath) are rejected, since that endpoint takes name and path only.
-func attachPlanVolumes(ctx context.Context, client *Client, name string, volumes []spec.Volume, stderr io.Writer, jsonOut bool) error {
-	resources := make([]appVolumeResource, 0, len(volumes))
+// validatePlanVolumes rejects bind mounts, which the volumes endpoint cannot take. Compose deploys carry them.
+func validatePlanVolumes(volumes []spec.Volume) error {
 	for _, v := range volumes {
 		if v.HostPath != "" {
-			return newValidationError("volume %q: hostPath bind mounts are not supported by \"apps create --file\", attach a named volume instead", v.Name)
+			return newValidationError("volume with hostPath %q: bind mounts are not supported by \"apps create --file\", use a named volume, or deploy a compose file with \"apps deploy-compose <name> --file\" and a \"- %s:%s:ro\" volume", v.HostPath, v.HostPath, v.Path)
 		}
+	}
+	return nil
+}
+
+// attachPlanVolumes wires app.yaml's volumes on with a follow-up PUT. The endpoint takes name and path only.
+func attachPlanVolumes(ctx context.Context, client *Client, name string, volumes []spec.Volume, stderr io.Writer, jsonOut bool) error {
+	if err := validatePlanVolumes(volumes); err != nil {
+		return err
+	}
+	resources := make([]appVolumeResource, 0, len(volumes))
+	for _, v := range volumes {
 		resources = append(resources, appVolumeResource{Name: v.Name, ContainerPath: v.Path})
 	}
 	if !jsonOut {

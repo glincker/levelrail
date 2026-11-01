@@ -12,6 +12,7 @@ func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr 
 	var backupID, newVolumeName string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required)")
 	fs.StringVar(&newVolumeName, "new-volume-name", "", "name for the brand-new, standalone Docker volume (default: a generated name, see the started attempt's own new_volume_name)")
+	fs.StringVar(&newVolumeName, "new-volume", "", "alias of --new-volume-name (same flag as in \"backups volumes restore\")")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsRestoreAsNewUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -46,7 +47,7 @@ func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr 
 
 func appVolumeBackupsRestoreAsNewUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s app-volume-backups restore-as-new <app> <volume> --backup ID [--new-volume-name NAME] [flags]
+  %[1]s app-volume-backups restore-as-new <app> <volume> --backup ID [--new-volume-name|--new-volume NAME] [flags]
 
 Creates a brand-new, standalone Docker volume (not attached to any app)
 and restores a previously succeeded backup of <app>'s <volume> into it.
@@ -57,6 +58,7 @@ risking the original.
 Flags:
   --backup string             id of a previously succeeded backup to restore from (required)
   --new-volume-name string   name for the new Docker volume (default: a generated name)
+  --new-volume string        alias of --new-volume-name
   --token string               API token (default: %[2]s env var, then the credentials file)
   --api-url string            control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string            named credentials profile to read (overrides APP_PROFILE, default "default")

@@ -906,8 +906,8 @@ levelrail-cli backups drill list [--app A --volume V | --database D] [--limit N]
 levelrail-cli backups drill show <drill-id> [flags]
 levelrail-cli backups volumes list <app> <volume> [flags]
 levelrail-cli backups volumes policy get <app> <volume> [flags]
-levelrail-cli backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --pause]
-levelrail-cli backups volumes restore <app> <volume> --backup ID [--new-volume NAME] [--target-app APP] [--node NODE]
+levelrail-cli backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --clear-pre-hook --clear-post-hook --pause|--no-pause]   (omitted flags keep the stored value)
+levelrail-cli backups volumes restore <app> <volume> --backup ID [--new-volume|--new-volume-name NAME] [--target-app APP] [--node NODE]
 ```
 
 - `list-all` lists backup history across every database and app volume instance wide.
@@ -926,7 +926,7 @@ levelrail-cli app-volume-backups trigger <app> <volume> --target ID [flags]
 levelrail-cli app-volume-backups delete <app> <volume> <backup-id> [flags]
 levelrail-cli app-volume-backups download <app> <volume> <backup-id> [flags]
 levelrail-cli app-volume-backups restore <app> <volume> --backup ID --confirm APP/VOLUME [flags]
-levelrail-cli app-volume-backups restore-as-new <app> <volume> --backup ID [--new-volume-name NAME] [flags]
+levelrail-cli app-volume-backups restore-as-new <app> <volume> --backup ID [--new-volume-name|--new-volume NAME] [flags]
 levelrail-cli app-volume-backups restores <app> <volume> [flags]
 levelrail-cli app-volume-backups clone-restores <app> <volume> [flags]
 levelrail-cli app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]

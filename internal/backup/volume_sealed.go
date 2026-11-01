@@ -154,7 +154,8 @@ func (r *Runner) sealedAttempt(ctx context.Context, serviceName, volumeName, doc
 		end, qerr := opts.Quiesce.Begin(ctx, serviceName, policy)
 		switch {
 		case qerr != nil && errors.Is(qerr, ErrInconsistent) && end != nil:
-			res.warning = "inconsistent: " + qerr.Error()
+			// The error already starts with "inconsistent: ".
+			res.warning = qerr.Error()
 		case qerr != nil:
 			return 0, "", res, fmt.Errorf("prepare volume for backup: %w", qerr)
 		}

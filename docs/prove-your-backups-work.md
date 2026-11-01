@@ -116,6 +116,8 @@ A running database's files are only consistent if it is quiet. Per volume you ca
 
 Each hook is cut off after `APP_BACKUP_HOOK_TIMEOUT_SECONDS` (default 60), never longer than `APP_BACKUP_HOOK_MAX_SECONDS` (default 600). At most `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` (default 65536) of a hook's output is read and the output is never stored. Hook errors never include the command or its output, because hooks often carry credentials. No hooks and no schedule are enabled by default.
 
+`policy set` merges: a flag you leave out keeps the stored value, so setting only `--pre-hook` does not touch the post-hook or the retention counts. Remove a hook on purpose with `--clear-pre-hook` or `--clear-post-hook` (or pass an empty string, as in `--post-hook ''`), and stop pausing with `--no-pause`. If the pre-hook turns saving off, as `save-off` does, always set the matching post-hook in the same change, and check the result with `policy get`.
+
 ### Example: a Minecraft world
 
 The backup package knows nothing about game servers. Set these commands on the world volume (replace the RCON password with your own; keep it out of shared shell history):
