@@ -1598,6 +1598,8 @@ EOF
 	cat <<EOF
   levelrail-cli login --api-url ${DASHBOARD_SCHEME}://${PUBLIC_IP:-<server-ip>}:${DASHBOARD_PORT} --code <XXXX-XXXX>
 The same login works from your own machine after installing the CLI there.
+A new device may need approval. With no token yet, approve it on this server:
+  sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} approve-signin <request id> --match <number>
 
   Service status: systemctl status ${SERVICE_NAME}
   Logs:           journalctl -u ${SERVICE_NAME} -f
@@ -1618,8 +1620,14 @@ Free HTTPS with no DNS setup: https://${dashed}.sslip.io already points at
 this server. In the dashboard, open Domains and click "Enable HTTPS" to get
 a real Let's Encrypt certificate for it (ports 80 and 443 must be open), or:
   levelrail-cli settings ingress https enable --email you@example.com
-Until then that https address shows a browser certificate warning. That is
-expected, not an attack: keep using the http link above until it is enabled.
+Until HTTPS is enabled that https address has no certificate at all, so a
+browser shows a connection error, not a warning page. Keep using the http
+link above until then.
+If your cloud firewall only opens ports 80 and 443, port ${DASHBOARD_PORT} is
+unreachable from outside. Tunnel it from your own machine instead:
+  ssh -L ${DASHBOARD_PORT}:127.0.0.1:${DASHBOARD_PORT} <user>@${PUBLIC_IP}
+and open http://127.0.0.1:${DASHBOARD_PORT} there. Port 80 does not redirect
+to https until a certificate exists.
 EOF
 }
 

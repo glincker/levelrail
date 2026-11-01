@@ -116,19 +116,39 @@ func (s *InheritedSockets) listenAddrs() []string {
 	return []string{"fd/" + strconv.Itoa(s.HTTPS)}
 }
 
-// redirectServer serves port 80: a plain HTTPS redirect, or nothing when the
-// redirect is turned off (the socket stays held so clients are not refused).
-func (s *InheritedSockets) redirectServer(redirect bool) *Server {
+// redirectServer serves port 80. Only hosts that hold a certificate are
+// redirected to https; every other host (a bare IP before any domain exists)
+// gets a plain note, because a redirect there would end in a failed handshake.
+// With the redirect off the socket stays held so clients are not refused.
+func (s *InheritedSockets) redirectServer(redirect bool, hosts []string) *Server {
 	srv := &Server{AutomaticHTTPS: &AutoHTTPSConfig{Disabled: true}, Listen: []string{"fd/" + strconv.Itoa(s.HTTP)}}
-	if redirect {
-		srv.Routes = []Route{{Handle: []any{StaticResponseHandler{
-			Handler:    "static_response",
-			StatusCode: 308,
-			Headers:    map[string][]string{"Location": {"https://{http.request.host}{http.request.uri}"}},
-		}}}}
+	if !redirect {
+		return srv
 	}
+	if len(hosts) > 0 {
+		srv.Routes = append(srv.Routes, Route{
+			Match: []Matcher{{Host: hosts}},
+			Handle: []any{StaticResponseHandler{
+				Handler:    "static_response",
+				StatusCode: 308,
+				Headers:    map[string][]string{"Location": {"https://{http.request.host}{http.request.uri}"}},
+			}},
+		})
+	}
+	srv.Routes = append(srv.Routes, Route{Handle: []any{StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: 200,
+		Body:       NoCertificateNotice,
+		Headers:    map[string][]string{"Content-Type": {"text/plain; charset=utf-8"}},
+	}}})
 	return srv
 }
+
+// NoCertificateNotice is what port 80 answers for a host with no certificate,
+// so the visitor is told the truth instead of hitting a TLS failure.
+const NoCertificateNotice = "No HTTPS certificate exists for this address yet, so it is not redirected to https.\n" +
+	"Open the dashboard on its own port (over an SSH tunnel if your firewall blocks it),\n" +
+	"then enable HTTPS from Domains or with: levelrail-cli settings ingress https enable\n"
 
 func withoutProtocol(protocols []string, drop string) []string {
 	out := make([]string, 0, len(protocols))

@@ -756,9 +756,13 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		cfg.Apps.Layer4 = &Layer4App{Servers: servers}
 	}
 
+	var tlsHosts []string
+	if opts.TLS {
+		tlsHosts = allHosts
+	}
 	if opts.Inherited.Active() {
 		if opts.Inherited.HTTP != 0 {
-			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect)
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect, tlsHosts)
 		}
 		cfg.ownedPorts = []int{opts.Inherited.HTTPSPort, opts.Inherited.HTTPPort}
 	}
