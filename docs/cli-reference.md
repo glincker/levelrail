@@ -282,6 +282,7 @@ levelrail-cli apps deploy <app> --at WHEN (--image IMAGE | --latest --branch NAM
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
+levelrail-cli apps cdn get|set|resync <app-name> [flags]   (set takes --proxied on|off|inherit and re-syncs existing DNS records; resync takes --dry-run)
 levelrail-cli apps abuse get|set|dry-run <app-name> [flags]
 levelrail-cli functions init|deploy|list|runtimes|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]

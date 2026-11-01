@@ -676,6 +676,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/advisory-refresh | AbilityDeploy | handleAdvisoryRefresh |
 | GET | /api/v1/apps/{name}/cdn | AbilityRead | handleGetAppCDN |
 | PUT | /api/v1/apps/{name}/cdn | AbilityWriteSensitive | handlePutAppCDN |
+| POST | /api/v1/apps/{name}/cdn/resync | AbilityWriteSensitive | handleResyncAppCDN |
 
 </Accordion>
 

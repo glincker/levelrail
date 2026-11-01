@@ -154,3 +154,9 @@ When the app's records are proxied, a static publish, a deploy, publishing a hel
 - Disk backed storage with checksummed objects, sized by environment variables.
 - Cross node purge once more than one ingress serves traffic.
 - Routing rules in the CDN section will use the shared rule builder (redirect with status, rewrite, set header) instead of linking to each domain's page.
+
+## Change the proxy setting for one app from the CLI
+
+`levelrail-cli apps cdn get <app>` shows the per-app proxy override, what it resolves to and the Cloudflare SSL/TLS mode. `levelrail-cli apps cdn set <app> --proxied on|off|inherit` changes it and, when the resolved setting actually changed, re-syncs the app's existing DNS records so they match.
+
+The re-sync only touches records Levelrail created for that app, and only those whose proxy flag differs. A record someone else created or edited is left alone, and each record reports its own result, so one failure does not hide the rest (the command exits non-zero if any failed). Use `--no-resync` to save the setting only, then `levelrail-cli apps cdn resync <app> --dry-run` to preview the changes before running `resync` for real. It needs a Cloudflare token with DNS edit.

@@ -53,6 +53,7 @@ var Tree = map[string]*Node{
 		"auto-rollback":           {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil}},
 		"settings":                {Subs: map[string]*Node{"predeploy-snapshot": nil}},
 		"sleep":                   {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil, "wake": nil, "now": nil, "list": nil, "history": nil}},
+		"cdn":                     {Subs: map[string]*Node{"get": nil, "set": nil, "resync": nil}},
 		"abuse":                   {Subs: map[string]*Node{"get": nil, "set": nil, "dry-run": nil}},
 		"access":                  nil,
 		"urls":                    nil,
