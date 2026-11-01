@@ -66,7 +66,7 @@ run_step() {
 }
 
 # ---- Go ----
-go_files="$(printf '%s\n' "$changed" | grep -E '\.go$' | grep -v -e '^tools/' -e '^kit/' -e '^integrations/' -e '^docs-local/' | while read -r f; do [ -f "$f" ] && echo "$f"; done)"
+go_files="$(printf '%s\n' "$changed" | grep -E '\.go$' | grep -v -e '^tools/' -e '^kit/' -e '^integrations/' | while read -r f; do [ -f "$f" ] && echo "$f"; done)"
 if [ -z "$go_files" ]; then
 	record go SKIP "no Go files changed"
 else

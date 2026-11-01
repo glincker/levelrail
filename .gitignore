@@ -1,9 +1,3 @@
-# Private research, strategy, and competitor reference material.
-# Never remove this line or narrow it: everything under docs-local/
-# is pre-launch, competitive, or strategy content that must not ship
-# in the public OSS repo.
-docs-local/
-
 # Go
 /bin/
 /dist/

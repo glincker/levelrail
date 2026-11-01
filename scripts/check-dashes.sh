@@ -7,7 +7,6 @@ cd "$(git rev-parse --show-toplevel)" || exit 2
 # Built from octal so this file does not contain the characters it hunts.
 pattern="$(printf '\342\200\224')|$(printf '\342\200\223')"
 hits="$(git grep -I -l -E -e "$pattern" -- . \
-	':(exclude)docs-local/competitor-clones' \
 	':(exclude)scripts/git-hooks/pre-commit' || true)"
 
 if [ -n "$hits" ]; then

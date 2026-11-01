@@ -19,7 +19,7 @@ exec 3>&2
 fail=0
 
 echo "pre-commit: gofmt"
-staged_go_files=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | grep -v '^docs-local/')
+staged_go_files=$(git diff --cached --name-only --diff-filter=ACM -- '*.go')
 if [ -n "$staged_go_files" ]; then
 	# xargs, not a bare $(...) expansion inside gofmt -l: an empty
 	# staged_go_files would otherwise pass gofmt zero file arguments,
@@ -53,7 +53,7 @@ fi
 # Go checks run only for staged Go files, on their packages only. The full
 # build (every dependent) runs once per push in pre-push, and CI lints the
 # whole tree, so a commit pays for what it touched, not for the repo.
-go_pkg_dirs=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' ':!tools/*' ':!kit/*' ':!integrations/terraform-provider/*' ':!docs-local/*' | xargs -n1 dirname 2>/dev/null | sort -u | while read -r d; do [ -d "$d" ] && echo "./$d"; done)
+go_pkg_dirs=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' ':!tools/*' ':!kit/*' ':!integrations/terraform-provider/*' | xargs -n1 dirname 2>/dev/null | sort -u | while read -r d; do [ -d "$d" ] && echo "./$d"; done)
 go_mod_staged=$(git diff --cached --name-only -- go.mod go.sum)
 
 # golangci-lint (with tests) already compiles and vets the same packages, so
@@ -162,7 +162,7 @@ fi
 # pattern has to contain the literal em/en dash characters it's looking
 # for, which would otherwise flag itself.
 echo "pre-commit: em dash / en dash sweep"
-staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^docs-local/competitor-clones/' | grep -v '^scripts/git-hooks/pre-commit$')
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^scripts/git-hooks/pre-commit$')
 dash_hits=""
 for f in $staged_files; do
 	[ -f "$f" ] || continue
@@ -194,7 +194,7 @@ if [ -n "$marker_hits" ]; then
 fi
 
 echo "pre-commit: comment density (new Go/TS/TSX lines only, >8 consecutive)"
-staged_go_files_density=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' 'web/*.ts' 'web/*.tsx' | grep -v '^docs-local/')
+staged_go_files_density=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' 'web/*.ts' 'web/*.tsx')
 bloat_hits=""
 for f in $staged_go_files_density; do
 	[ -f "$f" ] || continue

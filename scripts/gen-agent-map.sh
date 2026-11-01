@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# Writes docs-local/agent-map.md: one line per Go package and web route, so agents skip exploratory greps.
+# Writes the map to $LEVELRAIL_AGENT_MAP_OUT (skips when unset): one line per Go package and web route, so agents skip exploratory greps.
 # Usage: scripts/gen-agent-map.sh
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
-out="docs-local/agent-map.md"
+out="${LEVELRAIL_AGENT_MAP_OUT:-}"
+if [ -z "$out" ]; then
+	echo "LEVELRAIL_AGENT_MAP_OUT not set, skipping"
+	exit 0
+fi
 tmp="$(mktemp "$(git rev-parse --git-dir)/agent-map.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
@@ -39,7 +43,7 @@ if [ "$lines" -gt 200 ]; then
 	echo "warning: agent map is $lines lines (one line per package and route)" >&2
 fi
 
-mkdir -p docs-local
+mkdir -p "$(dirname "$out")"
 mv "$tmp" "$out"
 trap - EXIT
 echo "wrote $out ($lines lines)"
