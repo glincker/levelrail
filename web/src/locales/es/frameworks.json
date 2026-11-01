@@ -1,0 +1,29 @@
+{
+  "title": "Preajuste de framework",
+  "description": "Elige tu framework para completar el puerto, la comprobación de salud y el almacenamiento que necesita.",
+  "detected": "Detectado desde tu repositorio",
+  "detectedShort": "Detectado",
+  "loadFailed": "No se pudieron cargar los preajustes de framework.",
+  "port": "Puerto",
+  "healthPath": "Ruta de salud",
+  "buildType": "Compilación",
+  "outputMode": "Salida",
+  "static": "Sitio estático, servido directamente por el servidor web integrado",
+  "envHints": "Variables de entorno por definir",
+  "required": "obligatoria",
+  "volumes": "Almacenamiento persistente",
+  "mismatchTitle": "La configuración difiere del preajuste",
+  "mismatchBody": "Este formulario usa el puerto {{port}} y la ruta de salud {{health}}. Las aplicaciones de {{name}} normalmente usan el puerto {{presetPort}} y {{presetHealth}}.",
+  "applyFix": "Usar la configuración del preajuste",
+  "applied": "Configuración del preajuste aplicada.",
+  "dockerfile": "Copiar Dockerfile optimizado",
+  "dockerfileCopied": "Dockerfile copiado al portapapeles.",
+  "dockerfileFailed": "No se pudo copiar el Dockerfile.",
+  "outputModes": {
+    "server": "Servidor de Node o de otro entorno de ejecución",
+    "standalone": "Paquete de servidor independiente",
+    "static": "Archivos estáticos",
+    "jar": "Jar ejecutable",
+    "binary": "Binario único"
+  }
+}

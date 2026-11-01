@@ -1,0 +1,13 @@
+{
+  "toolCall": {
+    "noArguments": "Sin argumentos.",
+    "rejected": "Rechazada",
+    "checked": "Verificada",
+    "approved": "Aprobada",
+    "confirmationRequired": "Se requiere confirmación",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "actingAs": "Actuando como {{user}}",
+    "actingAsWithAbility": "Actuando como {{user}} con {{abilities}}"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "title": "Archivos",
+  "description": "Archivos de configuración en línea que se escriben en el contenedor al iniciar. Los archivos secretos nunca se vuelven a mostrar después de guardarlos.",
+  "empty": "Aún no hay archivos en línea.",
+  "add": "Agregar archivo",
+  "edit": "Editar {{path}}",
+  "delete": "Eliminar {{path}}",
+  "redacted": "Oculto",
+  "secretBadge": "Secreto",
+  "size": "{{count}} bytes",
+  "loadError": "No se pudieron cargar los archivos.",
+  "dialog": {
+    "addTitle": "Agregar archivo",
+    "editTitle": "Editar archivo",
+    "description": "Se guarda como un solo archivo dentro del contenedor de la aplicación.",
+    "path": "Ruta",
+    "pathPlaceholder": "/etc/app/config.yaml",
+    "mode": "Modo",
+    "modePlaceholder": "0644",
+    "content": "Contenido",
+    "contentRedactedHint": "Este archivo es secreto. Escribe contenido nuevo para reemplazarlo.",
+    "secret": "Archivo secreto",
+    "secretHelp": "El contenido secreto nunca se vuelve a mostrar después de guardar.",
+    "restart": "Reiniciar ahora para aplicar",
+    "cancel": "Cancelar",
+    "save": "Guardar archivo",
+    "saving": "Guardando..."
+  },
+  "validation": {
+    "path": "La ruta debe ser absoluta.",
+    "mode": "El modo debe ser octal, por ejemplo 0644."
+  },
+  "deleteDialog": {
+    "title": "¿Eliminar el archivo?",
+    "description": "{{path}} se quitará de la aplicación.",
+    "restart": "Reiniciar ahora para aplicar",
+    "confirm": "Eliminar",
+    "deleting": "Eliminando..."
+  },
+  "toast": {
+    "saved": "Archivo guardado.",
+    "saveFailed": "No se pudo guardar el archivo.",
+    "deleted": "Archivo eliminado.",
+    "deleteFailed": "No se pudo eliminar el archivo."
+  }
+}

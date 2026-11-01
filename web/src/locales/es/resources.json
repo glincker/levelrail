@@ -1,0 +1,116 @@
+{
+  "title": "Recursos",
+  "description": "Todas las aplicaciones, bases de datos, nodos, dominios, buckets y redes privadas en una sola lista con búsqueda. Etiquétalos, guarda las vistas que uses y revisa cuánto cuesta cada etiqueta.",
+  "search": {
+    "label": "Buscar recursos",
+    "placeholder": "Buscar por nombre, detalle o etiqueta"
+  },
+  "kind": {
+    "all": "Todos",
+    "app": "Aplicaciones",
+    "database": "Bases de datos",
+    "node": "Nodos",
+    "domain": "Dominios",
+    "bucket": "Buckets",
+    "network": "Redes privadas",
+    "appOne": "Aplicación",
+    "databaseOne": "Base de datos",
+    "nodeOne": "Nodo",
+    "domainOne": "Dominio",
+    "bucketOne": "Bucket",
+    "networkOne": "Red privada"
+  },
+  "tags": {
+    "filter": "Etiquetas",
+    "filterLabel": "Filtrar por etiqueta, un recurso debe tener todas las etiquetas seleccionadas",
+    "none": "Aún no hay etiquetas. Selecciona recursos y usa Agregar etiqueta para crear la primera.",
+    "clear": "Borrar etiquetas"
+  },
+  "list": {
+    "label": "Recursos",
+    "name": "Nombre",
+    "detail": "Detalle",
+    "tags": "Etiquetas",
+    "selectAll": "Seleccionar todos los recursos mostrados",
+    "selectOne": "Seleccionar {{name}}",
+    "shown": "{{shown}} de {{total}} mostrados",
+    "emptyTitle": "Ningún recurso coincide",
+    "emptyDescription": "Borra la búsqueda o el filtro de etiquetas para volver a ver todo.",
+    "emptyAction": "Borrar filtros",
+    "errorTitle": "No se pudieron cargar los recursos",
+    "retry": "Intentar de nuevo"
+  },
+  "bulk": {
+    "selected_one": "{{count}} seleccionado",
+    "selected_other": "{{count}} seleccionados",
+    "addTag": "Agregar etiqueta",
+    "removeTag": "Quitar etiqueta",
+    "clear": "Borrar selección"
+  },
+  "dialog": {
+    "addTitle": "Agregar una etiqueta a {{count}} recursos",
+    "removeTitle": "Quitar una etiqueta de {{count}} recursos",
+    "description": "Primero revisa una vista previa del cambio. No se escribe nada hasta que lo apliques.",
+    "tagLabel": "Etiqueta",
+    "tagPlaceholder": "team:shop",
+    "tagHint": "Una clave o clave:valor en minúsculas, por ejemplo env:prod. Úsala para agrupar costos.",
+    "preview": "Vista previa de los cambios",
+    "previewing": "Comprobando...",
+    "apply": "Aplicar a {{count}}",
+    "applying": "Aplicando...",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "summaryDry": "Vista previa: {{would}} cambiarían, {{skipped}} ya están como se pidió, {{blocked}} bloqueados.",
+    "summaryDone": "Listo: {{done}} cambiados, {{skipped}} ya estaban como se pidió, {{blocked}} bloqueados.",
+    "failed": "No se pudo previsualizar ni aplicar el cambio.",
+    "doneToast": "Etiqueta {{tag}} actualizada en {{count}} recursos"
+  },
+  "appAction": {
+    "restart": "Reiniciar aplicaciones",
+    "redeploy": "Volver a desplegar aplicaciones",
+    "restartTitle": "Reiniciar {{count}} aplicaciones",
+    "redeployTitle": "Volver a desplegar {{count}} aplicaciones",
+    "restartDescription": "Previsualiza qué aplicaciones se reiniciarían. Cada aplicación se reinicia por separado y no pasa nada hasta que lo apliques.",
+    "redeployDescription": "Previsualiza qué aplicaciones volverían a desplegar su versión actual. No pasa nada hasta que lo apliques.",
+    "summaryDry": "Vista previa: {{would}} se ejecutarían, {{skipped}} omitidos, {{blocked}} bloqueados.",
+    "summaryDone": "Listo: {{done}} iniciados, {{skipped}} omitidos, {{blocked}} bloqueados.",
+    "failed": "No se pudo previsualizar ni aplicar la acción.",
+    "restartToast": "Reiniciando {{count}} aplicaciones",
+    "redeployToast": "Volviendo a desplegar {{count}} aplicaciones"
+  },
+  "status": {
+    "ok": "Cambiado",
+    "would_apply": "Cambiará",
+    "skipped": "Ya establecido",
+    "denied": "Sin permiso",
+    "not_found": "No encontrado",
+    "error": "Falló"
+  },
+  "views": {
+    "button": "Vistas guardadas",
+    "label": "Vistas guardadas",
+    "empty": "Aún no hay vistas guardadas. Configura una búsqueda y guárdala aquí.",
+    "saveTitle": "Guardar los filtros actuales",
+    "namePlaceholder": "Nombre de la vista",
+    "save": "Guardar vista",
+    "saved": "Vista {{name}} guardada",
+    "apply": "Abrir la vista {{name}}",
+    "delete": "Eliminar la vista {{name}}",
+    "deleted": "Vista eliminada"
+  },
+  "cost": {
+    "title": "Costo por etiqueta",
+    "description": "Acumulado del mes, un recurso con varias etiquetas cuenta en cada una.",
+    "open": "Abrir el informe de costos completo",
+    "empty": "Etiqueta algunas aplicaciones o bases de datos para ver su costo agrupado aquí.",
+    "untagged": "Sin etiqueta"
+  },
+  "palette": {
+    "open": "Abrir el explorador de recursos",
+    "openKeywords": "recursos etiquetas explorador buscar todo",
+    "tagged": "Recursos con la etiqueta {{tag}}",
+    "view": "Vista guardada: {{name}}",
+    "bucket": "Bucket {{name}}",
+    "network": "Red privada {{name}}"
+  }
+}

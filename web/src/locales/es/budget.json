@@ -1,0 +1,174 @@
+{
+  "title": "Presupuesto",
+  "description": "Limita el egreso y el costo mensuales de esta aplicación. Recibes alertas conforme sube el uso, y la aplicación puede limitarse o pausarse cuando se alcanza el tope. Los contadores se reinician el primer día de cada mes (UTC).",
+  "loading": "Cargando presupuesto",
+  "loadError": "No se pudo cargar el presupuesto de esta aplicación.",
+  "retry": "Intentar de nuevo",
+  "empty": {
+    "title": "No hay un presupuesto definido",
+    "body": "Sin un presupuesto, un tráfico elevado puede disparar el egreso y el costo sin aviso. Define un límite para recibir alertas al 50, 80 y 100 por ciento.",
+    "action": "Definir un presupuesto"
+  },
+  "status": {
+    "resets": "Se reinicia el {{date}}",
+    "month": "Mes {{period}}"
+  },
+  "reason": {
+    "WithinBudget": "Dentro del presupuesto",
+    "ThresholdReached": "Nivel de alerta alcanzado",
+    "LimitReachedAlertOnly": "Límite alcanzado, solo alerta",
+    "Throttled": "Limitada",
+    "Paused": "Pausada",
+    "EnforcementPending": "Aplicando",
+    "DeploysBlocked": "Despliegues nuevos bloqueados"
+  },
+  "usage": {
+    "egress": "Egreso",
+    "cost": "Costo",
+    "ofLimit": "{{used}} de {{limit}}",
+    "costOfLimit": "{{used}} de {{limit}}",
+    "notPriced": "No hay precios configurados, así que el costo marca cero y su tope no puede activarse. Define los precios en la página de Uso y costo."
+  },
+  "summary": {
+    "alerts": "Alertas al {{levels}}",
+    "action": {
+      "none": "Al 100 por ciento: solo alerta, la aplicación sigue atendiendo",
+      "throttle": "Al 100 por ciento: cada cliente se limita a {{rps}} solicitudes por segundo",
+      "pause": "Al 100 por ciento: la aplicación se pausa con una respuesta de mantenimiento"
+    },
+    "guard": {
+      "alert": "Este presupuesto nunca bloquea los despliegues",
+      "block_deploys": "Al 100 por ciento: los despliegues nuevos se rechazan hasta el mes siguiente, un límite mayor o una excepción de root"
+    }
+  },
+  "actions": {
+    "edit": "Editar presupuesto",
+    "remove": "Quitar presupuesto",
+    "preview": "Previsualizar una pausa"
+  },
+  "form": {
+    "egress": "Límite mensual de egreso (GiB)",
+    "egressHelp": "Bytes de respuesta HTTP servidos por el ingress. Déjalo vacío para no limitar el egreso.",
+    "cost": "Tope mensual de costo",
+    "costHelp": "Usa los precios de la página de Uso y costo. Déjalo vacío para no poner tope de costo.",
+    "thresholds": "Niveles de alerta (porcentaje)",
+    "thresholdsHelp": "Separados por comas, de 1 a 100. Predeterminado: 50, 80, 100.",
+    "action": "Cuando se alcanza el límite",
+    "actionNone": "Solo alerta",
+    "actionNoneHelp": "La aplicación sigue atendiendo.",
+    "actionThrottle": "Limitar",
+    "actionThrottleHelp": "Limita a cada cliente a un número de solicitudes por segundo. Esto frena a los clientes más activos, pero no es un tope de ancho de banda.",
+    "actionPause": "Pausar",
+    "actionPauseHelp": "Responde con una página de mantenimiento hasta el mes siguiente o hasta que subas el límite.",
+    "rps": "Solicitudes por segundo por cliente",
+    "save": "Guardar presupuesto",
+    "saving": "Guardando",
+    "cancel": "Cancelar",
+    "needLimit": "Define un límite de egreso, un tope de costo, o ambos.",
+    "badNumber": "Escribe un número igual o mayor que cero.",
+    "badThresholds": "Usa porcentajes enteros de 1 a 100, separados por comas."
+  },
+  "remove": {
+    "title": "¿Quitar este presupuesto?",
+    "description": "La aplicación dejará de tener límites y alertas.",
+    "consequences": {
+      "lift": "Se levanta cualquier limitación o pausa vigente.",
+      "history": "Se conserva el historial de lo ocurrido."
+    },
+    "confirm": "Quitar presupuesto",
+    "pending": "Quitando"
+  },
+  "history": {
+    "title": "Historial",
+    "empty": "Aún no ha pasado nada. Aquí se listan las alertas, limitaciones, pausas y reinicios mensuales.",
+    "loadError": "No se pudo cargar el historial.",
+    "kind": {
+      "threshold": "Nivel de alerta alcanzado",
+      "enforced": "Acción aplicada",
+      "released": "Acción levantada",
+      "rollover": "Reinicio del mes",
+      "configured": "Presupuesto modificado",
+      "cleared": "Presupuesto quitado"
+    }
+  },
+  "toast": {
+    "saved": "Presupuesto guardado",
+    "removed": "Presupuesto quitado",
+    "errorTitle": "Falló la solicitud del presupuesto",
+    "overridden": "Despliegues permitidos por un tiempo corto"
+  },
+  "forecast": {
+    "projected": "Proyección de {{value}} al fin de mes",
+    "overLimit": "(por encima del límite)"
+  },
+  "guard": {
+    "legend": "Despliegues al llegar al límite",
+    "alert": {
+      "label": "Seguir desplegando",
+      "help": "Alcanzar el límite solo genera una alerta y aplica la acción indicada arriba."
+    },
+    "block_deploys": {
+      "label": "Bloquear despliegues nuevos",
+      "help": "Rechaza los despliegues nuevos al 100 por ciento. La versión en ejecución sigue atendiendo. Un usuario root puede hacer una excepción."
+    },
+    "blocked": "Los despliegues nuevos de esta aplicación se rechazan hasta el mes siguiente, hasta que se suba el límite o hasta que un usuario root los permita.",
+    "overridden": "Los despliegues están permitidos hasta {{time}} por una excepción: {{reason}}",
+    "override": "Permitir despliegues"
+  },
+  "override": {
+    "title": "¿Permitir despliegues por un tiempo corto?",
+    "description": "Una excepción de root deja pasar los despliegues nuevos mientras el límite sigue alcanzado. Expira por sí sola.",
+    "audited": "Tu nombre y el motivo quedan registrados en el historial del presupuesto.",
+    "expires": "La excepción termina tras una ventana corta, y luego vuelve a aplicarse la protección.",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Por qué este despliegue no puede esperar",
+    "confirm": "Permitir despliegues",
+    "pending": "Permitiendo"
+  },
+  "preview": {
+    "title": "Qué haría una pausa",
+    "description": "Una vista previa de detener todas las aplicaciones del alcance hasta que termine el mes. No se cambia nada.",
+    "noApps": "No hay aplicaciones en el alcance.",
+    "replicas_one": "{{count}} réplica",
+    "replicas_other": "{{count}} réplicas",
+    "saves": "ahorra cerca de {{value}}",
+    "total": "Se detendrían {{replicas}} réplicas, con un ahorro de cerca de {{value}} durante los {{days}} días restantes.",
+    "noChanges": "Aún no hay una pausa real disponible. Esta vista previa no cambia nada.",
+    "close": "Cerrar"
+  },
+  "alertRule": {
+    "name": "Alertas de tope de gasto",
+    "create": "Avisarme",
+    "creating": "Creando",
+    "created": "Regla de alerta creada. Asocia un canal de notificación para recibirla."
+  },
+  "project": {
+    "title": "Gasto",
+    "description": "Un tope de costo mensual para todas las aplicaciones de este proyecto, con una proyección y una protección de despliegues opcional.",
+    "empty": {
+      "title": "Este proyecto no tiene tope de gasto",
+      "body": "Define un monto mensual para recibir alertas conforme el proyecto gasta y, si lo eliges, bloquear los despliegues nuevos al llegar al límite.",
+      "action": "Definir un tope de gasto"
+    },
+    "form": {
+      "amount": "Monto mensual ({{currency}})",
+      "save": "Guardar tope de gasto",
+      "saving": "Guardando",
+      "cancel": "Cancelar",
+      "badAmount": "Escribe un monto mayor que cero."
+    },
+    "summary": "{{spent}} de {{limit}} este mes",
+    "level": {
+      "over": "Por encima del límite",
+      "warn": "Nivel de alerta alcanzado",
+      "forecast": "En camino a excederse",
+      "ok": "Dentro del presupuesto"
+    },
+    "edit": "Editar",
+    "remove": "Quitar",
+    "saved": "Tope de gasto guardado",
+    "removed": "Tope de gasto quitado",
+    "loadError": "No se pudo cargar el tope de gasto del proyecto.",
+    "resets": "Se reinicia el {{date}}"
+  }
+}

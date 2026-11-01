@@ -337,6 +337,830 @@
       "label": "ID de directorio (inquilino)",
       "hint": "Obligatorio para que las cuentas nuevas se creen desde el inicio de sesión de Microsoft. Sin él, solo pueden entrar las identidades que ya están vinculadas.",
       "invalid": "El ID de inquilino debe ser un GUID"
+    },
+    "banner": {
+      "body": "Cada proveedor pide una URL de redirección (callback) cuando creas su aplicación OAuth. Copia exactamente la URL que aparece en su fila, incluido el esquema, o el inicio de sesión fallará por una redirección que no coincide.",
+      "title": "Registra primero la URL de callback con cada proveedor"
+    },
+    "callbackCopied": "URL de callback copiada.",
+    "callbackCopyFailed": "No se pudo copiar. Selecciona la URL y cópiala a mano.",
+    "callbackLabel": "URL de callback",
+    "clientId": "ID de cliente",
+    "clientSecret": {
+      "label": "Secreto de cliente",
+      "neverShown": "No se vuelve a mostrar una vez guardado.",
+      "stored": "Ya hay un secreto guardado. Déjalo en blanco para conservarlo.",
+      "unchanged": "Sin cambios"
+    },
+    "configure": "Configurar",
+    "connectedCount_one": "{{count}} proveedor conectado",
+    "connectedCount_other": "{{count}} proveedores conectados",
+    "copyCallback": "Copiar URL de callback",
+    "copyCallbackFor": "Copiar la URL de callback de {{provider}}",
+    "credentials": {
+      "description": "Crea una aplicación OAuth en {{provider}} y pega aquí su ID de cliente y su secreto.",
+      "title": "Credenciales"
+    },
+    "description": "Permite que las personas inicien sesión con Google, GitHub, Microsoft o un proveedor de identidad autoalojado en lugar de una contraseña. Lo que puede hacer cada persona lo define su rol de equipo y las políticas de IAM.",
+    "displayName": {
+      "hint": "Se muestra en el botón de inicio de sesión como \"Continuar con ...\". Por defecto es \"SSO\".",
+      "label": "Nombre para mostrar (opcional)"
+    },
+    "enable": "Permitir inicio de sesión",
+    "errors": {
+      "clientId": "El ID de cliente es obligatorio para habilitar este proveedor",
+      "clientSecret": "El secreto de cliente es obligatorio la primera vez que se habilita este proveedor",
+      "issuerUrl": "La URL del emisor es obligatoria para habilitar OIDC"
+    },
+    "eyebrow": "Inicio de sesión",
+    "instanceUrl": {
+      "hint": "Déjalo en blanco para gitlab.com. Para un GitLab autoalojado, escribe su dirección https.",
+      "invalid": "La URL de la instancia debe empezar con https://",
+      "label": "URL de la instancia (opcional)"
+    },
+    "issuerUrl": {
+      "hint": "El emisor OIDC de tu proveedor de identidad, la dirección desde la que se sirve /.well-known/openid-configuration.",
+      "label": "URL del emisor"
+    },
+    "providers": {
+      "bitbucket": "Bitbucket",
+      "codeberg": "Codeberg",
+      "cognito": "Amazon Cognito",
+      "discord": "Discord",
+      "dropbox": "Dropbox",
+      "facebook": "Facebook",
+      "figma": "Figma",
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "google": "Google",
+      "huggingface": "Hugging Face",
+      "kakao": "Kakao",
+      "linear": "Linear",
+      "linkedin": "LinkedIn",
+      "microsoft": "Microsoft",
+      "oidc": "OIDC / SSO",
+      "patreon": "Patreon",
+      "salesforce": "Salesforce",
+      "slack": "Slack",
+      "twitch": "Twitch",
+      "vercel": "Vercel"
+    },
+    "rail": {
+      "callbacks": "URL de callback",
+      "connected": "Conectados",
+      "connectedOf": "{{connected}} de {{total}}",
+      "copyFor": "Copiar la URL de callback de {{provider}}",
+      "docs": "Documentación",
+      "docsLink": "Guía de identidad y acceso",
+      "label": "Resumen del inicio de sesión",
+      "summary": "Proveedores"
+    },
+    "restrict": {
+      "description": "Solo los nuevos inicios de sesión de este dominio de correo obtienen una cuenta creada automáticamente. Déjalo en blanco para permitir cualquier correo.",
+      "label": "Restringir a un dominio de correo (opcional)",
+      "title": "Quién puede unirse"
+    },
+    "saved": "Configuración de {{provider}} guardada.",
+    "sheet": {
+      "description": "Credenciales y quién puede iniciar sesión con este proveedor.",
+      "title": "Configurar {{provider}}"
+    },
+    "state": {
+      "connected": "Conectado",
+      "disabled": "Desactivado",
+      "unconfigured": "Sin configurar"
+    },
+    "title": "Inicio de sesión con OAuth",
+    "userPoolId": {
+      "hint": "Se encuentra en el resumen del grupo de usuarios de Cognito, por ejemplo us-east-1_AbC123. La región se lee de él.",
+      "invalid": "El ID del grupo de usuarios debe tener el formato us-east-1_AbC123",
+      "label": "ID del grupo de usuarios"
+    }
+  },
+  "backupCopies": {
+    "choose": "Elige un destino",
+    "description": "Copia cada copia de seguridad nueva a otro destino después de que llegue al principal. Solo se copian las copias de seguridad terminadas después de activar esto.",
+    "destination": "Copiar las copias de seguridad a",
+    "empty": "Aún no se ha puesto en cola ninguna copia de seguridad para copiar.",
+    "enable": "Activar copias",
+    "manifest": "Manifiesto",
+    "manifestTip": "Suma de verificación comprobada, manifiesto auxiliar escrito junto a la copia",
+    "on": "Copiando a {{name}}",
+    "saveFailed": "No se pudo guardar la configuración de copia de las copias de seguridad",
+    "saved": "Configuración de copia de las copias de seguridad guardada",
+    "status": {
+      "copying": "Copiando",
+      "failed": "Falló, reintentando",
+      "pending": "En espera",
+      "succeeded": "Copiada"
+    },
+    "table": {
+      "error": "Último error",
+      "finished": "Copia de seguridad terminada",
+      "label": "Copias de las copias de seguridad",
+      "lag": "Retraso",
+      "resource": "Recurso",
+      "status": "Estado"
+    },
+    "title": "Segundo destino",
+    "toggle": "Copiar las copias de seguridad al segundo destino",
+    "update": "Cambiar destino"
+  },
+  "backupTargetsPage": {
+    "banner": {
+      "body": "Las bases de datos administradas no tienen adónde enviar sus copias de seguridad hasta que conectes un bucket compatible con S3. Agrega uno antes de necesitar una restauración.",
+      "title": "No hay un destino de copias de seguridad configurado"
+    },
+    "count_one": "{{count}} destino",
+    "count_other": "{{count}} destinos",
+    "description": "Buckets compatibles con S3 conectados como destinos de copias de seguridad de las bases de datos administradas. AWS S3, Cloudflare R2 o cualquier otro endpoint compatible con S3.",
+    "empty": {
+      "body": "Conecta un bucket compatible con S3 (AWS S3, Cloudflare R2 o cualquier otro endpoint compatible con S3) para usarlo como destino de copias de seguridad de las bases de datos administradas.",
+      "title": "No hay destinos de copias de seguridad conectados"
+    },
+    "encryption": {
+      "confirm": "Activar cifrado",
+      "consequenceKey": "Aviso de pérdida de clave: si se pierde la clave de cifrado de las copias de seguridad (backup-encryption.key en el directorio de datos), las copias cifradas no se pueden restaurar. Guarda una copia fuera de este servidor.",
+      "consequenceNew": "Los nuevos volcados de bases de datos a este destino se cifran con age antes de subirse, así que el bucket nunca ve texto sin cifrar.",
+      "consequenceOld": "Los volcados que ya están almacenados allí se quedan exactamente como están (los que no están cifrados se siguen restaurando con normalidad).",
+      "enable": "Activar cifrado",
+      "enabled": "Los volcados de bases de datos a \"{{name}}\" ahora están cifrados.",
+      "off": "Sin cifrar",
+      "on": "Cifrado",
+      "pending": "Activando...",
+      "title": "¿Cifrar los volcados de bases de datos enviados a \"{{name}}\"?"
+    },
+    "eyebrow": "Almacenamiento",
+    "help": "Guía de copias de seguridad",
+    "rail": {
+      "count": "Destinos conectados",
+      "docs": "Documentación",
+      "label": "Resumen de destinos de copias de seguridad",
+      "provider": {
+        "aws": "AWS S3",
+        "custom": "Compatible con S3",
+        "local": "Directorio local",
+        "r2": "Cloudflare R2"
+      },
+      "providers": "Proveedores",
+      "status": "Estado de las copias de seguridad",
+      "statusBody": "Las ejecuciones, la cobertura y los simulacros de restauración están en la página de Copias de seguridad.",
+      "statusLink": "Abrir Copias de seguridad",
+      "targets": "Destinos"
+    },
+    "table": {
+      "bucket": "Bucket",
+      "connected": "Conectado",
+      "encryption": "Cifrado de volcados",
+      "label": "Destinos de copias de seguridad",
+      "name": "Nombre",
+      "provider": "Proveedor",
+      "region": "Región / endpoint",
+      "test": "Probar conexión",
+      "testFailed": "\"{{name}}\" no pudo conectarse.",
+      "testOk": "\"{{name}}\" se conectó correctamente.",
+      "testing": "Probando..."
+    },
+    "title": "Destinos de copias de seguridad"
+  },
+  "generalPage": {
+    "banner": {
+      "docker": "No se puede acceder a Docker",
+      "dockerBody": "El plano de control no puede comunicarse con el motor de Docker, así que no se puede desplegar ni reconciliar nada hasta que vuelva.",
+      "secrets": "El cifrado de secretos no está configurado",
+      "secretsBody": "Los secretos de entorno no se pueden almacenar hasta que se defina una clave maestra para esta instancia."
+    },
+    "density": {
+      "comfortable": "Cómoda",
+      "compact": "Compacta",
+      "description": "Compacta muestra más en pantalla. Cómoda agrega espacio. Se guarda solo en este navegador.",
+      "title": "Densidad de la interfaz"
+    },
+    "description": "Dónde se ejecuta esta instancia, cuánto disco le queda y qué funciones principales están configuradas.",
+    "eyebrow": "Plataforma",
+    "help": "Guía de solución de problemas",
+    "rail": {
+      "configured": "Configurado",
+      "connected": "Conectado",
+      "disconnected": "Sin conexión",
+      "docker": "Demonio de Docker",
+      "docs": "Documentación",
+      "health": "Salud",
+      "instance": "Instancia",
+      "label": "Resumen de la instancia",
+      "notConfigured": "Sin configurar",
+      "secrets": "Secretos",
+      "url": "URL de la instancia",
+      "version": "Versión"
+    },
+    "status": {
+      "attention": "Requiere atención",
+      "healthy": "Sana"
+    },
+    "title": "General",
+    "width": {
+      "comfortable": "Cómodo",
+      "comfortableHint": "Columna centrada con márgenes laterales generosos",
+      "description": "Qué tan ancho se vuelve el contenido de la página en pantallas grandes. Las pantallas de menos de 1024 px no se ven afectadas. Se guarda solo en este navegador.",
+      "full": "Ancho completo",
+      "fullHint": "De borde a borde",
+      "title": "Ancho de página",
+      "wide": "Amplio",
+      "wideHint": "Mayor aprovechamiento de las pantallas grandes"
+    }
+  },
+  "securityPage": {
+    "account": {
+      "description": "La autenticación en dos pasos, las passkeys, tu contraseña y las sesiones activas están en la página de tu Cuenta.",
+      "open": "Abrir Cuenta",
+      "title": "Tus métodos de inicio de sesión"
+    },
+    "banner": {
+      "body": "Activa la autenticación en dos pasos o registra una passkey para que una contraseña filtrada no pueda abrir este panel por sí sola.",
+      "title": "El inicio de sesión depende solo de una contraseña"
+    },
+    "description": "Sesiones, autenticación en dos pasos, passkeys y protección de inicio de sesión para esta cuenta.",
+    "eyebrow": "Cuenta",
+    "help": "Guía de seguridad",
+    "loginProtection": {
+      "body": "Los intentos fallidos de inicio de sesión tienen un límite de frecuencia por dirección IP y usuario, y cada fallo adicional hace que el siguiente intento permitido espere más que el anterior. Unas cuantas contraseñas mal escritas nunca te bloquearán, pero las adivinanzas automáticas repetidas se vuelven más lentas con cada intento.",
+      "title": "Protección de inicio de sesión"
+    },
+    "rail": {
+      "jump": "En esta página",
+      "label": "Resumen de la protección de inicio de sesión",
+      "off": "Desactivada",
+      "on": "Activada",
+      "passkeys": "Passkeys registradas",
+      "passkeysLink": "Passkeys",
+      "protection": "Protección de inicio de sesión",
+      "sessionsLink": "Sesiones",
+      "signedIn": "Sesión iniciada como",
+      "twoFactor": "Autenticación en dos pasos",
+      "twoFactorLink": "Autenticación en dos pasos",
+      "until": "La sesión expira"
+    },
+    "session": {
+      "account": "Sesión iniciada como",
+      "accountHelp": "La cuenta a la que se atribuye cada acción aquí.",
+      "description": "La cuenta y la sesión con las que este navegador ha iniciado sesión.",
+      "title": "Sesión actual",
+      "until": "Sesión iniciada hasta",
+      "untilHelp": "Después de esta hora se te pedirá iniciar sesión de nuevo."
+    },
+    "status": {
+      "open": "Solo contraseña",
+      "protected": "Segundo factor activado"
+    },
+    "title": "Seguridad"
+  },
+  "tokens": {
+    "abilities": "Permisos",
+    "actions": "Acciones",
+    "active": "Activo",
+    "activeNow": "Activo ahora",
+    "agent": "Agente",
+    "create": {
+      "abilityRequired": "Selecciona al menos un permiso",
+      "agent": "Nombre del agente (opcional)",
+      "agentPlaceholder": "p. ej. Claude Code",
+      "agentTip": "Etiqueta el token como emitido para un agente de IA, por ejemplo \"Claude Code\". El nombre se muestra aquí y en cada entrada del registro de auditoría que haga el token, para que puedas distinguir los cambios de un agente de los de una persona.",
+      "agentTipLabel": "Sobre los nombres de agente",
+      "agentTooLong": "Máximo 64 caracteres",
+      "days_one": "{{count}} día",
+      "days_other": "{{count}} días",
+      "description": "Una credencial con alcance limitado y revocable para la CLI, CI o una integración MCP.",
+      "expiration": "Expiración",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. ci-deploy",
+      "nameRequired": "El nombre es obligatorio",
+      "never": "Nunca",
+      "rootExclusive": "Root no se puede combinar con otros permisos",
+      "secretsReveal": "Revelar valores de secretos",
+      "secretsRevealHint": "Permite que este token lea el valor de un secreto, pero solo cuando el servidor permite revelar con token (APP_SECRET_REVEAL_TOKENS=on) y la solicitud lleva tu contraseña. Cada revelación queda auditada. Root no lo incluye.",
+      "secretsRevealNeedsSensitive": "Revelar secretos también requiere read:sensitive",
+      "signInApprove": "Aprobar mis inicios de sesión",
+      "signInApproveAgent": "Un token que aprueba inicios de sesión no se puede emitir para un agente",
+      "signInApproveExpiry": "Un token que aprueba inicios de sesión debe expirar en 30 días o menos",
+      "signInApproveHint": "Permite que este token muestre tus códigos de inicio de sesión y apruebe navegadores nuevos desde la CLI. Root no lo incluye y un inicio de sesión de dispositivo nunca lo otorga. Debe expirar en 30 días y se revoca cuando cambias o restableces tu contraseña o cierras tus otras sesiones.",
+      "submit": "Crear token",
+      "submitting": "Creando...",
+      "title": "Crear token"
+    },
+    "created": "Creado",
+    "devFixtureBadge": "Datos de prueba de desarrollo, solo local",
+    "devFixtureGroup": "Tokens de datos de prueba de desarrollo",
+    "devFixtureGroupBody": "Creados para pruebas locales, con secretos públicos. Nunca se crean en las compilaciones de producción. Se pueden ignorar con seguridad.",
+    "devFixtureGroupCount_one": "{{count}} token",
+    "devFixtureGroupCount_other": "{{count}} tokens",
+    "devFixtureRootWarning": "Acceso total con un secreto conocido públicamente. Nunca expongas este servidor a una red.",
+    "emptyBody": "Crea una credencial con alcance limitado y revocable para la CLI, CI o una integración MCP.",
+    "emptyTitle": "Aún no hay tokens",
+    "expires": "Expira",
+    "lastIp": "Última IP",
+    "lastUsed": "Último uso",
+    "name": "Nombre",
+    "never": "Nunca",
+    "none": "Ninguno",
+    "revoked": "Revocado",
+    "rotate": "Rotar",
+    "rotateLabel": "Rotar {{name}}",
+    "server": "Servidor",
+    "status": "Estado",
+    "tableLabel": "Tokens de API"
+  },
+  "tokensPage": {
+    "activeCount_one": "{{count}} token activo",
+    "activeCount_other": "{{count}} tokens activos",
+    "banner": {
+      "body": "Un token root filtrado puede cambiar cualquier cosa en esta instancia. Revócalo y crea uno más limitado con una fecha de expiración.",
+      "title_one": "{{count}} token root nunca expira",
+      "title_other": "{{count}} tokens root nunca expiran"
+    },
+    "description": "Credenciales con alcance limitado y revocables para la CLI, CI y las integraciones MCP. El inicio de sesión solo crea tokens: un token nunca puede crear ni revocar otro token por cuenta propia.",
+    "docsLink": "Ver la documentación de la API",
+    "expiring": {
+      "body": "Crea un reemplazo con el mismo acceso, cambia tu integración a él y luego revoca el anterior.",
+      "title_one": "{{count}} token expira en 14 días",
+      "title_other": "{{count}} tokens expiran en 14 días"
+    },
+    "eyebrow": "Acceso",
+    "help": "Referencia de la API",
+    "revoked": {
+      "autoDelete": "Eliminar los tokens revocados después de",
+      "cleanNow": "Limpiar ahora",
+      "cleaned_one": "Se quitó {{count}} token revocado.",
+      "cleaned_other": "Se quitaron {{count}} tokens revocados.",
+      "confirmAction": "Quitar tokens revocados",
+      "confirmBody_one": "{{count}} token revocado se quitará de forma definitiva.",
+      "confirmBody_other": "{{count}} tokens revocados se quitarán de forma definitiva.",
+      "confirmConsequence": "Los tokens activos no se tocan. El historial de auditoría conserva los nombres de quienes los usaron.",
+      "confirmTitle": "¿Quitar los tokens revocados?",
+      "empty": "No hay tokens revocados. Los tokens que revoques aparecen aquí hasta que se quiten.",
+      "janitorLink": "Ajustes de limpieza",
+      "revokedAt": "Revocado",
+      "schedule": "La eliminación se ejecuta con la limpieza programada, que debe estar activada y no en modo de vista previa.",
+      "title": "Tokens revocados"
+    },
+    "title": "Tokens de API"
+  },
+  "usersPage": {
+    "banner": {
+      "body": "Las personas invitadas no tienen acceso hasta que abran su enlace. Cópialo de nuevo desde la lista de invitaciones pendientes de abajo si se perdió.",
+      "title_one": "{{count}} invitación espera ser aceptada",
+      "title_other": "{{count}} invitaciones esperan ser aceptadas"
+    },
+    "count_one": "{{count}} usuario",
+    "count_other": "{{count}} usuarios",
+    "description": "Todas las personas con acceso a esta plataforma, y lo que puede hacer cada cuenta.",
+    "empty": {
+      "body": "Invita a un compañero o crea un usuario desde las acciones de arriba.",
+      "title": "No se encontraron usuarios"
+    },
+    "eyebrow": "Acceso",
+    "help": "Guía de equipos y roles",
+    "passwordChange": {
+      "cancel": "Cancelar",
+      "clear": "Quitar el requisito de contraseña",
+      "clearBody": "Podrá volver a iniciar sesión con su contraseña actual.",
+      "clearTitle": "¿Quitar el requisito de contraseña para {{email}}?",
+      "cleared": "{{email}} puede iniciar sesión con su contraseña actual.",
+      "confirmClear": "Quitar requisito",
+      "confirmRequire": "Exigir cambio",
+      "require": "Exigir cambio de contraseña",
+      "requireBody": "Sus sesiones terminan ahora. Se rechaza cada inicio de sesión hasta que defina una contraseña nueva con olvidé mi contraseña en la página de inicio de sesión.",
+      "requireTitle": "¿Exigir a {{email}} que cambie su contraseña?",
+      "required": "{{email}} debe cambiar su contraseña.",
+      "saving": "Guardando..."
+    },
+    "pendingInvites": "Invitaciones pendientes",
+    "table": {
+      "abilities": "Permisos",
+      "custom": "Personalizado",
+      "disabled": "Desactivado",
+      "displayName": "Nombre para mostrar",
+      "editAbilities": "Editar permisos",
+      "email": "Correo",
+      "firstUser": "Primer usuario",
+      "label": "Usuarios",
+      "lastLogin": "Último inicio de sesión",
+      "mustChangePassword": "Se requiere cambio de contraseña",
+      "never": "Nunca",
+      "noMethod": "ninguno",
+      "password": "contraseña",
+      "role": "Rol",
+      "selfEditHint": "No puedes editar tus propios permisos",
+      "signsInWith": "Inicia sesión con",
+      "you": "Tú"
+    },
+    "title": "Usuarios"
+  },
+  "accountPage": {
+    "access": {
+      "allowed": "Permitido",
+      "areas": {
+        "configure": "Cambiar la configuración de aplicaciones y servicios",
+        "deploy": "Desplegar y revertir",
+        "platform_settings": "Cambiar los ajustes de toda la plataforma",
+        "secrets_read": "Revelar secretos y valores sensibles",
+        "sensitive_write": "Cambiar ajustes sensibles",
+        "users_and_access": "Administrar usuarios, roles y políticas",
+        "view": "Ver aplicaciones, servicios y registros"
+      },
+      "colAction": "Acción",
+      "colArea": "Capacidad",
+      "colStatus": "Estado",
+      "description": "Lo que esta cuenta puede y no puede administrar, y qué permiso falta cuando no puede.",
+      "missing": "Permiso faltante: {{ability}}",
+      "noPolicies": "No hay políticas asociadas.",
+      "noTeams": "No eres miembro de ningún equipo.",
+      "policies": "Políticas de IAM asociadas",
+      "request": "Solicitar acceso",
+      "requestLabel": "Solicitar acceso para: {{area}}",
+      "teams": "Equipos",
+      "tier": "Nivel de acceso",
+      "tiers": {
+        "admin": "Administrador",
+        "developer": "Desarrollador",
+        "operator": "Operador",
+        "viewer": "Lector"
+      },
+      "title": "Mi acceso"
+    },
+    "description": "Tu perfil, la seguridad de tu inicio de sesión, tus sesiones y lo que puedes administrar.",
+    "loadError": "No se pudo cargar esta sección.",
+    "loading": "Cargando...",
+    "password": {
+      "changed": "Contraseña cambiada",
+      "changedBody": "Se cerraron tus otras sesiones. Esta sigue abierta.",
+      "confirm": "Confirmar la contraseña nueva",
+      "current": "Contraseña actual",
+      "currentRequired": "La contraseña actual es obligatoria",
+      "descChange": "Cambiar tu contraseña cierra todas las demás sesiones activas de esta cuenta. Este navegador sigue con la sesión iniciada.",
+      "descSet": "Esta cuenta actualmente inicia sesión solo mediante OAuth. Definir una contraseña agrega una segunda forma de iniciar sesión.",
+      "minHint": "Al menos {{min}} caracteres.",
+      "mismatch": "Las contraseñas no coinciden",
+      "new": "Contraseña nueva",
+      "rules": {
+        "digit": "Un número",
+        "length": "Al menos {{min}} caracteres",
+        "met": "(cumplido)",
+        "mixedCase": "Mayúsculas y minúsculas",
+        "symbol": "Un símbolo",
+        "unmet": "(no cumplido)"
+      },
+      "saving": "Guardando...",
+      "strength": {
+        "label": "Seguridad de la contraseña",
+        "level0": "Vacía",
+        "level1": "Débil",
+        "level2": "Regular",
+        "level3": "Buena",
+        "level4": "Fuerte"
+      },
+      "submitChange": "Cambiar contraseña",
+      "submitSet": "Definir contraseña",
+      "titleChange": "Cambiar contraseña",
+      "titleSet": "Definir una contraseña",
+      "tooShort": "La contraseña nueva debe tener al menos {{min}} caracteres"
+    },
+    "profile": {
+      "cancel": "Cancelar",
+      "counter": "{{used}} de {{max}} caracteres",
+      "description": "Tus propios datos. Lo que puedes administrar aparece en Mi acceso, más abajo.",
+      "displayName": "Nombre para mostrar",
+      "edit": "Editar el nombre para mostrar",
+      "email": "Correo",
+      "emailUnverified": "Sin verificar",
+      "emailVerified": "Verificado",
+      "hasPassword": "Esta cuenta inicia sesión con una contraseña.",
+      "noPassword": "Esta cuenta no tiene contraseña definida, solo inicio de sesión con OAuth.",
+      "save": "Guardar",
+      "saveError": "No se pudo guardar tu nombre para mostrar. Revisa tu conexión e inténtalo de nuevo.",
+      "saved": "Nombre para mostrar actualizado",
+      "saving": "Guardando...",
+      "title": "Perfil"
+    },
+    "providers": {
+      "configure": "Configurar proveedores",
+      "description": "Vincula un proveedor de identidad para iniciar sesión con él. Vincular requiere esta sesión activa.",
+      "link": "Vincular",
+      "linked": "Vinculado",
+      "none": "No hay proveedores de inicio de sesión habilitados en esta instancia.",
+      "title": "Proveedores de inicio de sesión vinculados"
+    },
+    "retry": "Reintentar",
+    "sessions": {
+      "canApprove": "Puede aprobar inicios de sesión",
+      "current": "Esta sesión",
+      "description": "Dónde tienes la sesión iniciada ahora mismo. Cerrar una sesión desconecta ese navegador.",
+      "deviceConfirmTitle": "¿Quitar el dispositivo de confianza {{device}}?",
+      "deviceConsequence": "Ese dispositivo debe aprobarse de nuevo la próxima vez que inicie sesión.",
+      "deviceRemove": "Quitar",
+      "deviceRemoveLabel": "Quitar el dispositivo de confianza {{device}}",
+      "deviceRemoved": "Dispositivo de confianza quitado",
+      "deviceRemoving": "Quitando...",
+      "devices": "Dispositivos de confianza",
+      "devicesEmpty": "No hay dispositivos de confianza.",
+      "empty": "No hay sesiones activas",
+      "emptyBody": "Las sesiones aparecen aquí después de iniciar sesión desde un navegador.",
+      "lastSeen": "visto por última vez",
+      "networks_one": "{{count}} red",
+      "networks_other": "{{count}} redes",
+      "revoke": "Cerrar sesión",
+      "revokeApproverConsequence": "Actualmente puede aprobar nuevos inicios de sesión, así que perderás a ese aprobador.",
+      "revokeConfirmTitle": "¿Cerrar la sesión de {{device}}?",
+      "revokeConsequence": "Ese navegador se desconecta de inmediato.",
+      "revokeLabel": "Cerrar la sesión de {{device}} ({{ip}})",
+      "revokeOthers": "Cerrar todas las demás sesiones",
+      "revokeOthersConfirmTitle": "¿Cerrar todas las demás sesiones?",
+      "revokeOthersConsequence": "Todos los demás navegadores y dispositivos se desconectan de inmediato.",
+      "revokeOthersKeep": "Este navegador sigue con la sesión iniciada.",
+      "revokeReloginConsequence": "Quien lo use deberá iniciar sesión de nuevo.",
+      "revoked": "Sesión cerrada",
+      "revokedOthers_one": "Se cerró {{count}} otra sesión",
+      "revokedOthers_other": "Se cerraron {{count}} otras sesiones",
+      "revoking": "Cerrando sesión...",
+      "signedInAt": "Inicio de sesión",
+      "title": "Sesiones activas y dispositivos de confianza",
+      "tone": {
+        "idle": "Inactiva",
+        "live": "Activa ahora",
+        "recent": "Activa en la última hora"
+      }
+    },
+    "title": "Cuenta",
+    "tokens": {
+      "description": "Tokens que creaste para la CLI, CI o agentes.",
+      "emptyBody": "Crea un token para la CLI, CI o un agente. El secreto se muestra una sola vez.",
+      "emptyTitle": "No hay tokens de API activos",
+      "manage": "Todos los tokens y el historial",
+      "title": "Mis tokens de API"
+    },
+    "twoFactor": {
+      "authCodeLabel": "Código del autenticador",
+      "cancel": "Cancelar",
+      "codeLabel": "Código de tu aplicación de autenticación",
+      "codePlaceholder": "123456",
+      "copied": "Copiado",
+      "copy": "Copiar",
+      "copyAll": "Copiar todo",
+      "description": "Exige un código de una aplicación de autenticación además de tu contraseña al iniciar sesión.",
+      "disable": "Desactivar la autenticación en dos pasos",
+      "disableAction": "Desactivar",
+      "disableBody": "Después, iniciar sesión solo requerirá una contraseña. Escribe un código vigente para confirmar.",
+      "disableTitle": "¿Desactivar la autenticación en dos pasos?",
+      "disabledHint": "No está activada. Agrega un segundo paso para que una contraseña robada no baste para iniciar sesión.",
+      "disabling": "Desactivando...",
+      "done": "Listo",
+      "enable": "Activar la autenticación en dos pasos",
+      "enabledTitle": "Autenticación en dos pasos activada",
+      "enabled_one": "Activada. Queda {{count}} código de recuperación.",
+      "enabled_other": "Activada. Quedan {{count}} códigos de recuperación.",
+      "qrFallback": "¿No puedes escanear? Escribe esta clave",
+      "qrLabel": "Código QR para tu aplicación de autenticación",
+      "qrLoading": "Cargando el código QR",
+      "recoveryBody": "Guarda estos códigos de recuperación en un lugar seguro. Cada uno se puede usar una vez para iniciar sesión si pierdes el acceso a tu aplicación de autenticación. No se volverán a mostrar.",
+      "recoveryCodeLabel": "Código de recuperación",
+      "recoveryPlaceholder": "xxxx-xxxx-xxxx-xxxx",
+      "regenerate": "Regenerar los códigos de recuperación",
+      "regenerateAction": "Regenerar",
+      "regenerateBody": "Todos los códigos de recuperación actuales dejan de funcionar en cuanto se generan otros nuevos. Escribe un código vigente de tu aplicación de autenticación para confirmar.",
+      "regeneratedBody": "Guárdalos en un lugar seguro. Los códigos anteriores ya no funcionan, y estos no se volverán a mostrar.",
+      "regeneratedTitle": "Nuevos códigos de recuperación generados",
+      "regenerating": "Regenerando...",
+      "saved": "Ya guardé estos códigos",
+      "setupBody": "Agrégalo a una aplicación de autenticación (1Password, Google Authenticator, Authy) y luego escribe el código de 6 dígitos que muestra para confirmar.",
+      "setupKey": "Clave de configuración",
+      "setupLink": "O usa este enlace",
+      "setupTitle": "Configurar la autenticación en dos pasos",
+      "title": "Autenticación en dos pasos",
+      "useAuthCode": "Usar el código del autenticador",
+      "useRecoveryCode": "Usar un código de recuperación",
+      "verify": "Verificar y activar",
+      "verifying": "Verificando..."
+    }
+  },
+  "emailDelivery": {
+    "apiKey": "Clave de API",
+    "domain": {
+      "checked": "Registros encontrados para {{domain}}.",
+      "checking": "Comprobando...",
+      "codes": {
+        "dkim_found": "Hay una clave DKIM publicada.",
+        "dkim_not_found": "No se encontró una clave DKIM en los selectores comunes. Agrega los registros DKIM que tu proveedor muestra en su página de verificación de dominio.",
+        "dmarc_missing": "No hay un registro DMARC. Publica un registro TXT en _dmarc con v=DMARC1; p=none para empezar a monitorear.",
+        "dmarc_monitor_only": "DMARC está en modo de monitoreo (p=none). Pasa a quarantine o reject cuando SPF y DKIM pasen.",
+        "dmarc_ok": "Hay publicada una política DMARC que pone en cuarentena o rechaza.",
+        "spf_missing": "No hay un registro SPF. Publica un registro TXT que empiece con v=spf1 y autorice a tu proveedor.",
+        "spf_multiple": "Existe más de un registro SPF. Únelos en uno solo, los receptores rechazan los duplicados.",
+        "spf_no_include": "SPF no incluye {{include}}. Agrega include:{{include}} a menos que tu proveedor use su propio dominio de return-path.",
+        "spf_ok": "Hay un registro SPF publicado.",
+        "spf_permissive": "SPF termina en +all, que autoriza a cualquier remitente. Usa ~all o -all."
+      },
+      "description": "Consulta SPF, DKIM y DMARC del dominio de tu dirección de remitente, para que el correo llegue a la bandeja de entrada y no a spam.",
+      "pass": "Correcto",
+      "providerHints": {
+        "mailgun": "Mailgun: agrega el dominio de envío y publica los registros SPF, DKIM y de seguimiento de su página de DNS.",
+        "postmark": "Postmark: agrega el dominio en Sender Signatures y publica los registros DKIM y Return-Path que indica.",
+        "resend": "Resend: agrega el dominio en Domains y publica los registros SPF y DKIM que indica, luego espera a que muestre Verified.",
+        "sendgrid": "SendGrid: ejecuta Domain Authentication y publica los registros CNAME que genera.",
+        "ses": "SES: verifica el dominio en Verified identities y publica los tres registros CNAME de DKIM que te da.",
+        "ses_smtp": "SES: verifica el dominio en Verified identities y publica los tres registros CNAME de DKIM que te da."
+      },
+      "recheck": "Comprobar de nuevo",
+      "run": "Comprobar dominio",
+      "title": "Comprobación del dominio remitente",
+      "types": {
+        "dkim": "DKIM",
+        "dmarc": "DMARC",
+        "spf": "SPF"
+      },
+      "warn": "Requiere atención"
+    },
+    "failure": {
+      "auth_failed": {
+        "fix": "Vuelve a escribir la contraseña o la clave de API y guarda de nuevo. Comprueba que el usuario pertenezca a la misma cuenta.",
+        "fixSesSmtp": "Las credenciales SMTP de SES se generan en la consola de SES y no son lo mismo que las claves de acceso de IAM. Crea allí las credenciales SMTP y pega aquí el usuario y la contraseña.",
+        "title": "El proveedor rechazó las credenciales"
+      },
+      "not_configured": {
+        "fix": "Elige un proveedor, completa sus datos y guarda antes de enviar una prueba.",
+        "title": "No hay un proveedor configurado"
+      },
+      "other": {
+        "fix": "Lee la respuesta del proveedor de abajo. Si no queda clara, revisa el panel del proveedor para ver el mensaje rechazado.",
+        "title": "Falló el envío"
+      },
+      "port_blocked": {
+        "fix": "Revisa el host y el puerto. Muchas nubes bloquean el puerto 25, así que prueba 587 o 465, y revisa cualquier firewall delante de este servidor.",
+        "title": "No se pudo llegar al servidor de correo"
+      },
+      "rate_limited": {
+        "fix": "El proveedor o el tope de envíos definido aquí está limitando. Espera un minuto y reintenta, o sube el tope en Límites de entrega.",
+        "title": "El envío está limitado por frecuencia"
+      },
+      "region_mismatch": {
+        "fix": "Elige la región donde está verificada la identidad del remitente, o verifícala en la región seleccionada.",
+        "title": "Remitente verificado en otra región"
+      },
+      "sender_not_verified": {
+        "fix": "Verifica la dirección de remitente o todo su dominio en la consola del proveedor y luego envía la prueba de nuevo.",
+        "title": "La dirección del remitente no está verificada"
+      },
+      "tls_error": {
+        "fix": "Haz coincidir el modo TLS con el puerto (STARTTLS en 587, TLS en 465). Para un servidor privado con su propio certificado, desactiva la verificación del certificado en Seguridad.",
+        "title": "Falló la conexión segura"
+      }
+    },
+    "limits": {
+      "description": "Topes que protegen la cuenta de tu proveedor de un bucle descontrolado. Los envíos por encima del tope fallan de inmediato y aparecen en el registro.",
+      "perDay": "Envíos por día",
+      "perMinute": "Envíos por minuto",
+      "title": "Límites de entrega",
+      "zeroHelp": "0 usa el valor predeterminado del servidor, que es ilimitado salvo que se defina otro."
+    },
+    "log": {
+      "allProviders": "Todos los proveedores",
+      "allStatuses": "Todos los estados",
+      "attempts": "Intentos",
+      "back": "Ajustes de correo",
+      "columns": {
+        "kind": "Tipo",
+        "provider": "Proveedor",
+        "status": "Estado",
+        "time": "Hora",
+        "to": "Para"
+      },
+      "description": "Cada intento de envío de correo saliente con su resultado. Los destinatarios se abrevian salvo que el servidor esté configurado para conservar las direcciones completas.",
+      "detailTitle": "Detalle de la entrega",
+      "emptyBody": "Los envíos aparecen aquí a medida que salen alertas, restablecimientos de contraseña y correos de prueba. Envía un correo de prueba desde la página de ajustes para ver la primera fila.",
+      "emptyTitle": "Aún no hay entregas",
+      "error": "Respuesta del proveedor",
+      "failureKind": "Por qué falló",
+      "messageId": "ID de mensaje del proveedor",
+      "noKind": "General",
+      "retry": "Reintentar",
+      "searchPlaceholder": "Buscar destinatario, ID de mensaje o error",
+      "statuses": {
+        "bounced": "Rebotado",
+        "failed": "Fallido",
+        "sent": "Enviado"
+      },
+      "title": "Registro de entrega de correo"
+    },
+    "mailgun": {
+      "domain": "Dominio de envío",
+      "domainPlaceholder": "mg.example.com",
+      "eu": "Europa",
+      "region": "Región",
+      "us": "Estados Unidos"
+    },
+    "password": "Contraseña",
+    "postmark": {
+      "token": "Token del servidor"
+    },
+    "provider": {
+      "description": "Cómo se entrega el correo. Elige uno y completa sus datos.",
+      "title": "Proveedor"
+    },
+    "providers": {
+      "mailgun": "Mailgun",
+      "postmark": "Postmark",
+      "resend": "Resend",
+      "sendgrid": "SendGrid",
+      "ses": "AWS SES (API)",
+      "ses_smtp": "AWS SES (SMTP)",
+      "smtp": "SMTP"
+    },
+    "reveal": {
+      "autoHide": "Se oculta solo a los 30 segundos. Cada revelación queda registrada en el registro de auditoría.",
+      "copied": "Copiado",
+      "copy": "Copiar",
+      "failed": "No se pudo revelar la credencial.",
+      "hide": "Ocultar",
+      "needsTwoFactor": "Revelar una credencial requiere autenticación en dos pasos. Configúrala primero en la seguridad de la cuenta.",
+      "show": "Revelar",
+      "stepUp": "Confirma que eres tú con tu contraseña y tu código del autenticador para revelar esta credencial."
+    },
+    "secretSet": "Ya está configurado. Déjalo en blanco para conservarlo.",
+    "secretUnset": "Aún no está definido.",
+    "security": {
+      "apiNote": "Este proveedor se alcanza por HTTPS con un certificado verificado. Aquí no hay nada que configurar.",
+      "description": "Cómo se protege la conexión con el servidor de correo.",
+      "modes": {
+        "auto": "Automático (STARTTLS cuando se ofrece)",
+        "none": "Sin cifrado",
+        "starttls": "Exigir STARTTLS",
+        "tls": "TLS desde el inicio (puerto 465)"
+      },
+      "title": "Seguridad",
+      "tlsMode": "Modo TLS",
+      "verify": "Verificar el certificado del servidor",
+      "verifyOff": "Las comprobaciones de certificado están desactivadas. Cualquiera entre este servidor y el servidor de correo podría leer o modificar tu correo. Hazlo solo en una red privada de confianza."
+    },
+    "sender": {
+      "description": "De quién viene el correo. Todos los proveedores usan estos datos.",
+      "envelopeFrom": "Remitente del sobre",
+      "envelopeHelp": "A dónde van los rebotes. Déjalo en blanco para usar la dirección de remitente.",
+      "fromAddress": "Dirección de remitente",
+      "fromName": "Nombre del remitente",
+      "optional": "Opcional.",
+      "replyTo": "Dirección de respuesta",
+      "title": "Remitente"
+    },
+    "ses": {
+      "accessKeyId": "ID de clave de acceso",
+      "region": "Región",
+      "regionHelp": "La región de AWS donde está verificada la identidad de tu remitente.",
+      "regionPlaceholder": "Elige una región",
+      "secretAccessKey": "Clave de acceso secreta"
+    },
+    "sesSmtp": {
+      "credentialsBody": "Crea credenciales SMTP en la consola de SES (ajustes de SMTP) y escribe aquí ese usuario y contraseña. Las claves de acceso de IAM serán rechazadas.",
+      "credentialsTitle": "Las credenciales SMTP de SES no son tus claves de IAM",
+      "derivedHost": "Se conecta a email-smtp.{{region}}.amazonaws.com.",
+      "port465": "465 (TLS)",
+      "port587": "587 (STARTTLS)"
+    },
+    "smtp": {
+      "host": "Host",
+      "hostPlaceholder": "smtp.example.com",
+      "port": "Puerto",
+      "presets": "Relleno rápido para un relay conocido"
+    },
+    "status": {
+      "configured": "Configurado",
+      "failed24h": "Fallidos en 24 horas",
+      "fromEnv": "SMTP del entorno del servidor",
+      "lastFailure": "Último fallo",
+      "lastSuccess": "Último envío exitoso",
+      "never": "Nunca",
+      "openLog": "Registro de entrega",
+      "sent24h": "Enviados en 24 horas"
+    },
+    "test": {
+      "description": "Envía un mensaje real mediante el proveedor guardado, por la misma vía que usan las alertas y los restablecimientos de contraseña. Deja la dirección en blanco para enviártelo a ti.",
+      "fix": "Solución:",
+      "noId": "no se devolvió ninguno",
+      "placeholder": "Tu propia dirección",
+      "response": "Proveedor: {{provider}}. ID de mensaje: {{id}}.",
+      "send": "Enviar correo de prueba",
+      "sending": "Enviando...",
+      "success": "Correo de prueba enviado a {{to}}.",
+      "title": "Enviar un correo de prueba"
+    },
+    "title": "Entrega de correo",
+    "username": "Usuario",
+    "validation": {
+      "accessKeyRequired": "El ID de clave de acceso es obligatorio",
+      "domainRequired": "El dominio de envío es obligatorio",
+      "emailInvalid": "Escribe una dirección de correo válida",
+      "fromRequired": "La dirección de remitente es obligatoria",
+      "hostRequired": "El host es obligatorio",
+      "portRequired": "El puerto es obligatorio",
+      "regionRequired": "Elige una región de AWS",
+      "smtpUsernameRequired": "El usuario SMTP es obligatorio"
     }
   }
 }

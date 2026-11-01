@@ -1,0 +1,126 @@
+{
+  "title": "Cómo llegar a esta aplicación",
+  "description": "La mejor dirección para abrir primero, y otras formas de entrar.",
+  "actions": {
+    "copy": "Copiar {{what}}",
+    "copied": "Copiado",
+    "open": "Abrir {{what}}",
+    "test": "Probar",
+    "testing": "Probando",
+    "allowNetwork": "Permitir acceso por red",
+    "change": "Cambiar puerto o exposición",
+    "openApp": "Abrir aplicación",
+    "copyUrl": "Copiar dirección",
+    "recheck": "Comprobar de nuevo",
+    "showDetails": "Mostrar detalles",
+    "hideDetails": "Ocultar detalles",
+    "openOnNetwork": "Abrir en esta red (IP y puerto)",
+    "addDomain": "Agregar un dominio"
+  },
+  "allow": {
+    "title": "¿Permitir el acceso por red?",
+    "description": "El puerto se publica en todas las interfaces y se abre en el firewall del host, de modo que otros dispositivos podrán llegar a esta aplicación por HTTP sin cifrar.",
+    "confirm": "Permitir acceso por red",
+    "pending": "Aplicando",
+    "none": "No cambiaría nada.",
+    "change": "{{what}}: {{from}} a {{to}}",
+    "plain_http": "HTTP sin cifrar: el tráfico no va cifrado y los controles de inicio de sesión configurados en el dominio no se aplican en este puerto.",
+    "recreates": "El contenedor se vuelve a crear con la nueva configuración.",
+    "done": "Acceso por red permitido",
+    "doneDescription": "La reconciliación se ejecuta en segundo plano."
+  },
+  "errors": {
+    "load": "No se pudieron cargar las direcciones de la aplicación.",
+    "retry": "Reintentar"
+  },
+  "empty": "Aún no hay direcciones. Despliega la aplicación para obtener una.",
+  "badges": {
+    "attention": "{{count}} requieren atención",
+    "port": "puerto {{port}}",
+    "deployed": "Desplegada",
+    "nodeOffline": "Nodo anfitrión sin conexión desde",
+    "previousHeld": "Versión anterior retenida, eliminada",
+    "previousHeldTitle": "Versión anterior, retenida hasta {{time}}. Se conserva para que la reversión sea instantánea."
+  },
+  "setup": {
+    "title": "Configuración recomendada",
+    "progress": "{{done}} de {{total}} completados",
+    "hide": "Ocultar para esta aplicación",
+    "show": "Mostrar la configuración recomendada"
+  },
+  "traffic": {
+    "hint": "Aún no hay tráfico. Los gráficos aparecen cuando llega la primera solicitud."
+  },
+  "hero": {
+    "title": "Abre tu aplicación",
+    "stopped": "La aplicación no está en ejecución, así que esta dirección no responderá hasta que inicie.",
+    "fixTitle": "Esta dirección aún no responde desde el exterior. Elige una forma de entrar:",
+    "fixHint": "Abrir en esta red da una IP y un puerto que funcionan en tu red local sin necesidad de un dominio. Un dominio hace que la aplicación sea accesible desde internet."
+  },
+  "status": {
+    "live": "En línea",
+    "down": "Sin respuesta",
+    "unchecked": "Sin comprobar",
+    "checking": "Comprobando",
+    "stopped": "Detenida"
+  },
+  "security": {
+    "secure": "Seguro",
+    "selfSigned": "Certificado autofirmado: el navegador mostrará una advertencia",
+    "plain": "Sin cifrar"
+  },
+  "scope": {
+    "internet": "Cualquier persona en internet",
+    "network": "La misma red o VPN",
+    "server": "Solo este servidor",
+    "apps": "Otras aplicaciones de este servidor"
+  },
+  "others": {
+    "title": "Otras formas de entrar"
+  },
+  "advanced": {
+    "title": "Avanzado: direcciones para otras aplicaciones y este servidor",
+    "hint": "Solo se necesita al conectar aplicaciones entre sí o al trabajar en el propio servidor.",
+    "noPublic": "Este servidor no tiene una dirección pública, así que la dirección de la red privada es la vía de acceso.",
+    "autoDown": "La dirección de prueba gratuita no respondió desde este servidor. Requiere DNS público y los puertos 80 y 443 abiertos, así que la dirección de arriba es la que debes usar."
+  },
+  "id": {
+    "domain": "Dominio",
+    "public": "Dirección pública",
+    "private": "Red privada",
+    "loopback": "Este servidor",
+    "internal": "Otras aplicaciones",
+    "container": "Puerto del contenedor",
+    "host": "Puerto del host"
+  },
+  "note": {
+    "container": "El puerto en el que la aplicación escucha dentro de su contenedor.",
+    "host": "El puerto publicado en este servidor para el puerto del contenedor.",
+    "hostStopped": "La aplicación no está en ejecución, así que no se publica ningún puerto del host.",
+    "hostNone": "Aún no se publica ningún puerto del host. Vuelve a desplegar para publicar uno.",
+    "local": "Solo funciona cuando has iniciado sesión en este servidor.",
+    "localNone": "Disponible cuando la aplicación esté en ejecución.",
+    "private": "Solo funciona desde la misma red o por VPN.",
+    "privateLocalhost": "No es accesible desde la red: el puerto está enlazado a localhost.",
+    "privateRemote": "Esta aplicación se ejecuta en otro nodo. Abre ese nodo para ver sus direcciones de red.",
+    "public": "HTTP sin cifrar, cualquiera que conozca la dirección puede llegar a ella.",
+    "domain": "Se sirve a través del proxy con TLS.",
+    "domainAuto": "Dirección automática. Agrega tu propio dominio para tener un certificado de confianza.",
+    "internal": "Las demás aplicaciones de este servidor se conectan con este nombre y puerto, por ejemplo http://{{address}}."
+  },
+  "test": {
+    "ok": "Respondió en {{ms}} ms",
+    "failed": "La aplicación no respondió en esta dirección. Puede que aún esté iniciando.",
+    "reason": {
+      "default": "La aplicación no respondió en esta dirección. Puede que aún esté iniciando.",
+      "container_not_running": "La aplicación no está en ejecución en este momento.",
+      "container_not_listening": "La aplicación no respondió en esta dirección. Puede que aún esté iniciando.",
+      "firewall_closed": "Esta dirección está bloqueada, muy probablemente por un firewall del servidor o del proveedor de alojamiento.",
+      "unreachable_from_host": "El proxy aún no responde en esta dirección.",
+      "tls_not_issued": "El certificado aún no es de confianza, así que los navegadores mostrarán una advertencia.",
+      "proxy_route_missing": "El proxy aún no tiene una ruta para esta dirección.",
+      "upstream_failing": "El proxy llegó al servidor, pero la aplicación detrás de él no responde.",
+      "app_error": "La aplicación respondió con un error."
+    }
+  }
+}

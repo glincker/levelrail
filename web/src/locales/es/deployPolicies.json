@@ -1,0 +1,83 @@
+{
+  "title": "Políticas de despliegue",
+  "description": "Salvaguardas que se revisan antes de cada despliegue, a nivel de organización, proyecto y entorno. Prevalece el alcance más específico para cada regla.",
+  "notConfigured": "Las políticas de despliegue no están disponibles en este plano de control.",
+  "rootOnly": "Solo los administradores de la instancia pueden cambiar las políticas de despliegue. Aún puedes hacer una prueba en seco.",
+  "scope": {
+    "label": "Alcance",
+    "org": "Organización",
+    "project": "Proyecto",
+    "environment": "Entorno",
+    "idLabel": "ID del proyecto o entorno",
+    "idPlaceholder": "proj_123"
+  },
+  "mode": {
+    "off": "Desactivada",
+    "warn": "Advertir",
+    "enforce": "Aplicar"
+  },
+  "modeLabel": "Modo para {{rule}}",
+  "valueLabel": "Valor para {{rule}}",
+  "rules": {
+    "allowed_registries": {
+      "title": "Registros de imágenes permitidos",
+      "hint": "Hosts separados por comas, por ejemplo ghcr.io, docker.io.",
+      "placeholder": "ghcr.io, docker.io"
+    },
+    "require_readiness_probe": {
+      "title": "Exigir una sonda de disponibilidad",
+      "hint": "Las aplicaciones deben definir una sonda de disponibilidad antes de desplegarse."
+    },
+    "max_memory_mb": {
+      "title": "Tope de memoria (MB)",
+      "hint": "Una aplicación sin límite de memoria supera el tope.",
+      "placeholder": "2048"
+    },
+    "max_cpu": {
+      "title": "Tope de CPU (núcleos)",
+      "hint": "Una aplicación sin límite de CPU supera el tope.",
+      "placeholder": "2"
+    },
+    "forbid_privileged": {
+      "title": "Prohibir contenedores privilegiados",
+      "hint": "Bloquea las aplicaciones que piden modo privilegiado."
+    },
+    "forbid_host_mounts": {
+      "title": "Prohibir montajes bind del host",
+      "hint": "Prefijos de ruta opcionales, separados por comas, que siguen permitidos.",
+      "placeholder": "/srv/data"
+    },
+    "required_labels": {
+      "title": "Etiquetas obligatorias",
+      "hint": "Claves de etiqueta separadas por comas que toda aplicación debe definir.",
+      "placeholder": "team, cost-center"
+    },
+    "max_replicas": {
+      "title": "Tope de réplicas",
+      "hint": "El máximo de réplicas que puede ejecutar una aplicación.",
+      "placeholder": "5"
+    }
+  },
+  "save": "Guardar política",
+  "saved": "Política guardada",
+  "clear": "Borrar alcance",
+  "cleared": "Política borrada",
+  "dryRun": "Prueba en seco con las aplicaciones actuales",
+  "dryRunHint": "Previsualiza las reglas de arriba sin guardarlas.",
+  "stored": {
+    "title": "Políticas guardadas",
+    "empty": "Aún no hay políticas. Agrega una regla arriba y guárdala, o haz primero una prueba en seco para ver qué fallaría.",
+    "edit": "Editar"
+  },
+  "result": {
+    "summary": "{{checked}} aplicaciones revisadas, {{failing}} serían bloqueadas, {{warning}} con advertencias.",
+    "clean": "Todas las aplicaciones cumplen estas reglas.",
+    "wouldFail": "Sería bloqueada",
+    "warns": "Solo advertencia",
+    "next": "Siguiente acción"
+  },
+  "errors": {
+    "idRequired": "Escribe el ID del proyecto o entorno para este alcance.",
+    "numberRequired": "{{rule}} necesita un número mayor que cero."
+  }
+}

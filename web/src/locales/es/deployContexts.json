@@ -1,0 +1,58 @@
+{
+  "title": "Contextos de despliegue",
+  "description": "Define variables de entorno y ajustes de compilación estática según el tipo de despliegue. Lo que dejes vacío hereda el valor predeterminado de la aplicación.",
+  "editor": {
+    "context": "Contexto",
+    "branchPattern": "Patrón de rama",
+    "branchPatternHint": "Nombre exacto o un glob como release/*.",
+    "env": "Variables de entorno",
+    "envHint": "Una CLAVE=VALOR por línea. Usa los reemplazos de variables por rama para los secretos.",
+    "buildCommand": "Comando de compilación",
+    "publishDir": "Directorio de publicación",
+    "buildArgs": "Argumentos de compilación",
+    "buildArgsHint": "Una CLAVE=VALOR por línea.",
+    "save": "Guardar contexto",
+    "saving": "Guardando",
+    "saved": "Contexto guardado.",
+    "saveError": "No se pudo guardar el contexto.",
+    "clear": "Borrar",
+    "cleared": "Contexto borrado.",
+    "clearError": "No se pudo borrar el contexto.",
+    "invalidLine": "La línea \"{{line}}\" debe tener el formato CLAVE=VALOR.",
+    "loadError": "No se pudieron cargar los contextos guardados."
+  },
+  "contexts": {
+    "deploy-preview": "Vista previa de despliegue (pull requests)",
+    "branch-deploy": "Despliegue de rama",
+    "branch": "Una rama específica"
+  },
+  "saved": {
+    "title": "Contextos guardados",
+    "empty": "Aún no hay reemplazos de contexto. Cada despliegue usa los valores predeterminados de la aplicación.",
+    "summary": "{{env}} variables de entorno, {{args}} argumentos de compilación",
+    "edit": "Editar"
+  },
+  "effective": {
+    "title": "Configuración efectiva para este despliegue",
+    "description": "Qué valor prevalece y de dónde viene. Los secretos permanecen ocultos.",
+    "context": "Desplegar como",
+    "production": "Producción",
+    "branch": "Rama",
+    "branchPlaceholder": "release/1.2",
+    "env": "Variables de entorno",
+    "buildCommand": "Comando de compilación",
+    "publishDir": "Directorio de publicación",
+    "buildArg": "Argumento de compilación {{name}}",
+    "none": "ninguno",
+    "empty": "No hay variables de entorno definidas para este despliegue.",
+    "loadError": "No se pudo cargar la configuración efectiva.",
+    "secret": "secreto",
+    "source": {
+      "app": "Predeterminado de la aplicación",
+      "preview-env": "Entorno de vista previa",
+      "context": "Contexto",
+      "branch-context": "Contexto de rama",
+      "branch-env": "Reemplazo de rama"
+    }
+  }
+}

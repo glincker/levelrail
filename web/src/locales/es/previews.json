@@ -1,0 +1,98 @@
+{
+  "title": "Vistas previas",
+  "extend": {
+    "button": "Extender",
+    "label": "Extender la vista previa del pull request {{number}}",
+    "hours": "Extender {{hours}} horas",
+    "success": "La vista previa del PR #{{number}} ahora expira {{when}}.",
+    "error": "No se pudo extender la vista previa."
+  },
+  "row": {
+    "extended": "Extendida",
+    "logs": "Registros de compilación",
+    "logsLabel": "Abrir los registros de la vista previa del pull request {{number}}"
+  },
+  "approve": {
+    "button": "Aprobar vista previa",
+    "title": "¿Aprobar la vista previa del PR #{{number}}?",
+    "fromRepo": "Este pull request viene de {{repo}}, no del repositorio de esta aplicación.",
+    "anotherRepo": "otro repositorio",
+    "warning": "Aprobar ejecuta el código del fork en tu servidor. Lee primero los cambios. Solo se despliega este commit; un nuevo push del fork vuelve a esperar aprobación.",
+    "shareSecrets": "Darle también las variables de entorno y los secretos de esta aplicación",
+    "shareSecretsHint": "Desactivado por defecto. Actívalo solo si confías en la persona autora: el código puede leer y enviar todos los valores.",
+    "cancel": "Cancelar",
+    "confirm": "Aprobar y desplegar",
+    "deploying": "Se está desplegando la vista previa del PR #{{number}}.",
+    "error": "No se pudo aprobar la vista previa."
+  },
+  "lifecycle": {
+    "title": "Ciclo de vida, recursos y exposición",
+    "description": "Cuántas vistas previas conserva una aplicación, qué tan grandes son, a qué datos pueden llegar y quién puede verlas.",
+    "unavailable": "La configuración de vistas previas no está disponible en este plano de control.",
+    "loading": "Cargando la configuración de vistas previas",
+    "save": "Guardar configuración",
+    "saved": "Configuración de vistas previas guardada.",
+    "saveError": "No se pudo guardar la configuración de vistas previas.",
+    "maxPreviews": "Máximo de vistas previas activas para esta aplicación",
+    "maxPreviewsHint": "0 usa el tope de la plataforma ({{cap}}).",
+    "memory": "Memoria por vista previa",
+    "memoryHint": "El valor predeterminado de la plataforma es {{value}}. Una vista previa nunca recibe más de lo que tiene la propia aplicación.",
+    "cpu": "CPU por vista previa",
+    "cpuHint": "El valor predeterminado de la plataforma es {{value}}. 0 lo usa.",
+    "idle": "Reposo tras minutos de inactividad",
+    "idleHint": "0 usa el valor predeterminado de la plataforma ({{value}} minutos). Una vista previa en reposo se despierta con la siguiente solicitud.",
+    "database": {
+      "label": "Base de datos",
+      "hint": "Una vista previa nunca se conecta a datos de producción, salvo que elijas compartida.",
+      "none": "Ninguna: ninguna credencial de base de datos llega a la vista previa",
+      "shared": "Compartida: usa la base de datos de producción (riesgoso)",
+      "fresh": "Nueva: una base de datos vacía del mismo motor",
+      "seed": "Con datos iniciales: una copia de la última copia de seguridad de una base de datos indicada",
+      "seedName": "Base de datos de origen",
+      "seedHint": "Vacío usa la base de datos asociada a la aplicación.",
+      "sharedWarning": "Cada vista previa, incluidas las de ramas sin revisar, puede leer y modificar los datos de producción."
+    },
+    "exposure": {
+      "heading": "Quién puede ver las vistas previas",
+      "forkSecrets": "Dar a las vistas previas de forks el entorno y los secretos de la aplicación",
+      "forkSecretsHint": "Desactivado por defecto. Una vista previa de un fork no recibe ninguna variable de entorno.",
+      "forkSecretsWarning": "Cualquier persona que pueda abrir un pull request desde un fork puede ejecutar código que lea estos valores.",
+      "indexing": "Permitir que los buscadores indexen las URL de vistas previas",
+      "indexingHint": "Desactivado por defecto: las vistas previas envían X-Robots-Tag noindex y sirven un robots.txt que lo deniega todo.",
+      "gate": "Exigir autenticación básica en las vistas previas",
+      "gateHint": "Un solo usuario y contraseña para todas las vistas previas de esta aplicación.",
+      "gateUsername": "Usuario",
+      "gatePassword": "Contraseña",
+      "gatePasswordSet": "Hay una contraseña definida. Déjalo en blanco para conservarla.",
+      "gateNeedsPassword": "Define un usuario y una contraseña para activar la protección."
+    }
+  },
+  "prEnv": {
+    "button": "Variables propias",
+    "help": "Define valores solo para la vista previa de este pull request. Tienen prioridad sobre el entorno de la propia aplicación y se aplican en el próximo despliegue (haz un push de un commit). Se eliminan junto con la vista previa.",
+    "empty": "No hay reemplazos para este pull request.",
+    "hidden": "oculto",
+    "remove": "Quitar el reemplazo {{key}}",
+    "key": "Variable de entorno",
+    "value": "Valor",
+    "secret": "Guardar cifrado (secreto). Nunca se vuelve a mostrar, tampoco en el comentario del pull request.",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "saved": "Reemplazo guardado para el PR #{{number}}. Se aplica en el próximo despliegue."
+  },
+  "prCommands": {
+    "title": "Comandos de pull request",
+    "description": "Permite que quienes tienen acceso de escritura al repositorio ejecuten /levelrail redeploy, rollback, status y preview redeploy desde un comentario de pull request. Las congelaciones, aprobaciones y la política de despliegue siguen aplicándose. Agrega el evento Issue comments al webhook del repositorio.",
+    "enabledLabel": "Comandos en comentarios de pull request activados",
+    "forksTitle": "Permitir comandos en pull requests de forks",
+    "forksDescription": "Desactivado salvo que lo actives. Un pull request de un fork puede venir de cualquiera.",
+    "forksLabel": "Comandos en comentarios de pull requests de forks activados",
+    "toast": {
+      "enabled": "Comandos en comentarios de pull request activados.",
+      "disabled": "Comandos en comentarios de pull request desactivados.",
+      "forksEnabled": "Comandos en pull requests de forks activados.",
+      "forksDisabled": "Comandos en pull requests de forks desactivados.",
+      "errorTitle": "No se pudieron actualizar los comandos en comentarios de pull request."
+    }
+  }
+}

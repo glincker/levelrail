@@ -47,11 +47,15 @@ describe('es locale', () => {
 
   it('falls back to English for keys it does not translate', async () => {
     const i = i18next.createInstance()
+    // cliConsole is emptied here so the test keeps proving the fallback now that es covers it.
     await i.init({
       lng: 'es',
       fallbackLng: 'en',
       defaultNS: 'common',
-      resources: { en: { common: en }, es: { common: es } },
+      resources: {
+        en: { common: en },
+        es: { common: { ...es, cliConsole: {} } },
+      },
       interpolation: { escapeValue: false },
     })
     expect(i.t('actions.copy')).toBe('Copiar')

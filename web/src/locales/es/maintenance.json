@@ -1,0 +1,169 @@
+{
+  "title": "Mantenimiento programado",
+  "description": "Anuncia tiempos de inactividad planificados en el panel y en la página de estado pública, y opcionalmente retén los despliegues automáticos durante ese tiempo.",
+  "notConfigured": "El mantenimiento programado no está disponible en este plano de control.",
+  "schedule": "Programar mantenimiento",
+  "cancel": "Cancelar ventana",
+  "until": "hasta",
+  "freezeBadge": "Despliegues retenidos",
+  "empty": {
+    "title": "No hay mantenimiento planificado",
+    "description": "Programa una ventana antes de dejar algo fuera de línea para que los usuarios lo vean con anticipación."
+  },
+  "state": {
+    "scheduled": "Programado",
+    "active": "En curso",
+    "ended": "Finalizado"
+  },
+  "scope": {
+    "all": "Afecta a todo",
+    "project": "Afecta al proyecto {{target}}",
+    "app": "Afecta a la aplicación {{target}}"
+  },
+  "scopeName": {
+    "all": "Todo",
+    "project": "Un proyecto",
+    "app": "Una aplicación"
+  },
+  "banner": {
+    "active": "Mantenimiento en curso: {{title}}, hasta {{end}}.",
+    "upcoming": "Mantenimiento planificado: {{title}}, de {{start}} a {{end}}.",
+    "freeze": "Los despliegues automáticos se retienen durante la ventana.",
+    "more": "Hay {{count}} ventanas de mantenimiento más planificadas."
+  },
+  "form": {
+    "title": "Programar mantenimiento",
+    "description": "Las horas están en la zona horaria de tu navegador ({{zone}}).",
+    "name": "Título",
+    "namePlaceholder": "Actualización del almacenamiento de la base de datos",
+    "message": "Mensaje (opcional)",
+    "start": "Inicia",
+    "end": "Termina",
+    "scope": "Alcance",
+    "target": "Destino",
+    "targetPlaceholder": {
+      "project": "ID del proyecto",
+      "app": "Nombre de la aplicación"
+    },
+    "lead": "Anunciar antes del inicio (minutos)",
+    "leadHint": "Se envía una sola vez por tus canales de notificación. Usa 0 para no anunciar.",
+    "freeze": "Retener los despliegues automáticos durante la ventana",
+    "badRange": "El fin debe ser posterior al inicio.",
+    "cancel": "Cancelar",
+    "submit": "Programar"
+  },
+  "domainBanner": {
+    "title": "El modo de mantenimiento está activado para {{domain}}",
+    "titleNotEnforced": "El mantenimiento está guardado para {{domain}} pero no se aplica",
+    "body": "Los visitantes ven la página de mantenimiento y nada más: no se sirven scripts, estilos ni imágenes. La aplicación sigue en ejecución y un despliegue no termina el mantenimiento.",
+    "bodyNotEnforced": "Es posible que los visitantes aún lleguen a la aplicación: no está comprobado que el proxy delante de este dominio envíe su tráfico al ingress integrado. Abre Administrar para ver los detalles.",
+    "manage": "Administrar",
+    "end": "Terminar mantenimiento",
+    "ending": "Terminando...",
+    "ended": "Mantenimiento terminado para {{domain}}",
+    "more_one": "{{count}} dominio más está en modo de mantenimiento.",
+    "more_other": "{{count}} dominios más están en modo de mantenimiento.",
+    "elapsed": "Activado desde hace {{time}}.",
+    "endsAt": "Termina {{date}}.",
+    "autoOff": "Se desactiva por sí solo el {{date}}.",
+    "noEnd": "No tiene fin automático: sigue activado hasta que lo termines.",
+    "long": "Esto dura más de lo esperado."
+  },
+  "confirm": {
+    "title": "¿Poner {{domain}} en mantenimiento?",
+    "description": "Los visitantes no podrán llegar a la aplicación hasta que termines el mantenimiento. Revisa primero la página de abajo.",
+    "visitors": "Los visitantes reciben una página de mantenimiento 503 con un encabezado Retry-After, en todas las URL de este dominio.",
+    "assets": "Tampoco se sirven scripts, estilos, imágenes ni llamadas a la API, así que la página no puede cargar nada de la aplicación.",
+    "running": "El contenedor sigue en ejecución y no se reinicia.",
+    "deploys": "Un despliegue durante el mantenimiento se completa y el mantenimiento sigue activado hasta que lo termines.",
+    "alerts": "Las alertas de caída, DNS, certificado y de errores o latencia de solicitudes de esta aplicación se silencian hasta que termine el mantenimiento. Las alertas de CPU, memoria, disco, reinicios y fallos siguen activas.",
+    "endsAt": "Termina automáticamente el {{date}}.",
+    "autoOff": "Se desactiva por sí solo después de {{hours}} horas.",
+    "noEnd": "No tiene fin automático. Define una hora de fin o una duración máxima para que no se quede activado.",
+    "confirm": "Activar mantenimiento",
+    "pending": "Activando..."
+  },
+  "preview": {
+    "title": "Vista previa de la página que ven los visitantes",
+    "caption": "Vista previa: estado {{status}}, Retry-After {{retry}} segundos",
+    "frameTitle": "Vista previa de la página de mantenimiento",
+    "failed": "No se pudo cargar la vista previa."
+  },
+  "appBanner": {
+    "title_one": "El mantenimiento está activado para {{count}} dominio de esta aplicación",
+    "title_other": "El mantenimiento está activado para {{count}} de {{total}} dominios de esta aplicación",
+    "body": "Los visitantes reciben la página de mantenimiento en esos dominios. Las alertas de caída, DNS, certificado y de errores o latencia de solicitudes se silencian, mientras que las de CPU, memoria, disco, reinicios y fallos siguen activas. Un despliegue se completa sin terminar el mantenimiento.",
+    "end": "Terminar para todos los dominios",
+    "ending": "Terminando...",
+    "ended": "Mantenimiento terminado para todos los dominios de esta aplicación"
+  },
+  "appToggle": {
+    "title": "Mantenimiento para todos los dominios",
+    "description": "Activa o desactiva el mantenimiento para todos los dominios de esta aplicación a la vez. Se aplica a todos o a ninguno.",
+    "on": "Activado para {{active}} de {{total}} dominios",
+    "off": "Desactivado",
+    "enable": "Activar para todos los dominios",
+    "enabling": "Activando...",
+    "disable": "Terminar para todos los dominios",
+    "disabling": "Terminando...",
+    "saved": "El mantenimiento está activado para todos los dominios de esta aplicación",
+    "failed": "No se cambió nada. {{message}}",
+    "noDomains": "Agrega un dominio a esta aplicación antes de activar el mantenimiento."
+  },
+  "deployNotice": {
+    "text": "Esta aplicación está en mantenimiento. El despliegue se completará y el mantenimiento seguirá activado.",
+    "tooltip": "Esta aplicación está en mantenimiento. El despliegue se completará y el mantenimiento seguirá activado."
+  },
+  "silence": {
+    "createdByMaintenance": "Creado por el mantenimiento (solo alertas de caída, DNS, certificado y solicitudes)",
+    "endsWithMaintenance": "Termina cuando termine el mantenimiento de {{domain}}",
+    "matchApp": "aplicación",
+    "matchRule": "regla",
+    "matchNode": "nodo",
+    "matchKind": "tipo",
+    "matchSeverity": "severidad",
+    "matchMetric": "métrica",
+    "newSilence": "Nuevo silencio",
+    "dialogDescription": "Las alertas que coinciden siguen evaluándose y aparecen en el historial como silenciadas, pero no notifican. Deben coincidir todos los filtros que completes.",
+    "apps": "Aplicaciones",
+    "appsPlaceholder": "web, worker",
+    "nodes": "Nodos",
+    "nodesPlaceholder": "edge-1",
+    "kinds": "Tipos de regla",
+    "kindsPlaceholder": "threshold, crashloop",
+    "severity": "Severidad",
+    "severityLevel": {
+      "info": "información",
+      "warning": "advertencia",
+      "critical": "crítica"
+    },
+    "duration": "Duración",
+    "reason": "Motivo",
+    "reasonPlaceholder": "migración planificada de la base de datos",
+    "cancel": "Cancelar",
+    "creating": "Creando...",
+    "create": "Crear silencio",
+    "errorNoMatcher": "Elige al menos una aplicación, nodo, tipo o severidad para la coincidencia.",
+    "errorDuration": "La duración debe tener un formato como 30m, 4h o 24h.",
+    "silencedFor": "Silenciado durante {{duration}}.",
+    "ended": "Silencio terminado.",
+    "endNow": "Terminar ahora",
+    "colStatus": "Estado",
+    "colMatches": "Coincide con",
+    "colUntil": "Hasta",
+    "colCreatedBy": "Creado por",
+    "status": {
+      "active": "activo",
+      "pending": "pendiente",
+      "expired": "vencido"
+    },
+    "showExpired": "Mostrar vencidos",
+    "sectionLabel": "Silencios",
+    "emptyTitle": "No hay silencios activos",
+    "emptyDescription": "Silencia una alerta desde su fila, o crea aquí un silencio para un cambio planificado."
+  },
+  "effects": {
+    "alertsSilenced": "Alertas de caída, DNS, certificado y solicitudes silenciadas",
+    "statusOngoing": "Página de estado: en curso"
+  }
+}
