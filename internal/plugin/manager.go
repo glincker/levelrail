@@ -48,6 +48,8 @@ type Manager struct {
 	egDirty   bool
 	chown     func(path string, uid, gid int) error
 	pushFn    func(ctx context.Context, socket string, p egress.Policy) error
+	denials   denialsCache
+	denialsFn func(ctx context.Context, socket string, timeout time.Duration) ([]egress.DenialCount, error)
 }
 
 // NewManager builds a Manager. audit and docker must be non-nil.
@@ -57,7 +59,7 @@ func NewManager(store Store, dk Containers, audit Auditor, cfg Config, log *slog
 	}
 	return &Manager{
 		store: store, docker: dk, audit: audit, cfg: cfg.withDefaults(), log: log,
-		now: time.Now, dial: dialUnix, instances: map[string]*instance{}, pushFn: egress.PushPolicy, chown: os.Chown,
+		now: time.Now, dial: dialUnix, instances: map[string]*instance{}, pushFn: egress.PushPolicy, denialsFn: egress.FetchDenials, chown: os.Chown,
 	}
 }
 

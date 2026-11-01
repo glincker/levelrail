@@ -249,6 +249,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_PLUGIN_EGRESS_CONNECT_TIMEOUT` | `10s` | Time limit for opening an outbound connection for a plugin. Control plane. |
 | `APP_PLUGIN_EGRESS_IDLE_TIMEOUT` | `60s` | How long a plugin tunnel may sit idle before it is closed. Control plane. |
 | `APP_PLUGIN_EGRESS_MAX_TUNNELS` | `16` | Simultaneous tunnels allowed per plugin. Positive integer. Control plane. |
+| `APP_PLUGIN_EGRESS_DENIALS_TTL` | `10s` | How long the plugin API reuses the proxy denial counts before reading them again. Control plane. |
+| `APP_PLUGIN_EGRESS_DENIALS_TIMEOUT` | `2s` | Time limit for one read of the proxy denial counts. Control plane. |
 | `APP_PLUGIN_EGRESS_BYTES_PER_MINUTE` | `268435456` (256 MiB) | Traffic cap per plugin per minute, both directions combined. Positive integer. Control plane. |
 | `APP_PLUGIN_EGRESS_ALLOW_PRIVATE` | `false` | Set to `true` to let plugin tunnels reach targets that resolve to internal addresses. Control plane. |
 | `APP_PLUGIN_EGRESS_POLICY_SOCKET` | none (required) | Unix socket path where the `plugin-egress` sidecar receives its policy. Created with mode 0600 in a 0700 directory. Sidecar only. |

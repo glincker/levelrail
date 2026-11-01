@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/plugin"
+	"github.com/GLINCKER/levelrail/internal/plugin/egress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -28,6 +29,27 @@ type pluginResource struct {
 	Commands     []plugin.Command `json:"commands"`
 	// EgressMode is "proxy" when declared hosts are enforced, "open" when they are not.
 	EgressMode string `json:"egress_mode"`
+	// EgressDenials is the proxy's refusal tally for this plugin. Empty in open mode.
+	EgressDenials pluginEgressDenials `json:"egress_denials"`
+}
+
+// pluginEgressDenials counts refusals by reason. Hosts and payloads are never stored.
+type pluginEgressDenials struct {
+	Total      int64            `json:"total"`
+	ByReason   map[string]int64 `json:"by_reason"`
+	LastDenied string           `json:"last_denied,omitempty"`
+}
+
+func summarizeDenials(rows []egress.DenialCount) pluginEgressDenials {
+	out := pluginEgressDenials{ByReason: map[string]int64{}}
+	for _, r := range rows {
+		out.Total += r.Count
+		out.ByReason[r.Reason] += r.Count
+		if r.LastDenied > out.LastDenied {
+			out.LastDenied = r.LastDenied
+		}
+	}
+	return out
 }
 
 type installPluginRequest struct {
@@ -92,12 +114,16 @@ func (rt *Router) pluginActor(r *http.Request) string {
 }
 
 func (rt *Router) toPluginResource(ctx context.Context, m *plugin.Manager, rec plugin.Record) pluginResource {
+	return rt.pluginResourceWith(ctx, m, rec, m.EgressDenials(ctx))
+}
+
+func (rt *Router) pluginResourceWith(ctx context.Context, m *plugin.Manager, rec plugin.Record, denials map[string][]egress.DenialCount) pluginResource {
 	st := m.StatusOf(ctx, rec)
 	panels, commands := []plugin.Panel{}, []plugin.Command{}
 	if man, err := plugin.ParseManifest([]byte(rec.Manifest)); err == nil {
 		panels, commands = man.Contributes.Panels, man.Contributes.Commands
 	}
-	return pluginResource{Record: rec, Running: m.Running(rec.Name), Health: st.Health, Verification: st.Verification, Fix: st.Fix, Panels: panels, Commands: commands, EgressMode: m.EgressMode()}
+	return pluginResource{Record: rec, Running: m.Running(rec.Name), Health: st.Health, Verification: st.Verification, Fix: st.Fix, Panels: panels, Commands: commands, EgressMode: m.EgressMode(), EgressDenials: summarizeDenials(denials[rec.Name])}
 }
 
 func (rt *Router) writePluginError(w http.ResponseWriter, what string, err error) {
@@ -140,8 +166,9 @@ func (rt *Router) handleListPlugins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := make([]pluginResource, 0, len(recs))
+	denials := m.EgressDenials(r.Context())
 	for _, rec := range recs {
-		out = append(out, rt.toPluginResource(r.Context(), m, rec))
+		out = append(out, rt.pluginResourceWith(r.Context(), m, rec, denials))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

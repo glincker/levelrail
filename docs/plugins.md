@@ -207,4 +207,26 @@ Set `APP_PLUGIN_EGRESS_MODE=proxy` to enforce declared hosts. The control plane 
 - Switching to proxy mode replaces the plugin network once, so plugins with declared hosts restart.
 - Plugins must use their HTTP client's default proxy handling. A plugin that opens raw sockets, or ignores `HTTPS_PROXY`, cannot reach the network in proxy mode.
 - Refused requests are logged by the proxy (plugin, host, port, reason, no payload) and counted per plugin and reason.
+
+### What each mode enforces
+
+- `open` (default): declared hosts are shown at approval but are not enforced. A plugin with declared hosts shares a network with a gateway and can reach the internet. No sidecar runs, so there are no denial counts.
+- `proxy`: the plugin network has no gateway. Every outbound request goes through the sidecar, which allows only the plugin's approved hosts (and ports), resolves names itself and refuses internal, loopback, link-local and metadata addresses. A plugin with no declared hosts has no network in either mode.
+
+### Reading denial counts
+
+In proxy mode `GET /api/v1/plugins` and `GET /api/v1/plugins/{name}` carry an `egress_denials` object per plugin. It needs the same ability as listing plugins.
+
+```json
+"egress_denials": {
+  "total": 4,
+  "by_reason": { "host_not_allowed": 3, "blocked_address": 1 },
+  "last_denied": "2026-10-31T11:00:00Z"
+}
+```
+
+- Reasons: `host_not_allowed`, `blocked_address`, `resolve_failed`, `dial_failed`, `too_many_tunnels`, `rate_limited`, `bad_request`, `unknown_caller`.
+- Counts are since the sidecar last started and reset when it restarts. Only counts and the time of the latest refusal are kept: no hosts, URLs, paths, headers or credentials. The refused host is in the sidecar log line.
+- In open mode, or when the sidecar cannot be read, `total` is 0 and `by_reason` is empty. The control plane reads the sidecar at most once per `APP_PLUGIN_EGRESS_DENIALS_TTL` and never blocks a list call longer than `APP_PLUGIN_EGRESS_DENIALS_TIMEOUT`.
+- A rising `host_not_allowed` count usually means the plugin calls a host missing from its manifest. Add it in a new version and approve it again.
 - A plugin that talks to an address you configure yourself (a self-hosted chat server, for example) needs that host in its approved list.

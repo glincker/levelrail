@@ -19,6 +19,8 @@ const (
 	envMaxConcurrent   = "APP_PLUGIN_MAX_CONCURRENT"
 	envBackoffMax      = "APP_PLUGIN_BACKOFF_MAX"
 	envBreakerFailures = "APP_PLUGIN_BREAKER_FAILURES"
+	envDenialsTTL      = "APP_PLUGIN_EGRESS_DENIALS_TTL"
+	envDenialsTimeout  = "APP_PLUGIN_EGRESS_DENIALS_TIMEOUT"
 
 	// EnvAllowUnsigned lets an operator install and run a package with no signature.
 	EnvAllowUnsigned = "APP_PLUGIN_ALLOW_UNSIGNED"
@@ -50,6 +52,9 @@ type Config struct {
 	BackoffBase       time.Duration
 	BackoffMax        time.Duration
 	BreakerCooldown   time.Duration
+	// DenialsTTL caches the sidecar denial tally; DenialsTimeout bounds one read.
+	DenialsTTL     time.Duration
+	DenialsTimeout time.Duration
 
 	HealthFailures  int
 	BreakerFailures int
@@ -73,6 +78,8 @@ func (c Config) withDefaults() Config {
 	setDur(&c.StopTimeout, 5*time.Second)
 	setDur(&c.BackoffBase, 2*time.Second)
 	setDur(&c.BackoffMax, 5*time.Minute)
+	setDur(&c.DenialsTTL, 10*time.Second)
+	setDur(&c.DenialsTimeout, 2*time.Second)
 	setDur(&c.BreakerCooldown, 30*time.Second)
 	setInt(&c.HealthFailures, 3)
 	setInt(&c.BreakerFailures, 5)
@@ -122,6 +129,7 @@ func ConfigFromEnv(namespace, dataDir string, lookup func(string) (string, bool)
 	}
 	for env, dst := range map[string]*time.Duration{
 		envCallTimeout: &c.CallTimeout, envStartTimeout: &c.StartTimeout, envReconcile: &c.ReconcileInterval, envBackoffMax: &c.BackoffMax,
+		envDenialsTTL: &c.DenialsTTL, envDenialsTimeout: &c.DenialsTimeout,
 	} {
 		if d, err := time.ParseDuration(get(env)); err == nil && d > 0 {
 			*dst = d
