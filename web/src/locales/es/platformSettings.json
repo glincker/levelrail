@@ -88,6 +88,10 @@
       "title": "Configuración de ingreso",
       "description": "Dominio principal, correo ACME y HSTS."
     },
+    "ddns": {
+      "title": "DNS dinámico",
+      "description": "Mantiene un nombre DNS apuntando a la IP pública de este servidor."
+    },
     "ingressEdge": {
       "title": "Borde de ingreso",
       "description": "El proxy integrado y los puertos en los que escucha."

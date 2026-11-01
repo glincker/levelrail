@@ -3,6 +3,7 @@ import { certificatesQueryOptions } from '../../queries/certificates'
 import { ingressSettingsQueryOptions } from '../../queries/domains'
 import { PLATFORM_ANCHORS } from '../../lib/platformSettingsIndex'
 import { IngressConnectivityCard } from '../IngressConnectivityCard'
+import { DdnsSettingsCard } from '../DdnsSettingsCard'
 import { IngressEdgeCard } from '../IngressEdgeCard'
 import { IngressSettingsCard } from '../IngressSettingsCard'
 import { ReverseProxyGuideCard } from '../ReverseProxyGuideCard'
@@ -18,6 +19,9 @@ export function PlatformIngressPage() {
     <>
       <PlatformCardSection anchor={PLATFORM_ANCHORS.ingressSettings}>
         <IngressSettingsCard settings={settings} primaryCert={primaryCert} />
+      </PlatformCardSection>
+      <PlatformCardSection anchor={PLATFORM_ANCHORS.ddns}>
+        <DdnsSettingsCard />
       </PlatformCardSection>
       <PlatformCardSection anchor={PLATFORM_ANCHORS.ingressEdge}>
         <IngressEdgeCard />

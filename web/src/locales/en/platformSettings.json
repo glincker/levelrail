@@ -88,6 +88,10 @@
       "title": "Ingress settings",
       "description": "Primary domain, ACME email and HSTS."
     },
+    "ddns": {
+      "title": "Dynamic DNS",
+      "description": "Keep a DNS name pointed at this server's public IP."
+    },
     "ingressEdge": {
       "title": "Ingress edge",
       "description": "The built-in proxy and the ports it listens on."

@@ -42,6 +42,7 @@ import type canvas from '../locales/en/canvas.json'
 import type mailServer from '../locales/en/mailServer.json'
 import type dnsSetup from '../locales/en/dnsSetup.json'
 import type dnsProviders from '../locales/en/dnsProviders.json'
+import type ddns from '../locales/en/ddns.json'
 import type platformSettings from '../locales/en/platformSettings.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
@@ -165,6 +166,7 @@ declare module 'i18next' {
       dnsSetup: typeof dnsSetup
       dnsProviders: typeof dnsProviders
       platformSettings: typeof platformSettings
+      ddns: typeof ddns
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions

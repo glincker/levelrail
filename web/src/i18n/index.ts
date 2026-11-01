@@ -39,6 +39,7 @@ export const NAMESPACES = [
   'dnsSetup',
   'dnsProviders',
   'platformSettings',
+  'ddns',
   'exposure',
   'appExposure',
   'appAccess',
