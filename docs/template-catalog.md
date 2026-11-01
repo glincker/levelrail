@@ -25,13 +25,13 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (388 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (391 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
-| [AI](#ai) | 34 |
+| [AI](#ai) | 35 |
 | [Analytics](#analytics) | 8 |
-| [Applications](#applications) | 25 |
+| [Applications](#applications) | 26 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 20 |
 | [Dashboard](#dashboard) | 8 |
@@ -39,7 +39,7 @@ Generated from `internal/catalog.Templates` (388 entries as of this build). Run 
 | [Developer Tools](#developer-tools) | 57 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 15 |
+| [Infrastructure](#infrastructure) | 16 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 28 |
 | [Monitoring](#monitoring) | 26 |
@@ -59,6 +59,7 @@ Generated from `internal/catalog.Templates` (388 entries as of this build). Run 
 | [Flowise](https://docs.flowiseai.com) | Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow. | `flowise` |  |
 | [Flowise (Postgres + Qdrant)](https://docs.flowiseai.com) | Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows. | `flowise-postgres` |  |
 | [Jupyter GPU Notebook](https://github.com/iot-salzburg/gpu-jupyter) | JupyterLab with a CUDA-ready data science stack for training and experimenting with models. | `jupyter-gpu` | Requires GPU |
+| [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) | A CPU text-to-speech server with an OpenAI-compatible /v1/audio/speech API, built on the Kokoro model. Apache-2.0 licensed. The image is about 3 GB and there is no login, so keep it on a private network or behind an auth proxy. | `kokoro-fastapi` |  |
 | [Label Studio](https://labelstud.io/guide) | A flexible data labeling tool for text, images, audio, and video, with export to common ML formats. | `label-studio` |  |
 | [Langflow](https://docs.langflow.org) | A visual low-code tool for building and deploying multi-agent and RAG workflows in Python. | `langflow` |  |
 | [Langfuse](https://langfuse.com/self-hosting) | Trace, evaluate, and debug LLM applications with prompt management and cost analytics. | `langfuse` |  |
@@ -121,6 +122,7 @@ Generated from `internal/catalog.Templates` (388 entries as of this build). Run 
 | [Moodle](https://moodle.org) | A widely used, highly customizable learning management system for online courses. | `moodle` |  |
 | [Nextcloud](https://docs.nextcloud.com) | Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives. | `nextcloud` |  |
 | [Odoo](https://www.odoo.com/documentation) | An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder. | `odoo` |  |
+| [Ombi](https://docs.ombi.app/) | A request portal where media server users ask for movies and shows and your download apps fill them. GPL-2.0 licensed. On first open, the wizard creates the admin account and connects your media server and Sonarr or Radarr. | `ombi` |  |
 | [OrangeHRM](https://docs.orangehrm.com/) | An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. | `orangehrm` |  |
 | [Redlib](https://github.com/redlib-org/redlib) | A private, lightweight front-end for browsing Reddit without tracking or ads. | `redlib` |  |
 | [SABnzbd](https://sabnzbd.org/wiki/) | A Usenet binary downloader with a web interface, RSS and post-processing. GPL-2.0 licensed. On first open, run the setup wizard to add your Usenet provider; if you serve it on a domain, add that host name under Config, Special, host_whitelist. | `sabnzbd` |  |
@@ -314,6 +316,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. | `elasticsearch` |  |
 | [etcd](https://etcd.io/docs/) | A distributed key-value store for configuration and coordination, running as a single member. | `etcd` |  |
 | [Headscale](https://headscale.net/stable/) | Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create). | `headscale` |  |
+| [MeshCentral](https://meshcentral.com/docs/) | A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server. | `meshcentral` |  |
 | [NATS](https://docs.nats.io/) | A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. | `nats` |  |
 | [NetBox](https://github.com/netbox-community/netbox-docker) | Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. | `netbox` |  |
 | [Nginx Proxy Manager](https://nginxproxymanager.com/guide/) | A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. | `nginx-proxy-manager` |  |

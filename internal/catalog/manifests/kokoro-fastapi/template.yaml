@@ -1,0 +1,20 @@
+id: kokoro-fastapi
+name: Kokoro TTS
+description: A CPU text-to-speech server with an OpenAI-compatible /v1/audio/speech API, built on the Kokoro model. Apache-2.0 licensed. The image is about 3 GB and there is no login, so keep it on a private network or behind an auth proxy.
+icon: speaker-high
+category: AI
+documentation_url: https://github.com/remsky/Kokoro-FastAPI
+recommended_memory_bytes: 1610612736
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for log timestamps.
+    default: Etc/UTC
+domains:
+  - service: kokoro
+    port: 8880
+    description: Public address of the Kokoro API and its web player.
+healthcheck:
+  service: kokoro
+  port: 8880
+  path: /health

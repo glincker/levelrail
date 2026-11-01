@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-388 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+391 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -14,6 +14,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Flowise](/self-host/flowise): Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow.
 - [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres): Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows.
 - [Jupyter GPU Notebook](/self-host/jupyter-gpu): JupyterLab with a CUDA-ready data science stack for training and experimenting with models.
+- [Kokoro TTS](/self-host/kokoro-fastapi): A CPU text-to-speech server with an OpenAI-compatible /v1/audio/speech API, built on the Kokoro model. Apache-2.0 licensed. The image is about 3 GB and there is no login, so keep it on a private network or behind an auth proxy.
 - [Label Studio](/self-host/label-studio): A flexible data labeling tool for text, images, audio, and video, with export to common ML formats.
 - [Langflow](/self-host/langflow): A visual low-code tool for building and deploying multi-agent and RAG workflows in Python.
 - [Langfuse](/self-host/langfuse): Trace, evaluate, and debug LLM applications with prompt management and cost analytics.
@@ -72,6 +73,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Moodle](/self-host/moodle): A widely used, highly customizable learning management system for online courses.
 - [Nextcloud](/self-host/nextcloud): Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives.
 - [Odoo](/self-host/odoo): An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder.
+- [Ombi](/self-host/ombi): A request portal where media server users ask for movies and shows and your download apps fill them. GPL-2.0 licensed. On first open, the wizard creates the admin account and connects your media server and Sonarr or Radarr.
 - [OrangeHRM](/self-host/orangehrm): An open-source human resources management suite: PTO, recruitment, performance, and an employee directory.
 - [Redlib](/self-host/redlib): A private, lightweight front-end for browsing Reddit without tracking or ads.
 - [SABnzbd](/self-host/sabnzbd): A Usenet binary downloader with a web interface, RSS and post-processing. GPL-2.0 licensed. On first open, run the setup wizard to add your Usenet provider; if you serve it on a domain, add that host name under Config, Special, host_whitelist.
@@ -253,6 +255,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Elasticsearch](/self-host/elasticsearch): A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.
 - [etcd](/self-host/etcd): A distributed key-value store for configuration and coordination, running as a single member.
 - [Headscale](/self-host/headscale): Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create).
+- [MeshCentral](/self-host/meshcentral): A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server.
 - [NATS](/self-host/nats): A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.
 - [NetBox](/self-host/netbox): Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling.
 - [Nginx Proxy Manager](/self-host/nginx-proxy-manager): A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.

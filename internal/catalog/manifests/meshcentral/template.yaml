@@ -1,0 +1,20 @@
+id: meshcentral
+name: MeshCentral
+description: A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server.
+icon: monitor
+category: Infrastructure
+documentation_url: https://meshcentral.com/docs/
+recommended_memory_bytes: 402653184
+env:
+  - key: MESH_HOSTNAME
+    label: Public host name
+    description: Domain agents connect to, without a scheme, for example mesh.example.com.
+    default: localhost
+domains:
+  - service: meshcentral
+    port: 4430
+    description: Public address of MeshCentral. Agents also use this address.
+healthcheck:
+  service: meshcentral
+  port: 4430
+  path: /
