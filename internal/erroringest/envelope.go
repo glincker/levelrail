@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -147,6 +148,8 @@ func buildEvent(payload []byte) (telemetry.ErrorEvent, error) {
 			title += ": " + ex.Value
 		}
 	}
+	// Mask before the cut so a secret straddling maxTitle cannot survive as a prefix.
+	title = secretmask.Mask(title)
 	if len(title) > maxTitle {
 		title = title[:maxTitle]
 	}

@@ -87,7 +87,7 @@ func TestMaskLongestFirst(t *testing.T) {
 
 // A store write path that stores free text must mask it. Every file that inserts into one of these
 // tables either calls secretmask or is listed in unreviewedSinks with the reason it has not been proven.
-var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries|deploy_logs|audit_log|pipeline_logs|app_events|deploy_trace_steps|error_events|notification_deliveries|webhook_deliveries|event_webhook_deliveries|status_webhook_deliveries|pipeline_webhook_deliveries|ai_chat_messages|email_deliveries|alert_history|service_hook_runs|scheduled_task_runs|oneshot_jobs|build_runs|pipeline_jobs|gate_events|deploy_gate_events|team_events|node_security_events|database_query_history)\b`)
+var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries|deploy_logs|audit_log|pipeline_logs|app_events|deploy_trace_steps|error_events|error_issues|notification_deliveries|webhook_deliveries|event_webhook_deliveries|status_webhook_deliveries|pipeline_webhook_deliveries|ai_chat_messages|email_deliveries|alert_history|service_hook_runs|scheduled_task_runs|oneshot_jobs|build_runs|pipeline_jobs|gate_events|deploy_gate_events|team_events|node_security_events|database_query_history)\b`)
 
 // unreviewedSinks is debt, not an approval: each path stores text that could carry a value, and no
 // proof test drives it yet. Remove an entry when the file masks or a test proves the field is structured.

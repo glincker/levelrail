@@ -79,3 +79,29 @@ func BenchmarkMaskNoHit(b *testing.B) {
 		r.Mask(line)
 	}
 }
+
+func TestWriterShortSecretInsideLongerAcrossWrites(t *testing.T) {
+	cases := []struct {
+		reg    []string
+		writes []string
+		want   string
+	}{
+		{[]string{"abcdefgh", "abcdefghSECRETTAIL"}, []string{"x abcdefgh", "SECRETTAIL y"}, "x " + secretmask.Marker + " y"},
+		{[]string{"abcdefgh1234", "efgh1234zzzz"}, []string{"x abcdefgh1234", "zzzz y"}, "x " + secretmask.Marker + " y"},
+	}
+	for _, c := range cases {
+		r := secretmask.New()
+		for _, v := range c.reg {
+			r.Add(v)
+		}
+		var out bytes.Buffer
+		w := secretmask.NewWriterFor(&out, r)
+		for _, s := range c.writes {
+			_, _ = w.Write([]byte(s))
+		}
+		_ = w.Close()
+		if out.String() != c.want {
+			t.Fatalf("got %q want %q", out.String(), c.want)
+		}
+	}
+}

@@ -17,16 +17,22 @@ func NewWriter(dst io.Writer) *Writer { return &Writer{dst: dst, reg: shared} }
 func NewWriterFor(dst io.Writer, reg *Registry) *Writer { return &Writer{dst: dst, reg: reg} }
 
 // Write always reports len(p) so io.Copy keeps draining even when dst fails late.
+// The carry stays raw: masking it early would hide a longer secret that a shorter one sits inside.
 func (w *Writer) Write(p []byte) (int, error) {
-	masked := w.reg.Mask(w.carry + string(p))
+	buf := w.carry + string(p)
 	hold := w.reg.maxLen() - 1
-	if hold < 0 || hold > len(masked) {
-		hold = len(masked)
+	if hold < 0 || hold > len(buf) {
+		hold = len(buf)
 	}
-	cut := len(masked) - hold
-	w.carry = masked[cut:]
+	cut := len(buf) - hold
+	for _, sp := range w.reg.mergedSpans(buf) {
+		if sp[0] < cut && cut < sp[1] {
+			cut = sp[0]
+		}
+	}
+	w.carry = buf[cut:]
 	if cut > 0 {
-		if _, err := io.WriteString(w.dst, masked[:cut]); err != nil {
+		if _, err := io.WriteString(w.dst, w.reg.Mask(buf[:cut])); err != nil {
 			return len(p), err
 		}
 	}

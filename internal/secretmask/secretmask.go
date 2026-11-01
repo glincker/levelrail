@@ -154,9 +154,26 @@ func jsonForms(v string) []string {
 // Mask replaces every registered value in s. Overlapping and prefix matches are
 // merged into one span so no tail of a longer secret survives a shorter hit.
 func (r *Registry) Mask(s string) string {
+	spans := r.mergedSpans(s)
+	if len(spans) == 0 {
+		return s
+	}
+	var b strings.Builder
+	pos := 0
+	for _, sp := range spans {
+		b.WriteString(s[pos:sp[0]])
+		b.WriteString(Marker)
+		pos = sp[1]
+	}
+	b.WriteString(s[pos:])
+	return b.String()
+}
+
+// mergedSpans returns the non-overlapping spans of s covered by registered values.
+func (r *Registry) mergedSpans(s string) [][2]int {
 	list := r.snapshot()
 	if len(list) == 0 || s == "" {
-		return s
+		return nil
 	}
 	var spans [][2]int
 	for _, v := range list {
@@ -170,30 +187,21 @@ func (r *Registry) Mask(s string) string {
 		}
 	}
 	if len(spans) == 0 {
-		return s
+		return nil
 	}
 	sort.Slice(spans, func(i, j int) bool { return spans[i][0] < spans[j][0] })
-	var b strings.Builder
-	pos := 0
-	cur := spans[0]
-	flush := func() {
-		b.WriteString(s[pos:cur[0]])
-		b.WriteString(Marker)
-		pos = cur[1]
-	}
+	merged := spans[:1]
 	for _, sp := range spans[1:] {
-		if sp[0] < cur[1] {
-			if sp[1] > cur[1] {
-				cur[1] = sp[1]
+		last := &merged[len(merged)-1]
+		if sp[0] < last[1] {
+			if sp[1] > last[1] {
+				last[1] = sp[1]
 			}
 			continue
 		}
-		flush()
-		cur = sp
+		merged = append(merged, sp)
 	}
-	flush()
-	b.WriteString(s[pos:])
-	return b.String()
+	return merged
 }
 
 // maxLen is the longest registered value or form, the basis of the stream carry window.

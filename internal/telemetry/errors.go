@@ -91,7 +91,7 @@ func (db *DB) WriteErrorEvent(ctx context.Context, ev ErrorEvent, keep int) (reg
 		_, err = tx.ExecContext(ctx, `INSERT INTO error_issues
 			(resource_id, fingerprint, title, level, first_seen_ns, last_seen_ns, count, last_release, last_deploy_id, status)
 			VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 'open')`,
-			ev.ResourceID, ev.Fingerprint, ev.Title, ev.Level, ev.TimestampNs, ev.TimestampNs, ev.Release, deploy)
+			ev.ResourceID, ev.Fingerprint, secretmask.Mask(ev.Title), ev.Level, ev.TimestampNs, ev.TimestampNs, ev.Release, deploy)
 	case err != nil:
 		return false, fmt.Errorf("telemetry: load error issue: %w", err)
 	default:
