@@ -34,8 +34,17 @@ PRE_PARSED = {"--offbox", "--requests"}
 
 def flag_defined(words, flag):
     # An undefined flag fails at parse time, before any request; -h stops a defined one early.
-    p = subprocess.run([cli, *words, flag + "=x", "-h"], capture_output=True, text=True, timeout=20, env=probe_env, cwd=probe_cwd)
-    return "not defined" not in (p.stdout + p.stderr)
+    # Bool flags reject "=x" (probe bare) and some verbs only expose a flag in one-shot mode.
+    for pre in ([], ["--command=x"]):
+        for probe in (flag, flag + "=x"):
+            try:
+                p = subprocess.run([cli, *words, *pre, probe, "-h"], capture_output=True, text=True, timeout=20, env=probe_env, cwd=probe_cwd)
+            except subprocess.TimeoutExpired:
+                # A bare value flag swallowed -h and ran the verb, so parsing accepted it.
+                return True
+            if "not defined" not in (p.stdout + p.stderr):
+                return True
+    return False
 
 def help_text(args):
     key = tuple(args)

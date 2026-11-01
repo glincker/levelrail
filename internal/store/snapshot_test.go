@@ -44,6 +44,10 @@ func TestInspectSnapshot_RejectsGarbage(t *testing.T) {
 }
 
 func TestOpen_DowngradeGuardAndPreMigrateHook(t *testing.T) {
+	// Two full-chain opens under -race; the nightly lane still runs it.
+	if testing.Short() && raceEnabled {
+		t.Skip("slow under -race, covered by the non-short lane")
+	}
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "levelrail.db")
 	db, err := Open(ctx, path, WithPreMigrateHook(func(context.Context, *DB, int, int) {

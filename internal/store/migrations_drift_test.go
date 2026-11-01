@@ -11,6 +11,9 @@ import (
 
 const driftShortWindow = 40
 
+// driftShortRaceWindow keeps -short -race runs bounded; -race multiplies the cost about 20x.
+const driftShortRaceWindow = 10
+
 var dropsMarkerRe = regexp.MustCompile(`(?m)^--\s*migrate:\s*drops\s+([a-z0-9_]+)\.([a-z0-9_*]+)`)
 
 // driftBaseline freezes old migrations that dropped tables on purpose before
@@ -162,8 +165,12 @@ func TestMigrationDrift_NoSilentColumnLoss(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if testing.Short() && len(migs) > driftShortWindow {
-		migs = migs[len(migs)-driftShortWindow:]
+	window := driftShortWindow
+	if raceEnabled {
+		window = driftShortRaceWindow
+	}
+	if testing.Short() && len(migs) > window {
+		migs = migs[len(migs)-window:]
 	}
 
 	path := filepath.Join(t.TempDir(), "drift.db")
