@@ -181,6 +181,8 @@ levelrail-cli backups volumes restore <app> <volume> --backup ID [--target-app A
 
 On the CLI the attempt history is `levelrail-cli backups list-all [--limit N] [--before RFC3339]` and the health view is `levelrail-cli backups health`.
 
+To see everything stored on one destination, including history of apps that no longer exist, use `levelrail-cli backups list-all --target <destination-id>`. `levelrail-cli storage delete` refuses while any history references the destination and names this command in its error. Remote objects are never removed by a destination delete; they stay in the bucket.
+
 ### Coverage: what is and is not protected
 
 The top-level **Backups** page leads with coverage, not history. It answers "is everything backed up, and has a restore been proven?" at a glance:

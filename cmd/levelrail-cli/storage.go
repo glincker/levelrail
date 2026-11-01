@@ -239,7 +239,7 @@ func runStorageDelete(prog string, args []string, stdout, stderr io.Writer, look
 	if err := c.client.DeleteStorageDestination(context.Background(), id); err != nil {
 		var apiErr *apiclient.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict && strings.Contains(apiErr.Message, "backup history") {
-			return c.fail(fmt.Errorf("delete storage destination %q: %w\nbackups still point at it. List them with \"%s backups list <database>\" or \"%s app-volume-backups list <app> <volume>\", remove each with \"backups delete <database> <backup-id>\" or \"app-volume-backups delete <app> <volume> <backup-id>\", then retry. Nothing was deleted", id, err, prog, prog))
+			return c.fail(fmt.Errorf("delete storage destination %q: %w\nbackups still point at it. List every one, including history of deleted apps, with \"%[3]s backups list-all --target %[4]s\"; for live resources use \"%[3]s backups list <database>\" or \"%[3]s app-volume-backups list <app> <volume>\". Remove each with \"backups delete <database> <backup-id>\" or \"app-volume-backups delete <app> <volume> <backup-id>\", then retry. Nothing was deleted", id, err, prog, id))
 		}
 		return c.fail(fmt.Errorf("delete storage destination %q: %w", id, err))
 	}

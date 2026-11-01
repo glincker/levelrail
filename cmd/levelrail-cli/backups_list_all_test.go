@@ -90,3 +90,13 @@ func TestRun_BackupsListAll_JSON(t *testing.T) {
 		t.Fatalf("decoded = %+v, want exactly the seeded row", decoded)
 	}
 }
+
+func TestFilterBackupsByTarget(t *testing.T) {
+	in := []backupHistoryResource{{ID: "a", TargetID: "t1"}, {ID: "b", TargetID: "t2"}}
+	if got := filterBackupsByTarget(in, "t2"); len(got) != 1 || got[0].ID != "b" {
+		t.Fatalf("filter t2 = %+v, want only b", got)
+	}
+	if got := filterBackupsByTarget(in, ""); len(got) != 2 {
+		t.Fatalf("empty target = %d rows, want all", len(got))
+	}
+}
