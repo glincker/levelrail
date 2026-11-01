@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/moby/buildkit/client/llb"
+	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/solver/pb"
 )
 
@@ -59,6 +60,39 @@ func (m NetworkMode) forceNetworkAttr() (string, bool, error) {
 	default:
 		return "", false, nil
 	}
+}
+
+// ErrNetworkFrontend refuses a custom Dockerfile frontend: force-network-mode
+// is only a hint to the stock frontend, a foreign one can return RUN steps
+// with the default network.
+var ErrNetworkFrontend = errors.New("build: a custom Dockerfile frontend (# syntax= or BUILDKIT_SYNTAX) is refused while security.build_network is not open; remove it or use the stock docker/dockerfile frontend")
+
+// checkFrontend allows only the stock frontend, whose image honours the
+// force-network-mode attribute, when the mode restricts the network.
+func (m NetworkMode) checkFrontend(dockerfile string, args map[string]string) error {
+	if ref, ok := args["BUILDKIT_SYNTAX"]; ok && !stockFrontend(ref) {
+		return ErrNetworkFrontend
+	}
+	dt, err := os.ReadFile(dockerfile) //nolint:gosec // path already confined to the build root by the caller
+	if err != nil {
+		return fmt.Errorf("build: read dockerfile: %w", err)
+	}
+	if ref, _, _, ok := parser.DetectSyntax(dt); ok && !stockFrontend(ref) {
+		return ErrNetworkFrontend
+	}
+	return nil
+}
+
+// stockFrontend reports whether ref is the docker/dockerfile image on Docker Hub.
+func stockFrontend(ref string) bool {
+	ref = strings.TrimSpace(ref)
+	for _, p := range []string{"docker.io/", "index.docker.io/"} {
+		ref = strings.TrimPrefix(ref, p)
+	}
+	if i := strings.IndexAny(ref, ":@"); i >= 0 {
+		ref = ref[:i]
+	}
+	return ref == "docker/dockerfile"
 }
 
 // applyRailpack rewrites every exec op of def to the mode's network.

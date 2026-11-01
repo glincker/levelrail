@@ -71,6 +71,9 @@ func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.
 		return nil, err
 	}
 	if set {
+		if err := req.Network.checkFrontend(dockerfilePath, req.BuildArgs); err != nil {
+			return nil, err
+		}
 		attrs["force-network-mode"] = force
 	}
 	for k, v := range req.BuildArgs {

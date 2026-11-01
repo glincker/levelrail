@@ -3,6 +3,8 @@ package build
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -32,6 +34,9 @@ func TestParseNetworkMode(t *testing.T) {
 
 func TestNewSolveOptNetworkPolicy(t *testing.T) {
 	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "Dockerfile"), []byte("FROM alpine\nRUN true\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		mode    NetworkMode
 		want    string
@@ -119,5 +124,39 @@ func TestResolveNetworkPrefersStoredSettingOverEnv(t *testing.T) {
 	stored = "none"
 	if got, _ := resolveNetwork(ctx); got != NetworkNone {
 		t.Fatalf("a changed stored value must apply on the next build, got %q", got)
+	}
+}
+
+func TestNewSolveOptCustomFrontend(t *testing.T) {
+	write := func(body string) string {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "Dockerfile"), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return dir
+	}
+	evil := write("# syntax=evil/frontend:latest\nFROM alpine\nRUN true\n")
+	stock := write("# syntax=docker/dockerfile:1\nFROM alpine\n")
+	plain := write("FROM alpine\n")
+	tests := []struct {
+		name string
+		dir  string
+		mode NetworkMode
+		args map[string]string
+		want error
+	}{
+		{"none refuses directive", evil, NetworkNone, nil, ErrNetworkFrontend},
+		{"none refuses build arg", plain, NetworkNone, map[string]string{"BUILDKIT_SYNTAX": "evil/frontend"}, ErrNetworkFrontend},
+		{"none allows stock directive", stock, NetworkNone, nil, nil},
+		{"none allows stock arg", plain, NetworkNone, map[string]string{"BUILDKIT_SYNTAX": "docker.io/docker/dockerfile:1"}, nil},
+		{"none refuses lookalike", plain, NetworkNone, map[string]string{"BUILDKIT_SYNTAX": "localhost:5000/docker/dockerfile"}, ErrNetworkFrontend},
+		{"open unchanged", evil, NetworkOpen, nil, nil},
+		{"empty mode unchanged", evil, "", map[string]string{"BUILDKIT_SYNTAX": "evil/frontend"}, nil},
+	}
+	for _, tt := range tests {
+		_, err := newSolveOpt(Request{ContextDir: tt.dir, Tag: "t:1", Network: tt.mode, BuildArgs: tt.args}, CacheConfig{}, nopWriteCloser{})
+		if !errors.Is(err, tt.want) {
+			t.Errorf("%s: err = %v, want %v", tt.name, err, tt.want)
+		}
 	}
 }
