@@ -23,6 +23,7 @@ var deniedFlags = map[string]bool{
 	"redirects": true, "headers-file": true, "bin": true, "binary": true, "image": true, "launch": true,
 	"csv": true, "ratchet": true, "record": true, "fix": true, "static": true, "path": true,
 	"cwd": true, "workdir": true, "context": true, "dockerfile": true, "script": true, "exec": true,
+	"heartbeat-url": true, "heartbeat-fail-url": true, "target": true,
 	"cmd": true, "command": true, "socket": true, "kubeconfig": true, "ca": true, "cacert": true,
 }
 
