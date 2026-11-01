@@ -474,9 +474,11 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 	for _, r := range rows {
 		sent[r.Key] = stepSignature(r)
 	}
+	masked := newMaskedSSE(w)
 	for _, e := range rt.mergeTraceIntoLog(ctx, deployID, entries) {
-		writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
+		masked.Write(sseLogEvent{Line: e.Message, Stream: e.Stream})
 	}
+	masked.Flush()
 	flusher.Flush()
 
 	rt.followTraceLog(ctx, w, flusher, deployID, true, sent)
@@ -511,13 +513,14 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 	// Same zero-body-flush gap serveFinishedDeployLog already fixed:
 	// write one byte so the browser confirms the connection is open.
 	_, _ = fmt.Fprint(w, ": connected\n\n")
+	masked := newMaskedSSE(w)
 	for _, ev := range lines {
-		writeSSEEvent(w, sseLogEvent{Line: ev.Line, Stream: ev.Stream})
+		masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream})
 	}
 	sent := map[string]string{}
 	if rows := rt.traceRows(r.Context(), deployID); len(rows) > 0 {
 		for _, e := range traceLogEntries(deployID, rows) {
-			writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
+			masked.Write(sseLogEvent{Line: e.Message, Stream: e.Stream})
 		}
 		for _, row := range rows {
 			sent[row.Key] = stepSignature(row)
@@ -531,6 +534,9 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 		select {
 		case <-r.Context().Done():
 			return
+		case <-masked.Idle():
+			masked.Flush()
+			flusher.Flush()
 		case <-traceTick.C:
 			rt.writeChangedTraceLines(r.Context(), w, flusher, deployID, sent)
 		case ev, chOpen := <-live:
@@ -540,11 +546,13 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 				// following trace rows the reconciler adds after the
 				// attempt finished, and stay open for the same
 				// reconnect-avoidance reason as serveFinishedDeployLog.
+				masked.Flush()
+				flusher.Flush()
 				rt.followTraceLog(r.Context(), w, flusher, deployID, true, sent)
 				<-r.Context().Done()
 				return
 			}
-			writeSSEEvent(w, sseLogEvent{Line: ev.Line, Stream: ev.Stream})
+			masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream})
 			flusher.Flush()
 		}
 	}

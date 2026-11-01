@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 func TestEmailDeliveries_RetentionPrunesOnlyOldRows(t *testing.T) {
@@ -39,5 +41,22 @@ func TestEmailDeliveries_RecipientIsTruncatedUnlessAllowed(t *testing.T) {
 	}
 	if strings.Contains(rows[0].ToDisplay, "person") || rows[0].ToDisplay != "p***@example.com" {
 		t.Errorf("to_display = %q, want a truncated address", rows[0].ToDisplay)
+	}
+}
+
+func TestEmailDeliveries_ErrorIsMasked(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	secretmask.Add("smtp-password-abcdef99")
+	d := EmailDelivery{Provider: "smtp", Status: EmailDeliveryFailed, Error: "auth smtp-password-abcdef99 rejected"}
+	if err := db.InsertEmailDelivery(ctx, d, "a@example.com", false); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := db.ListEmailDeliveries(ctx, EmailDeliveryFilter{Status: EmailDeliveryFailed})
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("rows = %d, %v", len(rows), err)
+	}
+	if strings.Contains(rows[0].Error, "smtp-password") || !strings.HasPrefix(rows[0].Error, "auth ") || !strings.HasSuffix(rows[0].Error, " rejected") {
+		t.Errorf("error = %q", rows[0].Error)
 	}
 }

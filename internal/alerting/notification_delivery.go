@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // NotificationDelivery is one recorded send attempt through a NotificationChannel, real or test.
@@ -37,7 +39,7 @@ func (db *DB) RecordNotificationDelivery(ctx context.Context, d NotificationDeli
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO notification_deliveries (id, channel_id, trigger_reason, success, error, created_at)
 		VALUES (?, ?, ?, ?, ?, ?)
-	`, d.ID, d.ChannelID, d.Trigger, boolToInt(d.Success), d.Error, now)
+	`, d.ID, d.ChannelID, d.Trigger, boolToInt(d.Success), secretmask.Mask(d.Error), now)
 	if err != nil {
 		return fmt.Errorf("alerting: record notification delivery %q: %w", d.ID, err)
 	}

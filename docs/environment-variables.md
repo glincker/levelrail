@@ -338,3 +338,9 @@ See [Volume files](/volume-files). Control plane and agent.
 | --- | --- | --- |
 | `APP_VOLUME_FILE_MAX_UPLOAD_MB` | `64` | Largest file accepted by a volume file upload or single-file restore. Positive integer. |
 | `APP_VOLUME_FILE_LIST_LIMIT` | `1000` | Most entries returned for one volume directory. Positive integer. |
+
+## Live log streams
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_LOG_MASK_IDLE_FLUSH` | `250ms` | Live log streams hold the last few lines back so a secret split across two lines is still masked. This is how long a held tail waits for the next line before it is sent anyway. Go duration, positive values only. Control plane. |

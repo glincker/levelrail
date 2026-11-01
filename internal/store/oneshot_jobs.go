@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // ErrOneShotJobNotFound is returned when no job has the requested id.
@@ -48,7 +50,7 @@ func (db *DB) SaveOneShotJob(ctx context.Context, j OneShotJob) error {
 			failed_attempts = excluded.failed_attempts, active = excluded.active, run_ids = excluded.run_ids,
 			message = excluded.message, finished_at = excluded.finished_at
 	`, j.ID, j.App, j.TaskID, j.State, j.Completions, j.Parallelism, j.BackoffLimit, j.Succeeded, j.FailedAttempts,
-		j.Active, string(ids), j.Message, j.StartedAt.UTC().Format(time.RFC3339Nano), finished)
+		j.Active, string(ids), secretmask.Mask(j.Message), j.StartedAt.UTC().Format(time.RFC3339Nano), finished)
 	if err != nil {
 		return fmt.Errorf("store: save one-shot job %q: %w", j.ID, err)
 	}
@@ -89,7 +91,7 @@ func (db *DB) FailInterruptedOneShotJobs(ctx context.Context, reason string, now
 	res, err := db.ExecContext(ctx, `
 		UPDATE oneshot_jobs SET state = 'Failed', active = 0, message = ?, finished_at = ?
 		WHERE state = 'Running'
-	`, reason, now.UTC().Format(time.RFC3339Nano))
+	`, secretmask.Mask(reason), now.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return 0, fmt.Errorf("store: fail interrupted one-shot jobs: %w", err)
 	}

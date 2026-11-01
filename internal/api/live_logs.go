@@ -183,6 +183,7 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 			writeSSEStatus(w, status)
 		}
 	}
+	masked := newMaskedSSE(w)
 	shown := 0
 	for _, e := range trimBackfill(entries, subscribeTime, liveLogBackfillMaxLines) {
 		// Backfill entries are processed through the same filter, in
@@ -194,14 +195,16 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 		if show, _ := containerFilter.admit(r.Context(), e.ContainerID); !show {
 			continue
 		}
-		writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
+		masked.Write(sseLogEvent{Line: e.Message, Stream: e.Stream})
 		shown++
 	}
 	if shown == 0 && statusKnown && !status.Running {
 		for _, l := range rt.lastOutputLines(r.Context(), r.PathValue("name"), status) {
-			writeSSEEvent(w, sseLogEvent{Line: l.Message, Stream: l.Stream})
+			masked.Write(sseLogEvent{Line: l.Message, Stream: l.Stream})
 		}
 	}
+	// The backfill is a closed set: nothing follows to complete a held tail.
+	masked.Flush()
 	flusher.Flush()
 
 	var statusTick <-chan time.Time
@@ -214,6 +217,9 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 		select {
 		case <-r.Context().Done():
 			return
+		case <-masked.Idle():
+			masked.Flush()
+			flusher.Flush()
 		case <-statusTick:
 			if next, ok := runState(r.Context(), r.PathValue("name")); ok && (!statusKnown || !next.equal(status)) {
 				status, statusKnown = next, true
@@ -237,17 +243,17 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 				return
 			}
 			if n := takeDropped(); n > 0 {
-				writeSSEEvent(w, sseLogEvent{Line: skippedLinesMarker(n), Stream: "system"})
+				masked.WriteDirect(sseLogEvent{Line: skippedLinesMarker(n), Stream: "system"})
 			}
 			show, transitioned := containerFilter.admit(r.Context(), entry.ContainerID)
 			if transitioned {
-				writeSSEEvent(w, sseLogEvent{Line: previousContainerTransitionLine, Stream: "system"})
+				masked.WriteDirect(sseLogEvent{Line: previousContainerTransitionLine, Stream: "system"})
 				flusher.Flush()
 			}
 			if !show {
 				continue
 			}
-			writeSSEEvent(w, sseLogEvent{Line: entry.Message, Stream: entry.Stream})
+			masked.Write(sseLogEvent{Line: entry.Message, Stream: entry.Stream})
 			flusher.Flush()
 		}
 	}

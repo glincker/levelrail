@@ -92,17 +92,14 @@ var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries
 // unreviewedSinks is debt, not an approval: each path stores text that could carry a value, and no
 // proof test drives it yet. Remove an entry when the file masks or a test proves the field is structured.
 var unreviewedSinks = map[string]string{
-	"internal/alerting/notification_delivery.go": "delivery response bodies",
-	"internal/alerting/history.go":               "alert message text",
-	"internal/rollback/host.go":                  "rollback event detail",
-	"internal/store/ai_chat.go":                  "chat messages",
-	"internal/store/deploy_gate.go":              "gate decision detail",
-	"internal/store/gate.go":                     "gate decision detail",
-	"internal/store/database_queries.go":         "user SQL text",
-	"internal/store/email_deliveries.go":         "provider error text",
-	"internal/store/team_invites.go":             "team event detail",
-	"internal/store/oneshot_jobs.go":             "job message",
-	"internal/store/node_security.go":            "node security event detail",
+	"internal/alerting/history.go":       "alert message text",
+	"internal/rollback/host.go":          "rollback event detail",
+	"internal/store/ai_chat.go":          "chat messages",
+	"internal/store/deploy_gate.go":      "gate decision detail",
+	"internal/store/gate.go":             "gate decision detail",
+	"internal/store/database_queries.go": "user SQL text",
+	"internal/store/team_invites.go":     "team event detail",
+	"internal/store/node_security.go":    "node security event detail",
 }
 
 // reviewedWriters are functions that write to a free-text table without a Mask call in their own body,

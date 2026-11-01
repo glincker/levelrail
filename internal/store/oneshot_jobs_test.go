@@ -2,8 +2,11 @@ package store
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 func TestOneShotJobs_RoundTripRecoverAndPrune(t *testing.T) {
@@ -43,5 +46,19 @@ func TestOneShotJobs_RoundTripRecoverAndPrune(t *testing.T) {
 	}
 	if _, err := db.GetOneShotJob(ctx, "ja"); !errors.Is(err, ErrOneShotJobNotFound) {
 		t.Fatalf("oldest job should be pruned, err = %v", err)
+	}
+}
+
+func TestOneShotJobs_MessageIsMasked(t *testing.T) {
+	ctx := t.Context()
+	db := openTestDB(t)
+	secretmask.Add("oneshot-secret-value-1234")
+	j := OneShotJob{ID: "jm", App: "web", TaskID: "tm", State: "Failed", Message: "boom oneshot-secret-value-1234 end", StartedAt: time.Now()}
+	if err := db.SaveOneShotJob(ctx, j); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.GetOneShotJob(ctx, "jm")
+	if err != nil || strings.Contains(got.Message, "oneshot-secret") || !strings.HasPrefix(got.Message, "boom ") || !strings.HasSuffix(got.Message, " end") {
+		t.Fatalf("message = %q, %v", got.Message, err)
 	}
 }

@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Email delivery statuses stored in email_deliveries.status.
@@ -91,7 +93,7 @@ func (db *DB) InsertEmailDelivery(ctx context.Context, d EmailDelivery, rawTo st
 		INSERT INTO email_deliveries (id, created_at, provider, to_hash, to_display, kind, status, message_id, error, error_kind, attempts, provider_id, failover_from)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.ID, d.CreatedAt.UTC().Format(emailDeliveryTimeFormat), d.Provider, EmailRecipientHash(rawTo), EmailRecipientDisplay(rawTo, fullAddress),
-		d.Kind, d.Status, d.MessageID, d.Error, d.ErrorKind, d.Attempts, d.ProviderID, d.FailoverFrom)
+		d.Kind, d.Status, d.MessageID, secretmask.Mask(d.Error), d.ErrorKind, d.Attempts, d.ProviderID, d.FailoverFrom)
 	if err != nil {
 		return fmt.Errorf("store: insert email delivery: %w", err)
 	}
