@@ -8,6 +8,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/heartbeat"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -49,6 +50,15 @@ func (s *bootState) startJobHeartbeat() {
 		os.Exit(1)
 	}
 	pinger := heartbeat.NewJobPinger(cfg, s.secretsManager, s.logger)
+	pinger.SetTuning(func(c context.Context) heartbeat.JobTuning {
+		rs := s.apiRouter.RuntimeSettings()
+		return heartbeat.JobTuning{
+			MaxAttempts: rs.Int(c, runtimesettings.KeyHeartbeatJobAttempts),
+			BackoffBase: rs.Duration(c, runtimesettings.KeyHeartbeatJobBackoffBase),
+			BackoffMax:  rs.Duration(c, runtimesettings.KeyHeartbeatJobBackoffMax),
+			Queue:       rs.Int(c, runtimesettings.KeyHeartbeatJobQueue),
+		}
+	})
 	s.scheduledTaskRunner.Pinger = pinger
 	s.apiRouter.SetJobPings(pinger)
 	go pinger.Run(s.ctx)

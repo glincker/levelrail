@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -89,6 +90,18 @@ func DeriveFailURL(pingURL, failURL string) string {
 	return u.String()
 }
 
+// JobTuning is the live retry and queue limits; zero fields fall back to the boot config.
+type JobTuning struct {
+	MaxAttempts int
+	BackoffBase time.Duration
+	BackoffMax  time.Duration
+	Queue       int
+}
+
+// jobQueueCeiling is the fixed channel capacity. It mirrors runtimesettings.JobQueueMax; the live limit is
+// enforced by the pending counter, so a changed queue size applies without resizing the channel.
+const jobQueueCeiling = 10000
+
 type jobEvent struct{ taskID, runID, status string }
 
 // JobPinger sends a per-job ping after a scheduled run settles. It never affects the run result.
@@ -98,6 +111,8 @@ type JobPinger struct {
 	logger  *slog.Logger
 	client  *http.Client
 	queue   chan jobEvent
+	pending atomic.Int64
+	tuning  func(context.Context) JobTuning
 	sleep   func(ctx context.Context, d time.Duration) error
 	jitter  func(limit int64) int64
 }
@@ -108,7 +123,32 @@ func NewJobPinger(cfg JobPingConfig, secrets Secrets, logger *slog.Logger) *JobP
 		logger = slog.New(slog.DiscardHandler)
 	}
 	return &JobPinger{cfg: cfg, secrets: secrets, logger: logger, client: NewClient(cfg.AllowPrivate, cfg.Timeout),
-		queue: make(chan jobEvent, cfg.Queue), sleep: sleepCtx, jitter: func(m int64) int64 { return rand.Int64N(m + 1) }} //nolint:gosec,forbidigo // backoff jitter, not security
+		queue: make(chan jobEvent, max(cfg.Queue, jobQueueCeiling)), sleep: sleepCtx, jitter: func(m int64) int64 { return rand.Int64N(m + 1) }} //nolint:gosec,forbidigo // backoff jitter, not security
+}
+
+// SetTuning makes the retry and queue limits follow a live source, such as runtime settings.
+func (p *JobPinger) SetTuning(f func(context.Context) JobTuning) { p.tuning = f }
+
+// limits merges the live tuning over the boot config.
+func (p *JobPinger) limits(ctx context.Context) JobPingConfig {
+	c := p.cfg
+	if p.tuning == nil {
+		return c
+	}
+	t := p.tuning(ctx)
+	if t.MaxAttempts > 0 {
+		c.MaxAttempts = t.MaxAttempts
+	}
+	if t.BackoffBase > 0 {
+		c.BackoffBase = t.BackoffBase
+	}
+	if t.BackoffMax > 0 {
+		c.BackoffMax = t.BackoffMax
+	}
+	if t.Queue > 0 {
+		c.Queue = t.Queue
+	}
+	return c
 }
 
 func sleepCtx(ctx context.Context, d time.Duration) error {
@@ -174,11 +214,15 @@ func (p *JobPinger) Notify(taskID, runID, status string) {
 	if !pingWanted(status) {
 		return
 	}
-	select {
-	case p.queue <- jobEvent{taskID, runID, status}:
-	default:
-		p.logger.Warn("job heartbeat queue full, ping dropped", slog.String("task_id", taskID))
+	if int(p.pending.Add(1)) <= p.limits(context.Background()).Queue {
+		select {
+		case p.queue <- jobEvent{taskID, runID, status}:
+			return
+		default:
+		}
 	}
+	p.pending.Add(-1)
+	p.logger.Warn("job heartbeat queue full, ping dropped", slog.String("task_id", taskID))
 }
 
 // pingWanted is false for skipped, replaced and other non-terminal statuses so the monitor's grace period decides.
@@ -202,6 +246,7 @@ func (p *JobPinger) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case ev := <-p.queue:
+			p.pending.Add(-1)
 			p.send(ctx, ev)
 		}
 	}
@@ -230,11 +275,12 @@ func (p *JobPinger) deliver(ctx context.Context, target string) error {
 		return err
 	}
 	var last error
-	for attempt := 0; attempt < p.cfg.MaxAttempts; attempt++ {
+	lim := p.limits(ctx)
+	for attempt := 0; attempt < lim.MaxAttempts; attempt++ {
 		if attempt > 0 {
-			d := p.cfg.BackoffBase << (attempt - 1)
-			if d <= 0 || d > p.cfg.BackoffMax {
-				d = p.cfg.BackoffMax
+			d := lim.BackoffBase << (attempt - 1)
+			if d <= 0 || d > lim.BackoffMax {
+				d = lim.BackoffMax
 			}
 			if err := p.sleep(ctx, d/2+time.Duration(p.jitter(int64(d/2)))); err != nil {
 				return err

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -157,4 +158,27 @@ func err2s(err error) string {
 		return ""
 	}
 	return err.Error()
+}
+
+func TestJobPingTuningAppliesWithoutRestart(t *testing.T) {
+	var logs bytes.Buffer
+	p, _ := newTestPinger(t, true, &logs)
+	var limit atomic.Int64
+	limit.Store(1)
+	p.SetTuning(func(context.Context) JobTuning { return JobTuning{Queue: int(limit.Load()), MaxAttempts: 2} })
+	p.Notify("t1", "r1", store.ScheduledTaskStatusFailed)
+	p.Notify("t1", "r2", store.ScheduledTaskStatusFailed)
+	if len(p.queue) != 1 {
+		t.Fatalf("limit 1 must hold one event, got %d", len(p.queue))
+	}
+	limit.Store(3)
+	p.Notify("t1", "r3", store.ScheduledTaskStatusFailed)
+	p.Notify("t1", "r4", store.ScheduledTaskStatusFailed)
+	p.Notify("t1", "r5", store.ScheduledTaskStatusFailed)
+	if len(p.queue) != 3 {
+		t.Fatalf("raised limit must apply live, got %d", len(p.queue))
+	}
+	if got := p.limits(context.Background()).MaxAttempts; got != 2 {
+		t.Fatalf("attempts = %d", got)
+	}
 }

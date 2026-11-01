@@ -5,6 +5,7 @@ package runtimesettings
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -69,6 +70,10 @@ const (
 	KeyBindAllowedRoots        = "security.bind_allowed_roots"
 	KeyTrustLoopbackForwarded  = "security.trust_loopback_forwarded_headers"
 	KeyIngressDNS01AllHosts    = "ingress.dns01_all_hosts"
+	KeyHeartbeatJobAttempts    = "heartbeat.job_max_attempts"
+	KeyHeartbeatJobBackoffBase = "heartbeat.job_backoff_base"
+	KeyHeartbeatJobBackoffMax  = "heartbeat.job_backoff_max"
+	KeyHeartbeatJobQueue       = "heartbeat.job_queue"
 	KeyRevokedTokenDays        = "retention.revoked_token_days" //nolint:gosec // setting key, not a credential
 	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
 )
@@ -207,6 +212,7 @@ func init() {
 		Title:       "DNS-01 for every host",
 		Description: "Issue certificates for single hosts over DNS-01 as well as wildcards, so servers with port 80 closed can still get one. Needs a connected DNS provider; not yet verified against a real CA.",
 	})
+	registerHeartbeatJobSettings()
 	Register(Definition{
 		Key: KeyRevokedTokenDays, Category: CategoryRetention, Kind: KindInt, Default: "90", AllowedInts: TokenRetentionPresets,
 		Env: "APP_RETENTION_REVOKED_TOKEN_DAYS", Apply: ApplyLive,
@@ -236,4 +242,44 @@ func ParseDuration(s string) (time.Duration, error) {
 		return 0, fmt.Errorf("duration must be positive")
 	}
 	return d, nil
+}
+
+// JobQueueMax bounds the job ping queue so its backing channel has a fixed size while the limit stays live.
+const JobQueueMax = 10000
+
+func intRangeCheck(floor, ceil int) func(string) error {
+	return func(canonical string) error {
+		n, err := strconv.Atoi(canonical)
+		if err != nil || n < floor || n > ceil {
+			return fmt.Errorf("value must be between %d and %d", floor, ceil)
+		}
+		return nil
+	}
+}
+
+func registerHeartbeatJobSettings() {
+	Register(Definition{
+		Key: KeyHeartbeatJobAttempts, Category: CategoryObservability, Kind: KindInt, Default: "3",
+		Env: "APP_HEARTBEAT_JOB_MAX_ATTEMPTS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 20),
+		Title:       "Job ping attempts",
+		Description: "How many times a per-job heartbeat ping is tried before it is given up.",
+	})
+	Register(Definition{
+		Key: KeyHeartbeatJobBackoffBase, Category: CategoryObservability, Kind: KindDuration, Default: "2s",
+		Env: "APP_HEARTBEAT_JOB_BACKOFF_BASE", Apply: ApplyLive,
+		Title:       "Job ping retry delay",
+		Description: "First wait before retrying a failed job ping; it doubles on each retry up to the maximum.",
+	})
+	Register(Definition{
+		Key: KeyHeartbeatJobBackoffMax, Category: CategoryObservability, Kind: KindDuration, Default: "30s",
+		Env: "APP_HEARTBEAT_JOB_BACKOFF_MAX", Apply: ApplyLive,
+		Title:       "Job ping maximum retry delay",
+		Description: "Upper bound on the wait between job ping retries.",
+	})
+	Register(Definition{
+		Key: KeyHeartbeatJobQueue, Category: CategoryObservability, Kind: KindInt, Default: "64",
+		Env: "APP_HEARTBEAT_JOB_QUEUE", Apply: ApplyLive, CheckValue: intRangeCheck(1, JobQueueMax),
+		Title:       "Job ping queue size",
+		Description: "How many job pings may wait to be sent before new ones are dropped. A change applies at once.",
+	})
 }
