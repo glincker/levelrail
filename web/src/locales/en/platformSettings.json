@@ -88,6 +88,10 @@
       "title": "Ingress settings",
       "description": "Primary domain, ACME email and HSTS."
     },
+    "dns01": {
+      "title": "DNS challenge for every host",
+      "description": "Use the DNS-01 challenge for all certificates, for servers behind CGNAT or with port 80 closed."
+    },
     "ddns": {
       "title": "Dynamic DNS",
       "description": "Keep a DNS name pointed at this server's public IP."
