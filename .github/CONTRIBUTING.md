@@ -117,6 +117,24 @@ PR: **PR hygiene** (labels, size, description and commit rules, one job) and
 the third-party review bots, which are not required. Flaky-test issues are
 filed by a separate workflow after CI finishes on `main`, not on PRs.
 
+## Which guard catches what
+
+Several checks scan the whole tree, so a scoped test run does not reach them.
+The ones you hit most often:
+
+| You changed | Run | A failure usually means |
+| --- | --- | --- |
+| Non-test Go that starts a process | `go test ./test/execgate` | The file needs a reviewed entry in `test/execgate/allowlist.txt`. Docker and BuildKit are driven through their APIs and never go in the list. |
+| Imports between internal packages | `scripts/check-fanin.sh` | A package passed its budget in `scripts/fanin-budget.txt`. Split the package, or raise the entry with a reason in the PR. |
+| API routes, templates, docs pages | `scripts/code-gen-check.sh` | A generated file is stale. Run the generator and commit the output. |
+| Docs | `bash scripts/docs-check.sh --links-only` and `scripts/check-dashes.sh` | A broken relative link, or an em or en dash. |
+| CLI flags or verbs | `go test ./cmd/levelrail-cli` | Help text, `--json` or completion drifted from the code. |
+| Web strings | `scripts/check-i18n.sh <file>` | Literal JSX text. Use `t()` with a key in `web/src/locales/en`. |
+
+The full table, with the fix for each guard, the git hook flags such as
+`LEVELRAIL_PUSH_BACKGROUND`, and the gate scripts, is in
+[docs/contributing-guards.md](../docs/contributing-guards.md).
+
 ## Running tests
 
 ```
