@@ -8,8 +8,6 @@ services:
       ALLOW_LIST: ${ALLOW_LIST}
       GAME_MODE: survival
       DIFFICULTY: normal
-    stdin_open: true
-    tty: true
     volumes:
       - bedrock_data:/data
     healthcheck:

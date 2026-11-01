@@ -70,8 +70,6 @@ var catalogGamesPlain = []Template{
     ports:
       - "7777:7777"
     command: ["-world", "/root/.local/share/Terraria/Worlds/world.wld", "-autocreate", "2", "-worldname", "world", "-maxplayers", "8"]
-    stdin_open: true
-    tty: true
     volumes:
       - terraria_data:/root/.local/share/Terraria/Worlds
     healthcheck:
