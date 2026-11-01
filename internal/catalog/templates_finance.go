@@ -21,7 +21,7 @@ var financeTemplates = []Template{
       DB_DATABASE: firefly
       DB_USERNAME: firefly
       DB_PASSWORD: $SERVICE_PASSWORD_DB
-      APP_URL: ${SERVICE_FQDN_FIREFLY:-http://localhost:8080}
+      APP_URL: ${SERVICE_URL_FIREFLY:-http://localhost:8080}
     volumes:
       - firefly_upload_data:/var/www/html/storage/upload
     healthcheck:
@@ -53,7 +53,7 @@ var financeTemplates = []Template{
     image: invoiceninja/invoiceninja:5
     ports: ["8080:80"]
     environment:
-      APP_URL: ${SERVICE_FQDN_INVOICENINJA:-http://localhost:8080}
+      APP_URL: ${SERVICE_URL_INVOICENINJA:-http://localhost:8080}
       APP_KEY: $SERVICE_BASE64_32_APPKEY
       DB_HOST: db
       DB_DATABASE: invoiceninja

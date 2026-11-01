@@ -182,8 +182,8 @@ var catalogBatch4Templates = []Template{
     image: ghcr.io/bluewave-labs/checkmate-backend-mono-multiarch:v3.2.0
     ports: ["52345:52345"]
     environment:
-      UPTIME_APP_API_BASE_URL: ${SERVICE_FQDN_CHECKMATE:-http://localhost:52345}/api/v1
-      UPTIME_APP_CLIENT_HOST: ${SERVICE_FQDN_CHECKMATE:-http://localhost:52345}
+      UPTIME_APP_API_BASE_URL: ${SERVICE_URL_CHECKMATE:-http://localhost:52345}/api/v1
+      UPTIME_APP_CLIENT_HOST: ${SERVICE_URL_CHECKMATE:-http://localhost:52345}
       DB_CONNECTION_STRING: mongodb://mongo:27017/checkmate
       JWT_SECRET: $SERVICE_PASSWORD_64_JWT
     depends_on: [mongo]

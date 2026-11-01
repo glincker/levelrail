@@ -23,7 +23,7 @@ var catalogBatch2Templates = []Template{
     environment:
       PUID: "1000"
       PGID: "1000"
-      CSRF_TRUSTED_ORIGINS: ${SERVICE_FQDN_BABYBUDDY:-http://localhost:8000}
+      CSRF_TRUSTED_ORIGINS: ${SERVICE_URL_BABYBUDDY:-http://localhost:8000}
     volumes:
       - babybuddy_config:/config
     healthcheck:
@@ -50,7 +50,7 @@ var catalogBatch2Templates = []Template{
       MYSQL_USER: $SERVICE_USER_MYSQL
       MYSQL_PASSWORD: $SERVICE_PASSWORD_MYSQL
       CP_DISABLE_HTTPS: "1"
-      CP_BASEURL: ${SERVICE_FQDN_CASTOPOD:-http://localhost:8080}
+      CP_BASEURL: ${SERVICE_URL_CASTOPOD:-http://localhost:8080}
       CP_ANALYTICS_SALT: $SERVICE_REALBASE64_64_SALT
       CP_CACHE_HANDLER: redis
       CP_REDIS_HOST: redis
@@ -106,7 +106,7 @@ var catalogBatch2Templates = []Template{
     environment:
       SYNAPSE_SERVER_NAME: localhost
       SYNAPSE_REPORT_STATS: "no"
-      SYNAPSE_PUBLIC_BASEURL: ${SERVICE_FQDN_SYNAPSE:-http://localhost:8008}
+      SYNAPSE_PUBLIC_BASEURL: ${SERVICE_URL_SYNAPSE:-http://localhost:8008}
       ENABLE_REGISTRATION: "false"
       ADMIN_USERNAME: $SERVICE_USER_ADMIN
       ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
@@ -211,7 +211,7 @@ var catalogBatch2Templates = []Template{
     image: unleashorg/unleash-server:latest
     ports: ["4242:4242"]
     environment:
-      UNLEASH_URL: ${SERVICE_FQDN_UNLEASH:-http://localhost:4242}
+      UNLEASH_URL: ${SERVICE_URL_UNLEASH:-http://localhost:4242}
       UNLEASH_DEFAULT_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
       DATABASE_URL: postgres://unleash:$SERVICE_PASSWORD_DB@postgres/unleash
       DATABASE_SSL: "false"
@@ -279,7 +279,7 @@ var catalogBatch2Templates = []Template{
       DB_NAME: freescout
       DB_USER: freescout
       DB_PASS: $SERVICE_PASSWORD_DB
-      SITE_URL: ${SERVICE_FQDN_FREESCOUT:-http://localhost:8080}
+      SITE_URL: ${SERVICE_URL_FREESCOUT:-http://localhost:8080}
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASS: $SERVICE_PASSWORD_ADMIN
       DISPLAY_ERRORS: "FALSE"

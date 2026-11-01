@@ -3,7 +3,7 @@ services:
     image: ghcr.io/paymenter/paymenter:v1.4.5
     ports: ["80"]
     environment:
-      APP_URL: ${SERVICE_FQDN_PAYMENTER:-http://localhost}
+      APP_URL: ${SERVICE_URL_PAYMENTER:-http://localhost}
       APP_ENV: production
       APP_KEY: ${APP_KEY}
       DB_CONNECTION: mariadb

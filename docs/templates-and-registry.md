@@ -68,7 +68,7 @@ Templates use `$SERVICE_<KIND>_<NAME>` tokens in place of literal secrets. At de
 
 - `PASSWORD`, `USER`, `BASE64`, `HEX`, `REALBASE64` and `BASE64BYTES` tokens are generated and stored as secrets. Every reference to the same name gets the same value, so an app and its database agree on `$SERVICE_PASSWORD_DB`. A generated value is never written into the stored Compose body.
 - `BASE64BYTES` is standard padded base64 of N random bytes (default 32), written `$SERVICE_BASE64BYTES_<N>_<NAME>`. There is no prefix option: a framework key such as a Laravel `APP_KEY` is composed as `base64:$SERVICE_BASE64BYTES_32_APPKEY`. `BASE64` and `REALBASE64` instead produce N characters, not N bytes.
-- `FQDN` tokens resolve to `https://` plus the service's assigned domain, when the Compose file assigns one.
+- `$SERVICE_FQDN_<NAME>` resolves to the service's own assigned domain as a bare host, and `$SERVICE_URL_<NAME>` to `https://` plus that host. The suffix is ignored: both always mean this service's own domain. With no domain assigned, write a default such as `${SERVICE_URL_APP:-http://localhost:5678}`. Adding, changing or removing a domain re-renders these values and recreates the service.
 - Any token written with a default (`${SERVICE_FOO:-value}`) uses that default.
 - Anything else has no value and is reported as unresolved. A template with an unresolved token is marked `requires_configuration`, and the one-click route refuses it. Deploy it through the dashboard's Compose editor, or with `apps deploy-compose`, after filling the value in.
 

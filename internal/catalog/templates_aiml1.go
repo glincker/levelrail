@@ -249,7 +249,7 @@ var aiml1Templates = []Template{
     ports: ["3000:3000"]
     environment:
       DATABASE_URL: postgres://langfuse:$SERVICE_PASSWORD_DB@db:5432/langfuse
-      NEXTAUTH_URL: ${SERVICE_FQDN_LANGFUSE_WEB:-http://localhost:3000}
+      NEXTAUTH_URL: ${SERVICE_URL_LANGFUSE_WEB:-http://localhost:3000}
       NEXTAUTH_SECRET: $SERVICE_HEX_32_NEXTAUTH
       SALT: $SERVICE_HEX_32_SALT
       ENCRYPTION_KEY: $SERVICE_HEX_64_ENCRYPTIONKEY

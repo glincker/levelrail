@@ -122,7 +122,7 @@ var applicationsTemplates = []Template{
       database__connection__user: ghost
       database__connection__password: $SERVICE_PASSWORD_DB
       database__connection__database: ghost
-      url: ${SERVICE_FQDN_GHOST:-http://localhost:2368}
+      url: ${SERVICE_URL_GHOST:-http://localhost:2368}
     volumes:
       - ghost_data:/var/lib/ghost/content
     depends_on:

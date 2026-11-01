@@ -40,7 +40,7 @@ var aiTemplates = []Template{
     image: ghcr.io/linkwarden/linkwarden:v2.9.3
     ports: ["3000:3000"]
     environment:
-      NEXTAUTH_URL: ${SERVICE_FQDN_LINKWARDEN:-http://localhost:3000}/api/v1/auth
+      NEXTAUTH_URL: ${SERVICE_URL_LINKWARDEN:-http://localhost:3000}/api/v1/auth
       NEXTAUTH_SECRET: $SERVICE_HEX_32_NEXTAUTHSECRET
       DATABASE_URL: postgresql://postgres:$SERVICE_PASSWORD_DB@db:5432/linkwarden
       MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILIKEY

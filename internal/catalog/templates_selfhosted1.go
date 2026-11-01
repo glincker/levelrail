@@ -136,8 +136,8 @@ var selfhosted1Templates = []Template{
     environment:
       TRUST_PROXY_HEADER: "1"
       DB_URL: postgres://logto:$SERVICE_PASSWORD_DB@db:5432/logto
-      ENDPOINT: ${SERVICE_FQDN_LOGTO:-http://localhost:3001}
-      ADMIN_ENDPOINT: ${SERVICE_FQDN_LOGTO_ADMIN:-http://localhost:3002}
+      ENDPOINT: ${SERVICE_URL_LOGTO:-http://localhost:3001}
+      ADMIN_ENDPOINT: ${SERVICE_URL_LOGTO_ADMIN:-http://localhost:3002}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3001/api/status || wget -q -O /dev/null http://127.0.0.1:3001/api/status || exit 1"]
       interval: 30s
@@ -198,7 +198,7 @@ var selfhosted1Templates = []Template{
     ports: ["8000:8000"]
     environment:
       APP_KEY: $SERVICE_PASSWORD_32_APPKEY
-      APP_URL: ${SERVICE_FQDN_2FAUTH:-http://localhost:8000}
+      APP_URL: ${SERVICE_URL_2FAUTH:-http://localhost:8000}
       SITE_OWNER: admin@example.com
       DB_CONNECTION: sqlite
     volumes:
@@ -270,7 +270,7 @@ var selfhosted1Templates = []Template{
     image: woodpeckerci/woodpecker-server:v3.18.1
     ports: ["8000:8000"]
     environment:
-      WOODPECKER_HOST: ${SERVICE_FQDN_WOODPECKER_SERVER:-http://localhost:8000}
+      WOODPECKER_HOST: ${SERVICE_URL_WOODPECKER_SERVER:-http://localhost:8000}
       WOODPECKER_AGENT_SECRET: $SERVICE_HEX_32_AGENTSECRET
       WOODPECKER_OPEN: "false"
       WOODPECKER_ADMIN: admin

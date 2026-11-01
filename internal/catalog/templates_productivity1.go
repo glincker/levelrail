@@ -14,7 +14,7 @@ var productivity1Templates = []Template{
     ports: ["3456:3456"]
     environment:
       VIKUNJA_SERVICE_JWTSECRET: $SERVICE_HEX_64_JWTSECRET
-      VIKUNJA_SERVICE_PUBLICURL: ${SERVICE_FQDN_VIKUNJA:-http://localhost:3456}
+      VIKUNJA_SERVICE_PUBLICURL: ${SERVICE_URL_VIKUNJA:-http://localhost:3456}
       # Vikunja's image runs as a fixed non-root uid with no chown step
       # of its own, so sqlite's default db path on a fresh named volume
       # is never writable; postgres avoids that entirely.
@@ -67,7 +67,7 @@ var productivity1Templates = []Template{
       UTILS_SECRET: $SERVICE_HEX_64_UTILSSECRET
       DATABASE_URL: postgres://outline:$SERVICE_PASSWORD_DB@db:5432/outline
       REDIS_URL: redis://redis:6379
-      URL: ${SERVICE_FQDN_OUTLINE:-http://localhost:3000}
+      URL: ${SERVICE_URL_OUTLINE:-http://localhost:3000}
       FORCE_HTTPS: "false"
       PGSSLMODE: disable
     volumes:
@@ -111,7 +111,7 @@ var productivity1Templates = []Template{
     image: ghcr.io/mealie-recipes/mealie:v3.28.0
     ports: ["9925:9000"]
     environment:
-      BASE_URL: ${SERVICE_FQDN_MEALIE:-http://localhost:9925}
+      BASE_URL: ${SERVICE_URL_MEALIE:-http://localhost:9925}
     volumes:
       - mealie_data:/app/data
     healthcheck:
@@ -177,7 +177,7 @@ var productivity1Templates = []Template{
     image: lscr.io/linuxserver/bookstack:24.05.2
     ports: ["6875:80"]
     environment:
-      APP_URL: ${SERVICE_FQDN_BOOKSTACK:-http://localhost:6875}
+      APP_URL: ${SERVICE_URL_BOOKSTACK:-http://localhost:6875}
       DB_HOST: db
       DB_DATABASE: bookstack
       DB_USERNAME: bookstack
@@ -262,7 +262,7 @@ var productivity1Templates = []Template{
     environment:
       PAPERLESS_REDIS: redis://redis:6379
       PAPERLESS_SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
-      PAPERLESS_URL: ${SERVICE_FQDN_PAPERLESS:-http://localhost:8000}
+      PAPERLESS_URL: ${SERVICE_URL_PAPERLESS:-http://localhost:8000}
     volumes:
       - paperless_data:/usr/src/paperless/data
       - paperless_media:/usr/src/paperless/media
@@ -329,7 +329,7 @@ var productivity1Templates = []Template{
     image: joplin/server:3.7.2
     ports: ["22300:22300"]
     environment:
-      APP_BASE_URL: ${SERVICE_FQDN_JOPLIN:-http://localhost:22300}
+      APP_BASE_URL: ${SERVICE_URL_JOPLIN:-http://localhost:22300}
       DB_CLIENT: pg
       POSTGRES_HOST: db
       POSTGRES_DATABASE: joplin

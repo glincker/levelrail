@@ -142,7 +142,7 @@ var catalogBatch5Templates = []Template{
     image: alextselegidis/easyappointments:1.6.0
     ports: ["8000:80"]
     environment:
-      BASE_URL: ${SERVICE_FQDN_EASYAPPOINTMENTS:-http://localhost:8000}
+      BASE_URL: ${SERVICE_URL_EASYAPPOINTMENTS:-http://localhost:8000}
       DB_HOST: mysql
       DB_NAME: easyappointments
       DB_USERNAME: root
@@ -180,7 +180,7 @@ var catalogBatch5Templates = []Template{
     image: ghcr.io/fuzzygrim/yamtrack:0.26.3
     ports: ["8000:8000"]
     environment:
-      URLS: ${SERVICE_FQDN_YAMTRACK:-http://localhost:8000}
+      URLS: ${SERVICE_URL_YAMTRACK:-http://localhost:8000}
       SECRET: $SERVICE_PASSWORD_64_SECRET
       REDIS_URL: redis://redis:6379
     depends_on: [redis]

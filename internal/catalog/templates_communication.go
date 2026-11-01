@@ -60,7 +60,7 @@ var communicationTemplates = []Template{
     environment:
       MONGO_URL: mongodb://mongo:27017/rocketchat
       MONGO_OPLOG_URL: mongodb://mongo:27017/local
-      ROOT_URL: ${SERVICE_FQDN_ROCKETCHAT:-http://localhost:3000}
+      ROOT_URL: ${SERVICE_URL_ROCKETCHAT:-http://localhost:3000}
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/info || exit 1"]
       interval: 30s
@@ -119,7 +119,7 @@ var communicationTemplates = []Template{
     ports: ["3000:3000"]
     environment:
       SECRET_KEY_BASE: $SERVICE_HEX_64_SECRETKEYBASE
-      FRONTEND_URL: ${SERVICE_FQDN_CHATWOOT:-http://localhost:3000}
+      FRONTEND_URL: ${SERVICE_URL_CHATWOOT:-http://localhost:3000}
       RAILS_ENV: production
       POSTGRES_HOST: db
       POSTGRES_DATABASE: chatwoot

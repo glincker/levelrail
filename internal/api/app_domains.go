@@ -144,6 +144,7 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 		if ev, ok := domainChangeEvent(name, before, next); ok {
 			rt.recordAppEvent(r, ev)
 		}
+		rt.rerenderDomainEnv(r.Context(), name)
 		rt.nudgeReconciler()
 		added, _ := sliceDiff(before, next)
 		rt.ensureWildcardRecords(r, added)

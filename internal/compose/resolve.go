@@ -84,11 +84,9 @@ func ResolveMagicVars(
 
 			if len(vars) == 1 && vars[0].Token == value {
 				v := vars[0]
-				if v.Kind == "FQDN" {
-					if url, ok := resolveFQDN(f, svcKey); ok {
-						newEnv[envKey] = url
-						continue
-					}
+				if val, ok := resolveDomainVar(f, svcKey, v); ok {
+					newEnv[envKey] = val
+					continue
 				}
 				if v.Generatable {
 					val, genErr := resolveGenerated(generated, v, generate)
@@ -112,11 +110,9 @@ func ResolveMagicVars(
 			resolved := value
 			hasSecret := false
 			for _, v := range vars {
-				if v.Kind == "FQDN" {
-					if url, ok := resolveFQDN(f, svcKey); ok {
-						resolved = strings.Replace(resolved, v.Token, url, 1)
-						continue
-					}
+				if val, ok := resolveDomainVar(f, svcKey, v); ok {
+					resolved = strings.Replace(resolved, v.Token, val, 1)
+					continue
 				}
 				if v.Generatable {
 					val, genErr := resolveGenerated(generated, v, generate)
@@ -148,17 +144,25 @@ func ResolveMagicVars(
 	return secretEnv, unresolved, nil
 }
 
-// resolveFQDN resolves ${SERVICE_FQDN_*} to the referencing service's
-// own assigned domain (x-levelrail-domains), ignoring the token's own
-// key suffix: FQDN almost always means "my own public URL," and that's
-// a per-service fact, not a value shared across services the way a
-// generated secret's (kind, key) is.
-func resolveFQDN(f *File, svcKey string) (string, bool) {
-	domain, ok := f.Domains[svcKey]
-	if !ok || domain == "" {
+// resolveDomainVar resolves ${SERVICE_FQDN_*} to the referencing service's
+// bare host and ${SERVICE_URL_*} to https://host. The token's own key
+// suffix is ignored: both mean "my own public address", a per-service
+// fact. With no domain assigned it reports false so a ":-default" applies.
+func resolveDomainVar(f *File, svcKey string, v MagicVar) (string, bool) {
+	if v.Kind != "FQDN" && v.Kind != "URL" {
 		return "", false
 	}
-	return "https://" + domain, true
+	domain := f.Domains[svcKey]
+	if domain == "" {
+		domain = f.RuntimeDomains[svcKey]
+	}
+	if domain == "" || strings.Contains(domain, "*") {
+		return "", false
+	}
+	if v.Kind == "URL" {
+		return "https://" + domain, true
+	}
+	return domain, true
 }
 
 // resolveCommandEntry resolves every magic var in one Command entry the
@@ -177,11 +181,9 @@ func resolveCommandEntry(f *File, svcKey string, index int, entry string) (strin
 	resolved := entry
 	var unresolved []UnresolvedVar
 	for _, v := range vars {
-		if v.Kind == "FQDN" {
-			if url, ok := resolveFQDN(f, svcKey); ok {
-				resolved = strings.Replace(resolved, v.Token, url, 1)
-				continue
-			}
+		if val, ok := resolveDomainVar(f, svcKey, v); ok {
+			resolved = strings.Replace(resolved, v.Token, val, 1)
+			continue
 		}
 		if v.Generatable {
 			unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})

@@ -137,8 +137,8 @@ var media1Templates = []Template{
     image: calcom/cal.com:v5.0.9
     ports: ["3000:3000"]
     environment:
-      NEXT_PUBLIC_WEBAPP_URL: ${SERVICE_FQDN_CALCOM:-http://localhost:3000}
-      NEXTAUTH_URL: ${SERVICE_FQDN_CALCOM:-http://localhost:3000}
+      NEXT_PUBLIC_WEBAPP_URL: ${SERVICE_URL_CALCOM:-http://localhost:3000}
+      NEXTAUTH_URL: ${SERVICE_URL_CALCOM:-http://localhost:3000}
       NEXTAUTH_SECRET: $SERVICE_BASE64_NEXTAUTHSECRET
       CALENDSO_ENCRYPTION_KEY: $SERVICE_BASE64_ENCRYPTIONKEY
       DATABASE_URL: postgresql://calcom:$SERVICE_PASSWORD_DB@db:5432/calcom
