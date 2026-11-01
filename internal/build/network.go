@@ -10,8 +10,6 @@ import (
 
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/solver/pb"
-
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // EnvBuildNetwork selects the network policy for RUN steps of a build.
@@ -120,14 +118,4 @@ func resolveNetwork(ctx context.Context) (NetworkMode, error) {
 		return ParseNetworkMode((*fn)(ctx))
 	}
 	return ParseNetworkMode(os.Getenv(EnvBuildNetwork))
-}
-
-func init() {
-	runtimesettings.Register(runtimesettings.Definition{
-		Key: KeyBuildNetwork, Category: runtimesettings.CategorySecurity, Kind: runtimesettings.KindString,
-		Default: string(NetworkOpen), Env: EnvBuildNetwork, Apply: runtimesettings.ApplyLive,
-		AllowedStrings: []string{string(NetworkOpen), string(NetworkNone), string(NetworkBlockPrivate)},
-		Title:          "Build network",
-		Description:    "Network for RUN steps of a build: open (no restriction), none, or block-private (reserved: builds fail until it can be enforced). Read on every build; the environment variable only seeds the default.",
-	})
 }
