@@ -2198,6 +2198,8 @@ type ScheduledTaskResource struct {
 	ConsecutiveMissed      int        `json:"consecutive_missed"`
 	RunningSince           *time.Time `json:"running_since,omitempty"`
 	NextRunAt              *time.Time `json:"next_run_at,omitempty"`
+	HeartbeatHost          string     `json:"heartbeat_host,omitempty"`
+	HeartbeatConfigured    bool       `json:"heartbeat_configured,omitempty"`
 	// RunID is set on the response to a run-now call.
 	RunID string `json:"run_id,omitempty"`
 	// HTTP is the request an http-mode job sends instead of a command.
@@ -2253,6 +2255,10 @@ type ScheduledTaskRequest struct {
 	CPULimitMillis         int    `json:"cpu_limit_millis,omitempty"`
 	MemoryLimitMB          int    `json:"memory_limit_mb,omitempty"`
 	WarnAfterSeconds       int    `json:"warn_after_seconds,omitempty"`
+	// HeartbeatURL and HeartbeatFailURL are sent only; the server never returns them.
+	HeartbeatURL     string `json:"heartbeat_url,omitempty"`
+	HeartbeatFailURL string `json:"heartbeat_fail_url,omitempty"`
+	HeartbeatClear   bool   `json:"heartbeat_clear,omitempty"`
 	// HTTP makes the job call a path on the app (Mode "http").
 	HTTP *JobHTTP `json:"http,omitempty"`
 }

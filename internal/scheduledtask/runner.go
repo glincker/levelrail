@@ -82,6 +82,11 @@ type Trigger struct {
 	CatchUp      bool
 }
 
+// RunPinger is told once per settled run; it must not block or fail the run.
+type RunPinger interface {
+	Notify(taskID, runID, status string)
+}
+
 // Runner runs one job and records the outcome.
 type Runner struct {
 	Apps     AppStore
@@ -98,6 +103,8 @@ type Runner struct {
 	Client      *http.Client
 	// NamePrefix namespaces fresh job containers (the brand short name).
 	NamePrefix string
+	// Pinger gets the settled status of each run for the per-job heartbeat; nil disables it.
+	Pinger RunPinger
 
 	// Now returns the current time; nil falls back to time.Now.
 	Now func() time.Time
@@ -310,6 +317,9 @@ func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Tr
 	}
 	if rerr := r.record(ctx, task.ID, res.status, snapshot); rerr != nil {
 		return rerr
+	}
+	if r.Pinger != nil {
+		r.Pinger.Notify(task.ID, runID, res.status)
 	}
 	return res.infraErr
 }

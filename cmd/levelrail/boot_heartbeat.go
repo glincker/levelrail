@@ -34,6 +34,23 @@ func (s *bootState) startHeartbeat() {
 		s.agentServer.SetSilenceSource(svc.AgentSilenceURL)
 	}
 	go svc.Run(s.ctx)
+	s.startJobHeartbeat()
+}
+
+// startJobHeartbeat wires the per-job ping-out; it needs the secrets store for the encrypted URLs.
+func (s *bootState) startJobHeartbeat() {
+	if s.secretsManager == nil {
+		return
+	}
+	cfg, err := heartbeat.JobPingConfigFromEnv(os.LookupEnv)
+	if err != nil {
+		s.logger.Error("job heartbeat configuration invalid", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	pinger := heartbeat.NewJobPinger(cfg, s.secretsManager, s.logger)
+	s.scheduledTaskRunner.Pinger = pinger
+	s.apiRouter.SetJobPings(pinger)
+	go pinger.Run(s.ctx)
 }
 
 // heartbeatHealth is the gate for the ping: a box that is up but not converging must stop pinging.

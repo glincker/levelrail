@@ -76,6 +76,13 @@ type scheduledTaskResource struct {
 	WarnAfterSeconds       int    `json:"warn_after_seconds,omitempty"`
 	Source                 string `json:"source,omitempty"`
 
+	// HeartbeatURL and HeartbeatFailURL are write-only secrets; reads carry the host and a flag.
+	HeartbeatURL        string `json:"heartbeat_url,omitempty"`
+	HeartbeatFailURL    string `json:"heartbeat_fail_url,omitempty"`
+	HeartbeatClear      bool   `json:"heartbeat_clear,omitempty"`
+	HeartbeatHost       string `json:"heartbeat_host,omitempty"`
+	HeartbeatConfigured bool   `json:"heartbeat_configured,omitempty"`
+
 	LastRunAt           *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus       string     `json:"last_run_status,omitempty"`
 	LastRunOutput       string     `json:"last_run_output,omitempty"`
@@ -312,6 +319,11 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: create scheduled task: save http target failed", err, slog.String("name", name))
 		return
 	}
+	if err := rt.persistJobHeartbeat(r.Context(), id, req); err != nil {
+		_ = rt.scheduledTasks.DeleteScheduledTask(r.Context(), id)
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	saved, err := rt.scheduledTasks.GetScheduledTask(r.Context(), id)
 	if err != nil {
 		writeJSON(w, http.StatusCreated, rt.jobResource(r.Context(), task))
@@ -450,6 +462,10 @@ func (rt *Router) handleUpdateScheduledTask(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: update scheduled task: save http target failed", err, slog.String("id", existing.ID))
 		return
 	}
+	if err := rt.persistJobHeartbeat(r.Context(), existing.ID, req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	reloaded, err := rt.scheduledTasks.GetScheduledTask(r.Context(), existing.ID)
 	if err != nil {
 		rt.internalError(w, "api: update scheduled task: reload failed", err, slog.String("id", existing.ID))
@@ -520,6 +536,9 @@ func (rt *Router) handleDeleteScheduledTask(w http.ResponseWriter, r *http.Reque
 		}
 		rt.internalError(w, "api: delete scheduled task failed", err, slog.String("id", existing.ID))
 		return
+	}
+	if rt.jobPings != nil {
+		_ = rt.jobPings.Clear(r.Context(), existing.ID)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
