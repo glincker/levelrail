@@ -318,6 +318,7 @@ func backupsVolumesUsage(prog string) string {
   %[1]s backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --pause]
   %[1]s backups volumes restore <app> <volume> --backup ID [--new-volume NAME] [--target-app APP] [--node NODE]
                                                          restore into a NEW volume (never overwrites), optionally for another app or on another node
+To run one volume backup now: %[1]s app-volume-backups trigger <app> <volume> --target ID
 `, prog)
 }
 

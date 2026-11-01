@@ -1550,7 +1550,12 @@ print_summary() {
 	log ""
 	log "Open the dashboard:"
 	if [ -n "$PUBLIC_IP" ]; then
-		log "  $(dashboard_link "$PUBLIC_IP")"
+		# Cloud networks that open only 80 and 443 leave the dashboard port closed, so the tunnel comes first.
+		log "  Through an SSH tunnel (works even when only ports 80 and 443 are open):"
+		log "    ssh -L ${DASHBOARD_PORT}:127.0.0.1:${DASHBOARD_PORT} <user>@${PUBLIC_IP}"
+		log "    then open $(dashboard_link 127.0.0.1)"
+		log "  Directly (only if port ${DASHBOARD_PORT} is open in your firewall):"
+		log "    $(dashboard_link "$PUBLIC_IP")"
 		others="$(local_ips | grep -vxF "$PUBLIC_IP" || true)"
 		if [ -n "$others" ]; then
 			log ""
@@ -1623,11 +1628,8 @@ a real Let's Encrypt certificate for it (ports 80 and 443 must be open), or:
 Until HTTPS is enabled that https address has no certificate at all, so a
 browser shows a connection error, not a warning page. Keep using the http
 link above until then.
-If your cloud firewall only opens ports 80 and 443, port ${DASHBOARD_PORT} is
-unreachable from outside. Tunnel it from your own machine instead:
-  ssh -L ${DASHBOARD_PORT}:127.0.0.1:${DASHBOARD_PORT} <user>@${PUBLIC_IP}
-and open http://127.0.0.1:${DASHBOARD_PORT} there. Port 80 does not redirect
-to https until a certificate exists.
+Port 80 does not redirect to https until a certificate exists; it shows a
+note instead. If port ${DASHBOARD_PORT} is closed, use the SSH tunnel above.
 EOF
 }
 

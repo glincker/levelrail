@@ -222,3 +222,60 @@ func TestRunCloudChecks_SkipAndPaidShape(t *testing.T) {
 		t.Fatal("paid shape should not get the idle note")
 	}
 }
+
+func TestPublishedPortsResult_Bindings(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name      string
+		binds     [][]string
+		wantOpen  string
+		wantNone  string
+		wantNoRes bool
+	}{
+		{name: "loopback only", binds: [][]string{{"127.0.0.1"}}, wantNone: "25565/tcp", wantOpen: "nothing needs opening"},
+		{name: "wildcard", binds: [][]string{{"0.0.0.0"}}, wantOpen: "Published ports: 25565/tcp"},
+		{name: "ipv6 wildcard", binds: [][]string{{"::"}}, wantOpen: "Published ports: 25565/tcp"},
+		{name: "ipv6 loopback", binds: [][]string{{"::1"}}, wantOpen: "nothing needs opening"},
+		{name: "public interface ip", binds: [][]string{{"10.0.0.5"}}, wantOpen: "Published ports: 25565/tcp"},
+		{name: "loopback and wildcard on one port", binds: [][]string{{"127.0.0.1", "0.0.0.0"}}, wantOpen: "Published ports: 25565/tcp"},
+		{name: "no bind info", binds: [][]string{nil}, wantOpen: "Published ports: 25565/tcp"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var ports []cloudPort
+			for _, b := range tc.binds {
+				ports = append(ports, cloudPort{Port: 25565, Proto: "tcp", Loopback: cloudBindsLoopback(b)})
+			}
+			res, ok := publishedPortsResult(cloudDedupPorts(ports), nil)
+			if !ok || !strings.Contains(res.Message, tc.wantOpen) {
+				t.Fatalf("ok=%v message %q want %q", ok, res.Message, tc.wantOpen)
+			}
+		})
+	}
+}
+
+func TestPublishedPortsResult_MixedListsOnlyReachable(t *testing.T) {
+	t.Parallel()
+	ports := cloudDedupPorts([]cloudPort{
+		{Port: 32895, Proto: "tcp", Loopback: true},
+		{Port: 25565, Proto: "tcp", Loopback: false},
+		{Port: 32895, Proto: "tcp", Loopback: true},
+	})
+	res, _ := publishedPortsResult(ports, nil)
+	if !strings.Contains(res.Message, "Published ports: 25565/tcp.") || !strings.Contains(res.Message, "Loopback-only ports need no firewall change: 32895/tcp") {
+		t.Fatalf("message %q", res.Message)
+	}
+	if cmds := cloudOpenCommands(ports, 5, "persist"); strings.Contains(cmds, "32895") {
+		t.Fatalf("loopback port in open commands: %s", cmds)
+	}
+}
+
+func TestImageArchResult_WordingCoversEmulation(t *testing.T) {
+	t.Parallel()
+	d := cloudDeps{hostArch: "arm64", imageArch: func(context.Context, string) (string, error) { return "amd64", nil }}
+	res, ok := imageArchResult(context.Background(), d, []cloudPort{{Port: 1, Proto: "tcp", Image: "x/y:1"}})
+	if !ok || !strings.Contains(res.Message, "pull or start fails with PlatformMismatch") || !strings.Contains(res.Message, "emulation") {
+		t.Fatalf("message %q", res.Message)
+	}
+}

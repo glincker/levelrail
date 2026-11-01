@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"sort"
@@ -47,7 +48,9 @@ var cloudProviders = map[string]cloudProviderInfo{
 }
 
 type cloudPort struct {
-	Port      int
+	Port int
+	// Loopback is true when every binding of the port is on 127.0.0.0/8 or ::1.
+	Loopback  bool
 	Proto     string
 	Container string
 	Image     string
@@ -122,7 +125,7 @@ func (rt *Router) doctorCheckCloud(ctx context.Context) []doctorCheckResource {
 				continue
 			}
 			for _, f := range n.Findings {
-				out = append(out, cloudPort{Port: f.HostPort, Proto: f.Protocol, Container: f.Container, Image: f.Image})
+				out = append(out, cloudPort{Port: f.HostPort, Proto: f.Protocol, Container: f.Container, Image: f.Image, Loopback: cloudBindsLoopback(f.Binds)})
 			}
 		}
 		return out, nil
@@ -317,7 +320,7 @@ func cloudSafeProto(p string) bool { return p == "tcp" || p == "udp" }
 func cloudOpenCommands(ports []cloudPort, pos int, persist string) string {
 	var lines []string
 	for _, p := range ports {
-		if p.Port < 1 || p.Port > 65535 || !cloudSafeProto(p.Proto) {
+		if p.Loopback || p.Port < 1 || p.Port > 65535 || !cloudSafeProto(p.Proto) {
 			continue
 		}
 		lines = append(lines, fmt.Sprintf("sudo iptables -I INPUT %d -p %s --dport %d -j ACCEPT", pos, p.Proto, p.Port))
@@ -329,17 +332,19 @@ func cloudOpenCommands(ports []cloudPort, pos int, persist string) string {
 }
 
 func cloudDedupPorts(in []cloudPort) []cloudPort {
-	seen := map[string]bool{}
+	seen := map[string]int{}
 	var out []cloudPort
 	for _, p := range in {
 		if p.Port < 1 || p.Port > 65535 || !cloudSafeProto(p.Proto) {
 			continue
 		}
 		k := p.Proto + ":" + strconv.Itoa(p.Port)
-		if seen[k] {
+		if i, ok := seen[k]; ok {
+			// A port is private only when every binding of it is.
+			out[i].Loopback = out[i].Loopback && p.Loopback
 			continue
 		}
-		seen[k] = true
+		seen[k] = len(out)
 		out = append(out, p)
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -352,12 +357,24 @@ func cloudDedupPorts(in []cloudPort) []cloudPort {
 }
 
 func publishedPortsResult(ports []cloudPort, prov *cloudProviderInfo) (doctorCheckResource, bool) {
-	if len(ports) == 0 {
+	var open, private []string
+	for _, p := range ports {
+		label := fmt.Sprintf("%d/%s", p.Port, p.Proto)
+		if p.Loopback {
+			private = append(private, label)
+		} else {
+			open = append(open, label)
+		}
+	}
+	if len(open) == 0 && len(private) == 0 {
 		return doctorCheckResource{}, false
 	}
-	list := make([]string, len(ports))
-	for i, p := range ports {
-		list[i] = fmt.Sprintf("%d/%s", p.Port, p.Proto)
+	if len(open) == 0 {
+		return doctorCheckResource{
+			Code: "published_port_reachability", Name: "Published port reachability", Status: doctorStatusOK,
+			Message:  "Published ports are bound to loopback only (" + strings.Join(private, ", ") + "), so nothing needs opening on the firewall. They are reachable from this host or an SSH tunnel.",
+			DocsPath: doctorCloudDocsPath,
+		}, true
 	}
 	where := "your network edge (router or cloud firewall) and this host's firewall"
 	if prov != nil {
@@ -365,10 +382,32 @@ func publishedPortsResult(ports []cloudPort, prov *cloudProviderInfo) (doctorChe
 	}
 	return doctorCheckResource{
 		Code: "published_port_reachability", Name: "Published port reachability", Status: doctorStatusOK,
-		Message: "Published ports: " + strings.Join(list, ", ") + ". Each must be open on " + where +
-			". This check does not probe from outside, so it cannot confirm they are reachable.",
+		Message: "Published ports: " + strings.Join(open, ", ") + ". Each must be open on " + where +
+			". This check does not probe from outside, so it cannot confirm they are reachable." + privateNote(private),
 		DocsPath: doctorCloudDocsPath,
 	}, true
+}
+
+// cloudBindsLoopback is true only when every bind is a loopback IP. No binds,
+// a wildcard or an unparseable address counts as reachable, the safe side.
+func cloudBindsLoopback(binds []string) bool {
+	if len(binds) == 0 {
+		return false
+	}
+	for _, b := range binds {
+		ip := net.ParseIP(strings.Trim(strings.TrimSpace(b), "[]"))
+		if ip == nil || !ip.IsLoopback() {
+			return false
+		}
+	}
+	return true
+}
+
+func privateNote(private []string) string {
+	if len(private) == 0 {
+		return ""
+	}
+	return " Loopback-only ports need no firewall change: " + strings.Join(private, ", ") + "."
 }
 
 func cloudSafeImage(s string) bool {
@@ -401,7 +440,8 @@ func imageArchResult(ctx context.Context, d cloudDeps, ports []cloudPort) (docto
 	return doctorCheckResource{
 		Code: "image_arch", Name: "Image architecture", Status: doctorStatusWarn,
 		Message: "Local images do not match this node (" + d.hostArch + "): " + strings.Join(bad, "; ") +
-			". A pull for a missing architecture fails with PlatformMismatch in the deploy trace.",
+			". Without emulation on the node, a pull or start fails with PlatformMismatch in the deploy trace; " +
+			"with qemu binfmt emulation present it runs under emulation and may be slow.",
 		Fix: "docker buildx imagetools inspect <image>  # look for a linux/" + d.hostArch + " manifest, or pick another tag",
 	}, true
 }

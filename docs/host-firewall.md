@@ -107,7 +107,8 @@ What Levelrail does here:
 
 - Reads only. `levelrail-cli doctor` reports the `host_firewall_iptables` check when iptables is the firewall in use, and says so when a `REJECT` or `DROP` sits before `ACCEPT` rules.
 - Prints the exact commands to open a port correctly (insert before the `REJECT`) and to persist it. Nothing is applied.
-- Lists your published ports and which layers they need opened (`published_port_reachability`). It does not probe from outside, so it never claims a port is reachable.
+- Lists your published ports and which layers they need opened (`published_port_reachability`). Ports bound only to loopback (127.0.0.1 or ::1) are listed as private and need no firewall change. It does not probe from outside, so it never claims a port is reachable.
+- Reuses one doctor result for `APP_DASHBOARD_CACHE_TTL` (default 5 seconds), so a check run right after you change a firewall rule can still show the old result. Wait that long and run `levelrail-cli doctor` again.
 
 What Levelrail does not do:
 

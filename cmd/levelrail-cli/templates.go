@@ -133,6 +133,9 @@ func formatRecommendedMemory(bytes int64) string {
 		return "-"
 	}
 	const gib = 1024 * 1024 * 1024
+	if bytes < gib {
+		return fmt.Sprintf("~%d MiB", (bytes+1<<19)>>20)
+	}
 	return fmt.Sprintf("~%.0f GiB", float64(bytes)/gib)
 }
 

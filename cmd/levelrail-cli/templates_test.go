@@ -207,3 +207,12 @@ func TestRun_Templates_Get_Description(t *testing.T) {
 		t.Errorf("stdout = %q, want an indented description block", stdout)
 	}
 }
+
+func TestFormatRecommendedMemory_SubGiBInMiB(t *testing.T) {
+	cases := map[int64]string{0: "-", 256 << 20: "~256 MiB", 512 << 20: "~512 MiB", 1 << 30: "~1 GiB", 6 << 30: "~6 GiB"}
+	for in, want := range cases {
+		if got := formatRecommendedMemory(in); got != want {
+			t.Errorf("formatRecommendedMemory(%d) = %q, want %q", in, got, want)
+		}
+	}
+}

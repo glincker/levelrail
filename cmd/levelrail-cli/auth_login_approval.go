@@ -112,7 +112,7 @@ func approvalPageURL(base, id string) string {
 // approvalHostHint is the path that works on a fresh install, where no token
 // holding signin:approve exists yet: the server's own binary, run on the host.
 func approvalHostHint(id string, match int) string {
-	return fmt.Sprintf("On the server itself (first sign-in, no token yet): sudo levelrail approve-signin %s --match %d", id, match)
+	return fmt.Sprintf("On the server itself (first sign-in, no token yet): sudo levelrail approve-signin %s --match %d (add APP_DATA_DIR=<your data dir> after sudo if you changed it)", id, match)
 }
 
 func approvalPairingHint(prog string) string {
@@ -128,7 +128,7 @@ func (c *authSessionClient) awaitApproval(ctx context.Context, prog string, logi
 	interactive := approvalInteractive()
 	if !interactive && !opts.wait && !envTruthy(lookupEnv, envLoginApprovalWait) {
 		return loginResponse{}, &apiError{StatusCode: http.StatusUnauthorized, Message: fmt.Sprintf(
-			"new-device approval required (request %s, number %d): approve at %s, or run on the server \"sudo levelrail approve-signin %s --match %d\", or sign in with \"%s login --api-url %s --code XXXX-XXXX\" using a code from the dashboard, or run \"%s login --wait\" (or set %s=1) to wait for approval",
+			"new-device approval required (request %s, number %d): approve at %s, or run on the server \"sudo levelrail approve-signin %s --match %d\" (add APP_DATA_DIR=<your data dir> after sudo if you changed it), or sign in with \"%s login --api-url %s --code XXXX-XXXX\" using a code from the dashboard, or run \"%s login --wait\" (or set %s=1) to wait for approval",
 			login.ApprovalID, login.ApprovalMatch, pageURL, login.ApprovalID, login.ApprovalMatch, prog, c.baseURL, prog, envLoginApprovalWait)}
 	}
 	if login.ApprovalExpiresAt != nil {

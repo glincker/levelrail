@@ -12,6 +12,20 @@ Levelrail looks for the file under these names, in this order: `app.yaml`, `app.
 
 To start a new file, run `levelrail-cli apps init`. It writes a valid `app.yaml` with the optional fields listed as comments, taken from the same schema.
 
+## Minimal example
+
+The smallest valid file deploys one prebuilt image. A flat file with only `name`, `image` and `port` at the top level fails validation: the schema needs `version` and a `services` map.
+
+```yaml
+version: 1
+services:
+  web:
+    image: nginx:1.27
+    port: 80
+```
+
+Check any file before you deploy it with `levelrail-cli apps validate --file app.yaml`.
+
 ## Full example
 
 ```yaml

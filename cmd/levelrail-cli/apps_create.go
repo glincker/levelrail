@@ -870,7 +870,7 @@ func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, s
 	return exitOK
 }
 
-// printSelfSignedNote says the automatic https URL is self-signed while
+// printSelfSignedNote says the automatic https URL has no certificate while
 // HTTPS is not enabled. A failed status lookup prints nothing.
 func printSelfSignedNote(ctx context.Context, client *Client, out io.Writer, autoURL string) {
 	if !strings.HasPrefix(autoURL, "https://") {
@@ -880,7 +880,7 @@ func printSelfSignedNote(ctx context.Context, client *Client, out io.Writer, aut
 	if err != nil || status.State == "issued" {
 		return
 	}
-	_, _ = fmt.Fprintln(out, "note:     the auto url uses a self-signed certificate until HTTPS is enabled; plain http gets a 308 redirect to it")
+	_, _ = fmt.Fprintln(out, "note:     the auto url has no HTTPS certificate yet, so it shows a connection error and plain http shows a note instead of redirecting; enable HTTPS from Domains or with: levelrail-cli settings ingress https enable")
 }
 
 // ContinueOnError, not ExitOnError: a library os.Exit would make commands untestable, so only main() calls os.Exit.
