@@ -261,6 +261,10 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.Header.Get(ingress.WakeAppHeader)
+	if !looksLikeBrowserVisit(r) && rt.isDeployURLCopy(r.Context(), name) {
+		writeSleepingNoWake(w)
+		return
+	}
 	w.Header().Set(ingress.WakeHeldHeader, "1")
 	setting, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	timing := rt.wakeTiming(r.Context(), name)

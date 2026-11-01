@@ -22,6 +22,14 @@ ports, hooks or automatic rollback, and it sleeps after
 `APP_DEPLOY_URL_IDLE_MINUTES` without traffic (default 5), then wakes on the
 first visit, so old deploys do not run idle.
 
+Only a person opening the address in a browser wakes a sleeping copy. Crawlers,
+scanners and scripts (including `curl`) get a plain 503 and the copy stays
+asleep, because a new hostname becomes public as soon as its certificate is
+issued and bots find it within seconds. The check needs no setting: it looks for
+a top-level browser navigation (`Sec-Fetch-Mode: navigate`) and a user agent
+that is not a known bot. The certificate itself is still requested when the
+copy is created. The app's own URL is not affected.
+
 The hostname is one label under the apps base domain. Without a base domain it
 falls back to the sslip.io address of the control plane's public IP. With
 neither, no URLs are created.
