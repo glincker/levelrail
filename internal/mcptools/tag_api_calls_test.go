@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -53,5 +54,23 @@ func TestTagAPICallsOffByDefault(t *testing.T) {
 	}
 	if seen.Get(apiclient.MCPToolHeader) != "" {
 		t.Error("tool header sent without TagAPICalls")
+	}
+}
+
+func TestTagAPICallsNoTagOnListAndNestedValues(t *testing.T) {
+	var seen http.Header
+	s := tagSession(t, true, &seen)
+	if _, err := s.ListTools(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if seen.Get(apiclient.MCPToolHeader) != "" {
+		t.Error("tools/list must not be tagged")
+	}
+	args := map[string]any{"agent": map[string]any{"inner": "nested-secret-value"}}
+	_, _ = s.CallTool(context.Background(), &mcp.CallToolParams{Name: "list_audit_log", Arguments: args})
+	for k, v := range seen {
+		if strings.Contains(strings.Join(v, ""), "nested-secret-value") || strings.Contains(strings.Join(v, ""), "inner") {
+			t.Errorf("header %s carries a nested key or value: %v", k, v)
+		}
 	}
 }

@@ -17,6 +17,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/mcptools"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -74,7 +75,7 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	opts.TagAPICalls = true
 	opts.AuditSink = func(_ context.Context, c mcptools.AuditCall) {
 		logger.Info("levelrail-mcp tool call", slog.String("tool", c.Tool),
-			slog.Any("argument_names", c.ArgumentNames), slog.String("outcome", c.Outcome))
+			slog.String("argument_names", secretmask.Mask(strings.Join(c.ArgumentNames, ","))), slog.String("outcome", c.Outcome))
 	}
 	server, summary := mcptools.NewServerWithOptions(client, opts)
 	logAttrs := []any{
