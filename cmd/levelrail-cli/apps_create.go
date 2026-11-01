@@ -6,12 +6,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -761,6 +763,13 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
 
+	// Same rule the build trigger enforces, checked first so a bad URL leaves no placeholder app.
+	if plan.Build != nil {
+		if err := validateBuildRepoScheme(plan.Build.RepoURL); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, err)
+		}
+	}
+
 	created, err := client.CreateApp(ctx, plan.CreateBody)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("create app %q: %w", plan.CreateBody.Name, err))
@@ -799,6 +808,14 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 }
 
 // validatePlanVolumes rejects bind mounts, which the volumes endpoint cannot take. Compose deploys carry them.
+func validateBuildRepoScheme(repo string) error {
+	u, err := url.Parse(repo)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return newValidationError("repo_url must use http or https (got %q)", envredact.URLForLog(repo))
+	}
+	return nil
+}
+
 func validatePlanVolumes(volumes []spec.Volume) error {
 	for _, v := range volumes {
 		if v.HostPath != "" {
