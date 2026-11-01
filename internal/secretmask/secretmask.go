@@ -4,7 +4,9 @@ package secretmask
 
 import (
 	"context"
+	"encoding/base64"
 	"log/slog"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -23,6 +25,7 @@ const (
 type Registry struct {
 	mu     sync.Mutex
 	values map[string]struct{}
+	count  int
 	sorted atomic.Pointer[[]string]
 }
 
@@ -44,13 +47,38 @@ func (r *Registry) Add(v string) {
 	if _, ok := r.values[v]; ok || len(r.values) >= maxValues {
 		return
 	}
+	// Tools echo a secret base64 or URL encoded (auth headers, DSNs), so those forms are masked too.
+	for _, form := range encodedForms(v) {
+		if len(r.values) < maxValues {
+			r.values[form] = struct{}{}
+		}
+	}
 	r.values[v] = struct{}{}
+	r.count++
 	list := make([]string, 0, len(r.values))
 	for k := range r.values {
 		list = append(list, k)
 	}
 	sort.Slice(list, func(i, j int) bool { return len(list[i]) > len(list[j]) })
 	r.sorted.Store(&list)
+}
+
+func encodedForms(v string) []string {
+	forms := []string{
+		base64.StdEncoding.EncodeToString([]byte(v)),
+		base64.RawStdEncoding.EncodeToString([]byte(v)),
+		base64.URLEncoding.EncodeToString([]byte(v)),
+		base64.RawURLEncoding.EncodeToString([]byte(v)),
+		url.QueryEscape(v),
+		url.PathEscape(v),
+	}
+	out := forms[:0]
+	for _, f := range forms {
+		if f != v && len(f) >= MinLength {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 // Mask replaces every registered value in s, longest first.
@@ -68,7 +96,11 @@ func (r *Registry) Mask(s string) string {
 }
 
 // Len reports how many values are registered.
-func (r *Registry) Len() int { return len(*r.sorted.Load()) }
+func (r *Registry) Len() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.count
+}
 
 var shared = New()
 

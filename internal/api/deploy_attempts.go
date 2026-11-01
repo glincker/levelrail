@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/failure"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
@@ -573,6 +574,8 @@ func startSSE(w http.ResponseWriter) (flusher http.Flusher, ok bool) {
 // marshal), so it's logged and skipped rather than propagated: one
 // unmarshalable line must not tear down an otherwise-healthy stream.
 func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
+	// Last stop before the wire: live container tails reach here without passing the store's masking.
+	ev.Line = secretmask.Mask(ev.Line)
 	data, err := json.Marshal(ev)
 	if err != nil {
 		slog.Default().Error("api: marshal deploy log event failed", slog.String("error", err.Error()))

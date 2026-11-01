@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Keys of build_limit_settings. An absent key means the env default applies.
@@ -36,6 +38,7 @@ type BuildRun struct {
 
 // RecordBuildRun appends one finished build and trims the app's history.
 func (db *DB) RecordBuildRun(ctx context.Context, r BuildRun) error {
+	r.Error = secretmask.Mask(r.Error)
 	_, err := db.ExecContext(ctx, `INSERT INTO build_runs
 		(app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, platform, image_bytes)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
