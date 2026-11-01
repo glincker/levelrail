@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -57,6 +58,30 @@ import (
 // loadConfig is caddy.Load, replaceable in tests.
 var loadConfig = caddy.Load
 
+// validateConfig provisions payload without starting it, replaceable in tests.
+var validateConfig = func(payload []byte) error {
+	var c caddy.Config
+	if err := json.Unmarshal(payload, &c); err != nil {
+		return err
+	}
+	return caddy.Validate(&c)
+}
+
+// restorePrevious reloads the last working config after a failed CA switch
+// left Caddy on the empty one.
+func (d *Driver) restorePrevious(ctx context.Context, prev []byte) {
+	if prev == nil {
+		return
+	}
+	if err := loadConfig(prev, true); err != nil {
+		d.logger.ErrorContext(ctx, "ingress: restore previous config failed", slog.String("error", err.Error()))
+		return
+	}
+	d.mu.Lock()
+	d.lastApplied = prev
+	d.mu.Unlock()
+}
+
 // Driver drives an in-process Caddy instance through the same code path as
 // its HTTP admin API: caddy.Load calls the identical config-apply logic
 // the admin API's POST /load handler calls, without this package ever
@@ -71,6 +96,7 @@ type Driver struct {
 	listenPorts map[int]bool
 	lastApplied []byte
 	lastCASig   string
+	failedReset []byte
 
 	snapshot            *SnapshotStore
 	snapshotFingerprint string
@@ -114,8 +140,20 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	sig := acmeCASignature(cfg)
 	d.mu.Lock()
 	switchedCA := d.lastCASig != "" && sig != "" && sig != d.lastCASig
+	prev := d.lastApplied
+	failedReset := d.failedReset
 	d.mu.Unlock()
 	if switchedCA {
+		// One reset attempt per changed payload, so a failing switch is not
+		// retried on every reconcile tick.
+		if failedReset != nil && bytes.Equal(failedReset, payload) {
+			return fmt.Errorf("ingress: apply: CA switch previously failed for this config")
+		}
+		// Validate first: the reset drops every server, so a bad payload must
+		// never reach it.
+		if err := validateConfig(payload); err != nil {
+			return fmt.Errorf("ingress: apply: validate config: %w", err)
+		}
 		// Caddy treats any ACME CA as the same issuer and keeps the old CA's
 		// cached certificate, so the new CA never gets an order. Loading a
 		// config without apps drops its in-memory cache; storage is untouched.
@@ -125,9 +163,14 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 		d.mu.Lock()
 		d.lastApplied = nil
 		d.mu.Unlock()
-	}
-
-	if err := loadConfig(payload, true); err != nil {
+		if err := loadConfig(payload, true); err != nil {
+			d.restorePrevious(ctx, prev)
+			d.mu.Lock()
+			d.failedReset = append([]byte(nil), payload...)
+			d.mu.Unlock()
+			return fmt.Errorf("ingress: apply: load config: %w", err)
+		}
+	} else if err := loadConfig(payload, true); err != nil {
 		d.mu.Lock()
 		d.lastApplied = nil
 		d.mu.Unlock()
@@ -135,7 +178,12 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	}
 
 	d.mu.Lock()
-	d.lastCASig = sig
+	// Keep the last CA when ACME is switched off so turning it back on with
+	// a different CA still resets the cache.
+	if sig != "" {
+		d.lastCASig = sig
+	}
+	d.failedReset = nil
 	d.listenPorts = listenPortsOf(cfg)
 	d.lastApplied = payload
 	d.mu.Unlock()
@@ -228,13 +276,17 @@ func listenAddrPort(addr string) (int, bool) {
 	return port, true
 }
 
-// acmeCASignature lists the ACME issuer CAs of every automation policy, or ""
-// when no ACME issuer is configured.
+// acmeProductionURL is the CA Caddy uses when an ACME issuer sets none.
+const acmeProductionURL = "https://acme-v02.api.letsencrypt.org/directory"
+
+// acmeCASignature is the sorted set of distinct ACME CAs across all policies,
+// or "" when no ACME issuer is configured. The default CA and the explicit
+// production URL count as one.
 func acmeCASignature(cfg *Config) string {
 	if cfg == nil || cfg.Apps.TLS == nil || cfg.Apps.TLS.Automation == nil {
 		return ""
 	}
-	var parts []string
+	set := map[string]bool{}
 	for _, p := range cfg.Apps.TLS.Automation.Policies {
 		for _, iss := range p.Issuers {
 			raw, err := json.Marshal(iss)
@@ -246,13 +298,22 @@ func acmeCASignature(cfg *Config) string {
 				CA     string `json:"ca"`
 			}
 			if json.Unmarshal(raw, &v) == nil && v.Module == "acme" {
-				parts = append(parts, v.CA)
+				ca := v.CA
+				if ca == "" {
+					ca = acmeProductionURL
+				}
+				set[ca] = true
 			}
 		}
 	}
-	if len(parts) == 0 {
+	if len(set) == 0 {
 		return ""
 	}
+	parts := make([]string, 0, len(set))
+	for ca := range set {
+		parts = append(parts, ca)
+	}
+	sort.Strings(parts)
 	return "acme|" + strings.Join(parts, "|")
 }
 
