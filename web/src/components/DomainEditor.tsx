@@ -3,7 +3,7 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { GlobeGlassIcon, PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { DOMAIN_PATTERN } from '../lib/domainWizard'
 import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
@@ -119,12 +119,11 @@ export function DomainEditor({ app }: { app: AppDetail }) {
           {t('editor.title')}
         </CardTitle>
         <CardDescription>
-          <Trans
-            t={t}
-            ns="domains"
-            i18nKey="editor.description"
-            components={{ link: <Link to="/domains" className="underline" /> }}
-          />
+          {t('editor.descriptionBefore')}
+          <Link to="/domains" className="underline">
+            {t('editor.descriptionLink')}
+          </Link>
+          {t('editor.descriptionAfter')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

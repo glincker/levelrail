@@ -1031,7 +1031,9 @@
   },
   "editor": {
     "title": "Dominios",
-    "description": "Dominios enrutados a esta aplicación a través de la capa de ingress. Los ajustes de ACME de toda la plataforma y del dominio principal están en <link>Dominios</link>.",
+    "descriptionBefore": "Dominios enrutados a esta aplicación a través de la capa de ingress. Los ajustes de ACME de toda la plataforma y del dominio principal están en ",
+    "descriptionLink": "Dominios",
+    "descriptionAfter": ".",
     "dnsHintLink": "Tipos de registros DNS explicados",
     "dnsHint": "Apunta un registro A a la dirección IP de este servidor (o un CNAME a su nombre de host) y, cuando resuelva, se emitirá un certificado TLS automáticamente.",
     "empty": "No hay dominios configurados.",

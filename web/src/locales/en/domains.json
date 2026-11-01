@@ -1031,7 +1031,9 @@
   },
   "editor": {
     "title": "Domains",
-    "description": "Domains routed to this app through the ingress layer. Platform-wide ACME and primary domain settings live under <link>Domains</link>.",
+    "descriptionBefore": "Domains routed to this app through the ingress layer. Platform-wide ACME and primary domain settings live under ",
+    "descriptionLink": "Domains",
+    "descriptionAfter": ".",
     "dnsHintLink": "DNS record types explained",
     "dnsHint": "Point an A record at this server's IP address (or a CNAME at its hostname), then a TLS certificate is issued automatically once it resolves.",
     "empty": "No domains configured.",
