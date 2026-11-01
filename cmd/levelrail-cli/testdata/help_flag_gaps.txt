@@ -157,6 +157,9 @@ jobs.go runJobsVerb --concurrency
 jobs.go runJobsVerb --count
 jobs.go runJobsVerb --cpu
 jobs.go runJobsVerb --disabled
+jobs.go runJobsVerb --heartbeat-clear
+jobs.go runJobsVerb --heartbeat-fail-url
+jobs.go runJobsVerb --heartbeat-url
 jobs.go runJobsVerb --http-body
 jobs.go runJobsVerb --http-method
 jobs.go runJobsVerb --http-path

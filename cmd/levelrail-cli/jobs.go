@@ -47,7 +47,10 @@ Flags for create and update:
   --timeout DURATION     per-attempt timeout, e.g. 10m
   --retries N            retries after a failed attempt
   --retry-backoff DUR    first retry delay, doubled each retry
-  --heartbeat-url URL    ping after each successful run (--heartbeat-fail-url, --heartbeat-clear)
+  --heartbeat-url URL    ping this URL after each successful run (stored encrypted, only the host is shown)
+  --heartbeat-fail-url URL
+                         ping this URL after a failed run (default: heartbeat-url plus /fail)
+  --heartbeat-clear      remove both heartbeat URLs
   --catch-up POLICY      skip (default) or run_once after control plane downtime
   --catch-up-lookback D  how far back run_once still applies
   --cpu CORES            CPU limit for a fresh container, e.g. 0.5
