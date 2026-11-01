@@ -304,6 +304,42 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: go build -o /dev/null ./cmd/levelrail-cli
 
+  # Advisory for the first release: TODO flip continue-on-error to false once
+  # a release has shown it reports no false positives. Deliberately not in
+  # ci-required. Pulls the pinned oasdiff release, verified by sha256.
+  openapi-breaking:
+    name: OpenAPI breaking changes
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install oasdiff
+        env:
+          OASDIFF_VERSION: "1.33.0"
+          OASDIFF_SHA256: 43a4e328e2d13ba1552d760aa68d2485c75c5621f309f6ff64ae895188345247
+        run: |
+          curl -fsSL -o oasdiff.tar.gz "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          echo "${OASDIFF_SHA256}  oasdiff.tar.gz" | sha256sum -c -
+          tar -xzf oasdiff.tar.gz oasdiff
+
+      - name: Compare with the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          if ! git cat-file -e "origin/${BASE_REF}:docs/public/openapi.json" 2>/dev/null; then
+            echo "no openapi.json on the base branch, nothing to compare"
+            exit 0
+          fi
+          git show "origin/${BASE_REF}:docs/public/openapi.json" > base-openapi.json
+          ./oasdiff breaking base-openapi.json docs/public/openapi.json --fail-on ERR
+
   # Lanes come from scripts/ci-go-plan.sh: internal/api sharded by test
   # name when it is affected, Docker-backed packages with bounded -p, the
   # rest in one lane, and a single merged lane when few packages are
