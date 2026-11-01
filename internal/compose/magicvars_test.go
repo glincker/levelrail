@@ -1,6 +1,10 @@
 package compose
 
-import "testing"
+import (
+	"encoding/base64"
+	"strings"
+	"testing"
+)
 
 func TestFindMagicVars(t *testing.T) {
 	tests := []struct {
@@ -115,5 +119,26 @@ func TestGenerateValue_TwoCallsDiffer(t *testing.T) {
 func TestGenerateValue_UnknownKind(t *testing.T) {
 	if _, err := GenerateValue("FQDN", 0); err == nil {
 		t.Fatal("GenerateValue(\"FQDN\", 0) error = nil, want an error (not a generatable kind)")
+	}
+}
+
+func TestBase64BytesResolvesInsideComposedValue(t *testing.T) {
+	f := &File{Services: map[string]Service{"app": {Environment: Environment{
+		"APP_KEY": "base64:$SERVICE_BASE64BYTES_32_APPKEY",
+	}}}}
+	persisted := map[string]string{}
+	_, unresolved, err := ResolveMagicVars(f, func(kind, _ string, n int) (string, error) {
+		return GenerateValue(kind, n)
+	}, func(_, envKey, v string) error { persisted[envKey] = v; return nil })
+	if err != nil || len(unresolved) != 0 {
+		t.Fatalf("err=%v unresolved=%v", err, unresolved)
+	}
+	val, ok := strings.CutPrefix(persisted["APP_KEY"], "base64:")
+	if !ok {
+		t.Fatalf("missing prefix: %q", persisted["APP_KEY"])
+	}
+	raw, err := base64.StdEncoding.DecodeString(val)
+	if err != nil || len(raw) != 32 {
+		t.Fatalf("decode err=%v len=%d, want 32 bytes", err, len(raw))
 	}
 }

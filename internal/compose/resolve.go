@@ -20,7 +20,7 @@ func (u UnresolvedVar) String() string {
 // ResolveMagicVars scans every service's environment and command for
 // SERVICE_ placeholders, mutating f in place: a token with a bash-style
 // default substitutes that default as a literal value; a generatable
-// token (PASSWORD/USER/BASE64/HEX/REALBASE64) found in Environment is
+// token (PASSWORD/USER/BASE64/HEX/REALBASE64/BASE64BYTES) found in Environment is
 // removed from it entirely and returned via secretEnv instead, since its
 // real value belongs in secret storage, not a literal desired-state
 // column. Command has no equivalent secret-storage indirection (a

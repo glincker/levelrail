@@ -18,11 +18,12 @@ import (
 // either satisfied by its own bash-style ${...:-default} or left
 // unresolved for the caller to reject.
 var generationKinds = map[string]bool{
-	"PASSWORD":   true,
-	"USER":       true,
-	"BASE64":     true,
-	"HEX":        true,
-	"REALBASE64": true,
+	"PASSWORD":    true,
+	"USER":        true,
+	"BASE64":      true,
+	"HEX":         true,
+	"REALBASE64":  true,
+	"BASE64BYTES": true,
 }
 
 var magicVarPattern = regexp.MustCompile(`\$\{SERVICE_([A-Za-z0-9_]+?)(?::-([^}]*))?\}|\$SERVICE_([A-Za-z0-9_]+)`)
@@ -88,6 +89,7 @@ const (
 	defaultUsernameLength = 16
 	defaultHexLength      = 64
 	defaultBase64Length   = 32
+	defaultBase64Bytes    = 32
 )
 
 // GenerateValue produces a real value for a generatable MagicVar kind.
@@ -102,6 +104,8 @@ func GenerateValue(kind string, length int) (string, error) {
 		return randomHex(orDefault(length, defaultHexLength))
 	case "BASE64", "REALBASE64":
 		return randomBase64(orDefault(length, defaultBase64Length))
+	case "BASE64BYTES":
+		return randomBase64Bytes(orDefault(length, defaultBase64Bytes))
 	default:
 		return "", fmt.Errorf("compose: %q is not a generatable magic-var kind", kind)
 	}
@@ -154,4 +158,14 @@ func randomBase64(length int) (string, error) {
 		return enc, nil
 	}
 	return enc[:length], nil
+}
+
+// randomBase64Bytes returns standard padded base64 of n random bytes, the
+// shape frameworks that decode their key (e.g. a 32 byte AES key) expect.
+func randomBase64Bytes(n int) (string, error) {
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("compose: generate random base64 bytes: %w", err)
+	}
+	return base64.StdEncoding.EncodeToString(buf), nil
 }
