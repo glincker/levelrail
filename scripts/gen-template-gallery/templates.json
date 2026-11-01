@@ -6212,6 +6212,85 @@
   }
  },
  {
+  "id": "deluge",
+  "name": "Deluge",
+  "slogan": "A lightweight BitTorrent client with a web interface and plugins. GPL-3.0 licensed. The web UI starts with the default password deluge, so change it on first sign in (Preferences, Interface). Only the web UI is published, so incoming peer connections are limited.",
+  "category": "Applications",
+  "docUrl": "https://deluge.readthedocs.io/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "deluge",
+    "image": "lscr.io/linuxserver/deluge:2.2.0",
+    "ports": [
+     8112
+    ],
+    "volumes": [
+     "config -> /config",
+     "downloads -> /downloads"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "deluge",
+    "name": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "deluge",
+    "name": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "deluge",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "deluge"
+     ],
+     "detail": "config, downloads",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "directus",
   "name": "Directus",
   "slogan": "An open-source headless CMS and instant REST/GraphQL API layer over your own database.",
@@ -6661,6 +6740,63 @@
     {
      "code": "volume_backups",
      "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "docling-serve",
+  "name": "Docling Serve",
+  "slogan": "An API server that converts PDFs, Office files and images into Markdown, JSON or text for RAG pipelines, using the Docling library on CPU. MIT licensed. The image is about 5 GB, the interactive UI is at /ui and the API docs at /docs. There is no login, so keep it private or behind an auth proxy.",
+  "category": "AI",
+  "docUrl": "https://github.com/docling-project/docling-serve",
+  "memoryMiB": 3072,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "docling",
+    "image": "ghcr.io/docling-project/docling-serve-cpu:v1.38.2",
+    "ports": [
+     5001
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "docling",
+    "name": "DOCLING_SERVE_ENABLE_UI",
+    "kind": "preset"
+   },
+   {
+    "service": "docling",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
     },
     {
      "code": "health_gated_deploy",
@@ -23370,6 +23506,86 @@
     {
      "code": "secret_masking",
      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "mylar3",
+  "name": "Mylar3",
+  "slogan": "An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration.",
+  "category": "Applications",
+  "docUrl": "https://github.com/mylar3/mylar3/wiki",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mylar3",
+    "image": "lscr.io/linuxserver/mylar3:0.8.3",
+    "ports": [
+     8090
+    ],
+    "volumes": [
+     "config -> /config",
+     "comics -> /comics",
+     "downloads -> /downloads"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mylar3",
+    "name": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "mylar3",
+    "name": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "mylar3",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "mylar3"
+     ],
+     "detail": "comics, config, downloads",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
     },
     {
      "code": "volume_backups",

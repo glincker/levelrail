@@ -526,6 +526,7 @@
               "self-host/anythingllm",
               "self-host/comfyui",
               "self-host/crawl4ai",
+              "self-host/docling-serve",
               "self-host/flowise",
               "self-host/flowise-postgres",
               "self-host/jupyter-gpu",
@@ -578,6 +579,7 @@
             "pages": [
               "self-host/budibase",
               "self-host/cockpit-cms",
+              "self-host/deluge",
               "self-host/drupal",
               "self-host/espocrm",
               "self-host/ghost",
@@ -590,6 +592,7 @@
               "self-host/maintainerr",
               "self-host/mediawiki",
               "self-host/moodle",
+              "self-host/mylar3",
               "self-host/nextcloud",
               "self-host/odoo",
               "self-host/ombi",

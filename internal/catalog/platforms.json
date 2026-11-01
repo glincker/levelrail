@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-01T23:07:14Z",
+  "scanned_at": "2026-11-01T23:23:03Z",
   "images": [
     {
       "image": "1dev/server",
@@ -1073,6 +1073,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/docling-project/docling-serve-cpu",
+      "tag": "v1.38.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:23:03Z"
     },
     {
       "image": "ghcr.io/donkie/spoolman",
@@ -2338,6 +2347,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "lscr.io/linuxserver/deluge",
+      "tag": "2.2.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:23:03Z"
+    },
+    {
       "image": "lscr.io/linuxserver/dokuwiki",
       "tag": "2026-07-14c-ls325",
       "platforms": [
@@ -2428,6 +2446,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "lscr.io/linuxserver/mylar3",
+      "tag": "0.8.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:23:03Z"
+    },
+    {
       "image": "lscr.io/linuxserver/ombi",
       "tag": "4.53.10",
       "platforms": [
@@ -2494,7 +2521,7 @@
       "image": "lscr.io/linuxserver/snapdrop",
       "tag": "latest",
       "platforms": null,
-      "checked_at": "2026-11-01T23:07:14Z",
+      "checked_at": "2026-11-01T23:23:03Z",
       "error": "unsupported manifest format"
     },
     {
@@ -3901,7 +3928,7 @@
       "image": "tiredofit/osticket",
       "tag": "1.18.2",
       "platforms": null,
-      "checked_at": "2026-11-01T23:07:14Z",
+      "checked_at": "2026-11-01T23:23:03Z",
       "error": "access denied (HTTP 401), image is private or missing"
     },
     {
@@ -4491,6 +4518,10 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "deluge": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "directus": [
       "linux/amd64",
       "linux/arm64"
@@ -4517,6 +4548,10 @@
       "linux/ppc64le",
       "linux/riscv64",
       "linux/s390x"
+    ],
+    "docling-serve": [
+      "linux/amd64",
+      "linux/arm64"
     ],
     "docmost": [
       "linux/amd64",
@@ -5204,6 +5239,10 @@
       "linux/arm64",
       "linux/ppc64le",
       "linux/s390x"
+    ],
+    "mylar3": [
+      "linux/amd64",
+      "linux/arm64"
     ],
     "n8n": [
       "linux/amd64",

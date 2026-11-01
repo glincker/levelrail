@@ -1,0 +1,67 @@
+---
+title: "Self-host Mylar3 with Docker"
+sidebarTitle: "Mylar3"
+description: "An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration."
+"og:url": "https://docs.levelrail.com/self-host/mylar3"
+---
+
+An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration.
+
+This page describes the Levelrail template for Mylar3 (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/mylar3/mylar3/wiki.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `mylar3` | `lscr.io/linuxserver/mylar3:0.8.3` | 8090 | `config -&#62; /config`<br />`comics -&#62; /comics`<br />`downloads -&#62; /downloads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `mylar3` | `PGID` | Preset in the template |
+| `mylar3` | `PUID` | Preset in the template |
+| `mylar3` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`mylar3`): comics, config, downloads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Mylar3 with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Mylar3. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy mylar3 --name my-mylar3
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,20 @@
+id: deluge
+name: Deluge
+description: A lightweight BitTorrent client with a web interface and plugins. GPL-3.0 licensed. The web UI starts with the default password deluge, so change it on first sign in (Preferences, Interface). Only the web UI is published, so incoming peer connections are limited.
+icon: download-simple
+category: Applications
+documentation_url: https://deluge.readthedocs.io/
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and schedules.
+    default: Etc/UTC
+domains:
+  - service: deluge
+    port: 8112
+    description: Public address of the Deluge web UI.
+healthcheck:
+  service: deluge
+  port: 8112
+  path: /

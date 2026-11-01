@@ -1,0 +1,20 @@
+id: docling-serve
+name: Docling Serve
+description: An API server that converts PDFs, Office files and images into Markdown, JSON or text for RAG pipelines, using the Docling library on CPU. MIT licensed. The image is about 5 GB, the interactive UI is at /ui and the API docs at /docs. There is no login, so keep it private or behind an auth proxy.
+icon: file-text
+category: AI
+documentation_url: https://github.com/docling-project/docling-serve
+recommended_memory_bytes: 3221225472
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for log timestamps.
+    default: Etc/UTC
+domains:
+  - service: docling
+    port: 5001
+    description: Public address of the Docling Serve API.
+healthcheck:
+  service: docling
+  port: 5001
+  path: /health

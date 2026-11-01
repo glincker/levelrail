@@ -143,7 +143,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-01T23:07:14Z. **374 yes, 15 amd64 only, 2 not checked** of 391 templates.
+Last scan: 2026-11-01T23:23:03Z. **377 yes, 15 amd64 only, 2 not checked** of 394 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -206,10 +206,12 @@ Last scan: 2026-11-01T23:07:14Z. **374 yes, 15 amd64 only, 2 not checked** of 39
 | `cyberchef` | amd64 only | linux/amd64 |
 | `dashy` | yes | linux/amd64, linux/arm64 |
 | `databasus` | yes | linux/amd64, linux/arm64 |
+| `deluge` | yes | linux/amd64, linux/arm64 |
 | `directus` | yes | linux/amd64, linux/arm64 |
 | `diun` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `docker-registry` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `docker-registry-auth` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
+| `docling-serve` | yes | linux/amd64, linux/arm64 |
 | `docmost` | yes | linux/amd64, linux/arm64 |
 | `documenso` | yes | linux/amd64, linux/arm64 |
 | `docuseal` | yes | linux/amd64, linux/arm64 |
@@ -363,6 +365,7 @@ Last scan: 2026-11-01T23:07:14Z. **374 yes, 15 amd64 only, 2 not checked** of 39
 | `monica` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `moodle` | yes | linux/amd64, linux/arm64 |
 | `mosquitto` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `mylar3` | yes | linux/amd64, linux/arm64 |
 | `n8n` | yes | linux/amd64, linux/arm64 |
 | `n8n-ai-starter` | yes | linux/amd64, linux/arm64 |
 | `n8n-postgres` | yes | linux/amd64, linux/arm64 |
