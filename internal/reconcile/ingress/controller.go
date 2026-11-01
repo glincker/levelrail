@@ -1152,6 +1152,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEEmail:            settings.ACMEEmail,
 		ACMEDirectoryURL:     settings.ACMEDirectoryURL,
 		DNSProvider:          dnsProvider,
+		DNS01AllHosts:        dns01AllHostsEnabled(),
 		TLSCertificates:      tlsCertOverrides,
 		RequestStats:         c.requestStats,
 		Firewall:             c.firewall,

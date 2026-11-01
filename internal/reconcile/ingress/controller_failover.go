@@ -70,3 +70,12 @@ func (c *Controller) failoverRoute(ctx context.Context, svc store.DesiredService
 		PassiveHealth: &ingress.PassiveHealthChecks{FailDuration: window, MaxFails: 1},
 	}
 }
+
+// dns01AllHostsEnv opts every host into DNS-01 so servers with port 80
+// closed can still issue. Off by default; needs a connected DNS provider.
+const dns01AllHostsEnv = "APP_INGRESS_DNS01_ALL_HOSTS"
+
+func dns01AllHostsEnabled() bool {
+	v := strings.TrimSpace(os.Getenv(dns01AllHostsEnv))
+	return strings.EqualFold(v, "true") || v == "1"
+}

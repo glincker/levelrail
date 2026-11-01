@@ -445,6 +445,10 @@ type RoutesOptions struct {
 	// pass; internal/reconcile/ingress resolves which one (and its
 	// credentials) from the operator-facing settings and internal/secrets.
 	DNSProvider DNS01Provider
+	// DNS01AllHosts makes DNS-01 the challenge for every host, not only
+	// wildcards, so servers behind CGNAT or a closed port 80 can still
+	// issue. It needs DNSProvider; without one the build fails closed.
+	DNS01AllHosts bool
 	// AdminListen overrides Caddy's admin API bind address. Empty keeps
 	// Caddy's own default (localhost:2019).
 	AdminListen string
@@ -798,7 +802,11 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {
 		case opts.ACMEEnabled:
-			cfg.Apps.TLS = acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
+			tlsApp, err := acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
+			if err != nil {
+				return nil, err
+			}
+			cfg.Apps.TLS = tlsApp
 			cfg.Apps.PKI = newInternalPKIApp()
 			cfg.Apps.ACMEEvents = &ACMEEventsApp{}
 			cfg.Logging = newACMELogTap()

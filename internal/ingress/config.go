@@ -813,24 +813,34 @@ func internalIssuerTLSApp(hosts []string) *TLSApp {
 	}
 }
 
-// acmeWithFallbackTLSApp scopes real ACME to every host, wildcards through
-// DNS-01 when a provider is set. Every policy ends in the internal issuer, so
-// a rejected contact, an unreachable challenge or a rate limit leaves the host
-// on a locally signed certificate, never on none.
-func acmeWithFallbackTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) *TLSApp {
+// acmeWithFallbackTLSApp scopes real ACME to every host: wildcards through
+// DNS-01 when a provider is set, and every host through it when DNS01AllHosts
+// is on (for hosts whose port 80 is unreachable). Every policy ends in the
+// internal issuer, so a failed challenge leaves a locally signed certificate.
+func acmeWithFallbackTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) (*TLSApp, error) {
 	acme := NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
+	if opts.DNS01AllHosts {
+		if opts.DNSProvider == nil {
+			return nil, fmt.Errorf("ingress: DNS-01 for all hosts is enabled but no DNS provider credentials are configured")
+		}
+		hosts := append(append([]string{}, wildcardHosts...), regularHosts...)
+		dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
+		return &TLSApp{Automation: &Automation{Policies: []AutomationPolicy{
+			{Subjects: hosts, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)},
+		}}}, nil
+	}
 	if opts.DNSProvider == nil || len(wildcardHosts) == 0 {
 		hosts := append(append([]string{}, wildcardHosts...), regularHosts...)
 		return &TLSApp{Automation: &Automation{Policies: []AutomationPolicy{
 			{Subjects: hosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)},
-		}}}
+		}}}, nil
 	}
 	dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
 	policies := []AutomationPolicy{{Subjects: wildcardHosts, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)}}
 	if len(regularHosts) > 0 {
 		policies = append(policies, AutomationPolicy{Subjects: regularHosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)})
 	}
-	return &TLSApp{Automation: &Automation{Policies: policies}}
+	return &TLSApp{Automation: &Automation{Policies: policies}}, nil
 }
 
 // newInternalPKIApp builds a PKIApp for the internal issuer's local CA

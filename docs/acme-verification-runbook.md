@@ -16,7 +16,7 @@ Most operators do not need the manual steps below. **Get a real certificate** (d
 - A domain you control, with access to create an `A` or `AAAA` record.
 - A control plane reachable from the public internet (installed with `install.sh`, as `levelrail.service`, or in Docker).
 - DNS already pointing at the server's public IP and propagated.
-- Ports 80 and 443 open from the internet. HTTP-01 is the check where the CA requests a file over port 80 to prove you own the domain, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](/domains-and-ingress#wildcard-domains-dns-01-providers) instead.
+- Ports 80 and 443 open from the internet. HTTP-01 is the check where the CA requests a file over port 80 to prove you own the domain, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](/domains-and-ingress#wildcard-domains-dns-01-providers) instead. Single hosts can use it too with `APP_INGRESS_DNS01_ALL_HOSTS=true` and a connected DNS provider (CGNAT or closed port 80); that path is not yet verified against a real CA.
 - A `root` API token or admin dashboard access, since saving ingress settings (`PUT /api/v1/settings/ingress`) needs the `root` ability.
 
 ## Steps
