@@ -13,7 +13,10 @@ import type { PaletteMode } from '@/lib/paletteMode'
 import { recordModeUse } from '@/lib/paletteModeUse'
 import { brandForRegistryHost, registryHostOf } from '@/lib/registryRef'
 import { searchDocsGrouped } from '@/lib/docsSearch'
-import { loadDocsManifest } from '@/lib/docsManifestLoader'
+import {
+  loadDocsManifest,
+  loadDocsSearchBodies,
+} from '@/lib/docsManifestLoader'
 import { BrandIcon } from '../components/BrandIcon'
 import type { PaletteItem } from '../components/commandPaletteData'
 import { dockerHubKeys, fetchDockerHubSearch } from '../queries/dockerhub'
@@ -51,7 +54,10 @@ export function usePaletteModeItems(
 
   const docs = useQuery({
     queryKey: ['palette', 'docs-manifest'],
-    queryFn: loadDocsManifest,
+    queryFn: () =>
+      Promise.all([loadDocsManifest(), loadDocsSearchBodies()]).then(
+        ([manifest, bodies]) => ({ manifest, bodies }),
+      ),
     enabled: mode?.kind === 'docs',
     staleTime: Infinity,
   })
@@ -114,11 +120,16 @@ export function usePaletteModeItems(
           items: hint('mode-docs-loading', t('loading'), icon),
         }
       }
-      const manifest = docs.data
-      const items: PaletteItem[] = searchDocsGrouped(manifest, debounced, {
-        pages: MAX_DOCS,
-        headings: 2,
-      }).flatMap((page) => {
+      const { manifest, bodies } = docs.data
+      const items: PaletteItem[] = searchDocsGrouped(
+        manifest,
+        debounced,
+        {
+          pages: MAX_DOCS,
+          headings: 2,
+        },
+        bodies,
+      ).flatMap((page) => {
         const newTab = (url: string) => () => {
           window.open(url, '_blank', 'noopener,noreferrer')
         }
@@ -136,7 +147,7 @@ export function usePaletteModeItems(
                 secondaryHint: t('modes.docs.local'),
               }
             : { run: newTab(localUrl(hash)) }
-        const excerpt = (manifest.pages[page.path]?.body ?? '').slice(0, 180)
+        const excerpt = (bodies[page.path] ?? '').slice(0, 180)
         const preview = {
           kind: 'doc' as const,
           description: excerpt,

@@ -8,6 +8,13 @@ declare module 'virtual:docs-manifest' {
   export default docsManifest
 }
 
+declare module 'virtual:docs-search-bodies' {
+  import type { DocsSearchBodies } from './docs'
+
+  const bodies: DocsSearchBodies
+  export default bodies
+}
+
 declare module 'virtual:docs-path-index' {
   const docsPathIndex: ReadonlySet<string>
   export default docsPathIndex

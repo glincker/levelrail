@@ -14,8 +14,8 @@ export interface DocPageMeta {
   file: string
   title: string
   headings: DocHeading[]
-  /** Plain-text excerpt of the page's paragraph content, for full-text search (see docsSearch.ts). */
-  body: string
+  /** Only set by full fixtures; the shipped manifest omits it and search text lives in DocsSearchBodies. */
+  body?: string
   /** "Tab / Group" on the hosted docs site; absent for pages the site does not publish. */
   section?: string
 }
@@ -31,3 +31,6 @@ export interface DocsManifest {
   /** Keyed by in-app path, e.g. "/getting-started", "/" for the index. */
   pages: Record<string, DocPageMeta>
 }
+
+/** Plain-text search excerpt per in-app path, loaded lazily (virtual:docs-search-bodies). */
+export type DocsSearchBodies = Readonly<Record<string, string>>
