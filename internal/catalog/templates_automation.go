@@ -14,7 +14,7 @@ var automationTemplates = []Template{
     ports: ["5678:5678"]
     environment:
       N8N_ENCRYPTION_KEY: $SERVICE_HEX_64_ENCRYPTIONKEY
-      N8N_HOST: "0.0.0.0"
+      WEBHOOK_URL: ${SERVICE_FQDN_N8N:-http://localhost:5678}
       N8N_PORT: "5678"
     volumes:
       - n8n_data:/home/node/.n8n
