@@ -8,6 +8,13 @@ import { DurationInput } from '@/components/ui/duration-input'
 import { Input } from '@/components/ui/input'
 import { SettingRow } from '@/components/ui/setting-row'
 import { RetentionDaysSelect } from './RetentionDaysSelect'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
@@ -147,6 +154,25 @@ export function RuntimeSettingRow({
                   setDraft(String(days))
                 }}
               />
+            ) : setting.kind === 'string' && setting.allowed_strings?.length ? (
+              <Select
+                value={draft}
+                disabled={!canEdit || busy}
+                onValueChange={(next) => {
+                  if (next !== null) setDraft(next)
+                }}
+              >
+                <SelectTrigger id={fieldId} size="sm" aria-label={title}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {setting.allowed_strings.map((word) => (
+                    <SelectItem key={word} value={word}>
+                      {t(`options.${word}`, { defaultValue: word })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : setting.kind === 'int' ? (
               <Input
                 id={fieldId}

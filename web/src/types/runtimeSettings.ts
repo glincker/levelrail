@@ -8,7 +8,8 @@ export type RuntimeSettingCategory =
   | 'experimental'
   | 'retention'
 
-export type RuntimeSettingKind = 'bool' | 'duration' | 'string_list' | 'int'
+export type RuntimeSettingKind =
+  'bool' | 'duration' | 'string_list' | 'int' | 'string'
 export type RuntimeSettingSource = 'saved' | 'env' | 'default'
 export type RuntimeSettingApply = 'live' | 'restart'
 export type RuntimeSettingRisk = 'normal' | 'weakens_security'
@@ -30,6 +31,8 @@ export interface RuntimeSetting {
   onboarding: boolean
   /** Set for an int setting limited to a fixed list of values. */
   allowed_values?: number[]
+  /** Set for a string setting limited to a fixed list of words. */
+  allowed_strings?: string[]
   pending_restart: boolean
   updated_at?: string
   updated_by?: string

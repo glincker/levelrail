@@ -24,6 +24,17 @@
   "badges": {
     "restart": "Restart required"
   },
+  "options": {
+    "open": "Open (no restriction)",
+    "none": "None (RUN steps have no network)",
+    "block-private": "Block private ranges (not enforceable yet)"
+  },
+  "items": {
+    "buildNetwork": {
+      "title": "Build network",
+      "description": "Network for RUN steps of a build: open, none, or block-private (reserved: builds fail until it can be enforced). Read on every build."
+    }
+  },
   "row": {
     "envHint": "Environment variable: {{env}}",
     "defaultHint": "Default: {{value}}",

@@ -17,6 +17,8 @@ func init() {
 		Risk:           runtimesettings.RiskWeakensSecurity,
 		FailClosed:     true,
 		EnvConvert:     func(raw string) (string, error) { return strings.ToLower(strings.TrimSpace(raw)), nil },
+		TitleKey:       "runtimeSettings:items.buildNetwork.title",
+		DescKey:        "runtimeSettings:items.buildNetwork.description",
 		Title:          "Build network",
 		Description:    "Network for RUN steps of a build: open (no restriction), none, or block-private (reserved: builds fail until it can be enforced). Read on every build; the environment variable only seeds the default.",
 	})

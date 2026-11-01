@@ -4346,6 +4346,8 @@ type RuntimeSettingResource struct {
 	PendingRestart bool   `json:"pending_restart"`
 	UpdatedAt      string `json:"updated_at"`
 	UpdatedBy      string `json:"updated_by"`
+	// AllowedStrings lists the values a string setting accepts.
+	AllowedStrings []string `json:"allowed_strings,omitempty"`
 }
 
 // RuntimeSettingsRestart reports whether the control plane can restart itself and has a restart pending.

@@ -307,3 +307,19 @@ func TestRun_SettingsRuntime_Commands(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRuntimeSettingValue_String(t *testing.T) {
+	allowed := []string{"open", "none", "block-private"}
+	for _, in := range []string{"none", " NONE "} {
+		got, err := parseRuntimeSettingValue("string", in, allowed)
+		if err != nil || got != "none" {
+			t.Errorf("parse %q = %v, %v, want none", in, got, err)
+		}
+	}
+	if _, err := parseRuntimeSettingValue("string", "nnone", allowed); err == nil || !strings.Contains(err.Error(), "open, none, block-private") {
+		t.Errorf("typo err = %v, want the allowed list", err)
+	}
+	if got, err := parseRuntimeSettingValue("string", "free", nil); err != nil || got != "free" {
+		t.Errorf("unrestricted string = %v, %v", got, err)
+	}
+}
