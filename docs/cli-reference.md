@@ -361,6 +361,7 @@ levelrail-cli apps exec-access enable|disable|status <name> [flags]
 
 ```
 levelrail-cli apps exec <name> -- <command> [args...] [flags]
+levelrail-cli apps console <name> [-- <command> [args...]] [flags]
 levelrail-cli apps logs <name> [flags]
 levelrail-cli apps metrics <name> --metric NAME [flags]
 levelrail-cli apps requests <name> [flags]
@@ -381,6 +382,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 ```
 
 - `apps exec` runs a command in the app's container and exits with its real exit code.
+- `apps console <app>` opens the console the app's template declares (Minecraft: `rcon-cli`) through the same exec path. With no command it opens a terminal; with `-- list` it runs once and prints the output. Templates that declare no console are refused with a pointer to `apps exec`. The console reads its credentials from the container's environment, nothing secret is passed on the command line.
 - `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.

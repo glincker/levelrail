@@ -10,7 +10,7 @@ This page covers running one Minecraft Java server from the Levelrail template o
 
 The template uses the community `itzg/minecraft-server` image. Its own documentation covers every server setting: [docker-minecraft-server](https://github.com/itzg/docker-minecraft-server). See the generated [Minecraft Server template page](/self-host/minecraft) for the template's current ports, volumes and variables.
 
-The template pins an image tag. You must enter `TRUE` for the EULA yourself, it is never accepted for you. The server type is one of VANILLA, PAPER, FABRIC or FORGE. The RCON password is generated and RCON is not published, so run `rcon-cli` from the app's exec shell.
+The template pins an image tag. You must enter `TRUE` for the EULA yourself, it is never accepted for you. The server type is one of VANILLA, PAPER, FABRIC or FORGE. The RCON password is generated and RCON is not published, so run `levelrail-cli apps console <app>` for an interactive RCON prompt, or `levelrail-cli apps console <app> -- list` for one command. The password stays in the container's environment and is never printed or put on a command line. Other game templates declare no console yet, use `apps exec` for them.
 
 ## Sizing
 

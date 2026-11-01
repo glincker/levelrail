@@ -32,7 +32,9 @@ type Manifest struct {
 	Env                    []EnvPrompt          `yaml:"env" json:"env,omitempty"`
 	Domains                []DomainPrompt       `yaml:"domains" json:"domains,omitempty"`
 	Healthcheck            *ManifestHealthcheck `yaml:"healthcheck" json:"healthcheck,omitempty"`
-	Compose                string               `yaml:"-" json:"-"`
+	// ConsoleCommand is the argv "apps console" runs in the container. It must read any secret from the container env, never carry one.
+	ConsoleCommand []string `yaml:"console_command" json:"console_command,omitempty"`
+	Compose        string   `yaml:"-" json:"-"`
 }
 
 // EnvPrompt is one ${KEY} placeholder the installer asks for.

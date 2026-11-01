@@ -1,10 +1,11 @@
 id: minecraft
 name: Minecraft Server
-description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; use the app's exec shell and run rcon-cli. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
+description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; run apps console from the CLI. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
 icon: cube
 category: Games
 documentation_url: https://docker-minecraft-server.readthedocs.io/
 recommended_memory_bytes: 3221225472
+console_command: [rcon-cli]
 env:
   - key: EULA
     label: Accept the Minecraft EULA

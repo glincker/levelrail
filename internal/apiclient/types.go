@@ -56,6 +56,8 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	// TemplateID is the catalog template the app was deployed from, empty otherwise.
+	TemplateID string `json:"template_id,omitempty"`
 	// PendingImage is set while a rollout to a new image is in progress or
 	// failed; Image is then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`
@@ -1711,6 +1713,12 @@ type ServiceTemplateDetail struct {
 	RequiresGPU            bool                 `json:"requires_gpu,omitempty"`
 	RequiresConfiguration  bool                 `json:"requires_configuration,omitempty"`
 	Requirements           TemplateRequirements `json:"requirements"`
+	Manifest               *TemplateManifest    `json:"manifest,omitempty"`
+}
+
+// TemplateManifest carries only the manifest fields the CLI acts on.
+type TemplateManifest struct {
+	ConsoleCommand []string `json:"console_command,omitempty"`
 }
 
 // TemplateRequirements mirrors internal/catalog's Requirements.
