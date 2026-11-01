@@ -308,6 +308,9 @@ Endpoints for:
 | GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
 | PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
 | GET | /api/v1/security/advisories | AbilityRead | handleSecurityAdvisories |
+| GET | /api/v1/settings/ddns | AbilityRoot | handleGetDDNS |
+| PUT | /api/v1/settings/ddns | AbilityRoot | handlePutDDNS |
+| GET | /api/v1/settings/ddns/status | AbilityRoot | handleDDNSStatus |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -321,9 +324,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/ddns | AbilityRoot | handleGetDDNS |
-| PUT | /api/v1/settings/ddns | AbilityRoot | handlePutDDNS |
-| GET | /api/v1/settings/ddns/status | AbilityRoot | handleDDNSStatus |
 
 </Accordion>
 
@@ -1125,6 +1125,8 @@ Endpoints for:
 | GET | /api/v1/settings/email/branding | AbilityRead | handleGetEmailBranding |
 | PUT | /api/v1/settings/email/branding | AbilityRoot | handleUpdateEmailBranding |
 | POST | /api/v1/settings/email/branding/preview | AbilityRoot | handlePreviewEmailBranding |
+| GET | /api/v1/settings/ingress/dns01 | AbilityRoot | handleGetIngressDNS01 |
+| PUT | /api/v1/settings/ingress/dns01 | AbilityRoot | handlePutIngressDNS01 |
 
 </Accordion>
 

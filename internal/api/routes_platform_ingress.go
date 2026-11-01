@@ -30,6 +30,8 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	// toggle can actually succeed.
 	mux.HandleFunc("GET /api/v1/settings/ingress/https", rt.requireAbility(AbilityRead, rt.handleGetHTTPSStatus))
 	mux.HandleFunc("POST /api/v1/settings/ingress/https", rt.requireAbility(AbilityRoot, rt.handleEnableHTTPS))
+	mux.HandleFunc("GET /api/v1/settings/ingress/dns01", rt.requireAbility(AbilityRoot, rt.handleGetIngressDNS01))
+	mux.HandleFunc("PUT /api/v1/settings/ingress/dns01", rt.requireAbility(AbilityRoot, rt.handlePutIngressDNS01))
 	mux.HandleFunc("GET /api/v1/settings/ingress/check", rt.requireAbility(AbilityRoot, rt.handleCheckIngressDomain))
 
 	mux.HandleFunc("GET /api/v1/settings/dns-provider", rt.requireAbility(AbilityRead, rt.handleGetDNSProvider))

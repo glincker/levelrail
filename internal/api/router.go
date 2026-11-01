@@ -896,6 +896,9 @@ type Router struct {
 	branchDeploys  BranchDeployStore // always set
 	contextConfigs ContextConfigStore
 	branchDeployMu sync.Mutex
+
+	// dns01ProviderCheck nil means no provider, so enabling dns01 is refused.
+	dns01ProviderCheck func(context.Context) bool
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

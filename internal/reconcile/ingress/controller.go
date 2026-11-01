@@ -359,6 +359,8 @@ type Controller struct {
 	// means no wildcard domain ever gets Cloudflare DNS-01, unchanged
 	// from this controller's behavior before this field existed.
 	dnsTokens CloudflareDNSTokenResolver
+	// dns01AllHosts is read every pass so the stored setting applies without a restart; nil means off.
+	dns01AllHosts func(context.Context) bool
 
 	// route53Creds, if set via WithRoute53DNSCredentials, is resolved
 	// fresh every Reconcile pass whenever store.Route53DNSSettings.
@@ -598,6 +600,21 @@ func WithRegistryDial(dial string) Option {
 // existed.
 func WithCloudflareDNSTokens(resolver CloudflareDNSTokenResolver) Option {
 	return func(c *Controller) { c.dnsTokens = resolver }
+}
+
+// WithDNS01AllHosts supplies the live DNS-01-for-every-host switch, resolved on each pass.
+func WithDNS01AllHosts(fn func(context.Context) bool) Option {
+	return func(c *Controller) { c.dns01AllHosts = fn }
+}
+
+func (c *Controller) dns01AllHostsOn(ctx context.Context) bool {
+	return c.dns01AllHosts != nil && c.dns01AllHosts(ctx)
+}
+
+// DNSProviderConnected reports whether a DNS-01 provider is enabled with usable credentials,
+// the same check a reconcile pass makes, so the API can refuse a setting the build would reject.
+func DNSProviderConnected(ctx context.Context, svcStore ServiceStore, opts ...Option) bool {
+	return New(svcStore, nil, nil, opts...).resolveDNSProvider(ctx) != nil
 }
 
 // WithRoute53DNSCredentials enables Route53 DNS-01 for wildcard domains
@@ -1152,7 +1169,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEEmail:            settings.ACMEEmail,
 		ACMEDirectoryURL:     settings.ACMEDirectoryURL,
 		DNSProvider:          dnsProvider,
-		DNS01AllHosts:        dns01AllHostsEnabled(),
+		DNS01AllHosts:        c.dns01AllHostsOn(ctx),
 		TLSCertificates:      tlsCertOverrides,
 		RequestStats:         c.requestStats,
 		Firewall:             c.firewall,

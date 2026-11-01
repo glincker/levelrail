@@ -24,6 +24,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -396,7 +397,11 @@ func (s *bootState) startReconciler() {
 		lbRegistry:                   lbRegistry,
 		proxySyncer:                  proxySyncer,
 		previewNotifier:              previewManager,
+		dns01AllHosts: func(c context.Context) bool {
+			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyIngressDNS01AllHosts)
+		},
 	}
+	s.setupDNS01Check()
 	engine.SetSource(dynamicSource(sourceDeps))
 	engine.SetKeyed(application.IsServiceControllerName)
 	scheduledTaskRunner.Specs = newJobSpecBuilder(sourceDeps)

@@ -68,6 +68,7 @@ const (
 	KeyBindBlockCredentialDirs = "security.bind_block_credential_dirs"
 	KeyBindAllowedRoots        = "security.bind_allowed_roots"
 	KeyTrustLoopbackForwarded  = "security.trust_loopback_forwarded_headers"
+	KeyIngressDNS01AllHosts    = "ingress.dns01_all_hosts"
 	KeyRevokedTokenDays        = "retention.revoked_token_days" //nolint:gosec // setting key, not a credential
 	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
 )
@@ -195,6 +196,12 @@ func init() {
 		TitleKey: "runtimeSettings:items.trustLoopbackForwarded.title", DescKey: "runtimeSettings:items.trustLoopbackForwarded.description",
 		Title:       "Trust forwarded headers from loopback",
 		Description: "Believe X-Forwarded-For when the request arrives from this host. Turn off when nothing local proxies to the control plane.",
+	})
+	Register(Definition{
+		Key: KeyIngressDNS01AllHosts, Category: CategoryNetworking, Kind: KindBool, Default: "false",
+		Env: "APP_INGRESS_DNS01_ALL_HOSTS", Apply: ApplyLive,
+		Title:       "DNS-01 for every host",
+		Description: "Issue certificates for single hosts over DNS-01 as well as wildcards, so servers with port 80 closed can still get one. Needs a connected DNS provider; not yet verified against a real CA.",
 	})
 	Register(Definition{
 		Key: KeyRevokedTokenDays, Category: CategoryRetention, Kind: KindInt, Default: "90", AllowedInts: TokenRetentionPresets,

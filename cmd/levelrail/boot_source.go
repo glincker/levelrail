@@ -95,6 +95,8 @@ type dynamicSourceDeps struct {
 	lbRegistry *loadbalancer.Registry
 	// proxySyncer is shared with the API so passes on one directory serialise.
 	proxySyncer *proxyroutes.Syncer
+	// dns01AllHosts reads the live DNS-01-for-every-host setting.
+	dns01AllHosts func(context.Context) bool
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -177,6 +179,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 		ingressOpts = append(ingressOpts, ingressreconcile.WithAppWake(deps.db, dashboardDialAddr(httpAddr()), appWakeToken()))
 		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db), ingressreconcile.WithCanaryDials(canary.DefaultDials()))
+		ingressOpts = append(ingressOpts, ingressreconcile.WithDNS01AllHosts(deps.dns01AllHosts))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 		if deps.proxySyncer != nil {
 			controllers = append(controllers, proxyroutesreconcile.New(deps.proxySyncer))
