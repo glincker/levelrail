@@ -31,7 +31,7 @@ func (c *Controller) reviveLastReady(ctx context.Context, targets []string, desi
 // release (not yet judged) and must keep older stopped ones where they are.
 func (c *Controller) reviveIfDead(ctx context.Context, targets []string, desired *store.DesiredService, skipIfTargetRunning bool) {
 	// Reviving an older one-shot would rerun a finished migration.
-	if desired.RunsToCompletion() {
+	if desired.RunsToCompletion() || desired.Suspended {
 		return
 	}
 	hist, ok := c.store.(attemptHistory)

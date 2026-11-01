@@ -47,6 +47,17 @@ Deploys, restarts and rollbacks follow the same order, and every step waits for 
 
 Two orders lose requests, and the ingress tests check both stay out of the cutover path: stopping the serving release before the route has moved, and moving the route to a release that is running but not listening yet. In both cases the ingress retries the dial for `APP_INGRESS_RETRY_WINDOW`, so a client with a shorter timeout sees a failed request.
 
+## What stays running after a cutover
+
+Two different things can leave an older release on disk, and neither is a standing replica.
+
+- **The held previous release.** Exactly one: the newest release before the current one keeps running for `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` (at least the drain timeout, and the watch window when auto-rollback is on), then it is stopped and removed. Older releases are removed at cutover.
+- **Deploy URL copies.** Opening an old deploy at its own URL uses a one-replica copy of that deploy's pinned image. Copies are created asleep, so nothing runs until the URL is visited, and they sleep again after `APP_DEPLOY_URL_IDLE_MINUTES`. At most `APP_DEPLOY_URL_MAX_COPIES` (default `1`) exist per app, within the newest `APP_DEPLOY_URL_KEEP` deploys (default `3`, `0` turns the feature off). Copies are removed when the app is deleted or falls out of the window.
+
+A copy has no volumes and no host ports, so apps that own data or a host claim get none: any app with a named volume, a writable bind mount, a published host port or a fixed host port. Such an app keeps only the held previous release, and its rollback uses the same volumes through the normal cutover. No copy is created when the host has less than `APP_DEPLOY_URL_MIN_FREE_MEMORY_MB` available (default `1024`), or when the app's memory limit is above `APP_DEPLOY_URL_MAX_MEMORY_PERCENT` percent of host RAM (default `25`); `0` turns either check off.
+
+A stopped app stays stopped: no revive path starts an older release while the app is suspended.
+
 A rollback to a release that is still held reuses it only when its container is the same one that served before. A rollback that has to start a fresh container goes through the full readiness gate, so traffic stays on the current release until the restored one is ready. That takes the readiness time plus the stable window.
 
 Rollbacks follow the same three steps:

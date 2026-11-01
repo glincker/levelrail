@@ -1371,6 +1371,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
 	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
+		spec.Labels = mergeLabel(spec.Labels, appspec.DeployURLLabelKey, "1")
+	}
 	if desired.Incarnation != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.IncarnationLabelKey, desired.Incarnation)
 	}

@@ -38,6 +38,10 @@ const InstanceLabelKey = ReservedLabelPrefix + "instance"
 // so an operator label cannot spoof it.
 const AppLabelKey = ReservedLabelPrefix + "app"
 
+// DeployURLLabelKey marks a container of a retained deploy copy, so a sweep
+// can find copies whose database row is gone.
+const DeployURLLabelKey = ReservedLabelPrefix + "deploy-url"
+
 // IncarnationLabelKey names which life of an app name created a container,
 // so a recreated app never adopts an older life's container.
 const IncarnationLabelKey = ReservedLabelPrefix + "incarnation"

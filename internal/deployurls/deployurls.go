@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // Environment variables that tune deploy URLs.
@@ -27,6 +29,12 @@ const (
 	EnvIdleMinutes = "APP_DEPLOY_URL_IDLE_MINUTES"
 	// EnvInterval is how often the syncer looks for new deploys.
 	EnvInterval = "APP_DEPLOY_URL_INTERVAL"
+	// EnvMaxCopies caps the retained copies of older deploys per app, the live deploy excluded.
+	EnvMaxCopies = "APP_DEPLOY_URL_MAX_COPIES"
+	// EnvMinFreeMemoryMB is the host available memory below which no new copy is created; 0 turns the check off.
+	EnvMinFreeMemoryMB = "APP_DEPLOY_URL_MIN_FREE_MEMORY_MB"
+	// EnvMaxMemoryPercent skips an app whose memory limit exceeds this share of host RAM; 0 turns the check off.
+	EnvMaxMemoryPercent = "APP_DEPLOY_URL_MAX_MEMORY_PERCENT"
 )
 
 // Defaults for the variables above.
@@ -34,6 +42,9 @@ const (
 	DefaultKeep        = 3
 	DefaultIdleMinutes = 5
 	DefaultInterval    = time.Minute
+	DefaultMaxCopies   = 1
+	DefaultMinFreeMB   = 1024
+	DefaultMaxMemPct   = 25
 	keyLen             = 7
 )
 
@@ -44,11 +55,24 @@ type Config struct {
 	Keep        int
 	IdleMinutes int
 	Interval    time.Duration
+	MaxCopies   int
+	MinFreeMB   int
+	MaxMemPct   int
 }
 
 // ConfigFromEnv reads the Env* variables, using defaults for anything missing or malformed.
 func ConfigFromEnv(getenv func(string) string) Config {
-	cfg := Config{Keep: DefaultKeep, IdleMinutes: DefaultIdleMinutes, Interval: DefaultInterval}
+	cfg := Config{Keep: DefaultKeep, IdleMinutes: DefaultIdleMinutes, Interval: DefaultInterval,
+		MaxCopies: DefaultMaxCopies, MinFreeMB: DefaultMinFreeMB, MaxMemPct: DefaultMaxMemPct}
+	if n, err := strconv.Atoi(strings.TrimSpace(getenv(EnvMaxCopies))); err == nil && n >= 0 {
+		cfg.MaxCopies = n
+	}
+	if n, err := strconv.Atoi(strings.TrimSpace(getenv(EnvMinFreeMemoryMB))); err == nil && n >= 0 {
+		cfg.MinFreeMB = n
+	}
+	if n, err := strconv.Atoi(strings.TrimSpace(getenv(EnvMaxMemoryPercent))); err == nil && n >= 0 && n <= 100 {
+		cfg.MaxMemPct = n
+	}
 	if n, err := strconv.Atoi(strings.TrimSpace(getenv(EnvKeep))); err == nil && n >= 0 {
 		cfg.Keep = n
 	}
@@ -159,6 +183,7 @@ type Store interface {
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
 	SetAppSleepIdle(ctx context.Context, serviceName string, minutes int, now time.Time) error
 	SetAppSleepHold(ctx context.Context, serviceName string, hold bool, now time.Time) error
+	SetAppSleeping(ctx context.Context, serviceName string, sleeping bool, now time.Time) error
 	ListDeployURLs(ctx context.Context, appName string) ([]store.DeployURL, error)
 	SaveDeployURL(ctx context.Context, u store.DeployURL) error
 	DeleteDeployURL(ctx context.Context, serviceName string) error
@@ -173,9 +198,11 @@ type Syncer struct {
 	// Remove deletes a retained service and tears its containers down.
 	Remove func(ctx context.Context, serviceName string) error
 	// Nudge asks the reconcilers to run now.
-	Nudge  func()
-	Now    func() time.Time
-	Logger *slog.Logger
+	Nudge func()
+	// HostMemory reports host total and available bytes; nil reads this host.
+	HostMemory func() (total, avail int64, err error)
+	Now        func() time.Time
+	Logger     *slog.Logger
 
 	existing map[string]bool
 }
@@ -249,7 +276,7 @@ func (s *Syncer) removeRow(ctx context.Context, r store.DeployURL) bool {
 
 func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map[string]store.DeployURL) (bool, error) {
 	var wanted []Wanted
-	if s.Config.Keep > 0 && !app.Suspended {
+	if s.Config.Keep > 0 && !app.Suspended && ExcludeReason(app) == "" {
 		attempts, err := s.Store.ListDeployAttempts(ctx, app.Name)
 		if err != nil {
 			return false, fmt.Errorf("list attempts: %w", err)
@@ -258,7 +285,7 @@ func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map
 		if err != nil {
 			return false, fmt.Errorf("list pins: %w", err)
 		}
-		wanted = Plan(app, attempts, pins, s.Config.Keep)
+		wanted = capCopies(Plan(app, attempts, pins, s.Config.Keep), s.Config.MaxCopies)
 	}
 	want := map[string]bool{}
 	changed := false
@@ -268,6 +295,10 @@ func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map
 			continue
 		}
 		if s.existing[w.ServiceName] {
+			continue
+		}
+		if s.memoryTight(app) {
+			s.Logger.InfoContext(ctx, "deploy urls: copy skipped, host memory is tight", slog.String("app", app.Name))
 			continue
 		}
 		host := ""
@@ -303,7 +334,10 @@ func wantedLive(wanted []Wanted, name string) bool {
 }
 
 func (s *Syncer) create(ctx context.Context, app store.DesiredService, w Wanted, host string) error {
-	if err := s.Store.SaveDesiredService(ctx, Clone(app, w, host)); err != nil {
+	// Born asleep: an old deploy costs nothing until someone opens its URL.
+	svc := Clone(app, w, host)
+	svc.Suspended = true
+	if err := s.Store.SaveDesiredService(ctx, svc); err != nil {
 		return fmt.Errorf("save service: %w", err)
 	}
 	now := s.now()
@@ -312,6 +346,9 @@ func (s *Syncer) create(ctx context.Context, app store.DesiredService, w Wanted,
 	}
 	if err := s.Store.SetAppSleepHold(ctx, w.ServiceName, true, now); err != nil {
 		return fmt.Errorf("hold requests: %w", err)
+	}
+	if err := s.Store.SetAppSleeping(ctx, w.ServiceName, true, now); err != nil {
+		return fmt.Errorf("mark asleep: %w", err)
 	}
 	return s.Store.SaveDeployURL(ctx, store.DeployURL{ServiceName: w.ServiceName, AppName: app.Name, AttemptID: w.Attempt.ID, Host: host, CreatedAt: now})
 }
@@ -343,3 +380,57 @@ func (c Config) Enabled() bool { return c.Keep > 0 }
 
 // FromProcessEnv is ConfigFromEnv over the process environment.
 func FromProcessEnv() Config { return ConfigFromEnv(os.Getenv) }
+
+// ExcludeReason names why app gets no retained copies, or "" when it may. A
+// copy runs without the app's volumes and host ports, so for an app that owns
+// data or a host claim it would be an empty second instance, never a rollback target.
+func ExcludeReason(app store.DesiredService) string {
+	if len(app.Volumes) > 0 {
+		return "named volume"
+	}
+	for _, m := range app.BindMounts {
+		if !m.ReadOnly && !strings.HasSuffix(path.Clean(m.HostPath), ".sock") {
+			return "writable bind mount"
+		}
+	}
+	if app.HostPort != nil || len(app.PublishedPorts) > 0 {
+		return "host port"
+	}
+	return ""
+}
+
+// capCopies keeps the live entry (it needs no service) and at most max older ones.
+func capCopies(in []Wanted, limit int) []Wanted {
+	out := in[:0:0]
+	copies := 0
+	for _, w := range in {
+		if !w.Live {
+			if copies >= limit {
+				continue
+			}
+			copies++
+		}
+		out = append(out, w)
+	}
+	return out
+}
+
+// memoryTight reports whether creating a copy of app could push the host into
+// memory pressure. An unreadable host memory never blocks.
+func (s *Syncer) memoryTight(app store.DesiredService) bool {
+	read := s.HostMemory
+	if read == nil {
+		read = telemetry.HostMemoryBytes
+	}
+	total, avail, err := read()
+	if err != nil || total <= 0 {
+		return false
+	}
+	if mb := int64(s.Config.MinFreeMB); mb > 0 && avail < mb<<20 {
+		return true
+	}
+	if pct := int64(s.Config.MaxMemPct); pct > 0 && app.Resources != nil && app.Resources.MemoryBytes*100 > total*pct {
+		return true
+	}
+	return false
+}
