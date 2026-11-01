@@ -538,6 +538,8 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 			masked.Flush()
 			flusher.Flush()
 		case <-traceTick.C:
+			// Release held log lines first so trace lines cannot overtake them.
+			masked.Flush()
 			rt.writeChangedTraceLines(r.Context(), w, flusher, deployID, sent)
 		case ev, chOpen := <-live:
 			if !chOpen {
