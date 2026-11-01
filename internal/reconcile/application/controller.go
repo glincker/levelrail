@@ -279,6 +279,7 @@ type Controller struct {
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
 	reviveWatch         time.Duration                   // see WithReviveWatch
+	handoffMu           sync.Mutex                      // parallel replica starts share handoffFailed
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 	pendingReady        *PendingReadiness               // nil keeps the blocking readiness wait, see WithReadinessRequeue
 	readinessRequeue    time.Duration
@@ -1022,7 +1023,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 				released = append(released, c.locateReleased(ctx, prior.released)...)
 			}
 		}
-		if err := c.createAndStart(ctx, target, desired); err != nil {
+		if err := c.createAndStart(ctx, target, desired, released); err != nil {
 			reason, err := c.createFailure(err)
 			c.traceAbort(ctx, desired, target, reason, err)
 			return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
@@ -1059,7 +1060,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			if err := c.removeContainer(ctx, state.ID); err != nil {
 				return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: start failed (%w) and the broken container could not be removed for recreation: %w", target, startErr, err)
 			}
-			if err := c.createAndStart(ctx, target, desired); err != nil {
+			if err := c.createAndStart(ctx, target, desired, released); err != nil {
 				return replicaOutcome{reason: "CreateFailed"}, fmt.Errorf("restart %q: start failed (%w), recreated instead: %w", target, startErr, err)
 			}
 			created = true
@@ -1079,7 +1080,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			var crash *readinessCrashError
 			if defers && !errors.As(err, &crash) {
 				if started, ok := c.adoptable(ctx, target, state, desired); ok {
-					return c.deferCandidate(target, state, pendingCandidate{created: true, firstSeen: started}), nil
+					return c.deferCandidate(target, state, pendingCandidate{created: true, released: releasedIDs(c.releasedFromLabel(ctx, state)), firstSeen: started}), nil
 				}
 			}
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
@@ -1207,7 +1208,7 @@ func (c *Controller) readinessVerdict(ctx context.Context, target string, state 
 		}
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 	}
-	delete(c.handoffFailed, target)
+	c.clearHandoffFailed(target)
 	return c.confirmedOutcome(ctx, target, state, desired, true)
 }
 
@@ -1327,7 +1328,7 @@ func (c *Controller) ensureAppNetwork(ctx context.Context, desired *store.Desire
 	return nil
 }
 
-func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService) error {
+func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService, released []docker.ContainerState) error {
 	tr := c.tracer(ctx, desired)
 	c.traceDependenciesMet(ctx, tr, desired)
 	cfgSpan := tr.Begin(ctx, deploytrace.StepConfigValidate, "resolving env and container config")
@@ -1375,6 +1376,10 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	if prev := c.supersededRelease(ctx, name); prev != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.SupersedesLabelKey, prev)
+	}
+	if len(released) > 0 {
+		// Survives a control plane restart so the stopped previous release can still be restored.
+		spec.Labels = mergeLabel(spec.Labels, releasedLabelKey, releasedLabelValue(released))
 	}
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
@@ -2344,6 +2349,9 @@ func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredServi
 	// ends the wait instead of waiting out the full readiness budget.
 	t := time.NewTicker(c.effectiveReviveWatch())
 	defer t.Stop()
+	// A takeover stopped the old release on purpose: reviving it would
+	// put two writers or two binders next to the candidate.
+	takeover := c.planHandoff(ctx, desired).stopFirst()
 	for {
 		select {
 		case err := <-readyErr:
@@ -2357,7 +2365,7 @@ func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredServi
 			if c.desiredSuperseded(ctx, desired) {
 				return errSuperseded
 			}
-			if desired.HostPort == nil && len(desired.PublishedPorts) == 0 {
+			if !takeover && desired.HostPort == nil && len(desired.PublishedPorts) == 0 {
 				c.reviveIfDead(ctx, []string{candidate}, desired, false)
 			}
 		}

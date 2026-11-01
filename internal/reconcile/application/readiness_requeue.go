@@ -6,11 +6,13 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -282,4 +284,36 @@ func (c *Controller) pendingResult(target string) reconcile.Result {
 		RequeueAfter: c.readinessRequeue,
 		KeyOnly:      true,
 	}
+}
+
+// releasedLabelKey records on a candidate which stopped releases it took
+// over from, so a restarted control plane can still restore them.
+var releasedLabelKey = appspec.ReservedLabelPrefix + "released"
+
+func releasedLabelValue(released []docker.ContainerState) string {
+	names := make([]string, 0, len(released))
+	for _, cs := range released {
+		names = append(names, cs.Name)
+	}
+	return strings.Join(names, ",")
+}
+
+// releasedFromLabel finds the stopped releases a candidate's label names.
+func (c *Controller) releasedFromLabel(ctx context.Context, candidate *docker.ContainerState) []docker.ContainerState {
+	raw := candidate.Labels[releasedLabelKey]
+	if raw == "" {
+		return nil
+	}
+	names := strings.Split(raw, ",")
+	all, err := c.listPrefix(ctx, c.serviceName+"-")
+	if err != nil {
+		return nil
+	}
+	var out []docker.ContainerState
+	for _, cs := range all {
+		if !cs.Running && slices.Contains(names, cs.Name) && ownsContainer(c.serviceName, cs.Name) {
+			out = append(out, cs)
+		}
+	}
+	return out
 }

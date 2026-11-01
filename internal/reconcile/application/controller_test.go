@@ -81,11 +81,13 @@ type fakeRuntime struct {
 	// any port, the Docker quirk after a failed first start.
 	startNoPortsOnce bool
 
-	createErr  error
-	startErr   error
-	stopErr    error
-	removeErr  error
-	inspectErr error
+	createErr error
+	startErr  error
+	stopErr   error
+	// stopErrOnCall fails exactly the Nth (1-based) Stop call.
+	stopErrOnCall int
+	removeErr     error
+	inspectErr    error
 	// inspectErrOnCall fails exactly the Nth (1-based) InspectByName
 	// call and no other, so a test can break the one inspect a specific
 	// step makes (the liveness check's own, say) without breaking the
@@ -374,6 +376,9 @@ func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.stopCalls++
+	if f.stopErrOnCall != 0 && f.stopCalls == f.stopErrOnCall {
+		return errors.New("stop failed")
+	}
 	if f.stopErr != nil {
 		return f.stopErr
 	}

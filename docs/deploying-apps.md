@@ -29,7 +29,7 @@ Domains and TLS, managed databases, and git provider setup have their own pages:
 
 - **An app is desired state.** It is a record: an image, a port, and the settings around them. Saving it changes the record. A level-triggered reconciler then converges the running containers to match. Nothing is edge-triggered, so a missed event never leaves an app out of sync.
 - **One mutation changes the image.** `POST /api/v1/apps/{name}/deploys` points the app at a tag and returns immediately. A rollback is the same call with an older tag. `apps rollback`, the dashboard rollback button, and automatic rollback on a crashloop all use it, so there is no second code path that can drift.
-- **Traffic only moves once the new container is ready.** The readiness probe has to pass before the old container is drained. If it never passes, the old container keeps serving and the deploy fails with a reason.
+- **Traffic only moves once the new container is ready.** The readiness probe has to pass before the old container is drained. If it never passes, the old container keeps serving and the deploy fails with a reason. The exception is a single-replica app with a writable volume and a fixed host port or stream port: it cannot run two copies, so the old container is stopped first and restarted if the new one fails (see [Pinned host ports](/deploy-safety#pinned-host-ports)). Set `strategy: recreate` for any other app that needs a single writer on its data.
 
 <Accordion title="For contributors: where this lives in the source">
 - Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
