@@ -39,6 +39,14 @@ levelrail-cli backups drill show bkd_xyz789
 
 `drill run` waits for the result and exits non-zero when the drill fails, so it works in a script or a cron job.
 
+To make the backup a drill needs, trigger one by hand: `levelrail-cli app-volume-backups trigger <app> <volume> --target ID`. `ID` is a storage destination from `levelrail-cli storage list`.
+
+### Try it against a local S3 server
+
+A destination on the same host, such as `--endpoint http://127.0.0.1:19000`, is refused with `endpoint_blocked` by default, because the control plane blocks loopback and private addresses for outbound storage calls. Set `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` in the control plane's environment and restart it. Despite the name, this one switch also gates storage destinations, and it relaxes the same check for webhooks, so enable it only on a host you control.
+
+The `minio/minio` image is no longer pullable from Docker Hub. Two S3-compatible servers whose Docker Hub manifests list an arm64 build (checked with `docker manifest inspect`) are `chrislusf/seaweedfs` and `dxflrs/garage`. Check the tag you pick the same way before relying on it.
+
 ## Automatic drills
 
 Every resource that has a succeeded backup is drilled on its newest backup once per `APP_BACKUP_DRILL_INTERVAL_HOURS` (default `168`, one week; `0` turns scheduled drills off). The result history is on the **Backups** page and in `levelrail-cli backups drill list`.

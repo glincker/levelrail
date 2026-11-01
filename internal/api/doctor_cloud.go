@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // Cloud preflight checks are read-only, optional and informational. They
@@ -128,9 +129,21 @@ func (rt *Router) doctorCheckCloud(ctx context.Context) []doctorCheckResource {
 				out = append(out, cloudPort{Port: f.HostPort, Proto: f.Protocol, Container: f.Container, Image: f.Image, Loopback: cloudBindsLoopback(f.Binds)})
 			}
 		}
-		return out, nil
+		return append(out, rt.desiredCloudPortsNow(ctx)...), nil
 	}
 	return runCloudChecks(ctx, d)
+}
+
+func (rt *Router) desiredCloudPortsNow(ctx context.Context) []cloudPort {
+	services, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return nil
+	}
+	var streams []store.AppStream
+	if rt.appStreams != nil {
+		streams, _ = rt.appStreams.ListAllAppStreams(ctx)
+	}
+	return desiredCloudPorts(services, streams)
 }
 
 func runCloudChecks(ctx context.Context, d cloudDeps) []doctorCheckResource {

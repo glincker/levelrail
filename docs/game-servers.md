@@ -51,7 +51,7 @@ A world is a set of files that change while the server runs. Copying them mid-wr
 
 Levelrail can back up an app volume to an S3-compatible target on a schedule, see [Backup targets and volume backups](/backups-and-storage). Each volume can have a pre-backup and a post-backup command, set with `levelrail-cli backups volumes policy set <app> <volume> --pre-hook '...' --post-hook '...'`. The post command always runs, even when the pre command fails or times out. A failed or timed-out pre command still produces a backup, recorded with an `inconsistent:` warning, so check that warning before you rely on the copy. Hooks are capped by `APP_BACKUP_HOOK_TIMEOUT_SECONDS` and `APP_BACKUP_HOOK_MAX_SECONDS`, and their output by `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES`. The `--pause` option freezes the container while the archive streams instead.
 
-For a Minecraft preset that runs `rcon-cli` (save-off, save-all flush, save-on), see the Minecraft example in [Prove your backups work](/prove-your-backups-work). Without hooks, stop the server before the backup runs or take the backup when nobody is online. Rehearse a restore before you rely on it: see [Prove your backups work](/prove-your-backups-work).
+For a Minecraft preset that runs `rcon-cli` (save-off, save-all flush, save-on), see the Minecraft example in [Prove your backups work](/prove-your-backups-work). Without hooks, stop the server before the backup runs or take the backup when nobody is online. To take one by hand, run `levelrail-cli app-volume-backups trigger <app> <volume> --target ID`. Rehearse a restore before you rely on it: see [Prove your backups work](/prove-your-backups-work).
 
 ## Other game templates
 

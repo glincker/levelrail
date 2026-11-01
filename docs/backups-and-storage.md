@@ -384,7 +384,7 @@ Limits to know about:
 - Deleting a database keeps its data volume and your backups. See [Managing databases](/managing-databases#stop-start-and-delete).
 - The free-space floor protects the control plane's data directory. Nothing watches the Docker host's own disk for a major upgrade's snapshot copy: a copy that runs out of space fails the upgrade before it changes anything.
 - WAL and binary logs for point-in-time restore are shipped to the backup target only for databases on the control plane's own node.
-- A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which a MinIO on the same private network needs.
+- A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set in the control plane's environment. A local or same-network S3 server needs it, and `storage add` fails with `endpoint_blocked` without it. The name says notify, but the same switch gates storage and relaxes webhook checks too, so set it only on a host you control. The `minio/minio` Docker Hub image can no longer be pulled; see [Prove your backups work](/prove-your-backups-work) for S3-compatible alternatives with arm64 images.
 - Deleting a backup target leaves its stored access key and secret in the secrets store, unreferenced and unreachable through the API but not erased at rest. Registry credentials behave the same way.
 
 ## API reference

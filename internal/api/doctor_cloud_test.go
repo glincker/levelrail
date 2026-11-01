@@ -5,6 +5,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const oracleInputRules = `-P INPUT ACCEPT
@@ -277,5 +280,61 @@ func TestImageArchResult_WordingCoversEmulation(t *testing.T) {
 	res, ok := imageArchResult(context.Background(), d, []cloudPort{{Port: 1, Proto: "tcp", Image: "x/y:1"}})
 	if !ok || !strings.Contains(res.Message, "pull or start fails with PlatformMismatch") || !strings.Contains(res.Message, "emulation") {
 		t.Fatalf("message %q", res.Message)
+	}
+}
+
+func TestDesiredCloudPorts_Scenarios(t *testing.T) {
+	t.Parallel()
+	stream := store.AppStream{ServiceName: "mc", HostPort: 25565, Protocol: "tcp"}
+	direct := store.DesiredService{Name: "mc", BindAddress: "private", PublishedPorts: []store.PublishedPort{{HostPort: 25565, ContainerPort: 25565, Bind: "public"}}}
+	loop := store.DesiredService{Name: "mc", BindAddress: "private", PublishedPorts: []store.PublishedPort{{HostPort: 25565, ContainerPort: 25565}}}
+	udp := store.DesiredService{Name: "vpn", BindAddress: "public", PublishedPorts: []store.PublishedPort{{HostPort: 51820, ContainerPort: 51820, Protocol: "udp"}}}
+	cases := []struct {
+		name     string
+		svcs     []store.DesiredService
+		streams  []store.AppStream
+		wantOpen string
+		wantPriv string
+		wantNone bool
+	}{
+		{name: "stream only", svcs: []store.DesiredService{loop}, streams: []store.AppStream{stream}, wantOpen: "Published ports: 25565/tcp."},
+		{name: "direct only", svcs: []store.DesiredService{direct}, wantOpen: "Published ports: 25565/tcp."},
+		{name: "stream plus loopback template publish", svcs: []store.DesiredService{{Name: "mc", PublishedPorts: []store.PublishedPort{{HostPort: 32895, ContainerPort: 25565}}}}, streams: []store.AppStream{stream}, wantOpen: "Published ports: 25565/tcp.", wantPriv: "32895/tcp"},
+		{name: "mixed", svcs: []store.DesiredService{direct, udp}, streams: []store.AppStream{{ServiceName: "x", HostPort: 8080, Protocol: "tcp"}}, wantOpen: "8080/tcp, 25565/tcp, 51820/udp"},
+		{name: "none", wantNone: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ports := cloudDedupPorts(desiredCloudPorts(tc.svcs, tc.streams))
+			res, ok := publishedPortsResult(ports, nil)
+			if tc.wantNone {
+				if ok {
+					t.Fatalf("unexpected result %q", res.Message)
+				}
+				return
+			}
+			if !ok || !strings.Contains(res.Message, tc.wantOpen) || !strings.Contains(res.Message, tc.wantPriv) {
+				t.Fatalf("ok=%v message %q want %q private %q", ok, res.Message, tc.wantOpen, tc.wantPriv)
+			}
+			cmds := cloudOpenCommands(ports, 5, "persist")
+			if tc.wantOpen != "" && !strings.Contains(cmds, "iptables -I INPUT 5 -p ") {
+				t.Fatalf("commands %q", cmds)
+			}
+		})
+	}
+}
+
+func TestClearStaleSuspended(t *testing.T) {
+	t.Parallel()
+	stale := []reconcile.Condition{{Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "Suspended"}}
+	if got := clearStaleSuspended(store.DesiredService{Suspended: false}, stale); got[0].Reason != "Starting" {
+		t.Fatalf("started app still shows %q", got[0].Reason)
+	}
+	if got := clearStaleSuspended(store.DesiredService{Suspended: true}, stale); got[0].Reason != "Suspended" {
+		t.Fatalf("stopped app lost Suspended: %q", got[0].Reason)
+	}
+	if stale[0].Reason != "Suspended" {
+		t.Fatal("input mutated")
 	}
 }
