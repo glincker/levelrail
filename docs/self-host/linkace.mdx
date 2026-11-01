@@ -1,0 +1,74 @@
+---
+title: "Self-host LinkAce with Docker"
+sidebarTitle: "LinkAce"
+description: "A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit."
+"og:url": "https://docs.levelrail.com/self-host/linkace"
+---
+
+A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit.
+
+This page describes the Levelrail template for LinkAce (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.linkace.org/docs/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `linkace` | `linkace/linkace:v2.6.3` | 80 | `storage -&#62; /app/storage` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `linkace` | `APP_KEY` | Generated at deploy |
+| `linkace` | `APP_TIMEZONE` | Preset in the template |
+| `linkace` | `APP_URL` | Preset in the template |
+| `linkace` | `DB_CONNECTION` | Preset in the template |
+| `linkace` | `DB_DATABASE` | Preset in the template |
+| `linkace` | `LOG_CHANNEL` | Preset in the template |
+| `linkace` | `TRUSTED_HOSTS` | Preset in the template |
+| `linkace` | `TRUSTED_PROXIES` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`linkace`): APP_KEY.
+- Stores data in named volumes (`linkace`): storage.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy LinkAce with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select LinkAce. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy linkace --name my-linkace
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,75 @@
+---
+title: "Self-host Lychee with Docker"
+sidebarTitle: "Lychee"
+description: "A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login."
+"og:url": "https://docs.levelrail.com/self-host/lychee"
+---
+
+A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login.
+
+This page describes the Levelrail template for Lychee (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://lycheeorg.dev/docs/.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `lychee` | `ghcr.io/lycheeorg/lychee:v7.12.0` | 8000 | `data -&#62; /data`<br />`uploads -&#62; /app/public/uploads`<br />`storage -&#62; /app/storage/app` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `lychee` | `APP_DEBUG` | Preset in the template |
+| `lychee` | `APP_ENV` | Preset in the template |
+| `lychee` | `APP_KEY` | Generated at deploy |
+| `lychee` | `APP_URL` | Preset in the template |
+| `lychee` | `DB_CONNECTION` | Preset in the template |
+| `lychee` | `DB_DATABASE` | Preset in the template |
+| `lychee` | `PHP_TZ` | Preset in the template |
+| `lychee` | `TIMEZONE` | Preset in the template |
+| `lychee` | `TRUSTED_PROXIES` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`lychee`): APP_KEY.
+- Stores data in named volumes (`lychee`): data, storage, uploads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Lychee with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Lychee. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy lychee --name my-lychee
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+- [Ghost](/self-host/ghost)
+
+All templates are listed in the [self-host gallery](/self-host).

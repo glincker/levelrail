@@ -25,13 +25,13 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (386 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (388 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 34 |
 | [Analytics](#analytics) | 8 |
-| [Applications](#applications) | 24 |
+| [Applications](#applications) | 25 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 20 |
 | [Dashboard](#dashboard) | 8 |
@@ -43,7 +43,7 @@ Generated from `internal/catalog.Templates` (386 entries as of this build). Run 
 | [IoT](#iot) | 3 |
 | [Media](#media) | 28 |
 | [Monitoring](#monitoring) | 26 |
-| [Productivity](#productivity) | 76 |
+| [Productivity](#productivity) | 77 |
 | [Security](#security) | 18 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 14 |
@@ -115,6 +115,7 @@ Generated from `internal/catalog.Templates` (386 entries as of this build). Run 
 | [Kutt](https://docs.kutt.it/) | A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis. | `kutt` |  |
 | [Lowcoder](https://docs.lowcoder.cloud) | An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop. | `lowcoder` |  |
 | [LubeLogger](https://docs.lubelogger.com/) | A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account. | `lubelogger` |  |
+| [Lychee](https://lycheeorg.dev/docs/) | A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login. | `lychee` |  |
 | [Maintainerr](https://docs.maintainerr.info/) | Rule-based media library cleanup for Plex and Jellyfin that works with Sonarr, Radarr and Seerr. MIT licensed. On first open, add your media server and arr apps in settings, then build rules. | `maintainerr` |  |
 | [MediaWiki](https://www.mediawiki.org/wiki/Manual:Contents) | The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history. | `mediawiki` |  |
 | [Moodle](https://moodle.org) | A widely used, highly customizable learning management system for online courses. | `moodle` |  |
@@ -427,14 +428,15 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [HedgeDoc](https://docs.hedgedoc.org) | Real-time collaborative markdown notes you can host yourself. | `hedgedoc` |  |
 | [HeyForm](https://docs.heyform.net/open-source/installation) | A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend. | `heyform` |  |
 | [Homebox](https://homebox.software/en/quick-start/install/) | A home inventory and organization system for tracking what you own and where it is. | `homebox` |  |
-| [Joplin Server](https://github.com/laurent22/joplin/blob/dev/packages/server/README.md) | A self-hosted sync server for the Joplin note-taking app, keeping notes off third-party clouds. | `joplin` |  |
 | [Joplin Server](https://joplinapp.org/help/api/server_config/) | A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync. | `joplin-server` |  |
+| [Joplin Server](https://github.com/laurent22/joplin/blob/dev/packages/server/README.md) | A self-hosted sync server for the Joplin note-taking app, keeping notes off third-party clouds. | `joplin` |  |
 | [Kanboard](https://docs.kanboard.org) | A minimalist, keyboard-friendly kanban board for personal and team task tracking. | `kanboard` |  |
 | [Karakeep](https://docs.karakeep.app) | A self-hosted bookmark, note, and read-it-later manager with full-text search and tagging. | `karakeep` |  |
 | [Kimai](https://www.kimai.org/documentation/) | A self-hosted time tracking tool for freelancers and teams, with invoicing and reporting. | `kimai` |  |
 | [Leantime](https://docs.leantime.io) | A goals-focused project management tool built for people who aren't professional project managers. | `leantime` |  |
 | [LibreOffice (Remote Desktop)](https://www.libreoffice.org/discover/libreoffice/) | A full LibreOffice desktop running in a container, reachable from any browser, for editing office documents. | `libreoffice` |  |
 | [LimeSurvey](https://www.limesurvey.org/manual/) | A mature, self-hosted online survey tool for building and analyzing anonymous surveys. | `limesurvey` |  |
+| [LinkAce](https://www.linkace.org/docs/) | A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit. | `linkace` |  |
 | [Linkding](https://linkding.link) | A minimal, fast bookmark manager built for keeping a personal link archive. | `linkding` |  |
 | [Linkding Plus](https://linkding.link) | Linkding's extended image with full-page snapshot archiving bundled in, for bookmarks that must survive link rot. | `linkding-plus` |  |
 | [Linkwarden](https://docs.linkwarden.app/self-hosting/setup) | A bookmark manager that archives full page snapshots, not just links, so pages stay readable. | `linkwarden` |  |

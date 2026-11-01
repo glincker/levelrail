@@ -1,0 +1,20 @@
+id: lychee
+name: Lychee
+description: A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login.
+icon: image
+category: Applications
+documentation_url: https://lycheeorg.dev/docs/
+recommended_memory_bytes: 402653184
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for upload dates and logs.
+    default: Etc/UTC
+domains:
+  - service: lychee
+    port: 8000
+    description: Public address of Lychee.
+healthcheck:
+  service: lychee
+  port: 8000
+  path: /

@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-01T04:36:49Z",
+  "scanned_at": "2026-11-01T22:50:28Z",
   "images": [
     {
       "image": "1dev/server",
@@ -1307,6 +1307,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/lycheeorg/lychee",
+      "tag": "v7.12.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T22:50:28Z"
+    },
+    {
       "image": "ghcr.io/maintainerr/maintainerr",
       "tag": "3.31.0",
       "platforms": [
@@ -2170,6 +2179,16 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "linkace/linkace",
+      "tag": "v2.6.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T22:50:28Z"
+    },
+    {
       "image": "lissy93/dashy",
       "tag": "4.7.8",
       "platforms": [
@@ -2447,7 +2466,7 @@
       "image": "lscr.io/linuxserver/snapdrop",
       "tag": "latest",
       "platforms": null,
-      "checked_at": "2026-11-01T00:10:24Z",
+      "checked_at": "2026-11-01T22:50:28Z",
       "error": "unsupported manifest format"
     },
     {
@@ -3854,7 +3873,7 @@
       "image": "tiredofit/osticket",
       "tag": "1.18.2",
       "platforms": null,
-      "checked_at": "2026-11-01T00:10:24Z",
+      "checked_at": "2026-11-01T22:50:28Z",
       "error": "access denied (HTTP 401), image is private or missing"
     },
     {
@@ -4950,6 +4969,11 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "linkace": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
     "linkding": [
       "linux/amd64",
       "linux/arm",
@@ -5005,6 +5029,10 @@
       "linux/arm64"
     ],
     "lubelogger": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "lychee": [
       "linux/amd64",
       "linux/arm64"
     ],

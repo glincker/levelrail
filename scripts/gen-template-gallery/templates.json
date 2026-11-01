@@ -18745,6 +18745,122 @@
   }
  },
  {
+  "id": "linkace",
+  "name": "LinkAce",
+  "slogan": "A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit.",
+  "category": "Productivity",
+  "docUrl": "https://www.linkace.org/docs/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "linkace",
+    "image": "linkace/linkace:v2.6.3",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "storage -> /app/storage"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "linkace",
+    "name": "APP_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "linkace",
+    "name": "APP_TIMEZONE",
+    "kind": "preset"
+   },
+   {
+    "service": "linkace",
+    "name": "APP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "linkace",
+    "name": "DB_CONNECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "linkace",
+    "name": "DB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "linkace",
+    "name": "LOG_CHANNEL",
+    "kind": "preset"
+   },
+   {
+    "service": "linkace",
+    "name": "TRUSTED_HOSTS",
+    "kind": "preset"
+   },
+   {
+    "service": "linkace",
+    "name": "TRUSTED_PROXIES",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "linkace"
+     ],
+     "detail": "APP_KEY",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "linkace"
+     ],
+     "detail": "storage",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "linkding",
   "name": "Linkding",
   "slogan": "A minimal, fast bookmark manager built for keeping a personal link archive.",
@@ -20067,6 +20183,129 @@
     {
      "code": "https_ingress",
      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "lychee",
+  "name": "Lychee",
+  "slogan": "A self-hosted photo management and gallery app with albums, sharing and public links. MIT licensed. Runs on SQLite in one container. On first open, the setup page asks you to create the admin login.",
+  "category": "Applications",
+  "docUrl": "https://lycheeorg.dev/docs/",
+  "memoryMiB": 384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "lychee",
+    "image": "ghcr.io/lycheeorg/lychee:v7.12.0",
+    "ports": [
+     8000
+    ],
+    "volumes": [
+     "data -> /data",
+     "uploads -> /app/public/uploads",
+     "storage -> /app/storage/app"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "lychee",
+    "name": "APP_DEBUG",
+    "kind": "preset"
+   },
+   {
+    "service": "lychee",
+    "name": "APP_ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "lychee",
+    "name": "APP_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "lychee",
+    "name": "APP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "lychee",
+    "name": "DB_CONNECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "lychee",
+    "name": "DB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "lychee",
+    "name": "PHP_TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "lychee",
+    "name": "TIMEZONE",
+    "kind": "preset"
+   },
+   {
+    "service": "lychee",
+    "name": "TRUSTED_PROXIES",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "lychee"
+     ],
+     "detail": "APP_KEY",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "lychee"
+     ],
+     "detail": "data, storage, uploads",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
     },
     {
      "code": "volume_backups",

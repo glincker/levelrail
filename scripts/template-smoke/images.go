@@ -152,7 +152,7 @@ func magicValue(name string) string {
 	case strings.HasPrefix(kind, "USER_"):
 		return "smoke" + randomHex(4)
 	case strings.HasPrefix(kind, "BASE64BYTES_"):
-		return base64.StdEncoding.EncodeToString([]byte(randomHex(32)))
+		return randomBase64(32)
 	case strings.HasPrefix(kind, "BASE64_"), strings.HasPrefix(kind, "REALBASE64_"):
 		return randomBase64(32)
 	default:

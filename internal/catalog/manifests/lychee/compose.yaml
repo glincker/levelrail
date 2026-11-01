@@ -1,0 +1,24 @@
+services:
+  lychee:
+    image: ghcr.io/lycheeorg/lychee:v7.12.0
+    ports: ["8000"]
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: base64:$SERVICE_BASE64BYTES_32_APPKEY
+      APP_URL: ${SERVICE_FQDN_LYCHEE:-http://localhost:8000}
+      TRUSTED_PROXIES: "*"
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /data/database.sqlite
+      TIMEZONE: ${TZ}
+      PHP_TZ: ${TZ}
+    volumes:
+      - data:/data
+      - uploads:/app/public/uploads
+      - storage:/app/storage/app
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/ || exit 1"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 60s
