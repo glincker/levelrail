@@ -160,3 +160,28 @@ func TestNewSolveOptCustomFrontend(t *testing.T) {
 		}
 	}
 }
+
+func TestEffectiveNetworkTakesStricter(t *testing.T) {
+	t.Cleanup(func() { SetNetworkResolver(nil) })
+	tests := []struct {
+		name    string
+		carried NetworkMode
+		own     string
+		want    NetworkMode
+		wantErr bool
+	}{
+		{"carried none beats own open", NetworkNone, "open", NetworkNone, false},
+		{"own none beats carried open", NetworkOpen, "none", NetworkNone, false},
+		{"both open", "", "", NetworkOpen, false},
+		{"unknown carried mode refused", "bogus", "open", "", true},
+		{"unknown own mode refused", NetworkNone, "bogus", "", true},
+	}
+	for _, tt := range tests {
+		own := tt.own
+		SetNetworkResolver(func(context.Context) string { return own })
+		got, err := effectiveNetwork(t.Context(), tt.carried)
+		if (err != nil) != tt.wantErr || got != tt.want {
+			t.Errorf("%s: got %q, %v", tt.name, got, err)
+		}
+	}
+}

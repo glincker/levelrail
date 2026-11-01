@@ -60,7 +60,7 @@ func TestCreateRefusedForAgentWithoutCapability(t *testing.T) {
 
 func TestLocalAgentInfoAdvertisesSecurityCapability(t *testing.T) {
 	caps := LocalAgentInfo().GetCapabilities()
-	want := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles}
+	want := []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork}
 	if !slices.Equal(caps, want) {
 		t.Fatalf("caps %v, want exactly %v", caps, want)
 	}

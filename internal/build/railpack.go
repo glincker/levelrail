@@ -380,7 +380,7 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 func (c *Client) solveRailpack(ctx context.Context, req RailpackRequest, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
 	start := time.Now()
 	var err error
-	if req.Network, err = resolveNetwork(ctx); err != nil {
+	if req.Network, err = effectiveNetwork(ctx, req.Network); err != nil {
 		return nil, err
 	}
 

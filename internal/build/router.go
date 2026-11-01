@@ -79,6 +79,9 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 	if req.S3Cache != nil {
 		emitCacheWarning(progress, "build cache skipped: this build runs on a remote build node, which does not receive bucket credentials")
 	}
+	if req.Network, err = ResolveForDispatch(ctx); err != nil {
+		return nil, err
+	}
 	remoteReq, err := NewRemoteRequest(req, r.local.cache)
 	if err != nil {
 		return nil, err
@@ -96,6 +99,9 @@ func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 		return r.local.BuildRailpack(ctx, req, progress)
 	}
 
+	if req.Network, err = ResolveForDispatch(ctx); err != nil {
+		return nil, err
+	}
 	remoteReq, err := NewRemoteRailpackRequest(req, r.local.cache)
 	if err != nil {
 		return nil, err

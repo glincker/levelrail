@@ -25,6 +25,7 @@ func TestBuildRequestWireRoundTrip(t *testing.T) {
 				BuildArgs:      map[string]string{"A": "1", "B": "2"},
 				NoCache:        true,
 				Cache:          build.CacheConfig{RegistryRef: "reg.example/cache:app", RegistryInsecure: true},
+				Network:        build.NetworkNone,
 			},
 		},
 		{
@@ -124,5 +125,12 @@ func TestBuildResultFromPB(t *testing.T) {
 	}
 	if got.ExporterResponse["containerimage.digest"] != "sha256:abc" {
 		t.Errorf("ExporterResponse = %v, want the remote exporter metadata", got.ExporterResponse)
+	}
+}
+
+func TestBuildRequestUnknownNetworkRefused(t *testing.T) {
+	_, err := buildRequestFromPB(&agentpb.BuildRequest{Kind: agentpb.BuildKind_BUILD_KIND_DOCKERFILE, Network: "air-gapped"})
+	if err == nil {
+		t.Fatal("unknown network mode must be refused, not run open")
 	}
 }

@@ -147,6 +147,46 @@ func SetNetworkResolver(fn func(context.Context) string) {
 	networkResolver.Store(&fn)
 }
 
+// effectiveNetwork returns the stricter of a mode the caller carried (a
+// control plane's, for a dispatched build) and this process's own setting.
+func effectiveNetwork(ctx context.Context, carried NetworkMode) (NetworkMode, error) {
+	carried, err := ParseNetworkMode(string(carried))
+	if err != nil {
+		return "", err
+	}
+	own, err := resolveNetwork(ctx)
+	if err != nil {
+		return "", err
+	}
+	if carried.rank() > own.rank() {
+		return carried, nil
+	}
+	return own, nil
+}
+
+func (m NetworkMode) rank() int {
+	switch m {
+	case NetworkNone:
+		return 2
+	case NetworkBlockPrivate:
+		return 1
+	default:
+		return 0
+	}
+}
+
+// ResolveForDispatch is the mode a build sent to a node must carry.
+func ResolveForDispatch(ctx context.Context) (NetworkMode, error) {
+	m, err := resolveNetwork(ctx)
+	if err != nil {
+		return "", err
+	}
+	if m == NetworkBlockPrivate {
+		return "", ErrNetworkUnenforceable
+	}
+	return m, nil
+}
+
 func resolveNetwork(ctx context.Context) (NetworkMode, error) {
 	if fn := networkResolver.Load(); fn != nil {
 		return ParseNetworkMode((*fn)(ctx))

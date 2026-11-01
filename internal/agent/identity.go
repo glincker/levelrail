@@ -81,7 +81,7 @@ func (h *IdentityHolder) Set(id *Identity) {
 func LocalAgentInfo() *agentpb.AgentInfo {
 	return &agentpb.AgentInfo{
 		Version: version.Version, Commit: buildCommit(), Os: runtime.GOOS, Arch: runtime.GOARCH,
-		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles},
+		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork},
 	}
 }
 
@@ -92,6 +92,13 @@ const CapContainerSpecSecurity = "container_spec_security"
 // CapContainerSpecFiles means the agent writes the spec's inline files into
 // the container before starting it.
 const CapContainerSpecFiles = "container_spec_files"
+
+// CapBuildNetwork means the agent honours a dispatched build's network mode.
+// An older agent ignores the field and would run the build open.
+const CapBuildNetwork = "build_network"
+
+// ErrAgentLacksBuildNetwork refuses a restricted-network build on an agent that cannot enforce it.
+var ErrAgentLacksBuildNetwork = errors.New("agent: build node agent too old to enforce security.build_network, upgrade the agent or set the build network to open")
 
 // CapExitTimes means the agent sends exit state start and finish times, so zero means never started.
 const CapExitTimes = "exit_times"

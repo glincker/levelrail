@@ -411,3 +411,12 @@ func writeBuildFixture(t *testing.T, path, content string) {
 		t.Fatalf("writing fixture %q: %v", path, err)
 	}
 }
+
+func TestBuildOnNode_RefusesRestrictedNetworkOnOldAgent(t *testing.T) {
+	transport, _ := newBuildHarness(t, nil)
+	req := dispatchableRequest(t)
+	req.Network = build.NetworkNone
+	if _, err := transport.BuildOnNode(t.Context(), req, io.Discard, nil); !errors.Is(err, ErrAgentLacksBuildNetwork) {
+		t.Fatalf("err = %v, want ErrAgentLacksBuildNetwork", err)
+	}
+}
