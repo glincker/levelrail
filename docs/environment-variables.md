@@ -344,4 +344,4 @@ See [Volume files](/volume-files). Control plane and agent.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_LOG_MASK_IDLE_FLUSH` | `250ms` | Live log streams hold the last few lines back so a secret split across two lines is still masked. This is how long a held tail waits for the next line before it is sent anyway. Go duration, positive values only. Control plane. |
+| `APP_LOG_MASK_IDLE_FLUSH` | `250ms` | Live log streams hold the last few lines back so a secret split across two lines is still masked. This is how long a held tail waits for the next line before it is sent anyway, so a multi-line secret whose lines arrive more than this apart is not masked. Only registered multi-line values cause lines to be held. Go duration, positive values only. Control plane. |
