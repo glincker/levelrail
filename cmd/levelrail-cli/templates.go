@@ -169,7 +169,7 @@ func printTemplateDetailHuman(out io.Writer, t serviceTemplateDetail) {
 		_, _ = fmt.Fprintf(out, "description:\n  %s\n", strings.ReplaceAll(t.Description, "\n", "\n  "))
 	}
 	if t.RecommendedMemoryBytes > 0 {
-		_, _ = fmt.Fprintf(out, "recommended_ram:   %s\n", formatRecommendedMemory(t.RecommendedMemoryBytes))
+		_, _ = fmt.Fprintf(out, "recommended_ram:   %s (working set; a deploy applies a higher container limit for peaks, see apps get)\n", formatRecommendedMemory(t.RecommendedMemoryBytes))
 	}
 	_, _ = fmt.Fprintln(out, "compose:")
 	_, _ = fmt.Fprintln(out, t.Compose)

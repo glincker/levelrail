@@ -80,7 +80,7 @@ func TestRun_Templates_Get_RecommendedMemory(t *testing.T) {
 
 	stdout, _ := runCLIExpectOK(t, []string{"templates", "get", "ollama-mistral", "--api-url", srv.URL})
 
-	if !strings.Contains(stdout, "recommended_ram:   ~6 GiB") {
+	if !strings.Contains(stdout, "recommended_ram:   ~6 GiB (working set;") {
 		t.Errorf("stdout = %q, want a recommended_ram line", stdout)
 	}
 }
@@ -214,5 +214,16 @@ func TestFormatRecommendedMemory_SubGiBInMiB(t *testing.T) {
 		if got := formatRecommendedMemory(in); got != want {
 			t.Errorf("formatRecommendedMemory(%d) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestPrintApp_TemplateMemoryLabelsEffectiveLimit(t *testing.T) {
+	var b strings.Builder
+	a := appResource{Name: "mc"}
+	a.MemoryFromTemplate = true
+	a.Resources = &apiclient.ServiceResources{MemoryBytes: 256 << 20}
+	printAppHuman(&b, a)
+	if !strings.Contains(b.String(), "~256 MiB container limit") {
+		t.Errorf("output = %q, want the labelled container limit", b.String())
 	}
 }
