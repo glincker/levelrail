@@ -1,0 +1,43 @@
+name: Govulncheck on dependency changes
+
+# A cheap gate that runs only when the Go module files change, so a bad
+# dependency bump is caught before merge. nightly.yml scans the whole tree.
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - go.mod
+      - go.sum
+
+concurrency:
+  group: govulncheck-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck:
+    name: Govulncheck
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      # Same fixable-only rule as nightly.yml: a finding with no upstream fix
+      # is listed but does not fail the PR.
+      - name: govulncheck
+        run: |
+          go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -format=json ./... > govulncheck.json
+          fixable="$(jq -s '[.[] | select(.finding) | .finding | select((.fixed_version // "") != "" and (.trace[0].function // "") != "") | .osv] | unique' govulncheck.json)"
+          unfixable="$(jq -s '[.[] | select(.finding) | .finding | select((.fixed_version // "") == "" and (.trace[0].function // "") != "") | .osv] | unique' govulncheck.json)"
+          echo "no fix available: $unfixable"
+          echo "fixable: $fixable"
+          [ "$(echo "$fixable" | jq length)" -eq 0 ]
