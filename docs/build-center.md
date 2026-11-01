@@ -59,38 +59,72 @@ show "not available" until the agent exposes it.
 
 ## Build network
 
-What a build's `RUN` steps can reach, from the code in `internal/build`:
+What a build's `RUN` steps can reach. Claims here come from the code in
+`internal/build`; anything that needs a real host is marked as not yet proven.
 
 - Builds run on the BuildKit that is embedded in the node's Docker Engine,
-  reached through the engine's own API. Levelrail does not set a network for
-  `RUN` steps and does not grant the `network.host` entitlement, so a
-  `RUN --network=host` step is refused by BuildKit.
+  reached through the engine's own API. Levelrail does not request the
+  `network.host` entitlement, so the engine decides whether `RUN --network=host`
+  is allowed. We expect it to be refused by default, but that rests on the
+  engine's behaviour, not on Levelrail code, and it is covered by the planned
+  host probe (the `oci1` probe), which has not been run yet.
 - With the default policy (`open`) Levelrail applies no restriction. A `RUN`
   step gets the engine's default build network, so it can reach whatever that
   network can route to, which may include the cloud metadata address, the
   Docker gateway and private LAN ranges. This has not been probed on a real
   host yet; treat those ranges as reachable until a probe says otherwise.
-- Base image pulls and `ADD <url>` are performed by BuildKit outside `RUN`
-  steps and are not affected by any setting below.
 - The managed buildkitd supervisor (`internal/build/buildkitd`) starts its
   container with no network, but it is not used by the build path yet.
 
 The policy is the runtime setting `security.build_network`. Change it in the
-dashboard settings card, with `levelrail settings runtime set
-security.build_network none`, or through the settings API. A saved value wins,
-is read on every build and needs no restart; `settings runtime get` shows the
-effective value and whether it is saved, from the environment or the default.
-`APP_BUILD_NETWORK` only seeds the default when nothing is saved. Agents have
-no settings store and read the variable on every build.
+dashboard settings card, with `levelrail-cli settings runtime set
+security.build_network none --confirm-weakening`, or through the settings API.
+Moving to a weaker value (`none` to `open`) asks for confirmation in the
+dashboard and API and needs `--confirm-weakening` in the CLI. A saved value
+wins, is read on every build and needs no restart; `settings runtime get` shows
+the effective value and whether it is saved, from the environment or the
+default. `APP_BUILD_NETWORK` only seeds the default when nothing is saved and is
+case-insensitive.
 
 | Value | Effect |
 | --- | --- |
 | `open` (default, also when unset) | No restriction, as described above. |
-| `none` | Every `RUN` step runs without a network interface. Dockerfile builds set `force-network-mode=none`; Railpack builds get no network on every exec step. Steps that download packages (`npm install`, `pip install`) fail, so it suits builds with vendored dependencies. |
+| `none` | Every `RUN` step runs without a network interface. Steps that download packages (`npm install`, `pip install`) fail, so it suits builds with vendored dependencies. |
 | `block-private` | Reserved for blocking metadata and private ranges while keeping the internet. No build path can enforce it yet, so builds fail with an explanation instead of running unprotected. |
 
-A value outside this list is refused when saved. The default stays `open`;
-whether to change it is an owner decision made after the host probe.
+How `none` is applied:
+
+- Dockerfile builds set the frontend attribute `force-network-mode=none`. That
+  attribute is only honoured by the stock `docker/dockerfile` frontend, so while
+  the mode is not `open` a build is refused if its Dockerfile has a
+  `# syntax=` line, or the build args contain `BUILDKIT_SYNTAX`, that names any
+  other frontend image. A `docker/dockerfile` reference (with any tag or digest)
+  is accepted.
+- Railpack builds rewrite every exec step of the generated plan to no network.
+- A build sent to a build node carries the control plane's mode. The node runs
+  the stricter of that mode and its own `APP_BUILD_NETWORK`, and refuses a mode
+  it does not recognise. A node whose agent predates this field does not
+  advertise the `build_network` capability, so the control plane refuses to send
+  it a build while the mode is not `open`; upgrade the agent first.
+- If the saved setting cannot be read, or the saved or environment value is not
+  one of the allowed words, the build fails with an error naming where the bad
+  value came from. It never falls back to `open`.
+
+What still uses the network under `none`, because BuildKit does it outside
+`RUN` steps:
+
+- Pulling base images named in `FROM`.
+- `ADD` of an HTTP URL or a git URL.
+- `COPY --from=<image>` and `RUN --mount=type=bind,from=<image>` when the source
+  is an image that has to be pulled.
+- Pulling the `docker/dockerfile` frontend image itself when the Dockerfile
+  names one.
+- Registry cache import and export when a registry cache is configured.
+
+Whether the engine really leaves a `RUN` step with no interface under `none` is
+the engine's behaviour; the host probe that checks it has not been run yet. The
+default stays `open`; whether to change it is an owner decision made after that
+probe.
 
 ## Platforms
 
