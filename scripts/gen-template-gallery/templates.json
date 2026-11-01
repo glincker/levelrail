@@ -21504,10 +21504,10 @@
  {
   "id": "minecraft",
   "name": "Minecraft Server",
-  "slogan": "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot. You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565: the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; run apps console from the CLI. The JVM heap is the memory field; the container limit must stay about 25 percent above it. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64).",
+  "slogan": "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot (default 1.21.11, tested on the Java 21 image). You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565 (no web address is created for it): the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; run apps console from the CLI. The JVM heap is the memory field and the container limit defaults to 2560M, 25 percent above the 2G heap. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64).",
   "category": "Games",
   "docUrl": "https://docker-minecraft-server.readthedocs.io/",
-  "memoryMiB": 3072,
+  "memoryMiB": 2560,
   "needsConfig": true,
   "services": [
    {
