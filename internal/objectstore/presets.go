@@ -18,6 +18,7 @@ const (
 	PresetGarage  = "garage"
 	PresetWasabi  = "wasabi"
 	PresetGCS     = "gcs"
+	PresetTigris  = "tigris"
 	PresetCustom  = "custom"
 	defaultRegion = "us-east-1"
 )
@@ -44,6 +45,8 @@ var presets = []Preset{
 	{ID: PresetB2, Label: "Backblaze B2", EndpointTemplate: "https://s3.{region}.backblazeb2.com", NeedsRegion: true, PathStyle: true, Provider: "custom"},
 	{ID: PresetWasabi, Label: "Wasabi", EndpointTemplate: "https://s3.{region}.wasabisys.com", DefaultRegion: defaultRegion, NeedsRegion: true, PathStyle: true, Provider: "custom"},
 	{ID: PresetGCS, Label: "Google Cloud Storage", EndpointTemplate: "https://storage.googleapis.com", DefaultRegion: "auto", PathStyle: true, Provider: "custom"},
+	// Tigris documents virtual-hosted addressing, so path style stays off.
+	{ID: PresetTigris, Label: "Tigris", EndpointTemplate: "https://t3.storage.dev", DefaultRegion: "auto", Provider: "custom"},
 	{ID: PresetMinIO, Label: "MinIO", DefaultRegion: defaultRegion, PathStyle: true, NeedsEndpoint: true, Provider: "custom"},
 	{ID: PresetGarage, Label: "Garage", DefaultRegion: "garage", PathStyle: true, NeedsEndpoint: true, Provider: "custom"},
 	{ID: PresetCustom, Label: "S3 compatible", DefaultRegion: defaultRegion, PathStyle: true, NeedsEndpoint: true, Provider: "custom"},

@@ -42,7 +42,7 @@ levelrail-cli backup-targets create \
   --secret-access-key ...
 ```
 
-The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, or MinIO, use [Object storage](/object-storage) to connect the bucket as a storage destination: the same record shows up under backup targets.
+The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, Tigris, Google Cloud Storage, Oracle Cloud Object Storage, or MinIO, use [Object storage](/object-storage) to connect the bucket as a storage destination: the same record shows up under backup targets.
 
 </Step>
 <Step title="Test the credential">

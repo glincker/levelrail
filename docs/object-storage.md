@@ -8,7 +8,7 @@ description: Connect S3-compatible buckets for log archive, build cache, and bac
 
 A storage destination is an S3-compatible bucket the control plane can write to. Log archive and the remote build cache use it, and database and volume backups use the same destinations: a destination is a backup target with a few extra options, so anything you connect appears in both **Settings, Storage destinations** and **Settings, Backup targets**.
 
-Supported providers: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, and any custom S3-compatible endpoint.
+Supported providers: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, Tigris, Google Cloud Storage, Oracle Cloud Object Storage (as a custom endpoint), and any custom S3-compatible endpoint.
 
 ## Connect a destination
 
@@ -42,10 +42,31 @@ Credentials are encrypted with the control plane master key, never logged, and n
 | `r2` | account id (`--account-id`) | `https://<account-id>.r2.cloudflarestorage.com` |
 | `b2` | region such as `us-west-004` | `https://s3.<region>.backblazeb2.com` |
 | `wasabi` | region | `https://s3.<region>.wasabisys.com` |
+| `tigris` | none (region `auto`) | `https://t3.storage.dev` |
+| `gcs` | none | `https://storage.googleapis.com` |
 | `minio` | endpoint | the URL you give |
 | `custom` | endpoint | the URL you give |
 
-Everything except AWS uses path-style addressing by default. Pass `--virtual-hosted` (or tick the box in the dialog) for a provider that needs the bucket in the hostname.
+Everything except AWS and Tigris uses path-style addressing by default. Pass `--virtual-hosted` (or tick the box in the dialog) for a provider that needs the bucket in the hostname.
+
+### Tigris, Google Cloud Storage and Oracle Cloud
+
+These three are not yet verified against a real bucket.
+
+**Tigris** (`--provider tigris`): endpoint `https://t3.storage.dev`, region `auto`, virtual-hosted addressing. Create an access key in the Tigris console and give it access to the bucket. At the time of writing the free tier is 5 GB of Standard storage, 10,000 class A and 100,000 class B requests per month, with free egress (Tigris pricing page).
+
+**Google Cloud Storage** (`--provider gcs`): endpoint `https://storage.googleapis.com` (the XML API), region `auto`, path-style. It needs an HMAC key, not a service account JSON file. In Cloud Storage, open Settings, then Interoperability, create an HMAC key for a service account that has `Storage Object Admin` on the bucket, and use the access ID as the access key id and the secret as the secret access key.
+
+**Oracle Cloud Object Storage** has no preset, because the endpoint needs your tenancy namespace and the dashboard form only has a Cloudflare-named account field. Use the `custom` provider with these fields:
+
+| Field | Value |
+| --- | --- |
+| Endpoint | `https://<namespace>.compat.objectstorage.<region>.oraclecloud.com` |
+| Region | the OCI region identifier, for example `us-ashburn-1` |
+| Addressing | path-style (the default for `custom`) |
+| Access key id and secret | a Customer Secret Key pair (user settings, Customer secret keys) |
+
+The namespace is under Tenancy details. Oracle shows the secret once, so copy it when you create the pair. Oracle's own page now lists the `oci.customer-oci.com` domain for the virtual-hosted form, so if the `oraclecloud.com` host does not resolve for your region, use that domain instead.
 
 ### What the connection test does
 
