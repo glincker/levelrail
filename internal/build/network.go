@@ -35,7 +35,7 @@ const (
 
 // ErrNetworkUnenforceable fails a build instead of running it with a policy
 // that would silently not apply.
-var ErrNetworkUnenforceable = errors.New("build: APP_BUILD_NETWORK=block-private cannot be enforced on this build path yet; use open or none")
+var ErrNetworkUnenforceable = errors.New("build: security.build_network=block-private cannot be enforced on this build path yet; set it to open or none")
 
 // ParseNetworkMode reads APP_BUILD_NETWORK. Empty is open; an unknown value
 // is an error so a typo on a security setting never degrades to open.
@@ -46,7 +46,7 @@ func ParseNetworkMode(raw string) (NetworkMode, error) {
 	case NetworkNone, NetworkBlockPrivate:
 		return m, nil
 	default:
-		return "", fmt.Errorf("build: unknown %s %q (want open, none or block-private)", EnvBuildNetwork, raw)
+		return "", fmt.Errorf("build: unknown network mode %q for %s (want open, none or block-private)", raw, KeyBuildNetwork)
 	}
 }
 
@@ -136,10 +136,10 @@ func (m NetworkMode) Facts() NetworkFacts {
 
 // networkResolver reads the saved platform setting on every build so a change
 // applies without a restart. Nil means no settings store (agents): env only.
-var networkResolver atomic.Pointer[func(context.Context) string]
+var networkResolver atomic.Pointer[func(context.Context) (string, error)]
 
 // SetNetworkResolver wires the platform settings value in at boot.
-func SetNetworkResolver(fn func(context.Context) string) {
+func SetNetworkResolver(fn func(context.Context) (string, error)) {
 	if fn == nil {
 		networkResolver.Store(nil)
 		return
@@ -189,7 +189,11 @@ func ResolveForDispatch(ctx context.Context) (NetworkMode, error) {
 
 func resolveNetwork(ctx context.Context) (NetworkMode, error) {
 	if fn := networkResolver.Load(); fn != nil {
-		return ParseNetworkMode((*fn)(ctx))
+		raw, err := (*fn)(ctx)
+		if err != nil {
+			return "", fmt.Errorf("build: refused, cannot read %s: %w", KeyBuildNetwork, err)
+		}
+		return ParseNetworkMode(raw)
 	}
 	return ParseNetworkMode(os.Getenv(EnvBuildNetwork))
 }

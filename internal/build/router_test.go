@@ -176,7 +176,7 @@ func dispatchRouter(remote NodeBuilder, nodes NodeSource) *Router {
 }
 
 func TestRouter_DispatchCarriesNetworkMode(t *testing.T) {
-	SetNetworkResolver(func(context.Context) string { return "none" })
+	SetNetworkResolver(func(context.Context) (string, error) { return "none", nil })
 	t.Cleanup(func() { SetNetworkResolver(nil) })
 	remote := &stubNodeBuilder{err: errors.New("stop")}
 	r := dispatchRouter(remote, staticNodes(NodeInfo{ID: "builder-1", AcceptsBuildWorkloads: true, Online: true}))
@@ -192,7 +192,7 @@ func TestRouter_DispatchCarriesNetworkMode(t *testing.T) {
 }
 
 func TestRouter_DispatchRefusesUnenforceableMode(t *testing.T) {
-	SetNetworkResolver(func(context.Context) string { return "block-private" })
+	SetNetworkResolver(func(context.Context) (string, error) { return "block-private", nil })
 	t.Cleanup(func() { SetNetworkResolver(nil) })
 	remote := &stubNodeBuilder{}
 	r := dispatchRouter(remote, staticNodes(NodeInfo{ID: "builder-1", AcceptsBuildWorkloads: true, Online: true}))

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -111,6 +112,8 @@ type resolved struct {
 	canonical string
 	source    string
 	row       *store.RuntimeSettingRow
+	// invalid names a saved or env value that failed validation on a FailClosed setting.
+	invalid string
 }
 
 func (s *Service) definition(key string) (Definition, bool) {
@@ -172,19 +175,28 @@ func (s *Service) lookupEnv(name string) (string, bool) {
 // validates is skipped so a bad value never disables a protection by accident.
 func (s *Service) resolve(ctx context.Context, d Definition) (resolved, error) {
 	saved, err := s.load(ctx)
+	invalid := ""
 	if row, ok := saved[d.Key]; ok {
 		if c, perr := canonicalFromString(d, row.Value); perr == nil {
 			return resolved{def: d, canonical: c, source: SourceSaved, row: &row}, nil
 		}
+		invalid = fmt.Sprintf("the saved setting %s holds an invalid value", d.Key)
 	}
 	if v, ok := s.lookupEnv(d.Env); ok && v != "" {
-		if c, perr := canonicalEnv(d, v); perr == nil {
+		if c, perr := canonicalEnv(d, v); perr == nil && (invalid == "" || !d.FailClosed) {
 			return resolved{def: d, canonical: c, source: SourceEnv}, err
+		}
+		if invalid == "" {
+			invalid = fmt.Sprintf("the environment variable %s holds an invalid value", d.Env)
 		}
 		warnInvalidEnv(d)
 	}
 	c, _ := canonicalFromString(d, d.Default)
-	return resolved{def: d, canonical: c, source: SourceDefault}, err
+	r := resolved{def: d, canonical: c, source: SourceDefault, invalid: invalid}
+	if !d.FailClosed {
+		r.invalid = ""
+	}
+	return r, err
 }
 
 // maskSensitive hides a credential-like value but still tells the UI whether one is set.
@@ -319,6 +331,9 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 		return next == "false"
 	case KindDuration:
 		return durationOf(next) < durationOf(cur.canonical)
+	case KindString:
+		order := d.StrengthOrder
+		return slices.Index(order, cur.canonical) >= 0 && slices.Index(order, next) < slices.Index(order, cur.canonical)
 	case KindInt:
 		return shorterDays(cur.canonical, next)
 	case KindStringList:
@@ -417,6 +432,24 @@ func (s *Service) value(ctx context.Context, key string) string {
 	}
 	r, _ := s.resolve(ctx, d)
 	return r.canonical
+}
+
+// StringChecked returns a string setting for a security decision. Unlike
+// String it errors, naming where the problem came from, when the saved
+// settings cannot be read or a FailClosed setting holds an invalid value.
+func (s *Service) StringChecked(ctx context.Context, key string) (string, error) {
+	d, ok := s.definition(key)
+	if !ok {
+		return "", fmt.Errorf("runtimesettings: unknown setting %q", key)
+	}
+	r, err := s.resolve(ctx, d)
+	if d.FailClosed && err != nil {
+		return "", fmt.Errorf("%s: saved settings could not be read: %w", key, err)
+	}
+	if r.invalid != "" {
+		return "", fmt.Errorf("%s: %s; fix it or remove it (allowed: %s)", key, r.invalid, strings.Join(d.AllowedStrings, ", "))
+	}
+	return r.canonical, nil
 }
 
 // Source reports whether a key's value is saved, from the environment, or the default.

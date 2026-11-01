@@ -117,7 +117,7 @@ func TestResolveNetworkPrefersStoredSettingOverEnv(t *testing.T) {
 		t.Fatalf("env seed = %q, %v", got, err)
 	}
 	stored := "open"
-	SetNetworkResolver(func(context.Context) string { return stored })
+	SetNetworkResolver(func(context.Context) (string, error) { return stored, nil })
 	if got, _ := resolveNetwork(ctx); got != NetworkOpen {
 		t.Fatalf("stored open must win over env none, got %q", got)
 	}
@@ -178,10 +178,22 @@ func TestEffectiveNetworkTakesStricter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		own := tt.own
-		SetNetworkResolver(func(context.Context) string { return own })
+		SetNetworkResolver(func(context.Context) (string, error) { return own, nil })
 		got, err := effectiveNetwork(t.Context(), tt.carried)
 		if (err != nil) != tt.wantErr || got != tt.want {
 			t.Errorf("%s: got %q, %v", tt.name, got, err)
 		}
+	}
+}
+
+func TestResolveNetworkRefusesWhenSettingUnreadable(t *testing.T) {
+	t.Cleanup(func() { SetNetworkResolver(nil) })
+	SetNetworkResolver(func(context.Context) (string, error) { return "", errors.New("database is down") })
+	_, err := resolveNetwork(t.Context())
+	if err == nil || !strings.Contains(err.Error(), KeyBuildNetwork) {
+		t.Fatalf("err = %v, want a refusal naming %s", err, KeyBuildNetwork)
+	}
+	if strings.Contains(ErrNetworkUnenforceable.Error(), EnvBuildNetwork) {
+		t.Errorf("ErrNetworkUnenforceable must not name the env var: %v", ErrNetworkUnenforceable)
 	}
 }

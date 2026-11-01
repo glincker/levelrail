@@ -102,6 +102,10 @@ type Definition struct {
 	EnvConvert func(raw string) (string, error)
 	// EnvLoose lets an int setting take any non-negative env value, not only the presets, so existing deployments keep working.
 	EnvLoose bool
+	// FailClosed makes StringChecked fail instead of falling back to the default when a saved or env value is invalid.
+	FailClosed bool
+	// StrengthOrder lists a string setting's allowed values from weakest to strongest, so WeakensTo can tell a downgrade.
+	StrengthOrder []string
 }
 
 var (
