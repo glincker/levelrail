@@ -6,6 +6,8 @@ description: Measured pass rate of the one-click template catalog from the local
 
 Measured by the catalog smoke script (scripts/catalog-smoke.sh): each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.
 
+Per-template Arm support is on the [Arm64 compatibility](/arm-compatibility) page.
+
 Last run: 2026-10-25, plus eight templates booted by hand on 2026-10-27 under the platform hardening flags (seconds not measured). **101 of 108 passed (94%).** Templates that need operator configuration are skipped and listed in the run output, not counted.
 
 | Template | Result | Seconds | Note |

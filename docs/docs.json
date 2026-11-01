@@ -376,6 +376,7 @@
               "template-catalog",
               "deploy-button",
               "templates-status",
+              "arm-compatibility",
               "templates"
             ],
             "icon": "/assets/icons/squares-four.svg"
