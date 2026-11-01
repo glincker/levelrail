@@ -189,14 +189,23 @@ How these are used is on [Data export](/data-export). Positive values only; anyt
 | `APP_EXPORT_AUDIT_MAX_ROWS` | `1000000` | Maximum rows in one audit log download. Integer. |
 | `APP_EXPORT_METRICS_INTERVAL` | `60s` | Default OTLP metrics push interval. Duration. |
 
+## Event webhooks
+
+Signed JSON posts sent when audited actions succeed. Positive durations only; anything else uses the default. Control plane. Source: `internal/eventhook/config.go`.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_EVENT_WEBHOOK_TIMEOUT` | `10s` | Timeout of one delivery request. Duration. |
+
 ## Ingress
 
-The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover). These two are not listed there. Control plane.
+The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover). These are not listed there. Control plane.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_INGRESS_RETRY_INTERVAL` | `250ms` | Pause between retries when a proxied backend cannot be reached during the `APP_INGRESS_RETRY_WINDOW`. A negative or unparseable value is a startup error, not a silent fallback. |
 | `APP_INGRESS_SOCKET_ACTIVATION` | `auto` | Controls use of sockets inherited from systemd. `auto` uses them if present. `true` (also `1`, `on`) makes missing inherited sockets a startup error. `false` (also `0`, `off`) ignores them. See [Surviving a control plane restart](/domains-and-ingress#surviving-a-control-plane-restart). |
+| `APP_CLOUDFLARED_IMAGE` | `cloudflare/cloudflared:2026.10.7` | Image that runs the Cloudflare Tunnel daemon. Set it to bump the pinned tag or point at a mirror without a new release. Control plane. Source: `internal/reconcile/cloudflaretunnel/controller.go`. |
 
 ## Certificates and request thresholds
 
