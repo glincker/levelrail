@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-10-31T23:54:42Z",
+  "scanned_at": "2026-11-01T00:10:24Z",
   "images": [
     {
       "image": "1dev/server",
@@ -192,7 +192,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:53:56Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "b3log/siyuan",
@@ -241,7 +241,7 @@
         "linux/arm",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:53:56Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "binwiederhier/ntfy",
@@ -286,7 +286,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:53:56Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "bugsink/bugsink",
@@ -339,7 +339,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:53:56Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "chatwoot/chatwoot",
@@ -357,7 +357,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:53:56Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "chibisafe/chibisafe",
@@ -422,7 +422,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "codeberg.org/readeck/readeck",
@@ -440,7 +440,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "codewithcj/sparkyfitness",
@@ -458,7 +458,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "copyparty/ac",
@@ -739,7 +739,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "espocrm/espocrm",
@@ -1045,7 +1045,7 @@
         "linux/arm",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "ghcr.io/diced/zipline",
@@ -1177,7 +1177,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "ghcr.io/huggingface/text-generation-inference",
@@ -1564,7 +1564,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "gitlab/gitlab-ce",
@@ -1778,7 +1778,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "hoppscotch/hoppscotch",
@@ -1926,7 +1926,7 @@
         "linux/riscv64",
         "linux/s390x"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "joplin/server",
@@ -2038,7 +2038,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "langfuse/langfuse",
@@ -2113,7 +2113,7 @@
         "linux/arm",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "lobehub/lobe-chat",
@@ -2346,8 +2346,8 @@
       "image": "lscr.io/linuxserver/snapdrop",
       "tag": "latest",
       "platforms": null,
-      "checked_at": "2026-10-31T23:54:42Z",
-      "error": "no platform in manifest"
+      "checked_at": "2026-11-01T00:10:24Z",
+      "error": "unsupported manifest format"
     },
     {
       "image": "lscr.io/linuxserver/sonarr",
@@ -2445,7 +2445,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "mariadb",
@@ -2607,7 +2607,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "milvusdb/milvus",
@@ -2851,7 +2851,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "ollama/ollama",
@@ -3236,7 +3236,7 @@
         "linux/riscv64",
         "linux/s390x"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "qdrant/qdrant",
@@ -3753,8 +3753,8 @@
       "image": "tiredofit/osticket",
       "tag": "1.18.2",
       "platforms": null,
-      "checked_at": "2026-10-31T23:54:42Z",
-      "error": "ERROR: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed"
+      "checked_at": "2026-11-01T00:10:24Z",
+      "error": "access denied (HTTP 401), image is private or missing"
     },
     {
       "image": "tolgee/tolgee",

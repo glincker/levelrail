@@ -19,13 +19,6 @@ func TestPlatformsFromRaw(t *testing.T) {
 	}
 }
 
-func TestPlatformsFromImageJSON(t *testing.T) {
-	got, err := platformsFromImageJSON([]byte(`{"os":"linux","architecture":"amd64"}`))
-	if err != nil || len(got) != 1 || got[0] != "linux/amd64" {
-		t.Fatalf("got %v %v", got, err)
-	}
-}
-
 func fakeCfg() config {
 	return config{Concurrency: 2, Timeout: time.Second, RatePerSec: 1000, TTL: time.Hour}
 }

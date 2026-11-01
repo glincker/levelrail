@@ -7,13 +7,12 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
-	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -36,6 +35,7 @@ type config struct {
 	TTL         time.Duration
 	Max         int
 	Out         string
+	Only        map[string]bool
 }
 
 func envInt(key string, def int) int {
@@ -54,7 +54,14 @@ func loadConfig() config {
 	if out == "" {
 		out = "internal/catalog/platforms.json"
 	}
+	only := map[string]bool{}
+	for _, r := range strings.Split(os.Getenv("PLATFORM_SCAN_ONLY"), ",") {
+		if r = strings.TrimSpace(r); r != "" {
+			only[r] = true
+		}
+	}
 	return config{
+		Only:        only,
 		Concurrency: max(1, envInt("PLATFORM_SCAN_CONCURRENCY", 4)),
 		Timeout:     time.Duration(max(1, envInt("PLATFORM_SCAN_TIMEOUT_SEC", 45))) * time.Second,
 		RatePerSec:  rate,
@@ -62,56 +69,6 @@ func loadConfig() config {
 		Max:         envInt("PLATFORM_SCAN_MAX", 0),
 		Out:         out,
 	}
-}
-
-// imagetoolsFetcher shells out to buildx, which reads the manifest list with
-// one request and reuses credentials from the local Docker config.
-func imagetoolsFetcher(ctx context.Context, ref string) ([]string, error) {
-	raw, err := runBuildx(ctx, "imagetools", "inspect", "--raw", ref)
-	if err != nil {
-		return nil, err
-	}
-	if plats, ok := platformsFromRaw(raw); ok {
-		return plats, nil
-	}
-	// A single-arch manifest has no platform field, so ask for the config.
-	out, err := runBuildx(ctx, "imagetools", "inspect", "--format", "{{json .Image}}", ref)
-	if err != nil {
-		return nil, err
-	}
-	return platformsFromImageJSON(out)
-}
-
-func runBuildx(ctx context.Context, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "docker", append([]string{"buildx"}, args...)...) //nolint:gosec // fixed binary, args built by this tool
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	if err := cmd.Run(); err != nil {
-		msg := strings.TrimSpace(stderr.String())
-		if i := strings.LastIndex(msg, "\n"); i >= 0 {
-			msg = msg[i+1:]
-		}
-		if isRateLimit(msg) {
-			return nil, errRateLimited
-		}
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		return nil, fmt.Errorf("%s", firstN(msg, 160))
-	}
-	return stdout.Bytes(), nil
-}
-
-func isRateLimit(s string) bool {
-	s = strings.ToLower(s)
-	return strings.Contains(s, "toomanyrequests") || strings.Contains(s, "too many requests") || strings.Contains(s, "429")
-}
-
-func firstN(s string, n int) string {
-	if len(s) > n {
-		return s[:n]
-	}
-	return s
 }
 
 // platformsFromRaw parses an index manifest. ok is false for a single manifest.
@@ -135,28 +92,6 @@ func platformsFromRaw(raw []byte) ([]string, bool) {
 		set[m.Platform.OS+"/"+m.Platform.Architecture] = true
 	}
 	return sortedKeys(set), true
-}
-
-func platformsFromImageJSON(raw []byte) ([]string, error) {
-	var one struct {
-		OS           string `json:"os"`
-		Architecture string `json:"architecture"`
-	}
-	if err := json.Unmarshal(raw, &one); err == nil && one.Architecture != "" {
-		return []string{one.OS + "/" + one.Architecture}, nil
-	}
-	var many map[string]struct {
-		OS           string `json:"os"`
-		Architecture string `json:"architecture"`
-	}
-	if err := json.Unmarshal(raw, &many); err != nil || len(many) == 0 {
-		return nil, errors.New("no platform in manifest")
-	}
-	set := map[string]bool{}
-	for _, v := range many {
-		set[v.OS+"/"+v.Architecture] = true
-	}
-	return sortedKeys(set), nil
 }
 
 func sortedKeys(set map[string]bool) []string {
@@ -189,6 +124,12 @@ func scan(ctx context.Context, cfg config, prev []catalog.ImagePlatforms, refs [
 	}
 	var todo []string
 	for _, ref := range refs {
+		if len(cfg.Only) > 0 {
+			if cfg.Only[ref] {
+				todo = append(todo, ref)
+			}
+			continue
+		}
 		if p, ok := known[ref]; ok && p.Error == "" && fresh(p, cfg.TTL, now) {
 			continue
 		}
@@ -315,7 +256,7 @@ func main() {
 	}
 	refs := wantedRefs(catalog.Templates)
 	now := time.Now()
-	images, limited := scan(context.Background(), cfg, prev.Images, refs, imagetoolsFetcher, now)
+	images, limited := scan(context.Background(), cfg, prev.Images, refs, registryFetcher(&http.Client{Timeout: cfg.Timeout}), now)
 	file := catalog.PlatformsFile{
 		ScannedAt: now.UTC().Format(time.RFC3339),
 		Images:    images,
