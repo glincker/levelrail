@@ -272,7 +272,7 @@ never reach it. It has its own lane instead:
 
 ## Required checks
 
-`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `web-check`, `install-sh` and the macOS and Windows CLI installer jobs. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
+`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `cross-compile`, `lint`, `kit`, the Go test jobs, `web-check`, `install-sh` and the macOS and Windows CLI installer jobs. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
 
 Six jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
 
