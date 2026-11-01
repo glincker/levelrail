@@ -18,6 +18,8 @@ const (
 	runtimeRuby    = "ruby"
 	runtimePHP     = "php"
 	runtimeElixir  = "elixir"
+	runtimeRust    = "rust"
+	runtimeDeno    = "deno"
 	runtimeJava    = "java"
 	runtimeStatic  = "static"
 	runtimeUnknown = "unknown"
@@ -29,7 +31,7 @@ const mib = 1 << 20
 // APP_WIZARD_MEMORY_MB_<RUNTIME>.
 var defaultMemoryMB = map[string]int{
 	runtimeNode: 512, runtimePython: 512, runtimeGo: 256, runtimeRuby: 1024,
-	runtimePHP: 512, runtimeElixir: 512, runtimeJava: 1024, runtimeStatic: 128, runtimeUnknown: 512,
+	runtimePHP: 512, runtimeElixir: 512, runtimeRust: 512, runtimeDeno: 256, runtimeJava: 1024, runtimeStatic: 128, runtimeUnknown: 512,
 }
 
 var (
@@ -44,7 +46,11 @@ type reader func(rel string) (string, bool)
 func detectStack(read reader) (Stack, importplan.StackGuess) {
 	if text, ok := read("Gemfile"); ok {
 		low := strings.ToLower(text)
+		_, hasConfig := read("_config.yml")
 		switch {
+		case strings.Contains(low, "jekyll") && hasConfig:
+			return Stack{Runtime: runtimeStatic, Framework: "Jekyll", Evidence: "Gemfile lists jekyll"},
+				importplan.StackGuess{Name: "Jekyll", Method: importplan.BuildStatic, Health: "/"}
 		case strings.Contains(low, "rails"):
 			return Stack{Runtime: runtimeRuby, Framework: "Rails", Evidence: "Gemfile lists rails"},
 				importplan.StackGuess{Name: "Rails", Method: importplan.BuildRailpack, Port: 3000, Health: "/up", Why: "Rails defaults"}
@@ -71,6 +77,19 @@ func detectStack(read reader) (Stack, importplan.StackGuess) {
 		return Stack{Runtime: runtimeElixir, Framework: "Phoenix", Evidence: "mix.exs lists phoenix"},
 			importplan.StackGuess{Name: "Phoenix", Method: importplan.BuildRailpack, Port: 4000, Health: "/"}
 	}
+	_, hasNode := read("package.json")
+	if _, ok := read("Cargo.toml"); ok && !hasNode {
+		return Stack{Runtime: runtimeRust, Framework: "Rust", Evidence: "Cargo.toml found"},
+			importplan.StackGuess{Name: "Rust", Method: importplan.BuildRailpack, Port: 8080, Health: "/"}
+	}
+	if name := firstPresent(read, "deno.json", "deno.jsonc"); name != "" && !hasNode {
+		return Stack{Runtime: runtimeDeno, Framework: "Deno", Evidence: name + " found"},
+			importplan.StackGuess{Name: "Deno", Method: importplan.BuildRailpack, Port: 8000, Health: "/"}
+	}
+	if name := firstPresent(read, "hugo.toml", "hugo.yaml", "hugo.json"); name != "" && !hasNode {
+		return Stack{Runtime: runtimeStatic, Framework: "Hugo", Evidence: name + " found"},
+			importplan.StackGuess{Name: "Hugo", Method: importplan.BuildStatic, Health: "/"}
+	}
 	g, ok := importplan.GuessStack(func(p string) (string, bool, error) {
 		t, found := read(p)
 		return t, found, nil
@@ -80,6 +99,15 @@ func detectStack(read reader) (Stack, importplan.StackGuess) {
 	}
 	rt := runtimeOf(g)
 	return Stack{Runtime: rt, Framework: g.Name, Evidence: g.Why}, g
+}
+
+func firstPresent(read reader, names ...string) string {
+	for _, n := range names {
+		if _, ok := read(n); ok {
+			return n
+		}
+	}
+	return ""
 }
 
 func runtimeOf(g importplan.StackGuess) string {

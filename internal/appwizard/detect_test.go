@@ -1,10 +1,13 @@
 package appwizard
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/repolayout"
+	"github.com/GLINCKER/levelrail/kit/stackdetect"
 )
 
 func tree(files map[string]string) Input {
@@ -278,5 +281,67 @@ func TestDetectStaticGeneratorsVersusServers(t *testing.T) {
 	}
 	if hasReason(plain, "single page app mode") {
 		t.Error("plain static generator got SPA reason")
+	}
+}
+
+// One parity check against kit/stackdetect so the two detectors cannot
+// drift apart silently on the frameworks they both claim.
+func TestDetectParityWithStackdetect(t *testing.T) {
+	fixtures := map[string]map[string]string{
+		"rails":    {"Gemfile": "gem 'rails'\n"},
+		"sinatra":  {"Gemfile": "gem 'sinatra'\n"},
+		"laravel":  {"composer.json": `{"require":{"laravel/framework":"11"}}`},
+		"symfony":  {"composer.json": `{"require":{"symfony/framework-bundle":"7"}}`},
+		"axum":     {"Cargo.toml": "[dependencies]\naxum = \"0.7\"\n"},
+		"actix":    {"Cargo.toml": "[dependencies]\nactix-web = \"4\"\n"},
+		"phoenix":  {"mix.exs": "{:phoenix, \"~> 1.7\"}"},
+		"deno":     {"deno.json": "{}"},
+		"dotnet":   {"App.csproj": "<Project/>"},
+		"hugo":     {"hugo.toml": "title='x'"},
+		"jekyll":   {"Gemfile": "gem 'jekyll'\n", "_config.yml": "x: 1"},
+		"eleventy": {"package.json": pkg(`"@11ty/eleventy":"2"`, "")},
+		"gatsby":   {"package.json": pkg(`"gatsby":"5"`, "")},
+		"angular":  {"package.json": pkg(`"@angular/core":"17"`, "")},
+		"nestjs":   {"package.json": pkg(`"@nestjs/core":"10"`, "")},
+		"astro":    {"package.json": pkg(`"astro":"4","@astrojs/node":"8"`, "")},
+		"flask":    {"requirements.txt": "flask\n"},
+		"django":   {"requirements.txt": "django\n"},
+	}
+	key := func(label string) string {
+		if i := strings.Index(label, "("); i >= 0 {
+			label = strings.Trim(label[i:], "()")
+		}
+		return strings.Map(func(r rune) rune {
+			if r >= 'A' && r <= 'Z' {
+				r += 'a' - 'A'
+			}
+			if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+				return r
+			}
+			return -1
+		}, label)
+	}
+	for name, files := range fixtures {
+		dir := t.TempDir()
+		var paths []string
+		for p, body := range files {
+			if err := os.WriteFile(filepath.Join(dir, p), []byte(body), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			paths = append(paths, p)
+		}
+		s, err := stackdetect.Detect(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		d := Detect(Input{Paths: paths, Read: func(p string) (string, bool) { b, ok := files[p]; return b, ok }})
+		a, b := key(s.Label), key(d.Framework)
+		if a != b && !strings.HasPrefix(a, b) && !strings.HasPrefix(b, a) {
+			t.Errorf("%s: stackdetect %q vs appwizard %q", name, s.Label, d.Framework)
+		}
+		// stackdetect still uses the generic Python port for Flask; the preset says 5000.
+		if name != "flask" && s.Port != 0 && d.Port.Value != s.Port && d.BuildType != buildStatic {
+			t.Errorf("%s: port stackdetect %d vs appwizard %d", name, s.Port, d.Port.Value)
+		}
 	}
 }

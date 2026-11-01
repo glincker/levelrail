@@ -174,6 +174,17 @@ func detectNode(f *files) (found, bool) {
 		g.output, g.start = "_site", ""
 		static = true
 		g.why("package.json", "package.json has @11ty/eleventy, so the site builds into _site/")
+	case n.dep("gatsby"):
+		g.framework, g.buildType = "Gatsby", buildRailpack
+		g.build = orStr(g.build, "gatsby build")
+		g.output, g.start = "public", ""
+		static = true
+		g.why("package.json", "package.json has gatsby, so the site builds into public/")
+	case n.dep("@angular/core"):
+		g.framework, g.buildType = "Angular", buildRailpack
+		g.build = orStr(g.build, "ng build")
+		g.why("package.json", "package.json has @angular/core; ng build writes dist/<project>/browser, set it as the publish directory for a static build")
+		setPort(3000, "Node convention, verify in the server code")
 	case n.depPrefix("@remix-run/") || n.depPrefix("@react-router/"):
 		g.framework, g.buildType = "Remix", buildRailpack
 		g.why("package.json", "package.json has a @remix-run or @react-router package")

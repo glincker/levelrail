@@ -24,7 +24,7 @@ func detectManifest(f *files) found {
 	if g, ok := detectNode(f); ok {
 		cands = append(cands, candidate{g, nodeRank(g)})
 	}
-	for _, d := range []func(*files) (found, int, bool){detectPython, detectRuby, detectPHP, detectGo, detectRust, detectJava} {
+	for _, d := range []func(*files) (found, int, bool){detectPython, detectRuby, detectPHP, detectGo, detectRust, detectJava, detectHugo, detectJekyll, detectDotnet, detectElixir, detectDeno} {
 		if g, rank, ok := d(f); ok {
 			cands = append(cands, candidate{g, rank})
 		}
@@ -364,4 +364,93 @@ func atoiSafe(s string) int {
 		n = n*10 + int(r-'0')
 	}
 	return n
+}
+
+// The detectors below mirror kit/stackdetect (markers, ports, commands) and
+// the static presets in internal/frameworks. TestDetectParityWithStackdetect
+// fails when the framework names drift apart.
+
+func staticGenerator(name, language, build, output, signal string) found {
+	g := found{language: language, framework: name, buildType: buildStatic, confidence: ConfidenceHigh, build: build, output: output, health: "/", port: PortGuess{staticPort, "static sites are served by the built-in static server"}}
+	g.why("file", signal)
+	return g
+}
+
+func detectHugo(f *files) (found, int, bool) {
+	name, ok := f.anyOf("hugo.toml", "hugo.yaml", "hugo.json")
+	if !ok {
+		return found{}, 0, false
+	}
+	return staticGenerator("Hugo", "go", "hugo --minify", "public", name+" is present, so Hugo builds the site into public/"), rankNamed, true
+}
+
+func detectJekyll(f *files) (found, int, bool) {
+	gems, ok := f.text("Gemfile")
+	if !ok || !f.has("_config.yml") || !strings.Contains(strings.ToLower(gems), "jekyll") {
+		return found{}, 0, false
+	}
+	return staticGenerator("Jekyll", "ruby", "bundle exec jekyll build", "_site", "Gemfile lists jekyll and _config.yml exists, so Jekyll builds the site into _site/"), rankNamed, true
+}
+
+func detectDotnet(f *files) (found, int, bool) {
+	proj := ""
+	for p := range f.present {
+		rel, ok := strings.CutPrefix(p, f.dir+"/")
+		if f.dir == "" {
+			rel, ok = p, true
+		}
+		if ok && !strings.Contains(rel, "/") && strings.HasSuffix(rel, ".csproj") && (proj == "" || rel < proj) {
+			proj = rel
+		}
+	}
+	if proj == "" {
+		return found{}, 0, false
+	}
+	g := found{language: "csharp", framework: ".NET", buildType: buildRailpack, confidence: ConfidenceMedium, build: "dotnet publish -c Release"}
+	g.port = PortGuess{8080, ".NET 8+ container default, set ASPNETCORE_URLS to change it"}
+	g.why("file", proj+" is present")
+	return g, rankNamed, true
+}
+
+func detectElixir(f *files) (found, int, bool) {
+	text, ok := f.text("mix.exs")
+	if !ok {
+		return found{}, 0, false
+	}
+	g := found{language: "elixir", framework: "Elixir", buildType: buildRailpack, confidence: ConfidenceLow, port: PortGuess{4000, "Elixir convention, verify in the app"}}
+	g.why("file", "mix.exs is present")
+	if !strings.Contains(strings.ToLower(text), "phoenix") {
+		return g, rankWeak, true
+	}
+	g.framework, g.confidence, g.port = "Phoenix", ConfidenceHigh, PortGuess{4000, "Phoenix default port"}
+	g.why("dependency", "mix.exs lists phoenix")
+	return g, rankNamed, true
+}
+
+func detectDeno(f *files) (found, int, bool) {
+	name, ok := f.anyOf("deno.json", "deno.jsonc")
+	if !ok {
+		return found{}, 0, false
+	}
+	g := found{language: "typescript", framework: "Deno", buildType: buildRailpack, confidence: ConfidenceMedium, port: PortGuess{8000, "Deno convention, verify in the server code"}}
+	g.why("file", name+" is present")
+	return g, rankGeneric, true
+}
+
+// detectProcfile is the last resort before a static site, as in stackdetect.
+func detectProcfile(f *files) (found, bool) {
+	text, ok := f.text("Procfile")
+	if !ok {
+		return found{}, false
+	}
+	for _, line := range strings.Split(text, "\n") {
+		cmd, isWeb := strings.CutPrefix(strings.TrimSpace(line), "web:")
+		if !isWeb || strings.TrimSpace(cmd) == "" {
+			continue
+		}
+		g := found{framework: "Procfile", buildType: buildRailpack, confidence: ConfidenceLow, start: strings.TrimSpace(cmd), port: PortGuess{8080, "assumed 8080, make the process read $PORT"}}
+		g.why("file", "Procfile has a web process")
+		return g, true
+	}
+	return found{}, false
 }
