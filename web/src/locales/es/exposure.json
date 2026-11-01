@@ -1,0 +1,64 @@
+{
+  "tableLabel": "Puertos publicados",
+  "title": "Puertos publicados",
+  "description": "Puertos de contenedor publicados en las interfaces de red de un servidor. Docker omite ufw para estos puertos, así que un firewall que parece activo no los cubre.",
+  "probe": "Comprobar desde fuera",
+  "probing": "Comprobando",
+  "probeNote": "Una comprobación fallida se informa como no confirmada, nunca como cerrada: muchos routers impiden que un servidor se conecte a su propia dirección pública.",
+  "emptyTitle": "Nada tuyo está publicado en internet",
+  "emptyBody": "Ningún contenedor de este servidor escucha en una dirección pública sin restricción.",
+  "nodeUnreachable": "No se pudo auditar este nodo: {{error}}",
+  "rulesUnreadable": "No se pudo leer la cadena del firewall del host: {{reason}}",
+  "columns": {
+    "severity": "Gravedad",
+    "port": "Puerto",
+    "container": "Contenedor",
+    "owner": "Propietario",
+    "bind": "Escucha en",
+    "state": "Estado"
+  },
+  "severity": {
+    "high": "Alta",
+    "medium": "Media",
+    "low": "Baja",
+    "info": "Info"
+  },
+  "class": {
+    "loopback": "Solo este servidor",
+    "private": "Red privada",
+    "restricted": "Restringido",
+    "exposed": "Expuesto",
+    "unknown": "Desconocido"
+  },
+  "owner": {
+    "database": "Base de datos {{name}}",
+    "app": "Aplicación {{name}}",
+    "unmanaged": "No administrado"
+  },
+  "outside": {
+    "answers": "Responde desde fuera de este host",
+    "could_not_confirm": "No se pudo confirmar desde este host"
+  },
+  "restrictedTo": "Solo se permite desde: {{sources}}",
+  "details": "Detalles",
+  "hideDetails": "Ocultar detalles",
+  "restrict": "Permitir solo estos orígenes",
+  "remove": "Quitar restricción",
+  "removedToast": "Restricción quitada",
+  "appliedToast": "Restricción aplicada",
+  "failedToast": "No se pudo cambiar el firewall",
+  "dialog": {
+    "title": "Restringir el puerto {{port}}",
+    "description": "Solo los orígenes que indiques pueden conectarse. Todos los demás se descartan, incluido internet.",
+    "sources": "Orígenes permitidos",
+    "sourcesHint": "Una IP o CIDR por línea, por ejemplo tus otros servidores",
+    "localContainers": "Permitir también los contenedores de este servidor",
+    "preview": "Vista previa de reglas",
+    "previewTitle": "Reglas exactas",
+    "effect": "Qué se descartará",
+    "apply": "Aplicar restricción",
+    "cancel": "Cancelar",
+    "confirm": "Entiendo que este tráfico se descartará",
+    "persistence": "Persistencia"
+  }
+}

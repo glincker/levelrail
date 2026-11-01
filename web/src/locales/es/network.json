@@ -1,0 +1,104 @@
+{
+  "privateLink": "Redes privadas y reglas",
+  "page": {
+    "title": "Red",
+    "description": "Dónde se ejecuta cada aplicación y base de datos, y cómo se comunican entre sí. Zona interna {{zone}}."
+  },
+  "summary": {
+    "nodes": "Servidores",
+    "mesh": "Malla",
+    "zone": "Zona interna",
+    "resources": "Aplicaciones y bases de datos",
+    "meshOff": "Desactivada",
+    "meshOn": "Activada",
+    "meshRestart": "Requiere reinicio"
+  },
+  "group": {
+    "thisServer": "Este servidor (plano de control)",
+    "unplaced": "Sin ubicar",
+    "unplacedHint": "Estos recursos están ubicados en un nodo que este plano de control no conoce ({{ids}}). Muévelos a este servidor o vuelve a añadir el nodo.",
+    "moveHint": "Abre una aplicación o base de datos y elige un nodo para moverla a este servidor.",
+    "reAdd": "Volver a añadir un nodo",
+    "empty": "Aún no se ejecuta nada aquí.",
+    "cordoned": "Acordonado",
+    "noMeshAddress": "Aún no está en la malla",
+    "viewNode": "Detalles del nodo"
+  },
+  "resource": {
+    "app": "Aplicación",
+    "database": "Base de datos",
+    "copy": "Copiar dirección interna",
+    "copied": "Copiado",
+    "local": "local",
+    "connectsTo": "Se conecta a {{database}}",
+    "noMeshAddress": "Sin dirección de malla",
+    "noMeshAddressHint": "Este recurso está en un nodo que no tiene dirección de malla, así que otros nodos no pueden alcanzarlo."
+  },
+  "legend": {
+    "title": "Cómo leer esta página",
+    "server": "Un servidor que ejecuta Levelrail. La primera tarjeta es el propio plano de control.",
+    "internalName": "El nombre interno que otras aplicaciones usan para alcanzar este recurso. Pulsa el botón de copiar para usarlo en una cadena de conexión.",
+    "local": "Local significa que el recurso está en este servidor y es accesible directamente, sin necesidad de malla.",
+    "mesh": "Con la malla activada, los recursos de otros servidores reciben una dirección de malla y el mismo nombre interno funciona entre servidores."
+  },
+  "empty": {
+    "title": "Aún no se ejecuta nada",
+    "description": "Despliega una aplicación o crea una base de datos y aparecerá aquí, agrupada por el servidor donde se ejecuta.",
+    "action": "Ir a aplicaciones"
+  },
+  "error": {
+    "load": "No se pudo cargar la vista general de la red."
+  },
+  "mesh": {
+    "title": "Red de malla",
+    "description": "Una red WireGuard privada entre tus servidores, para que las aplicaciones y bases de datos de distintos servidores se alcancen por nombre interno. Solo la necesitas cuando administras más de un servidor.",
+    "state": {
+      "off": "Desactivada",
+      "on": "Activada",
+      "enabling": "Requiere reinicio",
+      "disabling": "Requiere reinicio para desactivarla",
+      "error": "No se pudo iniciar"
+    },
+    "pinned": "Definido por {{envVar}} en el servidor. Quítalo allí para administrar la malla desde aquí.",
+    "readiness": "Preparación",
+    "check": {
+      "wireguard": "Compatibilidad con WireGuard",
+      "udp_port": "Puerto UDP disponible",
+      "firewall": "Firewall",
+      "public_address": "Dirección pública del plano de control",
+      "local_node": "Este servidor como nodo"
+    },
+    "status": {
+      "pass": "Listo",
+      "warn": "Revisar",
+      "fail": "Bloqueado"
+    },
+    "fix": "Solución: {{hint}}",
+    "enable": "Activar malla",
+    "disable": "Desactivar malla",
+    "enableTitle": "¿Activar la red de malla?",
+    "enableDescription": "La malla se guarda ahora y se inicia cuando se reinicie el plano de control.",
+    "disableTitle": "¿Desactivar la red de malla?",
+    "disableDescription": "La malla se detiene en el próximo reinicio del plano de control.",
+    "disableNodes": "Hay {{count}} nodo(s) más inscritos que acceden a este plano de control por la malla. Al desactivarla se desconectarán.",
+    "restartRequired": "Reinicia el plano de control para aplicar este cambio.",
+    "restartCommand": "Ejecuta en el servidor:",
+    "saved": "Configuración de la malla guardada",
+    "startError": "La malla no se inició: {{error}}",
+    "blocked": "Corrige primero las comprobaciones bloqueadas y luego activa la malla.",
+    "rootOnly": "Solo un administrador puede cambiar esto.",
+    "otherNodes": "Otros nodos inscritos: {{count}}",
+    "enableConsequence1": "Este servidor abre una interfaz WireGuard y escucha en un puerto UDP (51820 por defecto).",
+    "enableConsequence2": "Los agentes de otros nodos se conectan a este plano de control por la malla.",
+    "enableConsequence3": "Las aplicaciones y bases de datos reciben direcciones internas accesibles entre servidores.",
+    "disableConsequence1": "Las aplicaciones y bases de datos de otros servidores pierden sus direcciones internas entre servidores.",
+    "disableConsequence2": "Todo lo que hay en este servidor sigue funcionando localmente."
+  },
+  "banner": {
+    "diagram": {
+      "app": "Aplicación",
+      "node": "Nodo",
+      "server": "Servidor"
+    }
+  }
+}

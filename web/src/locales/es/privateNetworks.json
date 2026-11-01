@@ -1,0 +1,78 @@
+{
+  "page": {
+    "title": "Redes privadas",
+    "description": "Agrupa aplicaciones en redes privadas con nombre y decide cuáles pueden comunicarse entre sí. Las aplicaciones de redes distintas no se alcanzan hasta que una regla lo permita.",
+    "back": "Vista general de la red",
+    "apply": "Volver a aplicar ahora",
+    "applied": "Redes y reglas aplicadas de nuevo.",
+    "notApplied": "Guardado, pero la aplicación no terminó. Vuelve a aplicar para reintentar."
+  },
+  "map": {
+    "title": "Quién puede hablar con quién",
+    "description": "Las líneas verdes son rutas permitidas, las rojas discontinuas están bloqueadas y las ámbar difieren de lo que se ejecuta en Docker.",
+    "graphLabel": "Mapa de aplicaciones y las rutas entre ellas",
+    "empty": "Aún no hay aplicaciones que mostrar",
+    "emptyHint": "Crea una aplicación y añádela a una red privada para ver aquí sus rutas.",
+    "legendAllowed": "Permitido",
+    "legendBlocked": "Bloqueado",
+    "legendDrift": "Requiere volver a aplicar"
+  },
+  "paths": {
+    "title": "Rutas",
+    "none": "Todas las rutas entre tus aplicaciones están permitidas o fuera de alcance.",
+    "pair": "{{a}} y {{b}}",
+    "allowedVia": "Permitido por la red {{name}}",
+    "allowedRule": "Permitido por regla",
+    "blocked": "Bloqueado, redes distintas",
+    "drift": "La política y Docker no coinciden",
+    "crossNode": "Entre nodos, aplicado mediante DNS de malla",
+    "fixAllow": "Permitir",
+    "fixReapply": "Volver a aplicar",
+    "allowed": "Regla de permiso creada para {{a}} y {{b}}."
+  },
+  "networks": {
+    "title": "Redes",
+    "empty": "Aún no hay redes privadas",
+    "emptyHint": "Crea una y añade las aplicaciones que deben compartirla.",
+    "defaultDeny": "Denegar por defecto",
+    "defaultDenyHelp": "Los miembros no pueden alcanzarse hasta que una regla permita un par.",
+    "members": "Miembros",
+    "noMembers": "Sin miembros",
+    "create": "Crear red",
+    "name": "Nombre",
+    "namePlaceholder": "backend",
+    "nameHelp": "Letras minúsculas, dígitos y guiones.",
+    "apps": "Aplicaciones en esta red",
+    "noApps": "Aún no existen aplicaciones.",
+    "created": "Red {{name}} creada.",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar la red {{name}}?",
+    "deleteBody": "Sus miembros pierden el acceso entre sí, a menos que una regla lo permita.",
+    "deleted": "Red eliminada.",
+    "saveMembers": "Guardar miembros"
+  },
+  "rules": {
+    "title": "Reglas de permiso",
+    "description": "Una regla permite que dos aplicaciones se alcancen a través de los límites de la red.",
+    "empty": "Aún no hay reglas",
+    "from": "Aplicación",
+    "to": "Puede alcanzar",
+    "note": "Nota",
+    "notePlaceholder": "Por qué se necesita esta ruta",
+    "add": "Añadir regla",
+    "remove": "Quitar",
+    "removed": "Regla quitada.",
+    "pickApp": "Selecciona una aplicación"
+  },
+  "errors": {
+    "load": "No se pudieron cargar las redes privadas.",
+    "unavailable": "Las redes privadas no están disponibles en este plano de control."
+  },
+  "banner": {
+    "description": "Agrupa aplicaciones en redes privadas y decide cuáles pueden comunicarse entre sí. Crea la primera red abajo.",
+    "diagram": {
+      "apps": "Aplicaciones",
+      "mesh": "Malla privada"
+    }
+  }
+}

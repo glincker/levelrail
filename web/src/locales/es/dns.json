@@ -1,0 +1,343 @@
+{
+  "common": {
+    "cancel": "Cancelar"
+  },
+  "page": {
+    "title": "DNS",
+    "description": "Zonas, registros, delegación de servidores de nombres y propagación en tu proveedor de DNS.",
+    "help": "Guía de DNS",
+    "addZone": "Añadir zona",
+    "provider": "Proveedor: {{provider}}",
+    "loadFailed": "No se pudieron cargar las zonas DNS"
+  },
+  "empty": {
+    "title": "Conecta un proveedor de DNS",
+    "body": "Conecta Cloudflare, Route53 o Google Cloud DNS en Dominios, Proveedor de DNS, y luego administra aquí las zonas y los registros con las mismas credenciales.",
+    "action": "Abrir Dominios",
+    "noZonesTitle": "Aún no hay zonas",
+    "noZonesBody": "Crea una zona para un dominio que poseas y luego apunta tu registrador a sus servidores de nombres.",
+    "noZonesAction": "Añadir zona"
+  },
+  "zones": {
+    "col": {
+      "name": "Zona",
+      "status": "Estado",
+      "records": "Registros",
+      "nameServers": "Servidores de nombres"
+    },
+    "private": "Privada",
+    "unknown": "desconocido",
+    "notReported": "n/d"
+  },
+  "wizard": {
+    "title": "Lleva un dominio a tu DNS",
+    "titleFor": "Servidores de nombres de {{zone}}",
+    "progress": "Pasos de incorporación",
+    "step": {
+      "domain": "Dominio",
+      "nameservers": "Servidores de nombres",
+      "import": "Importar registros",
+      "verify": "Verificar"
+    },
+    "lead": {
+      "domain": "Crea una zona para un dominio que poseas en cualquier registrador.",
+      "nameservers": "Configura exactamente estos servidores de nombres en tu registrador, reemplazando los actuales.",
+      "import": "Copia los registros que el dominio sirve hoy, para que nada se rompa cuando cambien los servidores de nombres.",
+      "verify": "Se consulta a los resolvedores públicos qué servidores de nombres usa ahora el dominio."
+    },
+    "domain": "Dominio",
+    "domainHint": "El dominio registrable, por ejemplo example.com, no un subdominio.",
+    "create": "Crear zona",
+    "creating": "Creando...",
+    "copyAll": "Copiar todo",
+    "copied": "Copiado",
+    "registrarHint": "En tu registrador, abre la configuración de servidores de nombres del dominio, elige servidores de nombres personalizados y pega estos. No dejes los antiguos: una mezcla responde de forma inconsistente.",
+    "skipImport": "Omitir importación",
+    "next": "Siguiente",
+    "propagationHint": "Los registros suelen publicar el cambio en una hora; los resolvedores pueden conservar la respuesta anterior hasta dos días.",
+    "openZone": "Abrir zona"
+  },
+  "delegation": {
+    "state": {
+      "delegated": "Delegada",
+      "partially_delegated": "Parcialmente delegada",
+      "delegated_elsewhere": "Delegada en otro lugar",
+      "not_delegated": "No delegada"
+    },
+    "hint": {
+      "delegated": "Todos los resolvedores consultados devuelven los servidores de nombres de esta zona.",
+      "partially_delegated": "Algunos resolvedores aún devuelven otros servidores de nombres. Espera a que caduquen las cachés o quita los servidores sobrantes en el registrador.",
+      "delegated_elsewhere": "El dominio aún apunta a otros servidores de nombres. Actualízalos en tu registrador.",
+      "not_delegated": "Ningún resolvedor devolvió servidores de nombres para este dominio. Comprueba que el dominio esté registrado y que los servidores de nombres estén configurados."
+    },
+    "verdict": {
+      "match": "Coincide",
+      "partial": "Mixto",
+      "elsewhere": "Otro lugar",
+      "none": "Sin respuesta"
+    },
+    "col": {
+      "resolver": "Resolvedor",
+      "verdict": "Veredicto",
+      "answer": "Servidores de nombres"
+    },
+    "system": "Este servidor",
+    "noAnswer": "sin respuesta",
+    "elsewhere": "Aún apunta a: {{servers}}",
+    "recheck": "Comprobar de nuevo",
+    "checking": "Comprobando..."
+  },
+  "import": {
+    "title": "Importar y exportar",
+    "lead": "Trae registros a {{zone}} desde un archivo de zona o JSON. Nada cambia hasta que apliques el plan.",
+    "tabImport": "Importar",
+    "tabExport": "Exportar",
+    "file": "Archivo",
+    "paste": "O pega",
+    "formatHint": "Archivo de zona BIND o el JSON que exporta esta página. Se omiten SOA y NS del ápice.",
+    "replace": "Reemplazar: eliminar los conjuntos de registros que faltan en la importación",
+    "confirm": "Escribe {{zone}} para confirmar el reemplazo",
+    "preview": "Vista previa",
+    "apply": "Aplicar",
+    "appliedToast_one": "{{count}} cambio aplicado",
+    "appliedToast_other": "{{count}} cambios aplicados",
+    "failedToast": "Falló la importación",
+    "exportLead": "Descarga todos los conjuntos de registros excepto NS y SOA administrados por el proveedor.",
+    "exportBind": "Archivo de zona",
+    "exportJson": "JSON",
+    "discoverHint": "Se buscaron nombres comunes en los servidores de nombres actuales del dominio. Desmarca lo que no quieras.",
+    "extraNames": "Más nombres por buscar",
+    "extraPlaceholder": "vpn, portal, _acme-challenge",
+    "rescan": "Buscar",
+    "nothingFound": "No se encontraron registros en los servidores de nombres actuales.",
+    "foundAt_one": "{{count}} conjunto de registros encontrado en {{servers}}",
+    "foundAt_other": "{{count}} conjuntos de registros encontrados en {{servers}}",
+    "keep": "Importar {{name}} {{type}}",
+    "skip": "Omitir",
+    "importSelected_one": "Importar {{count}} conjunto",
+    "importSelected_other": "Importar {{count}} conjuntos"
+  },
+  "plan": {
+    "summary": "{{create}} por crear, {{update}} por actualizar, {{delete}} por eliminar, {{unchanged}} sin cambios",
+    "action": {
+      "create": "Crear",
+      "update": "Actualizar",
+      "delete": "Eliminar",
+      "unchanged": "Igual"
+    },
+    "blocked": "Los conflictos bloquean este plan. Corrígelos y vuelve a generar la vista previa."
+  },
+  "records": {
+    "search": "Buscar por nombre o valor",
+    "typeFilter": "Tipo de registro",
+    "allTypes": "Todos los tipos",
+    "count_one": "{{count}} conjunto de registros",
+    "count_other": "{{count}} conjuntos de registros",
+    "add": "Añadir registro",
+    "clear": "Borrar filtros",
+    "emptyTitle": "Aún no hay registros",
+    "emptyBody": "Añade un registro, aplica una plantilla o importa un archivo de zona.",
+    "noMatch": "Ningún registro coincide",
+    "noMatchBody": "Prueba con otro nombre, valor o tipo.",
+    "col": {
+      "name": "Nombre",
+      "type": "Tipo",
+      "ttl": "TTL",
+      "values": "Valores",
+      "flags": "Enrutamiento"
+    },
+    "auto": "Auto",
+    "proxied": "Con proxy",
+    "routed": "{{routing}} {{id}}",
+    "managed": "Administrado",
+    "alias": "Alias de {{target}}",
+    "edit": "Editar {{name}} {{type}}",
+    "delete": "Eliminar {{name}} {{type}}",
+    "deleteTitle": "¿Eliminar {{name}} {{type}}?",
+    "deleteLead_one": "El registro se elimina de inmediato en el proveedor.",
+    "deleteLead_other": "Los {{count}} valores se eliminan de inmediato en el proveedor.",
+    "confirmDelete": "Eliminar"
+  },
+  "record": {
+    "addTitle": "Añadir registro",
+    "editTitle": "Editar registro",
+    "lead": "Los cambios se escriben en {{zone}} en el proveedor al guardar.",
+    "name": "Nombre",
+    "type": "Tipo",
+    "ttl": "TTL",
+    "nameHint": "Relativo a {{zone}}: @ para el ápice, * para un comodín.",
+    "ttlAutoHint": "TTL 1 significa automático.",
+    "values": "Valores",
+    "addValue": "Añadir valor",
+    "removeValue": "Quitar el valor {{n}}",
+    "partLabel": "{{part}} {{n}}",
+    "part": {
+      "address": "Dirección",
+      "target": "Destino",
+      "text": "Texto",
+      "priority": "Prioridad",
+      "weight": "Peso",
+      "port": "Puerto",
+      "flags": "Indicadores",
+      "tag": "Etiqueta",
+      "caaValue": "Valor"
+    },
+    "placeholder": {
+      "address": "203.0.113.10",
+      "target": "host.example.com",
+      "text": "",
+      "priority": "10",
+      "weight": "5",
+      "port": "443",
+      "flags": "0",
+      "tag": "",
+      "caaValue": "letsencrypt.org"
+    },
+    "proxied": "Pasar por el proxy de Cloudflare",
+    "routing": "Política de enrutamiento",
+    "routingPolicy": {
+      "simple": "Simple",
+      "weighted": "Ponderado",
+      "failover": "Conmutación por error",
+      "multivalue": "Respuesta de varios valores"
+    },
+    "setIdentifier": "Identificador del conjunto",
+    "weight": "Peso (0 a 255)",
+    "failover": "Rol de conmutación por error",
+    "failoverPick": "Elige un rol",
+    "primary": "Primario",
+    "secondary": "Secundario",
+    "healthCheck": "Comprobación de estado",
+    "noHealthCheck": "Ninguna",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "savedToast": "{{name}} guardado",
+    "failedToast": "No se pudo guardar el registro",
+    "warning": "Guardado con una advertencia"
+  },
+  "validation": {
+    "name": "El nombre no es un nombre DNS válido. Un comodín debe ser la etiqueta situada más a la izquierda.",
+    "noValues": "Añade al menos un valor.",
+    "ipv4": "Un registro A necesita una dirección IPv4.",
+    "ipv6": "Un registro AAAA necesita una dirección IPv6.",
+    "host": "El destino debe ser un nombre de host.",
+    "priority": "La prioridad debe ser un número de 0 a 65535.",
+    "weight": "El peso debe ser un número de 0 a 65535.",
+    "port": "El puerto debe ser un número de 0 a 65535.",
+    "caaTag": "La etiqueta CAA debe ser issue, issuewild o iodef.",
+    "caaValue": "El valor CAA es obligatorio.",
+    "textTooLong": "El texto TXT está limitado a 4000 caracteres.",
+    "cnameSingle": "Un CNAME contiene exactamente un destino.",
+    "apexNs": "Los registros NS del ápice los administra el proveedor.",
+    "ttl": "El TTL debe estar entre 30 y 604800 segundos.",
+    "proxiedType": "Solo los registros A, AAAA y CNAME pueden pasar por proxy.",
+    "setIdentifier": "Los registros enrutados necesitan un identificador de conjunto.",
+    "routingWeight": "El peso debe estar entre 0 y 255.",
+    "failoverRole": "Elige primario o secundario."
+  },
+  "templates": {
+    "title": "Aplicar una plantilla",
+    "lead": "Configuraciones comunes como conjuntos de registros. Se conservan los valores TXT existentes con el mismo nombre, salvo un segundo registro SPF o DMARC.",
+    "pick": "Elige una plantilla",
+    "failedToast": "Falló la plantilla"
+  },
+  "check": {
+    "name": "Nombre del registro",
+    "type": "Tipo de registro",
+    "run": "Comprobar",
+    "checking": "Comprobando...",
+    "agree": "Las respuestas coinciden",
+    "differ": "Las respuestas difieren",
+    "zoneSays": "Zona: {{values}}",
+    "authoritative": "autoritativo",
+    "ttlLeft": "{{ttl}} s",
+    "noRecords": "sin registros",
+    "mismatch": "difiere de la zona",
+    "col": {
+      "server": "Servidor",
+      "ttl": "TTL restante",
+      "answer": "Respuesta"
+    }
+  },
+  "health": {
+    "lead": "Las comprobaciones de estado de Route53 deciden qué registro de conmutación por error o de varios valores responde.",
+    "type": "Tipo",
+    "target": "Host o IP",
+    "port": "Puerto",
+    "path": "Ruta",
+    "create": "Añadir comprobación de estado",
+    "delete": "Eliminar la comprobación de estado {{id}}",
+    "empty": "Aún no hay comprobaciones de estado.",
+    "failedToast": "Falló la comprobación de estado"
+  },
+  "zone": {
+    "loadFailed": "No se pudo cargar esta zona",
+    "nameservers": "Servidores de nombres",
+    "templates": "Plantillas",
+    "importExport": "Importar y exportar",
+    "delete": "Eliminar zona",
+    "deleteTitle": "¿Eliminar {{zone}}?",
+    "deleteLead": "La zona y sus servidores de nombres se eliminan en el proveedor. El dominio deja de resolverse si aún está delegado aquí.",
+    "deleteHasRecords_one": "La zona aún tiene {{count}} conjunto de registros además de NS y SOA. Expórtalo primero si puedes necesitarlo.",
+    "deleteHasRecords_other": "La zona aún tiene {{count}} conjuntos de registros además de NS y SOA. Expórtalos primero si puedes necesitarlos.",
+    "typeName": "Escribe {{zone}} para confirmar",
+    "force": "Eliminar también los registros",
+    "deletedToast": "{{zone}} eliminada",
+    "deleteFailed": "No se pudo eliminar la zona",
+    "recordsByType": "Registros por tipo",
+    "total_one": "{{count}} conjunto en total",
+    "total_other": "{{count}} conjuntos en total",
+    "lastChanged": "Último cambio",
+    "by": "por {{who}} ({{action}})",
+    "noChanges": "Aún no se ha hecho ningún cambio desde aquí.",
+    "provider": "{{provider}}, {{status}}",
+    "tab": {
+      "records": "Registros",
+      "delegation": "Delegación",
+      "propagation": "Propagación",
+      "health": "Comprobaciones de estado"
+    }
+  },
+  "recordsControl": {
+    "recordType": "Tipo de registro",
+    "recordName": "Nombre del registro",
+    "namePlaceholder": "@ o subdominio",
+    "recordValue": "Valor del registro",
+    "valuePlaceholder": "Valor",
+    "ttlSeconds": "TTL en segundos",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "editRecord": "Editar registro",
+    "deleteRecord": "Eliminar registro",
+    "deleteTitle": "¿Eliminar este registro?",
+    "deleteBody": "{{type}} {{name}} que apunta a {{value}} se quitará de la zona. Esta acción no se puede deshacer.",
+    "deleting": "Eliminando...",
+    "delete": "Eliminar",
+    "statusResolved": "Resuelto",
+    "statusPending": "Pendiente",
+    "statusMismatch": "No coincide",
+    "statusUnknown": "Sin verificar",
+    "title": "Registros DNS",
+    "titleNoProvider": "Registros DNS: sin proveedor",
+    "count_one": "{{count}} registro DNS",
+    "count_other": "{{count}} registros DNS",
+    "manage": "Administrar registros DNS",
+    "titleForZone": "Registros DNS de {{zone}}",
+    "hide": "Ocultar",
+    "noProvider": "No hay ningún proveedor de DNS configurado para administrar registros. Activa Cloudflare DNS, Route53 DNS o Google Cloud DNS arriba para listar y editar aquí los registros de esta zona.",
+    "noRecords": "No se encontraron registros.",
+    "colType": "Tipo",
+    "colName": "Nombre",
+    "colValue": "Valor",
+    "colTtl": "TTL",
+    "colStatus": "Estado",
+    "addRecord": "Añadir un registro"
+  },
+  "banner": {
+    "description": "Conecta un proveedor de DNS para administrar aquí las zonas y los registros, y ver cuándo se han propagado los cambios de servidores de nombres.",
+    "diagram": {
+      "records": "Registros",
+      "server": "Servidor"
+    }
+  }
+}

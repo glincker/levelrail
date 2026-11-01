@@ -1162,5 +1162,1296 @@
       "regionRequired": "Elige una región de AWS",
       "smtpUsernameRequired": "El usuario SMTP es obligatorio"
     }
+  },
+  "controlPlaneHealth": {
+    "allClear": "Todas las mediciones están por debajo de su umbral.",
+    "banner": {
+      "description": "Saturación en vivo de esta instancia, con una corrección con un clic para cada hallazgo.",
+      "diagram": {
+        "certificates": "certificados",
+        "database": "base de datos",
+        "disk": "disco"
+      }
+    },
+    "description": "Saturación en vivo de esta instancia: proceso, base de datos, bucle de reconciliación y streams abiertos.",
+    "errorTitle": "No se pudo leer el estado del plano de control",
+    "findings": {
+      "db_integrity": {
+        "hint": "Restaura la copia de seguridad más reciente verificada. Se aplica en el próximo inicio y se conserva el archivo dañado.",
+        "title": "La base de datos del plano de control está dañada"
+      },
+      "db_latency": {
+        "hint": "Actualizar las estadísticas de consultas suele restaurar buenos planes.",
+        "title": "Consultas lentas a la base de datos"
+      },
+      "db_queue": {
+        "hint": "El único escritor de SQLite está ocupado. Revisa la lista de consultas lentas de abajo.",
+        "title": "Las escrituras están en cola"
+      },
+      "event_lag": {
+        "hint": "Ningún ciclo terminó recientemente. Reinicia el plano de control si persiste.",
+        "title": "El bucle de reconciliación va con retraso"
+      },
+      "goroutines": {
+        "hint": "Normalmente son streams abiertos o trabajos atascados. Reinicia el plano de control si sigue subiendo.",
+        "title": "Muchas goroutines"
+      },
+      "heap": {
+        "hint": "Comprueba si hay salidas de registros o de compilación muy grandes retenidas en memoria.",
+        "title": "Uso elevado de memoria"
+      },
+      "reconcile_breakers": {
+        "hint": "Su disyuntor reintenta con un retraso creciente. Corrige la causa que se muestra abajo y luego restablece la protección para reintentar ahora.",
+        "title": "Un controlador sigue fallando y se pausó"
+      },
+      "reconcile_pass": {
+        "hint": "Un controlador tarda mucho. El más lento aparece en las métricas.",
+        "title": "El ciclo de reconciliación es lento"
+      },
+      "reconcile_storm": {
+        "hint": "Se combinaron ciclos para que el host siga respondiendo. Restablecer la protección rellena el presupuesto.",
+        "title": "Una ráfaga de eventos alcanzó el límite de frecuencia"
+      },
+      "rss": {
+        "hint": "El proceso usa mucha RAM. Reduce APP_GOMEMLIMIT_PERCENT o revisa los bucles de abajo.",
+        "title": "Uso elevado de memoria"
+      },
+      "slow_queries": {
+        "hint": "Revisa la lista de abajo y borra el contador una vez resuelto.",
+        "title": "Muchas consultas lentas"
+      },
+      "streams": {
+        "hint": "Los nuevos streams de registros y eventos se rechazan al llegar al tope. Sube APP_MAX_LIVE_STREAMS si el host tiene margen.",
+        "title": "Streams en vivo cerca del tope"
+      },
+      "telemetry_size": {
+        "hint": "La poda aplica la retención y el tope de tamaño, y devuelve el espacio libre al disco.",
+        "title": "La base de datos de métricas es grande"
+      },
+      "threads": {
+        "hint": "Normalmente son llamadas de disco o de red bloqueadas. Reinicia el plano de control si sigue subiendo.",
+        "title": "Muchos hilos del sistema operativo"
+      },
+      "wal_size": {
+        "hint": "Un punto de control lo integra de nuevo en el archivo de la base de datos.",
+        "title": "El registro de escritura anticipada es grande"
+      }
+    },
+    "findingsCount_one": "{{count}} hallazgo",
+    "findingsCount_other": "{{count}} hallazgos",
+    "findingsTitle": "Requiere atención",
+    "fixApplied": "Corrección aplicada",
+    "fixFailed": "La corrección falló",
+    "fixViaCli": "Corregir con la CLI",
+    "fixes": {
+      "db_optimize": "Actualizar estadísticas de consultas",
+      "integrity_check": "Ejecutar una comprobación completa",
+      "integrity_restore": "Restaurar la copia de seguridad más reciente verificada",
+      "reset_reconcile_guard": "Restablecer la protección y reanudar",
+      "reset_slow_log": "Borrar el registro de consultas lentas",
+      "telemetry_prune": "Podar y compactar las métricas",
+      "wal_checkpoint": "Crear un punto de control ahora"
+    },
+    "footprint": {
+      "basis": "Proceso del plano de control en {{platform}} frente a la línea base en reposo confirmada ({{apps}} aplicaciones, {{liveApps}} aplicaciones ahora).",
+      "footnote": "La CPU es un promedio de los últimos {{seconds}} s. La memoria se mantiene en el pico de la línea base. Los límites vienen de los ajustes IDLE_TOL_*. El agente del nodo no se mide aquí.",
+      "meterLabel": "{{metric}} frente a su límite",
+      "metric": {
+        "cpu": "CPU",
+        "goroutines": "Goroutines",
+        "open_fds": "Descriptores de archivo abiertos",
+        "rss": "Memoria residente"
+      },
+      "noBaseline": "No existe una línea base en reposo confirmada para {{platform}}, así que solo se muestra la lectura en vivo.",
+      "status": {
+        "no_baseline": "Sin línea base",
+        "over_tolerance": "Fuera de tolerancia",
+        "tolerance_unset": "Tolerancias sin definir",
+        "within_tolerance": "Dentro de la tolerancia"
+      },
+      "title": "Huella de recursos",
+      "vs": "(línea base {{baseline}}, límite {{limit}})"
+    },
+    "guard": {
+      "counts": "{{trips}} disparos, {{panics}} pánicos, {{throttled}} limitados",
+      "none": "Ningún controlador ha disparado un disyuntor ni alcanzado un límite de frecuencia.",
+      "state": {
+        "closed": "Cerrado",
+        "half_open": "En prueba",
+        "open": "En pausa"
+      },
+      "summary": "{{deferred}} ciclos aplazados, {{recent}} limitados en los últimos 5 minutos, {{open}} disyuntores abiertos.",
+      "title": "Protección de la reconciliación"
+    },
+    "integrity": {
+      "cancelRestore": "Cancelar",
+      "checkBad": "La base de datos no superó su comprobación",
+      "checkFull": "Comprobación completa ahora",
+      "checkOk": "La base de datos superó su comprobación",
+      "checkQuick": "Comprobación rápida ahora",
+      "confirmDescription": "La copia de seguridad se verifica de nuevo antes de prepararla y se aplica durante el próximo inicio, antes de abrir la base de datos.",
+      "confirmTitle": "¿Restaurar {{name}}?",
+      "consequenceKept": "El archivo actual de la base de datos se conserva junto a él, no se elimina.",
+      "consequenceRestart": "Los cambios hechos después de crear la copia de seguridad no están en ella.",
+      "damaged": "Dañada",
+      "last": "Última comprobación {{when}} ({{mode}}).",
+      "mode": {
+        "full": "completa",
+        "quick": "rápida"
+      },
+      "noSnapshots": "Aún no hay copias de seguridad. Crea una desde la página de copias de seguridad.",
+      "notYet": "No se ha ejecutado ninguna comprobación desde que se inició este proceso. La primera se ejecutará en breve.",
+      "ok": "Íntegra",
+      "pending": "La copia de seguridad {{name}} reemplaza la base de datos en el próximo inicio.",
+      "restartNow": "Reiniciar ahora",
+      "restore": "Restaurar",
+      "snapshots": "Copias de seguridad que puedes restaurar",
+      "staged": "Restauración preparada. Reinicia el plano de control para aplicarla.",
+      "title": "Integridad de la base de datos",
+      "unverified": "Aún sin verificar",
+      "verified": "Verificada"
+    },
+    "loops": {
+      "empty": "Ningún bucle en segundo plano ha informado aún.",
+      "row": "cada {{every}} s, {{runs}} ejecuciones, última {{ms}} ms, coste {{cost}} % de un núcleo",
+      "title": "Bucles en segundo plano"
+    },
+    "metrics": {
+      "cpu": "CPU desde la última comprobación",
+      "dbLatency": "p95 de la base de datos",
+      "dbLatencyHint": "p50 {{p50}} ms, p99 {{p99}} ms",
+      "dbQueue": "Escrituras que esperaron",
+      "dbQueueHint": "{{ms}} ms de espera en total",
+      "eventLag": "Desde el último ciclo de reconciliación",
+      "goroutines": "Goroutines",
+      "heap": "Heap en uso",
+      "readPoolDisabled": "Pool de lectura desactivado, las lecturas usan el escritor",
+      "readQueue": "Lecturas que esperaron",
+      "readQueueHint": "{{ms}} ms de espera en total, {{inUse}} de {{size}} conexiones ocupadas",
+      "reconcile": "Último ciclo de reconciliación",
+      "reconcileHint": "{{n}} controladores, p95 {{p95}} ms",
+      "reconcileQueue": "Cola de reconciliación",
+      "reconcileQueueHint": "{{depth}} en espera, la más antigua {{wait}} s",
+      "reconcileQueueValue": "{{inFlight}} de {{workers}} workers ocupados",
+      "rss": "Memoria en uso (RSS)",
+      "rssHint": "Límite flexible {{limit}} MiB",
+      "rssNoLimit": "Sin límite flexible definido",
+      "streams": "Streams en vivo",
+      "telemetry": "Base de datos de métricas",
+      "threads": "Hilos del sistema operativo",
+      "wal": "Registro de escritura anticipada",
+      "walHint": "Archivo de la base de datos {{size}} MiB"
+    },
+    "metricsTitle": "Entorno de ejecución y base de datos",
+    "noSlowQueries": "No se han registrado consultas lentas desde el inicio.",
+    "reading": "Ahora {{value}}, límite {{limit}}.",
+    "readingChip": "Ahora {{value}} / límite {{limit}}",
+    "recheck": "Volver a comprobar ahora",
+    "rechecking": "Comprobando",
+    "retry": "Intentar de nuevo",
+    "severity": {
+      "crit": "Crítico",
+      "warn": "Advertencia"
+    },
+    "slowQueries": "Consultas lentas: {{count}} por encima de {{ms}} ms",
+    "status": {
+      "crit": "Saturado",
+      "ok": "Saludable",
+      "warn": "Degradado"
+    },
+    "title": "Estado del plano de control"
+  },
+  "gitConnections": {
+    "account": "Sesión iniciada como {{name}}",
+    "accountUnknown": "Cuenta aún sin leer",
+    "add": {
+      "another": "Añadir otra cuenta",
+      "application": "Aplicación OAuth",
+      "applicationHelp": "Reutiliza la misma aplicación para iniciar sesión con otra cuenta en la misma instancia.",
+      "callbackCopied": "Copiado",
+      "callbackCopy": "Copiar",
+      "callbackLabel": "URL de retorno",
+      "cancel": "Cancelar",
+      "clientId": {
+        "bitbucket": "Consumer key",
+        "bitbucket_server": "ID de cliente",
+        "forgejo": "ID de cliente",
+        "gitea": "ID de cliente",
+        "gitlab": "ID de la aplicación"
+      },
+      "clientSecret": "Secreto",
+      "connect": "Verificar y conectar",
+      "description": "Crea la aplicación OAuth en el proveedor con la URI de redirección {{callback}} y luego introdúcela aquí. Se te enviará al proveedor para autorizarla.",
+      "first": "Añadir una cuenta",
+      "fixLabel": "Corrección",
+      "instanceHelp": "gitlab.com o una dirección autoadministrada, por ejemplo https://git.example.com.",
+      "instanceHelpServer": "La dirección base de tu servidor, por ejemplo https://bitbucket.example.com.",
+      "instanceUrl": "URL de la instancia",
+      "label": "Etiqueta (opcional)",
+      "labelHelp": "Por defecto es el nombre de la cuenta una vez que autorices. Puedes cambiarla después.",
+      "newApplication": "Registrar una aplicación OAuth nueva",
+      "reuse": "Reutilizar la aplicación de {{label}}",
+      "saving": "Guardando",
+      "submit": "Guardar y autorizar",
+      "test": "Probar conexión",
+      "testKind": {
+        "bad_scope": {
+          "fix": "Crea el token de nuevo con todos los permisos de los pasos anteriores marcados y pega el nuevo.",
+          "message": "Al token le falta un permiso que necesita este plano de control."
+        },
+        "bad_token": {
+          "fix": "Crea un nuevo token de acceso personal con acceso de lectura a los repositorios y pégalo de nuevo.",
+          "message": "El servidor rechazó el token."
+        },
+        "bad_url": {
+          "fix": "Usa la dirección raíz de la instancia, por ejemplo https://git.example.com, sin la ruta de un repositorio.",
+          "message": "Esa dirección no parece de este tipo de servidor."
+        },
+        "tls": {
+          "fix": "Instala un certificado de confianza en el servidor o añade tu CA privada al almacén de confianza de este plano de control.",
+          "message": "Se rechazó el certificado TLS del servidor."
+        },
+        "unreachable": {
+          "fix": "Comprueba el nombre de host y el puerto, y que la red o el firewall permitan el acceso saliente.",
+          "message": "Este plano de control no pudo alcanzar el servidor."
+        }
+      },
+      "testOk": "Conectado. El servidor respondió y los detalles parecen correctos.",
+      "testOkAccount": "Conectado como {{account}}.",
+      "testing": "Probando",
+      "title": {
+        "bitbucket": "Añadir una cuenta de Bitbucket",
+        "bitbucket_server": "Añadir una cuenta de Bitbucket Server",
+        "forgejo": "Añadir una cuenta de Forgejo",
+        "gitea": "Añadir una cuenta de Gitea",
+        "gitlab": "Añadir una cuenta de GitLab"
+      },
+      "token": "Token de acceso personal",
+      "tokenDescription": "Crea en el servidor un token de acceso personal con permiso de lectura y escritura de repositorios y pégalo aquí. Se verifica y luego se guarda cifrado.",
+      "tokenHelp": "En Administrar cuenta, Tokens de acceso personal. El token no se vuelve a mostrar.",
+      "verifying": "Verificando"
+    },
+    "authorize": "Autorizar",
+    "default": "Predeterminada",
+    "disconnect": {
+      "action": "Desconectar",
+      "description": "Este plano de control deja de usar esta cuenta y revoca su token en el proveedor cuando es posible. Las demás cuentas conectadas no se tocan.",
+      "pending": "Desconectando",
+      "sources_one": "{{count}} origen de git usa esta cuenta. Se conserva, muestra que requiere reconexión y vuelve a funcionar cuando conectes una cuenta en el mismo host.",
+      "sources_other": "{{count}} orígenes de git usan esta cuenta. Se conservan, muestran que requieren reconexión y vuelven a funcionar cuando conectes una cuenta en el mismo host.",
+      "title": "¿Desconectar {{label}}?"
+    },
+    "empty": {
+      "description": {
+        "bitbucket": "Registra un consumer OAuth de Bitbucket y luego autorízalo. Añade otro consumer más adelante para otro espacio de trabajo.",
+        "bitbucket_server": "Crea un token de acceso personal en tu Bitbucket Server y añádelo aquí. Cada servidor o cuenta es una conexión propia.",
+        "forgejo": "Registra una aplicación OAuth de Forgejo y luego autorízala. Codeberg y los servidores autoalojados son cada uno su propia conexión.",
+        "gitea": "Registra una aplicación OAuth de Gitea y luego autorízala. Cada servidor Gitea o Forgejo es su propia conexión.",
+        "gitlab": "Registra una aplicación OAuth de GitLab y luego autorízala. gitlab.com y las instancias autoadministradas pueden conectarse a la vez."
+      },
+      "title": "Ninguna cuenta conectada"
+    },
+    "reconnect": "Reconectar",
+    "rename": {
+      "action": "Renombrar",
+      "cancel": "Cancelar",
+      "label": "Etiqueta de la conexión",
+      "save": "Guardar"
+    },
+    "scopeNote": "Las conexiones pertenecen a este plano de control y las administran los administradores. Cualquiera con permiso para leer repositorios puede explorar lo que una cuenta puede ver.",
+    "setDefault": "Establecer como predeterminada",
+    "sources_one": "{{count}} origen de git",
+    "sources_other": "{{count}} orígenes de git",
+    "state": {
+      "needsReconnect": "Requiere reconexión",
+      "notAuthorized": "No autorizada",
+      "ok": "Conectada",
+      "rateLimited": "Limitada por frecuencia"
+    },
+    "toast": {
+      "added": "Cuenta guardada",
+      "addedBody": "Autorízala en el proveedor para terminar.",
+      "authorized": "Cuenta autorizada",
+      "authorizedBody": "Sus repositorios ya están disponibles para elegir.",
+      "disconnected": "Cuenta desconectada",
+      "renameFailed": "No se pudo renombrar la cuenta"
+    },
+    "token": {
+      "check": "Comprobar token",
+      "connected": "Cuenta conectada",
+      "connectedBody": "El token se comprobó y se guardó cifrado.",
+      "description": "Pega un token de acceso en lugar de registrar una aplicación OAuth. Funciona en una instalación http simple sin dominio público.",
+      "field": "Token de acceso",
+      "fieldEmailToken": "Correo y token de API (correo:token)",
+      "guideLabel": "Cómo crear el token",
+      "host": "Host",
+      "noDomain": "El token se guarda cifrado y no se vuelve a mostrar. No se necesita dominio público ni URL de retorno.",
+      "noRepos": "Aún no se puede acceder a ningún repositorio. Marca los permisos de repositorio o asegúrate de que la cuenta sea miembro de un proyecto.",
+      "repos_one": "Puede acceder a {{count}}{{plus}} repositorio.",
+      "repos_other": "Puede acceder a {{count}}{{plus}} repositorios.",
+      "scopes": "Permisos que marcar",
+      "scopesFound": "Permisos: {{scopes}}",
+      "scopesUnknown": "Este host no informa de los permisos de un token. En su lugar se comprueba el acceso a los repositorios.",
+      "server": "Servidor:",
+      "serverEmpty": "introduce arriba la URL del servidor",
+      "serverHelp": "La dirección que abres en un navegador, por ejemplo http://git.lan:3000. Funcionan tanto http como https.",
+      "steps": {
+        "bitbucket": {
+          "copy": "Crea el token y pégalo abajo como tu correo de Atlassian, dos puntos y el token (correo:token).",
+          "create": "Selecciona Create API token with scopes, ponle el nombre {{name}}, elige Bitbucket como aplicación y selecciona tu espacio de trabajo.",
+          "open": "Abre los tokens de API de Atlassian:"
+        },
+        "forgejo": {
+          "copy": "Selecciona Generate Token y cópialo ahora, Forgejo lo muestra una sola vez.",
+          "create": "En Generate New Token, ponle el nombre {{name}}.",
+          "open": "Abre la página de aplicaciones de tu Forgejo:"
+        },
+        "gitea": {
+          "copy": "Selecciona Generate Token y cópialo ahora, Gitea lo muestra una sola vez.",
+          "create": "En Generate New Token, ponle el nombre {{name}}.",
+          "open": "Abre la página de aplicaciones de tu Gitea:"
+        },
+        "gitlab": {
+          "copy": "Selecciona Create personal access token y copia el token que empieza por glpat-.",
+          "create": "Selecciona Add new token, ponle el nombre {{name}} y elige una fecha de caducidad razonable.",
+          "open": "Abre la página de tokens de acceso de tu GitLab:"
+        }
+      },
+      "tick": "Marca estos permisos:",
+      "title": "Conectar con un token"
+    }
+  },
+  "nodeProviders": {
+    "accessKeyId": "ID de clave de acceso",
+    "addNode": "Añadir un nodo",
+    "addNodeDescription": "Ejecuta el comando de instalación en la máquina. Se conecta hacia este plano de control, así que no hace falta ningún puerto de entrada.",
+    "addNodeDialog": {
+      "cloud": "Crear un servidor en un proveedor de nube",
+      "connectFirst": "Conecta {{provider}} para crear servidores allí.",
+      "manualHint": "Ejecuta un comando en la máquina tú mismo. No se abre nada de entrada.",
+      "manualTitle": "Inscribir con un token de unión",
+      "own": "Usar una máquina que ya tienes",
+      "sshHint": "Un VPS, un servidor doméstico o una Raspberry Pi. Instalamos el agente por ti.",
+      "sshTitle": "Conectar por SSH"
+    },
+    "addNodeTitle": "Añadir un nodo a {{provider}}",
+    "apiToken": "Token de API",
+    "azureCredential": "Entidad de servicio (JSON)",
+    "azureFederation": "¿Prefieres la federación de identidad de carga de trabajo a un secreto de cliente de larga duración? Usa en su lugar una clave \"federated_token_file\", consulta",
+    "azureFederationLink": "Federación de identidad de carga de trabajo de Azure",
+    "configureFor": "Configurar {{provider}}",
+    "confirmDisconnect": "Confirmar desconexión",
+    "connect": "Conectar",
+    "connected": "Conectado",
+    "connectedBy": "Conectado por {{name}}",
+    "credentialJson": "Credencial (JSON)",
+    "dcLocation": "Ubicación (opcional)",
+    "dcName": "Nombre del centro de datos",
+    "dcNotes": "Notas (opcional)",
+    "disconnect": "Desconectar",
+    "disconnected": "{{provider}} desconectado.",
+    "empty": "No hay proveedores de nube configurados en este plano de control.",
+    "firewallGuidance": "Permite TCP saliente al puerto del agente de este plano de control (9443 por defecto) y HTTPS saliente para descargar imágenes. El agente no necesita ninguna regla de entrada.",
+    "gcpCredential": "Clave de cuenta de servicio (JSON)",
+    "hints": {
+      "aws": "Clave de acceso, o la propia identidad de AWS de este plano de control.",
+      "azure": "JSON de la entidad de servicio, o federación de identidad de carga de trabajo.",
+      "custom": "Servidor físico, local o cualquier VM sin API de nube.",
+      "digitalocean": "Token de acceso personal con permiso de lectura y escritura.",
+      "gcp": "JSON de la clave de cuenta de servicio.",
+      "hetzner": "Token de API del proyecto con acceso de lectura y escritura."
+    },
+    "lastTested": "última prueba",
+    "methodLegend": "Método de conexión",
+    "methods": {
+      "access_key": {
+        "description": "Un ID y un secreto de clave de acceso de IAM de larga duración.",
+        "title": "Clave de acceso"
+      },
+      "ambient": {
+        "description": "Usa la identidad con la que ya se ejecuta este plano de control, como un perfil de instancia de EC2.",
+        "title": "Identidad del plano de control"
+      },
+      "api_token": {
+        "description": "Un único token de portador de la consola del proveedor.",
+        "title": "Token de API"
+      },
+      "assume_role": {
+        "description": "Asume un rol de IAM por ARN, así la identidad base solo necesita sts:AssumeRole.",
+        "title": "Asumir un rol"
+      },
+      "manual": {
+        "description": "Sin API de nube: servidor físico, local o cualquier VM que se inscribe con un token de unión.",
+        "title": "Manual"
+      },
+      "service_account_json": {
+        "description": "Una clave de entidad de servicio o de cuenta de servicio como documento JSON.",
+        "title": "JSON de cuenta de servicio"
+      },
+      "workload_identity_federation": {
+        "description": "Intercambia un archivo de token federado por un token de corta duración, sin guardar un secreto de cliente.",
+        "title": "Federación de identidad de carga de trabajo"
+      }
+    },
+    "names": {
+      "aws": "AWS",
+      "azure": "Azure",
+      "custom": "Centro de datos propio",
+      "digitalocean": "DigitalOcean",
+      "gcp": "Google Cloud",
+      "hetzner": "Hetzner"
+    },
+    "neverEchoed": "No se vuelve a mostrar una vez guardado.",
+    "notConnected": "No conectado",
+    "permissions": {
+      "aws": "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:DescribeImages, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags y las acciones de grupo de seguridad y VPC usadas para crear el grupo del nodo.",
+      "awsRole": "Con un rol, la identidad base solo necesita sts:AssumeRole sobre el ARN de ese rol. Asigna al rol las acciones anteriores.",
+      "azure": "Reader en la suscripción, más Virtual Machine Contributor y Network Contributor en el grupo de recursos de destino.",
+      "custom": "No se guarda ninguna credencial. El nodo se conecta hacia este plano de control con un token de unión de un solo uso.",
+      "digitalocean": "Un token de acceso personal con permiso de lectura y escritura, o un permiso personalizado limitado a crear, leer y eliminar droplets y ssh_key.",
+      "gcp": "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get y compute.instances.delete en el proyecto.",
+      "hetzner": "Un token de API de proyecto con acceso de lectura y escritura. Hetzner no tiene permisos más finos, así que usa un proyecto dedicado."
+    },
+    "permissionsTitle": "Mínimo privilegio",
+    "region": "Región (opcional)",
+    "roleArn": "ARN del rol (opcional)",
+    "roleArnHelp": "Si se define, se asume mediante STS antes de usarse: la credencial de arriba solo necesita sts:AssumeRole sobre este rol, no permisos directos de EC2.",
+    "roleArnRequired": "ARN del rol",
+    "save": "Guardar",
+    "saveManual": "Guardar centro de datos",
+    "saved": "Credencial de {{provider}} guardada.",
+    "saving": "Guardando...",
+    "secretAccessKey": "Clave de acceso secreta",
+    "sessionToken": "Token de sesión (opcional)",
+    "sheetDescription": "Se usa solo para crear e inspeccionar servidores desde la página Nodos. La operación diaria nunca toca tu cuenta de nube.",
+    "sheetTitle": "Credenciales de {{provider}}",
+    "storedPlaceholder": "Guardada. Pega un valor nuevo para reemplazarla.",
+    "storedReplace": "Ya hay una credencial guardada. Pega una nueva para reemplazarla.",
+    "testAndConnect": "Probar y conectar",
+    "testConnection": "Probar conexión",
+    "testFailed": "La prueba falló",
+    "testStored": "Probar la conexión guardada",
+    "testing": "Probando...",
+    "update": "Actualizar",
+    "useAmbient": "Usar la propia identidad de AWS de este plano de control (variables de entorno, configuración compartida o un perfil de instancia de EC2) en lugar de una clave guardada"
+  },
+  "storageDestinations": {
+    "classes": {
+      "archives": "Archivos de registros",
+      "artifacts": "Artefactos de pipelines",
+      "backups": "Copias de seguridad",
+      "cache": "Caché de compilación",
+      "dumps": "Volcados de datos"
+    },
+    "defaults": {
+      "clear": "Borrar",
+      "cleared": "Se borró el destino predeterminado de {{class}}.",
+      "description": "Adónde va cada tipo de datos cuando no se elige un destino. Los directorios de nodo solo pueden contener copias de seguridad y volcados.",
+      "pick": "Elige un destino",
+      "saved": "{{class}} ahora van a {{name}}.",
+      "title": "Destino predeterminado por clase de datos",
+      "unset": "Sin definir"
+    },
+    "empty": {
+      "description": "Conecta AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, cualquier bucket compatible con S3 o un nodo inscrito para guardar copias de seguridad, archivos y volcados.",
+      "title": "No hay destinos de almacenamiento"
+    },
+    "fix": {
+      "edit_bucket": {
+        "action": "Guardar bucket y volver a comprobar",
+        "description": "No existe ningún bucket con este nombre en el endpoint.",
+        "title": "Corrige el nombre del bucket"
+      },
+      "edit_credentials": {
+        "action": "Guardar credenciales y volver a comprobar",
+        "description": "El endpoint rechazó la clave de acceso. Pega un par de claves válido, se cifra y no se vuelve a mostrar.",
+        "title": "Introduce credenciales nuevas"
+      },
+      "edit_endpoint": {
+        "action": "Guardar endpoint y volver a comprobar",
+        "description": "No se pudo alcanzar el endpoint o falló su certificado. Los endpoints de red privada también necesitan APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true.",
+        "title": "Corrige el endpoint"
+      },
+      "edit_policy": {
+        "action": "Usar otra clave y volver a comprobar",
+        "description": "La clave es válida pero no puede escribir, leer ni eliminar en este bucket. Permite esas acciones en la política del proveedor o usa otro par de claves.",
+        "title": "Concede a la clave acceso al bucket"
+      },
+      "edit_region": {
+        "action": "Guardar región y volver a comprobar",
+        "description": "El bucket está en otra región.",
+        "title": "Corrige la región"
+      },
+      "enable_node_storage": {
+        "action": "Volver a comprobar",
+        "description": "Define APP_AGENT_STORAGE_DIR en el agente con un directorio donde pueda escribir, reinicia el agente y vuelve a comprobar.",
+        "title": "Asigna un directorio de almacenamiento al nodo"
+      },
+      "enable_path_style": {
+        "action": "Activar estilo de ruta y volver a comprobar",
+        "description": "Este endpoint no responde a URL de bucket de estilo virtual. Un clic cambia a https://host/bucket/key y vuelve a comprobar.",
+        "title": "Activa el direccionamiento de estilo de ruta"
+      },
+      "fields": {
+        "accessKeyId": "ID de clave de acceso",
+        "bucket": "Bucket",
+        "endpoint": "Endpoint",
+        "region": "Región",
+        "secretAccessKey": "Clave de acceso secreta"
+      },
+      "reconnect_node": {
+        "action": "Abrir nodos",
+        "description": "El nodo no está conectado al plano de control. Inicia su agente y vuelve a comprobar.",
+        "recheck": "Volver a comprobar",
+        "title": "Pon el nodo en línea"
+      },
+      "sync_clock": {
+        "action": "Volver a comprobar",
+        "description": "El endpoint de almacenamiento informa de una gran diferencia de reloj. Activa NTP en el host del plano de control y vuelve a comprobar.",
+        "title": "Sincroniza el reloj de este servidor"
+      }
+    },
+    "kind": {
+      "agent": "Directorio de nodo",
+      "agentLocation": "{{node}}:{{directory}}"
+    },
+    "node": {
+      "add": "Añadir directorio de nodo",
+      "connect": "Conectar",
+      "connected": "Directorio de nodo \"{{name}}\" conectado.",
+      "connecting": "Conectando...",
+      "description": "Envía copias de seguridad por streaming a un directorio confinado de un nodo inscrito, usando su conexión de agente existente. Sin SSH, sin shell, sin credenciales.",
+      "directory": "Directorio",
+      "directoryHint": "Relativo a la raíz de almacenamiento del nodo (APP_AGENT_STORAGE_DIR en el agente). Por defecto es backups.",
+      "name": "Nombre",
+      "noNodes": "Primero inscribe un nodo para guardar datos en él.",
+      "node": "Nodo",
+      "nodePlaceholder": "Elige un nodo",
+      "quota": "Cuota flexible (GB)",
+      "quotaHint": "Se marca cuando las copias de seguridad la superan. 0 significa sin límite.",
+      "title": "Añadir un destino de directorio de nodo",
+      "verify": "Probar la conexión antes de guardar (escribe y elimina un archivo de prueba)"
+    },
+    "test": {
+      "checking": "Comprobando...",
+      "close": "Cerrar",
+      "failed": "fallido",
+      "failedTitle": "\"{{name}}\" no superó la prueba de conexión",
+      "ok": "correcto",
+      "passed": "\"{{name}}\" funciona.",
+      "recheck": "Volver a comprobar",
+      "step": "{{name}}: {{status}}",
+      "title": "Prueba de conexión de \"{{name}}\""
+    },
+    "usage": {
+      "cost": "Coste estimado al mes",
+      "defaultFor": "Predeterminado para",
+      "free": "Gratis",
+      "header": "Uso",
+      "noDefault": "Ninguno",
+      "none": "Vacío",
+      "ofQuota": "{{used}} de {{quota}}",
+      "overQuota": "Por encima de la cuota"
+    }
+  },
+  "aiAssistantPage": {
+    "card": {
+      "active": "Activo",
+      "connect": "Añade una clave para conectar",
+      "manage": "Administrar",
+      "open": "Abrir los ajustes de {{name}}"
+    },
+    "configured": "Configurado",
+    "description": "Usa tu propia clave de API de un LLM para conversar con un asistente que lee registros, métricas y el historial de despliegues, y que siempre se detiene a pedir tu aprobación antes de cualquier cambio.",
+    "drawer": {
+      "addFallback": "Añadir como alternativo",
+      "apiKey": "Clave de API",
+      "baseUrl": "URL base",
+      "baseUrlInvalid": "Introduce una URL http o https completa.",
+      "baseUrlNote": "Se permiten direcciones privadas y locales para endpoints autoalojados. Los cambios quedan registrados en el registro de auditoría.",
+      "description": "Tu clave se cifra en este servidor y solo se usa para llamar a este proveedor.",
+      "disconnect": "Desconectar",
+      "disconnectBody": "La clave guardada se elimina de este servidor. Si este proveedor está activo, el asistente deja de responder hasta que elijas otro.",
+      "disconnectTitle": "¿Desconectar {{name}}?",
+      "disconnected": "{{name}} desconectado.",
+      "getKey": "Obtener una clave",
+      "hideKey": "Ocultar clave",
+      "keyKept": "Hay una clave guardada y oculta. Déjalo en blanco para conservarla.",
+      "keyNever": "Se guarda cifrada. No se vuelve a mostrar tras guardar.",
+      "keyPlaceholder": "Pega tu clave de API",
+      "keySavedPlaceholder": "Guardada. Pega una clave nueva para reemplazarla",
+      "model": "Modelo",
+      "modelFree": "Escribe el ID del modelo que usar.",
+      "modelHelp": "Elige de la lista o escribe cualquier ID de modelo.",
+      "nowActive": "{{name}} es ahora el proveedor activo.",
+      "save": "Guardar",
+      "saved": "{{name}} guardado.",
+      "savedShort": "Guardado",
+      "saving": "Guardando...",
+      "showKey": "Mostrar clave",
+      "test": "Probar conexión",
+      "testing": "Probando...",
+      "useModel": "Usar este modelo"
+    },
+    "fallback": {
+      "empty": "Aún no hay modelos alternativos. Abre un proveedor conectado y elige Añadir como alternativo.",
+      "hint": "Si el modelo activo alcanza un límite de frecuencia o sufre una caída, toma el relevo el siguiente de esta lista. Una clave incorrecta nunca activa el modelo alternativo.",
+      "moveDown": "Bajar {{name}}",
+      "moveUp": "Subir {{name}}",
+      "remove": "Quitar {{name}} de los alternativos",
+      "title": "Orden de alternativos"
+    },
+    "groups": {
+      "hosted": "Proveedores alojados",
+      "selfHosted": "Autoalojados"
+    },
+    "header": {
+      "attention": "Requiere atención",
+      "ready": "Listo"
+    },
+    "loadError": "No se pudieron cargar los proveedores de IA.",
+    "model": {
+      "context": "contexto de {{size}}",
+      "loading": "Cargando modelos..."
+    },
+    "notConfigured": "Sin configurar",
+    "pill": {
+      "connected": "Conectado",
+      "invalid_key": "Clave no válida",
+      "not_connected": "No conectado",
+      "quota_exhausted": "Sin créditos",
+      "unreachable": "Inaccesible"
+    },
+    "reassurance": "Tu clave nunca sale de este servidor y no se vuelve a mostrar.",
+    "retry": "Intentar de nuevo",
+    "rootOnly": "Solo la cuenta root puede conectar proveedores, cambiar claves o elegir modelos. Aun así puedes ver qué está conectado.",
+    "test": {
+      "invalid_key": "El proveedor rechazó esta clave",
+      "latency": "{{ms}} ms",
+      "ok": "La conexión funciona",
+      "quota_exhausted": "La cuenta se ha quedado sin créditos",
+      "unreachable": "No se pudo alcanzar al proveedor",
+      "untested": "Aún sin probar"
+    },
+    "title": "Asistente de IA",
+    "usage": {
+      "emptyBody": "Los recuentos de tokens aparecen aquí después de que el asistente responda su primera pregunta.",
+      "emptyTitle": "Aún no hay uso",
+      "errors": "Errores",
+      "last30": "Últimos 30 días",
+      "model": "Modelo",
+      "ofBudget": "{{used}} de {{budget}} tokens este mes ({{pct}} %)",
+      "requests": "Solicitudes",
+      "sparkline": "Tokens por día en los últimos 30 días",
+      "title": "Uso, últimos 30 días",
+      "tokens": "Tokens",
+      "total": "{{used}} tokens",
+      "unavailable": "El uso aún no está disponible en esta versión del servidor."
+    }
+  },
+  "networkSharesPage": {
+    "banner": {
+      "description": "Monta almacenamiento de un NAS o servidor de archivos como un volumen de Docker que tus aplicaciones puedan usar.",
+      "diagram": {
+        "app": "Aplicación",
+        "nfs": "NFS",
+        "smb": "SMB / CIFS",
+        "volume": "Montado como volumen de Docker"
+      },
+      "whatFor": "Un recurso compartido permite que una aplicación lea y escriba archivos que viven en otra máquina, como contenido multimedia en un NAS o copias de seguridad en un servidor de archivos. Añade uno y luego adjúntalo desde los volúmenes de una aplicación."
+    },
+    "description": "Exportaciones NFS y CIFS/SMB, montadas como volúmenes de Docker mediante el paso de red del controlador local de Docker. Adjunta una como origen de volumen al configurar los volúmenes de una aplicación.",
+    "dialog": {
+      "added": "Recurso compartido de red \"{{name}}\" añadido.",
+      "advanced": "Avanzado",
+      "cancel": "Cancelar",
+      "chips": {
+        "ids": "Definir uid y gid",
+        "label": "Opciones comunes",
+        "nfsvers3": "NFSv3",
+        "nfsvers4": "NFSv4",
+        "ro": "Solo lectura",
+        "smbvers": "SMB 3.0",
+        "soft": "Montaje blando"
+      },
+      "description": "Conecta almacenamiento de un NAS o servidor de archivos para que las aplicaciones lo monten como un volumen de Docker.",
+      "errors": {
+        "hostFormat": "Ese no es un nombre de host ni una dirección IP válidos.",
+        "hostRequired": "Introduce el nombre de host o la dirección IP del servidor.",
+        "nameFormat": "Usa letras minúsculas, números y guiones, empezando y terminando con una letra o un número.",
+        "nameRequired": "Ponle un nombre al recurso compartido.",
+        "nameTaken": "Ya existe un recurso compartido con este nombre.",
+        "nfsPathFormat": "La ruta de exportación NFS empieza con una barra, por ejemplo /export/media.",
+        "passwordRequired": "Los recursos SMB necesitan una contraseña.",
+        "pathRequired": "Introduce la ruta en el servidor.",
+        "smbPathFormat": "Introduce solo el nombre del recurso, sin barras ni espacios.",
+        "usernameRequired": "Los recursos SMB necesitan un nombre de usuario."
+      },
+      "hidePassword": "Ocultar contraseña",
+      "host": "Host",
+      "hostHint": "El nombre de host o la dirección IP del servidor (IPv4 o IPv6).",
+      "hostPlaceholder": "nas.lan o 192.168.1.50",
+      "name": "Nombre",
+      "nameFree": "Este nombre está disponible.",
+      "nameHint": "Se usa como nombre del volumen. Letras minúsculas, números y guiones.",
+      "namePlaceholder": "media-nas",
+      "nfs": {
+        "body": "Linux y NAS, sin contraseña",
+        "title": "NFS"
+      },
+      "open": "Añadir recurso compartido de red",
+      "options": "Opciones de montaje",
+      "optionsHint": "Opciones separadas por comas que se pasan directamente al controlador local de Docker. Elige una común o escribe las tuyas.",
+      "optionsOptional": "opcional",
+      "optionsPlaceholder": "ro,nfsvers=4",
+      "password": "Contraseña",
+      "passwordHint": "Se guarda cifrada. No se vuelve a mostrar.",
+      "path": {
+        "nfs": "Ruta de exportación",
+        "smb": "Nombre del recurso"
+      },
+      "pathHint": {
+        "nfs": "La carpeta que exporta el servidor, empezando con una barra.",
+        "smb": "El nombre de la carpeta compartida en el servidor, sin barras."
+      },
+      "pathPlaceholder": {
+        "nfs": "/export/media",
+        "smb": "media"
+      },
+      "protocol": "Protocolo",
+      "readOnly": "solo lectura",
+      "readWrite": "lectura y escritura",
+      "showPassword": "Mostrar contraseña",
+      "smb": {
+        "body": "Windows, macOS y muchos NAS, requiere un nombre de usuario",
+        "title": "SMB / CIFS"
+      },
+      "submit": "Añadir recurso compartido de red",
+      "submitting": "Añadiendo...",
+      "summary": "Monta {{remote}} en modo {{mode}} como el volumen de Docker {{name}}",
+      "summaryEmpty": "Rellena el servidor y la ruta para ver qué se montará.",
+      "title": "Añadir recurso compartido de red",
+      "username": "Nombre de usuario"
+    },
+    "title": "Recursos compartidos de red"
+  },
+  "doctorPage": {
+    "allPassedBody": "Nada requiere atención en este momento.",
+    "allPassedTitle": "Todas las comprobaciones pasaron",
+    "checking": "Comprobando...",
+    "copyDiagnostics": "Copiar diagnóstico",
+    "copyDone": "Diagnóstico copiado",
+    "copyFailed": "No se pudo copiar al portapapeles",
+    "counts": {
+      "fail_one": "{{count}} con fallo",
+      "fail_other": "{{count}} con fallos",
+      "ok": "{{count}} correctas",
+      "unknown": "{{count}} sin comprobar",
+      "warn_one": "{{count}} advertencia",
+      "warn_other": "{{count}} advertencias"
+    },
+    "description": "Una sola comprobación de estado para este servidor: Docker, disco, puertos, certificados, copias de seguridad, nodos y más. El comando doctor de la CLI ejecuta las mismas comprobaciones.",
+    "failedTitle_one": "{{count}} comprobación falló",
+    "failedTitle_other": "{{count}} comprobaciones fallaron",
+    "filter": {
+      "all": "Todas",
+      "fail": "Con fallo",
+      "warn": "Advertencias"
+    },
+    "filterLabel": "Filtrar comprobaciones por estado",
+    "fixAllBody": "Solo se incluyen correcciones con un clic que son seguras. Todo lo que reinicia un servicio o abre acceso sigue siendo un paso aparte y deliberado. Estos son los cambios:",
+    "fixAllCli": "¿Prefieres una terminal? Ejecuta esto en el servidor, imprime el mismo plan y pregunta antes.",
+    "fixAllConfirm": "Aplicar correcciones",
+    "fixAllPending": "Aplicando...",
+    "fixAllTitle_one": "¿Aplicar {{count}} corrección segura?",
+    "fixAllTitle_other": "¿Aplicar {{count}} correcciones seguras?",
+    "fixAll_one": "Corregir {{count}} problema seguro",
+    "fixAll_other": "Corregir los {{count}} problemas seguros",
+    "groups": {
+      "backups": {
+        "description": "Copias de seguridad del plano de control, programaciones de bases de datos y simulacros de restauración.",
+        "title": "Copias de seguridad"
+      },
+      "hardware": {
+        "description": "GPU y herramientas cliente de recursos compartidos de red.",
+        "title": "Hardware"
+      },
+      "host": {
+        "description": "Disco, inodos, memoria, CPU y la base de datos.",
+        "title": "Este servidor"
+      },
+      "network": {
+        "description": "Puertos, firewall, DNS, certificados y si internet puede alcanzar esta máquina.",
+        "title": "Red y accesibilidad"
+      },
+      "nodes": {
+        "description": "Conectividad de los agentes, versiones de los agentes y la malla WireGuard.",
+        "title": "Nodos y malla"
+      },
+      "other": {
+        "description": "Comprobaciones adicionales que informa este plano de control.",
+        "title": "Otras comprobaciones"
+      },
+      "runtime": {
+        "description": "Accesibilidad de Docker, versión, privilegios y datos sobrantes.",
+        "title": "Entorno de ejecución de contenedores"
+      },
+      "security": {
+        "description": "Rotación de secretos, tokens y comprobaciones de la firma de versiones.",
+        "title": "Seguridad"
+      }
+    },
+    "guide": "Guía del doctor",
+    "ingressBody": "El enrutamiento HTTPS basado en dominios se ejecuta integrado en el proceso de este plano de control. Si se cae o se reinicia, el enrutamiento queda inactivo hasta que vuelva, aunque los contenedores que ya se están ejecutando siguen sirviendo tráfico en sus propios puertos todo el tiempo.",
+    "ingressTitle": "El ingress es un punto único de fallo",
+    "lastChecked": "Última comprobación {{time}}",
+    "noMatches": "Ninguna comprobación coincide con este filtro.",
+    "progress": "{{done}} de {{total}} comprobaciones terminadas",
+    "rerun": "Volver a ejecutar las comprobaciones",
+    "reviewBelow": "Cada problema de abajo tiene una corrección o un siguiente paso, y un botón para volver a comprobar.",
+    "streamErrorBody": "Se muestran los resultados obtenidos hasta ahora. Usa Volver a ejecutar las comprobaciones para empezar de nuevo.",
+    "streamErrorTitle": "Se interrumpió el stream de comprobaciones",
+    "survivesCrash": "Qué sobrevive a una caída del plano de control",
+    "title": "Doctor",
+    "warnTitle_one": "{{count}} comprobación necesita revisión",
+    "warnTitle_other": "{{count}} comprobaciones necesitan revisión"
+  },
+  "emailProviders": {
+    "add": {
+      "backup": {
+        "action": "Añadir secundario",
+        "body": "El correo cambia a él automáticamente si el principal empieza a fallar.",
+        "title": "Añadir un proveedor secundario"
+      },
+      "primary": {
+        "action": "Añadir proveedor",
+        "body": "Elige desde dónde se envían las alertas, las invitaciones y los restablecimientos de contraseña.",
+        "title": "Añadir un proveedor"
+      }
+    },
+    "description": "El principal envía todo el correo. Si falla, un secundario toma el relevo hasta que el principal se recupere.",
+    "health": {
+      "failing": "Con fallos",
+      "healthy": "Saludable",
+      "none": "Sin configurar",
+      "paused": "En pausa",
+      "untested": "Aún sin probar"
+    },
+    "loadError": "No se pudieron cargar los proveedores: {{message}}",
+    "panel": {
+      "add": "Añadir proveedor",
+      "addTitle": "Añadir el proveedor {{role}}",
+      "backend": "Proveedor",
+      "cancel": "Cancelar",
+      "editTitle": "Editar el proveedor {{role}}",
+      "fromOverride": "Dirección de remitente para este proveedor",
+      "fromOverrideHelp": "Opcional. En blanco envía como {{from}}.",
+      "fromOverrideNoShared": "Es obligatoria a menos que definas abajo una dirección de remitente.",
+      "name": "Etiqueta",
+      "needsSender": "Este proveedor aún no tiene dirección de remitente. Define una antes de guardar.",
+      "needsSenderLink": "Ir a Identidad del remitente",
+      "save": "Guardar proveedor",
+      "sesSmtpNote": "Las credenciales SMTP de SES vienen de la consola de SES (ajustes SMTP). No son tus claves de IAM."
+    },
+    "remove": {
+      "confirm": "Quitar proveedor",
+      "consequenceCredentials": "Sus credenciales se eliminan y no se pueden recuperar.",
+      "consequenceNoFailover": "El correo deja de tener un proveedor alternativo si falla el principal.",
+      "consequenceNoMail": "Las alertas, las invitaciones y los restablecimientos de contraseña dejan de enviarse hasta que añadas un proveedor.",
+      "description": "El proveedor y sus credenciales guardadas se eliminan.",
+      "done": "{{name}} quitado",
+      "primaryWithBackup": "El principal no se puede quitar mientras exista un secundario. Convierte primero el secundario en principal o quita el secundario.",
+      "removing": "Quitando...",
+      "title": "¿Quitar {{name}}?"
+    },
+    "retry": "Intentar de nuevo",
+    "roles": {
+      "backup": "Secundario",
+      "primary": "Principal"
+    },
+    "row": {
+      "edit": "Editar",
+      "editLabel": "Editar {{name}}",
+      "enabledLabel": "Activar {{name}}",
+      "lastError": "Último error: {{kind}}. Ejecuta Probar para ver la corrección.",
+      "lastOk": "Enviado {{when}}",
+      "neverOk": "Aún sin envíos",
+      "noFrom": "Aún sin dirección de remitente",
+      "promote": "Convertir en principal",
+      "promoteLabel": "Convertir {{name}} en el principal",
+      "promoted": "{{name}} es ahora el principal",
+      "remove": "Quitar",
+      "removeLabel": "Quitar {{name}}",
+      "test": "Probar",
+      "testLabel": "Enviar una prueba a través de {{name}}"
+    },
+    "runningOnBackup": "Funcionando con el secundario",
+    "secret": {
+      "keep": "Conservar el valor guardado",
+      "replace": "Reemplazar",
+      "replaceHint": "Escribe el valor nuevo. El guardado se sobrescribe al guardar.",
+      "replaceLabel": "Reemplazar {{label}}",
+      "set": "Definido"
+    },
+    "status": {
+      "lastError": "Último error",
+      "noError": "Ninguno"
+    },
+    "title": "Proveedores"
+  },
+  "registryPage": {
+    "banner": {
+      "expiredBody": "Las descargas de imágenes privadas con una credencial caducada fallarán en el próximo despliegue. Reemplázala antes.",
+      "expired_one": "{{count}} credencial de registro ha caducado",
+      "expired_other": "{{count}} credenciales de registro han caducado",
+      "expiringBody": "Rótala en el registro y actualízala aquí antes de la fecha que muestra la tabla.",
+      "expiring_one": "{{count}} credencial de registro caduca pronto",
+      "expiring_other": "{{count}} credenciales de registro caducan pronto"
+    },
+    "cloud": {
+      "acr": {
+        "body": "Usa tu conexión de Azure. Introduce el host del registro, por ejemplo myregistry.azurecr.io.",
+        "title": "Conectar ACR"
+      },
+      "artifact_registry": {
+        "body": "Usa tu cuenta de servicio de Google Cloud. El host por defecto es <region>-docker.pkg.dev.",
+        "title": "Conectar Artifact Registry"
+      },
+      "connect": "Conectar",
+      "description": "Conecta ECR, Artifact Registry o ACR con la cuenta de nube que ya añadiste. Los inicios de sesión se generan y se renuevan automáticamente antes de que caduquen.",
+      "ecr": {
+        "body": "Usa tu conexión de AWS. El host del registro se completa a partir de tu cuenta.",
+        "title": "Conectar ECR"
+      },
+      "expires": "Caduca {{when}}",
+      "hostLabel": "Host del registro",
+      "hostPlaceholder": "myregistry.azurecr.io",
+      "lastRefresh": "Última renovación {{when}}",
+      "nameLabel": "Nombre de la credencial",
+      "nextRefresh": "Próxima renovación {{when}}",
+      "refreshFailing": "La renovación falla",
+      "refreshHealthy": "Renovándose",
+      "refreshNow": "Renovar ahora",
+      "regionLabel": "Región",
+      "test": "Probar",
+      "testOk": "El inicio de sesión funciona para {{host}}, caduca {{when}}.",
+      "title": "Registros en la nube que se renuevan solos"
+    },
+    "count_one": "{{count}} credencial",
+    "count_other": "{{count}} credenciales",
+    "description": "Nombres de usuario y contraseñas para descargar imágenes privadas con build.type: image, referenciadas por nombre desde app.yaml.",
+    "empty": {
+      "body": "Añade un nombre de usuario y una contraseña (o token de acceso) para descargar imágenes privadas de un registro de contenedores, referenciados por nombre desde el campo build.registryCredential de app.yaml.",
+      "title": "No hay credenciales de registro"
+    },
+    "eyebrow": "Compilaciones",
+    "help": "Guía de registros",
+    "table": {
+      "added": "Añadida",
+      "expiredOn": "Caducó el {{date}}",
+      "expiresOn": "Caduca el {{date}}",
+      "expiry": {
+        "expired": "Caducada",
+        "expiring_soon": "Caduca pronto",
+        "healthy": "Saludable"
+      },
+      "expiryHeader": "Caducidad",
+      "host": "Host del registro",
+      "label": "Credenciales de registro",
+      "name": "Nombre",
+      "noExpiry": "Sin caducidad definida",
+      "test": "Probar conexión",
+      "testFailed": "\"{{name}}\" no pudo autenticarse.",
+      "testOk": "\"{{name}}\" se autenticó correctamente.",
+      "testing": "Probando...",
+      "unused": "Aún nada",
+      "usedBy": "Usada por",
+      "usedByMany_one": "{{count}} servicio",
+      "usedByMany_other": "{{count}} servicios",
+      "username": "Nombre de usuario"
+    },
+    "title": "Credenciales de registro"
+  },
+  "aiControl": {
+    "adminUnavailable": "El modo administrador requiere que la función experimental ai-control esté activada en el servidor.",
+    "agentTokens": "Tokens de agente",
+    "agentTokensCount_one": "Existe {{count}} token de agente.",
+    "agentTokensCount_other": "Existen {{count}} tokens de agente.",
+    "description": "Decide qué pueden hacer los agentes y el asistente integrado en esta instancia. El servidor lo aplica en cada solicitud, sin importar lo que permita el token.",
+    "envKindsDescription": "Se aplica a operar y administrar. Las aplicaciones sin entorno cuentan como personalizadas.",
+    "envKindsLabel": "Entornos en los que pueden actuar los agentes",
+    "kinds": {
+      "custom": "Personalizado",
+      "dev": "Desarrollo",
+      "preview": "Vista previa",
+      "production": "Producción",
+      "test": "Pruebas",
+      "uat": "UAT"
+    },
+    "loadFailed": "No se pudo cargar la configuración del control de IA.",
+    "modeLabel": "Acceso de los agentes",
+    "modes": {
+      "admin": {
+        "description": "Los agentes pueden usar cualquier capacidad que tenga su token en los entornos de abajo. Una persona sigue teniendo que aprobar los despliegues protegidos.",
+        "label": "Administrar"
+      },
+      "observe": {
+        "description": "Los agentes pueden leer aplicaciones, registros y métricas, pero no secretos, y no cambian nada.",
+        "label": "Observar"
+      },
+      "off": {
+        "description": "Se rechaza toda solicitud de agentes. Las personas no se ven afectadas.",
+        "label": "Desactivado"
+      },
+      "operate": {
+        "description": "Los agentes pueden leer, escribir y desplegar en los entornos de abajo. No pueden usar root ni cambiar secretos, copias de seguridad o ajustes de la instancia.",
+        "label": "Operar"
+      }
+    },
+    "navDescription": "Desactiva el acceso de los agentes, déjalo en solo lectura o actívalo, y límitalo a los entornos elegidos.",
+    "pause": "Pausar todos los agentes",
+    "paused": "Todos los agentes en pausa.",
+    "revoke": {
+      "button": "Revocar todos los tokens de agente",
+      "cancel": "Cancelar",
+      "confirm": "Revocar tokens",
+      "description": "Todos los tokens con una etiqueta de agente dejan de funcionar de inmediato. Esta acción no se puede deshacer. El asistente integrado sigue funcionando.",
+      "done_one": "{{count}} token de agente revocado.",
+      "done_other": "{{count}} tokens de agente revocados.",
+      "revoking": "Revocando...",
+      "title": "¿Revocar todos los tokens de agente?"
+    },
+    "save": "Guardar cambios",
+    "saved": "Control de IA guardado.",
+    "saving": "Guardando...",
+    "title": "Control de IA",
+    "updatedBy": "Último cambio de {{name}}.",
+    "viewAudit": "Ver la actividad de los agentes en el registro de auditoría"
+  },
+  "cliAccessPage": {
+    "banner": {
+      "body": "Apruébalo abajo solo si lo iniciaste tú. Si la IP solicitante parece incorrecta, recházalo.",
+      "title_one": "{{count}} inicio de sesión de la CLI espera aprobación",
+      "title_other": "{{count}} inicios de sesión de la CLI esperan aprobación"
+    },
+    "ciHint": "¿Lo ejecutas desde CI o un script en lugar de una persona ante un teclado? Usa un token de API, no hay nada que aprobar a mano.",
+    "ciLink": "Crear un token de API",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "description": "Controla esta instancia desde tu propio equipo, como aws o gh, sin pasar por SSH.",
+    "eyebrow": "Acceso",
+    "help": "Referencia de la CLI",
+    "rail": {
+      "apiUrl": "URL de la API",
+      "ci": "CI y scripts",
+      "docs": "Documentación",
+      "label": "Resumen de la CLI",
+      "pending": "Inicios de sesión en espera",
+      "status": "Estado"
+    },
+    "server": {
+      "body": "La CLI fija esta identidad al iniciar sesión y se niega a enviar un token a cualquier otro servidor. Compara la huella con la que imprime la CLI.",
+      "confirmAction": "Confirmar que es la misma instancia",
+      "confirmLabel": "Escribe \"{{phrase}}\" para confirmar",
+      "confirmed": "Identidad de la instancia restaurada. Los tokens de la CLI vuelven a funcionar.",
+      "fingerprint": "Huella",
+      "id": "Instancia",
+      "movedBody": "Su identidad cambió, así que se rechazan los tokens de la CLI emitidos antes del traslado. Si es la misma instancia (una restauración o migración que hiciste), confírmalo para aceptar de nuevo esos tokens. Si no la trasladaste, déjalo así e inicia sesión de nuevo en la CLI.",
+      "movedTitle": "Esta instancia se restauró en un host nuevo",
+      "name": "Nombre",
+      "title": "Este servidor"
+    },
+    "setup": {
+      "hint": "¿Ya tienes la CLI? Inicia allí el inicio de sesión de dispositivo y aprueba el código de arriba. Estos pasos son solo para una máquina nueva.",
+      "toggle": "Configurar la CLI en una máquina nueva"
+    },
+    "steps": {
+      "install": {
+        "body": "No en el servidor. Es un pequeño binario cliente para tu portátil o ejecutor de CI, independiente de la instalación del plano de control.",
+        "note": "No necesita root, se instala en ~/.local/bin. Por ahora solo macOS y Linux; en Windows, ejecútalo desde WSL.",
+        "title": "Instala la CLI en tu equipo"
+      },
+      "login": {
+        "body": "Abre aquí un código para aprobar, con el mismo flujo de gh auth login y aws sso login: sin clave SSH ni puerto del servidor que abrir. La aprobación requiere una sesión iniciada en el panel, así que hereda el 2FA o la passkey de esa sesión.",
+        "title": "Inicia sesión"
+      },
+      "point": {
+        "body": "Defínelo una vez por shell o en el perfil de tu shell. Cada comando habla con esa dirección y, si no, usa localhost.",
+        "title": "Apúntala a este servidor"
+      }
+    },
+    "title": "Acceso a la CLI",
+    "tokens": {
+      "body": "Cada inicio de sesión de la CLI es un token ligado a este servidor. Revoca uno para dejar a esa máquina sin acceso.",
+      "title": "Tokens de la CLI"
+    },
+    "waitingCount_one": "{{count}} inicio de sesión en espera",
+    "waitingCount_other": "{{count}} inicios de sesión en espera"
+  },
+  "gitConnectionsHub": {
+    "add": {
+      "action": "Añadir cuenta",
+      "continue": "Continuar",
+      "domainBody": "Este host te devuelve a tu servidor después de iniciar sesión, así que el servidor necesita un dominio público.",
+      "domainTitle": "Primero define un dominio principal",
+      "withToken": "Conectar con un token",
+      "withTokenAsks": "GitLab, Bitbucket, Gitea o Forgejo. Pega un token, no se necesita aplicación OAuth ni dominio público."
+    },
+    "attention_one": "{{count}} cuenta requiere atención. Reconéctala para que sus aplicaciones sigan desplegándose.",
+    "attention_other": "{{count}} cuentas requieren atención. Reconéctalas para que sus aplicaciones sigan desplegándose.",
+    "banner": {
+      "description": "Conecta cuentas de GitHub, GitLab, Bitbucket, Gitea o Forgejo, todas las que necesites, y elige repositorios de cualquiera de ellas.",
+      "diagram": {
+        "branches": "Ramas",
+        "repos": "Repos",
+        "server": "Servidor"
+      },
+      "whatFor": "Conecta una cuenta por persona, equipo u organización. Las aplicaciones siguen ligadas a la cuenta desde la que se crearon, así que puedes añadir o quitar cuentas sin tocar tus aplicaciones."
+    },
+    "description": "Todas las cuentas de Git conectadas a este servidor, de todos los hosts.",
+    "disconnect": {
+      "affected": "Estas aplicaciones necesitan otra cuenta: {{apps}}",
+      "description": "Las aplicaciones nunca se eliminan. Cualquier aplicación que usara esta cuenta sigue ejecutándose y necesita otra cuenta conectada antes de su próximo despliegue."
+    },
+    "health": {
+      "connected": "Conectada",
+      "needsReconnect": "Requiere reconexión",
+      "notAuthorized": "No autorizada",
+      "rateLimited": "Limitada por frecuencia"
+    },
+    "hosts": {
+      "bitbucket": {
+        "access": "El acceso sigue los permisos OAuth que concediste.",
+        "asks": "Pegarás una consumer key y un secreto OAuth, y luego iniciarás sesión.",
+        "name": "Bitbucket"
+      },
+      "bitbucket_server": {
+        "access": "El acceso sigue los permisos del token.",
+        "asks": "Pegarás la URL de tu servidor y un token de acceso personal.",
+        "name": "Bitbucket Server"
+      },
+      "forgejo": {
+        "access": "El acceso sigue los permisos OAuth que concediste.",
+        "asks": "Introducirás la URL del servidor (codeberg.org funciona) y el ID y el secreto de una aplicación OAuth, y luego iniciarás sesión.",
+        "name": "Forgejo y Codeberg"
+      },
+      "gitea": {
+        "access": "El acceso sigue los permisos OAuth que concediste.",
+        "asks": "Introducirás la URL de tu Gitea y el ID y el secreto de una aplicación OAuth, y luego iniciarás sesión.",
+        "name": "Gitea"
+      },
+      "github": {
+        "access": "El acceso sigue los repositorios en los que está instalada la App.",
+        "asks": "Crearás o elegirás una GitHub App y la instalarás en una cuenta u organización.",
+        "name": "GitHub"
+      },
+      "gitlab": {
+        "access": "El acceso sigue los permisos OAuth que concediste.",
+        "asks": "Pegarás el ID y el secreto de una aplicación OAuth, y luego iniciarás sesión.",
+        "name": "GitLab"
+      }
+    },
+    "loadFailed": "No se pudieron cargar tus cuentas de Git. Inténtalo de nuevo en un momento.",
+    "openSettings": "Ajustes del proveedor",
+    "scopes": "Permisos: {{scopes}}",
+    "stats": {
+      "apps": "Aplicaciones",
+      "repos": "Repos"
+    },
+    "title": "Conexiones de Git"
+  },
+  "gitProviders": {
+    "bitbucket": {
+      "banner": "Cuando el consumer esté autorizado, sus repositorios estarán disponibles para elegir al crear una aplicación.",
+      "description": "Conecta un consumer OAuth de Bitbucket Cloud para explorar repositorios y desplegar mediante webhooks.",
+      "title": "Bitbucket App"
+    },
+    "bitbucket_server": {
+      "banner": "Cuando el token esté verificado, sus repositorios estarán disponibles para elegir al crear una aplicación.",
+      "description": "Conecta Bitbucket Server o Data Center con un token de acceso personal para explorar repositorios y desplegar mediante webhooks.",
+      "title": "Bitbucket Server"
+    },
+    "eyebrow": "Proveedor de Git",
+    "forgejo": {
+      "banner": "Cuando la aplicación esté autorizada, sus repositorios estarán disponibles para elegir al crear una aplicación.",
+      "description": "Conecta una aplicación OAuth2 de Forgejo, en Codeberg o autoalojada, para explorar repositorios y desplegar mediante webhooks.",
+      "title": "Forgejo App"
+    },
+    "gitea": {
+      "banner": "Cuando la aplicación esté autorizada, sus repositorios estarán disponibles para elegir al crear una aplicación.",
+      "description": "Conecta una aplicación OAuth2 de Gitea autoalojada para explorar repositorios y desplegar mediante webhooks.",
+      "title": "Gitea App"
+    },
+    "github": {
+      "banner": "Cuando la App esté instalada, sus repositorios estarán disponibles para elegir al crear una aplicación.",
+      "description": "Conecta una GitHub App para acceder a repositorios privados y explorar repositorios por instalación al crear una aplicación desde git.",
+      "title": "GitHub App"
+    },
+    "gitlab": {
+      "banner": "Cuando la aplicación esté autorizada, sus proyectos estarán disponibles para elegir al crear una aplicación.",
+      "description": "Conecta una aplicación OAuth de GitLab, en gitlab.com o autoalojada, para explorar proyectos y desplegar mediante webhooks.",
+      "title": "GitLab App"
+    },
+    "rail": {
+      "accessTitle": "A qué puede acceder",
+      "account": "Cuenta",
+      "accounts": "Cuentas conectadas",
+      "connected": "Conectado",
+      "connection": "Conexión",
+      "docs": "Documentación",
+      "docsLink": "Guía de integraciones de Git",
+      "instance": "Instancia",
+      "label": "Resumen de la conexión",
+      "notConnected": "No conectado",
+      "status": "Estado"
+    }
+  },
+  "registryVendors": {
+    "auth": {
+      "acr": "Usa un token con alcance de repositorio o una entidad de servicio: el usuario es el nombre del token o el ID de la aplicación, y la contraseña es su secreto.",
+      "dockerhub": "Usa tu nombre de usuario de Docker Hub con un token de acceso personal, no la contraseña de tu cuenta.",
+      "ecr": "El usuario es siempre AWS. La contraseña es la salida de aws ecr get-login-password, válida durante 12 horas.",
+      "gar": "El usuario es _json_key y la contraseña es el JSON de la clave de la cuenta de servicio.",
+      "generic": "Cualquier registro que hable la API HTTP de Docker Registry v2 con autenticación básica.",
+      "ghcr": "Usa tu nombre de usuario de GitHub con un token de acceso personal (classic).",
+      "gitlab": "Usa un token de despliegue o un token de acceso personal como contraseña.",
+      "harbor": "Usa una cuenta de robot: el usuario tiene el formato robot$name y la contraseña es su secreto.",
+      "jfrog": "El usuario es tu usuario y la contraseña es un token de identidad, no la contraseña de tu cuenta.",
+      "nexus": "Usa el usuario y la contraseña de un usuario con acceso al repositorio de Docker.",
+      "quay": "Usa una cuenta de robot: el usuario es org+robotname y la contraseña es su token."
+    },
+    "connect": "Conectar",
+    "connectFor": "Conectar {{vendor}}",
+    "dialogDescription": "La contraseña se cifra en reposo y no se vuelve a mostrar.",
+    "dialogTitle": "Conectar {{vendor}}",
+    "expires": "Caducidad (opcional)",
+    "heading": "Conectar un registro",
+    "host": "Host del registro",
+    "name": "Nombre",
+    "nameHelp": "Se referencia por nombre desde build.registryCredential de app.yaml.",
+    "neverShown": "No se vuelve a mostrar una vez guardada.",
+    "password": "Contraseña o token",
+    "save": "Guardar credencial",
+    "saved": "Credencial de registro \"{{name}}\" añadida.",
+    "saving": "Guardando...",
+    "scopes": {
+      "acr": "El rol AcrPull (o un token con content/read) para descargar, AcrPush para subir.",
+      "dockerhub": "El acceso de solo lectura basta para descargar. Elige Read & Write solo si las compilaciones suben imágenes.",
+      "ecr": "ecr:GetAuthorizationToken, ecr:BatchGetImage, ecr:GetDownloadUrlForLayer y ecr:BatchCheckLayerAvailability, desde una clave o un rol.",
+      "gar": "roles/artifactregistry.reader para descargar, roles/artifactregistry.writer para subir.",
+      "generic": "Acceso de descarga a los repositorios que despliegas.",
+      "ghcr": "read:packages para descargar, write:packages para subir. En una organización con SSO obligatorio, autoriza el token para SSO.",
+      "gitlab": "read_registry para descargar, write_registry para subir. Un token de despliegue tiene alcance de un solo proyecto o grupo.",
+      "harbor": "Permiso de descarga en el proyecto donde viven las imágenes.",
+      "jfrog": "Permiso de lectura en el repositorio de Docker.",
+      "nexus": "nx-repository-view-docker-*-read para descargar.",
+      "quay": "Permiso de lectura en el repositorio."
+    },
+    "scopesTitle": "Permisos necesarios",
+    "shortLived": "Este proveedor emite tokens que duran unas {{hours}} horas. Vuelve a emitir y actualiza la credencial antes de la fecha indicada, la renovación automática no está disponible.",
+    "subheading": "Elige un proveedor para rellenar el host y ver qué permisos de token necesita la credencial.",
+    "test": "Probar conexión",
+    "testing": "Probando...",
+    "username": "Nombre de usuario"
   }
 }
