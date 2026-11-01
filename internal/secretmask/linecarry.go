@@ -9,8 +9,9 @@ type Line struct {
 }
 
 // LineCarry masks a sequence of log lines while catching a secret that spans
-// a line break. It holds back raw trailing lines covering the last maxLen-1
-// bytes, so the caller must Flush after a short idle interval and at stream end.
+// a line break. It holds back raw trailing lines covering the last n-1 bytes, n being
+// the longest multi-line secret (nothing is held without one), so the caller must
+// Flush after a short idle interval and at stream end.
 type LineCarry struct {
 	reg  *Registry
 	pend []Line
@@ -27,6 +28,10 @@ func (c *LineCarry) Pending() bool { return len(c.pend) > 0 }
 
 // Push adds a raw line and returns the masked lines that are now safe to emit.
 func (c *LineCarry) Push(stream, text string) []Line {
+	// Without a multi-line secret nothing can straddle lines, so skip the join and scan.
+	if len(c.pend) == 0 && c.reg.maxMultiLineLen() == 0 {
+		return []Line{{Stream: stream, Text: c.reg.Mask(text)}}
+	}
 	c.pend = append(c.pend, Line{Stream: stream, Text: text})
 	return c.release(false)
 }
@@ -43,14 +48,12 @@ func (c *LineCarry) release(all bool) []Line {
 		texts[i] = l.Text
 	}
 	joined := strings.Join(texts, "\n")
-	spans := c.reg.mergedSpans(joined)
+	// Single-line values cannot cross a line break, and Mask below handles them per group.
+	spans := c.reg.multiLineSpans(joined)
 
 	cut := len(joined)
 	if !all {
-		hold := c.reg.maxLen() - 1
-		if hold < 0 {
-			hold = 0
-		}
+		hold := max(0, c.reg.maxMultiLineLen()-1)
 		if hold > len(joined) {
 			hold = len(joined)
 		}

@@ -45,6 +45,9 @@ type Registry struct {
 	warned    atomic.Bool
 	dirty     atomic.Bool
 	sorted    atomic.Pointer[[]string]
+	// maxNL is the longest registered value containing a newline, zero if none.
+	maxNL  atomic.Int64
+	nlList atomic.Pointer[[]string]
 }
 
 // New returns an empty registry.
@@ -117,6 +120,18 @@ func (r *Registry) snapshot() []string {
 				}
 			}
 			sort.Slice(list, func(i, j int) bool { return len(list[i]) > len(list[j]) })
+			multi := []string{}
+			for _, v := range list {
+				if strings.Contains(v, "\n") {
+					multi = append(multi, v)
+				}
+			}
+			nl := 0
+			if len(multi) > 0 {
+				nl = len(multi[0])
+			}
+			r.maxNL.Store(int64(nl))
+			r.nlList.Store(&multi)
 			r.sorted.Store(&list)
 			// Cleared only after the store so a racing Mask never sees clean with a stale list.
 			r.dirty.Store(false)
@@ -194,7 +209,16 @@ func (r *Registry) Mask(s string) string {
 
 // mergedSpans returns the non-overlapping spans of s covered by registered values.
 func (r *Registry) mergedSpans(s string) [][2]int {
-	list := r.snapshot()
+	return spansOf(r.snapshot(), s)
+}
+
+// multiLineSpans is mergedSpans limited to values that contain a newline.
+func (r *Registry) multiLineSpans(s string) [][2]int {
+	r.snapshot()
+	return spansOf(*r.nlList.Load(), s)
+}
+
+func spansOf(list []string, s string) [][2]int {
 	if len(list) == 0 || s == "" {
 		return nil
 	}
@@ -234,6 +258,13 @@ func (r *Registry) maxLen() int {
 		return 0
 	}
 	return len(list[0])
+}
+
+// maxMultiLineLen is the longest registered value that spans lines; only such a
+// value needs lines held back, and 0 means every line can be masked on its own.
+func (r *Registry) maxMultiLineLen() int {
+	r.snapshot()
+	return int(r.maxNL.Load())
 }
 
 // Len reports how many values are registered.
