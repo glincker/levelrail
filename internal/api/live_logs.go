@@ -203,8 +203,8 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 			masked.Write(sseLogEvent{Line: l.Message, Stream: l.Stream})
 		}
 	}
-	// The backfill is a closed set: nothing follows to complete a held tail.
-	masked.Flush()
+	// The held tail stays raw until the idle timer fires, so a multi-line secret that
+	// straddles backfill and live lines is still caught.
 	flusher.Flush()
 
 	var statusTick <-chan time.Time
