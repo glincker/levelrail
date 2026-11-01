@@ -14,9 +14,22 @@ Oracle changes its free tier limits and rules. Treat every number here as a poin
 The doctor cloud checks (`cloud_provider`, `cloud_firewall_layers`, `host_firewall_iptables`, `published_port_reachability`, `image_arch`, `idle_reclaim_risk`) and the `PlatformMismatch` refusal described below are available from the release that includes them. A release published before that does not have them: on the latest published release at the time of the 2026-11-01 test run, `levelrail-cli doctor` showed none of the cloud checks. Check `levelrail-cli version` and the [changelog](/changelog) before you rely on them.
 </Note>
 
+## Set the guards first
+
+Do this before you create anything. Oracle's API does not mark a create as free or billable, so a mistake only shows up on the bill. Two guards stop that.
+
+Which account you have decides how much you need them. The test run for this page used a Free Trial account, not a strictly Always Free one. Its service limits were far above the Always Free allowance (41 Arm OCPUs per availability domain), so a quota policy held the test compartment to the allowance. Treat every create as billable until a guard says otherwise.
+
+1. **Budget alert.** In the console open Billing and Cost Management, then Budgets, and create a small monthly budget (for example 10 USD) on the tenancy. Add alert rules on actual spend at 1 percent and 50 percent and on forecast spend at 100 percent, sent to your email. The 1 percent rule tells you the first time anything bills. A budget only warns, it does not stop spending.
+2. **Compartment quota policy.** Create a compartment for the VM (do not use the root compartment), then a quota policy in the root compartment that caps Arm compute there. The syntax is `set|zero|unset <family> quota <name> [to N] in compartment <name> [where request.ad = '<AD>']`, see Oracle's [quota policy syntax](https://docs.oracle.com/en-us/iaas/Content/Quotas/Concepts/quota_policy_syntax.htm). The quota names for the Arm shape are listed in Oracle's quota reference for compute, check them there. Cap Arm at 2 OCPUs and 12 GB of memory. A quota without an availability domain condition applies per availability domain, so use the condition to allow one domain and set the others to zero. Cap block storage at your boot volume plus a margin, well under the 200 GB total.
+
+A quota is the hard guard. Service limits always win over quotas, and the most restrictive policy applies. Read the policy back in the console after you save it. Creating the quota policy and the budget in the console was done for the test run. The exact statement text is not reproduced here, so write it from Oracle's reference and check it by trying a create over the cap in the console (not yet verified as a documented step).
+
 ## What the free Arm shape gives you
 
 Oracle's page says an Always Free tenancy gets the equivalent of 2 OCPUs and 12 GB of memory on the `VM.Standard.A1.Flex` shape, which you can split across instances. It also says boot volumes and block volumes share a 200 GB total, and that outbound data is 10 TB per month (all per the page linked above). Older guides quote 4 OCPUs and 24 GB. Do not assume that: the console shows what your tenancy actually has.
+
+Check the region before you create. Your home region is fixed at signup, and Oracle's pages list regions where the Arm shape is not offered. Pick the availability domain with Arm capacity in your home region.
 
 Levelrail's own release binaries and container images are built for `arm64` as well as `amd64`, so the control plane runs on this shape. The apps you deploy are a separate question, see [Arm and app images](#arm-and-app-images).
 
@@ -46,6 +59,7 @@ Traffic reaches the VM only if the VCN allows it. In the console open the instan
 | `0.0.0.0/0` | TCP | 80 | Certificate issuance and HTTP |
 | `0.0.0.0/0` | TCP | 443 | Dashboard and apps over HTTPS |
 | `0.0.0.0/0` | UDP | 443 | HTTP/3 (optional) |
+| `0.0.0.0/0` | UDP | 51820 | Mesh (WireGuard), only if you add more nodes |
 | `0.0.0.0/0` | TCP | 22 | SSH (usually present by default) |
 
 Port 8080 (the dashboard) is not in this table on purpose. The safe default is to leave it closed in the VCN and reach the dashboard through an SSH tunnel, see [First access to the dashboard](#first-access-to-the-dashboard). If you open TCP 8080, restrict the source CIDR to your own IP (`203.0.113.7/32` style), and remove the rule when you are done.
@@ -74,8 +88,11 @@ The installer warns when it finds an active firewalld or ufw. For `iptables`, in
 sudo iptables -I INPUT 5 -p tcp --dport 80 -j ACCEPT
 sudo iptables -I INPUT 6 -p tcp --dport 443 -j ACCEPT
 sudo iptables -I INPUT 7 -p udp --dport 443 -j ACCEPT
+sudo iptables -I INPUT 8 -p udp --dport 51820 -j ACCEPT   # only for multi-node
 sudo netfilter-persistent save
 ```
+
+The UDP 51820 rule is the same insert pattern but was not run on the test VM (not yet verified). Skip it for a single node.
 
 `netfilter-persistent save` writes `/etc/iptables/rules.v4`. On the test image the package was already installed, and the rules were still present after a reboot. Without the save, the rules are lost on reboot.
 
@@ -126,6 +143,12 @@ The alternative is to open TCP 8080 in the VCN for a short time with the source 
 
 HTTPS needs a domain whose DNS points at the VM's public IP, with TCP 80 and 443 open in both layers, so the certificate request can succeed. Set the domain in the dashboard, see [Go live](/go-live) and [Domains and ingress](/domains-and-ingress). Until then, use the tunnel.
 
+### HTTPS with an sslip.io host
+
+With no domain, use the free `sslip.io` name for your IP. The IP `203.0.113.7` becomes `203-0-113-7.sslip.io`, which resolves to that IP with no DNS record. Open TCP 80 and 443 in both layers (steps 2 and 3), then set the dashboard's domain to that name as described in [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https). The certificate request needs port 80 reachable from the internet.
+
+Issuing a certificate for an `sslip.io` name on this VM has not been run yet (not yet verified). Public certificate authorities rate limit shared domains such as `sslip.io`, so a request can fail for reasons outside your VM. A real domain avoids that.
+
 ### First login from the CLI on the server
 
 `levelrail-cli readiness` and the other commands return `401 not signed in` until you log in, and the dashboard is the usual place to start. For a headless server, the password login from the CLI over plain HTTP needs new-device approval, even for the first admin. The hint it prints mentions `levelrail-cli auth approve`, which needs a token you do not have yet. What worked on the host:
@@ -154,8 +177,21 @@ What this means for you:
 
 - A lightly used personal server can meet those conditions. Levelrail does not change that.
 - Oracle's page says that after you upgrade to Pay As You Go it does not charge for Always Free resources, only for usage above the free limits. Whether to upgrade is your call. Read Oracle's terms and set a budget alert if you do. This page does not promise any particular outcome.
+- The honest way to stay above the thresholds is to run real work on the instance. Check the instance's Monitoring graphs for CPU, network and memory over 7 days and compare them to the three limits. If your real use is lower, plan for the instance to be reclaimed, or upgrade on purpose.
 - Levelrail does not include a keep-alive or load generator, and this guide does not suggest one.
 - Keep backups off the VM, see [Backup targets and volume backups](/backups-and-storage), so a lost instance does not mean lost data.
+
+## Clean up so nothing keeps billing
+
+Delete in this order in the console, in the compartment you made for this. A stopped instance still bills for its boot volume.
+
+1. Terminate the instance and tick the option to delete the boot volume.
+2. Delete any block volumes, volume backups and reserved public IPs you created.
+3. Delete the subnet, then the route table rules and internet gateway, then the VCN.
+4. Delete the compartment once it is empty, then the quota policy and the budget if you no longer want them.
+5. Next month, open Billing and Cost Management, then Cost Analysis, and confirm the spend is zero.
+
+The commands for each delete were not run through to the end in the test (not yet verified). Do not delete the quota policy and budget before the other resources are gone.
 
 ## Related
 
