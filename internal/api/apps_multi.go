@@ -19,6 +19,21 @@ import (
 
 // Every app gets an AppID, even single-service ones: the reconciler attaches containers to a network only when it is set.
 func (rt *Router) ensureAppLinked(ctx context.Context, appName, serviceName string) (string, error) {
+	// A same-name delete can drop the App row between the lookup and the link; look it up again.
+	var err error
+	for attempt := 0; attempt < 3; attempt++ {
+		var id string
+		if id, err = rt.linkAppOnce(ctx, appName, serviceName); err == nil {
+			return id, nil
+		}
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	return "", err
+}
+
+func (rt *Router) linkAppOnce(ctx context.Context, appName, serviceName string) (string, error) {
 	app, err := rt.appGroups.GetAppByName(ctx, appName)
 	if errors.Is(err, store.ErrAppNotFound) {
 		now := time.Now().UTC().Format(time.RFC3339Nano)
