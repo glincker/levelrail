@@ -25,6 +25,7 @@ import {
   useRestartPlugin,
   type Plugin,
 } from '../../queries/plugins'
+import { EgressDenials } from './EgressDenials'
 import { DnsProviderControls } from './DnsProviderControls'
 import { VerificationBadge } from './PluginReview'
 
@@ -143,6 +144,7 @@ export function PluginTable({
                       verification={{ status: p.verification }}
                     />
                   </div>
+                  <EgressDenials plugin={p} />
                   {p.kind === 'dns_provider' && approved ? (
                     <DnsProviderControls plugin={p} />
                   ) : null}

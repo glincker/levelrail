@@ -207,7 +207,23 @@
   },
   "egress": {
     "openTitle": "Los hosts declarados no se aplican",
-    "openBody": "Los plugins que declaran hosts de salida actualmente comparten una red general. Define APP_PLUGIN_EGRESS_MODE=proxy para restringir cada plugin a los hosts que declaró."
+    "openBody": "Los plugins que declaran hosts de salida actualmente comparten una red general. Define APP_PLUGIN_EGRESS_MODE=proxy para restringir cada plugin a los hosts que declaró.",
+    "summary": {
+      "none": "Sin conexiones denegadas",
+      "last": "última {{when}}",
+      "help": "Cuenta desde el último reinicio del proxy de salida. Los nombres de host denegados están en el registro del proxy, no aquí.",
+      "reasons": {
+        "host_not_allowed": "host no declarado",
+        "blocked_address": "dirección bloqueada",
+        "resolve_failed": "falló la resolución DNS",
+        "dial_failed": "falló la conexión",
+        "too_many_tunnels": "demasiadas conexiones",
+        "rate_limited": "límite de tasa",
+        "bad_request": "solicitud mal formada",
+        "unknown_caller": "origen desconocido"
+      },
+      "count": "Conexiones denegadas: {{count}}"
+    }
   },
   "review": {
     "verification": "Verificación",

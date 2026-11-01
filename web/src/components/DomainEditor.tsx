@@ -120,6 +120,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
         </CardTitle>
         <CardDescription>
           <Trans
+            t={t}
             ns="domains"
             i18nKey="editor.description"
             components={{ link: <Link to="/domains" className="underline" /> }}
