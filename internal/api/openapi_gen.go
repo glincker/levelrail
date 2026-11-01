@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1906 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1908 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -441,6 +441,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/log-drain", Ability: "AbilityRead", Group: "Audit Log / Log Drain", Handler: "handleGetAppLogDrain", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/log-drain", Ability: "AbilityWriteSensitive", Group: "Audit Log / Log Drain", Handler: "handleSetAppLogDrain", Description: ""},
 	{Method: "GET", Path: "/api/v1/audit-log", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleListAuditLog", Description: "Audit log (audit.go): who did what, across every session and API token, docs/comparison.md's own \"no audit log exists anywhere in the codebase\" gap. AbilityRoot, the same tier as the node and GitHub App routes above: this is operational data about every other identity on this control plane, not an ordinary per-app read."},
+	{Method: "GET", Path: "/api/v1/audit-log/anchor", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleGetAuditAnchor", Description: "Signed chain head to copy off the box, and the check of an exported anchor list against the live chain."},
+	{Method: "POST", Path: "/api/v1/audit-log/anchor-check", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleCheckAuditAnchors", Description: ""},
 	{Method: "GET", Path: "/api/v1/audit-log/export", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleExportAuditLog", Description: ""},
 	{Method: "POST", Path: "/api/v1/audit-log/purge", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handlePurgeAuditLog", Description: "Manual retention purge (audit_retention.go): runs the same operator-configured retention window PurgeOldAuditEntries' own periodic sweep uses, on demand instead of waiting for its next tick. AbilityRoot, matching the read route above: clearing audit history is at least as sensitive as reading it."},
 	{Method: "GET", Path: "/api/v1/audit-log/verify", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleVerifyAuditLog", Description: "Walks the audit hash chain and reports edited, removed or truncated rows."},

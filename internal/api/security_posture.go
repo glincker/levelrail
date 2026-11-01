@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/exposure"
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -140,6 +142,8 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 		off := false
 		in.OffBoxBackups = &off
 	}
+	anchored := auditanchor.ConfigFromEnv(os.LookupEnv).Enabled()
+	in.AuditAnchor = &anchored
 	in.Strict = envBoolDefault(envPostureStrict, false)
 	if rt.apps != nil {
 		if svcs, err := rt.apps.ListDesiredServices(ctx); err != nil || len(svcs) > 0 {

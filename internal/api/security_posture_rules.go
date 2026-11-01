@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -85,6 +86,7 @@ type postureInput struct {
 	CodeLoginAdmins   *bool
 	Exposure          *postureExposure
 	OffBoxBackups     *bool
+	AuditAnchor       *bool
 	MasterKey         bool
 	MasterKeyRotated  *time.Time
 	MasterKeyKnown    bool
@@ -214,6 +216,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		exposureRule(in, false),
 		exposureRule(in, true),
 		recommendUntilLive(in, boolRule("offbox_backup_off", postureHigh, in.OffBoxBackups, false, &postureFix{Kind: postureFixLink, Link: "/settings/control-plane-backup", CLI: "control-plane-backups schedule show"})),
+		recommendUntilLive(in, boolRule("audit_anchor_off", postureMedium, in.AuditAnchor, false, &postureFix{Kind: postureFixLink, Link: "/settings/audit-log", CLI: auditanchor.EnvDir + "=/var/lib/levelrail-anchors"})),
 		masterKeyRule(in),
 		staleSecretsRule(in),
 		tlsRule(in),

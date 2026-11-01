@@ -195,6 +195,11 @@
       "pass": "Las copias de seguridad externas cifradas están activadas",
       "why": "Perder esta máquina implicaría perder todas las definiciones de apps, secretos y certificados."
     },
+    "audit_anchor_off": {
+      "title": "No hay un ancla externa del registro de auditoría configurada",
+      "pass": "El ancla externa del registro de auditoría está activada",
+      "why": "Sin una copia de la cabecera de la cadena de auditoría fuera de esta máquina, quien tenga root aquí puede reescribir el historial y volver a firmarlo sin que se detecte."
+    },
     "master_key_rotation": {
       "title": "Falta la clave maestra o su rotación está vencida",
       "pass": "La clave maestra se rotó recientemente",

@@ -4082,6 +4082,13 @@ func (c *Client) VerifyAuditLog(ctx context.Context) (AuditChainReport, error) {
 	return out, err
 }
 
+// CheckAuditAnchors calls POST /api/v1/audit-log/anchor-check with exported anchors.
+func (c *Client) CheckAuditAnchors(ctx context.Context, anchors []AuditAnchor) (AuditAnchorReport, error) {
+	var out AuditAnchorReport
+	err := c.do(ctx, http.MethodPost, "/api/v1/audit-log/anchor-check", map[string]any{"anchors": anchors}, &out)
+	return out, err
+}
+
 // DeployAttemptFilter narrows ListDeployAttemptsFiltered; empty fields are ignored.
 type DeployAttemptFilter struct {
 	Branch string

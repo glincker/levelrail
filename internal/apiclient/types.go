@@ -3881,6 +3881,26 @@ type AuditChainReport struct {
 	Problems    []AuditChainProblem `json:"problems"`
 }
 
+// AuditAnchor mirrors store.AuditAnchor: one signed chain head, no row content.
+type AuditAnchor struct {
+	Version int    `json:"v"`
+	Seq     int64  `json:"seq"`
+	Hash    string `json:"hash"`
+	At      string `json:"at"`
+	Sig     string `json:"sig"`
+}
+
+// AuditAnchorReport mirrors store.AuditAnchorReport.
+type AuditAnchorReport struct {
+	OK         bool                `json:"ok"`
+	Checked    int                 `json:"checked"`
+	Matched    int                 `json:"matched"`
+	Compacted  int                 `json:"compacted"`
+	Unverified int                 `json:"unverified"`
+	LiveHead   int64               `json:"live_head"`
+	Problems   []AuditChainProblem `json:"problems"`
+}
+
 // DeployAttemptResource mirrors internal/api's deployAttemptResource
 // (internal/api/deploy_attempts.go): one row of GET
 // /api/v1/apps/{name}/deploy-attempts, additive to the reconcile

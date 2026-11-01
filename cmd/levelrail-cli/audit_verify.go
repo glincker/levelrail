@@ -8,6 +8,8 @@ import (
 
 func runAuditVerify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-verify", "print the verification report as JSON to stdout and nothing else", stderr)
+	var anchorFlag string
+	fs.StringVar(&anchorFlag, "anchor", "", "anchor export (file path or https URL) to check the live chain against")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditVerifyUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -19,6 +21,10 @@ func runAuditVerify(prog string, args []string, stdout, stderr io.Writer, lookup
 	report, err := client.VerifyAuditLog(context.Background())
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("verify audit log: %w", err))
+	}
+
+	if anchorFlag != "" {
+		return runAuditVerifyAnchor(client, anchorFlag, report, jsonOut, of, stdout, stderr)
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, report, func() {
@@ -46,9 +52,12 @@ func auditVerifyUsage(prog string) string {
 
 Walks the audit log's hash chain and signed checkpoints and reports any
 entry that was edited, removed or cut off the end. Exits 1 when a check
-fails. Requires an admin/root-scoped token, the same as "%[1]s audit-log".
+fails. With --anchor it also checks the live chain against an off-box
+anchor export, which catches a rewrite or rollback done on the control plane.
+Requires an admin/root-scoped token, the same as "%[1]s audit-log".
 
 Flags:
+  --anchor string         anchor export (file path or https URL) from APP_AUDIT_ANCHOR_*; also checks that the live chain still contains every anchored head
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

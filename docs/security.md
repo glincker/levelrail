@@ -163,6 +163,21 @@ Retention is managed in one place, **Settings, Cleanup**: a retention period per
 
 Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable, exportable as NDJSON or CSV, verifiable as a hash chain, and streamable to a webhook or an S3 bucket. Reads that can expose secrets or personal data, such as app and database logs, Loki queries and data exports, are recorded too. Every change to a security setting and every cleanup run is audited with counts only, never row contents or secret values. See [Identity and access](/identity-and-access#audit-log).
 
+### Audit log anchor
+
+The chain and its checkpoints are signed with a key stored on the control plane. Someone with root on that machine could rewrite the whole log and sign it again. The anchor closes that gap by copying the signed chain head (sequence number, hash, timestamp, signature) to storage you control. It carries no log content and never the key. Nothing is published until you set one of these:
+
+| Variable | Meaning |
+| --- | --- |
+| `APP_AUDIT_ANCHOR_DIR` | Directory that receives `audit-anchors.jsonl`, one JSON record per line, append only. Ship it off the box (rsync, object storage sync, a backup job); on Linux `chattr +a` on the file makes local tampering harder. |
+| `APP_AUDIT_ANCHOR_URL` | HTTPS endpoint that receives each record as a JSON POST. Private and metadata addresses are refused like any outbound webhook (`APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` is the shared opt-in). |
+| `APP_AUDIT_ANCHOR_INTERVAL` | How often a new head is published when the log moved (Go duration, default `15m`). |
+| `APP_AUDIT_ANCHOR_TIMEOUT` | Webhook timeout (default `10s`). |
+
+A failing sink only logs a warning and is retried on the next interval; audit writes are never held up by it. Check an export with `levelrail-cli audit-verify --anchor audit-anchors.jsonl`.
+
+What it proves: every head in the export is still part of the live chain at the same position with the same hash, so deleting the tail (rollback) or rewriting history before an anchored point is detected, even if the attacker re-signs a chain that verifies on its own. What it does not prove: anything written after the newest anchor you hold (the interval is that window), or what was in a row before it was first chained. Heads that fall inside a range removed by retention cannot be compared and are reported as compacted, not as failures. Anchor signatures are checked on the control plane, so an export you hold alone cannot be verified offline without that key. The Security Center warns until an anchor is configured.
+
 ## Container hardening
 
 Every container Levelrail creates (apps, databases, catalogue services, helpers) can be created with secure defaults: all Linux capabilities dropped except a minimal set, `no-new-privileges`, and a per-container process limit. It is controlled by `APP_CONTAINER_HARDENING` on the control plane and on each agent:

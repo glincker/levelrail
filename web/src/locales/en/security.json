@@ -195,6 +195,11 @@
       "pass": "Encrypted off-box backups are on",
       "why": "Losing this machine would lose every app definition, secret and certificate."
     },
+    "audit_anchor_off": {
+      "title": "No off-box audit log anchor is configured",
+      "pass": "An off-box audit log anchor is on",
+      "why": "Without a copy of the audit chain head outside this machine, someone with root here can rewrite history and re-sign it undetected."
+    },
     "master_key_rotation": {
       "title": "The master key is missing or overdue for rotation",
       "pass": "The master key was rotated recently",

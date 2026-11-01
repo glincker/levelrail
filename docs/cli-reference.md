@@ -1647,7 +1647,7 @@ levelrail-cli audit-purge [flags]
 
 `audit-purge` deletes every entry older than the retention window (`APP_AUDIT_LOG_RETENTION_DAYS`, default 90 days) right now instead of waiting for the automatic sweep. Security-family entries are kept for `APP_AUDIT_LOG_SECURITY_RETENTION_DAYS` (default 365). It needs an admin or root scoped token.
 
-`audit-verify` walks the audit log's hash chain and signed checkpoints and prints any entry that was edited, removed or cut off the end. It exits 1 when a check fails and needs a root token.
+`audit-verify` walks the audit log's hash chain and signed checkpoints and prints any entry that was edited, removed or cut off the end. It exits 1 when a check fails and needs a root token. `audit-verify --anchor <file-or-https-url>` also reads an off-box anchor export (the `audit-anchors.jsonl` file or a JSON array of anchors, see [Security](/security#audit-log-anchor)) and checks that the live chain still holds every anchored head. It exits 1 when an anchored head was rewritten, rolled back or removed, and `--json` then prints `{"chain": ..., "anchor": ...}`. `APP_AUDIT_ANCHOR_FETCH_TIMEOUT` bounds a remote export read.
 
 `tokens create` and `auth login` default to a 90 day lifetime. A token that never expires needs `tokens create --no-expiry` from a root caller, and the security policy's maximum lifetime still overrides it.
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
+	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/autoscale"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/changes"
@@ -401,6 +402,11 @@ func (s *bootState) startSchedulers() {
 			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
+
+	// Publishes the signed audit chain head off the box; does nothing unless APP_AUDIT_ANCHOR_* is set.
+	if cfg := auditanchor.ConfigFromEnv(os.LookupEnv); cfg.Enabled() {
+		go auditanchor.New(cfg, db, logger).Run(ctx)
+	}
 
 	// Moves cold audit, deploy and pipeline rows into archive bundles when the policy is on.
 	go func() {

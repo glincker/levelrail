@@ -19,6 +19,9 @@ func (rt *Router) registerAuditRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/audit-log", rt.requireAbility(AbilityRoot, rt.handleListAuditLog))
 	// Walks the audit hash chain and reports edited, removed or truncated rows.
 	mux.HandleFunc("GET /api/v1/audit-log/verify", rt.requireAbility(AbilityRoot, rt.handleVerifyAuditLog))
+	// Signed chain head to copy off the box, and the check of an exported anchor list against the live chain.
+	mux.HandleFunc("GET /api/v1/audit-log/anchor", rt.requireAbility(AbilityRoot, rt.handleGetAuditAnchor))
+	mux.HandleFunc("POST /api/v1/audit-log/anchor-check", rt.requireAbility(AbilityRoot, rt.handleCheckAuditAnchors))
 	// Manual retention purge (audit_retention.go): runs the same
 	// operator-configured retention window PurgeOldAuditEntries' own
 	// periodic sweep uses, on demand instead of waiting for its next
