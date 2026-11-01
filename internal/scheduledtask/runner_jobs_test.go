@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -333,3 +334,24 @@ func TestRunner_ExecMode_WritesHistory(t *testing.T) {
 }
 
 func nopReader(s string) io.ReadCloser { return io.NopCloser(strings.NewReader(s)) }
+
+// The value is known only to the mask registry (not to the job's own secret list), as with a vault value.
+func TestRunner_RegisteredSecretIsMaskedInTaskRowAndHistory(t *testing.T) {
+	const canary = "canary-task-output-7731" //nolint:gosec // synthetic test value
+	secretmask.Add(canary)
+	rt := &nativeRuntime{fakeRuntime: &fakeRuntime{}, outcomes: []docker.RunOutcome{{ContainerID: "c9", Output: "connect to " + canary + " failed\n", OutputCaptured: true, ExitCode: 1}}}
+	env := newJobEnv(t, rt, fakeSpecs{}, nil)
+
+	_ = env.runner.RunTrigger(context.Background(), env.task, Trigger{Kind: store.ScheduledTaskTriggerAPI})
+
+	got, err := env.db.GetScheduledTask(context.Background(), env.task.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(got.LastRunOutput, canary) {
+		t.Errorf("scheduled_tasks.last_run_output stores the secret: %q", got.LastRunOutput)
+	}
+	if run := env.lastRun(t); strings.Contains(run.Output+run.Message, canary) {
+		t.Errorf("run history stores the secret: %q", run.Output)
+	}
+}

@@ -3,6 +3,9 @@ package secretmask_test
 import (
 	"context"
 	"encoding/base64"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io/fs"
 	"net/url"
 	"os"
@@ -112,6 +115,18 @@ var unreviewedSinks = map[string]string{
 	"internal/store/node_security.go":            "node security event detail",
 }
 
+// reviewedWriters are functions that write to a free-text table without a Mask call in their own body,
+// each with the reason it is safe. Keyed "file:Func".
+var reviewedWriters = map[string]string{
+	"internal/store/scheduled_task_run.go:ClaimScheduledTaskRun":             "masked in runArgs",
+	"internal/store/scheduled_task_run.go:CreateScheduledTaskRun":            "masked in runArgs",
+	"internal/store/scheduled_task_run.go:InterruptRunningScheduledTaskRuns": "fixed message text",
+	"internal/store/scheduled_task_run.go:PruneScheduledTaskRuns":            "clears output, writes none",
+	"internal/store/deploy_attempt.go:FailOrphanedDeployAttempts":            "fixed restart message",
+	"internal/store/deploy_attempt_safety.go:RecoverRestartRollout":          "clears the error",
+	"internal/store/pipeline_jobs.go:CreatePipelineJobs":                     "structured job fields, no output",
+}
+
 func repoRoot(t *testing.T) string {
 	t.Helper()
 	root, err := filepath.Abs("../..")
@@ -119,6 +134,45 @@ func repoRoot(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return root
+}
+
+// freeTextUpdates covers UPDATE statements that overwrite a free-text column of an existing row.
+var freeTextUpdates = regexp.MustCompile(`(?s)UPDATE (?:scheduled_tasks\s+SET[^;]*?last_run_output|deploy_attempts\s+SET[^;]*?\berror\b|pipeline_jobs\s+SET[^;]*?\boutputs\b|scheduled_task_runs\s+SET[^;]*?\b(?:output|message)\b|build_runs\s+SET[^;]*?\b(?:output|error)\b|service_hook_runs\s+SET[^;]*?\b(?:output|error)\b)`)
+
+// funcsWritingFreeText returns the functions of one file whose body holds a free-text SQL write
+// and whether each also calls into secretmask inside that same body.
+func funcsWritingFreeText(t *testing.T, path string) (writers map[string]bool) {
+	t.Helper()
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, path, nil, 0)
+	if err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	writers = map[string]bool{}
+	for _, decl := range f.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Body == nil {
+			continue
+		}
+		writes, masks := false, false
+		ast.Inspect(fn.Body, func(n ast.Node) bool {
+			switch x := n.(type) {
+			case *ast.BasicLit:
+				if x.Kind == token.STRING && (freeTextTables.MatchString(x.Value) || freeTextUpdates.MatchString(x.Value)) {
+					writes = true
+				}
+			case *ast.SelectorExpr:
+				if id, ok := x.X.(*ast.Ident); ok && id.Name == "secretmask" {
+					masks = true
+				}
+			}
+			return true
+		})
+		if writes {
+			writers[fn.Name.Name] = masks
+		}
+	}
+	return writers
 }
 
 func TestEveryFreeTextStoreSinkMasksOrIsListed(t *testing.T) {
@@ -130,17 +184,32 @@ func TestEveryFreeTextStoreSinkMasksOrIsListed(t *testing.T) {
 				return nil
 			}
 			b, _ := os.ReadFile(p) //nolint:gosec // walks this repo's own source tree
-			if !freeTextTables.Match(b) {
+			if !freeTextTables.Match(b) && !freeTextUpdates.Match(b) {
 				return nil
 			}
 			rel, _ := filepath.Rel(root, p)
 			rel = filepath.ToSlash(rel)
+			writers := funcsWritingFreeText(t, p)
+			if len(writers) == 0 {
+				return nil
+			}
 			seen[rel] = true
-			if _, listed := unreviewedSinks[rel]; !listed && !strings.Contains(string(b), "secretmask.") {
-				t.Errorf("%s stores free text but neither masks it nor is listed in unreviewedSinks", rel)
+			if _, listed := unreviewedSinks[rel]; listed {
+				return nil
+			}
+			for fn, masks := range writers {
+				if _, ok := reviewedWriters[rel+":"+fn]; !masks && !ok {
+					t.Errorf("%s: %s writes free text but never calls secretmask in its own body; mask it or list the file in unreviewedSinks", rel, fn)
+				}
 			}
 			return nil
 		})
+	}
+	for key := range reviewedWriters {
+		rel, fn, _ := strings.Cut(key, ":")
+		if _, ok := funcsWritingFreeText(t, filepath.Join(root, rel))[fn]; !ok {
+			t.Errorf("reviewedWriters lists %s which no longer writes free text; drop the entry", key)
+		}
 	}
 	for rel := range unreviewedSinks {
 		if !seen[rel] {

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // How a deploy attempt's ImageDigest was obtained.
@@ -127,6 +129,7 @@ func (db *DB) supersedeServingBefore(ctx context.Context, id string) error {
 // image to failed: its container never passed readiness, so the
 // "succeeded" recorded optimistically at trigger time no longer holds.
 func (db *DB) RecordRolloutFailure(ctx context.Context, serviceName, image, reason string) error {
+	reason = secretmask.Mask(reason)
 	_, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET status = ?, rollout_state = ?, error = ?, finished_at = COALESCE(finished_at, ?)
 		WHERE id = (

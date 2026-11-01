@@ -22,10 +22,10 @@ func TestSSELogEventMasksRegisteredSecret(t *testing.T) {
 	}
 }
 
-// The failure text stored on a deploy record carries repo-author build output and must be masked.
+// No key= prefix on purpose: the regex redactor must not be what saves this input.
 func TestDeployErrorMessageMasksRegisteredSecret(t *testing.T) {
 	secretmask.Add(apiCanary)
-	err := errors.New("build failed: --build-arg TOKEN=" + apiCanary)
+	err := errors.New("build failed: host " + apiCanary + " unreachable")
 	if got := deployErrorMessage(err); strings.Contains(got, apiCanary) {
 		t.Errorf("stored deploy error carries the secret: %q", got)
 	}

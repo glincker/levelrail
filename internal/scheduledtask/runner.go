@@ -25,6 +25,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/backoff"
@@ -284,8 +285,9 @@ func (r *Runner) settleWithoutRunning(ctx context.Context, task store.ScheduledT
 
 func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Trigger, runID string, started time.Time, res result) error {
 	ended := r.now()
-	output := redact(res.output, res.secrets)
-	message := redact(res.message, res.secrets)
+	// Mask before capTail so a secret straddling the cut leaves no fragment.
+	output := secretmask.Mask(redact(res.output, res.secrets))
+	message := secretmask.Mask(redact(res.message, res.secrets))
 	snapshot := output
 	if snapshot == "" {
 		snapshot = message
@@ -622,7 +624,7 @@ func (r *Runner) Cleanup(ctx context.Context, runs []store.ScheduledTaskRun) {
 const replacedOutputMessage = "run cancelled: replaced by a newer invocation (concurrency_policy: replace)"
 
 func (r *Runner) record(ctx context.Context, taskID, status, output string) error {
-	if err := r.Runs.RecordScheduledTaskRun(ctx, taskID, r.now(), status, capTail(output, maxOutputBytes)); err != nil {
+	if err := r.Runs.RecordScheduledTaskRun(ctx, taskID, r.now(), status, capTail(secretmask.Mask(output), maxOutputBytes)); err != nil {
 		return fmt.Errorf("scheduledtask: record run %q: %w", taskID, err)
 	}
 	return nil

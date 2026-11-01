@@ -196,6 +196,7 @@ func (db *DB) SetPipelineJobStatus(ctx context.Context, id, status, reason, node
 
 // SetPipelineJobOutputs stores a job's JSON-encoded outputs.
 func (db *DB) SetPipelineJobOutputs(ctx context.Context, id, outputsJSON string) error {
+	outputsJSON = secretmask.Mask(outputsJSON)
 	if _, err := db.ExecContext(ctx, `UPDATE pipeline_jobs SET outputs = ? WHERE id = ?`, outputsJSON, id); err != nil {
 		return fmt.Errorf("store: set pipeline job %q outputs: %w", id, err)
 	}

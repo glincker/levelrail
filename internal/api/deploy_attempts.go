@@ -587,5 +587,6 @@ func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
 // deployErrorMessage is stored and served on the deploy record and the error
 // carries repo-author build output, so strip control codes, redact and bound it.
 func deployErrorMessage(err error) string {
-	return untrusted.Sanitize(err.Error(), failureOptions().MaxBytes)
+	// Mask before Sanitize truncates so a secret cut at the limit leaves no fragment.
+	return untrusted.Sanitize(secretmask.Mask(err.Error()), failureOptions().MaxBytes)
 }

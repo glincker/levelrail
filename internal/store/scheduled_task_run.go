@@ -164,6 +164,7 @@ func applyRunStartedTx(ctx context.Context, tx *sql.Tx, run ScheduledTaskRun) er
 // task's running_since when no other run of it is still in flight. A
 // success resets consecutive_missed.
 func (db *DB) FinishScheduledTaskRun(ctx context.Context, run ScheduledTaskRun) error {
+	run.Message, run.Output = secretmask.Mask(run.Message), secretmask.Mask(run.Output)
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: finish scheduled task run %q: %w", run.ID, err)
